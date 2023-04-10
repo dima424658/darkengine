@@ -24,9 +24,9 @@ public:
    operator int() const { return id;}; 
    operator string() const { return string(id); }; 
 
-   operator ==(const object& o) { return id == o.id;}; 
-   operator ==(long o)          { return id == o;}; 
-   operator !=(const object& o) { return id != o.id;}; 
+   bool operator ==(const object& o) { return id == o.id;}; 
+   bool operator ==(long o)          { return id == o;}; 
+   bool operator !=(const object& o) { return id != o.id;}; 
 
 }; 
 

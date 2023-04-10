@@ -174,7 +174,8 @@ public:
    // @TODO: Should this really be inlined?
    void MessageNameToString(char *pszDest) const
    {
-      for (int i = 0; m_TraceHashKey.m_Combo[i] != ':'; ++i)
+      int i;
+      for (i = 0; m_TraceHashKey.m_Combo[i] != ':'; ++i)
          pszDest[i] = m_TraceHashKey.m_Combo[i];
       pszDest[i] = 0;
    }

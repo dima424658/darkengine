@@ -160,7 +160,8 @@ static BOOL PolyEdgeTest(uchar *pAVert, mxs_vector *pAPool, int iANumEdges,
                                        &pBPool[pBVert[0]], pBPlaneNorm);
 
          // Here's all the other edges.
-         for (int j = 0; j < (iBNumEdges - 1); ++j) {
+         int j;
+         for (j = 0; j < (iBNumEdges - 1); ++j) {
             if (bToRight != ToRightOfEdge(&Intersection, &pBPool[pBVert[j]],
                                         &pBPool[pBVert[j + 1]], pBPlaneNorm)) {
                break;

@@ -85,6 +85,6 @@ EXTERN char *cur_command_help_str(char *buf);
 // arg1 should be a string of length arg1_len - its filled with
 // the first argument string (which needs to be copied to be zero
 // terminated) and arg2 is set to point at the second argument
-EXTERN CommandParseStringArgs(char *arg, char *arg1, int arg1_len, 
+EXTERN BOOL CommandParseStringArgs(char *arg, char *arg1, int arg1_len, 
                               char **arg2);
 #endif

@@ -21,7 +21,7 @@
 #define  TRANSLATING_DOOR  (1)
 
 
-EXTERN  rot_door_lock;
+EXTERN BOOL rot_door_lock;
 
 #define ROT_DOOR_LOCK    rot_door_lock = TRUE
 #define ROT_DOOR_UNLOCK  rot_door_lock = FALSE

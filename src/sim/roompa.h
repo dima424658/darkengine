@@ -22,7 +22,7 @@
 
 /////////////////
 
-const kMaxDepth = 10;
+const int kMaxDepth = 10;
 
 /////////////////
 

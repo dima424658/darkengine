@@ -179,7 +179,7 @@ typedef struct mps_motion_param
 struct multiped;
 
 // Arbitrary callbacks
-typedef (*motion_callback)(struct multiped * mp, int motion_num, int frame, float time_slop, ulong flags);
+typedef int (*motion_callback)(struct multiped * mp, int motion_num, int frame, float time_slop, ulong flags);
 
 // reserved callback flags
 #define MP_CFLAG_MOT_ABORTED 0x1
