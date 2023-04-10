@@ -1,0 +1,11 @@
+===============================================================
+$Source: x:/prj/tech/libsrc/windisp/RCS/windisp.txt $
+$Author: TOML $
+$Date: 1996/05/08 17:41:35 $
+$Revision: 1.1 $
+===============================================================
+
+"windisp"
+
+This library implements the Windows versions of IDisplayDevice.
+

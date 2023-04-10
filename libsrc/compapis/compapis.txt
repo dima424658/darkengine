@@ -1,0 +1,56 @@
+===============================================================
+$Source: x:/prj/tech/libsrc/compapis/RCS/compapis.txt $
+$Author: TOML $
+$Date: 1996/04/20 14:40:39 $
+$Revision: 1.7 $
+===============================================================
+
+"Eidos"
+
+The CompAPI "library" is the general holder of globally visible
+component interface headers for all projects not large enough
+to justify a seperate API directory of thier own.  It also
+generates the library that holds the GUID instances for the
+exposed interfaces.
+
+Larger projects (like the 2d) are likely to have thier
+own API companion project.  Generic utility interfaces (like
+IAggregate) are defined in the "comtools" project, as well as
+"objbase.h."
+
+Interfaces published here are generally application-level
+(singleton) objects and their accessory support interfaces.
+
+Interface headers here are distinguished by the presence of
+API in the filename (e.g., gshelapi.h is describes the game
+shell interface).  Headers in this project should be as
+cross-platform and cross-vendor friendly as possible.
+
+There are four reasons to keep this project seperate, rather
+than having the API header as part of the implementing project:
+
+    1) It makes globally visible interfaces and GUIDs
+    easier to manage, and reminds one that a change to the
+    API is an exceptional event.
+
+    2) It reinforces the conceptual seperation between
+    interface and implementation.
+
+    3) It reminds of the inability to coorelate interface
+    with modular implementation.
+
+    Many libraries will have completely different
+    implementations, depending on platform.  Either
+    multiple implementations _must_ reside in the same
+    directory, or one project would have to act as the
+    "master" holder of the API.  While it is perfectly
+    reasonable to have two seperate implementations of a
+    given library reside in the same directory, it is
+    excessive to enforce this form.
+
+    4) It invites the sharing if interesting and
+    well-designed interfaces.
+
+The presence of an API header here does not strictly mean
+there exists a thing which implements the interface for a
+given platform.

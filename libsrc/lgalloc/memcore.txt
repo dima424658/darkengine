@@ -1,0 +1,11 @@
+===============================================================
+$Source: x:/prj/tech/libsrc/lgalloc/RCS/memcore.txt $
+$Author: TOML $
+$Date: 1997/07/10 17:13:09 $
+$Revision: 1.2 $
+===============================================================
+
+This library implements the core memory management
+functionality of the Resource System. It provides fast
+allocators, custom allocators, debugging allocators and
+caching logic.

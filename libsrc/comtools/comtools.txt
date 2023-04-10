@@ -1,0 +1,322 @@
+///////////////////////////////////////////////////////////////////////////////
+// $Source: x:/prj/tech/libsrc/comtools/RCS/comtools.txt $
+// $Author: TOML $
+// $Date: 1996/06/06 15:28:37 $
+// $Revision: 1.4 $
+//
+
+This library presents tools useful for using and implementing
+COM objects and OLE.  It includes several project and library
+independent, cross-platform interfaces, possibly with
+implementation tools.
+
+The headers are included in many, many places and should be
+changed with the greatest care.
+
+Detail
+======
+
+ComTools.h; Doc Updated: toml, 03-13-96
+---------------------------------------
+ comtools.h presents several tools for using and implementing COM
+ interfaces.  It should be included in place of objbase.h
+
+ The tools are:
+    - generic macros for implementing COM wrapper macros
+    - "Interface Pointers" that provide automatic naming, query/connect,
+      and release to reduce probability of error
+    - "Safe Release"
+    - three macros for implementing faster calling for select critical
+      functions
+    - implementation macros to eliminate the hassle of redundant
+    QI/AddRef/Release code
+
+ Macros for implementing COM wrapper macros:
+
+    To ease the use of COM interfaces in C, interface specifications
+    usually include some macros to handle the double-indirection of
+    vtable use.  Microsoft often hand-builds each macro, which has
+    two drawbacks: first it is cumbersome, second it it forces C
+    module being moved to C++ to change the call syntax, or use
+    special preprocessor defines.
+
+    These macros are of the form:
+
+        COMCallN(p, foo {, arg});
+
+    Where N matches the number of arguments.  For example, the default
+    interface functions are wrapped as follows:
+
+        #define COMQueryInterface(p, a, b)      COMCall2(p, QueryInterface, a, b)
+        #define COMAddRef(p)                    COMCall0(p, AddRef)
+        #define COMRelease(p)                   COMCall0(p, Release)
+
+    So given:
+
+        COMRelease(pInterface);
+
+    This expands in C++ to
+
+        pInterface->Release();
+
+    And in C to:
+
+        ((pInterface)->lpVtbl)->foo(pInterface);
+
+    Generally when defining an interface, you should define the
+    macros to access the interface from C at that time also, using
+    these macros.
+
+ "Interface Pointers" (C++ only)
+
+    Interface Pointers, or IPtrs, provide a convenient and general way
+    use pointers to interfaces.  They offer automatic query &
+    Release() of interface pointers. These simplify interface client code by:
+
+        1. Eliminating the need to explicitly QueryInterface()
+        2. Eliminating the need to Release() at every return point, for
+           robust and accurate reference counting.
+        3. Introducing a standard naming convention for interface pointers
+           by replacing the 'I' in the interface name with a 'p'. Thus
+           An IPtr to IUnknown defaults to pUnknown
+           Forms are available for finer control if default naming too is
+           restrictive
+
+ IPtrs These are only available in C and C++ source compiled using the C++
+ front end.
+
+ Safe Release:
+
+    It is typical when releasing an interface pointer to first test for
+    NULL before calling release, then setting the pointer to NULL after
+    release.  This way, code can cover all bases to ensure reference
+    counts are correct, without the storing any state outside the pointer
+    itself, and without the risk of accidental double-release.
+
+    The safe release macro encompasses this operation, and is generally
+    preferred over calling release directly.
+
+    "SimpleSafeRelease()" is used only in contexts where the pointer
+    is known to be going out of scope and thus need not be set to 0.
+    This version should generally be avoided if there is any doubt that
+    the instance in question is the absolute last use. It is generally
+    unneeded if your compiler's optimizer is working!
+
+    SafeRelease() is available from both C and C++ regardless of front end,
+    and works both with regular C pointers and IPtrs.
+
+ "Critical Use" macros:
+
+    The critical use macros allow for a level of indirection to be removed
+    when using truly critical functions.  They are advanced macros that
+    should be used with care.  They are intended as a tool for interface
+    designers to use to code simpler macros for clients
+    The interface specification should specify which operations are
+    useful this way, and provide macros to do critical use.
+
+    The macros essentially create an automatic function pointer, copy
+    the desired vtable entry, and allow for convenient call.  Thus
+    "((pInterface)->lpVtbl)->foo(pInterface)" becomes "auto_foo(pInterface)"
+
+    Be aware that these macros will cause no compile-time
+    type checking!  They also create a new scope.
+
+    Because constructs like this will be a maintenence problem,
+    and the net gain versus ordinary usage would be quite low,
+    these should be both implemented and used both sparingly and with
+    extreme caution.
+
+    The general form of ultimate client use, using AddRef() as an example
+    would be:
+
+    // Get an automatic pointer to AddRef(), call it until "test" is false
+    // Then let go.
+    IUnknown_CriticalAddRefBegin(pInterface);
+    while (test)
+        IUnknown_CriticalAddRef(pInterface);
+    IUnknown_CriticalAddRefEnd(pInterface);
+
+ Compare*s(), etc.:
+
+    Does correct comparisons of GUIDs
+
+ F_DECLARE_INTERFACE():
+
+    Forward declares an interface.  Interfaces that use other interfaces
+    should forward declare them rather than including the header
+    for them since interfaces are always accessed through pointers
+
+ DECLARE_UNKNOWN_PURE():
+
+    Expands to the pure declaration of IUnknown to make interface design
+    easier and more accurate.
+
+ DECLARE_UNKNOWN():
+
+    Expands to the declaration of IUnknown to make interface implementation
+    easier and more accurate.
+
+ DECLARE_UNAGGREGATABLE(), IMPLEMENT_UNAGGREGATABLE():
+
+    Expands to the declaration of IUnknown to make interface implementation
+    easier and more accurate.  Also implements the reference counting and
+    auto-destruction on release.
+
+ DECLARE_DELEGATION(), IMPLEMENT_DELEGATION():
+
+    Expands to the declaration of IUnknown to make interface implementation
+    easier and more accurate.  Also implements the code needed to delegate
+    to an outer object.
+
+ DECLARE_SINGLE_AGGREGATE(), IMPLEMENT_SINGLE_AGGREGATE():
+
+    These macros are for defining a shell which aggregates a single implementation
+    of an interface.  The interface should use delegation.
+
+
+Creating Aggregatable Objects
+=============================
+
+Creating objects that can be aggregated is optional; however,
+it is simple to do, and doing so has significant benefits. The
+following rules must be followed in order to create an object
+that is aggregatable (often called the inner object).
+
+    - The inner object's implementation of QueryInterface,
+      AddRef, and Release for the IUnknown interface controls
+      the inner object's reference count alone, and must not
+      delegate to the outer unknown. This IUnknown
+      implementation is sometimes called the implicit
+      IUnknown, somtimes referred to as the
+      controlling IUnknown.
+
+    - The implementation of QueryInterface, AddRef, and
+      Release members of all interfaces that the inner object
+      implements, other than IUnknown itself, must delegate
+      to the outer unknown. These implementations must not
+      directly affect the inner object's reference count.
+
+    - The implicit IUnknown must implement the
+      QueryInterface behavior for only the inner object.
+
+    - The aggregatable object must not call AddRef when
+      holding a reference to the outer unknown pointer.
+
+      The exception to this rule is when using the
+      IAggregate/IAggregateMemberControl protocol,
+      the outer aggregate makes all AddRefs() "weak"
+      during the "connect" phase of initialization. At
+      this time, the aggregateable object is allowed
+      to call QI or AddRef.
+
+    - If, when the object is created, any interface other
+      than IUnknown is requested, the creation must fail with
+      E_UNKNOWN.
+
+Most of this detail has been wrapped up in the macros in
+comtools.h and objcoll.h. The code fragment below illustrates a
+correct implementation of an aggregatable object using these
+macros (in C++, C is very similar):
+
+    class cSomeClass : public ISomeInterface
+        {
+    public:
+        // This macro declares QI/AddRef/Release, plus
+        // a pointer to the outer unknown (m_pOuterUnknown)
+        DECLARE_DELEGATION();
+
+        STDMETHOD (SomeMethod)();
+
+        // This macro declares an IUnknown derivation
+        // whose resonsible for notifying the
+        // outer cSomeClass instance that the reference
+        // count has reached zero.  This
+        // is the implicit or controlling IUnknown
+        // it also declares a member m_AggregateControl
+        DECLARE_SIMPLE_AGGREGATE_CONTROL(cSomeClass);
+
+        };
+
+    // This macro implements QI/AddRef/Release that
+    // delegate to m_pOuterUnknown.  cSomeClass is
+    // responsible for setting m_pOuterUnknown
+    IMPLEMENT_DELEGATION(cSomeClass);
+
+    // This macro implements QI/AddRef/Release for
+    // the implicit IUnknown.  This version
+    // automatically deletes the associated cSomeClass
+    // instance.
+    IMPLEMENT_SIMPLE_AGGREGATE_CONTROL_DELETE_CLIENT(cSomeClass);
+
+    cSomeClass::cSomeClass(IUnknown * pOuterUnknown)
+      : m_pOuterUnknown(pOuterUnknown), m_AggregateControl(this)
+        {
+        // Use convenience macro specified in IAggregate
+        // protocol header to add components into the aggregate
+        AddToAggregate1(pOuterUnknown, IID_ISomeClass, this, &m_AggregateControl);
+
+        // We hold the initial reference on the aggregate control,
+        // and now that the aggregate is referencing it, we can
+        // release it.
+        m_AggregateControl.Release();
+        }
+
+Using this approach, not every aggregateable interface
+implementation needs a controlling IUnknown.  Rather, every
+conceptual object that can be cleaned up as a unit needs one
+controlling IUnknown.
+
+Note also that this example performs all run-time aggregation
+hook-up in the constructor.  This is not a requirement.
+
+Notes on IAggregate protocol
+----------------------------
+
+Using the IAggregate protocol, the aggregate object
+is not complete and ready to use until Init() is called.
+Any QI for any interface other
+
+Members of the aggregate entity *must* acquire any retained
+references to other parts of the aggregate during the
+connect phase.  Otherwise, the reference count of the aggregate
+will be incorrect due to self-reference.
+
+Also note that the IAggregate/IAggregateMemberControl protocol
+is our own enhancement of the standard aggregation technique.
+As a result, the predefined aggregate control macros are
+optimized for the way we to aggregation.  They don't fulfill
+the need of the implicit unknown to allow querying to all
+interfaces represented in the object.
+
+
+Aggregating Objects
+-------------------
+
+When developing an object that aggregates in another object,
+these rules must be followed:
+
+  - When creating the inner object, the outer object must
+    explicitly ask for IUnknown.
+
+  - The outer object must protect its implementation of
+    Release from reentrancy with an artificial reference
+    count around its destruction code.
+
+  - The outer object must call its own outer unknown's
+    Release if it queries for a pointer to any of the inner
+    object's interfaces. To free this pointer, the outer
+    object calls its own outer unknown's AddRef followed by
+    Release on the inner object's pointer:
+
+    // Obtaining inner object interface pointer
+    pUnkInner->QueryInterface(IID_IFoo, &pIFoo);
+    pUnkOuter->Release();
+
+    // Releasing inner object interface pointer
+    pUnkOuter->AddRef();
+    pIFoo->Release();
+
+  - The outer object must not blindly delegate a query for any
+    unrecognized interface of the inner object unless that
+    behavior is specifically the intention of the outer object.
+

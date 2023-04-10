@@ -1,0 +1,156 @@
+///////////////////////////////////////////////////////////////////////////////
+// $Source: x:/prj/tech/libsrc/cpptools/RCS/cpptools.txt $
+// $Author: TOML $
+// $Date: 1996/08/20 09:25:36 $
+// $Revision: 1.4 $
+//
+
+This file documents the contents of the library "cpptools."
+"cpptools: originated as my set of tools for C++ development,
+in addition to the project for COM object stuff in
+"comtools."  Feel free to ask me about these -- comments are
+welcome (toml 02-28-96).
+
+Many of these tools either have now, or will have, a thin-layer
+C front end for use in C++ shy code.
+
+Everything in here is designed to be absolutely independent of
+ANY external project or library, except core typedefs &
+logging. While some of the tools use each other, they only
+refer to C library and OS apis outside the project. This
+independence is *very* important. (toml 02-28-96)
+
+Exception to this rule would be access to other "fundamental"
+libraries, like the debugging routines.
+
+Available Tools
+---------------
+
++ Dynamic Function Loader
+  - Files: dynfunc.h, dynfunc.cpp
+  - Ties together all the steps of dynamically loading
+    a function from a dll.
+  - Useful in deferring the loading of optional dlls
+    until actually needed.
+
++ FileSpecs
+  - Files: filekind.h (base type used for C and COM),
+           fnamutil.h, fnamutil.cpp, filespec.h, filespec.cpp,
+           filepath.h, filepath, cpp
+  - Wraps up all the functions needed to manipulate
+    file names.
+  - Using these makes life a lot easier if the underlying
+    file name scheme changes (like long names & UNC)
+  - The include support for named "things" where one
+    might want to use these names in the identical
+    context as a file name.  Use/extension of this
+    is still under development.
+
++ Strings
+
++ Thread tools
+
+  - OVERVIEW
+
+    The Win32 API provides a variety of ways to coordinate
+    multiple threads of execution, including:
+
+        - Wait functions and synchronization objects
+        - Critical section objects
+        - Interlocked variable access
+
+    The API provides a set of wait functions that enable a
+    thread to block its own execution. These functions do not
+    return until a set of conditions specified by the wait
+    function's parameters have been satisfied. These parameters
+    include a time-out interval and handles of one or more
+    synchronization objects.
+
+    When a wait function is called, it checks the state of the
+    specified synchronization object or objects and any other
+    conditions that could cause it to return. If this initial
+    state does not satisfy the specified conditions and the
+    time-out interval has not elapsed, the calling thread enters
+    an efficient wait state, consuming very little processor time
+    while waiting for the conditions to be satisfied. The time-out
+    interval can be set to INFINITE to cause an indefinite wait.
+
+    A synchronization object is an object whose handle can be
+    specified in one of the wait functions to coordinate the
+    execution of multiple threads. The state of a synchronization
+    object is either signaled, which can allow the wait function
+    to return, or nonsignaled, which can prevent the function from
+    returning. More than one process can have a handle of the same
+    synchronization object, making interprocess synchronization
+    possible.
+
+    The Win32 API provides the following three object types
+    intended exclusively for synchronization.
+
+    Type        Description
+    ----        -----------
+    event       Notifies one or more waiting threads that an event
+                has occurred.
+
+    mutex       Can be owned by only one thread at a time, enabling
+                threads to coordinate mutually exclusive access to
+                a shared resource.
+
+    semaphore   Maintains a count between zero and some maximum value,
+                limiting the number of threads that are simultaneously
+                accessing a shared resource.
+
+    Critical section objects provide synchronization similar to
+    that provided by mutex objects, except that critical section
+    objects can be used only by the threads of a single process.
+    Event, mutex, and semaphore objects can also be used in a
+    single-process application, but critical section objects
+    provide a slightly faster, more efficient mechanism for
+    mutual-exclusion synchronization. Like a mutex object, a
+    critical section object can be owned by only one thread at a
+    time, which makes it useful for protecting a shared resource
+    from simultaneous access. For example, a process could use a
+    critical section object to prevent more than one thread at a
+    time from modifying a global data structure.
+
+  - CLASS cThreadLock
+
+    Wrapper for critical sections management
+
+    A thread uses the Lock() member  function to request ownership
+    and the Unlock() function to release its ownership. If the
+    critical section object is currently owned by another thread,
+    Lock() waits indefinitely for ownership. This differs from the
+    use of a mutex object for mutual exclusion, where the wait
+    functions accept a specified time-out interval.
+
+    Once a thread owns a critical section object, it can make
+    additional calls to Lock() without blocking its execution.
+    This prevents a thread from deadlocking itself while waiting
+    for a critical section object that it already owns. To release
+    its ownership, the thread must call Unlock() once for each
+    time that it entered the critical section.
+
+    When a critical section object is owned, the only other
+    threads affected are those that are waiting for ownership in a
+    call to Lock(). Threads that are not waiting are free to
+    continue their normal execution.
+
+
+  - CLASS cThreadSemaphore
+
+    The state of a semaphore object is signaled when its count is
+    greater than zero and nonsignaled when its count is equal to
+    zero. Each time a waiting thread is "released" because of the
+    semaphore's signaled state, the count of the semaphore is
+    decreased by one.
+
+    Typically, an application uses a semaphore to limit the number
+    of threads using a resource. Before a thread uses the
+    resource, it specifies the semaphore handle in a call to one
+    of the wait functions. When the wait function returns, it
+    decreases the semaphore's count by one. When the thread has
+    finished using the resource, it calls Release() to increase
+    the semaphore's count by one.
+
+

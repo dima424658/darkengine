@@ -1,0 +1,17 @@
+===============================================================
+$Source: x:/prj/tech/libsrc/appcore/RCS/appcore.txt $
+$Author: TOML $
+$Date: 1996/04/24 17:20:39 $
+$Revision: 1.2 $
+===============================================================
+
+"appcore"
+
+This library implements the core of COM based LG apps.  It
+provides the application aggregate, and is responsible for
+calling the initialization and shut-down routines specified
+int appagg.h.
+
+Under DOS, it implements IApplication.
+
+Under Windows, it implements IApplication and IWinApp.
