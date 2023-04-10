@@ -1,8 +1,8 @@
 /*
  * $Source: x:/prj/tech/libsrc/md/RCS/mds.h $
- * $Revision: 1.18 $
- * $Author: JAEMZ $
- * $Date: 1998/06/18 13:03:23 $
+ * $Revision: 1.20 $
+ * $Author: jaemz $
+ * $Date: 1998/09/26 14:02:31 $
  *
  * Structure definitions for the Model library
  *
@@ -17,7 +17,9 @@
 #include <r3ds.h>
 
 // Current MD version number
-#define MD_CUR_VER 3
+#define MD_CUR_VER 4
+// Current backwards compatible number
+#define MD_COMPATIBLE_VER 3
 
 // Enable backface intersection checking
 #define BACKFACE_INTERSECTION
@@ -63,8 +65,11 @@ typedef struct mds_model {
    ulong pgon_off;
    ulong node_off;
    ulong mod_size;   // size of the model
+   // Next time, make materials field expandable...
+   ulong mat_flags;     // which features are used, trans, illum, etc.
+   ulong amat_off;      // offset of auxilliary material info
+   ulong amat_size;     // size of new material, never assume size of struct
 } mds_model;
-
 
 // Subobjects
 // Each subobject header contains the starting index and number of
@@ -103,6 +108,7 @@ typedef struct mds_subobj {
 // more information like  shininess and things like that.  That's more a
 // feature for lighting.
 
+
 enum _mde_mat {
    MD_MAT_TMAP,
    MD_MAT_COLOR
@@ -119,6 +125,19 @@ typedef struct mds_mat {
       ulong ipal; // inverse pal lookup
    };
 } mds_mat;        // material info
+
+// Which features are used by the model as a whole, these get or'd
+// in mat_flags
+// Do we have translucency?
+#define MD_MAT_TRANS 0x1
+// Do we have self illumination?
+#define MD_MAT_ILLUM 0x2
+
+// Auxilliary information for material
+typedef struct mds_amat {
+   float trans; // translucency 0-1
+   float illum; // self illumination, 0-1
+} mds_amat;
 
 
 // UVs Wow, is this structure uninteresting
@@ -186,6 +205,12 @@ typedef struct mds_pgon {
    ushort   verts[]; // vertex indices, then light indices, then uv
                      // indices, optionally
 } mds_pgon;
+
+// Auxilliary info for the pgon.. like material
+// occurs after verts, has extra info
+typedef struct mds_pgon_aux {
+   ubyte   mat; // which material
+} mds_pgon_aux;
 
 
 // The node list is still relatively similar to an interpreter, in that there are many types of nodes, and

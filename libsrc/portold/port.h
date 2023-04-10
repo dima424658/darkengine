@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/portold/port.h,v 1.36 1998/04/01 14:58:52 KEVIN Exp $
+// $Header: r:/prj/cam/src/portal/RCS/port.h 1.45 1998/12/22 10:34:19 JON Exp $
 //   Interface to portal
 
 #ifndef _PORT_H_
@@ -29,6 +29,10 @@ typedef int ObjID;  // can't include objtype.h
   // 0,7 means add 0 for darkest, add 7 for lightest; we use 11,0.
 extern void init_portal_renderer(int dark_color, int light_color);
 
+extern void portal_setup_water_hack(
+   int num_textures, r3s_texture *tex_list, float *alpha_list, int *rgb_list);
+
+extern void portal_cleanup_water_hack(void);
 
 
 //////                                 Render
@@ -50,6 +54,10 @@ extern unsigned char pt_medium_entry_clut[256];
 extern unsigned char pt_medium_exit_clut[256];
 extern unsigned char pt_medium_haze_clut[256];
 
+// Like medium-haze clut, except per motion index.  Overrides 
+// medium haze if non-zero. 
+extern unsigned char pt_motion_haze_clut[256]; 
+
    // Both of these expect results in milliseconds.
 extern long (*portal_get_time)(void);
 extern long (*portal_get_frame_time)(void);
@@ -68,6 +76,7 @@ extern mxs_real portal_detail_level;
 extern void (*portal_render_object)(ObjID o, uchar *clut, ulong fragment);
 extern BOOL (*portal_object_visible)(ObjID);
 extern BOOL (*portal_object_blocks)(ObjID blocker, ObjID blockee);
+extern void (*portal_pre_draw_callback)(void);
 extern Position* (*portal_object_pos)(ObjID obj);
 
 // kinds of object fragments--OTHER means the object has been split
@@ -87,6 +96,19 @@ extern void portal_push_clip_planes(
 extern void portal_pop_clip_planes(void);
 
 
+// bitfield telling us which cells have been in the visible set in
+// portal_render_scene since the last call to portal_unmark_visible_cells
+extern uchar portal_cell_rendered[];
+
+// was cell ThisCell in the visible set last frame?
+#define portal_cell_visible(ThisCell) \
+   ((portal_cell_rendered[(ThisCell) >> 3] & ((1 << ((ThisCell) & 7)))) ? \
+    TRUE : FALSE)
+
+
+// clear portal_cell_visible
+void portal_unmark_visible_cells();
+
 //////                                 Lighting
 
 // These flags apply to lights when we determine how they affect the
@@ -104,6 +126,8 @@ extern void portal_pop_clip_planes(void);
 // oversampled raycast
 #define LIGHT_QUAD              8
 
+// raycast w/objects 
+#define LIGHT_OBJCAST          16
 
 extern int portal_add_omni_light(float br, float ambient,
       Location *loc, uchar dynamic, float radius);
@@ -144,6 +168,11 @@ extern bool portal_render_from_texture;
   // This should be set for each level, 0-255.
 extern int portal_ambient_light_level;
 
+EXTERN void portal_set_normalized_color(int rm, int gm, int bm);
+EXTERN void portal_convert_hsb_to_rgb(int *rp, int *gp, int *bp, float hue, float saturation);
+EXTERN void portal_shine_omni_light(int light_index, Location *loc, 
+                                        uchar lighting_type);
+
 
 //////                                 World Rep
 
@@ -152,9 +181,13 @@ extern int portal_ambient_light_level;
   // Pass in something nonzero for the last parameter to cast sans
   // epsilon.
 extern void PortalRaycastVector (Location *start_loc, mxs_vector *vec,
-                    Location *hit_loc, int use_zero_epsilon);
+                                 Location *hit_loc, int use_zero_epsilon);
 extern bool PortalRaycast(Location *start_loc, Location *end_loc,
-                    Location *hit_loc, int use_zero_epsilon);
+                          Location *hit_loc, int use_zero_epsilon);
+
+  // collects extra refs
+extern bool PortalRaycastRefs(Location *start_loc, Location *end_loc,
+                              Location *hit_loc, int use_zero_epsilon);
 
   // This finds the polygon reached by the most recent raycast.
   // It returns -1 if the most recent cast returned TRUE.
@@ -166,12 +199,17 @@ extern bool PortalPointInPolygon(mxs_vector *point, PortalCell *cell,
                                  PortalPolygonCore *polygon,
                                  int vertex_offset, bool set_hull_test);
 
-  // These are set by PortalRaycast().
+  // These are set by PortalRaycast() and PortalRaycastRefs().
 extern bool PortalRaycastResult;        // return value of most recent raycast
 extern int PortalRaycastPlane;          // -1 if we hit nothing
 extern int PortalRaycastCell;           // end cell of cast if we didn't hit
+extern float PortalRaycastTime;         // along total cast: 0-1
 extern mxs_vector PortalRaycastHit;     // undefined if we hit nothing
 
+#define RAYCAST_MAX_REFS 128
+  // These are set by PortalRaycastRefs().
+extern int PortalRaycastRefCount;
+extern int PortalRaycastRef[RAYCAST_MAX_REFS];
 
   // returns cell*256+poly
 extern int PortalRenderPick(Position *pos, int x, int y, float zoom);

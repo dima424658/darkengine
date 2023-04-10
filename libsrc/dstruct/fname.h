@@ -56,5 +56,3 @@ void FnameReplacePart(char *part, char *str, int maxlen);
 #define FnameDelExt(fn) ((fn)->ext[0]=0)
 
 #endif
-
-

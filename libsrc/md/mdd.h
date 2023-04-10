@@ -1,8 +1,8 @@
 /*
  * $Source: x:/prj/tech/libsrc/md/RCS/mdd.h $
- * $Revision: 1.3 $
- * $Author: TOML $
- * $Date: 1996/10/21 09:35:56 $
+ * $Revision: 1.4 $
+ * $Author: jaemz $
+ * $Date: 1998/09/26 14:01:07 $
  *
  * Debugging output routines for the Model library
  * These routines are restricted to a separate file,
@@ -39,7 +39,7 @@ void md_prn_light(mds_light *l);
 
 // dump a polygon
 // returns a pointer to the next pgon
-mds_pgon *md_prn_pgon(mds_pgon *p);
+mds_pgon *md_prn_pgon(mds_pgon *p,mds_model *m);
 
 // dump a sphere
 void md_prn_sphere_info(mds_sphere *s);

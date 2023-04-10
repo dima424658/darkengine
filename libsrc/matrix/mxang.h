@@ -1,4 +1,4 @@
-// $Header: x:/prj/tech/libsrc/matrix/RCS/mxang.h 1.2 1997/08/20 08:55:33 dc Exp $
+// $Header: x:/prj/tech/libsrc/matrix/RCS/mxang.h 1.3 1999/04/22 10:41:38 JAEMZ Exp $
 // angle/angvec stuff for mx
 // since it is single/double precision invariant
 
@@ -7,7 +7,7 @@
 
 typedef ushort mxs_ang;
 
-typedef struct _mxs_angvec {
+typedef struct mxs_angvec {
    union {
       struct {mxs_ang tx,ty,tz;};
       mxs_ang el[3];

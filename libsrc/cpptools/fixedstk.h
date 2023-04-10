@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/cpptools/RCS/fixedstk.h $
 // $Author: TOML $
-// $Date: 1997/09/22 22:29:29 $
-// $Revision: 1.1 $
+// $Date: 1998/10/03 11:02:03 $
+// $Revision: 1.2 $
 //
 // Fixed size stacks of fixed size things...
 //
@@ -71,19 +71,24 @@ public:
     //
     // Queries for stack state
     //
-    BOOL IsEmpty()
+    BOOL IsEmpty() const
     {
         return (m_iNext == m_iBottom);
     }
 
-    BOOL IsFull()
+    BOOL IsFull() const
     {
         return (((m_iNext + 1) & unsigned(kMaxElems - 1)) == m_iBottom);
     }
 
-    unsigned GetSize()
+    unsigned GetSize() const
     {
         return kMaxElems;
+    }
+
+    int GetCount() const
+    {
+       return ((m_iNext + (kMaxElems - m_iBottom)) & (unsigned)(kMaxElems - 1));
     }
 
     //
@@ -206,6 +211,22 @@ public:
     }
 
     //
+    // Check for the all items pm the stack. Returns count
+    // there is any.
+    //
+    int PeekAll(T * pReturn)
+    {
+        int count = GetCount();
+        int i = count - 1;
+        for (; i >= 0; i--)
+        {
+            *pReturn = m_Entries[((m_iBottom + i) & unsigned(kMaxElems - 1))];
+            pReturn++;
+        }
+        return count;
+    }
+
+    //
     // Threading support
     //
     BOOL WaitForData(ulong msecTimeout = 0)
@@ -240,21 +261,27 @@ template <class T, unsigned kMaxElems>
 class cFixedMTStack : private cFixedStack<T, kMaxElems>
 {
 public:
-    BOOL IsEmpty()
+    BOOL IsEmpty() const
     {
         cAutoLock lock(m_Lock);
         return cFixedStack<T, kMaxElems>::IsEmpty();
     }
 
-    BOOL IsFull()
+    BOOL IsFull() const
     {
         cAutoLock lock(m_Lock);
         return cFixedStack<T, kMaxElems>::IsFull();
     }
 
-    unsigned GetSize()
+    unsigned GetSize() const
     {
         return cFixedStack<T, kMaxElems>::GetSize();
+    }
+
+    int GetCount() const
+    {
+       cAutoLock lock(m_Lock);
+       return cFixedStack<T, kMaxElems>::GetCount();
     }
 
     void Flush()

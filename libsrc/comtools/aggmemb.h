@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/comtools/RCS/aggmemb.h $
-// $Author: TOML $
-// $Date: 1998/05/19 18:18:10 $
-// $Revision: 1.11 $
+// $Author: JAEMZ $
+// $Date: 1999/01/06 17:49:19 $
+// $Revision: 1.12 $
 //
 
 #ifndef __AGGMEMB_H
@@ -32,6 +32,12 @@
     \
     cCTDelegating<INTERFACE1>::InitDelegation(pOuterUnknown); \
     MI_ADD_TO_AGGREGATE_1(pOuterUnknown, INTERFACE1, priority, pConstraints)
+
+#define MI_INIT_AGGREGATION_SPLIT(pOuterUnknown, GUID1, INTERFACE1, priority, pConstraints) \
+    \
+    cCTDelegating<INTERFACE1>::InitDelegation(pOuterUnknown); \
+    MI_ADD_TO_AGGREGATE_SPLIT(pOuterUnknown, GUID1,INTERFACE1, priority, pConstraints)
+
 
 #define MI_INIT_AGGREGATION_2(pOuterUnknown, INTERFACE1, INTERFACE2, priority, pConstraints) \
     \
@@ -292,6 +298,11 @@ DECLARE_INTERFACE_(IAggregateMemberControl, IUnknown)
 #define MI_ADD_TO_AGGREGATE_1(pOuterUnknown, INTERFACE1, priority, pConstraints) \
     \
     AddToAggregate1(pOuterUnknown, IID_ ## INTERFACE1, THIS_AS(INTERFACE1), THIS_AS(IAggregateMemberControl), priority, pConstraints); \
+    AggregateMemberControlRelease()
+
+#define MI_ADD_TO_AGGREGATE_SPLIT(pOuterUnknown, GUID1, INTERFACE1, priority, pConstraints) \
+    \
+    AddToAggregate1(pOuterUnknown, IID_ ## GUID1, THIS_AS(INTERFACE1), THIS_AS(IAggregateMemberControl), priority, pConstraints); \
     AggregateMemberControlRelease()
 
 #define MI_ADD_TO_AGGREGATE_2(pOuterUnknown, INTERFACE1, INTERFACE2, priority, pConstraints) \

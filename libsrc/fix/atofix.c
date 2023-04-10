@@ -85,5 +85,3 @@ static void fixgetab(char *p, int fracshift, int *a, int *b, int *sign)
 			}
 		}
 }
-
-

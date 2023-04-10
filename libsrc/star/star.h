@@ -1,30 +1,33 @@
 /*
  * $Source: x:/prj/tech/libsrc/star/RCS/star.h $
- * $Revision: 1.6 $
- * $Author: PATMAC $
- * $Date: 1998/07/01 18:40:48 $
+ * $Revision: 1.7 $
+ * $Author: BFARQUHA $
+ * $Date: 1998/11/06 15:10:12 $
  *
  * Star library header
  *
  * $Log: star.h $
+ * Revision 1.7  1998/11/06  15:10:12  BFARQUHA
+ * new star callback added
+ * 
  * Revision 1.6  1998/07/01  18:40:48  PATMAC
  * Add extern "C"
- * 
+ *
  * Revision 1.5  1998/02/18  15:57:56  KEVIN
  * added function to set pixel rendering function for next call to StarRender().
- * 
+ *
  * Revision 1.4  1997/11/04  16:22:23  KEVIN
  * 16 bit support.
- * 
+ *
  * Revision 1.3  1997/11/02  20:05:51  buzzard
  * anti-aliased stars cleanup
- * 
+ *
  * Revision 1.2  1997/01/31  23:25:39  JAEMZ
  * Updated star library for the nineties
- * 
+ *
  * Revision 1.1  1994/10/24  23:27:39  jaemz
  * Initial revision
- * 
+ *
 */
 
 #ifndef __STAR_H
@@ -38,6 +41,19 @@ extern "C" {
 #endif
 // This is for the anti-alised size of the stars.  Fear me.
 extern   int std_size;
+
+struct sStarRenderCallbackData
+   {
+   mxs_vector *pVec;
+   r3s_point *pPoint;
+   int color;
+   };
+
+typedef BOOL (*tStarRenderCallback)(struct sStarRenderCallbackData *pData);
+
+// Sets the function to be called to render each star. If not set will
+// do default, old-style behavior.
+void StarSetStarRenderCallback(tStarRenderCallback);
 
 // sets global pointers in the star library
 // to the number of stars, their positions, their colors
@@ -55,7 +71,7 @@ void StarFree();
 
 // stuffs random vectors and colors into the set areas
 // randomly assigning a color range to them
-// Col is the starting col in the range, range, is the number 
+// Col is the starting col in the range, range, is the number
 // of entries.
 void StarRand(uchar col,uchar range);
 
@@ -67,7 +83,7 @@ void StarPoly(int n,r3s_phandle *vp);
 
 // Just enters the list.  You are responsible for making sure the
 // region is already color zero.  Note that this is how SS did the cool
-// texture map gratings in the botany bay.  
+// texture map gratings in the botany bay.
 // Pass in unclipped poly, we'll clip
 void StarEmpty(int n,r3s_phandle *vp);
 
@@ -96,7 +112,7 @@ void StarRenderSimple();
 
 // Base is the black color, range includes
 // the white color
-// wsize is canvas size to meet or exceed to 
+// wsize is canvas size to meet or exceed to
 // anti-alias
 void StarSetAntiAlias(int dark_col,int bright_col,int wsize);
 
@@ -108,8 +124,3 @@ void StarSetCheckBkgnd(BOOL check);
 }
 #endif
 #endif // star.h
-
-
-
-
-

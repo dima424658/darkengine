@@ -115,5 +115,3 @@
 // BSTR (lParam2 is unused). You must free the BSTR by calling
 // IMediaEvent::FreeEventParams.
 #define EC_OLE_EVENT			    0x18
-
-

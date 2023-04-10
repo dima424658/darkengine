@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/sound/RCS/lgsound.h $
-// $Author: PATMAC $
-// $Date: 1998/03/20 13:04:42 $
-// $Revision: 1.27 $
+// $Author: mwhite $
+// $Date: 1999/01/06 15:37:57 $
+// $Revision: 1.31 $
 //
 // (c) 1996 Looking Glass Technologies Inc.
 // Pat McElhatton (from JohnB)
@@ -219,6 +219,58 @@ typedef struct _sSndEnvironment {
    float    rolloffFactor;
 } sSndEnvironment;
 
+// Results from Init3DReverb 
+typedef enum
+{
+   kREVERB_InitFail,    // Failure
+   kREVERB_InitOK_HW,   // Success, hardware reverb
+   kREVERB_InitOK_SW    // Success, software reverb (not yet implememnted)
+} eReverbInitResult;
+
+// Reverb types: Was enum, but ints are cleaner for property storage.
+#define kREVERB_Generic          0
+#define kREVERB_PaddedCell       1
+#define kREVERB_Room             2
+#define kREVERB_Bathroom         3
+#define kREVERB_LivingRoom       4
+#define kREVERB_StoneRoom        5
+#define kREVERB_Auditorium       6
+#define kREVERB_ConcertHall      7
+#define kREVERB_Cave             8
+#define kREVERB_Arena            9
+#define kREVERB_Hangar           10
+#define kREVERB_CarpetedHallway  11
+#define kREVERB_Hallway          12
+#define kREVERB_StoneCorridor    13
+#define kREVERB_Alley            14
+#define kREVERB_Forest           15
+#define kREVERB_City             16
+#define kREVERB_Mountains        17
+#define kREVERB_Quarry           18
+#define kREVERB_Plain            19
+#define kREVERB_ParkingLot       20
+#define kREVERB_SewerPipe        21
+#define kREVERB_UnderWater       22
+#define kREVERB_Drugged          23
+#define kREVERB_Dizzy            24
+#define kREVERB_Psychotic        25
+#define kREVERB_COUNT            26
+
+#define kREVERB_FlagType         (1 << 0)
+#define kREVERB_FlagLevel        (1 << 1)
+#define kREVERB_FlagDecay        (1 << 2)
+#define kREVERB_FlagDamping      (1 << 3)
+
+typedef struct ReverbSettings
+{
+   //   eReverbType type;
+   DWORD flags;
+   int type;
+   float level;
+   float decay;
+   float damping;
+} ReverbSettings;
+
 // volume limits in millibels
 #define kSndMinVolume -10000
 #define kSndMaxVolume -1
@@ -333,6 +385,13 @@ DECLARE_INTERFACE_(ISndMixer, IUnknown)
    STDMETHOD_(int32,    Get3DPositionVolume)(THIS_ sSndVector *pSrcPos) PURE;
    STDMETHOD_(void,     Get3DPositionPanVolume)(THIS_ sSndVector *pSrcPos, int32 *pPan, int32 *pVol) PURE;
    STDMETHOD_(void,     Set3DDeferMode)(THIS_ BOOL deferOn) PURE;
+   STDMETHOD_(void, 	   FreeHWChannelCount)(THIS_ int32 *pHWChans, int32 *p3DHWChans) PURE;
+   STDMETHOD_(int32,    Init3DReverb)(THIS) PURE;
+   STDMETHOD_(void,     Shutdown3DReverb)(THIS) PURE;
+   STDMETHOD_(BOOL,     Have3DReverb)(THIS) PURE;
+   STDMETHOD_(BOOL,     CanDo3DReverb)(THIS) PURE;
+   STDMETHOD_(BOOL,     Set3DReverbSettings)(THIS_ ReverbSettings *pReverbSettings) PURE;
+   STDMETHOD_(BOOL,     Get3DReverbSettings)(THIS_ ReverbSettings *pReverbSettings) PURE;
 };
 
 #define ISndMixer_Init(p, a, b, c)						COMCall3(p, Init, a, b, c)
@@ -376,6 +435,13 @@ DECLARE_INTERFACE_(ISndMixer, IUnknown)
 #define ISndMixer_Get3DPositionVolume(p, a)        COMCall1(p, Get3DPositionVolume, a)
 #define ISndMixer_Get3DPositionPanVolume(p, a, b, c)     COMCall3(p, Get3DPositionPanVolume, a, b, c)
 #define ISndMixer_Set3DDeferMode(p, a)				   COMCall1(p, Set3DDeferMode, a)
+#define ISndMixer_FreeHWChannelCount(p, a, b)      COMCall2(p, FreeHWChannelCount, a, b)
+#define ISndMixer_Init3DReverb(p)                  COMCall0(p)
+#define ISndMixer_Shutdown3DReverb(p)              COMCall0(p)
+#define ISndMixer_Have3DReverb(p)                  COMCall0(p)
+#define ISndMixer_CanDo3DReverb(p)                 COMCall0(p)
+#define ISndMixer_Set3DReverbSettings(p, a)        COMCall1(p, Set3DReverbSettings, a)
+#define ISndMixer_Get3DReverbSettings(p, a)        COMCall1(p, Get3DReverbSettings, a)
 
 #undef INTERFACE
 #define INTERFACE ISndSample
@@ -459,6 +525,7 @@ DECLARE_INTERFACE_(ISndSample, IUnknown)
    STDMETHOD_(int32,    GetAmbientVolume)(THIS) PURE;
    STDMETHOD_(void,     Set3DMethod)(THIS_ eSnd3DMethod method) PURE;
    STDMETHOD_(eSnd3DMethod, Get3DMethod)(THIS) PURE;
+   STDMETHOD_(void,     Set3DReverbMix)(THIS_ float mix) PURE;
 };
 
 #define	ISndSample_Play(p) 						COMCall0(p, Play)
@@ -540,7 +607,7 @@ DECLARE_INTERFACE_(ISndSample, IUnknown)
 #define ISndSample_GetAmbientVolume(p, a)    COMCall0(p, Get3DAmbientVolume)
 #define ISndSample_Set3DMethod(p, a)         COMCall1(p, Set3DMethod, a)
 #define ISndSample_Get3DMethod(p)            COMCall0(p, Get3DMethod)
-
+#define ISndSample_Set3DReverbMix(p, a)      COMCall1(p, Set3DReverbMix, a)
 
 //
 // get header info from WAVE or VOC sound file image

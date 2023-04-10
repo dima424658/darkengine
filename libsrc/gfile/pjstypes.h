@@ -70,4 +70,3 @@ typedef int 			Errcode; /* >= 0 if ok, < 0 otherwise see pjecodes.h */
 #endif
 
 #endif /* PJSTYPES_H */
-

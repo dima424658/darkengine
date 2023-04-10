@@ -2,11 +2,13 @@
 @Copyright Looking Glass Studios, Inc.
 1996,1997,1998,1999,2000 Unpublished Work.
 */
-
-// $Header: r:/t2repos/thief2/libsrc/gadget/guistyle.h,v 1.1 1996/07/30 19:22:58 mahk Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/guistyle.h 1.3 1998/09/18 19:19:37 mahk Exp $
 
 #ifndef __GUISTYLE_H
 #define __GUISTYLE_H
+#pragma once
+
+#include <datasrc.h>
 
 ////////////////////////////////////////////////////////////
 // Kinds of colors
@@ -34,6 +36,32 @@ typedef enum _StyleColorKind
 typedef ulong StyleColor;
 
 ////////////////////////////////////////////////////////////
+// MACROS FOR MAKING/UNMAKING RGB COLORS
+////////////////////////////////////////////////////////////
+
+//
+// StyleGetColor will turn these colors into screen colors 
+// automatically, or you can pre-compile them.
+//
+
+#define GUI_RGB_MASK 0x1000000
+#define guiRGB(r,g,b)   (GUI_RGB_MASK|((b) << 16)|((g) << 8)|(r))
+#define guiR(rgb)     (((rgb) >> 0) & 0xFF)
+#define guiG(rgb)     (((rgb) >> 8) & 0xFF)
+#define guiB(rgb)     (((rgb) >> 16) & 0xFF)
+#define guiIsRGB(rgb)  ((rgb) & GUI_RGB_MASK)
+
+//
+// Pre-convert a single color to screen.  Idempotent.
+//
+EXTERN int guiScreenColor(int color); 
+
+//
+// Pre-convert an entire style
+//
+EXTERN void guiCompileStyleColors(struct guiStyle* targ, const struct guiStyle* src); 
+
+////////////////////////////////////////////////////////////
 // Kinds of fonts
 ////////////////////////////////////////////////////////////
 
@@ -44,7 +72,7 @@ typedef enum _StyleFontKind
    StyleNumFonts
 } StyleFontKind;
 
-typedef ulong StyleFont;
+typedef IDataSource * StyleFont;
 
 ////////////////////////////////////////////////////////////
 // Kinds of sounds
@@ -66,7 +94,7 @@ typedef ulong StyleSound;
 
 typedef ulong StylePalette;
 
-typedef struct _guiStyle
+typedef struct guiStyle
 {
    StylePalette pal;
    StyleColor   colors[StyleNumColors];
@@ -120,7 +148,7 @@ EXTERN bool guiStyleStopSound(guiStyle* style, StyleSoundKind kind);
 // the app can install these callbacks to specify how various
 // style entries should be interpreted.
 
-typedef struct _guiStyleMethods 
+typedef struct guiStyleMethods 
 {
    // palette function: the default function treats the argument 
    // as a resource id (if < 0x10000) or an imgref id (if >= 0x10000)

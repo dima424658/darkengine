@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/sndsrc/RCS/playlist.h $
-// $Author: PATMAC $
-// $Date: 1998/01/03 00:51:32 $
-// $Revision: 1.3 $
+// $Author: FKANE $
+// $Date: 1998/11/03 14:04:53 $
+// $Revision: 1.7 $
 //
 // (c) 1997 Looking Glass Technologies Inc.
 // Pat McElhatton
@@ -15,24 +15,31 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include <sndsrc.h>
+#include <resapi.h>
 
 typedef enum _SSPlaylistOps {
    plNone            = 0,
    plEndList         = 1,
    plSilence         = 2,
+
    plRezSingle       = 3,
    plFileSingle      = 4,
    plMemSingle       = 5,
-   plRezDual         = 6,
-   plFileDual        = 7,
-   plMemDual         = 8,
-   plCallback        = 9,
-   plLabel           = 10,
-   plBranch          = 11,
-   plSetGate         = 12,
-   plRawMemSingle    = 13,
-   plRawMemDual      = 14,
-   plLASTOp          = 15     // Must be highest valued enum!
+   plRawMemSingle    = 6,
+   plNRezSingle      = 7,
+
+   plRezDual         = 8,
+   plFileDual        = 9,
+   plMemDual         = 10,
+   plRawMemDual      = 11,
+   plNRezDual        = 12,
+
+   plCallback        = 13,
+   plLabel           = 14,
+   plBranch          = 15,
+   plSetGate         = 16,
+
+   plLASTOp          = 17     // Must be highest valued enum!
 } SSPlaylistOps;
 
 
@@ -69,8 +76,19 @@ typedef struct _SSPLFileSingle {
    uint32      off;           // LIBRARY WILL FILL IN
    uint32      format1;       // LIBRARY WILL FILL IN
    uint32      format2;       // LIBRARY WILL FILL IN
-   char        name[32];
+   char        name[256];
 } SSPLFileSingle;
+
+
+// single named resource
+typedef struct _SSPLNRezSingle {
+   uint32      op;
+   uint32      nSamples;      // LIBRARY WILL FILL IN
+   uint32      off;           // LIBRARY WILL FILL IN
+   uint32      format1;       // LIBRARY WILL FILL IN
+   uint32      format2;       // LIBRARY WILL FILL IN
+   IRes        *pRes;
+} SSPLNRezSingle;
 
 
 // single memory buffer, with attribs in header
@@ -111,8 +129,19 @@ typedef struct _SSPLFileDual {
    uint32      off;           // LIBRARY WILL FILL IN
    uint32      format1;       // LIBRARY WILL FILL IN
    uint32      format2;       // LIBRARY WILL FILL IN
-   char        name[32];
+   char        name[256];
 } SSPLFileDual;
+
+
+// named resource dual (splice)
+typedef struct _SSPLNRezDual {
+   uint32      op;
+   uint32      nSamples;
+   uint32      off;           // LIBRARY WILL FILL IN
+   uint32      format1;       // LIBRARY WILL FILL IN
+   uint32      format2;       // LIBRARY WILL FILL IN
+   IRes        *pRes;         // LIBRARY WILL FILL IN
+} SSPLNRezDual;
 
 
 // dual memory buffer, with attribs in header
@@ -171,3 +200,6 @@ typedef struct _SSPLSetGate {
    uint32               gateNum;
    uint32               gateValue;
 } SSPLSetGate;
+
+// utility array for traversing playlists
+EXTERN int playlistOpSizes[];

@@ -71,6 +71,3 @@ void SymDumpTable(Symtab *psymtab, bool sorted)
 			}
 		}
 }
-
-
-

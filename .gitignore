@@ -40,3 +40,6 @@
 .vscode
 Debug
 Release
+*.log
+*.tlog
+*.pdb

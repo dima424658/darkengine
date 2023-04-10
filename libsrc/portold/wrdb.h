@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/portold/wrdb.h,v 1.20 1997/10/27 18:10:28 MAT Exp $
+// $Header: r:/prj/cam/src/portal/RCS/wrdb.h 1.25 1998/10/31 08:14:39 buzzard Exp $
 //
 // World Representation Database
 
@@ -23,6 +23,7 @@ extern "C"
 typedef mxs_vector Vertex;
 typedef mxs_vector Vector;
 
+#if 0
 //   A cached relative vector
 typedef struct st_CachedVector
 {
@@ -41,34 +42,7 @@ typedef struct st_CachedData
    CachedVector *back;
    int dummy1;
 } CachedData;
-
-
-///////////////////////////////////////////
-//
-//   WorldRep BSP tree structure
-//   
-//     This BSP tree is generated from the CSG BSP tree just before 
-//     it emits cells.  It keeps track of cells split during emission 
-//     (caused by too many polys).  It is the BSP tree used at runtime.
-
-typedef struct wrBspNode
-{
-   bool        leaf;             // Is it a leaf?
-
-   char        medium;           // Medium of leaf
-   bool        mark;             // Markable for fast rendering traversal
-   char        padding;          // Padding out to 4 byte boundary
-   int         cell_id;          // Index to reference cell (-1 if !leaf)
-
-   mxs_plane         plane;      // Split plane
-   struct wrBspNode *inside;     // Children (NULL if !leaf) 
-   struct wrBspNode *outside;
-
-   // General
-   struct wrBspNode *parent;     // Parent (NULL if root)
-} wrBspNode;
-// 36 bytes
-
+#endif
 
 ///////////////////////////////////////////
 //
@@ -92,7 +66,7 @@ typedef struct wrBspNode
 
 typedef struct
 {
-   CachedVector *norm;
+   mxs_vector normal;
    float plane_constant;
 } PortalPlane;
 
@@ -111,18 +85,7 @@ typedef struct
 
 
 //  Polygon data necessary for rendering
-typedef struct
-{
-   CachedVector *u, *v;
-   ushort u_base,v_base;    // SFIX u&v values at the anchor vertex
-   uchar texture_id;        // which texture to paint
-   uchar texture_anchor;    // which vertex to anchor the texture to
-   short cached_surface;
-
-   mxs_real texture_mag;    // used in finding MIP level
-   mxs_vector center;       // also used in finding MIP level
-} PortalPolygonRenderInfo;  // 32 bytes
-
+typedef struct st_PortalPolygonRenderInfo PortalPolygonRenderInfo;
 
 typedef struct
 {
@@ -130,26 +93,56 @@ typedef struct
    uint offset;
 } PortalDecal;
 
+///////////////////////////////////////////
+//
+//   WorldRep BSP tree structure
+//   
+//     This BSP tree is generated from the CSG BSP tree just before 
+//     it emits cells.  It keeps track of cells split during emission 
+//     (caused by too many polys).  It is the BSP tree used at runtime.
+
+// Use the accessor macros in wrbsp.h to get at these fields properly!
+
+typedef struct wrBspNode
+{
+   union
+   {
+      struct
+      {
+         uchar pad1;
+         uchar pad2;
+         uchar pad3;
+
+         uchar flags; // defined in wrbsp.h
+      };
+      struct
+      {
+         uint parent_index;
+      };
+   };
+
+   PortalPlane *plane;
+
+   union
+   {
+      struct 
+      {
+         uint cell_id;        // Cell index (if a leaf)
+         uint pad4;
+      };
+      struct
+      {
+         uint inside_index;   // Children indices (if an internal node)
+         uint outside_index;
+      };
+   };
+} wrBspNode;
+// 16 bytes
+
 
 // basic light map storage
-typedef struct 
-{
-   short base_u, base_v; // these can be negative, they indicate top
-                         // left of rectangle
-   short row;            // bitmapesque data
-   uchar h, w;
+typedef struct st_PortalLightMap PortalLightMap;
 
-   uchar *bits;          // the actual data--the static lightmap comes first,
-                         // and then the bits for all the animated lightmaps,
-                         // in the order in which they appear in the cell's
-                         // palette
-   uchar *dynamic;       // if it's dynamically lit, this has the new data
-
-   PortalDecal *decal;   // any decal overlays
-   uint anim_light_bitmask; // Which animated lights reaching this cell
-                         // affect this polygon?  The bits match the
-                         // anim light palette of the cell.
-} PortalLightMap; // 24 bytes
 
 
 ////
@@ -220,7 +213,7 @@ typedef struct
    uchar num_planes;
    uchar medium;
    uchar flags;
-   uchar spare_byte_1;
+   uchar num_full_bright;
 
    // 16
    Vertex *vpool;
@@ -233,7 +226,7 @@ typedef struct
    int portal_vertex_list;          // offset of second type of polygons per-poly vertex list
 
    // 20
-   wrBspNode *leaf;                 // ptr to leaf of worldrep BSP tree
+   uint leaf_index;              // ptr to leaf of worldrep BSP tree
    PortalPlane *plane_list;         // plane equations for all unique planes
    PortalCellRenderData *render_data;// data used by renderer while rendering
    void *refs;
@@ -278,24 +271,6 @@ typedef struct {
    uchar pad_2;
 } PortalCellMotion;
 
-
-// A given cell is stored as a contiguous block of memory.  The pointers
-// are swizzled at load time to point to the right places.  So the memory
-// is laid out like this:
-//      1 PortalCell (52 bytes)
-//     ~m PortalPlane (8 * ~m, ~m == number of unique planes)
-//      m PortalPolygonCore (16 * m, m == num_total_polys)
-//      k PortalPolygonRenderInfo (8 * k, k == num_render_polys)
-//      n Vertex (12 * n, n == num_vertices)
-//      p uchars vertex_pool (p bytes, p = sum of number of vertices per poly)
-//      q uchars vertex_pool_lighting (q bytes, q = sum of number of vertices per render poly)
-// (dynamic lighting is dynamically allocated q more bytes)
-
-// This probably puts a level somewhere between 200K and 1M, depending on complexity
-// A pretty big portion of that is the vertices.  Maybe we should share vertices--
-// we make one big vertex pool with all vertices, and change the vpool to being
-// indices into that pool, saving 10*n bytes.  We can still skip caching points
-// across cells--just immediately build them all directly.  Hmm.
 
 #ifdef __cplusplus
 };

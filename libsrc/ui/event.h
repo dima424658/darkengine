@@ -1,4 +1,4 @@
-// $Header: x:/prj/tech/libsrc/ui/RCS/event.h 1.26 1998/06/18 13:28:20 JAEMZ Exp $
+// $Header: x:/prj/tech/libsrc/ui/RCS/event.h 1.27 1998/07/30 10:52:04 JAEMZ Exp $
 
 #ifndef _EVENT_H
 #define _EVENT_H
@@ -115,6 +115,7 @@ typedef struct _ui_user_defined_event
 #define UI_JOY_BUTTON2UP      2
 #define UI_JOY_BUTTON1DOWN    3
 #define UI_JOY_BUTTON2DOWN    4
+
 
 // ----------------
 //  EVENT HANDLERS
@@ -303,6 +304,15 @@ EXTERN Point uiJoystickMouseGain;
 // Recording Support
 typedef bool (*uiEventRecordFunc)(uiEvent *ev);
 
+// By default you can't have two overlapping buttons and expect
+// one to get the event if the other doesn't.  This is done as an
+// optimization, I guess, but now you can control it.
+// This defaults to FALSE -JF
+EXTERN bool uiAllowOverlappingRegions;
+
+
 EXTERN uiEventRecordFunc ui_recording_func;
+
+
 
 #endif // _EVENT_H

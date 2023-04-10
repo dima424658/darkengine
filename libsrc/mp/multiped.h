@@ -1,3 +1,5 @@
+// $Header: x:/prj/tech/libsrc/mp/RCS/multiped.h 1.24 1998/10/14 08:29:16 KATE Exp $
+
 //
 
 #ifndef MULTIPED_H
@@ -39,7 +41,8 @@ typedef struct mps_overlay
 
 // frame of reference types for multipeds
 #define MFRT_REL_START  0
-#define MFRT_GLOBAL     1
+#define MFRT_ARM        1  //@HACK: mode only works for dark engine's player arm (plycbllm.cpp)
+#define MFRT_GLOBAL     2
 
 typedef struct multiped
 {
@@ -133,6 +136,7 @@ EXTERN void mp_close(void);
 // and position are correct.
 EXTERN void mp_init_multiped(multiped * mp);
 
+
 //
 // Corresponding multiped shutdown function. Needs to free some internal
 // data, etc. If you don't call this you'll find your memory leaking.
@@ -144,6 +148,31 @@ EXTERN void mp_free_multiped(multiped * mp);
 // destination multiped, so clone must be freed using mp_free_multiped
 // when done to avoid memory leaks.
 EXTERN BOOL mp_clone_multiped(multiped *dst, multiped *src);
+
+
+// 
+// Read a multiped from buffer.  Use swizzle param to swizzle motion numbers.
+// Assumes multiped already had joints, num torsos etc set.
+// Return status of what happened on read.
+#define MP_READ_OKAY 1
+#define MP_READ_BAD_CONFIG 0
+#define MP_READ_BAD_MOTIONS -1
+EXTERN int mp_read_multiped(multiped *mp, void *buf, int (*swizzle_func)(int,motion_callback *pcallback));
+
+// 
+// Return buffer size necessary to write a multiped
+EXTERN int mp_get_write_buffsize(multiped *mp);
+
+//
+// Write a multiped to a buffer
+EXTERN void mp_write_multiped(multiped *mp, void *buf);
+
+//
+// Return list of motions currently playing on multiped.
+// max_mots should be initially set to size of mots array,
+// and gets set to number actually filled in.  Motion numbers are
+// set in mots array.
+EXTERN void mp_get_multiped_motions(multiped *mp, int *mots, int *max_mots);
 
 //
 // The following functions allow adding various types of motions to the 
@@ -189,6 +218,11 @@ EXTERN void mp_set_callback(int callback_num, motion_callback callback);
 // The frame will be the frame you passed into mp_start_motion().
 //
 
+// when starting motion, don't subtract off xlat from starting frame to 
+// start in place.  (for example, for cycling locomotions, you _want_ that
+// xlat).
+#define MStrtFlag_KeepXlat 0x1
+
 //
 // To reduce number of parameters passed and stabilize the API, you need to 
 // fill out this structure, mps_start_info, with the appropriate information 
@@ -203,6 +237,7 @@ typedef struct mps_start_info
    int					callback_frame;
    mps_motion_param *	params;			// can be NULL for defaults.
    float				trans_duration;
+   ulong          flags;
 } mps_start_info;
 
 //
@@ -336,7 +371,7 @@ EXTERN void mp_initial_update(multiped * mp);
 
 EXTERN bool mp_get_motion_data(multiped * mp, 
                         mps_motion * m, 
-                        int frame, quat * rot, 
+                        float frame, quat * rot, 
                         mxs_vector * trans);
 
 EXTERN void mp_apply_motion(multiped * mp, quat * rot, mxs_vector * trans, 
@@ -370,7 +405,7 @@ typedef struct mps_blend_info
 //
 
 EXTERN mps_motion_node * mp_alloc_motion(multiped * mp, mps_start_info * info);
-EXTERN void mp_setup_motion(multiped * mp, mps_motion_node *m);
+EXTERN void mp_setup_motion(multiped * mp, mps_motion_node *m, ulong flags);
 EXTERN mps_motion_node * mp_setup_current_pose(multiped * mp);
 
 EXTERN BOOL mp_update_list(multiped * mp, mps_overlay * ov, mps_motion_list * list,
@@ -419,6 +454,3 @@ EXTERN void mp_free(void * ptr);
 //
 
 #endif
-
-
-

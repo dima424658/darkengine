@@ -1,12 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/cpptools/RCS/dynarray.h $
 // $Author: TOML $
-// $Date: 1998/06/11 13:46:09 $
-// $Revision: 1.15 $
+// $Date: 1998/10/05 22:10:53 $
+// $Revision: 1.20 $
 //
 // (c) Copyright 1993-1996 Tom Leonard. All Rights Reserved. Unlimited license granted to Looking Glass Technologies Inc.
-//
-// @TBD (toml 03-31-98): should do a more fully inlined version for efficiency
 //
 
 #ifndef __DYNARRAY_H
@@ -14,6 +12,10 @@
 
 #include <string.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <malloc.h>
+
+#include <dynarsrv.h>
 
 #ifdef  _MSC_VER
 #include <new>
@@ -22,8 +24,18 @@
 #include <lg.h>
 
 #if defined(__WATCOMC__)
+#pragma off (unreferenced)
 #pragma warning 549 9
 #endif
+
+#pragma pack(4)
+#pragma once
+
+typedef int (*tVoidCompareFunc)(const void * pLeft, const void * pRight);
+// for back compatability with a prior implementation:
+typedef unsigned index_t;
+typedef int (*tSearchFunc)(const void *pKey, const void *); // Comparison functions for search and sort
+typedef int (*tSortFunc)(const void *, const void *);
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -32,300 +44,454 @@
 //
 // This header declares a simple class to encapsulate dynamically allocated
 // arrays. Data items must either be simple types, complex types without
-// constructors, or complex types with constructors and where the virtual
-// functions for object management are overriden.
+// constructors, or complex types using the "class" version.
 //
 // Items must be safely relocatable, as reallocs may implicitly occur.
-//
 // For example, to declare a dynamic array of integers:
+// { cDynArray<int> myArray(1); myArray[1] = 1; }
 //
-// cDynArray<int> myArray;
-//
-// myArray[1] = 1;
-//
-// Note block size must be a power of 2
+// Notes: block size must be a power of 2, destructors not virtual. WARNING:
+// MSVC allows its optimizer compiler to evaluate both the left and right 
+// sides of an assignment prior to the assignment. So, given myArray[1] = foo()
+// where foo changes myArray and causes a realloc will generate probably unexpected 
+// results, because the compiler might store (myArray.m_pItems + 1) in a register
+// prior to calling foo.
 
+const unsigned BAD_INDEX           = 0xFFFFFFFFL;
+#define kDynArrayDefBlockSize 4
 
-///////////////////////////////////////////////////////////////////////////////
-
-class cIStore;
-class cOStore;
-
-typedef unsigned long index_t; // for indexing into the array
-typedef void tDynArrayItem;
-typedef void tDynArrayKey;
-typedef int (*tSearchFunc)(const tDynArrayKey *pKey, const tDynArrayItem *); // Comparison functions for search and sort
-typedef int (*tSortFunc)(const tDynArrayItem *, const tDynArrayItem *);
-
-const index_t   BAD_INDEX           = 0xFFFFFFFFL;
-const ushort    kDynArrDefBlockSize = 8;
-
-// @TBD (toml 03-22-96): Make export/importable
-#define __CPPTOOLSAPI
+#ifdef DEBUG
+EXTERN void DumpDynarraySummary();
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// CLASS: cDynArrayBase
+// CLASS: cDARaw
 //
 // Base class of dynamic array
 //
 
-#pragma pack(4)
-
-class __CPPTOOLSAPI cDynArrayBase
+template <class T, unsigned BlockSize, class ServiceFuncs>
+class cDABase
 {
 public:
 
-    ///////////////////////////////////
-    //
-    // Get/Set the block size (the minimum increment by which the array storage
-    // grows and shrinks)
-    //
-    unsigned GetBlockSize() const;
-    void     SetBlockSize(ushort);
+   ///////////////////////////////////
+   //
+   // Constructors, assignment operator, and destructor
+   //
+   cDABase();
+   cDABase(int size);
+   cDABase(const cDABase<T, BlockSize, ServiceFuncs> &);
+   cDABase<T, BlockSize, ServiceFuncs> & operator=(const cDABase<T, BlockSize, ServiceFuncs> &);
+   ~cDABase(); // note destructor is *not* virtual
+   
+   ///////////////////////////////////
+   //
+   // Detach memory from the dynarray
+   //
 
-    ///////////////////////////////////
-    //
-    // Get and set array size (the number of active elements)
-    //
-    index_t      Size() const;
-    virtual BOOL SetSize(index_t);
+   T * Detach();
 
-    ///////////////////////////////////
-    //
-    // Query the size of array elements
-    //
-    size_t GetElementSize() const;
+   ///////////////////////////////////
+   //
+   // Access the array using array notation.
+   //
 
-    ///////////////////////////////////
-    //
-    // Test if a given index is valid
-    //
-    BOOL IsValidIndex(index_t index) const;
+   T & operator[] (short);
+   T & operator[] (int);
+   T & operator[] (long);
+   T & operator[] (ushort);
+   T & operator[] (uint);
+   T & operator[] (ulong);
 
-    ///////////////////////////////////
-    //
-    // Assign to a slot
-    //
-    virtual void SetItem(const tDynArrayItem* itemPtr, index_t index);
+   const T & operator[] (short) const;
+   const T & operator[] (int) const;
+   const T & operator[] (long) const;
+   const T & operator[] (ushort) const;
+   const T & operator[] (uint) const;
+   const T & operator[] (ulong) const;
 
-    ///////////////////////////////////
-    //
-    // Remove an item, shifting items down
-    //
-    virtual void DeleteItem(index_t index);
-    void FastDeleteItem(index_t index);
+   ///////////////////////////////////
+   //
+   // Access the array as a pointer (i.e., a C-array)
+   //
+   // (inline in class because watcom parser has trouble with non-in-class version
+   
+   operator T *()             { return m_pItems; }
+   operator const T *() const { return (const T *)m_pItems; }
 
-    ///////////////////////////////////
-    //
-    // Grow the array, insert an item, shifting items up
-    //
-    void InsertAtIndex(const tDynArrayItem *itemPtr, index_t index);
+   T * AsPointer();
+   const T * AsPointer() const;
 
-    ///////////////////////////////////
-    //
-    // Move an item, shifting items
-    //
-    void MoveItemToIndex(index_t currentIndex,index_t newIndex);
+   ///////////////////////////////////
+   //
+   // Grow the array, insert an item, shifting items up
+   //
+   void InsertAtIndex(const T &, unsigned);
 
-    ///////////////////////////////////
-    //
-    // Streaming protocol
-    //
-    BOOL ToStream(cOStore &) const;
-    BOOL FromStream(cIStore &);
+   ///////////////////////////////////
+   //
+   // Grow the array, appending an item
+   //
+   unsigned Append(const T &);
 
-    ///////////////////////////////////
-    //
-    // Swap the contents of two arrays
-    //
-    void SwapContents(cDynArrayBase &);
+   ///////////////////////////////////
+   //
+   // Grow/shrink the array, filling new slots with blanks
+   //
+   unsigned Grow(unsigned num = 1);
+   void Shrink(unsigned num = 1);
 
-    ///////////////////////////////////
-    //
-    // Array sorting and searching (qsort, linear search, bninary search)
-    //
-    void    Sort(tSortFunc);
-    index_t LSearch(tDynArrayKey *, tSearchFunc) const;
-    index_t BSearch(tDynArrayKey *, tSearchFunc) const;
+   ///////////////////////////////////
+   //
+   // Do a verified memcpy into the array
+   //
+   void MemCpy(const T *, unsigned nItems);
+   void AppendMemCpy(const T *, unsigned nItems);
+
+   ///////////////////////////////////
+   //
+   // Get the block size (the minimum increment by which the array storage
+   // grows and shrinks)
+   //
+   unsigned GetBlockSize() const;
+
+   ///////////////////////////////////
+   //
+   // Get and set array size (the number of active elements)
+   //
+   unsigned Size() const;
+   BOOL     SetSize(unsigned);
+
+   ///////////////////////////////////
+   //
+   // Query the size of array elements
+   //
+   size_t GetElementSize() const;
+
+   ///////////////////////////////////
+   //
+   // Test if a given index is valid
+   //
+   BOOL IsValidIndex(unsigned index) const;
+
+   ///////////////////////////////////
+   //
+   // Assign to a slot
+   //
+   void SetItem(const T * pItem, unsigned index);
+
+   ///////////////////////////////////
+   //
+   // Remove an item, shifting items down
+   //
+   void DeleteItem(unsigned index);
+
+   ///////////////////////////////////
+   //
+   // Remove an item, swapping last into deleted slot
+   //
+   void FastDeleteItem(unsigned index);
+   
+   ///////////////////////////////////
+   //
+   // Swap two items
+   //
+   void Swap(unsigned index1, unsigned index2);
+
+   ///////////////////////////////////
+   //
+   // Move an item, shifting items
+   //
+   void MoveItemToIndex(unsigned currentIndex, unsigned newIndex);
+
+   ///////////////////////////////////
+   //
+   // Swap the contents of two arrays
+   //
+   void SwapContents(cDABase<T, BlockSize, ServiceFuncs> &);
+
+   ///////////////////////////////////
+   //
+   // Array sorting and searching (qsort, linear search, bninary search)
+   //
+   typedef int (*tCompareFunc)(const T * pLeft, const T * pRight); // Comparison functions for sort
+   typedef int (*tSearchFunc)(const void * pKey, const T * pRight); // Comparison functions for search
+
+   void     Sort(tCompareFunc);
+   unsigned LSearch(const void *, tSearchFunc) const;
+   unsigned BSearch(const void *, tSearchFunc) const;
 
 protected:
-
-    ///////////////////////////////////
-    //
-    // Constructors, assignment operator, and destructor
-    //
-    cDynArrayBase(size_t ElementSize);
-    cDynArrayBase(const cDynArrayBase &);
-    virtual ~cDynArrayBase();
-
-    cDynArrayBase & operator= (const cDynArrayBase&);
-
-
-    ///////////////////////////////////
-    //
-    // Functions for moving, creating, and copying items.  Along with
-    // DeleteItem(), derived arrays that contain complex types with
-    // constructors or destructors should override these
-    //
-    virtual void MakeItem(const tDynArrayItem *, index_t);
-    virtual void Swap(index_t, index_t);
-
-    virtual void CopyToTemporary(index_t);
-    virtual void CopyFromTemporary(index_t);
-
-    virtual BOOL ItemToStream(cOStore &, const tDynArrayItem *) const;
-    virtual BOOL ItemFromStream(cIStore &, tDynArrayItem *);
-
-    BOOL Resize(index_t numSlots);
-
-    tDynArrayItem *ItemPtr(index_t index) const;
-    tDynArrayItem *UnsafeItemPtr(index_t index) const;
-
-    tDynArrayItem *GetItemArray() const;
-
-    tDynArrayItem *Detach();
-
-    ///////////////////////////////////
-
-#ifndef SHIP
-    void InitExaminePointer(tDynArrayItem *** pppExaminePointer);
-
-    static char BASED_CODE gm_pszOutOfRange[]; // Out of range message
-#endif
+   ///////////////////////////////////
+   //
+   // Raw resize
+   //
+   
+   BOOL Resize(unsigned numSlots);
 
 private:
-
-    BOOL DoResize(index_t numSlots);
-    
-    ///////////////////////////////////
-
-    BYTE *  m_pItems;                            // Items in the array
-    size_t  m_nItemSize;                         // Size of each element in bytes
-
-    index_t m_nItems;                            // Number of items in the array
-    index_t m_nSlots;                            // Total number of slots allocated
-
-    unsigned m_nBlockSizeLessOne;
+   T *      m_pItems;
+   unsigned m_nItems;
 };
 
-#pragma pack()
 
-////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
-// TEMPLATE: cDynArray
+// CLASS: cDynArray_
 //
-// A dynamic array, templatized
+// Non-class type dynarray with settable block size
 //
 
-template <class T>
-class cDynArray : public cDynArrayBase
+template <class T, unsigned BlockSize>
+class cDynArray_ : public cDABase<T, BlockSize, cDARawSrvFns<T> >
 {
+   typedef cDABase<T, BlockSize, cDARawSrvFns<T> > Base;
 public:
-    ///////////////////////////////////
-    //
-    // Constructors, assignment operator, and destructor
-    //
-    cDynArray();
-    cDynArray(int size, int blockSize = 0);
-    cDynArray(const cDynArray<T> &);
-    cDynArray<T> & operator=(const cDynArray<T> &);
-
-    T * Detach();
-
-    ///////////////////////////////////
-    //
-    // Access the array using array notation.
-    //
-
-    T & operator[] (short);
-    T & operator[] (int);
-    T & operator[] (long);
-    T & operator[] (ushort);
-    T & operator[] (uint);
-    T & operator[] (ulong);
-
-    const T & operator[] (short) const;
-    const T & operator[] (int) const;
-    const T & operator[] (long) const;
-    const T & operator[] (ushort) const;
-    const T & operator[] (uint) const;
-    const T & operator[] (ulong) const;
-
-    ///////////////////////////////////
-    //
-    // Access the array as a pointer (i.e., a C-array)
-    //
-    operator T *();
-    operator const T *() const;
-
-    T * AsPointer();
-    const T * AsPointer() const;
-
-    ///////////////////////////////////
-    //
-    // Grow the array, insert an item, shifting items up
-    //
-    void InsertAtIndex(const T &, index_t);
-
-    ///////////////////////////////////
-    //
-    // Grow the array, appending an item
-    //
-    index_t Append(const T &);
-
-    ///////////////////////////////////
-    //
-    // Grow/shrink the array, filling new slots with blanks
-    //
-    index_t Grow(unsigned num = 1);
-    void Shrink(unsigned num = 1);
-
-    ///////////////////////////////////
-    //
-    // Do a verified memcpy into the array
-    //
-    void MemCpy(const T *, unsigned nItems);
-    
-private:
-
-#ifndef SHIP
-    // Use this to view base items in source level debugger
-    const T ** m_ppExaminePointer;
-#endif
-};
-
-////////////////////////////////////////////////////////////
-//
-// TEMPLATE: cDynClassArray
-//
-// A dynamic array, templatized, with functions for
-// dealing with constructors and destructors implemented
-//
-
-template <class T>
-class cDynClassArray : public cDynArray<T>
-{
-public:
-    ///////////////////////////////////
-    //
-    // Constructors, assignment operator, and destructor
-    //
-    cDynClassArray();
-    cDynClassArray(int size, int blockSize = 0);
-    cDynClassArray(const cDynClassArray<T> &);
-    cDynClassArray<T> & operator=(const cDynClassArray<T> &);
-
-    virtual BOOL SetSize(index_t);
-    virtual void SetItem(const tDynArrayItem* itemPtr, index_t index);
-    virtual void DeleteItem(index_t index);
-    virtual void MakeItem(const tDynArrayItem *, index_t);
+   cDynArray_() {}
+   cDynArray_(int size) : Base(size) {}
+   cDynArray_(const cDynArray_<T, BlockSize> & from)  : Base(from) {}
+   cDynArray_<T, BlockSize> & operator=(const cDynArray_<T, BlockSize> & from) { Base::operator=(from); return *this; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// CLASS: cDynArrayBase, inline functions
+// CLASS: cDynArray
 //
+// The general purpose non-class type dynarray
+//
+
+template <class T>
+class cDynArray : public cDynArray_<T, kDynArrayDefBlockSize>
+{
+   typedef cDynArray_<T, kDynArrayDefBlockSize> Base;
+public:
+   cDynArray() {}
+   cDynArray(int size)  : Base(size) {}
+   cDynArray(const cDynArray<T> & from)  : Base(from) {}
+   cDynArray<T> & operator=(const cDynArray<T> & from)  { Base::operator=(from); return *this; }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// CLASS: cDynZeroArray_
+//
+// Non-class type dynarray with settable block size that zeros new slots
+//
+
+template <class T, unsigned BlockSize>
+class cDynZeroArray_ : public cDABase<T, BlockSize, cDAZeroSrvFns<T> >
+{
+   typedef cDABase<T, BlockSize, cDAZeroSrvFns<T> > Base;
+public:
+   cDynZeroArray_() {}
+   cDynZeroArray_(int size) : Base(size) {}
+   cDynZeroArray_(const cDynZeroArray_<T, BlockSize> & from)  : Base(from) {}
+   cDynZeroArray_<T, BlockSize> & operator=(const cDynZeroArray_<T, BlockSize> & from) { Base::operator=(from); return *this; }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// CLASS: cDynZeroArray
+//
+// The general purpose non-class type dynarray that zeros new slots
+//
+
+template <class T>
+class cDynZeroArray : public cDynZeroArray_<T, kDynArrayDefBlockSize>
+{
+   typedef cDynZeroArray_<T, kDynArrayDefBlockSize> Base;
+public:
+   cDynZeroArray() {}
+   cDynZeroArray(int size)  : Base(size) {}
+   cDynZeroArray(const cDynZeroArray<T> & from)  : Base(from) {}
+   cDynZeroArray<T> & operator=(const cDynZeroArray<T> & from)  { Base::operator=(from); return *this; }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// CLASS: cDynClassArray_
+//
+// Class type dynarray with settable block size
+//
+
+template <class T, unsigned BlockSize>
+class cDynClassArray_ : public cDABase<T, BlockSize, cDAClsSrvFns<T> >
+{
+   typedef cDABase<T, BlockSize, cDAClsSrvFns<T> > Base;
+public:
+   cDynClassArray_() {}
+   cDynClassArray_(int size) :  Base(size) {}
+   cDynClassArray_(const cDynClassArray_<T, BlockSize> & from) : Base(from) {}
+   cDynClassArray_<T, BlockSize> & operator=(const cDynClassArray_<T, BlockSize> & from)  { Base::operator=(from); return *this; }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// CLASS: cDynClassArray
+//
+// The general purpose class type dynarray
+//
+
+template <class T>
+class cDynClassArray : public cDynClassArray_<T, kDynArrayDefBlockSize>
+{
+   typedef cDynClassArray_<T, kDynArrayDefBlockSize> Base;
+public:
+   cDynClassArray() {}
+   cDynClassArray(int size) : Base(size) {}
+   cDynClassArray(const cDynClassArray<T> & from)  : Base(from) {}
+   cDynClassArray<T> & operator=(const cDynClassArray<T> & from) { Base::operator=(from); return *this; }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// CLASS: cDABase, inline methods
+//
+
+#define DYNARRAY_BASE_TEMPLATE  template <class T, unsigned BlockSize, class ServiceFuncs>
+#define DYNARRAY_BASE           cDABase<T, BlockSize, ServiceFuncs>
+
+DYNARRAY_BASE_TEMPLATE
+inline DYNARRAY_BASE::cDABase()
+ : m_pItems(NULL),
+   m_nItems(0)
+{
+   cDynArray_TrackCreate();
+}
+
+///////////////////////////////////////
+//
+// Get a pointer to the element at the specified index
+//
+
+DYNARRAY_BASE_TEMPLATE
+inline T & DYNARRAY_BASE::operator[](short index)
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline T & DYNARRAY_BASE::operator[](int index)
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline T & DYNARRAY_BASE::operator[](long index)
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline T & DYNARRAY_BASE::operator[](ushort index)
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline T & DYNARRAY_BASE::operator[](uint index)
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline T & DYNARRAY_BASE::operator[](ulong index)
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+///////////////////////////////////////
+//
+// Get a const pointer to the element at the specified index
+//
+DYNARRAY_BASE_TEMPLATE
+inline const T & DYNARRAY_BASE::operator[](short index) const
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline const T & DYNARRAY_BASE::operator[](int index) const
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline const T & DYNARRAY_BASE::operator[](long index) const
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline const T & DYNARRAY_BASE::operator[](ushort index) const
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline const T & DYNARRAY_BASE::operator[](uint index) const
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+DYNARRAY_BASE_TEMPLATE
+inline const T & DYNARRAY_BASE::operator[](ulong index) const
+{
+    DynArrayAssertIndex(index);
+    return m_pItems[index];
+}
+
+///////////////////////////////////////
+//
+// Convert array to a pointer to the first element
+//
+DYNARRAY_BASE_TEMPLATE
+inline T * DYNARRAY_BASE::AsPointer()
+{
+    return m_pItems;
+}
+
+///////////////////////////////////////
+//
+// Convert array to a pointer to the first element
+//
+DYNARRAY_BASE_TEMPLATE
+inline const T * DYNARRAY_BASE::AsPointer() const
+{
+    return m_pItems;
+}
+
+///////////////////////////////////////
+
+DYNARRAY_BASE_TEMPLATE
+unsigned DYNARRAY_BASE::GetBlockSize() const
+{
+    return BlockSize;
+}
+
+///////////////////////////////////////
+//
+// Get the size of the array
+//
+
+DYNARRAY_BASE_TEMPLATE
+unsigned DYNARRAY_BASE::Size() const
+{
+    return m_nItems;
+}
 
 ///////////////////////////////////////
 //
@@ -334,74 +500,119 @@ public:
 // NOTE: The logical size does not change.
 //
 
-inline BOOL cDynArrayBase::Resize(index_t newSlotCount)
+DYNARRAY_BASE_TEMPLATE
+inline BOOL DYNARRAY_BASE::Resize(unsigned newSlotCount)
 {
-    // Round up to the nearest even block size
-    const index_t evenSlots = ((newSlotCount + m_nBlockSizeLessOne) & (~m_nBlockSizeLessOne));
+   // Round up to the nearest even block size
+   const unsigned curSlots = ((m_nItems + (BlockSize - 1)) & (~(BlockSize - 1)));
+   const unsigned evenSlots = ((newSlotCount + (BlockSize - 1)) & (~(BlockSize - 1)));
 
-    // If there is no need to change...
-    if (m_nSlots == evenSlots)
-        return TRUE;
-
-   return DoResize(evenSlots);
+   // If there is no need to change...
+   if (curSlots == evenSlots)
+      return TRUE;
+      
+   return ServiceFuncs::DoResize((void **)&m_pItems, sizeof(T), evenSlots);
 }
 
 ///////////////////////////////////////
 //
-// Initialize an array object, specifying the element size. The initialized
-// array is empty.
+// Set the logical size of the array.  
 //
 
-inline cDynArrayBase::cDynArrayBase(size_t elementSize)
-  : m_nBlockSizeLessOne(kDynArrDefBlockSize - 1),
-    m_nItemSize(elementSize),
-    m_nItems(0),
-    m_nSlots(0),
-    m_pItems(0)
+DYNARRAY_BASE_TEMPLATE
+inline BOOL DYNARRAY_BASE::SetSize(unsigned newSize)
 {
-}
-
-///////////////////////////////////////
-//
-// Copy constructor
-//
-
-inline cDynArrayBase::cDynArrayBase(const cDynArrayBase& array)
-  : m_nBlockSizeLessOne(array.m_nBlockSizeLessOne),
-    m_nItemSize(array.m_nItemSize),
-    m_nItems(array.m_nItems),
-    m_nSlots(0),
-    m_pItems(0)
-{
-    VerifyMsg(Resize(m_nItems), "Array allocation failed");
-
-    AssertMsg(!m_nItems || m_pItems, "Expected items in dynarray");
-
-    // Call make item for all the items
-    for (index_t i = 0; i < m_nItems; i++)
-        MakeItem(array.ItemPtr(i), i);
+   if (m_nItems != newSize)
+   {
+      ServiceFuncs::PreSetSize(m_pItems, m_nItems, newSize);
+      Resize(newSize);
+      ServiceFuncs::PostSetSize(m_pItems, m_nItems, newSize);
+      m_nItems = newSize;
+      return TRUE;
+   }
+   return FALSE;
 }
 
 
 ///////////////////////////////////////
-//
-// Destroy the dynamic array
-//
 
-inline cDynArrayBase::~cDynArrayBase()
+DYNARRAY_BASE_TEMPLATE
+inline DYNARRAY_BASE::cDABase(int size) // want after SetSize
+ : m_pItems(NULL),
+   m_nItems(0)
 {
-    if (m_pItems)
-        free(m_pItems);
+   cDynArray_TrackCreate();
+   SetSize(size);
+}
+   
+///////////////////////////////////////
+
+DYNARRAY_BASE_TEMPLATE
+inline DYNARRAY_BASE::cDABase(const DYNARRAY_BASE &from)
+ : m_pItems(NULL),
+   m_nItems(0)
+{
+   cDynArray_TrackCreate();
+   Resize(from.m_nItems);
+   m_nItems = from.m_nItems;
+   if (!m_nItems)
+      return;
+
+   // Call make item for all the items
+   for (unsigned i = 0; i < m_nItems; i++)
+      ServiceFuncs::ConstructItem(m_pItems + i, (const T *)from.m_pItems + i);
+}
+
+///////////////////////////////////////
+
+DYNARRAY_BASE_TEMPLATE
+inline DYNARRAY_BASE & DYNARRAY_BASE::operator=(const DYNARRAY_BASE & from)
+{
+   SetSize(0);
+   Resize(from.m_nItems);
+   m_nItems = from.m_nItems;
+   if (!m_nItems)
+      return *this;
+
+   // Call make item for all the items
+   for (unsigned i = 0; i < m_nItems; i++)
+      ServiceFuncs::ConstructItem(m_pItems + i, (const T*)from.m_pItems + i);
+
+   return *this;
+}
+
+///////////////////////////////////////
+
+DYNARRAY_BASE_TEMPLATE
+inline DYNARRAY_BASE::~cDABase() // want after SetSize
+{
+   cDynArray_TrackDestroy();
+   if (m_pItems)
+   {
+      ServiceFuncs::PreSetSize(m_pItems, m_nItems, 0);
+      ServiceFuncs::DoResize((void **)&m_pItems, sizeof(T), 0);
+   }
+}
+   
+///////////////////////////////////////
+
+DYNARRAY_BASE_TEMPLATE
+inline T * DYNARRAY_BASE::Detach()
+{
+    T * p = m_pItems;
+    m_nItems = 0;
+    m_pItems = NULL;
+    return p;
 }
 
 ///////////////////////////////////////
 //
-// Get the size of the array
+// Get the size of a array element
 //
-
-inline index_t cDynArrayBase::Size() const
+DYNARRAY_BASE_TEMPLATE
+inline size_t DYNARRAY_BASE::GetElementSize() const
 {
-    return m_nItems;
+    return sizeof(T);
 }
 
 ///////////////////////////////////////
@@ -409,165 +620,160 @@ inline index_t cDynArrayBase::Size() const
 // Return TRUE if the index is valid
 //
 
-inline BOOL cDynArrayBase::IsValidIndex(index_t index) const
+DYNARRAY_BASE_TEMPLATE
+inline BOOL DYNARRAY_BASE::IsValidIndex(unsigned index) const
 {
     return (index < m_nItems);
 }
 
 ///////////////////////////////////////
 //
-// Get a pointer to an item given its index
+// Default routine to set an item.  The slot being copied into
+// contains an initialize item which may need to be destroyed.
 //
 
-inline tDynArrayItem *cDynArrayBase::ItemPtr(index_t index) const
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::SetItem(const T * pItem, unsigned index)
 {
-    AssertMsg(m_pItems && index < m_nItems, gm_pszOutOfRange);
-    return m_pItems + index * m_nItemSize;
+   ServiceFuncs::CopyItem(m_pItems + index, pItem);
 }
 
 ///////////////////////////////////////
 //
-// Get a pointer to an item given its index
+// Delete an item from the array
 //
 
-inline tDynArrayItem *cDynArrayBase::UnsafeItemPtr(index_t index) const
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::DeleteItem(unsigned index)
 {
-    return m_pItems + index * m_nItemSize;
+   DynArrayAssertIndex(index);
+
+   ServiceFuncs::OnDeleteItem(m_pItems + index);
+
+   unsigned nNew = m_nItems - 1;
+
+   // If we aren't deleting the last element...
+   if (index < nNew)
+      // ...then shift everything down
+      memmove(m_pItems + index, m_pItems + (index + 1), (nNew - index) * sizeof(T));
+
+   Resize(nNew);
+   m_nItems--;
 }
-
-///////////////////////////////////////
-//
-// Default routine to delete an item from the array (virtual)
-//
-
-inline void cDynArrayBase::DeleteItem(index_t index)
-{
-    AssertMsg(index < m_nItems, gm_pszOutOfRange);
-
-    m_nItems--;                         // We're gonna get rid of an item
-
-    // If we aren't deleting the last element...
-    if (index < m_nItems)
-        // ...then shift everything down
-        memmove(UnsafeItemPtr(index), UnsafeItemPtr(index+1), (m_nItems - index) * m_nItemSize);
-
-    Resize(m_nItems);
-}
-
-// Macro for obtaining a pointer to temporary storage for one
-// element. The temporary storage is an extra slot kept at the
-// end of the item handle.
-#define TmpItemPtr() UnsafeItemPtr(m_nItems)
-
-///////////////////////////////////////
-//
-// Place an item into temporary storage
-//
-
-inline void cDynArrayBase::CopyToTemporary(index_t index)
-{
-    memcpy(TmpItemPtr(), UnsafeItemPtr(index), m_nItemSize);
-}
-
-///////////////////////////////////////
-//
-// Get an item from temporary storage
-//
-
-inline void cDynArrayBase::CopyFromTemporary(index_t index)
-{
-    memcpy(UnsafeItemPtr(index), TmpItemPtr(), m_nItemSize);
-}
-
-#undef TmpItemPtr
 
 ///////////////////////////////////////
 //
 // Swap two items.
 //
 
-inline void cDynArrayBase::Swap(index_t index1, index_t index2)
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::Swap(unsigned index1, unsigned index2)
 {
-    AssertMsg(index1 < m_nItems && index2 < m_nItems, gm_pszOutOfRange);
+   DynArrayAssertIndex(index1);
+   DynArrayAssertIndex(index2);
 
-    if (index1 != index2)
-    {
-       CopyToTemporary(index1);
-       memcpy(UnsafeItemPtr(index1),UnsafeItemPtr(index2), m_nItemSize);
-       CopyFromTemporary(index2);
-    }
+   if (index1 != index2)
+      ServiceFuncs::Swap(m_pItems + index1, m_pItems + index2);
 }
 
 ///////////////////////////////////////
 
-inline void cDynArrayBase::FastDeleteItem(index_t index)
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::FastDeleteItem(unsigned index)
 {
-   int last = m_nItems - 1;
+   DynArrayAssertIndex(index);
+    
+   const int last = m_nItems - 1;
    if (index != last)
-      Swap(index, last);
-   DeleteItem(last);
+      ServiceFuncs::SwapDelete(m_pItems + index, m_pItems + last);
+   else
+      ServiceFuncs::OnDeleteItem(m_pItems + last);
+   Resize(last);
+   m_nItems--;
+}
+
+///////////////////////////////////////
+
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::MoveItemToIndex(unsigned currentIndex, unsigned newIndex)
+{
+   DynArrayAssertIndex(currentIndex);
+   DynArrayAssertIndex(newIndex);
+
+   ServiceFuncs::MoveItem(m_pItems, m_nItems, currentIndex, newIndex);
 }
 
 ///////////////////////////////////////
 //
-// Get the size of a array element
+// Swap the content of two arrays (all state and ownership
+// of allocated memory). If information should only go one-way,
+// empty one first.
 //
-inline size_t cDynArrayBase::GetElementSize() const
+
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::SwapContents(DYNARRAY_BASE &x)
 {
-    return m_nItemSize;
+    T * p;
+    p = x.m_pItems;
+    x.m_pItems = m_pItems;
+    m_pItems = p;
+
+    unsigned  ix;
+    ix = x.m_nItems;
+    x.m_nItems = m_nItems;
+    m_nItems = ix;
+}
+
+
+///////////////////////////////////////
+//
+// Sort the array of elements based on the supplied comparison function.
+//
+
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::Sort(tCompareFunc pfnCompare)
+{
+    if (m_pItems)
+       qsort(m_pItems, m_nItems, sizeof(T), (tVoidCompareFunc)pfnCompare);
 }
 
 ///////////////////////////////////////
 //
-// Get the block size
+// Find an element using a supplied comparison function.  This routine uses
+// a binary search algorithm so the array must be sorted.
 //
-inline unsigned cDynArrayBase::GetBlockSize() const
+
+DYNARRAY_BASE_TEMPLATE
+inline unsigned DYNARRAY_BASE::BSearch(const void * pKey, tSearchFunc pfnSearch) const
 {
-    return m_nBlockSizeLessOne + 1;
+   if (m_pItems)
+   {
+      T * pItem = (T *)bsearch(pKey, m_pItems, m_nItems, sizeof(T), (tVoidCompareFunc)pfnSearch);
+      if (pItem)
+         return pItem - m_pItems;
+   }
+   return BAD_INDEX;
 }
+
 
 ///////////////////////////////////////
 //
-// Set the size of the allocation unit
+// Find an element using a supplied comparison function.  This routine uses
+// a straight linear search algorithm.
 //
-inline void cDynArrayBase::SetBlockSize(ushort blockSize)
+
+DYNARRAY_BASE_TEMPLATE
+inline unsigned DYNARRAY_BASE::LSearch(const void * pKey, tSearchFunc pfnSearch) const
 {
-   #ifdef DEBUG
-   AssertMsg(((blockSize) & (blockSize - 1)) == 0, "cDynArray block size must be a power of 2");
-   #endif
-   m_nBlockSizeLessOne = (blockSize - 1);
+   if (m_pItems)
+   {
+      for (int i = 0; i < m_nItems; i++)
+         if ((*pfnSearch)(pKey, &m_pItems[i]) == 0)
+            return i;
+   }
+   return BAD_INDEX;
 }
 
-///////////////////////////////////////
-//
-// Get the item array
-//
-inline tDynArrayItem *cDynArrayBase::GetItemArray() const
-{
-    return m_pItems;
-}
-
-///////////////////////////////////////
-//
-// Default routine to set an item (virtual).  The slot being copied into
-// contains an initialize item which may need to be destroyed.
-//
-
-inline void cDynArrayBase::SetItem(const tDynArrayItem *itemPtr, index_t index)
-{
-    memmove(UnsafeItemPtr(index), itemPtr, m_nItemSize);
-}
-
-///////////////////////////////////////
-//
-// Default routine to create an item (virtual).  The slot being copied into
-// contains uninitialized space.
-//
-
-inline void cDynArrayBase::MakeItem(const tDynArrayItem *itemPtr, index_t index)
-{
-    memmove(UnsafeItemPtr(index), itemPtr, m_nItemSize);
-}
 
 ///////////////////////////////////////
 //
@@ -579,14 +785,15 @@ inline void cDynArrayBase::MakeItem(const tDynArrayItem *itemPtr, index_t index)
 // of the array.
 //
 
-inline void cDynArrayBase::InsertAtIndex(const tDynArrayItem *itemPtr, index_t index)
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::InsertAtIndex(const T & item, unsigned index)
 {
     Resize(m_nItems + 1);
 
     if (index < m_nItems)
     {
         // Move items at position >= index down one slot, unless it is the last item
-        memmove(UnsafeItemPtr(index+1), UnsafeItemPtr(index), (m_nItems - index + 1) * m_nItemSize);
+        memmove(m_pItems + (index + 1), m_pItems + index, (m_nItems - index) * sizeof(T));
     }
     else
         index = m_nItems;
@@ -595,222 +802,32 @@ inline void cDynArrayBase::InsertAtIndex(const tDynArrayItem *itemPtr, index_t i
     m_nItems++;
 
     // Create the new object in the empty slot
-    MakeItem(itemPtr, index);
-}
-
-///////////////////////////////////////
-
-inline tDynArrayItem *cDynArrayBase::Detach()
-{
-    void * p = m_pItems;
-    m_nItems = 0;
-    m_nSlots = 0;
-    m_pItems = 0;
-    return p;
-}
-
-///////////////////////////////////////
-//
-// Set the logical size of the array (virtual).  A derived class may want to override
-// this function to construct default objects or to delete existing objects.
-//
-
-inline BOOL cDynArrayBase::SetSize(index_t newSize)
-{
-    if (m_nItems != newSize && Resize(newSize))
-    {
-        m_nItems = newSize;
-        return TRUE;
-    }
-    return FALSE;
-}
-
-///////////////////////////////////////
-
-#ifndef SHIP
-inline void cDynArrayBase::InitExaminePointer(tDynArrayItem *** pppExaminePointer)
-{
-   *pppExaminePointer = (tDynArrayItem **)&m_pItems;
-}
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// TEMPLATE: cDynArray, inline functions
-//
-
-template <class T>
-inline cDynArray<T>::cDynArray()
-    : cDynArrayBase(sizeof(T))
-{
-#ifndef SHIP
-   InitExaminePointer((tDynArrayItem ***) &m_ppExaminePointer);
-#endif
-}
-
-///////////////////////////////////////
-
-template <class T>
-inline cDynArray<T>::cDynArray(int size, int blockSize)
-    : cDynArrayBase(sizeof(T))
-{
-#ifndef SHIP
-   InitExaminePointer((tDynArrayItem ***) &m_ppExaminePointer);
-#endif
-   if (blockSize)
-      SetBlockSize((ushort)blockSize);
-   SetSize(size);
-}
-
-///////////////////////////////////////
-
-template <class T>
-inline cDynArray<T>::cDynArray(const cDynArray<T>& array)
-    : cDynArrayBase(array)
-{
-#ifndef SHIP
-   InitExaminePointer((tDynArrayItem ***) &m_ppExaminePointer);
-#endif
-}
-
-///////////////////////////////////////
-
-template <class T>
-inline cDynArray<T> &cDynArray<T>::operator=(const cDynArray<T>& array)
-{
-    return (cDynArray<T> &)cDynArrayBase::operator=(array);
-}
-
-///////////////////////////////////////
-
-template <class T>
-inline T * cDynArray<T>::Detach()
-{
-    return (T *)cDynArrayBase::Detach();
-}
-
-///////////////////////////////////////
-//
-// Get a pointer to the element at the specified index
-//
-template <class T>
-inline T &cDynArray<T>::operator[](short index)
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline T &cDynArray<T>::operator[](int index)
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline T &cDynArray<T>::operator[](long index)
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline T &cDynArray<T>::operator[](ushort index)
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline T &cDynArray<T>::operator[](uint index)
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline T &cDynArray<T>::operator[](ulong index)
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-///////////////////////////////////////
-//
-// Get a const pointer to the element at the specified index
-//
-template <class T>
-inline const T &cDynArray<T>::operator[](short index) const
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline const T &cDynArray<T>::operator[](int index) const
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline const T &cDynArray<T>::operator[](long index) const
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline const T &cDynArray<T>::operator[](ushort index) const
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline const T &cDynArray<T>::operator[](uint index) const
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-template <class T>
-inline const T &cDynArray<T>::operator[](ulong index) const
-{
-    AssertMsg(GetItemArray() && index < Size(), gm_pszOutOfRange);
-    return ((T *)GetItemArray())[index];
-}
-
-///////////////////////////////////////
-//
-// Insert an element at the specified index
-//
-template <class T>
-inline void cDynArray<T>::InsertAtIndex(const T &item, index_t index)
-{
-    cDynArrayBase::InsertAtIndex(&item, index);
+    ServiceFuncs::ConstructItem(m_pItems + index, &item);
 }
 
 ///////////////////////////////////////
 //
 // Append an element to the end of the array
 //
-template <class T>
-inline index_t cDynArray<T>::Append(const T &item)
+
+DYNARRAY_BASE_TEMPLATE
+inline unsigned DYNARRAY_BASE::Append(const T &item)
 {
-    InsertAtIndex(item, BAD_INDEX);
+    Resize(m_nItems + 1);
+    const unsigned index = m_nItems;
+    m_nItems++;
+    ServiceFuncs::ConstructItem(m_pItems + index, &item);
     return Size()-1;
 }
-
 
 ///////////////////////////////////////
 //
 // Grow the array
 //
-template <class T>
-inline index_t cDynArray<T>::Grow(unsigned num)
+DYNARRAY_BASE_TEMPLATE
+inline unsigned DYNARRAY_BASE::Grow(unsigned num)
 {
-   const index_t prevSize = Size();
+   const unsigned prevSize = Size();
    SetSize(prevSize + num);
    return prevSize;
 }
@@ -819,142 +836,43 @@ inline index_t cDynArray<T>::Grow(unsigned num)
 //
 // Shrink the array
 //
-template <class T>
-inline void cDynArray<T>::Shrink(unsigned num)
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::Shrink(unsigned num)
 {
-    int shrink = (int)Size() - (int)num;
-    if (shrink < 0)
-        shrink = 0;
-    SetSize(shrink);
+   if (!num)
+      return;
+   DynArrayAssertIndex(num - 1);
+   int shrink = (int)Size() - (int)num;
+   if (shrink < 0)
+      shrink = 0;
+   SetSize(shrink);
 }
 
 ///////////////////////////////////////
 //
 // Do a verified memcpy into the array
 //
-template <class T>
-inline void cDynArray<T>::MemCpy(const T * p, unsigned nItems)
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::MemCpy(const T * p, unsigned nItems)
 {
-   AssertMsg(GetItemArray() && nItems <= Size(), gm_pszOutOfRange);
-   memcpy(GetItemArray(), p, nItems * sizeof(T));
+   DynArrayAssertIndex(nItems - 1);
+   memcpy(m_pItems, p, nItems * sizeof(T));
 }
 
 ///////////////////////////////////////
-//
-// Convert array to a pointer to the first element
-//
-template <class T>
-inline cDynArray<T>::operator T *()
+
+DYNARRAY_BASE_TEMPLATE
+inline void DYNARRAY_BASE::AppendMemCpy(const T * p, unsigned nItems)
 {
-    return (T *)GetItemArray();
-}
-
-///////////////////////////////////////
-//
-// Convert array to a pointer to the first element
-//
-template <class T>
-inline cDynArray<T>::operator const T *() const
-{
-    return (const T *)GetItemArray();
-}
-
-///////////////////////////////////////
-//
-// Convert array to a pointer to the first element
-//
-template <class T>
-inline T * cDynArray<T>::AsPointer()
-{
-    return (T *)GetItemArray();
-}
-
-///////////////////////////////////////
-//
-// Convert array to a pointer to the first element
-//
-template <class T>
-inline const T * cDynArray<T>::AsPointer() const
-{
-    return (const T *)GetItemArray();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// TEMPLATE: cDynClassArray, inline functions
-//
-
-template <class T>
-inline cDynClassArray<T>::cDynClassArray()
-{
-}
-
-template <class T>
-inline cDynClassArray<T>::cDynClassArray(int size, int blockSize)
- : cDynArray<T>(size, blockSize)
-{
-}
-
-template <class T>
-inline cDynClassArray<T>::cDynClassArray(const cDynClassArray<T> & fromArray)
- : cDynArray<T>(fromArray)
-{
-}
-
-template <class T>
-inline cDynClassArray<T> & cDynClassArray<T>::operator=(const cDynClassArray<T> & fromArray)
-{
-   cDynArray<T>::operator=(fromArray);
-   return *this;
-}
-
-template <class T>
-inline BOOL cDynClassArray<T>::SetSize(index_t newSize)
-{
-   BOOL result;
-   int oldSize = Size();
-   if (newSize > oldSize)
-   {
-      result = cDynArray<T>::SetSize(newSize);
-      for (; oldSize < newSize; oldSize++)
-         new ( ((T *)GetItemArray() + oldSize)) T;
-   }
-   else if (newSize < oldSize)
-   {
-      do
-      {
-         oldSize--;
-         (((T *)GetItemArray() + oldSize))->~T();
-      } while (oldSize != newSize);
-
-      result = cDynArray<T>::SetSize(newSize);
-   }
-   return result;
-}
-
-template <class T>
-inline void cDynClassArray<T>::SetItem(const tDynArrayItem* pItem, index_t index)
-{
-   ((T *)GetItemArray() + index)->operator=(*((T *)pItem));
-}
-
-template <class T>
-inline void cDynClassArray<T>::DeleteItem(index_t index)
-{
-   ((T *)GetItemArray() + index)->~T();
-   cDynArray<T>::DeleteItem(index);
-}
-
-template <class T>
-inline void cDynClassArray<T>::MakeItem(const tDynArrayItem * pItem, index_t index)
-{
-   ((T *)GetItemArray() + index)->operator=(*((T *)pItem));
+   Grow(nItems);
+   memcpy(m_pItems + (m_nItems - nItems), p, nItems * sizeof(T));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-//if defined(__WATCOMC__)
-//pragma warning 549 2
-//endif
+#pragma pack()
+#if defined(__WATCOMC__)
+#pragma on (unreferenced)
+#endif
 
 #endif /* !__DYNARRAY_H */

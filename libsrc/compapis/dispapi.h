@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/compapis/RCS/dispapi.h $
 // $Author: KEVIN $
-// $Date: 1998/04/14 15:03:32 $
-// $Revision: 1.35 $
+// $Date: 1998/11/06 18:17:01 $
+// $Revision: 1.37 $
 //
 // @TBD (toml 03-28-96): This should move if 2dapi is created
 // @Note (toml 12-10-96): Some of these interfaces are really more closely
@@ -420,6 +420,17 @@ DECLARE_INTERFACE_(IDisplayDevice, IUnknown)
     // @tbd: move this next to GetKind next time we can't backtouch
     // 
     STDMETHOD_(void,               GetKind2)(THIS_ eDisplayDeviceKind *, int *, GUID **) PURE;
+
+    //
+    // Set gamma correction level
+    // 
+    STDMETHOD_(BOOL, SetGamma)(THIS_ double gamma) PURE;
+
+    //
+    // Set page flipping
+    //
+    STDMETHOD_(BOOL, SetFlip)(THIS_ BOOL bFlip) PURE;
+
 };
 
 #define IDisplayDevice_QueryInterface(p, a, b)      COMQueryInterface(p, a, b)

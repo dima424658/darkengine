@@ -1,9 +1,4 @@
-/*
-@Copyright Looking Glass Studios, Inc.
-1996,1997,1998,1999,2000 Unpublished Work.
-*/
-
-// $Header: r:/t2repos/thief2/libsrc/gadget/drawelem.h,v 1.14 1997/07/30 23:46:04 PATMAC Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/drawelem.h 1.15 1998/08/04 14:09:32 JAEMZ Exp $
 
 #ifndef __DRAWELEM_H
 #define __DRAWELEM_H
@@ -30,7 +25,8 @@ typedef void (*DrawElemCallback)(struct _DrawElement* drawme, DrawElemState stat
 
 #define MAX_BTYPES   8
 EXTERN Id lgad_btype_ids[MAX_BTYPES];
-EXTERN Id lgad_default_font;
+
+// Total hackly thing
 EXTERN Id lgad_internal_id;
 EXTERN char *(*lgad_string_get)(int num, char *buf, int bufsize);
 

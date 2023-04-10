@@ -26,5 +26,3 @@ char *StringAlloc(char *s);
 void StringFree(char *s);
 
 #endif
-
-

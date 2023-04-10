@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/portold/wrfunc.h,v 1.9 1998/02/11 11:38:53 MAT Exp $
+// $Header: r:/prj/cam/src/portal/RCS/wrfunc.h 1.10 1998/10/08 16:29:39 CCAROLLO Exp $
 
 // World Representation Functions
 
@@ -35,7 +35,6 @@ extern "C"
 
 extern PortalCell *wr_cell[];
 extern int wr_num_cells;
-extern wrBspNode *wrBspTree;
 void ResetWorldRep(void);
 
 #ifndef DYNAMIC_CELLS
@@ -51,14 +50,6 @@ void ResetWorldRep(void);
 
 #define CellFromLoc(loc) (IS_CELLFROMLOC_FAST(loc) ? (loc)->cell : ComputeCellForLocation(loc))
 #define CellFromPos(p)   CellFromLoc(&((p)->loc))
-
-// Macros for the worldrep bsp tree
-#define wrIS_LEAF(b)   (b->leaf)
-#define wrIS_NODE(b)   (!b->leaf)
-#define wrIS_ROOT(b)   (b->parent == NULL)
-#define wrIS_MARKED(b) (b->mark)
-#define wrMARK(b)      (b->mark = TRUE)
-#define wrUNMARK(b)    (b->mark = FALSE)
 
 int ComputeCellForLocation(Location *loc);
 int PortalComputeCellFromPoint(mxs_vector *seed_pos);
@@ -77,4 +68,3 @@ int PortalUnblockVisionFromLocation(Location *seed_loc);
 #endif
 
 #endif
-

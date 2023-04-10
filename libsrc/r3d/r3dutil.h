@@ -1,8 +1,8 @@
 /*
  * $Source: x:/prj/tech/libsrc/r3d/RCS/r3dutil.h $
- * $Revision: 1.3 $
- * $Author: JAEMZ $
- * $Date: 1998/06/18 12:50:31 $
+ * $Revision: 1.4 $
+ * $Author: jaemz $
+ * $Date: 1998/11/18 17:25:29 $
  *
  * View point related functions
  *
@@ -33,8 +33,11 @@ EXTERN void r3_wire_sphere(float rad);
 // h is height of cylinder
 EXTERN void r3_wire_cylinder(float hrad,float h);
 
-
 // Pass it a bounding box
 EXTERN void r3_wire_bbox(mxs_vector *bmin,mxs_vector *bmax);
+
+// Render a wire frame plane with radius
+EXTERN void r3_wire_plane(float rad);
+
 
 #endif // UTILS

@@ -363,5 +363,3 @@ void MsgSprintDefault(char *buff, Message *m)
 		m->info.shortinfo[7]
 		);
 }
-
-

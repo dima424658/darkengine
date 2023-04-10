@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/lgalloc/RCS/allocapi.h $
-// $Author: TOML $
-// $Date: 1998/06/10 14:07:20 $
-// $Revision: 1.8 $
+// $Author: ccarollo $
+// $Date: 1999/02/11 11:48:14 $
+// $Revision: 1.10 $
 //
 // Allocator APIs
 //
@@ -181,8 +181,8 @@ DECLARE_INTERFACE_(IDebugMalloc, IMalloc)
 #endif
 
 #ifdef DEBUG
-   #define LGALLOC_PUSH_CREDIT() g_pMalloc->PushCredit(__FILE__, __LINE__)
-   #define LGALLOC_POP_CREDIT()  g_pMalloc->PopCredit()
+   #define LGALLOC_PUSH_CREDIT() do { if (g_pMalloc) g_pMalloc->PushCredit(__FILE__, __LINE__); } while (FALSE)
+   #define LGALLOC_POP_CREDIT()  do { if (g_pMalloc) g_pMalloc->PopCredit(); } while (FALSE)
    #ifdef __cplusplus
       struct __cAutoAllocCredit
       {

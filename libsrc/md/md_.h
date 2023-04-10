@@ -1,8 +1,8 @@
 /*
  * $Source: x:/prj/tech/libsrc/md/RCS/md_.h $
- * $Revision: 1.3 $
- * $Author: JAEMZ $
- * $Date: 1998/06/29 15:55:27 $
+ * $Revision: 1.5 $
+ * $Author: jaemz $
+ * $Date: 1998/09/28 16:41:55 $
  *
  * Model Library Internals
  *
@@ -38,6 +38,11 @@ typedef struct _mds_con {
    r3s_point   *buff_points; // a pointer to the transformed points
    float       *buff_lights; // a pointer to the lighting values
    float       *buff_norms;  // a pointer to the normal do product results
+
+   // These are some per model goodies for material contents
+   bool use_illum;      // does the model use self illumination in materials
+   bool use_alpha;      // does the model use alpha in materials
+   float alpha_scale;    // what to scale the alpha by
 } mds_con;
 
 EXTERN mds_con mdd;
@@ -48,9 +53,13 @@ EXTERN ulong       *mdd_index_table;   // index into an array of points
    ((r3s_point *)(((uchar *)mdd.buff_points) + mdd_index_table[(i)]))
                                        // pointer to the ith buff_point.
 
-EXTERN mds_parm   *mdd_parms;   // currently set parms
-EXTERN ubyte      mdd_type_and;  // mask for pgon type at render time
-EXTERN ubyte      mdd_type_or;   // mask for pgon type at render time
+EXTERN mds_parm* mdd_parms;   // currently set parms
+EXTERN ubyte    mdd_type_and;  // mask for pgon type at render time
+EXTERN ubyte    mdd_type_or;   // mask for pgon type at render time
+
+// Texture
+EXTERN ulong    mdd_tmap_mode;  // default to perspective
+EXTERN bool     mdd_rgb_lighting; // if true, use RGB lighting
 
 // this gets called back by the subobj traverser
 // used internally mostly
@@ -64,9 +73,11 @@ EXTERN void md_set_globals(mds_model *m);
 // use only if you are sneaky
 EXTERN void md_reset_tables();
 
+// Vertex list.  Pretty darn big.
+// Temporary state
+// This is used by the pgon rendering callbacks
+EXTERN r3s_phandle mdd_vlist[64];
+
+
+
 #endif // MD__H
-
-
-
-
-

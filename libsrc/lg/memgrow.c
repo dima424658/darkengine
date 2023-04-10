@@ -97,5 +97,3 @@ void MemUnlockHeap()
 	if (--heapLockCount == 0)
 		memcpy((uchar *) __ExpandDGROUP, oldExpandCode, sizeof(oldExpandCode));
 }
-
-

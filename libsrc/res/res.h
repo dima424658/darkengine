@@ -1,7 +1,7 @@
 //      Res.H       Resource Manager header file
 //      Rex E. Bradford (REX)
 //
-// $Header: x:/prj/tech/libsrc/res/RCS/res.h 1.41 1997/06/23 10:29:19 KEVIN Exp $
+// $Header: x:/prj/tech/libsrc/res/RCS/res.h 1.43 1999/04/12 14:08:24 BFarquha Exp $
 //
 
 #ifndef __RES_H
@@ -129,17 +129,17 @@ typedef struct
    void *ptr;                                    // ptr to resource in memory, or NULL if on disk
    ulong lock: 8;                                // lock count
    ulong size: 24;                               // size of resource in bytes (1 Mb max)
-   ulong filenum: 5;                             // file number 0-31
-   ulong offset: 27;                             // offset in file
+   ulong offset;                                 // offset in file
 #if 0
    Id next;                                      // next resource in LRU order
    Id prev;                                      // previous resource in LRU order
 #else
-   ulong flags;
+   ushort filenum;
+   ushort flags;
 #endif
 } ResDesc;
 
-#define RF_USEFREECALLBACK 0x00000001            // flag to indicate Free callback should be 
+#define RF_USEFREECALLBACK 0x0001                // flag to indicate Free callback should be
                                                  // used when resource is dropped
 
 typedef struct
@@ -173,6 +173,7 @@ extern ResDesc2 * gResDesc2;                     // ptr to array of ResDesc2 (sh
 #define ResInUse(id) (gResDesc[id].offset)
 #define ResPtr(id) (gResDesc[id].ptr)
 #define ResSize(id) (gResDesc[id].size)
+#define ResExists(id) (gResDesc[id].size != 0)
 #define ResLocked(id) (gResDesc[id].lock)
 #define ResFilenum(id) (gResDesc[id].filenum)
 #define ResType(id) (gResDesc2[id].type)
@@ -224,7 +225,7 @@ void ResSetCDSpoof(char *path, void (*spoof_cb) (int size, Id id));
     (creat) ? ROM_EDITCREATE : ROM_EDIT, TRUE)
 #define ResCreateFile(fname) ResOpenResFile(fname, ROM_CREATE, TRUE)
 
-#define MAX_RESFILENUM 31           // maximum file number
+#define MAX_RESFILENUM 40           // maximum file number
 
 extern Datapath gDatapath;                       // res system's datapath (others may use)
 

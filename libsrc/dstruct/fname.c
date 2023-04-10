@@ -174,5 +174,3 @@ void FnameReplacePart(char *part, char *str, int maxlen)
 	strncpy(part, str, maxlen);
 	part[maxlen] = 0;
 }
-
-

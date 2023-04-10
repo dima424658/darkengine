@@ -43,5 +43,3 @@
 #define SetExitMsg(msg)
 
 #endif
-
-

@@ -153,6 +153,4 @@ void MsgPrint (Message *m);
 #define MessageToMsgID(message) ((message)-mL)
 
 
-#endif // MESSAGE_H 
-
-
+#endif // MESSAGE_H

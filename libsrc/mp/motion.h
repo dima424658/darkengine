@@ -1,4 +1,4 @@
-// $Header: x:/prj/tech/libsrc/mp/RCS/motion.h 1.18 1998/06/21 15:13:06 kate Exp $
+// $Header: x:/prj/tech/libsrc/mp/RCS/motion.h 1.20 1998/08/04 13:25:34 kate Exp $
 //
 // Motion.h -- structures and definitions used by multiped library.
 //
@@ -18,7 +18,7 @@
 // fixed points. (e.g. hips, abdomen, shoulders, neck).
 //
 
-#define NUM_TORSO_POINTS	4
+#define NUM_TORSO_POINTS        16
 
 //
 // The pelvis position (relative to the world) changes from frame to frame,
@@ -49,7 +49,7 @@ typedef struct torso_frame
 
 //
 
-#define NUM_LIMB_SEGS		4
+#define NUM_LIMB_SEGS           16
 #define NUM_LIMB_JOINTS	(NUM_LIMB_SEGS+1)
 
 typedef struct limb
@@ -313,9 +313,9 @@ typedef struct mps_motion
 // Component Motion Data Callback - for Captured motions
 // used to get vector or quat data for a joint for a frame
 //
-typedef void (*mps_component_xlat_callback_func)(struct multiped *mp, mps_motion_info *mi, mps_comp_motion *cm, int frame, mxs_vector *data);
-typedef void (*mps_component_rot_callback_func)(mps_motion_info *mi, mps_comp_motion *cm, int frame, quat *data);
-typedef void (*mps_root_rot_callback_func)(struct multiped *mp, mps_motion_info *mi, int frame, quat *data);
+typedef void (*mps_component_xlat_callback_func)(struct multiped *mp, mps_motion_info *mi, mps_comp_motion *cm, float frame, mxs_vector *data);
+typedef void (*mps_component_rot_callback_func)(mps_motion_info *mi, mps_comp_motion *cm, float frame, quat *data);
+typedef void (*mps_root_rot_callback_func)(struct multiped *mp, mps_motion_info *mi, float frame, quat *data);
 
 // filter callback, to modify rots after individual callbacks made
 typedef void (*mps_rot_filter_callback)(struct multiped *mp,mps_motion_info *m,quat *rot,mxs_vector *xlat);
@@ -323,5 +323,3 @@ typedef void (*mps_rot_filter_callback)(struct multiped *mp,mps_motion_info *m,q
 //
 
 #endif
-
-

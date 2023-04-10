@@ -1,8 +1,8 @@
 /*
  * $Source: x:/prj/tech/libsrc/matrix/RCS/matrixd.h $
- * $Revision: 1.22 $
- * $Author: JAEMZ $
- * $Date: 1998/06/18 13:07:01 $
+ * $Revision: 1.25 $
+ * $Author: buzzard $
+ * $Date: 1998/10/26 23:51:23 $
  */
 
 
@@ -97,7 +97,14 @@ double mxd_norm_vec(mxds_vector *dest,const mxds_vector *v);
 double mxd_normeq_vec(mxds_vector *v1);
 
 // return v1 . v2
+#ifdef _MSC_VER
+__inline double mxd_dot_vec(const mxds_vector *v1, const mxds_vector *v2)
+{
+   return v1->x*v2->x + v1->y*v2->y + v1->z*v2->z;
+}
+#else
 double mxd_dot_vec(const mxds_vector *v1,const mxds_vector *v2);
+#endif
 
 // dest = v1 x v2
 void mxd_cross_vec(mxds_vector *dest,const mxds_vector *v1,const mxds_vector *v2);
@@ -123,7 +130,9 @@ void mxd_mineq_vec(mxds_vector *dest,const mxds_vector *v);
 void mxd_max_vec(mxds_vector *dest,const mxds_vector *v1,const mxds_vector *v2);
 void mxd_maxeq_vec(mxds_vector *dest,const mxds_vector *v);
 
-
+// If the delta of any element is greater than eps, return false
+// Has fast rejection
+bool mxd_is_identical(const mxds_vector *v1,const mxds_vector *v2,double eps);
 
 // PURE MATRIX OPERATIONS
 void mxd_zero_mat(mxds_matrix *m);
@@ -329,37 +338,18 @@ void mxd_trans_tmul_vec(mxds_vector *dest,const mxds_trans *t,const mxds_vector 
 // print one out
 void mxd_prn_trans(const mxds_trans *t);
 
+// Utility
+// Create a matrix from an unormalized vector v, which points
+// in the direction of something (x vector) and takes a z vector.
+// returns |v|
+double mxd_mat_look_at_z(mxds_matrix *dest,const mxds_vector *v,const mxds_vector *z);
+
+// Same as above but assumes z vector (0,0,1), ie, bank of zero.
+double mxd_mat_look_at(mxds_matrix *dest,const mxds_vector *v);
+
 
 #ifdef __cplusplus
 };
 #endif
 
 #endif /* __MATRIXD_H */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

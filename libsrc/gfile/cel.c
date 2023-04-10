@@ -549,5 +549,3 @@ static void CelExpandWordDelta(GfileInfo *pgfi, uchar *ps)
 			*(pd - 1) = lastByte;
 		}
 }
-
-

@@ -2,7 +2,7 @@
 // $Source: x:/prj/tech/libsrc/cpptools/RCS/dlist.h $
 // $Author: TOML $
 // $Date: 1998/02/23 10:46:47 $
-// $Revision: 1.6 $
+// $Revision: 1.9 $
 //
 // (c) Copyright 1996 Tom Leonard. All Rights Reserved. Unlimited license granted to Looking Glass Technologies Inc.
 //
@@ -12,6 +12,8 @@
 
 #include <lgassert.h>
 #include <templexp.h>
+
+#include <dbmem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -524,7 +526,92 @@ inline void cDList<NODE, ID>::InsertBefore(NODE *After, NODE *Node)
     cDListBase::InsertBefore((cDListNode<NODE, ID> *)After, (cDListNode<NODE, ID> *)Node);
 }
 
+////////////////////////////////////////////////////////////
+//
+// "SIMPLE" DLIST TEMPLATE
+//
+// Wrapper around dlist.h
+//
+////////////////////////////////////////////////////////////
+
+template <class ELEM> class cSimpleDList;
+template <class ELEM> class cSimpleDListNode;
+template <class ELEM> class cSimpleDListIter;
+
+//------------------------------------------------------------
+// LIST NODE
+//
+
+template <class ELEM>
+class cSimpleDListNode : public cDListNode<cSimpleDListNode<ELEM>,1>
+{
+   ELEM Elm;
+public:
+   cSimpleDListNode(const ELEM& elem)
+      : Elm(elem) {};
+   operator ELEM() { return Elm;};
+   ELEM& Value() { return Elm;};
+
+};
+
+//------------------------------------------------------------
+// LIST ITERATOR
+//
+
+template <class ELEM>
+class cSimpleDListIter
+{
+   typedef cSimpleDListNode<ELEM> cNode;
+   cNode* ThisNode;
+   cNode* NextNode;
+   friend class cSimpleDList<ELEM>;
+
+   cSimpleDListIter(cNode* node)
+      : ThisNode(node),
+        NextNode((node != NULL) ? node->GetNext() : NULL)
+   {};
+public:
+   cSimpleDListIter() :ThisNode(NULL),NextNode(NULL) {};
+   BOOL Done() const { return ThisNode == NULL;};
+   ELEM& Value() const { return ThisNode->Value();};
+   cNode& Node() const { return *ThisNode;};
+   void Next()
+   {
+      if (ThisNode) ThisNode = NextNode;
+      if (NextNode) NextNode = NextNode->GetNext();
+   };
+};
+
+//------------------------------------------------------------
+// THE LIST PROPER
+//
+
+template <class ELEM>
+class cSimpleDList : public cDList<cSimpleDListNode<ELEM>,1>
+{
+
+public:
+   // for convenience
+   typedef cDList<cSimpleDListNode<ELEM>,1> cParent;
+   typedef cSimpleDListNode<ELEM> cNode;
+   typedef cSimpleDListIter<ELEM> cIter;
+
+   void Append(const ELEM& e) { cParent::Append(new cNode(e));};
+   void Prepend(const ELEM& e) { cParent::Prepend(new cNode(e));};
+   void AppendNode(cNode* node) { cParent::Append(node); }; 
+   void PrependNode(cNode* node) { cParent::Prepend(node); }; 
+
+   void InsertBefore(cNode& before, const ELEM& e) { cParent::InsertBefore(&before,new cNode(e));};
+   void InsertAfter(cNode& before, const ELEM& e) { cParent::InsertAfter(&before,new cNode(e));};
+   void Delete(cNode& n) { if (&n != NULL) delete Remove(&n);};
+   cIter Iter() const { return cIter(GetFirst());};
+
+   ~cSimpleDList() { DestroyAll();};
+};
+
 ///////////////////////////////////////////////////////////////////////////////
+
+#include <undbmem.h>
 
 #endif /* !__DLIST_H */
 

@@ -1,11 +1,13 @@
-// $Header: x:/prj/tech/libsrc/mm/RCS/mms.h 1.4 1998/03/26 08:43:08 MAT Exp $
+// $Header: x:/prj/tech/libsrc/mm/RCS/mms.h 1.6 1999/03/01 16:05:24 Zarko Exp $
 
 #ifndef __MMS_H
 #define __MMS_H
 
 #include <matrixs.h>
+#include <r3ds.h>
 
-#define MM_CUR_VER 1
+#define MM_CUR_VER 2
+#define MM_ACCLD_VER 1
 
 enum _mme_layout
 {
@@ -48,6 +50,13 @@ typedef struct _mms_attachment
    mxs_trans relative_trans;
    ulong user_data;
 } mms_attachment;
+
+
+typedef struct _mms_attach_trans
+{
+   mxs_trans rel_trans;
+   r3s_point point;
+} mms_attach_trans;
 
 
 // data passed in with model which controls special cases in working
@@ -95,7 +104,8 @@ enum _mme_mat {
 };
 typedef unsigned char mme_mat;
 
-typedef struct _mms_smatr
+//zb
+typedef struct _mms_ssmatr
 {
    char name[16]; // for sanity
    ulong handle;  // texture handle or 0bgr
@@ -109,8 +119,33 @@ typedef struct _mms_smatr
    uchar flags;
    mms_data_chunk data;    // this field only relevent if smatsegs are laid
      // out in material order, so pgons and verts will be consecutive per material.
-} mms_smatr;
+} mms_ssmatr;
 
+//zb
+enum _mme_caps {
+    kUseAlpha               = 0x00000001L,
+    kUseSelfIllumination    = 0x00000002L,
+    kAmaBigDude             = 0xFFFFFFFFL
+};
+typedef struct _mms_smatr
+{
+   char name[16]; // for sanity
+   uint         dwCaps;
+   float        fAlpha;
+   float        fSelfIllumination;
+   uint         dwForRent;
+   ulong handle;  // texture handle or 0bgr
+   union {
+      float uv;   // uv coords per 3d unit for mipmapping or ipal index
+      ulong ipal; // inverse pal lookup
+   };
+   mme_mat type;    // type 0 = texture, 1 = virtual color
+   uchar smatsegs; // number of single material segments
+   uchar map_start;
+   uchar flags;
+   mms_data_chunk data;    // this field only relevent if smatsegs are laid
+     // out in material order, so pgons and verts will be consecutive per material.
+} mms_smatr;
 
 #define MMSEG_FLAG_STRETCHY 0x1  // segment composed of stretchy polygons
 
@@ -133,6 +168,17 @@ typedef struct _mms_smatseg
    ushort smatr_id;
    ushort seg_id;
 } mms_smatseg;
+
+typedef struct _mms_polysort_elt
+{
+   float depth;
+   ushort index;
+   uchar kind;
+   uchar pad;
+} mms_polysort_elt;
+
+#define MM_POLYSORT_KIND_POLY           1
+#define MM_POLYSORT_KIND_ATTACH         2
 
 // for mm_ray_hit_detect
 typedef struct mms_ray_hit_detect_info {

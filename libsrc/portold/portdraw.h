@@ -23,4 +23,3 @@ extern void PortalSetMIPTable();
 extern ushort *cur_anim_light_index_list;
 
 #endif
-

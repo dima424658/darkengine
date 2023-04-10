@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/cpptools/RCS/pdynarr.h $
-// $Author: JAEMZ $
-// $Date: 1997/08/13 19:00:29 $
-// $Revision: 1.6 $
+// $Author: TOML $
+// $Date: 1998/10/03 10:20:43 $
+// $Revision: 1.7 $
 //
 
 #ifndef __PDYNARR_H
@@ -23,7 +23,7 @@ typedef int (LGAPI * tGetPriorityFunc)(const void *);
 class cPriDynArrayCompareHolder
     {
 protected:
-    static int Compare(const tDynArrayItem *, const tDynArrayItem *);
+    static int Compare(const void *, const void *);
     static tGetPriorityFunc gm_pfnGetPriority;
     };
 	
@@ -42,7 +42,7 @@ public:
     {
       AssertMsg(!gm_pfnGetPriority, "Already sorting?");
       cPriDynArrayCompareHolder::gm_pfnGetPriority = D;
-      cDynArrayBase::Sort(cPriDynArrayCompareHolder::Compare);
+      cDynArray<T>::Sort((tCompareFunc)cPriDynArrayCompareHolder::Compare);
       cPriDynArrayCompareHolder::gm_pfnGetPriority = NULL;
     }
 

@@ -215,4 +215,3 @@ typedef struct pstamp_chunk {
 	} Pstamp_chunk;
 
 #endif /* PJFLI_H */
-

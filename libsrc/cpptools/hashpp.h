@@ -1,4 +1,4 @@
-// $Header: x:/prj/tech/libsrc/cpptools/RCS/hashpp.h 1.7 1998/04/21 18:57:31 mahk Exp $
+// $Header: x:/prj/tech/libsrc/cpptools/RCS/hashpp.h 1.9 1998/09/29 11:25:14 TOML Exp $
 
 #ifndef HASHPP_H
 #define HASHPP_H
@@ -10,6 +10,19 @@
 #define DEFAULT_SIZE 10
 
 ////////////////////////////////////////////////////////////
+// HELPER FUNCTION CLASS
+//
+
+class cHashHelperFunctions
+{
+protected:
+   static int hashlog2(int x);
+   static int expmod(int b, int e, uint m);
+   static bool is_fermat_prime(uint n, uint numtests);
+   static bool is_prime(uint n);
+};
+
+////////////////////////////////////////////////////////////
 // DENSE HASH TABLE CLASS
 //
 // This class is intended for mapping small keys into small values. 
@@ -17,7 +30,6 @@
 // If you have larger things you want to hash, use cHashSet. 
 //
 
-class cHashHelperFunctions;
 template <class KEY, class VALUE, class FUNC> class cHashIter;
 
 template <class KEY, class VALUE, class FUNC /* == cHashTableFunctions<KEY> */> 
@@ -41,9 +53,10 @@ protected:
    static VALUE& SomeValue(); // return an arbitrary value
    
 
-   int size; 
-   int sizelog2; 
-   int fullness;
+   int size;       // Total vec size
+   int sizelog2;   // size log 2
+   int fullness;   // number of entries
+   int tombstones; // number of "Tombstones" left by delete entries 
    ubyte *statvec;
    Elem *vec;
    
@@ -175,19 +188,6 @@ public:
    }
 };
 
-
-////////////////////////////////////////////////////////////
-// HELPER FUNCTION CLASS
-//
-
-class cHashHelperFunctions
-{
-protected:
-   static int hashlog2(int x);
-   static int expmod(int b, int e, uint m);
-   static bool is_fermat_prime(uint n, uint numtests);
-   static bool is_prime(uint n);
-};
 
 ////////////////////////////////////////////////////////////
 // DENSE HASH TABLE CLASS for strings 

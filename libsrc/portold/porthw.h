@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/portold/porthw.h,v 1.3 1998/02/20 17:09:18 KEVIN Exp $
+// $Header: r:/prj/cam/src/portal/RCS/porthw.h 1.4 1998/08/19 13:53:49 KEVIN Exp $
 #ifndef __PORTHW_H
 #define __PORTHW_H
 
@@ -28,7 +28,10 @@ typedef struct hw_render_info {
 extern BOOL pt_aggregate_lightmaps;
 
 // invalidate a lightmap (e.g., when we want to animate)
-extern void porthw_invalidate_cached_lightmap(int n);
+extern void porthw_uncache_lightmap(PortalPolygonRenderInfo *render);
+
+extern void porthw_preload_lightmap(PortalPolygonRenderInfo *render,
+      PortalLightMap *lt);
 
 // sets hw->lm, hw->lm_u0, and hw->lm_v0;
 // allocates and frees lightmaps as necessary

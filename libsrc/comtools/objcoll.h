@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/comtools/RCS/objcoll.h $
 // $Author: TOML $
-// $Date: 1996/10/21 09:34:24 $
-// $Revision: 1.19 $
+// $Date: 1998/09/29 12:42:49 $
+// $Revision: 1.20 $
 //
 // General interfaces for component object collections
 //
@@ -197,7 +197,7 @@ DECLARE_INTERFACE_(IInterfaceSet, IUnknown)
 //
 #ifndef NO_SELF_CONNECT
 #define SelfConnectOptional(root)     QueryInterface(IID_I ## root, (void **) (&m_p ## root))
-#define SelfConnectRequired(root)     { QueryInterface(IID_I ## root, (void **) (&m_p ## root)); AssertMsg((m_p ## root), "Expected instance of I" #root " in aggregate"); }
+#define SelfConnectRequired(root)     { QueryInterface(IID_I ## root, (void **) (&m_p ## root)); AssertMsg((!!(m_p ## root)), "Expected instance of I" #root " in aggregate"); }
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -285,4 +285,3 @@ long profileRecordHash(lPfDataHash *profile);
 #ifdef __cplusplus
 }
 #endif
-

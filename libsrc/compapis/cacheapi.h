@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/compapis/RCS/cacheapi.h $
-// $Author: TOML $
-// $Date: 1997/02/24 23:47:34 $
-// $Revision: 1.2 $
+// $Author: JUSTIN $
+// $Date: 1998/08/24 13:13:41 $
+// $Revision: 1.3 $
 //
 // Interfaces for simple resource caching.  The application object will
 // have a shared cache for cooperative system-wide resource sharing
@@ -174,6 +174,29 @@ struct sCacheClientDesc
 
 ///////////////////////////////////////
 //
+// STRUCT: sCacheStats. Used to obtain information about the cache usage.
+//
+
+struct sCacheStats
+{
+    ulong reserved;
+
+    ulong memoryLoad;    // percent of memory in use
+    ulong totalPhys;     // bytes of physical memory
+    ulong availPhys;     // free physical memory bytes
+    ulong totalPageFile; // bytes of paging file
+    ulong availPageFile; // free bytes of paging file
+    ulong totalVirtual;  // user bytes of address space
+    ulong availVirtual;  // free user bytes
+
+    ulong allocCap;
+    ulong totalMalloc;
+    ulong lockedMalloc;
+    ulong cachedMalloc;
+};
+
+///////////////////////////////////////
+//
 // INTERFACE: ISharedCache
 //
 
@@ -226,6 +249,11 @@ DECLARE_INTERFACE_(ISharedCache, IUnknown)
     // Dump the oldest items to free the specified amount of memory
     //
     STDMETHOD_(ulong, Purge)(THIS_ ulong nBytes) PURE;
+
+    //
+    // Get information about the cache usage
+    //
+    STDMETHOD_(void, GetStats)(THIS_ sCacheStats *pStats) PURE;
 
 };
 

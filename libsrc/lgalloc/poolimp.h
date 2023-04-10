@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/lgalloc/RCS/poolimp.h $
 // $Author: TOML $
-// $Date: 1997/08/14 12:22:16 $
-// $Revision: 1.6 $
+// $Date: 1998/09/22 13:02:32 $
+// $Revision: 1.7 $
 //
 // Implementation details of allocation pools.  Most clients should only
 // concern themselves with pool.h
@@ -22,11 +22,11 @@
 //
 
 #ifndef _WIN32
-#define PoolCoreAllocPage()   malloc(kPageSize)
-#define PoolCoreFreePage(p)   free(p)
+#define PoolCoreAlloc(n)  malloc(n)
+#define PoolCoreFree(p)   free(p)
 #else
-#define PoolCoreAllocPage()   cPoolCore::AllocPage()
-#define PoolCoreFreePage(p)   cPoolCore::FreePage(p)
+#define PoolCoreAlloc(n)  cPoolCore::Alloc(n)
+#define PoolCoreFree(p)   cPoolCore::Free(p)
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,11 +62,13 @@ public:
 
     static void DumpPools();
 
-    #ifdef TRACK_ALLOCS
+    unsigned long GetElemSize() { return m_nElementSize; }
+
+    #ifdef ALLOC_STATS
     // For debugging/optimization:
     unsigned long GetBlockNum();
     unsigned long GetTakes();
-    unsigned long GetBlockSize();
+    unsigned long GetInUse();
     unsigned long GetFrees();
     unsigned long GetMaxTakes();
     #endif
@@ -80,7 +82,7 @@ private:
 
     cPoolAllocator * m_pNextPool;
 
-    #ifdef TRACK_ALLOCS
+    #ifdef ALLOC_STATS
     unsigned long m_nBlocks;
     unsigned long m_nInUse;
     unsigned long m_nAllocs;
@@ -108,7 +110,7 @@ inline cPoolAllocator::cPoolAllocator(size_t elemSize)
 
 ///////////////////////////////////////
 
-#ifdef TRACK_ALLOCS
+#ifdef ALLOC_STATS
 inline unsigned long cPoolAllocator::GetBlockNum()
 {
     return m_nBlocks;
@@ -119,6 +121,13 @@ inline unsigned long cPoolAllocator::GetBlockNum()
 inline unsigned long cPoolAllocator::GetTakes()
 {
     return m_nAllocs;
+}
+
+///////////////////////////////////////
+
+inline unsigned long cPoolAllocator::GetInUse()
+{
+   return m_nInUse;
 }
 
 ///////////////////////////////////////

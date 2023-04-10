@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/compapis/RCS/movieapi.h $
-// $Author: TOML $
-// $Date: 1997/06/18 04:42:40 $
-// $Revision: 1.3 $
+// $Author: XEMU $
+// $Date: 1999/06/25 21:14:58 $
+// $Revision: 1.5 $
 //
 // The Movie API is likely to change in the next few months, so the first
 // revision has interface version numbers from the start (toml 08-01-96)
@@ -144,10 +144,21 @@ DECLARE_INTERFACE_(IMoviePlayer1, IUnknown)
     STDMETHOD_(BOOL, Stop)(THIS) PURE;
 
     //
+    // Get/Set the sound volume (-10000..0).
+    //
+    STDMETHOD_(BOOL, GetVolume)(THIS_ int* pOutVol) PURE;
+    STDMETHOD_(BOOL, SetVolume)(THIS_ int inVol) PURE;
+
+    //
     // Query the state of the player
     //
     STDMETHOD_(eMP1State, GetState)(THIS) PURE;
 
+
+    //
+    // Specify the list of keys that terminate movie playing
+    // 
+    STDMETHOD_(void, SetTermKeys)(THIS_ char *keylist) PURE;
 };
 
 #define IMoviePlayer1_QueryInterface(p, a, b)   COMQueryInterface(p, a, b)
@@ -159,6 +170,8 @@ DECLARE_INTERFACE_(IMoviePlayer1, IUnknown)
 #define IMoviePlayer1_Play(p, a)                COMCall1(p, Play, a)
 #define IMoviePlayer1_Pause(p)                  COMCall0(p, Pause)
 #define IMoviePlayer1_Stop(p)                   COMCall0(p, Stop)
+#define IMoviePlayer1_GetVolume(p, a)           COMCall1(p, GetVolume, a) // MRW
+#define IMoviePlayer1_SetVolume(p, a)           COMCall1(p, SetVolume, a) // MRW
 #define IMoviePlayer1_GetState(p)               COMCall0(p, GetState)
 
 #endif /* !__MOVIEAPI_H */

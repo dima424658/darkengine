@@ -5,6 +5,6 @@
 
 
 //#define PROFILE_ON
-#define PROFILE_CHILD
+//#define PROFILE_CHILD
 
 #include <prof.h>

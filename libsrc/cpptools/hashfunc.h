@@ -1,4 +1,4 @@
-// $Header: x:/prj/tech/libsrc/cpptools/RCS/hashfunc.h 1.4 1997/08/12 12:12:19 TOML Exp $
+// $Header: x:/prj/tech/libsrc/cpptools/RCS/hashfunc.h 1.5 1998/08/13 10:28:22 TOML Exp $
 #ifndef HASHFUNC_H
 #define HASHFUNC_H
 
@@ -176,6 +176,22 @@ public:
    static unsigned IsEqual(const char* s1, const char* s2)
    {
       return stricmp(s1,s2) == 0;
+   }
+};
+
+
+template <class T>
+class cGenHashFunc
+{
+public:
+   static unsigned Hash(const T *p)
+   {
+      return HashThing(p, sizeof(T));
+   }
+
+   static BOOL IsEqual(const T *p1, const T *p2)
+   {
+      return !memcmp(p1, p2, sizeof(T)); 
    }
 };
 

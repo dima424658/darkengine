@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////
-// $Source: x:/prj/tech/libsrc/comtools/RCS/comtools.h $
-// $Author: TOML $
-// $Date: 1998/07/02 11:03:27 $
-// $Revision: 1.52 $
+// $Source: x:/prj/tech/libsrc/comtools/rcs/comtools.h $
+// $Author: Johan $
+// $Date: 1999/04/21 17:29:31 $
+// $Revision: 1.55 $
 // Description :
 //
 // comtools.h: Tools for using and implementing COM component objects (toml)
@@ -517,8 +517,8 @@ private:
 
 #define SafeRelease(pUnknown) \
     { \
-        if (pUnknown) \
-            COMRelease(((IUnknown *)pUnknown)); \
+        if ((IUnknown *)(pUnknown)) \
+            COMRelease(((IUnknown *)(pUnknown))); \
         pUnknown = 0; \
     }
 
@@ -722,10 +722,6 @@ typedef unsigned char   tResultCode;
     typedef interface iface iface; \
     EXTERN_C const GUID CDECL FAR IID_##iface
 
-// Forward declare a guid
-#define F_DECLARE_GUID(guid) \
-    EXTERN_C const GUID CDECL FAR guid
-
 //
 // Add default parameter concept to interface macro generalization (this sucks)
 //
@@ -832,9 +828,17 @@ private:
 
 
 template <class INTERFACE1, const GUID * pIID_INTERFACE1, class INTERFACE2, const GUID * pIID_INTERFACE2, const int FLAGS>
-class cCTUnaggregated2 : public cCTUnaggregated<INTERFACE1, pIID_INTERFACE1, FLAGS>, public INTERFACE2
+class cCTUnaggregated2 : public INTERFACE1, public INTERFACE2
 {
 public:
+   virtual ~cCTUnaggregated2()
+   {
+   }
+
+   virtual void OnFinalRelease()
+   {
+   }
+
    STDMETHODIMP QueryInterface(REFIID id, void ** ppI)
    {
       if (IsEqualGUID(id, *pIID_INTERFACE2))
@@ -844,8 +848,40 @@ public:
          return S_OK;
       }
 
-      return cCTUnaggregated<INTERFACE1, pIID_INTERFACE1, FLAGS>::QueryInterface(id, ppI);
+      if (!IsEqualOrIUnknownGUID(id, *pIID_INTERFACE1))
+      {
+         *ppI = 0;
+         return E_NOINTERFACE;
+      }
+      *ppI = this;
+      AddRef();
+      return S_OK;
    }
+
+   STDMETHODIMP_(ULONG) AddRef()
+   {
+      return __m_ulRefs.AddRef();
+   }
+
+   STDMETHODIMP_(ULONG) Release()
+   {
+      if (__m_ulRefs.Release())
+         return __m_ulRefs;
+
+      OnFinalRelease();
+
+#ifdef __WATCOMC__
+      if ((!(FLAGS & kCTU_NoSelfDelete) && g_ComtoolsQuietWatcom_TRUE) || g_ComtoolsQuietWatcom_FALSE)
+#else
+      if (!(FLAGS & kCTU_NoSelfDelete))
+#endif
+         delete this;
+
+      return 0;
+   }
+
+private:
+   cCTRefCount __m_ulRefs;
 };
 
 //

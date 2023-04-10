@@ -1,4 +1,4 @@
-// $Header: x:/prj/tech/libsrc/lgd3d/RCS/tmgr.h 1.16 1998/07/02 11:48:38 PATMAC Exp $
+// $Header: x:/prj/tech/libsrc/lgd3d/RCS/tmgr.h 1.18 1998/09/18 16:13:05 KEVIN Exp $
 #ifndef __TMGR_H
 #define __TMGR_H
 #ifdef __cplusplus
@@ -14,7 +14,7 @@ typedef struct grs_bitmap grs_bitmap;
 #define TMGRF_SPEW 1
 
 typedef struct texture_manager {
-   int (*init)(grs_bitmap *bm, int max_textures, int flags);
+   int (*init)(grs_bitmap *bm, int max_textures, int *texture_size_list, int num_texture_sizes, int flags);
    void (*shutdown)(void);
    void (*start_frame)(int frame);
    void (*end_frame)(void);
@@ -30,10 +30,17 @@ typedef struct texture_manager {
    void (*reload_texture)(grs_bitmap *bm);
 } texture_manager;
 
+/*
 typedef struct texture_driver texture_driver;
 
 extern texture_manager *get_block_texture_manager(texture_driver *driver);
 extern texture_manager *get_dopey_texture_manager(texture_driver *driver);
+//*/
+
+//zb
+extern texture_manager *get_block_texture_manager( void* driver );
+extern texture_manager *get_dopey_texture_manager( void* driver );
+
 
 extern texture_manager        *g_tmgr;       // this is kinda silly, but it'll do for now...
 

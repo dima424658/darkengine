@@ -1,12 +1,18 @@
 /*
  * $Source: x:/prj/tech/libsrc/mprintf/RCS/mprintf.h $
- * $Revision: 1.10 $
+ * $Revision: 1.12 $
  * $Author: TOML $
- * $Date: 1997/07/28 18:44:39 $
+ * $Date: 1999/02/22 11:59:39 $
  * 
  * Defines and prototypes for monochrome print stuff.
  *
  * $Log: mprintf.h $
+ * Revision 1.12  1999/02/22  11:59:39  TOML
+ * getmode again
+ * 
+ * Revision 1.11  1999/02/22  11:57:26  TOML
+ * getmoide
+ * 
  * Revision 1.10  1997/07/28  18:44:39  TOML
  * output debug string support
  * 
@@ -114,6 +120,7 @@ extern bool mono_detect (void);
 extern bool mono_init (void);
 extern bool mono_win_init (bool have_screen);
 extern int  mono_setmode (int mode);        /* set the mode */
+extern int  mono_getmode (void);
 extern int  mprint(const char *s);                /* print a string */
 extern int  mprintf (const char *f, ...);         /* print a formatted string */
 /* notice mget and mput do not reset cursor positon... ret -1 if off screen or no mono screen */

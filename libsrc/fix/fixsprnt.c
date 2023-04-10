@@ -81,5 +81,3 @@ char *fix24_sprint_hex (char *str, fix24 x)
 	else      sprintf (str, "-%x.%02lx", x >> 8, x&0xff);
    return str;
 }
-
-

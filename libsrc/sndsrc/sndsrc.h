@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/sndsrc/RCS/sndsrc.h $
-// $Author: PATMAC $
-// $Date: 1997/11/01 01:57:45 $
-// $Revision: 1.4 $
+// $Author: mwhite $
+// $Date: 1999/02/22 23:06:13 $
+// $Revision: 1.6 $
 //
 // (c) 1997 Looking Glass Technologies Inc.
 // Pat McElhatton
@@ -42,14 +42,18 @@ extern "C"
 typedef unsigned long SndPlaylistElement;
 typedef unsigned long *SndPlaylist;
 
-// number of gate variables
-#define SNDSRC_MAX_GATES 8
+// Default number of gate variables
+#define SNDSRC_DEFAULT_MAX_GATES 8
 
-// number of labels
-#define SNDSRC_MAX_LABELS 8
+// Default number of labels
+#define SNDSRC_DEFAULT_MAX_LABELS 8
 
 ISndSource *
 SndCreateSource( sSndAttribs *pAttribs);
+
+ISndSource *
+SndCreateSourceEx( sSndAttribs *pAttribs, uint32 maxLabels, uint32 maxGates );
+
 
 typedef void (*SndSourceEndCallback)(ISndSource *, void *);
 
@@ -72,6 +76,8 @@ DECLARE_INTERFACE_(ISndSource, IUnknown)
 
 	STDMETHOD_( BOOL, SetGate )( THIS_ uint32 gateNum, uint32 gateValue ) PURE;
 
+	STDMETHOD_( uint32, GetGate )( THIS_ uint32 gateNum ) PURE;
+
 	STDMETHOD_( void, RegisterEndCallback )( THIS_ SndSourceEndCallback func, void *pCBData ) PURE;
 
 	STDMETHOD_( void, GetPositions ) ( THIS_ uint32 *pPlay, uint32 *pSource, uint32 *pLeft ) PURE;
@@ -91,6 +97,7 @@ DECLARE_INTERFACE_(ISndSource, IUnknown)
 #define ISndSource_ConnectToPlayer( p, a )         COMCall1( p, ConnectToPlayer, a )
 #define ISndSource_DisconnectFromPlayer( p )       COMCall0( p, DisconnectFromPlayer )
 #define ISndSource_SetGate( p, a, b )              COMCall2( p, SetGate, a, b )
+#define ISndSource_GetGate( p, a )                 COMCall1( p, GetGate, a )
 #define ISndSource_RegisterEndCallback( p, a, b )  COMCall2( p, RegisterEndCallback, a, b )
 #define ISndSource_GetPositions( p, a, b, c )      COMCall3( p, GetPositions, a, b, c )
 #define ISndSource_SetPosition( p, a )             COMCall1( p, SetPosition, a )

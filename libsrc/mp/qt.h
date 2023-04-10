@@ -1,3 +1,4 @@
+// $Header: x:/prj/tech/libsrc/mp/RCS/qt.h 1.3 1998/09/14 16:15:03 KEVIN Exp $
 
 #ifndef __QT_H
 #define __QT_H
@@ -46,6 +47,12 @@ EXTERN void quat_mul(quat * dest, quat * p, quat * q);
 EXTERN void quat_scale(quat * dest, quat * q, float scale);
 
 // Interpolates between q1 and q2.
+EXTERN void quat_slerp_cached_info(quat *dest, quat * q1, quat * q2, float t, mxs_vector *omega_info, bool flip);
+
+// Interpolates between q1 and q2.
+EXTERN bool quat_get_slerp_info(mxs_vector *omega_info, quat * q1, quat * q2);
+
+// Interpolates between q1 and q2.
 EXTERN void quat_slerp(quat * dest, quat * q1, quat * q2, float t);
 
 // *dst = *src.
@@ -58,4 +65,3 @@ EXTERN void quat_identity(quat * q);
 EXTERN float quat_mag(quat * q);
 
 #endif
-

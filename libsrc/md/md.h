@@ -1,8 +1,8 @@
 /*
  * $Source: x:/prj/tech/libsrc/md/RCS/md.h $
- * $Revision: 1.25 $
- * $Author: buzzard $
- * $Date: 1998/06/30 18:56:11 $
+ * $Revision: 1.30 $
+ * $Author: JAEMZ $
+ * $Date: 1999/06/01 14:14:20 $
  *
  * Model Library prototypes
  *
@@ -44,6 +44,10 @@ EXTERN void md_render_subobj(mds_model *m,mds_parm parms[],int sub);
 // Return a pointer to the material list.
 #define md_mat_list(m) ((mds_mat *)((uchar *)(m)+((m)->mat_off)))
 
+// Return the correct pointer to the given aux material
+// only way to access it
+#define md_amat(_m,_n) ((mds_amat *)((uchar *)(_m)+((_m)->amat_off)+((_m)->amat_size)*(_n)))
+
 // Return a point to the subobject list
 #define md_subobj_list(m) ((mds_subobj *)((uchar *)(m)+((m)->subobj_off)))
 
@@ -60,7 +64,13 @@ EXTERN void md_render_subobj(mds_model *m,mds_parm parms[],int sub);
 #define md_norm_list(m) ((mxs_vector*)((uchar *)m+m->norm_off))
 
 // Just evaluate the vhots, stuffing them into their positions.
+// Needs a valid 3d space
 EXTERN void md_eval_vhots(mds_model *m,mds_parm parms[]);
+
+// Just evaluate the vhots, stuffing them into their positions.
+// Does not need a 3d context, actually ignores the 3d context
+// and just gets all the points relative to the object space
+EXTERN void md_eval_vhots_object(mds_model *m,mds_parm parms[]);
 
 // These tables are for the vcolors, textures, vcalls, and for reading the result of vhots.  The vhots are in 
 // world coords.  You set the vcolor to the color index (if 8 bit) or color (if 16 bit or higher).  You set the 
@@ -212,5 +222,26 @@ EXTERN mds_model *md_scale_model(mds_model *dst,mds_model *src,mxs_vector *s,boo
 // you may actually want it to be the same, plus it's the slowest thing to
 // do
 EXTERN mds_model *md_shear_model(mds_model *dst,mds_model *src,int ax_src,int ax_targ,mxs_real s,bool light);
+
+// Call if you want to use lgd3d alpha blending in the models
+// Defaults to true.  If false, then alphad things are opaque
+EXTERN void md_set_alpha(bool);
+// Assuming your are setting alpha, scales it by this amount
+EXTERN void md_set_alpha_scale(float);
+
+// Call if you want to allow or disallow self illumination, defaults to
+// true.
+EXTERN void md_set_illum(bool);
+
+// Accessors for the model
+// Does this model have alpha?
+#define md_has_alpha(_m) ((_m)->ver > 3 && ((_m)->mat_flags&MD_MAT_TRANS))
+// Does it use self illumination?
+#define md_has_illum(_m) ((_m)->ver > 3 && ((_m)->mat_flags&MD_MAT_ILLUM))
+
+// This gives you a set of parameters you can pass in that are
+// guaranteed to be zeroed, so you don't need your own copy.  Beware though,
+// NEVER write into it.
+EXTERN mds_parm mdd_zero_parms[];
 
 #endif // __MD_H

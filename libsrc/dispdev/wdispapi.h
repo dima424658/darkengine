@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/dispdev/RCS/wdispapi.h $
-// $Author: KEVIN $
-// $Date: 1997/10/21 16:24:29 $
-// $Revision: 1.14 $
+// $Author: ZARKO $
+// $Date: 1998/09/18 16:15:54 $
+// $Revision: 1.15 $
 //
 //
 
@@ -14,6 +14,10 @@
 
 F_DECLARE_INTERFACE(IDirectDraw);
 F_DECLARE_INTERFACE(IDirectDrawSurface);
+
+//zb
+F_DECLARE_INTERFACE(IDirectDraw4);
+F_DECLARE_INTERFACE(IDirectDrawSurface4);
 
 typedef struct grs_bitmap grs_bitmap;
 typedef grs_bitmap        sGrBitmap;
@@ -57,7 +61,7 @@ DECLARE_INTERFACE_(IWinDisplayDevice, IUnknown)
     //
     // Access the instance of DirectDraw in use, if any (use at own risk)
     //
-    STDMETHOD_(BOOL, GetDirectDraw)(THIS_ IDirectDraw **) PURE;
+    STDMETHOD_(BOOL, GetDirectDraw)(THIS_ IDirectDraw4 **) PURE;
 
     //
     // Access the device lock/unlock mutex
@@ -76,7 +80,7 @@ DECLARE_INTERFACE_(IWinDisplayDevice, IUnknown)
     // if any (use at own risk)
     //
     STDMETHOD_(BOOL, GetBitmapSurface)(THIS_ sGrBitmap *, 
-                                             IDirectDrawSurface **) PURE;
+                                             IDirectDrawSurface4 **) PURE;
 
     //
     // Add application callback for task switch message.

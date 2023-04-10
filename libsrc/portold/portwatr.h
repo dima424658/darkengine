@@ -39,4 +39,3 @@ extern void portal_position_portal_texture(mxs_vector *dest_u,
 #endif
 
 #endif // ~_PORTWATR_H_
-
