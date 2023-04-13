@@ -54,15 +54,15 @@ DECLARE_SCRIPT_SERVICE(Object, 0xdf)
    // Object Position
    STDMETHOD_(vector,Position)(object obj) PURE; 
    STDMETHOD_(vector,Facing)(object obj) PURE; 
-   STDMETHOD(Teleport)(object obj, const vector ref position, const vector ref facing, object ref_frame = 0) PURE;
+   STDMETHOD(Teleport)(object obj, const vector& position, const vector& facing, object ref_frame = 0) PURE;
    STDMETHOD_(boolean,IsPositionValid)(object obj) PURE;
 
    // Object Searching
    STDMETHOD_(object,FindClosestObjectNamed)(ObjID objId, const char* name) PURE; 
 
    // Add/remove metaproperty to multiple targets
-   STDMETHOD_(integer, AddMetaPropertyToMany)(object metaprop, const string ref ToSet) PURE;
-   STDMETHOD_(integer, RemoveMetaPropertyFromMany)(object metaprop, const string ref ToSet) PURE;
+   STDMETHOD_(integer, AddMetaPropertyToMany)(object metaprop, const string& ToSet) PURE;
+   STDMETHOD_(integer, RemoveMetaPropertyFromMany)(object metaprop, const string& ToSet) PURE;
 
    // useful to know for an object
    STDMETHOD_(boolean, RenderedThisFrame)(object scr_obj) PURE;

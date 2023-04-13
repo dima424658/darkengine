@@ -80,12 +80,12 @@ DECLARE_SCRIPT_SERVICE_IMPL(cDarkGameSrv,DarkGame)
       return config_is_defined(name);
    }
 
-   STDMETHOD_(BOOL, ConfigGetInt)(const char *name, int ref value)
+   STDMETHOD_(BOOL, ConfigGetInt)(const char *name, int & value)
    {
       return config_get_int(name, &value);
    }
 
-   STDMETHOD_(BOOL, ConfigGetFloat)(const char *name, float ref value)
+   STDMETHOD_(BOOL, ConfigGetFloat)(const char *name, float & value)
    {
       return config_get_float(name, &value);
    }

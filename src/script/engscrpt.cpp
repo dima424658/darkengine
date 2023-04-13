@@ -42,14 +42,14 @@ DECLARE_SCRIPT_SERVICE_IMPL(cDebugScrSrv, Debug)
 {
 public:
 
-   STDMETHOD (MPrint)(const string ref s1,
-                      const string ref s2,
-                      const string ref s3,
-                      const string ref s4,
-                      const string ref s5,
-                      const string ref s6,
-                      const string ref s7,
-                      const string ref s8)
+   STDMETHOD (MPrint)(const string& s1,
+                      const string& s2,
+                      const string& s3,
+                      const string& s4,
+                      const string& s5,
+                      const string& s6,
+                      const string& s7,
+                      const string& s8)
    {
 #ifdef PLAYTEST
       mprintf("%s%s%s%s%s%s%s%s\n",
@@ -65,14 +65,14 @@ public:
       return S_OK;
    }
 
-   STDMETHOD (Command)(const string ref s1,
-                      const string ref s2,
-                      const string ref s3,
-                      const string ref s4,
-                      const string ref s5,
-                      const string ref s6,
-                      const string ref s7,
-                      const string ref s8)
+   STDMETHOD (Command)(const string& s1,
+                      const string& s2,
+                      const string& s3,
+                      const string& s4,
+                      const string& s5,
+                      const string& s6,
+                      const string& s7,
+                      const string& s8)
    {
       char buf[1024];
       sprintf(buf, "%s %s%s%s%s%s%s%s",

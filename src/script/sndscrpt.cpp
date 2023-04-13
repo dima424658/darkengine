@@ -719,7 +719,7 @@ public:
    // If we do not have a target object or set of coordinates, we
    // assume our sound is coming from the object playing the script.
    STDMETHOD_ (boolean, Play)(object CallbackObjID, 
-                              const string ref SoundName,
+                              const string& SoundName,
                               eSoundSpecial Special = kSoundNormal,
                               eSoundNetwork Network = kSoundNetDefault)
 
@@ -740,7 +740,7 @@ public:
    // We'll record the coordinates of the target object.  Naturally,
    // this doesn't keep it from moving before the sound finishes.
    STDMETHOD_ (boolean, Play)(object CallbackObjID, 
-                              const string ref SoundName,
+                              const string& SoundName,
                               object TargetObj,
                               eSoundSpecial Special = kSoundNormal,
                               eSoundNetwork Network = kSoundNetDefault)
@@ -762,8 +762,8 @@ public:
    // We set the target object to OBJ_NULL if we're playing to
    // coordinates.
    STDMETHOD_ (boolean, Play)(object CallbackObjID, 
-                              const string ref SoundName,
-                              vector ref Location,
+                              const string& SoundName,
+                              vector& Location,
                               eSoundSpecial Special = kSoundNormal,
                               eSoundNetwork Network = kSoundNetDefault)
    {
@@ -773,7 +773,7 @@ public:
    }
 
    STDMETHOD_ (boolean, PlayAmbient)(object CallbackObjID, 
-                                     const string ref SoundName,
+                                     const string& SoundName,
                                      eSoundSpecial Special = kSoundNormal,
                                      eSoundNetwork Network = kSoundNetDefault)
    {
@@ -827,7 +827,7 @@ public:
 
    STDMETHOD_ (boolean, PlaySchema)(object CallbackObjID, 
                                     object Schema,
-                                    vector ref Location,
+                                    vector& Location,
                                     eSoundNetwork Network = kSoundNetDefault)
    {
       ObjID ScriptID = ScriptObjID(CallbackObjID);
@@ -849,7 +849,7 @@ public:
 
 
    STDMETHOD_(boolean, PlayEnvSchema)(object CallbackObject,
-                                      const string ref Tags,
+                                      const string& Tags,
                                       object SourceObject, object Agent,
                                       eEnvSoundLoc loc = kEnvSoundAmbient,
                                       eSoundNetwork Network = kSoundNetDefault)
@@ -905,14 +905,14 @@ public:
    //
 
    STDMETHOD_(integer, Halt)(object TargetObject,
-                             const string ref SoundName,
+                             const string& SoundName,
                              object CallbackObject)
    {
       return HaltActiveSounds(TargetObject, SoundName, CallbackObject, FALSE);
    }
 
    STDMETHOD_(boolean, HaltSchema)(object TargetObject,
-                                   const string ref SchemaName,
+                                   const string& SchemaName,
                                    object CallbackObject)
    {
       return HaltActiveSounds(TargetObject, SchemaName, CallbackObject, TRUE);
@@ -925,7 +925,7 @@ public:
       return S_OK;
    }
 
-   STDMETHOD_(boolean,PreLoad)(const string ref SpeechName)
+   STDMETHOD_(boolean,PreLoad)(const string& SpeechName)
    {
       return SFX_PreLoad(SpeechName);
    }

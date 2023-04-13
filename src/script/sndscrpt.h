@@ -53,21 +53,21 @@ DECLARE_SCRIPT_SERVICE(Sound, 0xf1)
 {
    // play a raw sound by name
    STDMETHOD_(boolean, Play)(object CallbackObject, 
-                             const string ref SoundName,
+                             const string& SoundName,
                              eSoundSpecial Special = kSoundNormal,
                              eSoundNetwork Network = kSoundNetDefault) PURE;
    STDMETHOD_(boolean, Play)(object CallbackObject, 
-                             const string ref SoundName, 
+                             const string& SoundName, 
                              object TargetObject,
                              eSoundSpecial Special = kSoundNormal,
                              eSoundNetwork Network = kSoundNetDefault) PURE;
    STDMETHOD_(boolean, Play)(object CallbackObject, 
-                             const string ref SoundName, 
-                             vector ref Vector,
+                             const string& SoundName, 
+                             vector& Vector,
                              eSoundSpecial Special = kSoundNormal,
                              eSoundNetwork Network = kSoundNetDefault) PURE;
    STDMETHOD_(boolean, PlayAmbient)(object CallbackObject,
-                                    const string ref SoundName,
+                                    const string& SoundName,
                                     eSoundSpecial Special = kSoundNormal,
                                     eSoundNetwork Network = kSoundNetDefault)
       PURE;
@@ -85,7 +85,7 @@ DECLARE_SCRIPT_SERVICE(Sound, 0xf1)
       PURE;
    STDMETHOD_(boolean, PlaySchema)(object CallbackObject, 
                                    object Schema, 
-                                   vector ref Vector,
+                                   vector& Vector,
                                    eSoundNetwork Network = kSoundNetDefault)
       PURE;
    STDMETHOD_(boolean, PlaySchemaAmbient)(object CallbackObject,
@@ -97,7 +97,7 @@ DECLARE_SCRIPT_SERVICE(Sound, 0xf1)
    // SourceObject defaults to CallbackObject
    // For callbacks, this will be treated like any other schema.
    STDMETHOD_(boolean, PlayEnvSchema)(object CallbackObject,
-                                      const string ref Tags,
+                                      const string& Tags,
                                       object SourceObject = OBJ_NULL, 
                                       object AgentObject = OBJ_NULL, 
                                       eEnvSoundLoc loc = kEnvSoundOnObj,
@@ -116,18 +116,18 @@ DECLARE_SCRIPT_SERVICE(Sound, 0xf1)
    // object.  The return values here are the number of sounds or
    // schemas which were halted.
    STDMETHOD_(integer, Halt)(object TargetObject,
-                             const string ref SoundName = "",
+                             const string& SoundName = "",
                              object CallbackObject
                               = OBJ_NULL) PURE;
 
    STDMETHOD_(boolean, HaltSchema)(object TargetObject,
-                                   const string ref SoundName = "",
+                                   const string& SoundName = "",
                                    object CallbackObject
                                     = OBJ_NULL) PURE;
 
    STDMETHOD(HaltSpeech)(object speakerObj) PURE;
 
-   STDMETHOD_(boolean,PreLoad)(const string ref SpeechName) PURE;
+   STDMETHOD_(boolean,PreLoad)(const string& SpeechName) PURE;
 };
 
 

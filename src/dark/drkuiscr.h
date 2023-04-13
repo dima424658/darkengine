@@ -48,8 +48,8 @@ DECLARE_SCRIPT_SERVICE(DarkUI,0x19f)
    //
    // Look up bound command
    //
-   STDMETHOD_(boolean,IsCommandBound)(const string ref cmd) PURE; 
-   STDMETHOD_(string,DescribeKeyBinding)(const string ref cmd) PURE; 
+   STDMETHOD_(boolean,IsCommandBound)(const string & cmd) PURE; 
+   STDMETHOD_(string,DescribeKeyBinding)(const string & cmd) PURE; 
 
 
 }; 

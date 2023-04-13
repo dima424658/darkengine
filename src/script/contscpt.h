@@ -17,12 +17,12 @@
 DECLARE_SCRIPT_SERVICE(Container, 0x146)
 {
    // Does container contain containee? 
-   STDMETHOD(Contains)(const object ref container, const object ref findobj) PURE; 
+   STDMETHOD(Contains)(const object& container, const object& findobj) PURE; 
    // How many containtype-combineable objects are in container?
-   STDMETHOD_(int, CombineCount)(const object ref container, const object ref containtype) PURE;
+   STDMETHOD_(int, CombineCount)(const object& container, const object& containtype) PURE;
    // Put object into container
    // deals with getting it out of the world as well (hm, can do this game-independantly?)
-   STDMETHOD(ContainerAdd)(const object ref container, const object ref obj);
+   STDMETHOD(ContainerAdd)(const object& container, const object& obj);
    STDMETHOD
 }
 

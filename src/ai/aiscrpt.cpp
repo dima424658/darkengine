@@ -206,7 +206,7 @@ public:
       }
    }
 
-   STDMETHOD_(boolean, MakeGotoObjLoc)(ObjID objIdAI, const object &objIdTarget, eAIScriptSpeed speed, eAIActionPriority priority, const cMultiParm ref dataToSendOnReach)
+   STDMETHOD_(boolean, MakeGotoObjLoc)(ObjID objIdAI, const object &objIdTarget, eAIScriptSpeed speed, eAIActionPriority priority, const cMultiParm& dataToSendOnReach)
    {
       cAIBasicScript * pBasicScript = cAIBasicScript::AccessBasicScript(objIdAI);
       if (pBasicScript)
@@ -221,7 +221,7 @@ public:
    }
 
 #if 0
-   STDMETHOD_(boolean, MakeDoManeuver)(ObjID objIdAI, const string ref Maneuver, eAIActionPriority priority, const cMultiParm ref dataToSendOnCompletion)
+   STDMETHOD_(boolean, MakeDoManeuver)(ObjID objIdAI, const string & Maneuver, eAIActionPriority priority, const cMultiParm & dataToSendOnCompletion)
    {
       cAI * pAI;
       g_pAIPool->GetObjAI(objIdAI, pAI);
@@ -232,7 +232,7 @@ public:
    }
 #endif
 
-   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, eAIActionPriority priority, const cMultiParm ref dataToSendOnReach)
+   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, eAIActionPriority priority, const cMultiParm& dataToSendOnReach)
    {
       cAIBasicScript * pBasicScript = cAIBasicScript::AccessBasicScript(objIdAI);
       if (pBasicScript)
@@ -246,7 +246,7 @@ public:
       return FALSE;
    }
 
-   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, const object &objWith, eAIActionPriority priority, const cMultiParm ref dataToSendOnReach)
+   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, const object &objWith, eAIActionPriority priority, const cMultiParm& dataToSendOnReach)
    {
       cAIBasicScript * pBasicScript = cAIBasicScript::AccessBasicScript(objIdAI);
       if (pBasicScript)
@@ -334,7 +334,7 @@ public:
       }
    }
 
-   STDMETHOD_(void, Signal)(ObjID objIdAI, const string ref signalName)
+   STDMETHOD_(void, Signal)(ObjID objIdAI, const string& signalName)
    {
       // This will go to doSignal() on the AI's host machine:
       g_pAISignalMsg->Send(OBJ_NULL, objIdAI, signalName);

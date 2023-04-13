@@ -220,7 +220,7 @@ public:
 #define DEGREES2ANG(x) (mxs_ang)(((long)((x) * MX_ANG_PI))/180)
 #define ANG2DEGREES(x) (((mxs_real)(x) * 180)/MX_ANG_PI)
 
-   STDMETHOD(Teleport)(object obj, const vector ref position, const vector ref facing, object ref_frame) 
+   STDMETHOD(Teleport)(object obj, const vector& position, const vector& facing, object ref_frame) 
    {
       mxs_angvec fac = { DEGREES2ANG(facing.x), DEGREES2ANG(facing.y), DEGREES2ANG(facing.z) }; 
       return GameTools()->TeleportObject(obj,&position,&fac,ref_frame); 
@@ -253,7 +253,7 @@ public:
       return object(FindTheClosestObjectNamed(objId, name));
    }
 
-   STDMETHOD_(integer, AddMetaPropertyToMany)(object metaprop, const string ref ToSet)
+   STDMETHOD_(integer, AddMetaPropertyToMany)(object metaprop, const string& ToSet)
    {
       cObjListParser   parser;
       cDynArray<ObjID> objs;
@@ -278,7 +278,7 @@ public:
       return objs.Size();
    }
    
-   STDMETHOD_(integer, RemoveMetaPropertyFromMany)(object metaprop, const string ref FromSet)
+   STDMETHOD_(integer, RemoveMetaPropertyFromMany)(object metaprop, const string& FromSet)
    {
       cObjListParser   parser;
       cDynArray<ObjID> objs;

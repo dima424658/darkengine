@@ -35,12 +35,12 @@ DECLARE_SCRIPT_SERVICE(Physics, 0x141)
 
    // @HACK: should this be here?
    // Launch Projectile 
-   STDMETHOD_(object,LaunchProjectile)(object launcher, object proj, real power, integer flags, const vector ref add_vel) PURE; 
+   STDMETHOD_(object,LaunchProjectile)(object launcher, object proj, real power, integer flags, const vector& add_vel) PURE; 
 
    // Velocity
-   STDMETHOD(SetVelocity)(object obj, const vector ref vel) PURE; 
-   STDMETHOD(GetVelocity)(object obj, vector ref vel) PURE; 
-   STDMETHOD(ControlVelocity)(object obj, const vector ref vel) PURE; 
+   STDMETHOD(SetVelocity)(object obj, const vector& vel) PURE; 
+   STDMETHOD(GetVelocity)(object obj, vector& vel) PURE; 
+   STDMETHOD(ControlVelocity)(object obj, const vector& vel) PURE; 
    STDMETHOD(StopControlVelocity)(object obj) PURE;
 
    // Gravity
@@ -64,7 +64,7 @@ DECLARE_SCRIPT_SERVICE(Physics, 0x141)
    STDMETHOD(DeregisterModel)(object obj) PURE;
 
    // Player 
-   STDMETHOD_(void, PlayerMotionSetOffset)(int subModel, vector ref offset) PURE;
+   STDMETHOD_(void, PlayerMotionSetOffset)(int subModel, vector& offset) PURE;
 
    STDMETHOD(Activate)(const object obj) PURE;
 

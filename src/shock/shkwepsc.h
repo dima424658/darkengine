@@ -24,13 +24,13 @@
 
 DECLARE_SCRIPT_SERVICE(ShockWeapon, 0x213)
 {
-   STDMETHOD_(void, SetWeaponModel)(const object ref obj) PURE;
+   STDMETHOD_(void, SetWeaponModel)(const object& obj) PURE;
    STDMETHOD_(object, GetWeaponModel)(void) PURE;
 
    STDMETHOD_(object, TargetScan)(object projectile) PURE;
    STDMETHOD_(void, Home)(object projectile, object target) PURE;
 
-   STDMETHOD_(void, DestroyMelee)(const object ref obj) PURE;
+   STDMETHOD_(void, DestroyMelee)(const object& obj) PURE;
 };
 
 #endif /* !__SHKWEPSC_H */

@@ -59,14 +59,14 @@ DECLARE_SCRIPT_SERVICE_IMPL(cDarkUISrv,DarkUI)
       }
 
 
-   STDMETHOD_(boolean,IsCommandBound)(const string ref cmd)
+   STDMETHOD_(boolean,IsCommandBound)(const string & cmd)
       {
          cStr strings[1]; 
          int n = GetCmdBinds(cmd,strings,1); 
          return n > 0;
       }
 
-   STDMETHOD_(string,DescribeKeyBinding)(const string ref cmd) 
+   STDMETHOD_(string,DescribeKeyBinding)(const string & cmd) 
       {
          cStr strings[16]; 
          int n = GetCmdBinds(cmd,strings,16); 

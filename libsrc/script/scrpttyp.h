@@ -68,7 +68,6 @@ typedef int (*tScriptPrintFunc)(const char *pszFormatString, ...);
 #define vector       cScrVec
 #define integer      int
 #define boolean      true_bool
-#define ref          &
 #define timer_handle int
 
 #ifdef __cplusplus

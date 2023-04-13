@@ -20,9 +20,9 @@ DECLARE_SCRIPT_SERVICE(Property, 0xda)
    STDMETHOD_(cMultiParm, Get)(object obj, const char * prop, const char * field = NULL) PURE;
    // Set() will ask the owner of the object to set the property. SetLocal()
    // will set the property locally, even on a proxy object.
-   STDMETHOD(Set)(object obj, const char * prop, const cMultiParm ref) PURE;
-   STDMETHOD(Set)(object obj, const char * prop, const char * field, const cMultiParm ref) PURE;
-   STDMETHOD(SetLocal)(object obj, const char * prop, const char * field, const cMultiParm ref) PURE;
+   STDMETHOD(Set)(object obj, const char * prop, const cMultiParm&) PURE;
+   STDMETHOD(Set)(object obj, const char * prop, const char * field, const cMultiParm&) PURE;
+   STDMETHOD(SetLocal)(object obj, const char * prop, const char * field, const cMultiParm&) PURE;
 
    STDMETHOD(Add)(object obj, const char* prop) PURE;
    STDMETHOD(Remove)(object obj, const char* prop) PURE;

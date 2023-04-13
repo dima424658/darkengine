@@ -29,7 +29,7 @@
 DECLARE_SCRIPT_SERVICE_IMPL(cShockWeaponSrv, ShockWeapon)
 {
 public:
-   STDMETHOD_(void, SetWeaponModel)(const object ref obj)
+   STDMETHOD_(void, SetWeaponModel)(const object& obj)
    {
       AutoAppIPtr(ShockPlayer);
       pShockPlayer->SetWeaponModel(obj);
@@ -54,7 +54,7 @@ public:
    {
       ::Home(projectile, target);
    }
-   STDMETHOD_(void, DestroyMelee)(const object ref obj)
+   STDMETHOD_(void, DestroyMelee)(const object& obj)
    {
       ::DestroyMelee(ObjID(obj), PlayerObject());
    }

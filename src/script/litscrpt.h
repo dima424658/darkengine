@@ -31,14 +31,14 @@
 //
 DECLARE_SCRIPT_SERVICE(Light, 0x16c)
 {
-   STDMETHOD_(void, Set)(const object ref obj, int mode,
+   STDMETHOD_(void, Set)(const object& obj, int mode,
                          float min_brightness, float max_brightness) PURE;
-   STDMETHOD_(void, SetMode)(const object ref obj, int mode) PURE;
-   STDMETHOD_(void, Activate)(const object ref obj) PURE;
-   STDMETHOD_(void, Deactivate)(const object ref obj) PURE;
-   STDMETHOD_(void, Subscribe)(const object ref obj) PURE;
-   STDMETHOD_(void, Unsubscribe)(const object ref obj) PURE;
-   STDMETHOD_(int, GetMode)(const object ref obj) PURE;
+   STDMETHOD_(void, SetMode)(const object& obj, int mode) PURE;
+   STDMETHOD_(void, Activate)(const object& obj) PURE;
+   STDMETHOD_(void, Deactivate)(const object& obj) PURE;
+   STDMETHOD_(void, Subscribe)(const object& obj) PURE;
+   STDMETHOD_(void, Unsubscribe)(const object& obj) PURE;
+   STDMETHOD_(int, GetMode)(const object& obj) PURE;
 };
 
 

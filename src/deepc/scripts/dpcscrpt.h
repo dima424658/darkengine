@@ -46,26 +46,26 @@
 DECLARE_SCRIPT_SERVICE(DPCGame, 0x108)
 {
    STDMETHOD(DestroyCursorObj)() PURE;
-   STDMETHOD(DestroyInvObj)(const object ref DestroyObj) PURE;
-   STDMETHOD(HideInvObj)(const object ref DestroyObj) PURE;
+   STDMETHOD(DestroyInvObj)(const object& DestroyObj) PURE;
+   STDMETHOD(HideInvObj)(const object& DestroyObj) PURE;
 
-   STDMETHOD(AttachCamera)(const string ref s) PURE;
-   STDMETHOD(CutSceneModeOn)(const string ref sceneName) PURE;
+   STDMETHOD(AttachCamera)(const string& s) PURE;
+   STDMETHOD(CutSceneModeOn)(const string& sceneName) PURE;
    STDMETHOD(CutSceneModeOff)(void) PURE;
    STDMETHOD_(int, CreatePlayerPuppet)(void) PURE;
-   STDMETHOD_(int, CreatePlayerPuppet)(const string ref modelName) PURE;
+   STDMETHOD_(int, CreatePlayerPuppet)(const string& modelName) PURE;
    STDMETHOD(DestroyPlayerPuppet)(void) PURE;
 
-   STDMETHOD(Container)(const object ref ContainObj) PURE;
-   STDMETHOD(YorN)(const object ref BaseObj, const string ref s) PURE;
-   STDMETHOD(Keypad)(const object ref BaseObj) PURE;
-   STDMETHOD(HRM)(integer hacktype, const object ref Obj, BOOL frompsi) PURE;
-   STDMETHOD(TechTool)(const object ref Obj) PURE;
+   STDMETHOD(Container)(const object& ContainObj) PURE;
+   STDMETHOD(YorN)(const object& BaseObj, const string& s) PURE;
+   STDMETHOD(Keypad)(const object& BaseObj) PURE;
+   STDMETHOD(HRM)(integer hacktype, const object& Obj, BOOL frompsi) PURE;
+   STDMETHOD(TechTool)(const object& Obj) PURE;
 
-   STDMETHOD(UseLog)(const object ref LogObj, BOOL PickedUpByMe) PURE;
+   STDMETHOD(UseLog)(const object& LogObj, BOOL PickedUpByMe) PURE;
    // types: 0: email 1: log 2: media 3: video
    STDMETHOD_(BOOL, TriggerLog)(int usetype, int uselevel, int which, BOOL show_mfd) PURE;
-   STDMETHOD(FindLogData)(const object ref LogObj, int usetype, int *level, int *which) PURE;
+   STDMETHOD(FindLogData)(const object& LogObj, int usetype, int *level, int *which) PURE;
 
    STDMETHOD(PayNanites)(int quan) PURE;
    STDMETHOD(OverlayChange)(int which, int mode) PURE;
@@ -73,35 +73,35 @@ DECLARE_SCRIPT_SERVICE(DPCGame, 0x108)
    STDMETHOD_(object, Equipped)(int slot) PURE;
 
    STDMETHOD(LevelTransport)(const char *newlevel, int marker, uint flags) PURE;
-   STDMETHOD_(BOOL, CheckLocked)(const object ref CheckObj, BOOL verbose, const object ref player) PURE;
+   STDMETHOD_(BOOL, CheckLocked)(const object& CheckObj, BOOL verbose, const object& player) PURE;
 
    // In both of these and AddTextObjProp(), "player" can be OBJ_NULL, in
    // which case the text will be shown to all players.
-   STDMETHOD(AddText)(const char *msg, const object ref player, int time = 5000) PURE;
-   STDMETHOD(AddTranslatableText)(const char *msg, const char *table, const object ref player, int time = 5000) PURE;
+   STDMETHOD(AddText)(const char *msg, const object& player, int time = 5000) PURE;
+   STDMETHOD(AddTranslatableText)(const char *msg, const char *table, const object& player, int time = 5000) PURE;
 
-   STDMETHOD(AmmoLoad)(const object ref GunObj, const object ref AmmoObj) PURE;
-   STDMETHOD_(int,GetClip)(const object ref GunObj) PURE;
+   STDMETHOD(AmmoLoad)(const object& GunObj, const object& AmmoObj) PURE;
+   STDMETHOD_(int,GetClip)(const object& GunObj) PURE;
 
-//   STDMETHOD(AddExp)(const object ref Who, int amount, BOOL verbose ) PURE;
-   STDMETHOD_(BOOL,HasTrait)(const object ref Who, int trait) PURE;
-   STDMETHOD(HealObj)(const object ref Who, int amt) PURE;
+//   STDMETHOD(AddExp)(const object& Who, int amount, BOOL verbose ) PURE;
+   STDMETHOD_(BOOL,HasTrait)(const object& Who, int trait) PURE;
+   STDMETHOD(HealObj)(const object& Who, int amt) PURE;
 
-   STDMETHOD(OverlaySetObj)(int which, const object ref Obj) PURE;
+   STDMETHOD(OverlaySetObj)(int which, const object& Obj) PURE;
 
-   STDMETHOD_(string,GetArchetypeName)(const object ref Obj) PURE;
+   STDMETHOD_(string,GetArchetypeName)(const object& Obj) PURE;
    STDMETHOD_(BOOL, OverlayOn)(int which) PURE;
 
-   STDMETHOD_(object,FindSpawnPoint)(const object ref Obj, uint flags) PURE;
+   STDMETHOD_(object,FindSpawnPoint)(const object& Obj, uint flags) PURE;
    STDMETHOD_(int, CountEcoMatching)(int val) PURE;
 
-   STDMETHOD_(int, GetStat)(const object ref who, int which) PURE;
+   STDMETHOD_(int, GetStat)(const object& who, int which) PURE;
 
    STDMETHOD_(object, GetSelectedObj)(void) PURE;
 
-   STDMETHOD_(BOOL, AddInvObj)(const object ref obj) PURE;
+   STDMETHOD_(BOOL, AddInvObj)(const object& obj) PURE;
 
-   STDMETHOD(RecalcStats)(const object ref who) PURE;
+   STDMETHOD(RecalcStats)(const object& who) PURE;
 
    STDMETHOD(PlayVideo)(const char *vidname) PURE;
 
@@ -110,7 +110,7 @@ DECLARE_SCRIPT_SERVICE(DPCGame, 0x108)
    STDMETHOD_(int, RandRange)(int low, int high) PURE;
 
    // NOTE: don't call this unless you're sure that there isn't an object currently on the cursor
-   STDMETHOD_(BOOL, LoadCursor)(const object ref obj) PURE;
+   STDMETHOD_(BOOL, LoadCursor)(const object& obj) PURE;
 
    // speed control functions
    STDMETHOD_(void,AddSpeedControl)(const char *name, float speed_fac, float rot_fac) PURE;
@@ -123,15 +123,15 @@ DECLARE_SCRIPT_SERVICE(DPCGame, 0x108)
    // get distant shock-selected object 
    STDMETHOD_(object, GetDistantSelectedObj)(void) PURE;
 
-   STDMETHOD(Equip)(int slot, const object ref Obj) PURE;
+   STDMETHOD(Equip)(int slot, const object& Obj) PURE;
 
-   STDMETHOD(OverlayChangeObj)(int which, int mode, const object ref Obj) PURE;
+   STDMETHOD(OverlayChangeObj)(int which, int mode, const object& Obj) PURE;
 
-   STDMETHOD(SetObjState)(const object ref Obj, int state) PURE;
+   STDMETHOD(SetObjState)(const object& Obj, int state) PURE;
 
    STDMETHOD(DestroyAllByName)(const char *name) PURE;
 
-   STDMETHOD(AddTextObjProp)(const object ref Obj, const char *propname, const object ref player, int time = 5000) PURE;
+   STDMETHOD(AddTextObjProp)(const object& Obj, const char *propname, const object& player, int time = 5000) PURE;
 
    STDMETHOD(DisableAlarmGlobal)(void) PURE;
 
@@ -143,7 +143,7 @@ DECLARE_SCRIPT_SERVICE(DPCGame, 0x108)
 
    // This should be called by any script that potentially removes
    // an object from a container.
-   STDMETHOD(RemoveFromContainer)(const object ref Obj, const object ref Container) PURE;
+   STDMETHOD(RemoveFromContainer)(const object& Obj, const object& Container) PURE;
 
    STDMETHOD(ActivateMap)(void) PURE;
 
@@ -164,11 +164,11 @@ DECLARE_SCRIPT_SERVICE(DPCGame, 0x108)
    
    STDMETHOD_(object,PlayerGun)(void) PURE;
    
-   STDMETHOD_(object, PseudoProjectile)(const object ref source, const object ref emittype) PURE;
+   STDMETHOD_(object, PseudoProjectile)(const object& source, const object& emittype) PURE;
 
-   STDMETHOD(WearArmor)(const object ref Obj) PURE;
+   STDMETHOD(WearArmor)(const object& Obj) PURE;
 
-   STDMETHOD(SetModify)(const object ref Obj, int modlevel) PURE;
+   STDMETHOD(SetModify)(const object& Obj, int modlevel) PURE;
 
    STDMETHOD_(BOOL, Censored)(void) PURE;
 
@@ -177,23 +177,23 @@ DECLARE_SCRIPT_SERVICE(DPCGame, 0x108)
    STDMETHOD(Mouse)(BOOL mode, BOOL clear) PURE;
 
    STDMETHOD(RefreshInv)(void) PURE;
-   STDMETHOD(TreasureTable)(const object ref Obj) PURE;
+   STDMETHOD(TreasureTable)(const object& Obj) PURE;
 
    STDMETHOD_(object, OverlayGetObj)() PURE;
 
    STDMETHOD(VaporizeInv)(void) PURE;
 
-   STDMETHOD(SetQBHacked)(const string ref qbname, int qbval) PURE;
+   STDMETHOD(SetQBHacked)(const string& qbname, int qbval) PURE;
 
    STDMETHOD(SetLogTime)(int level, int logtype, int which) PURE;
 
-   STDMETHOD(AddTranslatableTextInt)(const char *msg, const char *table, const object ref player, int val, int time = 5000) PURE;
+   STDMETHOD(AddTranslatableTextInt)(const char *msg, const char *table, const object& player, int val, int time = 5000) PURE;
 
-   STDMETHOD(ZeroControls)(const object ref Obj, BOOL poll) PURE;
+   STDMETHOD(ZeroControls)(const object& Obj, BOOL poll) PURE;
 
-   STDMETHOD_(BOOL, ValidGun)(const object ref Obj) PURE;
+   STDMETHOD_(BOOL, ValidGun)(const object& Obj) PURE;
 
-   STDMETHOD(AddTranslatableTextIndexInt)(const char *msg, const char *table, const object ref player, int index, int val, int time = 5000) PURE;
+   STDMETHOD(AddTranslatableTextIndexInt)(const char *msg, const char *table, const object& player, int index, int val, int time = 5000) PURE;
 
    STDMETHOD_(BOOL, IsAlarmActive)(void) PURE;
 

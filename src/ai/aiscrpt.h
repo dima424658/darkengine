@@ -27,18 +27,18 @@
 
 DECLARE_SCRIPT_SERVICE(AI, 0xe5)
 {
-   STDMETHOD_(boolean, MakeGotoObjLoc)(ObjID objIdAI, const object &objIdTarget, eAIScriptSpeed speed = kNormalSpeed, eAIActionPriority = kNormalPriorityAction, const cMultiParm ref dataToSendOnReach = NULL_PARM) PURE;
+   STDMETHOD_(boolean, MakeGotoObjLoc)(ObjID objIdAI, const object &objIdTarget, eAIScriptSpeed speed = kNormalSpeed, eAIActionPriority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM) PURE;
 #if 0
-   STDMETHOD_(boolean, MakeDoManeuver)(ObjID objIdAI, const string ref Maneuver, eAIActionPriority = kNormalPriorityAction, const cMultiParm ref dataToSendOnCompletion = NULL_PARM) PURE;
+   STDMETHOD_(boolean, MakeDoManeuver)(ObjID objIdAI, const string & Maneuver, eAIActionPriority = kNormalPriorityAction, const cMultiParm & dataToSendOnCompletion = NULL_PARM) PURE;
 #endif
-   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, eAIActionPriority = kNormalPriorityAction, const cMultiParm ref dataToSendOnReach = NULL_PARM) PURE;
-   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, const object &objWith, eAIActionPriority = kNormalPriorityAction, const cMultiParm ref dataToSendOnReach = NULL_PARM) PURE;
+   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, eAIActionPriority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM) PURE;
+   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, const object &objWith, eAIActionPriority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM) PURE;
    STDMETHOD_(eAIScriptAlertLevel, GetAlertLevel)(ObjID objIdAI) PURE;
    STDMETHOD_(void, SetMinimumAlert)(ObjID objIdAI, eAIScriptAlertLevel level) PURE;
    STDMETHOD_(void, ClearGoals)(ObjID objIdAI) PURE;
    STDMETHOD_(void, SetScriptFlags)(ObjID objIdAI, int iFlags) PURE;
    STDMETHOD_(void, ClearAlertness)(ObjID objIdAI) PURE;
-   STDMETHOD_(void, Signal)(ObjID objIdAI, const string ref signal) PURE;
+   STDMETHOD_(void, Signal)(ObjID objIdAI, const string & signal) PURE;
    STDMETHOD_(boolean, StartConversation)(ObjID conversationID) PURE;
 };
 
@@ -136,24 +136,24 @@ BEGIN_SCRIPT(AI, RootScript)
 
    METHODS:
 
-      METHOD boolean GotoObjLoc(const object &objIdTarget, eAIScriptSpeed speed = kNormalSpeed, eAIActionPriority priority = kNormalPriorityAction, const cMultiParm ref dataToSendOnReach = NULL_PARM)
+      METHOD boolean GotoObjLoc(const object &objIdTarget, eAIScriptSpeed speed = kNormalSpeed, eAIActionPriority priority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM)
       {
          return AI.MakeGotoObjLoc(self, objIdTarget, speed, priority, dataToSendOnReach);
       }
 
 #if 0
-      METHOD boolean DoManeuver(const string ref Maneuver, eAIActionPriority priority = kNormalPriorityAction, const cMultiParm ref dataToSendOnCompletion = NULL_PARM)
+      METHOD boolean DoManeuver(const string & Maneuver, eAIActionPriority priority = kNormalPriorityAction, const cMultiParm & dataToSendOnCompletion = NULL_PARM)
       {
          return AI.MakeDoManeuver(self, Maneuver, priority, dataToSendOnCompletion);
       }
 #endif
 
-      METHOD boolean FrobObj(const object &objIdTarget, eAIActionPriority priority = kNormalPriorityAction, const cMultiParm ref dataToSendOnReach = NULL_PARM)
+      METHOD boolean FrobObj(const object &objIdTarget, eAIActionPriority priority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM)
       {
          return AI.MakeFrobObj(self, objIdTarget, priority, dataToSendOnReach);
       }
 
-      METHOD boolean FrobObj(const object &objIdTarget, const object &objWith, eAIActionPriority priority = kNormalPriorityAction, const cMultiParm ref dataToSendOnReach = NULL_PARM)
+      METHOD boolean FrobObj(const object &objIdTarget, const object &objWith, eAIActionPriority priority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM)
       {
          return AI.MakeFrobObj(self, objIdTarget, objWith, priority, dataToSendOnReach);
       }
@@ -183,7 +183,7 @@ BEGIN_SCRIPT(AI, RootScript)
          AI.ClearAlertness(self);
       }
 
-      METHOD void Signal(const string ref signal)
+      METHOD void Signal(const string & signal)
       {
          AI.Signal(self, signal);
       }

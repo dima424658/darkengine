@@ -107,12 +107,12 @@ public:
       return TRUE;
    }
 
-   STDMETHOD_(object,LaunchProjectile)(object launcher, object proj, real power, integer flags, const vector ref add_vel) 
+   STDMETHOD_(object,LaunchProjectile)(object launcher, object proj, real power, integer flags, const vector& add_vel) 
    {
       return launchProjectile(launcher,proj,power,flags,&add_vel,NULL,NULL); 
    }
 
-   STDMETHOD(SetVelocity)(object obj, const vector ref vel)
+   STDMETHOD(SetVelocity)(object obj, const vector& vel)
    {
       // Setting velocities from scripts wants to be initially clear from the
       // effects of friction, so we break all contacts.  
@@ -128,7 +128,7 @@ public:
       PhysSetVelocity(obj, (mxs_vector*)&vel);
       return S_OK;
    }
-   STDMETHOD(GetVelocity)(object obj, vector ref vel)
+   STDMETHOD(GetVelocity)(object obj, vector& vel)
    {
       PhysGetVelocity(obj, &vel);
       return S_OK;
@@ -205,7 +205,7 @@ public:
       return E_FAIL;
    }
 
-   STDMETHOD(ControlVelocity)(object obj, const vector ref vel)
+   STDMETHOD(ControlVelocity)(object obj, const vector& vel)
    {
       PhysControlVelocity(obj, (mxs_vector*)&vel);
       return S_OK;
@@ -227,7 +227,7 @@ public:
       return E_FAIL;
    }
 
-   STDMETHOD_(void, PlayerMotionSetOffset)(int subModel, vector ref offset)
+   STDMETHOD_(void, PlayerMotionSetOffset)(int subModel, vector& offset)
    {
       ::PlayerMotionSetOffset(subModel, &offset);         
    }

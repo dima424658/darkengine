@@ -40,9 +40,9 @@ DECLARE_SCRIPT_SERVICE(DarkGame,0x1b4)
 
    STDMETHOD_(BOOL, ConfigIsDefined)(const char *name) PURE;
 
-   STDMETHOD_(BOOL, ConfigGetInt)(const char *name, int ref value) PURE;
+   STDMETHOD_(BOOL, ConfigGetInt)(const char *name, int & value) PURE;
 
-   STDMETHOD_(BOOL, ConfigGetFloat)(const char *name, float ref value) PURE;
+   STDMETHOD_(BOOL, ConfigGetFloat)(const char *name, float & value) PURE;
 
    STDMETHOD_(real, BindingGetFloat)(const char *name) PURE;
 

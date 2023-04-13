@@ -45,7 +45,7 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLightScrSrv, Light)
 {
 public:
 
-   STDMETHOD_ (void, Set)(const object ref obj, int mode,
+   STDMETHOD_ (void, Set)(const object& obj, int mode,
                           float min_brightness, float max_brightness)
    {
       sAnimLightProp *pAnimLight;
@@ -54,7 +54,7 @@ public:
          SetCore(obj, pAnimLight, mode, min_brightness, max_brightness);
    }
 
-   STDMETHOD_ (void, SetMode)(const object ref obj, int mode)
+   STDMETHOD_ (void, SetMode)(const object& obj, int mode)
    {
       sAnimLightProp *pAnimLight;
 
@@ -63,7 +63,7 @@ public:
                  pAnimLight->animation.max_brightness);
    }
 
-   STDMETHOD_(int, GetMode)(const object ref obj)
+   STDMETHOD_(int, GetMode)(const object& obj)
    {
       sAnimLightProp *pAnimLight;
 
@@ -73,7 +73,7 @@ public:
          return(-1);
    }
 
-   STDMETHOD_ (void, Activate)(const object ref obj)
+   STDMETHOD_ (void, Activate)(const object& obj)
    {
       sAnimLightProp *pAnimLight;
 
@@ -81,7 +81,7 @@ public:
          pAnimLight->animation.inactive = FALSE;
    }
 
-   STDMETHOD_ (void, Deactivate)(const object ref obj)
+   STDMETHOD_ (void, Deactivate)(const object& obj)
    {
       sAnimLightProp *pAnimLight;
 
@@ -89,7 +89,7 @@ public:
          pAnimLight->animation.inactive = TRUE;
    }
 
-   STDMETHOD_ (void, Subscribe)(const object ref obj)
+   STDMETHOD_ (void, Subscribe)(const object& obj)
    {
       sAnimLightProp *pAnimLight;
 
@@ -97,7 +97,7 @@ public:
         pAnimLight->notify_script = obj;
    }
 
-   STDMETHOD_ (void, Unsubscribe)(const object ref obj)
+   STDMETHOD_ (void, Unsubscribe)(const object& obj)
    {
       sAnimLightProp *pAnimLight;
 

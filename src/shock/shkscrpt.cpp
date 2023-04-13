@@ -243,7 +243,7 @@ public:
       return S_OK;
    }
 
-   STDMETHOD(DestroyInvObj)(const object ref DestroyObj)
+   STDMETHOD(DestroyInvObj)(const object& DestroyObj)
    {
       ObjID victim = ScriptObjID(DestroyObj);
       if (victim == drag_obj)
@@ -361,7 +361,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(HideInvObj)(const object ref DestroyObj)
+   STDMETHOD(HideInvObj)(const object& DestroyObj)
    {
       ObjID victim = ScriptObjID(DestroyObj);
 
@@ -372,7 +372,7 @@ public:
       return TRUE;
    }
 
-   STDMETHOD_(BOOL, AddInvObj)(const object ref obj)
+   STDMETHOD_(BOOL, AddInvObj)(const object& obj)
    {
       ObjID objID = ScriptObjID(obj);
       return ShockInvAddObj(PlayerObject(), objID);
@@ -405,7 +405,7 @@ public:
       return pPlayerPsi->GetMaxPoints();
    }
 
-   STDMETHOD(GrantPsiPower)(const object ref who, int which)
+   STDMETHOD(GrantPsiPower)(const object& who, int which)
    {
       ObjID objID = ScriptObjID(who);
       AutoAppIPtr(ShockPlayer);
@@ -419,7 +419,7 @@ public:
       return(pPlayerPsi->IsActive((ePsiPowers)power));
    }
 
-   STDMETHOD(Replicator)(const object ref RepObj)
+   STDMETHOD(Replicator)(const object& RepObj)
    {
       ObjID rep = ScriptObjID(RepObj);
 
@@ -434,7 +434,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(UseLog)(const object ref LogObj, BOOL PickedUpByMe)
+   STDMETHOD(UseLog)(const object& LogObj, BOOL PickedUpByMe)
    {
       ObjID obj = ScriptObjID(LogObj);
       int uselevel, usewhich,i;
@@ -517,13 +517,13 @@ public:
       }
    }
 
-   STDMETHOD(FindLogData)(const object ref LogObj, int usetype, int *plevel, int *pwhich)
+   STDMETHOD(FindLogData)(const object& LogObj, int usetype, int *plevel, int *pwhich)
    {
       ObjID obj = ScriptObjID(LogObj);
       return(ShockFindLogData(obj, usetype, plevel, pwhich));
    }
 
-   STDMETHOD(AttachCamera)(const string ref s)
+   STDMETHOD(AttachCamera)(const string& s)
    {
       AutoAppIPtr(ShockCamera);
       pShockCamera->Attach((const char *)s);
@@ -535,14 +535,14 @@ public:
       pShockCamera->SetEditMode(kCameraNormal);
       return S_OK;
    }
-   STDMETHOD(CutSceneModeOn)(const string ref sceneName)
+   STDMETHOD(CutSceneModeOn)(const string& sceneName)
    {
       AutoAppIPtr(ShockCamera);
       pShockCamera->SetScene((const char*)sceneName);
       pShockCamera->SetEditMode(pShockCamera->GetEditState());
       return S_OK;
    }
-   STDMETHOD_(int, CreatePlayerPuppet)(const string ref modelName)
+   STDMETHOD_(int, CreatePlayerPuppet)(const string& modelName)
    {
       return PlayerPuppetCreate((const char *)modelName);
    }
@@ -556,14 +556,14 @@ public:
       PlayerPuppetDestroy();
       return TRUE;
    }
-   STDMETHOD(Container)(const object ref ContainObj)
+   STDMETHOD(Container)(const object& ContainObj)
    {
       ObjID cont = ScriptObjID(ContainObj);
       ShockContainerOpen(cont);
       return(S_OK);
    }
 
-   STDMETHOD(TechHacking)(const object ref TechObj)
+   STDMETHOD(TechHacking)(const object& TechObj)
    {
       /*
       ObjID o = ScriptObjID(TechObj);
@@ -573,13 +573,13 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(YorN)(const object ref BaseObj, const string ref s)
+   STDMETHOD(YorN)(const object& BaseObj, const string& s)
    {
       ShockYorNPopup(ScriptObjID(BaseObj), (const char *)s);
       return(S_OK);
    }
 
-   STDMETHOD(Keypad)(const object ref BaseObj)
+   STDMETHOD(Keypad)(const object& BaseObj)
    {
       ShockKeypadOpen(ScriptObjID(BaseObj));
       return(S_OK);
@@ -599,7 +599,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(OverlaySetObj)(int which, const object ref Obj)
+   STDMETHOD(OverlaySetObj)(int which, const object& Obj)
    {
       ObjID obj = ScriptObjID(Obj);
       ShockOverlaySetObj(which, obj);
@@ -611,7 +611,7 @@ public:
       return(ShockOverlayGetObj());
    }
 
-   STDMETHOD(OverlayChangeObj)(int which, int mode, const object ref Obj)
+   STDMETHOD(OverlayChangeObj)(int which, int mode, const object& Obj)
    {
       ObjID obj = ScriptObjID(Obj);
       ShockOverlayChangeObj(which, mode, obj);
@@ -629,7 +629,7 @@ public:
       return(pShockPlayer->GetEquip(PlayerObject(), (ePlayerEquip)slot));
    }
 
-   STDMETHOD(Equip)(int slot, const object ref Obj)
+   STDMETHOD(Equip)(int slot, const object& Obj)
    {
       ObjID obj = ScriptObjID(Obj);
       AutoAppIPtr(ShockPlayer);
@@ -638,7 +638,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(WearArmor)(const object ref Obj)
+   STDMETHOD(WearArmor)(const object& Obj)
    {
       ObjID obj = ScriptObjID(Obj);
       if (obj == OBJ_NULL)
@@ -682,7 +682,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(LevelTransport)(const char *newlevel, object ref marker, uint flags)
+   STDMETHOD(LevelTransport)(const char *newlevel, object& marker, uint flags)
    {
       /*
       ObjID markerobj = ScriptObjID(marker);
@@ -696,7 +696,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(SpewLockData)(const object ref LockObj, BOOL success)
+   STDMETHOD(SpewLockData)(const object& LockObj, BOOL success)
    {
       ObjID obj = ScriptObjID(LockObj);
       sKeyInfo *keyinfo;
@@ -749,9 +749,9 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD_(BOOL, CheckLocked)(const object ref CheckObj, 
+   STDMETHOD_(BOOL, CheckLocked)(const object& CheckObj, 
 				 BOOL verbose,
-				 const object ref PlayerRef)
+				 const object& PlayerRef)
    {
       AutoAppIPtr(ContainSys);
       AutoAppIPtr(KeySys);
@@ -822,7 +822,7 @@ public:
       return(TRUE);
    }
 
-   STDMETHOD(AddText)(const char *msg, const object ref playerRef, int time)
+   STDMETHOD(AddText)(const char *msg, const object& playerRef, int time)
    {
       ObjID player = ScriptObjID(playerRef);
       ShockSendAddText(player, msg, time);
@@ -833,7 +833,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(AddTranslatableText)(const char *msg, const char *table, const object ref playerRef, int time = DEFAULT_MSG_TIME)
+   STDMETHOD(AddTranslatableText)(const char *msg, const char *table, const object& playerRef, int time = DEFAULT_MSG_TIME)
    {
       char temp[255];
       ShockStringFetch(temp,sizeof(temp),msg,table);
@@ -846,12 +846,12 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(AddTranslatableTextInt)(const char *msg, const char *table, const object ref playerRef, int val, int time = DEFAULT_MSG_TIME)
+   STDMETHOD(AddTranslatableTextInt)(const char *msg, const char *table, const object& playerRef, int val, int time = DEFAULT_MSG_TIME)
    {
       return(AddTranslatableTextIndexInt(msg,table,playerRef,-1,val,time));
    }
 
-   STDMETHOD(AddTranslatableTextIndexInt)(const char *msg, const char *table, const object ref playerRef, 
+   STDMETHOD(AddTranslatableTextIndexInt)(const char *msg, const char *table, const object& playerRef, 
       int index, int val, int time = DEFAULT_MSG_TIME)
    {
       char temp[255], final[255];
@@ -866,7 +866,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(AddTextObjProp)(const object ref Obj, const char *propname, const object ref playerRef, int time = DEFAULT_MSG_TIME)
+   STDMETHOD(AddTextObjProp)(const object& Obj, const char *propname, const object& playerRef, int time = DEFAULT_MSG_TIME)
    {
       cStr str;
       char temp[255];
@@ -884,7 +884,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(AmmoLoad)(const object ref GunObj, const object ref AmmoObj)
+   STDMETHOD(AmmoLoad)(const object& GunObj, const object& AmmoObj)
    {
       ObjID gun = ScriptObjID(GunObj);
       ObjID ammo = ScriptObjID(AmmoObj);
@@ -904,20 +904,20 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD_(int,GetClip)(const object ref GunObj) 
+   STDMETHOD_(int,GetClip)(const object& GunObj) 
    {
       ObjID gun = ScriptObjID(GunObj);
       return(BaseGunDescGetClip(gun));
    }
 
-   STDMETHOD(SetModify)(const object ref Obj, int modlevel) 
+   STDMETHOD(SetModify)(const object& Obj, int modlevel) 
    {
       ObjID gun = ScriptObjID(Obj);
       GunSetModification(gun,modlevel);
       return(S_OK);
    }
 
-   STDMETHOD(AddExp)(const object ref Who, int amt, BOOL verbose)
+   STDMETHOD(AddExp)(const object& Who, int amt, BOOL verbose)
    {
       ObjID player = ScriptObjID(Who);
       if (player == OBJ_NULL)
@@ -926,7 +926,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD_(BOOL,HasTrait)(const object ref Who, int trait)
+   STDMETHOD_(BOOL,HasTrait)(const object& Who, int trait)
    {
       BOOL retval;
       ObjID player = ScriptObjID(Who);
@@ -935,7 +935,7 @@ public:
       return(retval);
    }
 
-   STDMETHOD_(BOOL,HasImplant)(const object ref Who, int implant)
+   STDMETHOD_(BOOL,HasImplant)(const object& Who, int implant)
    {
       BOOL retval;
       ObjID player = ScriptObjID(Who);
@@ -944,7 +944,7 @@ public:
       return(retval);
    }
 
-   STDMETHOD(HealObj)(const object ref Who, int amt)
+   STDMETHOD(HealObj)(const object& Who, int amt)
    {
       ObjID o = ScriptObjID(Who);
       int hitPoints;
@@ -969,13 +969,13 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD_(BOOL, ResearchConsume)(const object ref Obj)
+   STDMETHOD_(BOOL, ResearchConsume)(const object& Obj)
    {
       ObjID o = ScriptObjID(Obj);
       return (ShockResearchConsume(o));
    }
 
-   STDMETHOD_(string,GetArchetypeName)(const object ref Obj)
+   STDMETHOD_(string,GetArchetypeName)(const object& Obj)
    {
       AutoAppIPtr(ObjectSystem);
       AutoAppIPtr(TraitManager);
@@ -985,7 +985,7 @@ public:
       return(pObjectSystem->GetName(arch));
    }
 
-   STDMETHOD_(int,GetStat)(const object ref Who, int which)
+   STDMETHOD_(int,GetStat)(const object& Who, int which)
    {
       ObjID player = ScriptObjID(Who);
       AutoAppIPtr(ShockPlayer);
@@ -1039,7 +1039,7 @@ public:
       return(addlist);
    }
 
-   STDMETHOD_(object,FindSpawnPoint)(const object ref Obj, uint flags)
+   STDMETHOD_(object,FindSpawnPoint)(const object& Obj, uint flags)
    {
       ObjID o;
       ObjID candidate;
@@ -1169,7 +1169,7 @@ public:
       return(retval);
    }
 
-   STDMETHOD(RecalcStats)(const object ref who) 
+   STDMETHOD(RecalcStats)(const object& who) 
    {
       AutoAppIPtr(ShockPlayer);
       pShockPlayer->RecalcData(ScriptObjID(who));
@@ -1182,7 +1182,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(HRM)(integer hacktype, const object ref Obj, BOOL frompsi)
+   STDMETHOD(HRM)(integer hacktype, const object& Obj, BOOL frompsi)
    {
       ObjID obj = ScriptObjID(Obj);
       int techtype = ShockFindTechType(obj);
@@ -1197,7 +1197,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(TechTool)(const object ref Obj)
+   STDMETHOD(TechTool)(const object& Obj)
    {
       HRESULT retval;
       ObjID o;
@@ -1222,7 +1222,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD_(BOOL, LoadCursor)(const object ref obj)
+   STDMETHOD_(BOOL, LoadCursor)(const object& obj)
    {
       ShockInvLoadCursor(OBJ_NULL);
       return ShockInvLoadCursor((ObjID)obj);
@@ -1257,7 +1257,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(SetObjState)(const object ref Obj, int state) 
+   STDMETHOD(SetObjState)(const object& Obj, int state) 
    {
       ObjID obj = ScriptObjID(Obj);
       ObjSetObjState(obj, (eObjState)state);
@@ -1319,8 +1319,8 @@ public:
 
    // This tells the other players, and our own system, that this object
    // has been taken from its container.
-   STDMETHOD(RemoveFromContainer)(const object ref Obj, 
-                                  const object ref Container)
+   STDMETHOD(RemoveFromContainer)(const object& Obj, 
+                                  const object& Container)
    {
       ObjID obj = ScriptObjID(Obj);
       ObjID container = ScriptObjID(Container);
@@ -1510,7 +1510,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD_(object, PseudoProjectile)(const object ref Source, const object ref Emittype) 
+   STDMETHOD_(object, PseudoProjectile)(const object& Source, const object& Emittype) 
    {
       ObjID source = ScriptObjID(Source);
       ObjID emittype = ScriptObjID(Emittype);
@@ -1595,7 +1595,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(TreasureTable)(const object ref Obj) 
+   STDMETHOD(TreasureTable)(const object& Obj) 
    {
       ObjID corpse = ScriptObjID(Obj);
       GenerateLoot(corpse);
@@ -1643,7 +1643,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(SetQBHacked)(const string ref name, int qbval) 
+   STDMETHOD(SetQBHacked)(const string& name, int qbval) 
    {
       AutoAppIPtr(QuestData);
       char qbname[255];
@@ -1685,7 +1685,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD(ZeroControls)(const object ref Obj, BOOL poll)
+   STDMETHOD(ZeroControls)(const object& Obj, BOOL poll)
    {
       ObjID obj = ScriptObjID(Obj);
       // make sure said object even has physics first
@@ -1710,7 +1710,7 @@ public:
       return(S_OK);
    }
 
-   STDMETHOD_(BOOL, ValidGun)(const object ref Obj) 
+   STDMETHOD_(BOOL, ValidGun)(const object& Obj) 
    {
       ObjID o = ScriptObjID(Obj);
 

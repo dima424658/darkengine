@@ -211,10 +211,10 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLinkSrv, Link)
    // @NOTE (justin 2/16/99): As of this writing, networking only supports
    // ObjIDs as the type for linkdata. This will be fixed some time when
    // I have time to properly network cMultiParms...
-   STDMETHOD(BroadcastOnAllLinks)(const object ref SelfObj,
+   STDMETHOD(BroadcastOnAllLinks)(const object& SelfObj,
                                   const char *Message, 
  				  linkkind recipients,
- 				  const cMultiParm ref linkdata)
+ 				  const cMultiParm& linkdata)
    {
       AutoAppIPtr(LinkManager);
       AutoAppIPtr(ScriptMan);
@@ -253,7 +253,7 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLinkSrv, Link)
       return(S_OK);
    }
 
-   STDMETHOD(BroadcastOnAllLinks)(const object ref SelfObj,
+   STDMETHOD(BroadcastOnAllLinks)(const object& SelfObj,
                                   const char *Message, 
  				  linkkind recipients)
    {
@@ -291,7 +291,7 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLinkSrv, Link)
    //
    // Create multiple links.
    //
-   STDMETHOD(CreateMany)(linkkind kind, const string ref FromSet, const string ref ToSet)
+   STDMETHOD(CreateMany)(linkkind kind, const string& FromSet, const string& ToSet)
    {
       cObjListParser   parser;
       cDynArray<ObjID> sources;
@@ -315,7 +315,7 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLinkSrv, Link)
    //
    // Destroy multiple link
    //
-   STDMETHOD(DestroyMany)(linkkind kind, const string ref FromSet, const string ref ToSet)
+   STDMETHOD(DestroyMany)(linkkind kind, const string& FromSet, const string& ToSet)
    {
       cObjListParser   parser;
       cDynArray<ObjID> sources;
@@ -388,7 +388,7 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLinkToolsSrv, LinkTools)
       return link(id).GetData(field); 
    }
 
-   STDMETHOD(LinkSetData)(long id, const char* field, const cMultiParm ref val)
+   STDMETHOD(LinkSetData)(long id, const char* field, const cMultiParm& val)
    {
       link(id).SetData(field,val); 
       return S_OK;

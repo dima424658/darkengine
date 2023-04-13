@@ -37,7 +37,7 @@ static cNetMsg *g_pProxyScriptMsg = NULL;
 
 static void SendScriptMsg(ObjID obj, 
                           const char *pText, 
-                          const cMultiParm ref data)
+                          const cMultiParm & data)
 {
    sScrMsg msg(obj, pText);
    // Since this message was explicitly sent to us, allow it to run even
@@ -126,10 +126,10 @@ public:
    }
 
    // Send this message to the specified object on all other machines.
-   STDMETHOD(Broadcast)(const object ref scrObj, 
+   STDMETHOD(Broadcast)(const object& scrObj, 
                         const char *pText,
                         BOOL sendFromProxy,
-                        const cMultiParm ref data)
+                        const cMultiParm& data)
    {
 #ifdef NEW_NETWORK_ENABLED
       ObjID obj = ScriptObjID(scrObj);
@@ -153,10 +153,10 @@ public:
    //
    // Note that this method should work, even if networking is not
    // enabled; the message will loop back to the local player.
-   STDMETHOD(SendToProxy)(const object ref toPlayer, 
-                          const object ref obj, 
+   STDMETHOD(SendToProxy)(const object& toPlayer, 
+                          const object& obj, 
                           const char *pText,
-                          const cMultiParm ref data)
+                          const cMultiParm& data)
    {
       ObjID target = ScriptObjID(obj);
 
@@ -170,7 +170,7 @@ public:
    }
 
    // Take over the specified object
-   STDMETHOD(TakeOver)(const object ref obj)
+   STDMETHOD(TakeOver)(const object& obj)
    {
       // Make sure we should do anything
 #ifndef NEW_NETWORK_ENABLED
@@ -187,7 +187,7 @@ public:
    }
 
    // Hand off the specified object
-   STDMETHOD(GiveTo)(const object ref obj, const object ref toPlayer)
+   STDMETHOD(GiveTo)(const object& obj, const object& toPlayer)
    {
       // Make sure we should do anything
 #ifndef NEW_NETWORK_ENABLED
@@ -204,7 +204,7 @@ public:
       return TRUE;
    }
 
-   STDMETHOD_(BOOL, IsPlayer)(const object ref obj)
+   STDMETHOD_(BOOL, IsPlayer)(const object& obj)
    {
       ObjID Obj = ScriptObjID(obj);
       return IsAPlayer(Obj);
@@ -219,7 +219,7 @@ public:
    }
 
    STDMETHOD_(timer_handle, SetProxyOneShotTimer)
-      (const object ref toObj,
+      (const object& toObj,
        const char *msg,
        float time,
        const cMultiParm & data = NULL_PARM)
@@ -263,17 +263,17 @@ public:
       return S_OK;
    }
 
-   STDMETHOD_(BOOL, HostedHere)(const object ref obj)
+   STDMETHOD_(BOOL, HostedHere)(const object& obj)
    {
       return m_pObjNet->ObjHostedHere(ScriptObjID(obj));
    }
 
-   STDMETHOD_(BOOL, IsProxy)(const object ref obj)
+   STDMETHOD_(BOOL, IsProxy)(const object& obj)
    {
       return m_pObjNet->ObjIsProxy(ScriptObjID(obj));
    }
 
-   STDMETHOD_(BOOL, LocalOnly)(const object ref obj)
+   STDMETHOD_(BOOL, LocalOnly)(const object& obj)
    {
       return m_pObjNet->ObjLocalOnly(ScriptObjID(obj));
    }
@@ -283,7 +283,7 @@ public:
       return m_pNetMan->Networking();
    }
 
-   STDMETHOD_(object, Owner)(const object ref objRef)
+   STDMETHOD_(object, Owner)(const object& objRef)
    {
       ObjID obj = ScriptObjID(objRef);
       if (m_pObjNet->ObjLocalOnly(obj))

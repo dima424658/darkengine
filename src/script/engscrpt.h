@@ -48,23 +48,23 @@
 
 DECLARE_SCRIPT_SERVICE(Debug, 0xd7)
 {
-   STDMETHOD (MPrint)(const string ref,
-                      const string ref = NULL_STRING,
-                      const string ref = NULL_STRING,
-                      const string ref = NULL_STRING,
-                      const string ref = NULL_STRING,
-                      const string ref = NULL_STRING,
-                      const string ref = NULL_STRING,
-                      const string ref = NULL_STRING) PURE;
+   STDMETHOD (MPrint)(const string&,
+                      const string& = NULL_STRING,
+                      const string& = NULL_STRING,
+                      const string& = NULL_STRING,
+                      const string& = NULL_STRING,
+                      const string& = NULL_STRING,
+                      const string& = NULL_STRING,
+                      const string& = NULL_STRING) PURE;
 
-   STDMETHOD (Command)(const string ref,
-                       const string ref = NULL_STRING,
-                       const string ref = NULL_STRING,
-                       const string ref = NULL_STRING,
-                       const string ref = NULL_STRING,
-                       const string ref = NULL_STRING,
-                       const string ref = NULL_STRING,
-                       const string ref = NULL_STRING) PURE;
+   STDMETHOD (Command)(const string&,
+                       const string& = NULL_STRING,
+                       const string& = NULL_STRING,
+                       const string& = NULL_STRING,
+                       const string& = NULL_STRING,
+                       const string& = NULL_STRING,
+                       const string& = NULL_STRING,
+                       const string& = NULL_STRING) PURE;
 
    STDMETHOD (Break)() PURE;
 };

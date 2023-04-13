@@ -39,10 +39,10 @@ DECLARE_SCRIPT_SERVICE(Networking, 0x225)
    // properly, beef this up to handle up to three params. Also, put in
    // a better flags field, so the caller can specify whether data fields
    // are integers or ObjIDs.
-   STDMETHOD(Broadcast)(const object ref obj, 
+   STDMETHOD(Broadcast)(const object& obj, 
                         const char *msg,
                         BOOL sendFromProxy = FALSE,
-                        const cMultiParm ref data = NULL) PURE;
+                        const cMultiParm& data = NULL) PURE;
 
    // Send the specified message to the specified object on just the
    // specified player's machine. Should only be called by the machine
@@ -57,24 +57,24 @@ DECLARE_SCRIPT_SERVICE(Networking, 0x225)
    // @BRUTAL HACK: note that the data, if supplied, is treated as an
    // objID, *not* an int. Please, God, give us time to make cMultiParm
    // smarter...
-   STDMETHOD(SendToProxy)(const object ref toPlayer, 
-                          const object ref obj,
+   STDMETHOD(SendToProxy)(const object& toPlayer, 
+                          const object& obj,
                           const char *msg,
-                          const cMultiParm ref data = NULL) PURE;
+                          const cMultiParm& data = NULL) PURE;
 
    // Take control of the specified object. Does nothing if networking
    // isn't running. This should be used with care, and only if you
    // know what you're doing -- it should not be used casually.
-   STDMETHOD(TakeOver)(const object ref obj) PURE;
+   STDMETHOD(TakeOver)(const object& obj) PURE;
 
    // Give an object to another player. This results in the object being
    // in a somewhat strange intermediate state for a second or so, while
    // it is "in transit". Again, use with care.
-   STDMETHOD(GiveTo)(const object ref obj, const object ref toPlayer) PURE;
+   STDMETHOD(GiveTo)(const object& obj, const object& toPlayer) PURE;
 
    // Returns TRUE iff the specified object is *any* player, including
    // one on some other machine.
-   STDMETHOD_(BOOL, IsPlayer)(const object ref obj) PURE;
+   STDMETHOD_(BOOL, IsPlayer)(const object& obj) PURE;
 
    // Returns TRUE iff this is a multiplayer game. Running just a
    // multiplayer host, without any clients, still counts as multiplayer.
@@ -84,7 +84,7 @@ DECLARE_SCRIPT_SERVICE(Networking, 0x225)
    // the local object, even if it's a proxy. Occasionally useful for
    // objects with strange, complex networking.
    STDMETHOD_(timer_handle, SetProxyOneShotTimer)
-      (const object ref toObj,
+      (const object& toObj,
        const char *msg,
        float time,
        const cMultiParm & data = NULL_PARM) PURE;
@@ -110,9 +110,9 @@ DECLARE_SCRIPT_SERVICE(Networking, 0x225)
    // in which case the other players don't know anything about this obj,
    // or if the message is a type that gets sent to proxies as well as
    // the host.
-   STDMETHOD_(BOOL, HostedHere)(const object ref obj) PURE;
-   STDMETHOD_(BOOL, IsProxy)(const object ref obj) PURE;
-   STDMETHOD_(BOOL, LocalOnly)(const object ref obj) PURE;
+   STDMETHOD_(BOOL, HostedHere)(const object& obj) PURE;
+   STDMETHOD_(BOOL, IsProxy)(const object& obj) PURE;
+   STDMETHOD_(BOOL, LocalOnly)(const object& obj) PURE;
 
    // Are we actually currently networking? This is different from
    // IsMultiplayer(), which just indicates whether this is a multiplayer
@@ -123,7 +123,7 @@ DECLARE_SCRIPT_SERVICE(Networking, 0x225)
 
    // Returns the player who owns the given object. If the object is local,
    // then that will be this player.
-   STDMETHOD_(object, Owner)(const object ref obj) PURE;
+   STDMETHOD_(object, Owner)(const object& obj) PURE;
 };
 
 ////////////////////////////////////////////////////////////////////////////
