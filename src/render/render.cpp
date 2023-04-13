@@ -505,7 +505,7 @@ static void init_color_tables(void)
       g2pt_tluc_table = g_tluc[0];
 
       // setup our media entry/exit cluts
-      for (x=0; x < 256; ++x) {
+      for (int x=0; x < 256; ++x) {
          pt_medium_entry_clut[x] = 0;
          pt_medium_exit_clut[x] = 0;
          pt_medium_haze_clut[x] = 0;
@@ -526,7 +526,7 @@ static void init_color_tables(void)
          pt_clut_list[x] = NULL;
 
       // setup our media entry/exit cluts
-      for (x=0; x < 256; ++x) {
+      for (int x=0; x < 256; ++x) {
          pt_medium_entry_clut[x] = 0;
          pt_medium_exit_clut[x] = 0;
          pt_medium_haze_clut[x] = 0;

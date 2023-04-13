@@ -13,7 +13,6 @@
 #include <fcntl.h>
 #include <io.h>
 #include <sys\stat.h>
-#include <nameconv.h>
 #include <time.h>
 
 #include <kbcook.h>

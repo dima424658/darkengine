@@ -33,8 +33,8 @@ public:
    operator long() const { return id; }; 
    operator string() const; 
 
-   operator ==(const linkkind& f) const { return id == f.id; }; 
-   operator ==(const char* name) const { return id == linkkind(name).id; }; 
+   bool operator ==(const linkkind& f) const { return id == f.id; };
+   bool operator ==(const char* name) const { return id == linkkind(name).id; };
 
 };
 
@@ -61,8 +61,8 @@ public:
 
    // Link data accessors
    cMultiParm GetData(const char* field = NULL) const; 
-   void SetData(const char* field, const cMultiParm ref value);
-   void SetData(const cMultiParm ref value) { SetData(NULL,value); }; 
+   void SetData(const char* field, const cMultiParm& value);
+   void SetData(const cMultiParm& value) { SetData(NULL,value); };
 };
 
 //
@@ -125,19 +125,19 @@ DECLARE_SCRIPT_SERVICE(Link, 0xee)
    STDMETHOD_(link,GetOne)(linkkind kind = AnyLink, object from = AnyObject, object to = AnyObject) PURE; 
 
    // Broadcast along all of your links
-   STDMETHOD(BroadcastOnAllLinks)(const object ref SelfObj, const char *Message, linkkind recipients, const cMultiParm ref linkdata) PURE;
-   STDMETHOD(BroadcastOnAllLinks)(const object ref SelfObj, const char *Message, linkkind recipients) PURE;
+   STDMETHOD(BroadcastOnAllLinks)(const object& SelfObj, const char *Message, linkkind recipients, const cMultiParm& linkdata) PURE;
+   STDMETHOD(BroadcastOnAllLinks)(const object & SelfObj, const char *Message, linkkind recipients) PURE;
 
 
    //
    // Create multiple links.
    //
-   STDMETHOD(CreateMany)(linkkind kind, const string ref FromSet, const string ref ToSet) PURE;
+   STDMETHOD(CreateMany)(linkkind kind, const string& FromSet, const string& ToSet) PURE;
 
    //
    // Destroy a link
    //
-   STDMETHOD(DestroyMany)(linkkind kind, const string ref FromSet, const string ref ToSet) PURE;
+   STDMETHOD(DestroyMany)(linkkind kind, const string& FromSet, const string& ToSet) PURE;
    
    
    //
@@ -160,7 +160,7 @@ DECLARE_SCRIPT_SERVICE(LinkTools, 0xef)
    STDMETHOD_(string,LinkKindName)(long id) PURE; 
    STDMETHOD(LinkGet)(long id, sLink& l) PURE; 
    STDMETHOD_(cMultiParm,LinkGetData)(long id, const char* field) PURE; 
-   STDMETHOD(LinkSetData)(long id, const char* field, const cMultiParm ref val) PURE; 
+   STDMETHOD(LinkSetData)(long id, const char* field, const cMultiParm& val) PURE;
 }; 
 
 #ifdef SCRIPT
@@ -194,7 +194,7 @@ inline cMultiParm link::GetData(const char* field) const
    return LinkTools.LinkGetData(id,field); 
 }
 
-inline void link::SetData(const char* field, const cMultiParm ref value) 
+inline void link::SetData(const char* field, const cMultiParm& value) 
 {
    LinkTools.LinkSetData(id,field,value); 
 }

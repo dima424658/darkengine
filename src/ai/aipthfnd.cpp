@@ -9,6 +9,7 @@
 
 // #define PROFILE_ON 1
 
+#include <_ai.h>
 #include <lg.h>
 #include <timings.h>
 

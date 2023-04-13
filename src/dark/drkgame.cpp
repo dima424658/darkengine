@@ -367,7 +367,8 @@ static void fixup_player(void)
    
    // move the old player's contents over to the marker
    AutoAppIPtr(ContainSys);
-   for (sContainIter* iter = pContainSys->IterStart(old); !iter->finished; pContainSys->IterNext(iter))
+   sContainIter* iter;
+   for (iter = pContainSys->IterStart(old); !iter->finished; pContainSys->IterNext(iter))
       pContainSys->Add(start,iter->containee,iter->type,CTF_NONE); 
    pContainSys->IterEnd(iter); 
 

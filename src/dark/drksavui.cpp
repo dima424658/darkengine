@@ -59,7 +59,7 @@ public:
 const char* cDarkFilePanel::SlotFileName(int which)
 {
    if (which == kQuickSlot)
-      return SAVE_PATH"\\"QUICK_SAVE; 
+      return SAVE_PATH "\\" QUICK_SAVE; 
    static char buf[64]; 
    sprintf(buf,"%s\\game%04d.sav",SAVE_PATH,which); 
    return buf; 

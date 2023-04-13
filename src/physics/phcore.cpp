@@ -1565,7 +1565,7 @@ static void AdjustForRestAxes(cPhysModel *pModel, mxs_vector *rot_vel, mxs_vecto
             {
                cFaceContact faceContact((cPhysSphereModel *)pModel2, ((cPhysSphereModel *)pModel2)->GetRadius(0));
 
-               if ((faceContact.GetPoly != NULL) && (faceContact.GetNormal().z > 0))
+               if ((faceContact.GetPoly() != NULL) && (faceContact.GetNormal().z > 0))
                {
                   mx_copy_vec(&ground_normal, &faceContact.GetNormal());
                   best_z = ground_normal.z;
@@ -1608,7 +1608,7 @@ static void AdjustForRestAxes(cPhysModel *pModel, mxs_vector *rot_vel, mxs_vecto
    mxs_real   axis_val;
    mxs_real   max_axis_val;
 
-   for (i=0; i<6; i++)
+   for (int i=0; i<6; i++)
    {
       if (pModel->GetRestAxes() & (1 << i))
       {
@@ -3434,14 +3434,14 @@ void CheckModelObjectCollisions(cPhysModel * pModel, mxs_real t0, mxs_real dt, B
    BOOL is_AI = ObjIsAI(ourObjID);
    BOOL us_on_mt = IsOnMovingTerrainHack(pModel);
 
-   AssertMsg1(OurID != 0, "Bad object ref for ObjID %d!  Fell out of world?", ourObjID);
+   AssertMsg1(OurID != 0, "Bad object& for ObjID %d!  Fell out of world?", ourObjID);
 
    // Keep track of initial pointer because list is circular
    pInitialRef = pCurrentRef = OBJREFID_TO_PTR(OurID);
 
    do
    {
-      // We need the FIRST object ref in the bin because this list isn't circular
+      // We need the FIRST object& in the bin because this list isn't circular
       CurrentBinID = *(mRefSystems[pCurrentRef->refsys].ref_list_func((void *) pCurrentRef->bin, FALSE));
       do
       {

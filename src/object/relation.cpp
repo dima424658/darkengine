@@ -326,7 +326,7 @@ STDMETHODIMP cStandardRelation::SetID(RelationID newid)
 
    Store->AddRelation(ID);
    DataStore->AddRelation(ID);
-   for (i = 0; i < DB.Size(); i++)
+   for (int i = 0; i < DB.Size(); i++)
       DB[i]->AddRelation(ID);
 
    return S_OK; 
@@ -765,7 +765,7 @@ IRelation* CreateRelationFromLinkStore(const sRelationDesc* desc, const sRelatio
 
    IRelation* result = CreateCustomRelation(desc,datadesc,&stuff);
 
-   for (i = 0; i < kRelationNumQueryCases; i++)
+   for (int i = 0; i < kRelationNumQueryCases; i++)
       SafeRelease(stuff.DBs[i]);
 
    return result;

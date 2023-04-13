@@ -14,12 +14,10 @@
 \* --<<= --\-\-\-\-\-\-\ <<< ((( ((( \/ ))) ))) >>> /-/-/-/-/-/-/-- =>>-- */
 
 
-extern "C" {
 #include <r3d.h>
 #include <2d.h>
 #include <mm.h>
 #include <mdutil.h>
-};
 
 #include <cfgdbg.h>
 #include <dynarray.h>

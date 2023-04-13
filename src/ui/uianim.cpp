@@ -127,8 +127,7 @@ void cUiAnim::InitUI()
 
    while(p!=NULL && *p != '\0') {
       char lname[16];
-      char *end;
-      end = strchr(p,' ');
+      const char *end = strchr(p,' ');
       if (end==NULL) {
          strcpy(lname,p);
          p = NULL;

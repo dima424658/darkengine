@@ -92,7 +92,7 @@ ObjID EditGetObjNamed(const char* name)
       return LINKOBJ_WILDCARD;
 
    // look for (id)
-   char* r = strchr(name,'(');
+   const char* r = strchr(name,'(');
    if (r != NULL) 
    {
       r++;

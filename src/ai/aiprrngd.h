@@ -42,7 +42,7 @@ enum eAIP_TargMethod
    kTM_Radius,
 };
 
-const kNumTargetingMethods = 5;
+const int kNumTargetingMethods = 5;
 
 ////////////////////////////////////////
 
@@ -80,8 +80,7 @@ struct sVantagePtProp
 {
    sVantagePtProp()
    {
-      AssertMsg(sizeof(sVantagePtProp()) == 8, "You need to update the constructor for sVantagePtProp");
-
+      AssertMsg(sizeof(sVantagePtProp{}) == 8, "You need to update the constructor for sVantagePtProp");
       value = 0;
       decay_speed = 0.8;
    };
@@ -107,7 +106,7 @@ struct sCoverPtProp
 {
    sCoverPtProp()
    {
-      AssertMsg(sizeof(sCoverPtProp()) == 12, "You need to update the constructor for sCoverPtProp");
+      AssertMsg(sizeof(sCoverPtProp{}) == 12, "You need to update the constructor for sCoverPtProp");
 
       value = 0;
       decay_speed = 0.8;

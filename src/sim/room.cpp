@@ -211,7 +211,8 @@ void cRoom::AddPortal(cRoomPortal *newPortal)
 
 BOOL cRoom::PointInside(const mxs_vector &pt) const
 {
-   for (int i=0; i<6; i++)
+   int i;
+   for (i=0; i<6; i++)
    {
       if (PointPlaneDist(m_Plane[i], pt) > ON_PLANE_EPSILON)
          break;

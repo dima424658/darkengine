@@ -50,7 +50,7 @@
 // Must be last header
 #include <dbmem.h>
 
-static ged_default_room = -1;
+static int ged_default_room = -1;
 
 void ged_compile_rooms(void)
 {

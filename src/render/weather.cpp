@@ -486,7 +486,7 @@ static void SetDerivedGlobals()
 
    for (int i = 0; i < 4; ++i) {
       g2s_point *p = (g2s_point *) (g_aPt + i);
-      p->r = p->g = p->b = g_Weather.m_fBrightness;
+      p->i = p->h = p->d = g_Weather.m_fBrightness;
    }
 }
 
@@ -675,7 +675,7 @@ static void WeatherRoomToWRCallback(int iCell, cRoom *pRoom, void *pData)
 {
    PortalCell *pCell = WR_CELL(iCell);
    ConfigSpew("WeatherRoomSpew", ("Cell %d x room %d w/objid %d.\n",
-                                  iCell, pRoom->GetRoomID(), pRoom->GetObjID));
+                                  iCell, pRoom->GetRoomID(), pRoom->GetObjID()));
 
    sWeather *pWeather;
    if (g_pWeatherProperty->Get(pRoom->GetObjID(), &pWeather)) {

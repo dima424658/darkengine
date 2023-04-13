@@ -1490,7 +1490,7 @@ static void record_pgon(mds_pgon *p)
    pgon_queue[num_pgon_in_queue++] = (void *)p;
 }
 
-EXTERN md_render_pgon_render_callback(mds_pgon *p);
+EXTERN void md_render_pgon_render_callback(mds_pgon *p);
 
 static void queue_render_md(void *q, uchar *clut)
 {

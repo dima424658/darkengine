@@ -163,6 +163,7 @@ typedef cHashSet<cPhysModel *, ObjID, cHashFunctions> cPhysModelTableBase;
 
 class cPhysModelTable : public cPhysModelTableBase
 {
+public:
    virtual tHashSetKey GetKey(tHashSetNode ) const;
 };
 

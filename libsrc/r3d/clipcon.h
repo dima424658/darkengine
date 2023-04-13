@@ -1,5 +1,7 @@
 // $Header: x:/prj/tech/libsrc/r3d/RCS/clipcon.h 1.8 1998/06/30 18:45:55 buzzard Exp $
 
+#pragma once
+
 #include <clip.h>
 
 typedef struct {

@@ -323,7 +323,8 @@ BOOL cPropSndInst::PlaySoundList(cPlayerSoundList *pCurPlayerList)
       #endif
 
       // Find unused active sound object
-      for (int j=0; j<kMaxActiveSounds && (m_ActiveSound[j] != NULL); j++);
+      int j;
+      for (j = 0; j<kMaxActiveSounds && (m_ActiveSound[j] != NULL); j++);
 
       AssertMsg(j != kMaxActiveSounds, "Unable to find available active sound object");
 
@@ -688,7 +689,8 @@ void cPropSndInst::ClearSoundInfo()
 void cPropSndInst::AddActiveSound(cSoundInfo *pSoundInfo)
 {
 // @OBB: i removed an ifndef SHIP, since we need to set J for below
-   for (int j=0; j<kMaxActiveSounds && (m_ActiveSound[j] != NULL); j++);
+   int j;
+   for (j=0; j<kMaxActiveSounds && (m_ActiveSound[j] != NULL); j++);
 
    AssertMsg(j != kMaxActiveSounds, "Unable to find available active sound object");
 
@@ -1348,7 +1350,8 @@ void cPropSndInst::ResolveDeferredSounds(ObjID hearingObj)
                         {
                            pSoundInfo->SFXHandle = SFX_Play_Raw(SFX_STATIC, &pSoundInfo->AppsfxParms, pSoundInfo->SampleName);
 
-                           for (int j=0; j<kMaxActiveSounds && (m_ActiveSound[j] != NULL); j++);
+                           int j;
+                           for (j=0; j<kMaxActiveSounds && (m_ActiveSound[j] != NULL); j++);
 
                            if (pSoundInfo->SFXHandle != SFX_NO_HND)
                            {

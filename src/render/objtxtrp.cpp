@@ -71,7 +71,8 @@ private:
    {
       if (trData)
       {
-         for (int i=0; i<MAX_REPL_TXT; i++)
+         int i;
+         for (i=0; i<MAX_REPL_TXT; i++)
             if (trData->pTxt[i]!=NULL)
                break;
          if (i==MAX_REPL_TXT)

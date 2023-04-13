@@ -609,7 +609,7 @@ BOOL HasObjectWarned(ObjID objID)
 
 ///////////////////////////////////////////////////////////////////////////////.
 
-EXTERN g_SimRunning;
+EXTERN BOOL g_SimRunning;
 BOOL PosPropLock = 0;
 
 static void LGAPI PosPropListener(sPropertyListenMsg* msg, PropListenerData data)
@@ -679,8 +679,8 @@ static BOOL ShouldBroadcastControlFor(ObjID objID)
 //
 //////////////////////////////////////////////////////////////////////////////
 
-extern sim_frames;
-extern phys_frames;
+extern int sim_frames;
+extern int phys_frames;
 
 extern int  inworld_checks;
 extern BOOL net_cap_physics;

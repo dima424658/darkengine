@@ -14,7 +14,7 @@ typedef struct g2s_point {
    union {
       float coord[32];
       struct {
-         float i,u,v,h,d;
+         float i,u,v,h,d,a;
       };
    };
 } g2s_point; // 140 bytes.  ick.

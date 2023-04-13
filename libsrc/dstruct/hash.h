@@ -1,8 +1,7 @@
 #ifndef _HASH_H
 #define _HASH_H
 #include "lg.h" 
-#include "error.h" 
-#include "_dstruct.h"
+#include "error.h"
 
 /*
  * $Source: r:/prj/lib/src/dstruct/rcs/hash.h $

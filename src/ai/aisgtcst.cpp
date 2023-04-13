@@ -159,6 +159,7 @@ void AISightCastCollectRefs()
       if (!OBJ_IS_CONCRETE(obj) || !ObjHasRefs(obj))
          continue;
 
+      int i;
       for (i = 0; i < iLimit; i++)
          if (_g_InterestingObjects[i] == obj)
             break;

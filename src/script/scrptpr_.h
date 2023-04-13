@@ -72,7 +72,7 @@ public:
       sModule(const sModule& s) : name( new char[strlen(s.name)+1]) { strcpy(name,s.name); };
       ~sModule() { delete name;};
       operator const char*() const { return name;};
-      operator ==(const sModule& m) const { return strcmp(name,m.name) == 0;};
+      bool operator ==(const sModule& m) const { return strcmp(name,m.name) == 0;};
    };
 
    class cModuleSet : public cSimpleListSet<sModule>

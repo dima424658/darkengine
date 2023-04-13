@@ -103,7 +103,7 @@ static void munge_path(char* fullname, char* filename)
 {
    char base[256] = ".";
    char name[256];
-   attachPostfix(name,filename,"."DB_MISSION_SUFFIX);
+   attachPostfix(name,filename,"." DB_MISSION_SUFFIX);
    config_get_raw(DB_FILE_DIR_VAR,base,sizeof(base));
    if (is_full_path(name))
       strcpy(fullname,name);
@@ -155,7 +155,7 @@ void dbSetCurrentFile(char *buf)
 static void set_file_var(char* var, char* filename, bool save)
 {
    char name[256];
-   attachPostfix(name,filename,"."DB_FILE_SUFFIX);
+   attachPostfix(name,filename,"." DB_FILE_SUFFIX);
    config_set_string(var,name);
    if (save)
       config_set_priority(var,CONFIG_DFT_LO_PRI);   
@@ -824,7 +824,7 @@ static void set_gamesys(char *filename)
 
    char *ext = strchr(filename, '.');
    if (ext == NULL)
-      strcat(filename, "."DB_GAMESYS_SUFFIX);
+      strcat(filename, "." DB_GAMESYS_SUFFIX);
    set_gamesys_file((char *)strip_pathname(filename));
 }
 
@@ -870,7 +870,8 @@ static BOOL load_cmd_file_find(ulong filetype, const char* filename, char* buf)
 {
    char msgbuf[256];
    // find a good phase name
-   for (int i = 0; i < LOAD_ORDER_PHASES; i++)
+   int i;
+   for (i = 0; i < LOAD_ORDER_PHASES; i++)
       if (load_order[i] & filetype)
          break;
    if (i < LOAD_ORDER_PHASES)
@@ -948,7 +949,7 @@ EXTERN void load_file(char *str)
 EXTERN void load_gamesys(char* str)
 {
    char buf[256];
-   attachPostfix(buf,str,"."DB_GAMESYS_SUFFIX);
+   attachPostfix(buf,str,"." DB_GAMESYS_SUFFIX);
    load_cmd_guts(buf,kFiletypeGAM);
    set_gamesys_file(buf); 
 }
@@ -960,7 +961,7 @@ EXTERN void new_world(void)
    if (config_get_raw("default_gamesys",buf,sizeof(buf)))
    {
       char fname[256];
-      attachPostfix(fname,buf,"."DB_GAMESYS_SUFFIX);
+      attachPostfix(fname,buf,"." DB_GAMESYS_SUFFIX);
       char fpath[256]; 
       if (find_for_load(fpath,fname))
       {

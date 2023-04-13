@@ -1461,7 +1461,7 @@ void cCloudDeck::Render()
    r3_set_view(&ZeroPos);
 
    r3_set_clipmode(R3_CLIP);
-   r3_set_clip_flags(R3_CLIP_UV|R3_CLIP_RGBA);
+   r3_set_clip_flags(R3_CLIP_UV|R3_CLIP_RGB);
    // If this is an alpha texture:
    if (g_CloudObj.bIsAlphaTexture) // Must be an alpha texture:
    {
@@ -1477,7 +1477,7 @@ void cCloudDeck::Render()
    }
 
    r3_set_prim();
-   r3_set_polygon_context(R3_PL_POLYGON|R3_PL_TEXTURE|R3_PL_RGBA_GOURAUD);
+   r3_set_polygon_context(R3_PL_POLYGON|R3_PL_TEXTURE|R3_PL_RGB_GOURAUD);
    lgd3d_set_blend(TRUE);
    r3_set_color(0xffffff);
    bRestoreZWrite = lgd3d_is_zwrite_on();

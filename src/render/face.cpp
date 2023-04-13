@@ -621,7 +621,8 @@ static inline void ProcessSample(const char *pszName, FILE *pFile)
 
    char *pszPositions = (char *) malloc(iNumPositions + 1);
 
-   for (int i = 0; i < iNumPositions; ++i)
+   int i;
+   for (i = 0; i < iNumPositions; ++i)
       pszPositions[i] = '0' + FindFacePos(pfSamples + i * iSamplesPerPosition,
                                           iSamplesPerPosition, fStDev);
 

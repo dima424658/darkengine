@@ -144,7 +144,8 @@ STDMETHODIMP_(IEditTrait*) cObjEditors::FirstTrait(sEditTraitIter* iter)
 {
    Assert_(iter); 
 
-   for (int i = 0; i < Traits.Size() ; i++)
+   int i;
+   for (i = 0; i < Traits.Size() ; i++)
       if (Traits[i] != NULL)
       {
          iter->idx = i;
@@ -162,7 +163,8 @@ STDMETHODIMP_(IEditTrait*) cObjEditors::NextTrait(sEditTraitIter* iter)
 {
    Assert_(iter); 
 
-   for (int i = iter->idx+1; i < Traits.Size() ; i++)
+   int i;
+   for (i = iter->idx+1; i < Traits.Size() ; i++)
       if (Traits[i] != NULL)
       {
          iter->idx = i;

@@ -9,10 +9,7 @@
 //
 //
 
-extern "C"
-{
 #include <r3d.h>
-}
 #include <matrix.h>
 #include <aidbdraw.h>
 #include <aidebug.h>

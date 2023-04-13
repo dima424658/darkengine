@@ -301,7 +301,7 @@ void cPlayerMode::Read(ITagFile *file)
       file->Read((char *)&m_speedScale[i], sizeof(sScaleElem));
 
    // @HACK: nullify  any items on the zero speed list
-   int j;
+   int i, j;
    int num = sizeof(NullifyOnLoadList) / sizeof(NullifyOnLoadList[0]);
 
    for (i=0; i<num; i++)

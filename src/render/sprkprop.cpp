@@ -16,13 +16,11 @@
 \* ----- \-\-\-\-\-\-\-\-\ <<< (((((( \/ )))))) >>> /-/-/-/-/-/-/-/-/ ----- */
 
 
-extern "C" {
 #include <matrix.h>
 #include <rand.h>
 #include <fix.h>
 #include <r3d.h>
 #include <2d.h>
-};
 
 #include <wrtype.h>
 #include <objpos.h>
@@ -172,7 +170,7 @@ static r3s_point *screen_vertex_pointer[3] =
 extern "C" void ObjSparkRender(ObjID obj, sSpark *spark, grs_bitmap *bitmap)
 {
    static r3s_point screen_projection;
-   static fInit; // to workaround watcom internal error bug (toml 10-09-97)
+   static BOOL fInit; // to workaround watcom internal error bug (toml 10-09-97)
 
    if (!fInit)
    {

@@ -133,7 +133,7 @@ protected:
    void ParsePropString(const char* in, cStr* name, cStr* text)
    {
       // look for colon 
-      char* s = strchr(in,':');
+      const char* s = strchr(in,':');
       if (!s)
       {
          *name = in;
@@ -142,11 +142,11 @@ protected:
       }
 
       // Peril! mutate in place
-      *s = '\0';
+      //*s = '\0';
       // save off name
       *name = in; 
       // now mutate back 
-      *s = ':'; 
+      //*s = ':'; 
 
       s++; 
       // Now find the quote
@@ -154,14 +154,14 @@ protected:
       if (s)
       {
          s++;  // skip past quote
-         char* q = strchr(s,'\"'); 
+         const char* q = strchr(s,'\"'); 
          
          if (q)
          {
             // Mutate in place again 
-            *q = '\0'; 
+            //*q = '\0'; 
             *text = s; 
-            *q = '\"'; 
+            //*q = '\"'; 
          }
          else
             *text = ""; 
@@ -338,7 +338,7 @@ public:
             char* s = elem->res->StringLock(name); 
             if (s)
             {
-               prop->Set(obj,name+": \""+s+"\""); 
+                prop->Set(obj, cStr{ static_cast<const char*>(name) } + ": \"" + s + "\"");
                elem->res->StringUnlock(name); 
             }
          }

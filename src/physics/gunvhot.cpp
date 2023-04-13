@@ -5,11 +5,8 @@
 
 
 #include <matrix.h>
-extern "C" 
-{
 #include <r3d.h>
 #include <md.h>
-}
 #include <objpos.h>
 #include <rendprop.h>
 #include <mnamprop.h>

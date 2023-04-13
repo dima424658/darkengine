@@ -134,13 +134,6 @@ typedef struct  _GUID
     BYTE  Data4[ 8 ];
     }	GUID;
 
-#define MAKE_GUID(p, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-   do \
-   { \
-      const GUID _temp = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }; \
-      *p = _temp; \
-   } while (0)
-
 #if !defined(_MSC_VER) && !defined(WAT110)
    #define DEFINE_GUID_UNCONDITIONAL(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
             EXTERN_C const GUID CDECL name \
@@ -174,6 +167,13 @@ typedef struct  _GUID
 
 #endif /* !NO_GUIDS && !GUID_DEFINED */
 
+#define MAKE_GUID(p, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
+   do \
+   { \
+      const GUID _temp = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }; \
+      *p = _temp; \
+   } while (0)
+
 //
 // Looking Glass GUID definition macro
 //
@@ -188,7 +188,7 @@ typedef struct  _GUID
                        0x83, 0x48, 0x00, 0xaa, 0x00, 0xa8, 0x2b, 0x51)
 
 #define DEFINE_LG_GUID_UNCONDITIONAL(ident, number) \
-    DEFINE_GUID_UNCONDITIONAL(ident, MAKE_LG_GUID_HIGH_DWORD((number)), \
+    DEFINE_GUID(ident, MAKE_LG_GUID_HIGH_DWORD((number)), \
                        (0x7a80 + (number)), \
                        (0x11cf + (number)), \
                        0x83, 0x48, 0x00, 0xaa, 0x00, 0xa8, 0x2b, 0x51)

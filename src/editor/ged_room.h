@@ -15,7 +15,7 @@
 
 
 // is room database up-to-date?
-EXTERN g_RoomsOK;
+EXTERN BOOL g_RoomsOK;
 
 // Use to compile rooms and set status flags
 EXTERN void ged_compile_rooms(void);

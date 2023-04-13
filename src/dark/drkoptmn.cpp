@@ -451,7 +451,7 @@ protected:
       
       //get our slider button bitmap
       AutoAppIPtr (ResMan);
-      for (i = 0; i < 4; i++) {
+      for (int i = 0; i < 4; i++) {
          mButtBmpRes[SLIDER_BMPRES][i] = pResMan->Bind ("slidbutt", RESTYPE_IMAGE, NULL, mResPath);
          if (!mButtBmpRes[SLIDER_BMPRES][i])
             AssertMsg (0, "Error loading button bitmap");
@@ -465,7 +465,7 @@ protected:
       mSliderBaseBmp.draw_type = DRAWTYPE_RES;
       mSliderBaseBmp.draw_data = (void *)pResMan->Bind ("slidbase", RESTYPE_IMAGE, NULL, mResPath);
 
-      for (i = 0; i < (int)kNumSubPanelSlides; i++)
+      for (int i = 0; i < (int)kNumSubPanelSlides; i++)
          mSlidersOn[i] = FALSE;
 
       // Initialize non-linear volume ramp.
@@ -473,7 +473,7 @@ protected:
       m_volumeLookup[0] = -10000;
       m_volumeLookup[kVolumeSliderNotches - 1] = -1;
       // Decibel curve.
-      for (i = 1; i < (kVolumeSliderNotches - 1); i++) // A size 13 slider actually goes from 0..13, having 14 notches. doh
+      for (int i = 1; i < (kVolumeSliderNotches - 1); i++) // A size 13 slider actually goes from 0..13, having 14 notches. doh
       {
          m_volumeLookup[i] = (int) (-1000.0F * (float) log ( (double) (kVolumeSliderNotches) / (double) (i+1)) / log(2.0) );
          //         m_volumeLookup[i] = - (1 << (13 - i));
@@ -537,8 +537,8 @@ protected:
       uiGameUnloadStyle (&mBindStyle); 
       uiGameUnloadStyle (&mTextStyle);
 
-      for (i = 0; i < 3; i++)
-         for (j = 0; j < 4; j++)
+      for (int i = 0; i < 3; i++)
+         for (int j = 0; j < 4; j++)
             mButtBmpRes[i][j]->Release ();
 
       ((IRes *)(mSliderBaseBmp.draw_data))->Release ();

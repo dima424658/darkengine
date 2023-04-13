@@ -11,6 +11,7 @@
 #define __INPUTAPI_H
 
 #include <comtools.h>
+#include <inpguid.h>
 
 ///////////////////////////////////////
 //

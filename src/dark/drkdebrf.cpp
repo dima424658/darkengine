@@ -209,8 +209,8 @@ void cObjectivesBase::RedrawDisplay()
 
       guiStyleCleanupFont(&mTextStyle,StyleFontNormal);
 
-
-      for (int i = 0; i < nfonts; i++)
+      int i;
+      for (i = 0; i < nfonts; i++)
       {
          char var[64]; 
          sprintf(var,"%s_alt_font_%d",panel_name,i); 

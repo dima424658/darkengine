@@ -417,14 +417,14 @@ void DarkQuickSaveGame(void)
 {
    mkdir(SAVE_PATH); 
    cStr desc = FetchUIString("gamesav","quick_save"); 
-   BOOL success = SUCCEEDED(DarkSaveGameFile(desc,SAVE_PATH"\\"QUICK_SAVE)); 
+   BOOL success = SUCCEEDED(DarkSaveGameFile(desc,SAVE_PATH "\\" QUICK_SAVE)); 
    char* msg = (success) ? "success" : "failure"; 
    DarkMessage(FetchUIString("gamesav",msg)); 
 }
 
 void DarkQuickLoadGame(void)
 {
-   long success =   DarkQuickLoadGameFile(SAVE_PATH"\\"QUICK_SAVE); 
+   long success =   DarkQuickLoadGameFile(SAVE_PATH "\\" QUICK_SAVE); 
 
    switch(success)
    {

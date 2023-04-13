@@ -207,7 +207,8 @@ void cAIDefend::Seek()
    eAIAlertLevel alertness = m_pAIState->GetAlertness();
 
    // Find the first interesting range
-   for (int i = 0; i < kAIMaxDfndRanges; i++)
+   int i;
+   for (i = 0; i < kAIMaxDfndRanges; i++)
    {
       if (pPoint->ranges[i].radius &&
           alertness >= pPoint->ranges[i].minAlert &&

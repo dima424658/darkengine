@@ -29,10 +29,7 @@
 #include <control.h>
 #include <evcode.h>
 #include <uuids.h>
-extern "C"
-{
 #include <2d.h>
-};
 #include <imutil.h>
 #include <limits.h>
 #include <vfwmsgs.h>

@@ -347,7 +347,7 @@ void cObjectSystem::build_obj_lists(void)
 
    gObjCount = 0;
    LGALLOC_AUTO_CREDIT();
-   for (i = 1; i <= TopObj; i++)
+   for (int i = 1; i <= TopObj; i++)
       if (ObjExists(i))
       {
          mActiveObjs.Append(i);
@@ -793,7 +793,8 @@ HRESULT cObjectSystem::LoadActiveArray(ITagFile* file, eObjPartition partition)
                {
                   // we have no free list, so we're going to have to scan the
                   // array for one.
-                  for (int free = 1; free < gMaxObjID; free++)
+                  int free;
+                  for (free = 1; free < gMaxObjID; free++)
                   {
                      int idx = ObjActiveIdx(free-minobj);
                      int mask = ObjActiveMask(free-minobj);

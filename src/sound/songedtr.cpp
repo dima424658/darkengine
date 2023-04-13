@@ -220,7 +220,7 @@ static void _CmdSongDumpMono ()
 
 static void _SongSetupCommands()
 {
-   static sbCommandsSetup;
+   static BOOL sbCommandsSetup;
 
    if (! sbCommandsSetup)
    {

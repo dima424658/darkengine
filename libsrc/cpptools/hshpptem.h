@@ -5,7 +5,6 @@
 #include <lg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <_dstruct.h>
 
 #ifndef SHIP
 #include <mprintf.h>
@@ -78,8 +77,8 @@ HASHTABLE_TEMPLATE int HASHTABLE::find_index(const KEY& key) const
    if (statvec[index] == HASH_FULL)
    {
       int delta = 1 << (hash%sizelog2);
-
-      for (int j = 0; j < size && statvec[index] == HASH_FULL; j++)
+      int j;
+      for (j = 0; j < size && statvec[index] == HASH_FULL; j++)
       {
          // compute next index
          index += delta;
@@ -287,9 +286,9 @@ HASHTABLE_TEMPLATE void HASHTABLE::Clear(int newsize)
 
 
 // Return an iterator across elements
-HASHTABLE_TEMPLATE HASHTABLE::cIter HASHTABLE::Iter() const
+HASHTABLE_TEMPLATE typename HASHTABLE::cIter HASHTABLE::Iter() const
 {
-   HASHTABLE::cIter iter(this);
+   typename HASHTABLE::cIter iter(this);
    return iter;
 }
 
@@ -360,4 +359,3 @@ ITER_TEMPLATE void HASHITER::Next()
 #undef realloc
 
 #endif // HSHPPTEM_H
-

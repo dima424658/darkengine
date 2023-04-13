@@ -314,7 +314,8 @@ void cBook::RedrawDisplay()
          int rh = RectHeight(&r); // rect height
          int h = 0; // text height, so far 
 	 //make sure that h+ch <= rh, so that you don't wrap it off.
-         for (char* v = s; *v != '\0' && ((h + ch)<= rh); v++)
+         char* v;
+         for (v = s; *v != '\0' && ((h + ch)<= rh); v++)
             if (*v == '\n' || *v == CHAR_SOFTCR)
                h += ch; 
 

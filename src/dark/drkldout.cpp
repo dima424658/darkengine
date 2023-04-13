@@ -289,7 +289,7 @@ void cLoadout::InitUI()
    drewblank = FALSE;
 
    // Initialize the "buy" button 
-   for (i = 0; i < kNumBuyImages; i++)
+   for (int i = 0; i < kNumBuyImages; i++)
    {
       char buf[16]; 
       sprintf(buf,"arrow%03d",i); 
@@ -313,7 +313,7 @@ void cLoadout::InitUI()
 
    // setup the elems for the other regions 
    int n = 0; 
-   for (i = 0; i < kNumRegions; i++)
+   for (int i = 0; i < kNumRegions; i++)
       if (i != kInvRegion)
       {
          DrawElement& elem = mBuyElems[i];  
@@ -347,7 +347,7 @@ void cLoadout::TermUI()
       mpSelState = NULL; 
    }
 
-   for (i = 0; i < kNumBuyImages; i++)
+   for (int i = 0; i < kNumBuyImages; i++)
    {
       mBuyImages[i]->Unlock(); 
       SafeRelease(mBuyImages[i]); 

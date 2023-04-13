@@ -461,6 +461,7 @@ STDMETHODIMP_(void) cAINewRangedSubcombat::OnActionProgress(IAIAction * pAction)
 
 int cAINewRangedSubcombat::SelectNewMode(BOOL modesFailed[])
 {
+   int modeNum;
    int modeApplicabilities[kAIRC_NumModes];
    int total = 0;
    int selection;
@@ -488,6 +489,7 @@ int cAINewRangedSubcombat::SelectNewMode(BOOL modesFailed[])
 
 int cAINewRangedSubcombat::SelectInterruptMode(BOOL modesFailed[], eAIRangedModePriority priority)
 {
+   int modeNum;
    int modeApplicabilities[kAIRC_NumModes];
    int total = 0;
    int selection;

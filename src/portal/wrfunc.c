@@ -18,6 +18,7 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
+#undef rad2
 
 static int FindLeaf(Location *loc)
 {

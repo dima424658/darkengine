@@ -16,7 +16,6 @@
 #include <loopapi.h>
 #include <config.h>
 #include <cfg.h>
-#include <fault.h>
 #include <mprintf.h>
 #include <kbcook.h>
 #include <stdlib.h>
@@ -118,7 +117,7 @@ static uint app_read_cfg(char* )
 
 static void init_monochrome()
 {
-   static initialized = FALSE;
+   static BOOL initialized = FALSE;
 
    if (initialized)
       return;
@@ -261,7 +260,7 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    // must come after pick_game
    process_config_includes(INCLUDE_PREFIX);
 #ifdef EDITOR
-   process_config_includes("editor_"INCLUDE_PREFIX); 
+   process_config_includes("editor_" INCLUDE_PREFIX); 
 #endif 
 
    config_parse_commandline(g_argc,g_argv,NULL);

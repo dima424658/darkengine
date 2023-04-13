@@ -44,7 +44,7 @@
 extern "C" void FindVhotLocation(mxs_vector *offset, ObjID obj, int vhot);
 extern "C" void (*portal_post_render_cback)(void);
 #ifdef EDITOR
-extern "C" g_lgd3d;
+extern "C" BOOL g_lgd3d;
 #endif // EDITOR
 
 
@@ -225,7 +225,7 @@ void CoronaRender()
       r3d_glob.cur_stride = sizeof(sR3SPlus);
 
       r3_start_block();
-      r3_set_clip_flags(R3_CLIP_UV | R3_CLIP_RGBA);
+      r3_set_clip_flags(R3_CLIP_UV | R3_CLIP_RGB);
       r3_set_polygon_context(R3_PL_POLYGON | R3_PL_TEXTURE | R3_PL_GOURAUD);
       lgd3d_set_blend(TRUE);
 
@@ -301,11 +301,11 @@ void CoronaInit(void)
    for (int i = 0; i < 4; ++i) {
       g2s_point *pGP = (g2s_point *) &g_aPt[i].grp;
 
-      pGP->a = 1.0;
       pGP->i = 1.0;
-      pGP->r = 1.0;
-      pGP->g = 1.0;
-      pGP->b = 1.0;
+      pGP->u = 1.0;
+      pGP->v = 1.0;
+      pGP->h = 1.0;
+      pGP->d = 1.0;
    }
 
    g_pfnNextPostRenderCallback = portal_post_render_cback;

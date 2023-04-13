@@ -11,10 +11,7 @@
 
 
 #include <lg.h>
-extern "C"
-{
 #include <r3d.h>
-}
 
 #include <playrobj.h>
 
@@ -267,7 +264,7 @@ void AIDrawOneCellsLinks(tAIPathCellID cell, BOOL proxCull = TRUE);
 
 void AIDrawOnePathCell(tAIPathCellID cell, BOOL proxCull)
 {
-   const             MAX_CELL_LINKS_DRAWABLE = 100;
+   const  int        MAX_CELL_LINKS_DRAWABLE = 100;
    static r3s_point  pt[MAX_CELL_LINKS_DRAWABLE];
    static int        ptColor[MAX_CELL_LINKS_DRAWABLE];
 
@@ -389,7 +386,7 @@ static int g_LinkDrawType;
 
 void AIDrawOneCellsLinks(tAIPathCellID cell, BOOL proxCull)
 {
-   const      MAX_CELL_LINKS_DRAWABLE = 100;
+   const int  MAX_CELL_LINKS_DRAWABLE = 100;
    static r3s_point  pt[MAX_CELL_LINKS_DRAWABLE];
    int        i;
    int        cCount = g_AIPathDB.GetCell(cell)->cellCount;   // cell connection count

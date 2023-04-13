@@ -109,8 +109,7 @@ void LinksByObj::RemoveRelation(RelationID id)
    {
       ObjID obj = iter.Key();
       LinkSet* set = iter.Value();
-      LinkSet::cIter iter;
-      for (iter = set->Iter(); !iter.Done(); iter.Next())
+      for (LinkSet::cIter iter = set->Iter(); !iter.Done(); iter.Next())
       {
          if (id == LINKID_RELATION(iter.Value()))
          {

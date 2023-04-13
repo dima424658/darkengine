@@ -892,7 +892,7 @@ const mxs_vector cPhysModel::GetCOG() const
 
 ///////////////////////////////////////
 
-static AttachConstrainLock = FALSE;
+static BOOL AttachConstrainLock = FALSE;
 
 void cPhysModel::AddConstraint(ObjID cause, const mxs_vector &dir, mxs_real mag)
 {
@@ -1090,7 +1090,7 @@ void cPhysModel::ApplyConstraints(mxs_vector *vec)
 
    if (IsPlayer())
    {
-      for (i=0; i<m_VelConstraintList.Size(); i++)
+      for (int i=0; i<m_VelConstraintList.Size(); i++)
       {
          if (m_VelConstraintList[i].mag > 0)
          {
@@ -2628,7 +2628,8 @@ void cPhysModel::AddTransLimit(const mxs_vector &loc, LimitCallback callback)
 
 void cPhysModel::GetTransLimits(mxs_vector *limit_list, int *limit_list_size, int max_list_size) const
 {
-   for (int i=0; i<max_list_size && i<m_TransLimitList.Size(); i++)
+   int i;
+   for (i=0; i<max_list_size && i<m_TransLimitList.Size(); i++)
    {
       // Project our current location onto the plane
       mxs_real plane_dist = mx_dot_vec(&GetLocationVec(), &m_TransLimitList[i]->norm) -

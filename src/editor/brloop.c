@@ -186,20 +186,20 @@ static void obj_message(ObjID obj, eObjNotifyMsg msg, void* data)
 }
 #pragma on(unreferenced)
 
-static tObjListenerHandle listen; 
+static tObjListenerHandle listenerHandle; 
 
 static void init_obj_message(void)
 {
    IObjectSystem* pObjSys = AppGetObj(IObjectSystem); 
    sObjListenerDesc desc = { obj_message, NULL }; 
-   listen = IObjectSystem_Listen(pObjSys,&desc);
+   listenerHandle = IObjectSystem_Listen(pObjSys,&desc);
    SafeRelease(pObjSys); 
 }
 
 static void term_obj_message(void)
 {
    IObjectSystem* pObjSys = AppGetObj(IObjectSystem); 
-   listen = IObjectSystem_Unlisten(pObjSys,listen);
+   listenerHandle = IObjectSystem_Unlisten(pObjSys, listenerHandle);
    SafeRelease(pObjSys); 
 }
 

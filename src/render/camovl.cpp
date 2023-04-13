@@ -459,7 +459,7 @@ void cFrostedEdgesEffect::Render(BOOL bIsScreenLocked)
    lgd3d_set_blend(TRUE);
 
    r3_set_clipmode(R3_NO_CLIP);
-   r3_set_clip_flags(R3_CLIP_RGBA);
+   r3_set_clip_flags(R3_CLIP_RGB);
 
    gr_set_fill_type(FILL_NORM);
    r3_set_prim(); // synch r3d and g2
@@ -467,7 +467,7 @@ void cFrostedEdgesEffect::Render(BOOL bIsScreenLocked)
    nStride = r3d_glob.cur_stride;
    r3d_glob.cur_stride = sizeof(goddamn_stupid_r3s_point);
 
-   r3_set_polygon_context(R3_PL_POLYGON|R3_PL_SOLID|R3_PL_RGBA_GOURAUD);
+   r3_set_polygon_context(R3_PL_POLYGON|R3_PL_SOLID|R3_PL_RGB_GOURAUD);
    r3_set_color(0xffffff);
 
    // Make sure our polys match current screen mode:

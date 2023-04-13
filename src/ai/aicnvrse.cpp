@@ -257,7 +257,7 @@ int cAIConversation::StartActions(int step)
          // this gets freed by the ability when it is done
          pActions = (sAIPsdScrAct*)malloc(nActions*sizeof(sAIPsdScrAct));
          nCopied = 0;
-         for (i=0; i<kAIMaxConvActions; i++)
+         for (int i=0; i<kAIMaxConvActions; i++)
          {
             pConvAction = m_pConversationDesc->GetAction(step, i);
             if (pConvAction->actor == pConversor->m_actorID)

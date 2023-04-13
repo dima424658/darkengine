@@ -19,6 +19,8 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
+#undef rad2
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define MAX_NUM_CONSTRAINTS  (12)

@@ -39,9 +39,9 @@ static BOOL _txt_name_parse(const char *srcfam, const char *srctx, char *dstfam,
 {
    if (srcfam==NULL)
    {
-      char *pfront=strrchr(srctx,'/');  // find front or back slash
-      char *pback=strrchr(srctx,'\\');
-      char *p=(pfront>pback)?pfront:pback;
+      const char *pfront=strrchr(srctx,'/');  // find front or back slash
+      const char *pback=strrchr(srctx,'\\');
+      const char *p=(pfront>pback)?pfront:pback;
       if (p==NULL)
          return FALSE;
       strcpy(dsttx,p+1);

@@ -134,7 +134,6 @@ class cStoredPropertyNetworking;
 
 class cStoredProperty: public cPropertyBase
 {
-
 public:
 
 	// Query Interface 
@@ -307,11 +306,10 @@ template <class IFACE, const GUID *pIID>
 class cProperty: public cUnknownProperty<IFACE,pIID>,
                  public cStoredProperty
 {
-   typedef cStoredProperty cBase; 
+protected:
+    using cBase = cStoredProperty;
 
 public:
-
-
    // Describe myself
    STDMETHOD_(const sPropertyDesc*, Describe) () const { return cBase::Describe(); }; 
 

@@ -29,6 +29,8 @@
 #include <crjoint.h>
 #include <mprintf.h>
 
+#undef small
+
 #ifndef SHIP
 #define PARTICLE_COUNTS
 #endif

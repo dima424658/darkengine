@@ -13,10 +13,7 @@
 
 \* --<<= --\-\-\-\-\-\-\ <<< ((( ((( \/ ))) ))) >>> /-/-/-/-/-/-/-- =>>-- */
 
-extern "C" {
 #include <r3d.h>
-};
-
 #include <math.h>
 #include <g2.h>
 #include <config.h>

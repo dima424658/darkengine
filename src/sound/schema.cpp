@@ -180,7 +180,7 @@ SchemaPlayList playingSchemas;
 static struct sSchemaPlaySample playingSamples[MAX_PLAYING_SAMPLES];
 static sSchemaPlaySample *pFreePlayingSamples;
 
-static killingSamples = FALSE;
+static BOOL killingSamples = FALSE;
 
 sSchemaCallParams g_sDefaultSchemaCallParams = {0,};
 

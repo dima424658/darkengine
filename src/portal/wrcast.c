@@ -203,7 +203,7 @@
 #include <r3d.h>
 #include <matrix.h>
 
-#include <_portal.h>
+// #include <_portal.h>
 
 #include <port.h>
 #include <wrtype.h>

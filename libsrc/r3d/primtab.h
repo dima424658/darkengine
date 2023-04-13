@@ -2,6 +2,8 @@
 
 // primitive function table type
 
+#pragma once
+
 #include <r3ds.h>
 typedef struct grs_vertex grs_vertex;
 

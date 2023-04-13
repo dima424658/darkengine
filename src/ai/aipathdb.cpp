@@ -259,7 +259,7 @@ float TriArea(const mxs_vector & v1, const mxs_vector & v2, const mxs_vector & v
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline Same(const mxs_vector & v1, const mxs_vector & v2, float eps)
+inline BOOL Same(const mxs_vector & v1, const mxs_vector & v2, float eps)
 {
    return (afle(v1.x-v2.x, eps) &&
            afle(v1.y-v2.y, eps) &&
@@ -902,7 +902,7 @@ static float PathFindCliffHeight(const cMxsVector &sampleSourcePt)
 ///////////////////////////////////////
 
 // This constant must match the number of bits allocated for stair size
-static g_aStairSize[kAIPathCellNumStairSizes]
+static double g_aStairSize[kAIPathCellNumStairSizes]
 = {
    .5, .75, 1.0, 1.5
 };
@@ -1770,7 +1770,7 @@ static void FindAdjunctData(int iCellIndex,
 
 
 #define kNumCeilingHeights 7
-static g_aCeilingHeight[kNumCeilingHeights]
+static double g_aCeilingHeight[kNumCeilingHeights]
 = {
    2.0, 4.0, 6.0, 8.0, 10.0, 15.0, 20.0
 };
@@ -1788,7 +1788,8 @@ static void SetCellInfoFromAdjunct(int iCellIndex,
       pCell->m_Water = 1;
 
    float fRoomHeight = pAdjunct->m_fMinCeilingZ - pAdjunct->m_fMaxFloorZ;
-   for (int i = kNumCeilingHeights - 1; i >= 0; --i)
+   int i;
+   for (i = kNumCeilingHeights - 1; i >= 0; --i)
       if (fRoomHeight > g_aCeilingHeight[i])
          break;
    if (i == -1)
@@ -1917,7 +1918,7 @@ static void PropagateFloorTypes()
 
 // No lighting has value 0.  While most cells will be from 0 to 1, the
 // range is open-ended.
-static g_LightThresholds[kAIPathCellNumLightLevels]
+static double g_LightThresholds[kAIPathCellNumLightLevels]
 = {
    0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5
 };

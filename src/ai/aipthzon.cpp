@@ -244,7 +244,7 @@ static inline void DoLinkPathfindZones(eAIPathZoneType ZoneType)
          const int first_cell_link = pCell->firstCell;
          const int last_cell_link = pCell->firstCell + pCell->cellCount;
 
-         for (i=first_cell_link; i<last_cell_link; i++)
+         for (int i=first_cell_link; i<last_cell_link; i++)
          {
             sAIPathCellLink *pLink = &g_AIPathDB.m_Links[i];
             tAIPathCellID    newCellID = pLink->dest;

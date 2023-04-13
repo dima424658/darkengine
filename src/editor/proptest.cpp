@@ -196,8 +196,8 @@ static void list_props(void)
 
 int count_links(ILinkQuery* query)
 {
-
-   for (int count = 0; !query->Done(); query->Next(), count++)
+   int count;
+   for (count = 0; !query->Done(); query->Next(), count++)
       ;
    return count;
 }
@@ -495,7 +495,7 @@ static void link_many(char* arg)
    if (!pRelation)
       return;
       
-   for (i = 0; i < sources.Size(); i++)
+   for (int i = 0; i < sources.Size(); i++)
    {
       if (sources[i] != LINKOBJ_WILDCARD)
       {
@@ -553,7 +553,7 @@ static void unlink_many(char* arg)
    if (!pRelation)
       return;
       
-   for (i = 0; i < sources.Size(); i++)
+   for (int i = 0; i < sources.Size(); i++)
    {
       for (int j = 0; j < destinations.Size(); j++)
       {

@@ -1092,7 +1092,8 @@ void InitIBVars ()
    char gamebnd[128];
    config_get_raw ("game", gamebnd, 128);
    //remove trailing space
-   for (char *s = gamebnd; *s != ' ' && *s != '\0'; s++);
+   char* s;
+   for (s = gamebnd; *s != ' ' && *s != '\0'; s++);
    *s = '\0'; 
    strcat (gamebnd, ".bnd");
 

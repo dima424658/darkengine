@@ -9,6 +9,11 @@
  * This file is part of the 2d library.
  */
 
+#ifndef TMPALLOC_H
+#define TMPALLOC_H
+
+#include <memall.h>
+
 #ifdef __cplusplus
 extern "C"  {
 #endif  // cplusplus
@@ -44,3 +49,5 @@ extern int temp_spew_free(void *p,char *file,int line);
 #ifdef __cplusplus
 }
 #endif  // cplusplus
+
+#endif // TMPALLOC_H

@@ -76,7 +76,7 @@ void cPlayerMotion::Activate(ePlayerMotion motion)
    m_timeHoldLength = PlayerMotionTable[motion].hold_len;
    m_timeActive = 0.0;
 
-   for (i=0; i<PlayerMotionTable[motion].numOffsets; i++)
+   for (int i=0; i<PlayerMotionTable[motion].numOffsets; i++)
       m_targOffset[PlayerMotionTable[motion].offset[i].submod] = PlayerMotionTable[motion].offset[i].vec;
 }
 

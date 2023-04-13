@@ -134,7 +134,8 @@ public:
       int iNumMenuSlots = kAIMaxConvSteps+1;
       char **ppszMenu = (char **)Malloc(sizeof(char**)*iNumMenuSlots);
 
-      for (int i=0; i<iNumMenuSlots-2; i++)
+      int i;
+      for (i=0; i<iNumMenuSlots-2; i++)
       {
          ppszMenu[i] = (char*) Malloc(sizeof(char)*3);
          // wacky string sorting...
