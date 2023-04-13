@@ -1,13 +1,22 @@
+/*
+@Copyright Looking Glass Studios, Inc.
+1996,1997,1998,1999,2000 Unpublished Work.
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
-// $Header: x:/prj/tech/libsrc/cpptools/RCS/packflag.h 1.2 1997/09/17 23:24:28 mahk Exp $
+// $Header: x:/prj/tech/libsrc/cpptools/RCS/packflag.h 1.5 1970/01/01 00:00:00 mahk Exp $
 //
 //
 //
 
-#ifndef __PACKFLAG_H
-#define __PACKFLAG_H
+#ifndef INCLUDED_PACKFLAG_H
+#define INCLUDED_PACKFLAG_H
 
+#include <memall.h>
 #include <string.h>
+
+#include <dbmem.h>
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -29,8 +38,12 @@ public:
 
    void SetAll(void);
    void ClearAll(void);
+   int Size(void);
 
-    
+   void Resize(int newSize);
+
+   void CopyFrom(const cPackedBoolSet& from);
+
 private: 
    DWORD *      m_pBits;
    int m_nBits;
@@ -120,10 +133,57 @@ inline void cPackedBoolSet::Assign(int i, BOOL val)
 
    AssignBit(i,bit & 1);
 }
-    
+
+inline int cPackedBoolSet::Size(void)
+{
+    return m_nBits;
+}
+
+//////////////////////////////////////////
+
+inline void cPackedBoolSet::Resize(int size)
+{
+    int oldnBits = m_nBits;
+    int vecSize = (size >> 5) + 1;
+    int oldVecSize = (m_nBits >> 5) + 1;
+
+    m_nBits = size;
+
+    if (vecSize != oldVecSize)
+    {
+        DWORD* oldBits = m_pBits;
+        m_pBits = new DWORD[vecSize];
+
+        if (vecSize < oldVecSize)
+        {
+            // copy the bits you can
+            memcpy(m_pBits, oldBits, sizeof(DWORD) * vecSize);
+        }
+        else
+        {
+            // Clear the new bits and copy the lower bits
+            memset(m_pBits + oldVecSize, 0, sizeof(DWORD) * (vecSize - oldVecSize));
+            memcpy(m_pBits, oldBits, sizeof(DWORD) * oldVecSize);
+        }
+
+
+        delete[] oldBits;
+    }
+}
+
+//////////////////////////////////////////
+
+inline void cPackedBoolSet::CopyFrom(const cPackedBoolSet& from)
+{
+    Resize(from.m_nBits);
+    int copySize = (m_nBits >> 5) + 1;
+    memcpy(m_pBits, from.m_pBits, copySize * sizeof(DWORD));
+}
+
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif /* !__PACKFLAG_H */
+#include <undbmem.h>
 
-
-
+#endif /* !INCLUDED_PACKFLAG_H */

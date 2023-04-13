@@ -43,3 +43,8 @@ void r3_set_clip_flags(int flags)
 {
    r3d_clip_flags = flags;
 }
+
+int r3_get_clip_flags(void)
+{
+   return r3d_clip_flags;
+}

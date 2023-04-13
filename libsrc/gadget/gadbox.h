@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: x:/prj/tech/libsrc/gadget/RCS/gadbox.h 1.7 1999/05/26 23:38:27 mahk Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/gadbox.h 1.8 1999/12/28 12:13:07 JAEMZ Exp $
 
 #ifndef __GADBOX_H
 #define __GADBOX_H
@@ -72,7 +72,7 @@ typedef struct _LGadBox LGadBox;
 // BOX CALLBACKS
 // 
 
-typedef bool (*LGadMouseCallback)(short x, short y, short action, LGadBox *vb);
+typedef bool (*LGadMouseCallback)(short x, short y, short action, short wheel, LGadBox *vb);
 typedef bool (*LGadMotionCallback)(short x, short y, LGadBox *vb);
 typedef bool (*LGadKeyCallback)(short keycode, LGadBox *vb);
 typedef void (*DrawCallback)(void *data, LGadBox *vb);
@@ -154,7 +154,7 @@ EXTERN void LGadBoxSetMask(LGadBox* box, LGadMaskFunc func, void* data);
 // Create a new box
 // If vbox is null, allocates a new box and returns it, otherwise just initiallizes vbox in place.
 // if vr is null, uses LGadCurrentRoot().  
-EXTERN LGadBox *LGadCreateBox(LGadBox *vbox, LGadRoot *vr, short x, short y, short w, short h, 	
+EXTERN LGadBox *LGadCreateBox(LGadBox *vbox, LGadRoot *vr, short x, short y, short w, short h,  
    LGadMouseCallback vmc, LGadKeyCallback vkc, DrawCallback drawcall, char paltype);
 
 // Destroy a box

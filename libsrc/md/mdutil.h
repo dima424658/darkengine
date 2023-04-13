@@ -1,8 +1,13 @@
 /*
+@Copyright Looking Glass Studios, Inc.
+1996,1997,1998,1999,2000 Unpublished Work.
+*/
+
+/*
  * $Source: x:/prj/tech/libsrc/md/RCS/mdutil.h $
- * $Revision: 1.11 $
- * $Author: JAEMZ $
- * $Date: 1998/06/18 13:03:34 $
+ * $Revision: 1.14 $
+ * $Author: alique $
+ * $Date: 1970/01/01 00:00:00 $
  *
  * Model Library prototypes
  *
@@ -75,7 +80,7 @@ EXTERN BOOL md_fancy_setup_model(mds_model *m,mds_parm parms[]);
 // Checks whether the segment a-b intersects the model.
 // it fills in hit, hit_normal, and r appropriately.
 EXTERN void md_segment_hit_detect(mds_model *m, mds_segment_hit_detect_info *hdi);
-
+EXTERN void md_msh_segment_hit_detect(mds_model *m, mds_segment_hit_detect_info *hdi);
 // Checks whether sphere intersects model.  Must allocate enough
 // room in hdi->polys for entire model worth of poly refs.
 EXTERN void md_sphere_hit_detect(mds_model *m, mds_sphere_hit_detect_info *hdi);
@@ -88,8 +93,15 @@ EXTERN void md_sphere_hit_detect(mds_model *m, mds_sphere_hit_detect_info *hdi);
 // Seans definition has a mipmap ending with a grs_bitmap with zeros
 // someday we should reconcile the two.
 
-// Returns size of a mipmap
+// Returns size of an already existing mipmap
 EXTERN int md_sizeof_mipmap(r3s_texture mmap);
+
+// Given an already existing mipmap, returns how big all the bits are
+EXTERN int md_sizeof_mipmap_bits(r3s_texture mmap);
+
+// Given a BMT type, w and h, returns how big the mipmap would be
+// and stuffs the number of levels
+EXTERN int md_sizeof_mipmap_type(int *pNumLevels,int type,int w,int h);
 
 // Render mip map levels upper left going down
 // Just like gr_bitmap, but shows you all the levels
@@ -99,7 +111,8 @@ EXTERN void md_mipmap_render(r3s_texture tmap,int x,int y);
 // Creates it all in one big block, copies srcbits
 // if pal is set, uses it, else uses the current ipal.
 // ignores if srcbits NULL
-EXTERN r3s_texture md_mipmap_alloc(uchar *srcbits,int type,int flags,int w,int h,uchar *pal);
+// Uses pMem if non-null, else allocates on its own
+EXTERN r3s_texture md_mipmap_alloc(uchar *pMem,uchar *srcbits,int type,int flags,int w,int h,uchar *pal);
 
 // Used for the callback when you set
 // md_set_render_pgon_callback
@@ -108,9 +121,11 @@ EXTERN r3s_texture md_mipmap_alloc(uchar *srcbits,int type,int flags,int w,int h
 // and if it's relatively non-perspective
 EXTERN void md_mipmap_render_pgon(mds_pgon *p, r3s_phandle *v,grs_bitmap *bm, ulong color, ulong type);
 
+// under construction
+EXTERN void md_rg_mipmap_render_pgon(mds_pgon *p, r3s_phandle *v,grs_bitmap *bm, ulong color, ulong type);
+
 // Higher detail = use higher res mip.  default = 1.0.
 EXTERN void md_mipmap_set_detail(float detail);
 EXTERN float md_mipmap_get_detail(void);
 
 #endif // __MDUTIL_H
-

@@ -1,4 +1,9 @@
-// $Header: x:/prj/tech/libsrc/ui/RCS/event.h 1.27 1998/07/30 10:52:04 JAEMZ Exp $
+/*
+@Copyright Looking Glass Studios, Inc.
+1996,1997,1998,1999,2000 Unpublished Work.
+*/
+
+// $Header: x:/prj/tech/libsrc/ui/RCS/event.h 1.28 1999/12/28 11:59:40 JAEMZ Exp $
 
 #ifndef _EVENT_H
 #define _EVENT_H
@@ -14,8 +19,8 @@
 #define UIEV_DATASIZE 6
 
 
-#define UIEVFRONT  Point pos;        /* all ui events have a "screen" position */  \
-                   ulong type;         /* An event type, 32 possible.   */
+#define UIEVFRONT  Point pos;   /* all ui events have a "screen" position */  \
+ulong type;         /* An event type, 32 possible.   */
 
 #define UIEVBACK(sz) char pad[UIEV_DATASIZE-(sz)]
 
@@ -75,7 +80,8 @@ typedef struct _ui_mouse_event
   short action;        /* mouse event type, as per mouse library */
   ulong tstamp;
   ubyte buttons;
-  UIEVBACK(sizeof(ulong)+sizeof(ubyte));
+  char wheel;   // would rather make it short, but we're out of space!
+  // Full house!   UIEVBACK(sizeof(ulong)+sizeof(ubyte)+sizeof(char));
 } uiMouseEvent;
 
 // joystick events

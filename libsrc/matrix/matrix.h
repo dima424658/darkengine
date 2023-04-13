@@ -1,8 +1,8 @@
 /*
  * $Source: x:/prj/tech/libsrc/matrix/RCS/matrix.h $
- * $Revision: 1.25 $
- * $Author: buzzard $
- * $Date: 1998/10/26 23:51:23 $
+ * $Revision: 1.26 $
+ * $Author: JAEMZ $
+ * $Date: 1999/07/21 15:44:24 $
  */
 
 
@@ -346,6 +346,10 @@ float mx_mat_look_at_z(mxs_matrix *dest,const mxs_vector *v,const mxs_vector *z)
 
 // Same as above but assumes z vector (0,0,1), ie, bank of zero.
 float mx_mat_look_at(mxs_matrix *dest,const mxs_vector *v);
+
+// Same as above but uses x vector (1,0,0) If x and y components are zero
+// or at least under some fraction of z
+float mx_mat_look_at_safe(mxs_matrix *dest,const mxs_vector *v);
 
 
 #ifdef __cplusplus

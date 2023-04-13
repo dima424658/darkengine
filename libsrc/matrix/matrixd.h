@@ -1,8 +1,13 @@
 /*
+@Copyright Looking Glass Studios, Inc.
+1996,1997,1998,1999,2000 Unpublished Work.
+*/
+
+/*
  * $Source: x:/prj/tech/libsrc/matrix/RCS/matrixd.h $
- * $Revision: 1.25 $
- * $Author: buzzard $
- * $Date: 1998/10/26 23:51:23 $
+ * $Revision: 1.26 $
+ * $Author: JAEMZ $
+ * $Date: 1999/07/21 15:44:24 $
  */
 
 
@@ -346,6 +351,10 @@ double mxd_mat_look_at_z(mxds_matrix *dest,const mxds_vector *v,const mxds_vecto
 
 // Same as above but assumes z vector (0,0,1), ie, bank of zero.
 double mxd_mat_look_at(mxds_matrix *dest,const mxds_vector *v);
+
+// Same as above but uses x vector (1,0,0) If x and y components are zero
+// or at least under some fraction of z
+double mxd_mat_look_at_safe(mxds_matrix *dest,const mxds_vector *v);
 
 
 #ifdef __cplusplus
