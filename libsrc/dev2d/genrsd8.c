@@ -7,7 +7,7 @@
  */
 
 #include <bitmap.h>
-#include <clip.h>
+#include <clip2d.h>
 #include <gdbm.h>
 #include <rsd.h>
 #include <string.h>

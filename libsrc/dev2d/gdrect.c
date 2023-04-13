@@ -11,7 +11,7 @@
  *
  */
 
-#include <clip.h>
+#include <clip2d.h>
 #include <gdlin.h>
 
 void gdi_box(int x, int y, int x1, int y1,

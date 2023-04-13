@@ -12,7 +12,7 @@
 #include <mode.h>
 #include <alpha.h>
 #include <fill.h>
-#include <clip.h>
+#include <clip2d.h>
 #include <icanvas.h>
 #include <idevice.h>
 #include <grd.h>

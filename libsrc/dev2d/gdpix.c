@@ -1,7 +1,7 @@
 // $Header: x:/prj/tech/libsrc/dev2d/RCS/gdpix.c 1.2 1997/02/17 14:49:13 KEVIN Exp $
 // Generic pixel drawing primitives
 
-#include <clip.h>
+#include <clip2d.h>
 #include <gdpix.h>
 
 void gd_upoint_opt(int x, int y, gdupix_func *upix_func)

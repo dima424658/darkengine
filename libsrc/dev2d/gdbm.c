@@ -6,7 +6,7 @@
  *
  */
 
-#include <clip.h>
+#include <clip2d.h>
 #include <gdbm.h>
 extern void (*gen_bitmap_func[])();
 

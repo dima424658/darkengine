@@ -11,7 +11,7 @@
  */
 
 #include <grd.h>
-#include <clip.h>
+#include <clip2d.h>
 
 // This is legacy code for terra nova, but won't be linked in
 // any apps that don't use it.

@@ -6,7 +6,7 @@
  *
  */
 
-#include <clip.h>
+#include <clip2d.h>
 #include <grd.h>
 #include <bmftype.h>
 

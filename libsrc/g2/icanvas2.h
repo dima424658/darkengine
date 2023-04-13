@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef __ICANVAS_H
-#define __ICANVAS_H
+#ifndef __ICANVAS2_H
+#define __ICANVAS2_H
 /* here are the indices for all the indirected driver functions. */
 enum {
    G2C_ULINE,

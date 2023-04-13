@@ -9,8 +9,8 @@
  * This file is part of the dev2d library.
  */
 
-#ifndef __CLIP_H
-#define __CLIP_H
+#ifndef __CLIP2D_H
+#define __CLIP2D_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,4 +27,4 @@ extern "C" {
 #ifdef __cplusplus
 };
 #endif
-#endif /* !__CLIP_H */
+#endif /* !__CLIP2D_H */

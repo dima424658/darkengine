@@ -9,7 +9,7 @@
  * This file is part of the dev2d library.
  */
 
-#include <clip.h>
+#include <clip2d.h>
 #include <gdlin.h>
 
 int gd_hline_opt(int x, int y, int x1, gdulin_func *f)

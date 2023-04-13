@@ -8,7 +8,7 @@
 #ifndef __GRLIN_H
 #define __GRLIN_H
 #include <g2d.h>
-#include <icanvas.h>
+#include <icanvas2.h>
 #include <lftype.h>
 
 #define gr_uline \
