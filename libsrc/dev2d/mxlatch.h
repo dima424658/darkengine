@@ -6,7 +6,6 @@
 #define __MXLATCH_H
 #include <conio.h>
 #include <vgareg.h>
-#include <nameconv.h>
 
 #ifdef __cplusplus
 extern "C" {

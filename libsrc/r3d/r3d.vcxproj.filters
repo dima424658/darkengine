@@ -1,0 +1,227 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="view.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xfrmtab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="_ctxt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="_test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="_xfrm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="block.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clip_.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clipcon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clipcon_.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clipoff.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clipplan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clipprim.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cliptab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clipu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ctxtguts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ctxts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="grnull.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="init.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="object.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="prim.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primcon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primcon_.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primconv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primfunc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primpoly.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primtab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primtab_.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="r3d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="r3dctxt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="r3ds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="r3dutil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="space.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="xfrmclip.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xfrmglob.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xfrmlin.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xfrmproj.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xfrmunsc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="block.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clip.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clipclip.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clipglob.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clipplan.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clipproj.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cliptest.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clipunsc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ctxtguts.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ctxtmang.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ctxtmult.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="frame.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="init.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="object.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="prim.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primconv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primd3d.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primface.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primfunc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primg2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primmisc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primnull.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primpoly.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="space.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="view.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="projfast.asm">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>

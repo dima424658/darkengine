@@ -270,8 +270,8 @@ static char sgSongFilename[64];
 #endif
 
 /* stdin and stdout may not neccessarily be constants */
-YY_DECL	FILE   *songyyin = stdin;
-YY_DECL	FILE   *songyyout = stdout;
+YY_DECL	FILE* songyyin = NULL;
+YY_DECL	FILE* songyyout = NULL;
 YY_DECL	int	songyylineno = 1;		/* line number */
 
 /*

@@ -268,8 +268,8 @@ static char * local_strdup(const char * s)
 #endif
 
 /* stdin and stdout may not neccessarily be constants */
-YY_DECL	FILE   *incin = stdin;
-YY_DECL	FILE   *incout = stdout;
+YY_DECL	FILE   *incin = NULL;
+YY_DECL	FILE   *incout = NULL;
 YY_DECL	int	inclineno = 1;		/* line number */
 
 /*

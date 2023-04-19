@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/gadget/gadscale.h,v 1.4 1996/12/04 15:56:26 xemu Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/gadscale.h 1.4 1996/12/04 15:56:26 xemu Exp $
 
 #ifndef __GADSCALE_H
 #define __GADSCALE_H

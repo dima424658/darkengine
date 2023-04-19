@@ -140,3 +140,5 @@ EXTERN grs_canvas* DefaultGUIcanvas;
 
 
 #endif // __GCOMPOSE_H
+
+

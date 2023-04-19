@@ -16,7 +16,6 @@
 #include <mprintf.h>
 
 #include <sys\stat.h>	// added by cnn - 8/29/96
-#include <nameconv.h>	// added by cnn - 8/29/96
 #include <recapi.h>	// added by njt - 8/28/97
 #include <comtools.h>	// added by njt - 8/28/97
 #include <appagg.h>	// added by njt - 8/28/97

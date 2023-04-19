@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/gadget/gadint.h,v 1.1 1998/07/02 13:20:25 PATMAC Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/gadint.h 1.1 1998/07/02 13:20:25 PATMAC Exp $
 
 // gadget lib internals - should be needed only be folks who
 //   are implementing their own gadgets

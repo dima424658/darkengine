@@ -111,25 +111,3 @@ int flat16_flat8_clut_opaque_scale(grs_bitmap *bm, int x, int y, int w, int h)
    ti->il_func = flat16_flat8_clut_opaque_np2_nowrap_il;
    return scale_shell(x, y, w, h);
 }
-
-void flat16_flat8_tluc_trans_uscale(grs_bitmap *bm, int x, int y, int w, int h)
-{
-   g2s_tmap_info *ti;
-
-   ti = &g2d_tmap_info;
-   ti->bm = bm;
-   ti->il_func = flat16_flat8_tluc_trans_il;
-   uscale_shell(x, y, w, h);
-}
-
-int flat16_flat8_tluc_trans_scale(grs_bitmap *bm, int x, int y, int w, int h)
-{
-   g2s_tmap_info *ti;
-
-   ti = &g2d_tmap_info;
-   ti->bm = bm;
-   ti->il_func = flat16_flat8_tluc_trans_il;
-   return scale_shell(x, y, w, h);
-}
-
-

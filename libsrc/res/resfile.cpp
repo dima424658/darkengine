@@ -41,8 +41,6 @@
 #include <resthred.h>
 #include <res_.h>
 
-#include <_res.h>
-
 //  Resource files start with this signature
 
 char resFileSignature[16] = {

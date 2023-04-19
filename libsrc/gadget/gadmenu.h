@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/gadget/gadmenu.h,v 1.7 1996/11/08 14:23:13 xemu Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/gadmenu.h 1.7 1996/11/08 14:23:13 xemu Exp $
 
 #ifndef __GADMENU_H
 #define __GADMENU_H

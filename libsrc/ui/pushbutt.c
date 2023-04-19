@@ -1,7 +1,6 @@
 #include <gadgets.h>
 #include <pushbutt.h>
 #include <tngpushb.h>
-#include <_ui.h>
 #include <dbg.h>
 #include <string.h>
 

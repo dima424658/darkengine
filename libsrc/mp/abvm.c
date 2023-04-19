@@ -16,7 +16,7 @@ bool abp_head_track(multiped * mp, mps_motion_info * m, int frame, quat * rot,
 	appbiped * ab = (appbiped *) mp->app_ptr;
 	bool result = TRUE;
 
-	mx_sub_vec(&d, &ab->target, &ab->joints[HEAD]);
+	mx_sub_vec(&d, trans, &ab->joints[HEAD]);
 
 // Get yaw.
 	mx_copy_vec(&v1, &d);

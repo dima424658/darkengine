@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{6e04ffc9-88db-4646-93b1-d1cef76cfe10}</ProjectGuid>
+    <RootNamespace>input</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>Input</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\..\h;$(ProjectDir)..\..\libsrc\lg;$(ProjectDir)..\..\libsrc\lgalloc;$(ProjectDir)..\..\libsrc\comtools;$(ProjectDir)..\..\libsrc\compapis;$(ProjectDir)..\..\libsrc\cpptools;$(ProjectDir)..\..\libsrc\timer;$(ProjectDir)..\..\libsrc\mprintf;$(ProjectDir)..\..\libsrc\fix;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\..\h;$(ProjectDir)..\..\libsrc\lg;$(ProjectDir)..\..\libsrc\lgalloc;$(ProjectDir)..\..\libsrc\comtools;$(ProjectDir)..\..\libsrc\compapis;$(ProjectDir)..\..\libsrc\cpptools;$(ProjectDir)..\..\libsrc\timer;$(ProjectDir)..\..\libsrc\mprintf;$(ProjectDir)..\..\libsrc\fix;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\..\h;$(ProjectDir)..\..\libsrc\lg;$(ProjectDir)..\..\libsrc\lgalloc;$(ProjectDir)..\..\libsrc\comtools;$(ProjectDir)..\..\libsrc\compapis;$(ProjectDir)..\..\libsrc\cpptools;$(ProjectDir)..\..\libsrc\timer;$(ProjectDir)..\..\libsrc\mprintf;$(ProjectDir)..\..\libsrc\fix;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\..\h;$(ProjectDir)..\..\libsrc\lg;$(ProjectDir)..\..\libsrc\lgalloc;$(ProjectDir)..\..\libsrc\comtools;$(ProjectDir)..\..\libsrc\compapis;$(ProjectDir)..\..\libsrc\cpptools;$(ProjectDir)..\..\libsrc\timer;$(ProjectDir)..\..\libsrc\mprintf;$(ProjectDir)..\..\libsrc\fix;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="defehand.h" />
+    <ClInclude Include="fanjoy.h" />
+    <ClInclude Include="inpapi.h" />
+    <ClInclude Include="inpbase.h" />
+    <ClInclude Include="inpcompo.h" />
+    <ClInclude Include="inpdynf.h" />
+    <ClInclude Include="inperr.h" />
+    <ClInclude Include="inpface.h" />
+    <ClInclude Include="inpguid.h" />
+    <ClInclude Include="inpinit.h" />
+    <ClInclude Include="inpman.h" />
+    <ClInclude Include="inputimp.h" />
+    <ClInclude Include="joyapi.h" />
+    <ClInclude Include="joynew.h" />
+    <ClInclude Include="joystick.h" />
+    <ClInclude Include="joywin.h" />
+    <ClInclude Include="kb.h" />
+    <ClInclude Include="kbarray.h" />
+    <ClInclude Include="kbcntry.h" />
+    <ClInclude Include="kbcook.h" />
+    <ClInclude Include="kbdecl.h" />
+    <ClInclude Include="kbmod.h" />
+    <ClInclude Include="kbs.h" />
+    <ClInclude Include="kbscan.h" />
+    <ClInclude Include="kbstate.h" />
+    <ClInclude Include="keydefs.h" />
+    <ClInclude Include="mouse.h" />
+    <ClInclude Include="mousedev.h" />
+    <ClInclude Include="mousesys.h" />
+    <ClInclude Include="mousevel.h" />
+    <ClInclude Include="recinput.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="defehand.cpp" />
+    <ClCompile Include="fanjoy.cpp" />
+    <ClCompile Include="hatcal.cpp" />
+    <ClCompile Include="inpcompo.cpp" />
+    <ClCompile Include="inpdynf.cpp" />
+    <ClCompile Include="inperr.cpp" />
+    <ClCompile Include="inpguid.c" />
+    <ClCompile Include="inpinit.c" />
+    <ClCompile Include="inpman.cpp" />
+    <ClCompile Include="joyold.cpp" />
+    <ClCompile Include="joystick.cpp" />
+    <ClCompile Include="joywin.cpp" />
+    <ClCompile Include="kbasctab.cpp" />
+    <ClCompile Include="kbcntry.c" />
+    <ClCompile Include="kbcook.cpp" />
+    <ClCompile Include="kbshut.cpp" />
+    <ClCompile Include="kbstart.cpp" />
+    <ClCompile Include="kbsys.cpp" />
+    <ClCompile Include="kbwin.cpp" />
+    <ClCompile Include="mousesys.cpp" />
+    <ClCompile Include="recinput.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

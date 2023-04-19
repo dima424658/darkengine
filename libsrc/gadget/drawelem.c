@@ -596,7 +596,7 @@ void ElementDraw(DrawElement *d, DrawElemState state, short x, short y, short w,
 
             // if there is an "inner" draw element put it over the title
             if (d->inner)
-               ElementDraw(d->inner,NULL,x + trek_int_bms[0]->w, y, w - trek_int_bms[0]->w, trek_int_bms[1]->h);
+               ElementDraw(d->inner,dsNORMAL,x + trek_int_bms[0]->w, y, w - trek_int_bms[0]->w, trek_int_bms[1]->h);
 
             // alter drawing area
             x = x + trek_int_bms[2]->w;
@@ -627,7 +627,7 @@ void ElementSize(DrawElement *d, short *px, short *py)
    {
       // Arguments we pass on are "undefined" since in theory they are unused in this case.
       // zero seems most likely to cause it to die.
-      elem_draw_funcs[d->draw_type](d,NULL,0,0,0,0,&p);
+      elem_draw_funcs[d->draw_type](d,dsNORMAL,0,0,0,0,&p);
       *px = p.x;
       *py = p.y;
    }

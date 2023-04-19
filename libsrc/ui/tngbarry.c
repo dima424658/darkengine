@@ -3,7 +3,6 @@
 
 #include <barrykey.h>
 #include <tngbarry.h>
-#include <_ui.h>
 #include <tngslidr.h>
 #include <mprintf.h>
 

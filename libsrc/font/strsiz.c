@@ -126,7 +126,7 @@ int gr_font_string_nheight (grs_font *f, char *s, int n)
    return h;
 }
 
-void gr_font_string_nsize (grs_font *f, char *s, int n, short *w, short *h)
+void gr_font_string_nsize (grs_font *f, char *s, short *w, short *h, int n)
 {
    short *offset_tab;         /* table of character offsets */
    short offset;              /* offset of current character */

@@ -103,7 +103,7 @@
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>.;.\actreact;.\ai;.\csg;.\editor;.\engfeat;.\framewrk;.\motion;.\object;.\physics;.\portal;.\render;.\script;.\shock;.\sim;.\sound;.\ui;.\dark;\prj\thief2\h;r:\prj\thief2\h;\prj\tech\h\win32;\prj\tech\h;x:\prj\tech\h\win32;x:\prj\tech\h;x:\prj\3rdsrc\h;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>types.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <PreprocessorDefinitions>WINDOWS_IGNORE_PACKING_MISMATCH;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;REPORT;WIN32;_WINDOWS;STRICT=1;EDITOR;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;PROPERTY_BLAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WINDOWS_IGNORE_PACKING_MISMATCH;_CRT_SECURE_NO_WARNINGS;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;REPORT;WIN32;_WINDOWS;STRICT=1;EDITOR;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;PROPERTY_BLAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Dromed___Win32_Opt_No_Precompiled_Header\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Dromed___Win32_Opt_No_Precompiled_Header\dromed.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Dromed___Win32_Opt_No_Precompiled_Header\</ObjectFileName>
@@ -146,7 +146,7 @@
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>.;.\actreact;.\ai;.\csg;.\dark;.\editor;.\engfeat;.\framewrk;.\motion;.\object;.\physics;.\portal;.\render;.\script;.\shock;.\sim;.\sound;.\ui;\prj\thief2\h;r:\prj\thief2\h;\prj\tech\h\win32;\prj\tech\h;x:\prj\tech\h\win32;x:\prj\tech\h;x:\prj\3rdsrc\h;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>types.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <PreprocessorDefinitions>WINDOWS_IGNORE_PACKING_MISMATCH;NDEBUG;SHOCK;WIN32;_WINDOWS;STRICT=1;EDITOR;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;PROPERTY_BLAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WINDOWS_IGNORE_PACKING_MISMATCH;_CRT_SECURE_NO_WARNINGS;NDEBUG;SHOCK;WIN32;_WINDOWS;STRICT=1;EDITOR;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;PROPERTY_BLAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Release\dromed.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Release\</ObjectFileName>
@@ -186,7 +186,7 @@
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>.;.\actreact;.\ai;.\csg;.\editor;.\engfeat;.\framewrk;.\motion;.\object;.\physics;.\portal;.\render;.\script;.\shock;.\sim;.\sound;.\ui;.\dark;\prj\thief2\h;r:\prj\thief2\h;\prj\tech\h\win32;\prj\tech\h;x:\prj\tech\h\win32;x:\prj\tech\h;x:\prj\3rdsrc\h;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>pch.h;types.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <PreprocessorDefinitions>WINDOWS_IGNORE_PACKING_MISMATCH;DEBUG;_DEBUG;DBG_ON;WARN_ON;SPEW_ON;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;REPORT;WIN32;_WINDOWS;STRICT=1;EDITOR;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;PROPERTY_BLAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WINDOWS_IGNORE_PACKING_MISMATCH;_CRT_SECURE_NO_WARNINGS;DEBUG;_DEBUG;DBG_ON;WARN_ON;SPEW_ON;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;REPORT;WIN32;_WINDOWS;STRICT=1;EDITOR;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;PROPERTY_BLAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Debug\dromed.pch</PrecompiledHeaderOutputFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -232,7 +232,7 @@
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>.;.\actreact;.\ai;.\csg;.\editor;.\engfeat;.\framewrk;.\motion;.\object;.\physics;.\portal;.\render;.\script;.\shock;.\sim;.\sound;.\ui;.\dark;\prj\thief2\h;r:\prj\thief2\h;\prj\tech\h\win32;\prj\tech\h;x:\prj\tech\h\win32;x:\prj\tech\h;x:\prj\3rdsrc\h;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>pch.h;types.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <PreprocessorDefinitions>WINDOWS_IGNORE_PACKING_MISMATCH;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;REPORT;WIN32;_WINDOWS;STRICT=1;EDITOR;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;PROPERTY_BLAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WINDOWS_IGNORE_PACKING_MISMATCH;_CRT_SECURE_NO_WARNINGS;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;REPORT;WIN32;_WINDOWS;STRICT=1;EDITOR;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;PROPERTY_BLAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Opt\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Opt\dromed.pch</PrecompiledHeaderOutputFile>
       <PrecompiledHeader>Use</PrecompiledHeader>

@@ -38,7 +38,7 @@ void DatapathDirGetPath(DatapathDir *dpd,char *s)
    strcpy(p,dpd->find.name);
 }
 
-DatapathDir *DatapathOpenDir(Datapath *dpath,char *name,int flags)
+DatapathDir *DatapathOpenDir(Datapath *dpath, const char *name,int flags)
 {
    DatapathDir *dpd;
 

@@ -41,6 +41,10 @@ extern uchar *g3d_rt_canv_bits;
 extern uchar *g3d_lt_canv_bits;
 #endif
 
+typedef struct sts_vec
+{
+    ushort x, y, z;
+} sts_vec;
 
 // globals for state
 sts_vec  *std_vec;

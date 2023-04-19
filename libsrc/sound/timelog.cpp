@@ -109,7 +109,7 @@ static void
 verifyLog(
 	logHistory		*pLog,
 	FILE			*fout,
-	char			*name
+	const char		*name
 	)
 {
 	int 			i;

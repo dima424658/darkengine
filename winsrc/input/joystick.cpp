@@ -177,6 +177,30 @@ STDMETHODIMP cJoystick::SetAxisDeadZone(eJoystickObjs axis, DWORD deadZone)
    return S_OK;
 }
 
+STDMETHODIMP cJoystick::SetCooperativeLevel(BOOL excl, BOOL foreground)
+{
+    // we need the main app's HWND
+    IWinApp* pWA = AppGetObj(IWinApp);
+    Assert_(pWA != NULL);
+    HWND hMainWnd = pWA->GetMainWnd();
+    SafeRelease(pWA);
+
+    DWORD flags{};
+    if (excl)
+        flags |= DISCL_EXCLUSIVE;
+
+    if (foreground)
+        flags |= DISCL_FOREGROUND;
+
+    if (FAILED(m_pDev->SetCooperativeLevel(hMainWnd, flags)))
+    {
+        Warning(("cJoystick::SetCooperativeLevel - SetCooperativeLevel FAILED\n"));
+        return E_FAIL;
+    }
+
+    return S_OK;
+}
+
 cJoystick::cJoystick():
    m_pDev(NULL)
 {
@@ -230,13 +254,9 @@ STDMETHODIMP cJoystick::Init(LPDIRECTINPUTDEVICE pDev)
       m_pDev = NULL;
       return E_FAIL;
    }
+
    // set the cooperative level
-   // we need the main app's HWND
-   IWinApp *pWA = AppGetObj(IWinApp);
-   Assert_(pWA != NULL);
-   HWND hMainWnd = pWA->GetMainWnd();
-   SafeRelease(pWA);
-   if (FAILED(m_pDev->SetCooperativeLevel(hMainWnd, DISCL_EXCLUSIVE | DISCL_FOREGROUND)))
+   if (FAILED(SetCooperativeLevel(TRUE, TRUE)))
       // TODO: put back to foreground?
    {
       Warning(("cJoystick::cJoystick - SetCooperativeLevel FAILED\n"));

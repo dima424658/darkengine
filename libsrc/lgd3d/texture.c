@@ -520,11 +520,11 @@ static void InitTextureManager(lgd3ds_device_info *info)
       g_tmgr->shutdown();
       g_tmgr = NULL;
    }
-
+   
    g_tmgr = get_dopey_texture_manager(&driver);
    g_tmgr->init(
       default_bm,
-      LGD3D_MAX_TEXTURES,
+      LGD3D_MAX_TEXTURES, NULL, 0,
       (info->flags & LGD3DF_SPEW) ? TMGRF_SPEW:0);
 
 }

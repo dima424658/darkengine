@@ -755,7 +755,7 @@ void cAnsiStr::FmtStr(unsigned nBufSize, const char *format,...)
 
 void cAnsiStr::FmtStr(const char *format,...)
     {
-    const kFmtBufSize = 256;
+    const int kFmtBufSize = 256;
 
     va_list arg_ptr;
     va_start(arg_ptr, format);
@@ -788,7 +788,7 @@ void cAnsiStr::FmtStr(ushort nID,...)
     if (Str.LoadString(nID))
         {
         const char *format = Str;
-        const kFmtBufSize = 256;
+        const int kFmtBufSize = 256;
 
         va_list arg_ptr;
         va_start(arg_ptr, format);

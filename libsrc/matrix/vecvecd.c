@@ -204,10 +204,12 @@ double mxd_normeq_vec(mxds_vector *v)
 }
 
 // return v1 . v2
+#ifndef _MSC_VER
 double mxd_dot_vec(const mxds_vector *v1,const mxds_vector *v2)
 {
    return v1->x*v2->x + v1->y*v2->y + v1->z*v2->z;
 }
+#endif
 
 // dest = v1 x v2
 void mxd_cross_vec(mxds_vector *dest,const mxds_vector *v1,const mxds_vector *v2)

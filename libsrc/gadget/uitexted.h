@@ -6,7 +6,7 @@
 #ifndef __UITEXTED_H
 #define __UITEXTED_H
 /*
- * $Source: r:/t2repos/thief2/libsrc/gadget/uitexted.h,v $
+ * $Source: x:/prj/tech/libsrc/gadget/RCS/uitexted.h $
  * $Revision: 1.5 $
  * $Author: JAEMZ $
  * $Date: 1998/01/12 12:41:29 $

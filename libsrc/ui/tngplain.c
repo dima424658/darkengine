@@ -1,5 +1,4 @@
 #include <tngplain.h>
-#include <_ui.h>
 
 bool tng_plain_keycooked(TNG *ptng, ushort key)
 {

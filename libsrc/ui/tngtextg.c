@@ -2,7 +2,6 @@
 #include <io.h>
 
 #include <tngtextg.h>
-#include <_ui.h>
 #include <tngslidr.h>
 #include <fakefont.h>
 #include <tngfont.h>

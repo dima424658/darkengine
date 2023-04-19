@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="appguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arqapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="arqguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cacheapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cachguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dispapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dispguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gshelapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gshlguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="indevapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="indvguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="loopguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="looptype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="movconst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="movieapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="moviguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pumpenum.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="recapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="recguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tagguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thrmguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thrmnapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="wappapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="wappguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="2d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="appagg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="appapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="compapis.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="genguid1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

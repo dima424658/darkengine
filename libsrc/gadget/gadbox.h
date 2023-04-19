@@ -50,7 +50,7 @@ EXTERN LGadRoot* LGadCurrentRoot(void);
 EXTERN LGadRoot* LGadSetupSubRoot(LGadRoot* subroot, LGadRoot* parent, short x, short y, short w, short h);
 
 // Destroy a root
-EXTERN int LGadDestroyRoot(LGadRoot *vr);
+EXTERN LGadDestroyRoot(LGadRoot *vr);
 
 // Change the root cursor 
 EXTERN void LGadSetRootCursor(LGadRoot* root, IDataSource* bm, Point hotspot); 
@@ -154,7 +154,7 @@ EXTERN void LGadBoxSetMask(LGadBox* box, LGadMaskFunc func, void* data);
 // Create a new box
 // If vbox is null, allocates a new box and returns it, otherwise just initiallizes vbox in place.
 // if vr is null, uses LGadCurrentRoot().  
-EXTERN LGadBox *LGadCreateBox(LGadBox *vbox, LGadRoot *vr, short x, short y, short w, short h,  
+EXTERN LGadBox *LGadCreateBox(LGadBox *vbox, LGadRoot *vr, short x, short y, short w, short h, 	
    LGadMouseCallback vmc, LGadKeyCallback vkc, DrawCallback drawcall, char paltype);
 
 // Destroy a box
@@ -199,3 +199,6 @@ struct _LGadRoot {
 
 
 #endif // __GADBOX_H
+
+
+

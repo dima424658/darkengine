@@ -668,7 +668,7 @@ public:
 
    void AggregateMemberControlRelease()
    {
-      Release();
+       cCTUnaggregated<IAggregateMemberControl, &IID_IAggregateMemberControl, FLAGS>::Release();
    }
 
    STDMETHOD (Connect)()

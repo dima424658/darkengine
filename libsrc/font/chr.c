@@ -27,7 +27,7 @@ static int char_guts(grs_font_info *fi, grs_font *f, char c, int x)
    return CLIP_NONE;
 }
 
-int gr_font_char (grs_font *f, char c, int x, int y)
+int gr_font_char (grs_font *f, char c, short x, short y)
 {
    grs_font_info fi;
 
@@ -36,7 +36,7 @@ int gr_font_char (grs_font *f, char c, int x, int y)
    return gd_bitmap_opt(&fi.bm, x, y, fi.blitter);
 }
 
-void gr_font_uchar (grs_font *f, char c, int x, int y)
+void gr_font_uchar (grs_font *f, char c, short x, short y)
 {
    grs_font_info fi;
 

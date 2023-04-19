@@ -1010,7 +1010,7 @@ HRESULT cScriptMan::ClearScriptData(ObjID objId, const char * pszClass)
 // The one thing which should be set up at this point is the script
 // objects, since the host app knows which objects have them and what
 // their names are.  All that's left for us to do is set those flags.
-STDMETHODIMP cScriptMan::SaveLoad(tPersistIOFunc pfnIO, 
+HRESULT cScriptMan::SaveLoad(tPersistIOFunc pfnIO, 
                                   void * pContextIO, 
                                   BOOL fLoading)
 {

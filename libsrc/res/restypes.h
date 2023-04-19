@@ -85,5 +85,5 @@
 
 //  Type names can be found thru this array (array kept in res.c)
 
-extern char *resTypeNames[NUM_RESTYPENAMES];
+extern const char *resTypeNames[NUM_RESTYPENAMES];
 #endif

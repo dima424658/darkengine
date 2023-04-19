@@ -489,7 +489,7 @@ public:
     cAutoIPtr(INTERFACE * pUnknownInit)             : cIPtr<INTERFACE>(pUnknownInit)       {};
     cAutoIPtr(REFIID id, IUnknown * pUnknownFrom)   : cIPtr<INTERFACE>(id, pUnknownFrom)   {};
 
-    ~cAutoIPtr()                                    { if (pUnknown) pUnknown->Release(); }
+    ~cAutoIPtr()                                    { if (cIPtrBase::pUnknown) cIPtrBase::pUnknown->Release(); }
 
     INTERFACE * operator=(INTERFACE * p)            { return cIPtr<INTERFACE>::operator=(p); }
     int operator=(int)                              { return cIPtr<INTERFACE>::operator=(0); }

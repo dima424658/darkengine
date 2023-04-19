@@ -20,7 +20,7 @@
 #include <lg.h>
 #include <memstat.h>
 #include <mprintf.h>
-#include <_lg.h>
+// #include <_lg.h>
 
 // our secret heapwalker...
 extern int _oheapwalk( struct _heapinfo *__entry );

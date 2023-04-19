@@ -6409,5 +6409,17 @@
     <CustomBuild Include="portal\Ptsurf16.asm">
       <Filter>Portal\Portal ASM files</Filter>
     </CustomBuild>
+    <CustomBuild Include="inclex.lex">
+      <Filter>Win32</Filter>
+    </CustomBuild>
+    <CustomBuild Include="mschlex.lex">
+      <Filter>Win32</Filter>
+    </CustomBuild>
+    <CustomBuild Include="schlex.lex">
+      <Filter>Win32</Filter>
+    </CustomBuild>
+    <CustomBuild Include="songlang.lex">
+      <Filter>Win32</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

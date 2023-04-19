@@ -150,6 +150,7 @@ static int __stdcall DoFillStackArray(int Skip, int MaxFrames, void **p)
     for (int i = 0; i < MaxFrames; i++)
         p[i] = 0;
 
+    int i;
     for (i = 0; i < MaxFrames; i++)
         {
         *p++ = (void *)(ste.wIP);

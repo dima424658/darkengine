@@ -35,7 +35,6 @@
 #include <error.h>
 #include <mouse.h>
 #include <mousevel.h>
-#include <_mouse.h>
 
 #define __MOUSESYS_SRC
 

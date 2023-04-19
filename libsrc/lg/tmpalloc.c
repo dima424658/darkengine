@@ -12,7 +12,7 @@
 #include <dbg.h>
 #include <memall.h>
 #include <tmpalloc.h>
-#include <_lg.h>
+// #include <_lg.h>
 
 /* arbitrary size for buffer.  used if a buffer isn't explicitly set. */
 #define TEMP_BUF_SIZE 3*16384

@@ -15,7 +15,6 @@
 #include <event.h>
 #include <stdlib.h>
 #include <dbg.h>
-#include <_ui.h>
 #include <vmouse.h>
 #include <mousevel.h>
 #include <joystick.h>

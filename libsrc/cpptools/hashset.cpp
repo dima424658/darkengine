@@ -40,10 +40,10 @@ HASHSET_IMPLEMENT_POOL(sHashSetChunk);
 
 ///////////////////////////////////////
 
-const kSlotSize = sizeof(sHashSetChunk *);
+constexpr auto kSlotSize = sizeof(sHashSetChunk *);
 // Maximum allowed size if next prime after this value
 // @TBD: This value is very conservative (could be slightly less than UINT_MAX)
-const kMaxSlots = INT_MAX / kSlotSize;
+constexpr auto kMaxSlots = INT_MAX / kSlotSize;
 
 
 ///////////////////////////////////////

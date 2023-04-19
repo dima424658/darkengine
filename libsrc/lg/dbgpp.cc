@@ -9,8 +9,6 @@
 // 
 
 
-#include <iostream.h>
-
 #include <dbgpp.h>
 #include <mout.h>
 
@@ -46,6 +44,6 @@ void dbgostrstream::flush_to_dbg( int reportType, int errCode, int src )
    DbgHandle( reportType, src, rdbuf()->str() );  // yeeee-haw
 
    // Flush strstream
-   rdbuf()->seekoff( 0, ios::beg, ios::out );
+   rdbuf()->pubseekoff( 0, std::ios::beg, std::ios::out );
 }
 

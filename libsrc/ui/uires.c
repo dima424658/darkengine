@@ -9,8 +9,6 @@
 #include <uires.h>
 #include <string.h>
 
-#include <_ui.h>
-
 struct _uirestempbuffer uiResTempBuffer;
 
 #pragma disable_message(202)

@@ -19,8 +19,8 @@
 #ifndef _DBGPP_H
 #define _DBGPP_H
 
-#include <iostream.h>
-#include <strstrea.h>
+#include <strstream>
+
 extern "C" {
 #include <dbg.h>
 }
@@ -29,15 +29,11 @@ extern "C"  {
 #endif  // cplusplus
 
 
-class dbgostrstream : public ostrstream
+class dbgostrstream : public std::ostrstream
 {
 public:
    dbgostrstream() {}
-#ifdef __WATCOMC__
-   dbgostrstream( char *str, int len, ios::openmode mode = ios::out ) :
-#else
-   dbgostrstream( char *str, int len, ios::open_mode mode = ios::out ) :
-#endif
+   dbgostrstream( char *str, int len, std::ios::open_mode mode = std::ios::out ) :
       ostrstream(str,len,mode) {}
    void flush_to_dbg( int reportType, int errCode, int src );
    dbgostrstream &prefix( int reportType );

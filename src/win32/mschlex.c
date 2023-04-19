@@ -473,8 +473,8 @@ extern	int	mschmapch	YY_ARGS((int delim, int escape));
 #endif
 
 /* stdin and stdout may not neccessarily be constants */
-YY_DECL	FILE   *mschin = stdin;
-YY_DECL	FILE   *mschout = stdout;
+YY_DECL	FILE   *mschin = NULL;
+YY_DECL	FILE   *mschout = NULL;
 YY_DECL	int	mschlineno = 1;		/* line number */
 
 /*

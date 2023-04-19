@@ -131,7 +131,7 @@ void mp_start_motion(multiped * mp, mps_start_info * info)
 				mp_list_add(&ov->list, (mps_stack_node *) t);
 			}
 		}
-      mp_setup_motion(mp,m); // finish setup. need to happed after listadd call, so that
+      mp_setup_motion(mp,m, 0); // finish setup. need to happed after listadd call, so that
                              // start callback will have been made (and hence data locked).
 	}
 	else
@@ -180,7 +180,7 @@ mps_motion_node * mp_alloc_motion(multiped * mp, mps_start_info * info)
 
 //
 
-void mp_setup_motion(multiped * mp, mps_motion_node *m)
+void mp_setup_motion(multiped * mp, mps_motion_node *m, ulong flags)
 {
 	mps_motion * motion;
 	motion = mp_motion_list + m->handle;

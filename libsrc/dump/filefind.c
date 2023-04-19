@@ -13,7 +13,6 @@
 #include <fcntl.h>
 #include <io.h>
 #include <sys\stat.h>
-#include <nameconv.h>
 
 /* Finds the free file in a sequence like
  * "<prefix>000.<suff>", tries to open it,

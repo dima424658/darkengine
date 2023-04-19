@@ -48,7 +48,7 @@ void gri_build_blend(uchar *base_addr, int blend_fac)
 }
 
 /* frees the blending table. returns 0 if ok, nonzero if error. */
-int gr_free_blend(void)
+bool gr_free_blend(void)
 {
    if (grd_blend==NULL)
       return 1;

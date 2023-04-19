@@ -43,3 +43,4 @@ Release
 *.log
 *.tlog
 *.pdb
+*.rsp

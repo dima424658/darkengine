@@ -49,7 +49,7 @@ BOOL cWinDisplayProvider::DoProcessMessage(UINT, WPARAM, LPARAM, long *)
 
 ///////////////////////////////////////
 
-BOOL cWinDisplayProvider::DoGetDirectDraw(IDirectDraw ** ppDD)
+BOOL cWinDisplayProvider::DoGetDirectDraw(IDirectDraw4 ** ppDD)
 {
     *ppDD = NULL;
     return FALSE;
@@ -57,7 +57,7 @@ BOOL cWinDisplayProvider::DoGetDirectDraw(IDirectDraw ** ppDD)
 
 ///////////////////////////////////////
 
-BOOL cWinDisplayProvider::DoGetBitmapSurface(sGrBitmap * pBm, IDirectDrawSurface ** ppDDS)
+BOOL cWinDisplayProvider::DoGetBitmapSurface(sGrBitmap * pBm, IDirectDrawSurface4 ** ppDDS)
 {
     *ppDDS = NULL;
     return FALSE;

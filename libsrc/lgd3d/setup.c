@@ -356,7 +356,7 @@ void lgd3d_shutdown(void)
    SafeRelease(lpd3d);
 }
 
-void lgd3d_init(lgd3ds_device_info *device_info)
+BOOL lgd3d_init(lgd3ds_device_info *device_info)
 {
    extern void lgd3d_render_init(lgd3ds_device_info *info);
 

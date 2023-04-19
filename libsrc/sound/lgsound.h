@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/sound/RCS/lgsound.h $
-// $Author: mwhite $
-// $Date: 1999/01/06 15:37:57 $
-// $Revision: 1.31 $
+// $Author: PATMAC $
+// $Date: 1999/12/06 13:32:43 $
+// $Revision: 1.32 $
 //
 // (c) 1996 Looking Glass Technologies Inc.
 // Pat McElhatton (from JohnB)
@@ -38,196 +38,197 @@ F_DECLARE_INTERFACE(ISndSample);
 extern "C" {
 #endif
 
-// the single most important call here!!
-// How to create the mixer in the first place
-BOOL SndCreateMixer(ISndMixer **ppMixer, IUnknown *pOuter);
+	// the single most important call here!!
+	// How to create the mixer in the first place
+	BOOL SndCreateMixer(ISndMixer** ppMixer, IUnknown* pOuter);
 #define SndCreateDSMixer SndCreateMixer
-BOOL SndCreateQSMixer(ISndMixer **ppMixer, IUnknown *pOuter);
-BOOL SndCreateA3DMixer(ISndMixer **ppMixer, IUnknown *pOuter);
+	BOOL SndCreateQSMixer(ISndMixer** ppMixer, IUnknown* pOuter);
+	BOOL SndCreateA3DMixer(ISndMixer** ppMixer, IUnknown* pOuter);
 
-// the errors we want to return
-typedef enum _eSndError {
-	kSndUnknownError = -1,
-	kSndOk,
-	kSndCantInit,
-	kSndInitAlready,
-	kSndNoFreeChannels,
-	kSndNoMemory,
-	kSndInvalidData,
-	kSndDeviceAlready,
-	kSndCantCreateDevice,
-	kSndCantSetupDevice,
-   kSndBadGroup,
-   kSndOnly8Bit,
-	kUnknownFormat,
-   kSnd3DInitFailure
-} eSndError;
+	// the errors we want to return
+	typedef enum _eSndError {
+		kSndUnknownError = -1,
+		kSndOk,
+		kSndCantInit,
+		kSndInitAlready,
+		kSndNoFreeChannels,
+		kSndNoMemory,
+		kSndInvalidData,
+		kSndDeviceAlready,
+		kSndCantCreateDevice,
+		kSndCantSetupDevice,
+		kSndBadGroup,
+		kSndOnly8Bit,
+		kUnknownFormat,
+		kSnd3DInitFailure
+	} eSndError;
 
-// major states of a sample
-typedef enum {
-	kSndStateCreated,          // sample not inited yet
-	kSndStateInited,           // sample ready to play
-	kSndStatePlaying,          // sample playing (may be paused and/or muted)
-	kSndStateStopped,          // sample stopped
-	kSndStateDestroyed
-} eSndState;
+	// major states of a sample
+	typedef enum {
+		kSndStateCreated,          // sample not inited yet
+		kSndStateInited,           // sample ready to play
+		kSndStatePlaying,          // sample playing (may be paused and/or muted)
+		kSndStateStopped,          // sample stopped
+		kSndStateDestroyed
+	} eSndState;
 
-// additional state flags
-typedef enum {
-   kSndFlagPaused       = 1,        // sample is paused
-   kSndFlagMuted        = 2,        // sample is muted
-   kSndFlagLooped       = 4,        // sample is looping
-   kSndFlagStream       = 8,        // sample is a stream
-   kSndFlagAudible      = 16,       // sample is audible (has a low-level channel)
-   // the following flags are very short-term - generally are only set during a
-   //  single callback
-   kSndFlagFadeStop     = 256,      // sample has stopped due to a fade
-   kSndFlagPreempted    = 512,      // sample has been preempted
-   kSndFlagEndOfData    = 1024,     // sample is at end of data
-   // sound flag bits 16 - 31 are reserved for internal use (see lgsndi.h)
-   kSndFlagNone         = 0         // initial state, all flags off
-} eSndStateFlags;
+	// additional state flags
+	typedef enum {
+		kSndFlagPaused = 1,        // sample is paused
+		kSndFlagMuted = 2,        // sample is muted
+		kSndFlagLooped = 4,        // sample is looping
+		kSndFlagStream = 8,        // sample is a stream
+		kSndFlagAudible = 16,       // sample is audible (has a low-level channel)
+		kSndFlagHWBuffer = 32,       // sample has a HW buffer assigned to it
+		// the following flags are very short-term - generally are only set during a
+		//  single callback
+		kSndFlagFadeStop = 256,      // sample has stopped due to a fade
+		kSndFlagPreempted = 512,      // sample has been preempted
+		kSndFlagEndOfData = 1024,     // sample is at end of data
+		// sound flag bits 16 - 31 are reserved for internal use (see lgsndi.h)
+		kSndFlagNone = 0         // initial state, all flags off
+	} eSndStateFlags;
 
-// a bit set of state flags
-typedef uint32 eSndFlagSet;
+	// a bit set of state flags
+	typedef uint32 eSndFlagSet;
 
-// what to do when we're all done with a fade
-typedef enum _eSndFadeFlags {
-	kSndFadeNone,
-	kSndFadeStop,
-	kSndFadeReverse,
-   kSndFadeCallback
-} eSndFadeFlags;
+	// what to do when we're all done with a fade
+	typedef enum _eSndFadeFlags {
+		kSndFadeNone,
+		kSndFadeStop,
+		kSndFadeReverse,
+		kSndFadeCallback
+	} eSndFadeFlags;
 
-// Here are the different types of sounds we can create
-// Don't try to create an internal.
-typedef enum _eSndSampleCreateFlags {
-	kSndSampleInternal   = 1,        // this actually indicates the 'primary' sample
-	kSndSampleNormal     = 2,        // "Normal" really means this is a one-shot
-	kSndSampleStream     = 4,
-	kSndSampleHardware   = 8
-} eSndSampleCreateFlags;
+	// Here are the different types of sounds we can create
+	// Don't try to create an internal.
+	typedef enum _eSndSampleCreateFlags {
+		kSndSampleInternal = 1,        // this actually indicates the 'primary' sample
+		kSndSampleNormal = 2,        // "Normal" really means this is a one-shot
+		kSndSampleStream = 4,
+		kSndSampleHardware = 8
+	} eSndSampleCreateFlags;
 
-typedef uint32 eSndSampleCreateFlagSet;
+	typedef uint32 eSndSampleCreateFlagSet;
 
-// The different formats we know about
-typedef enum _eSndFormat {
-	kSndVocFile,
-	kSndWaveFile,
-	kSndLgFile,
-	kSndPcmFile,
-	kSndNoFile        // for streams - can have any data format
-} eSndFormat;
+	// The different formats we know about
+	typedef enum _eSndFormat {
+		kSndVocFile,
+		kSndWaveFile,
+		kSndLgFile,
+		kSndPcmFile,
+		kSndNoFile        // for streams - can have any data format
+	} eSndFormat;
 
-typedef enum _eSndFaders {
-   kSndFadeVolume,
-   kSndFadePan,
-   kSndFadeFrequency,
-   kSndNumFaders
-} eSndFaders;
+	typedef enum _eSndFaders {
+		kSndFadeVolume,
+		kSndFadePan,
+		kSndFadeFrequency,
+		kSndNumFaders
+	} eSndFaders;
 
-typedef enum _eSndSquelchMode {
-   kSndSquelchStop,
-   kSndSquelchMute
-} eSndSquelchMode;
+	typedef enum _eSndSquelchMode {
+		kSndSquelchStop,
+		kSndSquelchMute
+	} eSndSquelchMode;
 
-typedef enum _eSndDataType {
-   kSndDataPCM,
-   kSndDataIMAADPCM
-} eSndDataType;
+	typedef enum _eSndDataType {
+		kSndDataPCM,
+		kSndDataIMAADPCM
+	} eSndDataType;
 
-//
-// significant events in life of a sample (& mixer)
-//
-typedef enum _eSndTraceEvent {
-	kSndSampleStarted,
-	kSndSampleStopped,
-	kSndSamplePaused,
-	kSndSampleResumed,
-   kSndSampleDestroyed,
-   kSndSampleMuted,
-   kSndSampleCreated,
-   kSndMixerDestroyed,
-   kSndMixerUpdateStart,
-   kSndMixerUpdateEnd,
-   kSndThreadUpdateStart,
-   kSndThreadUpdateEnd,
-   kSndBufferAllocate,
-   kSndBufferFree
-} eSndTraceEvent;
+	//
+	// significant events in life of a sample (& mixer)
+	//
+	typedef enum _eSndTraceEvent {
+		kSndSampleStarted,
+		kSndSampleStopped,
+		kSndSamplePaused,
+		kSndSampleResumed,
+		kSndSampleDestroyed,
+		kSndSampleMuted,
+		kSndSampleCreated,
+		kSndMixerDestroyed,
+		kSndMixerUpdateStart,
+		kSndMixerUpdateEnd,
+		kSndThreadUpdateStart,
+		kSndThreadUpdateEnd,
+		kSndBufferAllocate,
+		kSndBufferFree
+	} eSndTraceEvent;
 
-//
-// these are the ways of implementing 3d sound
-//
-typedef enum {
-   kSnd3DMethodNone        = 0,
-   kSnd3DMethodPanVol      = 1,
-   kSnd3DMethodSoftware    = 2,
-   kSnd3DMethodHardware    = 4
-} eSnd3DMethod;
+	//
+	// these are the ways of implementing 3d sound
+	//
+	typedef enum {
+		kSnd3DMethodNone = 0,
+		kSnd3DMethodPanVol = 1,
+		kSnd3DMethodSoftware = 2,
+		kSnd3DMethodHardware = 4
+	} eSnd3DMethod;
 
-//
-// these are the 3D modes that can be applied on a sample-by-sample basis
-//
-typedef enum {
-   kSnd3DModeNone,
-   kSnd3DModeNormal,
-   kSnd3DModeHeadRelative
-} eSnd3DMode;
+	//
+	// these are the 3D modes that can be applied on a sample-by-sample basis
+	//
+	typedef enum {
+		kSnd3DModeNone,
+		kSnd3DModeNormal,
+		kSnd3DModeHeadRelative
+	} eSnd3DMode;
 
-//
-// these are the attributes of a sound channel
-//
-typedef struct _sSndAttribs {
-   eSndDataType   dataType;
-   int32          sampleRate;
-   int32          bitsPerSample;
-   int32          nChannels;
-   int32          bytesPerBlock;
-   int32          samplesPerBlock;
-   uint32         numSamples;
-} sSndAttribs;
+	//
+	// these are the attributes of a sound channel
+	//
+	typedef struct _sSndAttribs {
+		eSndDataType   dataType;
+		int32          sampleRate;
+		int32          bitsPerSample;
+		int32          nChannels;
+		int32          bytesPerBlock;
+		int32          samplesPerBlock;
+		uint32         numSamples;
+	} sSndAttribs;
 
-typedef struct _sSndSetup {
-	void        *hwnd;
-} sSndSetup, *pSndSetup;
+	typedef struct _sSndSetup {
+		void* hwnd;
+	} sSndSetup, * pSndSetup;
 
-typedef struct _sSndMixerCaps {
-	int32 maxVolume;
-	int32 minVolume;
-	int32 panLeft;
-	int32 panRight;
-	int32 maxSampleRate;
-   int32 minSampleRate;
-} sSndMixerCaps;
+	typedef struct _sSndMixerCaps {
+		int32 maxVolume;
+		int32 minVolume;
+		int32 panLeft;
+		int32 panRight;
+		int32 maxSampleRate;
+		int32 minSampleRate;
+	} sSndMixerCaps;
 
-// 3D postions, velocities & orientations
-//  position units are meters
-//  velocity units are a jealously gaurded MSoft secret (furlongs/fortnight?)
-//  orientations are arbitrary units
-typedef struct _sSndVector {
-   float    x;
-   float    y;
-   float    z;
-} sSndVector;
+	// 3D postions, velocities & orientations
+	//  position units are meters
+	//  velocity units are a jealously gaurded MSoft secret (furlongs/fortnight?)
+	//  orientations are arbitrary units
+	typedef struct _sSndVector {
+		float    x;
+		float    y;
+		float    z;
+	} sSndVector;
 
-// Global 3D sound environment factors
-// 
-typedef struct _sSndEnvironment {
-   float    dopplerFactor;
-   float    distanceFactor;
-   float    rolloffFactor;
-} sSndEnvironment;
+	// Global 3D sound environment factors
+	// 
+	typedef struct _sSndEnvironment {
+		float    dopplerFactor;
+		float    distanceFactor;
+		float    rolloffFactor;
+	} sSndEnvironment;
 
-// Results from Init3DReverb 
-typedef enum
-{
-   kREVERB_InitFail,    // Failure
-   kREVERB_InitOK_HW,   // Success, hardware reverb
-   kREVERB_InitOK_SW    // Success, software reverb (not yet implememnted)
-} eReverbInitResult;
+	// Results from Init3DReverb 
+	typedef enum
+	{
+		kREVERB_InitFail,    // Failure
+		kREVERB_InitOK_HW,   // Success, hardware reverb
+		kREVERB_InitOK_SW    // Success, software reverb (not yet implememnted)
+	} eReverbInitResult;
 
-// Reverb types: Was enum, but ints are cleaner for property storage.
+	// Reverb types: Was enum, but ints are cleaner for property storage.
 #define kREVERB_Generic          0
 #define kREVERB_PaddedCell       1
 #define kREVERB_Room             2
@@ -261,17 +262,17 @@ typedef enum
 #define kREVERB_FlagDecay        (1 << 2)
 #define kREVERB_FlagDamping      (1 << 3)
 
-typedef struct ReverbSettings
-{
-   //   eReverbType type;
-   DWORD flags;
-   int type;
-   float level;
-   float decay;
-   float damping;
-} ReverbSettings;
+	typedef struct ReverbSettings
+	{
+		//   eReverbType type;
+		DWORD flags;
+		int type;
+		float level;
+		float decay;
+		float damping;
+	} ReverbSettings;
 
-// volume limits in millibels
+	// volume limits in millibels
 #define kSndMinVolume -10000
 #define kSndMaxVolume -1
 
@@ -310,89 +311,91 @@ typedef struct ReverbSettings
 #define GET_SAMPLE_NAME  ((long) ISndSample_GetName(
 #endif
 
-typedef uint8* SndSampleBuffer;
+	typedef uint8* SndSampleBuffer;
 
-typedef ISndSample * (*SndMixerCallback)(ISndMixer *, ISndSample *, void *);
-typedef BOOL         (*SndPriorityCallback)(ISndMixer *, ISndSample *, void *);
-typedef void			(*SndSampleCallback)(ISndSample *);
-typedef void			(*SndEndCallback)(ISndSample *, void *);
-typedef void			(*SndFreeChannelCallback)(ISndMixer *, void *);
-typedef void         (*SndFillCallback)(ISndSample *, void *, uint32);
-typedef void *       (*SndLoadFunction)(void *pCBData, void *pDst, uint32);
-typedef void			(*SndTraceCallback)(ISndSample *, eSndTraceEvent);
+	typedef ISndSample* (*SndMixerCallback)(ISndMixer*, ISndSample*, void*);
+	typedef BOOL(*SndPriorityCallback)(ISndMixer*, ISndSample*, void*);
+	typedef void			(*SndSampleCallback)(ISndSample*);
+	typedef void			(*SndEndCallback)(ISndSample*, void*);
+	typedef void			(*SndFreeChannelCallback)(ISndMixer*, void*);
+	typedef void         (*SndFillCallback)(ISndSample*, void*, uint32);
+	typedef void* (*SndLoadFunction)(void* pCBData, void* pDst, uint32);
+	typedef void			(*SndTraceCallback)(ISndSample*, eSndTraceEvent);
 
 #undef INTERFACE
 #define INTERFACE ISndMixer
 
-DECLARE_INTERFACE_(ISndMixer, IUnknown)
-{
-	// Comtools macro to declare IUnknown methods
-	DECLARE_UNKNOWN_PURE();
+	DECLARE_INTERFACE_(ISndMixer, IUnknown)
+	{
+		// Comtools macro to declare IUnknown methods
+		DECLARE_UNKNOWN_PURE();
 
-	// call this bad boy to create a mixer
-	STDMETHOD_(eSndError, Init)(THIS_ sSndSetup *setup, uint32 numChannels, sSndAttribs *attr) PURE;
+		// call this bad boy to create a mixer
+		STDMETHOD_(eSndError, Init)(THIS_ sSndSetup * setup, uint32 numChannels, sSndAttribs * attr) PURE;
 
-	// how to create a new sample to be played.  flags determines what kind of sample it will be
-	STDMETHOD_(ISndSample *, CreateSampleFromRez)(THIS_ eSndSampleCreateFlagSet flags, void *data, uint32 len) PURE;
+		// how to create a new sample to be played.  flags determines what kind of sample it will be
+		STDMETHOD_(ISndSample*, CreateSampleFromRez)(THIS_ eSndSampleCreateFlagSet flags, void* data, uint32 len) PURE;
 
-	STDMETHOD_(ISndSample *, CreateRawSample)(THIS_ eSndSampleCreateFlagSet flags, void *dat, uint32 len,
-                                             uint32 nsamps, sSndAttribs *attribs ) PURE;
+		STDMETHOD_(ISndSample*, CreateRawSample)(THIS_ eSndSampleCreateFlagSet flags, void* dat, uint32 len,
+			uint32 nsamps, sSndAttribs * attribs) PURE;
 
-	STDMETHOD_(uint32, 	FreeChannelCount)(THIS) PURE;
+		STDMETHOD_(uint32, FreeChannelCount)(THIS) PURE;
 
-	// some callbacks.  This might get replaced with more elegant designed things
-	STDMETHOD_(void,     RegisterPriorityCallback)(THIS_ SndPriorityCallback func, void *pCBData) PURE;
+		// some callbacks.  This might get replaced with more elegant designed things
+		STDMETHOD_(void, RegisterPriorityCallback)(THIS_ SndPriorityCallback func, void* pCBData) PURE;
 
-	// a general purpose interator for sound of a certain type
-	STDMETHOD_(void, 		DoForAllSamples)(THIS_ SndMixerCallback func, void *pCBData) PURE;
-	STDMETHOD_(void, 		DoForGroupSamples)(THIS_ uint32 group, SndMixerCallback func, void *pCBData) PURE;
+		// a general purpose interator for sound of a certain type
+		STDMETHOD_(void, DoForAllSamples)(THIS_ SndMixerCallback func, void* pCBData) PURE;
+		STDMETHOD_(void, DoForGroupSamples)(THIS_ uint32 group, SndMixerCallback func, void* pCBData) PURE;
 
-	// this must get called as ofen as the app needs to have everything run smoothly...
-	STDMETHOD_(void, 		Update)(THIS) PURE;
+		// this must get called as ofen as the app needs to have everything run smoothly...
+		STDMETHOD_(void, Update)(THIS) PURE;
 
-	STDMETHOD_(int32, 	SetMasterVolume)(THIS_  int32 vol) PURE;
-	STDMETHOD_(int32, 	GetMasterVolume)(THIS) PURE;
+		STDMETHOD_(int32, SetMasterVolume)(THIS_  int32 vol) PURE;
+		STDMETHOD_(int32, GetMasterVolume)(THIS) PURE;
 
-	STDMETHOD_(int32, 	SetGroupVolume)(THIS_  uint32 group, int32 vol) PURE;
-	STDMETHOD_(int32, 	GetGroupVolume)(THIS_ uint32 group) PURE;
-	STDMETHOD_(void, 		FadeGroupVolume)(THIS_ uint32 group, int32 vol, int32 time, eSndFadeFlags flags) PURE;
-   STDMETHOD_(void,     RegisterGroupFadeCallback)(THIS_ uint32 group, SndEndCallback cBack, void *p) PURE;
+		STDMETHOD_(int32, SetGroupVolume)(THIS_  uint32 group, int32 vol) PURE;
+		STDMETHOD_(int32, GetGroupVolume)(THIS_ uint32 group) PURE;
+		STDMETHOD_(void, FadeGroupVolume)(THIS_ uint32 group, int32 vol, int32 time, eSndFadeFlags flags) PURE;
+		STDMETHOD_(void, RegisterGroupFadeCallback)(THIS_ uint32 group, SndEndCallback cBack, void* p) PURE;
 
-	STDMETHOD_(void,     StopAllSamples)(THIS) PURE;
+		STDMETHOD_(void, StopAllSamples)(THIS) PURE;
 
-	STDMETHOD_(ISndSample *, First)(THIS_ uint32 group, eSndFlagSet tflags, eSndFlagSet fflags) PURE;
-	STDMETHOD_(ISndSample *, Next)(THIS) PURE;
+		STDMETHOD_(ISndSample*, First)(THIS_ uint32 group, eSndFlagSet tflags, eSndFlagSet fflags) PURE;
+		STDMETHOD_(ISndSample*, Next)(THIS) PURE;
 
-	STDMETHOD_(void,     Pause)(THIS) PURE;
-	STDMETHOD_(void,     Resume)(THIS) PURE;
-   STDMETHOD_(uint32,   SetTimeout)(THIS_ uint32 mSecs ) PURE;
-	STDMETHOD_(void,     RegisterFreeChannelCallback)(THIS_ SndFreeChannelCallback func, void *pCBData) PURE;
-   STDMETHOD_(void,     RegisterTraceCallback)(THIS_ SndTraceCallback f) PURE;
-   STDMETHOD_(void,	   GetAttribs)(THIS_ sSndAttribs *pAttribs) PURE;
+		STDMETHOD_(void, Pause)(THIS) PURE;
+		STDMETHOD_(void, Resume)(THIS) PURE;
+		STDMETHOD_(uint32, SetTimeout)(THIS_ uint32 mSecs) PURE;
+		STDMETHOD_(void, RegisterFreeChannelCallback)(THIS_ SndFreeChannelCallback func, void* pCBData) PURE;
+		STDMETHOD_(void, RegisterTraceCallback)(THIS_ SndTraceCallback f) PURE;
+		STDMETHOD_(void, GetAttribs)(THIS_ sSndAttribs * pAttribs) PURE;
 
-   STDMETHOD_(void,     Set3DPosition)(THIS_ sSndVector *pPosition) PURE;
-   STDMETHOD_(void,     Get3DPosition)(THIS_ sSndVector *pPosition) PURE;
-   STDMETHOD_(void,     Set3DOrientation)(THIS_ sSndVector *pFront, sSndVector *pTop) PURE;
-   STDMETHOD_(void,     Get3DOrientation)(THIS_ sSndVector *pFront, sSndVector *pTop) PURE;
-   STDMETHOD_(void,     Set3DVelocity)(THIS_ sSndVector *pVel) PURE;
-   STDMETHOD_(void,     Get3DVelocity)(THIS_ sSndVector *pVel) PURE;
-   STDMETHOD_(void,     Set3DEnvironment)(THIS_ sSndEnvironment *pParams) PURE;
-   STDMETHOD_(void,     Get3DEnvironment)(THIS_ sSndEnvironment *pParams) PURE;
-   STDMETHOD_(void,     Set3DMethod)(THIS_ eSnd3DMethod method) PURE;
-   STDMETHOD_(void,     Get3DMethodCapabilities)(THIS_ uint32 *pMethods) PURE;
-   STDMETHOD_(int32,    Get3DDistanceVolume)(THIS_ float dist) PURE;
-   STDMETHOD_(float,    Get3DDistanceFromVolume)(THIS_ int32 vol) PURE;
-   STDMETHOD_(int32,    Get3DPositionVolume)(THIS_ sSndVector *pSrcPos) PURE;
-   STDMETHOD_(void,     Get3DPositionPanVolume)(THIS_ sSndVector *pSrcPos, int32 *pPan, int32 *pVol) PURE;
-   STDMETHOD_(void,     Set3DDeferMode)(THIS_ BOOL deferOn) PURE;
-   STDMETHOD_(void, 	   FreeHWChannelCount)(THIS_ int32 *pHWChans, int32 *p3DHWChans) PURE;
-   STDMETHOD_(int32,    Init3DReverb)(THIS) PURE;
-   STDMETHOD_(void,     Shutdown3DReverb)(THIS) PURE;
-   STDMETHOD_(BOOL,     Have3DReverb)(THIS) PURE;
-   STDMETHOD_(BOOL,     CanDo3DReverb)(THIS) PURE;
-   STDMETHOD_(BOOL,     Set3DReverbSettings)(THIS_ ReverbSettings *pReverbSettings) PURE;
-   STDMETHOD_(BOOL,     Get3DReverbSettings)(THIS_ ReverbSettings *pReverbSettings) PURE;
-};
+		STDMETHOD_(void, Set3DPosition)(THIS_ sSndVector * pPosition) PURE;
+		STDMETHOD_(void, Get3DPosition)(THIS_ sSndVector * pPosition) PURE;
+		STDMETHOD_(void, Set3DOrientation)(THIS_ sSndVector * pFront, sSndVector * pTop) PURE;
+		STDMETHOD_(void, Get3DOrientation)(THIS_ sSndVector * pFront, sSndVector * pTop) PURE;
+		STDMETHOD_(void, Set3DVelocity)(THIS_ sSndVector * pVel) PURE;
+		STDMETHOD_(void, Get3DVelocity)(THIS_ sSndVector * pVel) PURE;
+		STDMETHOD_(void, Set3DEnvironment)(THIS_ sSndEnvironment * pParams) PURE;
+		STDMETHOD_(void, Get3DEnvironment)(THIS_ sSndEnvironment * pParams) PURE;
+		STDMETHOD_(void, Set3DMethod)(THIS_ eSnd3DMethod method) PURE;
+		STDMETHOD_(void, Get3DMethodCapabilities)(THIS_ uint32 * pMethods) PURE;
+		STDMETHOD_(int32, Get3DDistanceVolume)(THIS_ float dist) PURE;
+		STDMETHOD_(float, Get3DDistanceFromVolume)(THIS_ int32 vol) PURE;
+		STDMETHOD_(int32, Get3DPositionVolume)(THIS_ sSndVector * pSrcPos) PURE;
+		STDMETHOD_(void, Get3DPositionPanVolume)(THIS_ sSndVector * pSrcPos, int32 * pPan, int32 * pVol) PURE;
+		STDMETHOD_(void, Set3DDeferMode)(THIS_ BOOL deferOn) PURE;
+		STDMETHOD_(void, FreeHWChannelCount)(THIS_ int32 * pHWChans, int32 * p3DHWChans) PURE;
+		STDMETHOD_(int32, Init3DReverb)(THIS) PURE;
+		STDMETHOD_(void, Shutdown3DReverb)(THIS) PURE;
+		STDMETHOD_(BOOL, Have3DReverb)(THIS) PURE;
+		STDMETHOD_(BOOL, CanDo3DReverb)(THIS) PURE;
+		STDMETHOD_(BOOL, Set3DReverbSettings)(THIS_ ReverbSettings * pReverbSettings) PURE;
+		STDMETHOD_(BOOL, Get3DReverbSettings)(THIS_ ReverbSettings * pReverbSettings) PURE;
+		STDMETHOD_(BOOL, Have3DOcclusion)(THIS) PURE;
+		STDMETHOD_(int32, Kludge)(THIS_ int kludgeSelector, void* pKludgeStruct, int32 sizeKludgeStruct) PURE;
+	};
 
 #define ISndMixer_Init(p, a, b, c)						COMCall3(p, Init, a, b, c)
 #define ISndMixer_CreateSampleFromRez(p,a,b,c)     COMCall3(p, CreateSampleFromRez, a, b, c)
@@ -408,7 +411,7 @@ DECLARE_INTERFACE_(ISndMixer, IUnknown)
 #define ISndMixer_GetGroupVolume(p, a)					COMCall1(p, GetGroupVolume, a)
 #define ISndMixer_FadeGroupVolume(p,a,b,c,d)       COMCall4(p, FadeGroupVolume,a,b,c,d)
 #define ISndMixer_RegisterGroupFadeCallback(p,g,f,a) COMCall3(p, RegisterFadeCallback, g, f, a)
-//#define ISndMixer_GroupFadeActive(p,a)             COMCall1(p, GroupFadeActive, a)
+	//#define ISndMixer_GroupFadeActive(p,a)             COMCall1(p, GroupFadeActive, a)
 #define ISndMixer_StopAllSamples(p)						COMCall0(p, StopAllSamples)
 #define ISndMixer_First(p,a)								COMCall1(p, First, a)
 #define ISndMixer_Next(p,a)								COMCall1(p, Next, a)
@@ -442,91 +445,95 @@ DECLARE_INTERFACE_(ISndMixer, IUnknown)
 #define ISndMixer_CanDo3DReverb(p)                 COMCall0(p)
 #define ISndMixer_Set3DReverbSettings(p, a)        COMCall1(p, Set3DReverbSettings, a)
 #define ISndMixer_Get3DReverbSettings(p, a)        COMCall1(p, Get3DReverbSettings, a)
+#define ISndMixer_Have3DOcclusion(p)               COMCall0(p)
+#define ISndMixer_Kludge(p, a, b, c)               COMCall3(p, Kludge, a, b, c)
 
 #undef INTERFACE
 #define INTERFACE ISndSample
 
-DECLARE_INTERFACE_(ISndSample, IUnknown)
-{
-	// Comtools macro to declare IUnknown methods
-	DECLARE_UNKNOWN_PURE();
+	DECLARE_INTERFACE_(ISndSample, IUnknown)
+	{
+		// Comtools macro to declare IUnknown methods
+		DECLARE_UNKNOWN_PURE();
 
-	STDMETHOD_(void, 	Play)(THIS) PURE;
-	STDMETHOD_(void, 	Pause)(THIS) PURE;
-	STDMETHOD_(void, 	Resume)(THIS) PURE;
-	STDMETHOD_(void, 	Stop)(THIS) PURE;
-	STDMETHOD_(void, 	Loop)(THIS) PURE;
-	STDMETHOD_(void, 	Mute)(THIS) PURE;
-	STDMETHOD_(void, 	UnMute)(THIS) PURE;
-   STDMETHOD_(BOOL,  ResyncNeeded)(THIS_ uint32 *pStartPos) PURE;
-	STDMETHOD_(void, 	Preempt)(THIS) PURE;
+		STDMETHOD_(void, Play)(THIS) PURE;
+		STDMETHOD_(void, Pause)(THIS) PURE;
+		STDMETHOD_(void, Resume)(THIS) PURE;
+		STDMETHOD_(void, Stop)(THIS) PURE;
+		STDMETHOD_(void, Loop)(THIS) PURE;
+		STDMETHOD_(void, Mute)(THIS) PURE;
+		STDMETHOD_(void, UnMute)(THIS) PURE;
+		STDMETHOD_(BOOL, ResyncNeeded)(THIS_ uint32 * pStartPos) PURE;
+		STDMETHOD_(void, Preempt)(THIS) PURE;
 
-	STDMETHOD_(void, 	SetVolume)(THIS_ int32 vol) PURE;
-	STDMETHOD_(void, 	SetPan)(THIS_ int32 pan) PURE;
-	STDMETHOD_(void, 	SetFrequency)(THIS_ uint32 freq) PURE;
-	STDMETHOD_(void, 	SetData)(THIS_ int32 data) PURE;
-	STDMETHOD_(void, 	SetPriority)(THIS_ int32 pri) PURE;
-   STDMETHOD_(void,  SetSuperInfo)(THIS_ void *pInfo) PURE;
-	STDMETHOD_(void, 	SetPosition)(THIS_ uint32 pos) PURE;
-	STDMETHOD_(void, 	SetGroup)(THIS_ uint32 group) PURE;
+		STDMETHOD_(void, SetVolume)(THIS_ int32 vol) PURE;
+		STDMETHOD_(void, SetPan)(THIS_ int32 pan) PURE;
+		STDMETHOD_(void, SetFrequency)(THIS_ uint32 freq) PURE;
+		STDMETHOD_(void, SetData)(THIS_ int32 data) PURE;
+		STDMETHOD_(void, SetPriority)(THIS_ int32 pri) PURE;
+		STDMETHOD_(void, SetSuperInfo)(THIS_ void* pInfo) PURE;
+		STDMETHOD_(void, SetPosition)(THIS_ uint32 pos) PURE;
+		STDMETHOD_(void, SetGroup)(THIS_ uint32 group) PURE;
 
-	STDMETHOD_(int32, 	GetVolume)(THIS) PURE;
-	STDMETHOD_(int32, 	GetPan)(THIS) PURE;
-	STDMETHOD_(uint32, 	GetFrequency)(THIS) PURE;
-	STDMETHOD_(int32, 	GetData)(THIS) PURE;
-	STDMETHOD_(int32, 	GetPriority)(THIS) PURE;
-	STDMETHOD_(void *,   GetSuperInfo)(THIS) PURE;
-	STDMETHOD_(uint32, 	GetPosition)(THIS) PURE;
-   STDMETHOD_(void,	   GetPositions)(THIS_ uint32 *pW, uint32 *pP) PURE;
-   STDMETHOD_(void,	   GetAttribs)(THIS_ sSndAttribs *pAttribs) PURE;
-	STDMETHOD_(uint32,   GetGroup)(THIS) PURE;
+		STDMETHOD_(int32, GetVolume)(THIS) PURE;
+		STDMETHOD_(int32, GetPan)(THIS) PURE;
+		STDMETHOD_(uint32, GetFrequency)(THIS) PURE;
+		STDMETHOD_(int32, GetData)(THIS) PURE;
+		STDMETHOD_(int32, GetPriority)(THIS) PURE;
+		STDMETHOD_(void*, GetSuperInfo)(THIS) PURE;
+		STDMETHOD_(uint32, GetPosition)(THIS) PURE;
+		STDMETHOD_(void, GetPositions)(THIS_ uint32 * pW, uint32 * pP) PURE;
+		STDMETHOD_(void, GetAttribs)(THIS_ sSndAttribs * pAttribs) PURE;
+		STDMETHOD_(uint32, GetGroup)(THIS) PURE;
 
-   STDMETHOD_(uint32, 	GetSerialNumber)(THIS) PURE;
+		STDMETHOD_(uint32, GetSerialNumber)(THIS) PURE;
 
-	STDMETHOD_(void, 		Fade)(THIS_ eSndFaders t, int32 vol, int32 time, eSndFadeFlags flags) PURE;
-   STDMETHOD_(BOOL,     FadeActive)(THIS_ eSndFaders t) PURE;
+		STDMETHOD_(void, Fade)(THIS_ eSndFaders t, int32 vol, int32 time, eSndFadeFlags flags) PURE;
+		STDMETHOD_(BOOL, FadeActive)(THIS_ eSndFaders t) PURE;
 
-   STDMETHOD_(uint32,   AvailToWrite)(THIS) PURE;
-   STDMETHOD_(void,     CheckStream)(THIS) PURE;
-	STDMETHOD_(void,     GetStatus)(THIS_ eSndState *pState, eSndFlagSet *pFlags) PURE;
+		STDMETHOD_(uint32, AvailToWrite)(THIS) PURE;
+		STDMETHOD_(void, CheckStream)(THIS) PURE;
+		STDMETHOD_(void, GetStatus)(THIS_ eSndState * pState, eSndFlagSet * pFlags) PURE;
 
-	STDMETHOD_(BOOL,     BufferReady)(THIS_ uint32 len) PURE;
-	STDMETHOD_(eSndError, LoadBuffer)(THIS_ uint8 * data, uint32 len) PURE;
-	STDMETHOD_(eSndError, LoadBufferIndirect)(THIS_ SndLoadFunction funk, void *pFunkData, uint32 len) PURE;
+		STDMETHOD_(BOOL, BufferReady)(THIS_ uint32 len) PURE;
+		STDMETHOD_(eSndError, LoadBuffer)(THIS_ uint8 * data, uint32 len) PURE;
+		STDMETHOD_(eSndError, LoadBufferIndirect)(THIS_ SndLoadFunction funk, void* pFunkData, uint32 len) PURE;
 
-   STDMETHOD_(void,	   SilenceFill)(THIS_ uint32 nBytes) PURE;
-   STDMETHOD_(void,     RegisterFillCallback)(THIS_ SndFillCallback cBack, void *p) PURE;
-   STDMETHOD_(void,     RegisterEndCallback)(THIS_ SndEndCallback cBack, void *p) PURE;
-   STDMETHOD_(void,     RegisterPreemptCallback)(THIS_ SndEndCallback cBack, void *p) PURE;
-   STDMETHOD_(void,     RegisterFadeCallback)(THIS_ eSndFaders t, SndEndCallback cBack, void *p) PURE;
-   STDMETHOD_(void,     DumpData)(THIS_ BOOL turnOn ) PURE;  // start dumping data to raw file
-   STDMETHOD_(uint32,   PlayTimeRemaining)(THIS) PURE;      // return milliseconds of playtime left
-   STDMETHOD_(void,     SetName)(THIS_ char *pUserName) PURE;
-   STDMETHOD_(char *,   GetName)(THIS) PURE;
+		STDMETHOD_(void, SilenceFill)(THIS_ uint32 nBytes) PURE;
+		STDMETHOD_(void, RegisterFillCallback)(THIS_ SndFillCallback cBack, void* p) PURE;
+		STDMETHOD_(void, RegisterEndCallback)(THIS_ SndEndCallback cBack, void* p) PURE;
+		STDMETHOD_(void, RegisterPreemptCallback)(THIS_ SndEndCallback cBack, void* p) PURE;
+		STDMETHOD_(void, RegisterFadeCallback)(THIS_ eSndFaders t, SndEndCallback cBack, void* p) PURE;
+		STDMETHOD_(void, DumpData)(THIS_ BOOL turnOn) PURE;  // start dumping data to raw file
+		STDMETHOD_(uint32, PlayTimeRemaining)(THIS) PURE;      // return milliseconds of playtime left
+		STDMETHOD_(void, SetName)(THIS_ const char* pUserName) PURE;
+		STDMETHOD_(char*, GetName)(THIS) PURE;
 
-   STDMETHOD_(void,     Squelch)(THIS_ int32 sqLevel, uint32 sqCount, eSndSquelchMode mode) PURE;
+		STDMETHOD_(void, Squelch)(THIS_ int32 sqLevel, uint32 sqCount, eSndSquelchMode mode) PURE;
 
-   STDMETHOD_(uint32,   TimeToSamples)(THIS_ uint32 millisecs) PURE;
-   STDMETHOD_(uint32,   SamplesToTime)(THIS_ uint32 samples) PURE;
+		STDMETHOD_(uint32, TimeToSamples)(THIS_ uint32 millisecs) PURE;
+		STDMETHOD_(uint32, SamplesToTime)(THIS_ uint32 samples) PURE;
 
-   STDMETHOD_(void,     Set3DPosition)(THIS_ sSndVector *pPosition) PURE;
-   STDMETHOD_(void,     Get3DPosition)(THIS_ sSndVector *pPosition) PURE;
-   STDMETHOD_(void,     Set3DVelocity)(THIS_ sSndVector *pVelocity) PURE;
-   STDMETHOD_(void,     Get3DVelocity)(THIS_ sSndVector *pVelocity) PURE;
-   STDMETHOD_(void,     Set3DConeAngles)(THIS_ uint32 inside, uint32 outside) PURE;
-   STDMETHOD_(void,     Get3DConeAngles)(THIS_ uint32 *pInside, uint32 *pOutside) PURE;
-   STDMETHOD_(void,     Set3DConeOrientation)(THIS_ sSndVector *pOrient) PURE;
-   STDMETHOD_(void,     Get3DConeOrientation)(THIS_ sSndVector *pOrient) PURE;
-   STDMETHOD_(void,     Set3DDistanceRange)(THIS_ float dmin, float dmax) PURE;
-   STDMETHOD_(void,     Get3DDistanceRange)(THIS_ float *pMin, float *pMax) PURE;
-   STDMETHOD_(void,     Set3DMode)(THIS_ eSnd3DMode mode) PURE;
-   STDMETHOD_(void,     Get3DMode)(THIS_ eSnd3DMode *pMode) PURE;
-   STDMETHOD_(void,     SetAmbientVolume)(THIS_ int32 vol) PURE;
-   STDMETHOD_(int32,    GetAmbientVolume)(THIS) PURE;
-   STDMETHOD_(void,     Set3DMethod)(THIS_ eSnd3DMethod method) PURE;
-   STDMETHOD_(eSnd3DMethod, Get3DMethod)(THIS) PURE;
-   STDMETHOD_(void,     Set3DReverbMix)(THIS_ float mix) PURE;
-};
+		STDMETHOD_(void, Set3DPosition)(THIS_ sSndVector * pPosition) PURE;
+		STDMETHOD_(void, Get3DPosition)(THIS_ sSndVector * pPosition) PURE;
+		STDMETHOD_(void, Set3DVelocity)(THIS_ sSndVector * pVelocity) PURE;
+		STDMETHOD_(void, Get3DVelocity)(THIS_ sSndVector * pVelocity) PURE;
+		STDMETHOD_(void, Set3DConeAngles)(THIS_ uint32 inside, uint32 outside) PURE;
+		STDMETHOD_(void, Get3DConeAngles)(THIS_ uint32 * pInside, uint32 * pOutside) PURE;
+		STDMETHOD_(void, Set3DConeOrientation)(THIS_ sSndVector * pOrient) PURE;
+		STDMETHOD_(void, Get3DConeOrientation)(THIS_ sSndVector * pOrient) PURE;
+		STDMETHOD_(void, Set3DDistanceRange)(THIS_ float dmin, float dmax) PURE;
+		STDMETHOD_(void, Get3DDistanceRange)(THIS_ float* pMin, float* pMax) PURE;
+		STDMETHOD_(void, Set3DMode)(THIS_ eSnd3DMode mode) PURE;
+		STDMETHOD_(void, Get3DMode)(THIS_ eSnd3DMode * pMode) PURE;
+		STDMETHOD_(void, SetAmbientVolume)(THIS_ int32 vol) PURE;
+		STDMETHOD_(int32, GetAmbientVolume)(THIS) PURE;
+		STDMETHOD_(void, Set3DMethod)(THIS_ eSnd3DMethod method) PURE;
+		STDMETHOD_(eSnd3DMethod, Get3DMethod)(THIS) PURE;
+		STDMETHOD_(void, Set3DReverbMix)(THIS_ float mix) PURE;
+		STDMETHOD_(void, Set3DOcclusion)(THIS_ int32 occlusionMillibels) PURE;
+		STDMETHOD_(int32, Kludge)(THIS_ int kludgeSelector, void* pKludgeStruct, int32 sizeKludgeStruct) PURE;
+	};
 
 #define	ISndSample_Play(p) 						COMCall0(p, Play)
 #define  ISndSample_Pause(p)                 COMCall0(p, Pause)
@@ -608,22 +615,23 @@ DECLARE_INTERFACE_(ISndSample, IUnknown)
 #define ISndSample_Set3DMethod(p, a)         COMCall1(p, Set3DMethod, a)
 #define ISndSample_Get3DMethod(p)            COMCall0(p, Get3DMethod)
 #define ISndSample_Set3DReverbMix(p, a)      COMCall1(p, Set3DReverbMix, a)
+#define ISndMixer_Kludge(p, a, b, c)               COMCall3(p, Kludge, a, b, c)
 
-//
-// get header info from WAVE or VOC sound file image
-// return TRUE if failure occurs
-//
-extern BOOL
-SndCrackRezHeader(
-                  void          *pHdr,
-                  uint32        len,
-                  void          **ppData,
-                  uint32        *pDataLen,
-                  uint32        *pNumSamples,
-                  sSndAttribs   *pAttribs );
+	//
+	// get header info from WAVE or VOC sound file image
+	// return TRUE if failure occurs
+	//
+	extern BOOL
+		SndCrackRezHeader(
+			void* pHdr,
+			uint32        len,
+			void** ppData,
+			uint32* pDataLen,
+			uint32* pNumSamples,
+			sSndAttribs* pAttribs);
 
 #ifdef __cplusplus
-	};
+};
 #endif
 
 #endif //_LG_SOUND_H

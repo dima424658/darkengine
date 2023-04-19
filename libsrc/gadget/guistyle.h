@@ -2,6 +2,7 @@
 @Copyright Looking Glass Studios, Inc.
 1996,1997,1998,1999,2000 Unpublished Work.
 */
+
 // $Header: x:/prj/tech/libsrc/gadget/RCS/guistyle.h 1.3 1998/09/18 19:19:37 mahk Exp $
 
 #ifndef __GUISTYLE_H

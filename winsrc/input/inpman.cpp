@@ -179,7 +179,7 @@ HRESULT cInputManager::Init()
    if (DynDirectInputCreate(hMainInst, DIRECTINPUT_VERSION, &m_pDI, NULL) == DI_OK)
    {
       // Enumerate the joystick devices.  
-      m_pDI->EnumDevices(DIDEVTYPE_JOYSTICK, InitJoystickInput, this, DIEDFL_ATTACHEDONLY);
+      m_pDI->EnumDevices(DI8DEVTYPE_JOYSTICK, InitJoystickInput, this, DIEDFL_ATTACHEDONLY);
       m_pDI->Release();    // Finished with DX 5.0.
    } 
    else 

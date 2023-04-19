@@ -120,7 +120,7 @@ int DatapathFDOpen(Datapath *pdp, const char *fname, int access, ... );
 int DatapathFind(Datapath *pdp, const char *fname, char *buff, int len);
 bool DatapathAdd(Datapath *pdp, const char *path);
 bool DatapathAddDir(Datapath *pdp, const char *pdir);
-char *DatapathLastPath(Datapath *pdp);
+const char *DatapathLastPath(Datapath *pdp);
 
 // Copies to dst from src, does not clear or free dst, so beware...
 void DatapathCopy(Datapath *dst, const Datapath *src);
@@ -160,7 +160,7 @@ typedef struct {
 // Makes a new DatapathDir, initializes it and returns it.  Pass in
 // the matching string, ie "*.res", or "regions\*" or whatever, and 
 // any flags.  
-DatapathDir *DatapathOpenDir(Datapath *dpath,char *name,int flags);
+DatapathDir *DatapathOpenDir(Datapath *dpath,const char *name,int flags);
 
 // Reads the next match and returns the name or passes back NULL if
 // done

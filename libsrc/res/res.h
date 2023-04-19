@@ -383,7 +383,7 @@ extern Id   resDescMax;                          // max id in res desc
 //      RESOURCE FILE BUILDING  (resbuild.c)
 //  --------------------------------------------------------
 
-void ResSetComment(int filenum, char *comment);  // set comment
+void ResSetComment(int filenum, const char *comment);  // set comment
 int  ResWrite(Id id);                            // write resource to file
 void ResKill(Id id);                             // delete resource & remove from file
 long ResPack(int filenum);                       // remove empty entries

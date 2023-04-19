@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{cd44d01f-f0c2-46c9-b700-a4ae556fc39e}</ProjectGuid>
+    <RootNamespace>g2</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="chkedgeb.asm" />
+    <None Include="chkedges.asm" />
+    <None Include="co88il.asm" />
+    <None Include="fl8lo2wi.asm" />
+    <None Include="fl8nni.asm" />
+    <None Include="fl8o2ni.asm" />
+    <None Include="fl8o2wi.asm" />
+    <None Include="lo816il.asm" />
+    <None Include="lo88il.asm" />
+    <None Include="n88il.asm" />
+    <None Include="o2w88i.asm" />
+    <None Include="o88bil.asm" />
+    <None Include="o88il.asm" />
+    <None Include="ptfloat.asm" />
+    <None Include="ptlinear.asm" />
+    <None Include="ptmap.asm" />
+    <None Include="ptmapper.asm" />
+    <None Include="ptmap_8.asm" />
+    <None Include="ptmap_n.asm" />
+    <None Include="ptpersp.asm" />
+    <None Include="uvgrad.asm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="area.c" />
+    <ClCompile Include="blend.c" />
+    <ClCompile Include="cc816.c" />
+    <ClCompile Include="chkply.c" />
+    <ClCompile Include="clip.c" />
+    <ClCompile Include="clplin.c" />
+    <ClCompile Include="co88.c" />
+    <ClCompile Include="cominit.c" />
+    <ClCompile Include="dlh816.c" />
+    <ClCompile Include="drytmap.c" />
+    <ClCompile Include="f16fl8ll.c" />
+    <ClCompile Include="f16fl8s.c" />
+    <ClCompile Include="f16lm.c" />
+    <ClCompile Include="f16pm.c" />
+    <ClCompile Include="f16s.c" />
+    <ClCompile Include="fl8fl8l.c" />
+    <ClCompile Include="fl8fl8ll.c" />
+    <ClCompile Include="fl8fl8s.c" />
+    <ClCompile Include="fl8il.c" />
+    <ClCompile Include="fl8l.c" />
+    <ClCompile Include="fl8lin.c" />
+    <ClCompile Include="fl8lm.c" />
+    <ClCompile Include="fl8lo2wc.c" />
+    <ClCompile Include="fl8nnic.c" />
+    <ClCompile Include="fl8o2wic.c" />
+    <ClCompile Include="fl8pm.c" />
+    <ClCompile Include="fl8s.c" />
+    <ClCompile Include="fl8sply.c" />
+    <ClCompile Include="g2circ.c" />
+    <ClCompile Include="g2d.c" />
+    <ClCompile Include="g2el.c" />
+    <ClCompile Include="g2makewr.c" />
+    <ClCompile Include="g2ov.c" />
+    <ClCompile Include="g2poly.c" />
+    <ClCompile Include="g2ring.c" />
+    <ClCompile Include="g2rot.c" />
+    <ClCompile Include="g2tm.c" />
+    <ClCompile Include="gen16il.c" />
+    <ClCompile Include="gen8il.c" />
+    <ClCompile Include="genf16l.c" />
+    <ClCompile Include="genf16s.c" />
+    <ClCompile Include="genfl8l.c" />
+    <ClCompile Include="genfl8s.c" />
+    <ClCompile Include="genil.c" />
+    <ClCompile Include="genlil.c" />
+    <ClCompile Include="genline.c" />
+    <ClCompile Include="genlm.c" />
+    <ClCompile Include="genply.c" />
+    <ClCompile Include="genrast.c" />
+    <ClCompile Include="genrsds.c" />
+    <ClCompile Include="genrsdtm.c" />
+    <ClCompile Include="gens.c" />
+    <ClCompile Include="gensil.c" />
+    <ClCompile Include="gensply.c" />
+    <ClCompile Include="golftmap.c" />
+    <ClCompile Include="grtm.c" />
+    <ClCompile Include="grwater.c" />
+    <ClCompile Include="init.c" />
+    <ClCompile Include="lh816.c" />
+    <ClCompile Include="lht816.c" />
+    <ClCompile Include="lmap.c" />
+    <ClCompile Include="lo816.c" />
+    <ClCompile Include="lo88.c" />
+    <ClCompile Include="o88.c" />
+    <ClCompile Include="permap.c" />
+    <ClCompile Include="plyshell.c" />
+    <ClCompile Include="point.c" />
+    <ClCompile Include="pt_duv.c" />
+    <ClCompile Include="pt_grad.c" />
+    <ClCompile Include="pt_main.c" />
+    <ClCompile Include="pt_map.c" />
+    <ClCompile Include="r88.c" />
+    <ClCompile Include="rastel.c" />
+    <ClCompile Include="raster.c" />
+    <ClCompile Include="scshell.c" />
+    <ClCompile Include="setdrv.c" />
+    <ClCompile Include="shadhack.c" />
+    <ClCompile Include="shadtmap.c" />
+    <ClCompile Include="svgainit.c" />
+    <ClCompile Include="t816oc.c" />
+    <ClCompile Include="t88oc.c" />
+    <ClCompile Include="tf.c" />
+    <ClCompile Include="tmapd.c" />
+    <ClCompile Include="tmsetup.c" />
+    <ClCompile Include="trifan.c" />
+    <ClCompile Include="trigrad.c" />
+    <ClCompile Include="trirast.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="blncon.h" />
+    <ClInclude Include="blnfcn.h" />
+    <ClInclude Include="buffer.h" />
+    <ClInclude Include="f16tf.h" />
+    <ClInclude Include="fl8lf.h" />
+    <ClInclude Include="fl8lin.h" />
+    <ClInclude Include="fl8sf.h" />
+    <ClInclude Include="fl8tf.h" />
+    <ClInclude Include="flat16.h" />
+    <ClInclude Include="flat8.h" />
+    <ClInclude Include="frame.h" />
+    <ClInclude Include="g2.h" />
+    <ClInclude Include="g2clip.h" />
+    <ClInclude Include="g2d.h" />
+    <ClInclude Include="g2makewr.h" />
+    <ClInclude Include="g2pt.h" />
+    <ClInclude Include="g2spoint.h" />
+    <ClInclude Include="g2tm.h" />
+    <ClInclude Include="general.h" />
+    <ClInclude Include="genrast.h" />
+    <ClInclude Include="gensf.h" />
+    <ClInclude Include="gentf.h" />
+    <ClInclude Include="grchkply.h" />
+    <ClInclude Include="grcurv.h" />
+    <ClInclude Include="grlin.h" />
+    <ClInclude Include="grply.h" />
+    <ClInclude Include="grscale.h" />
+    <ClInclude Include="grtm.h" />
+    <ClInclude Include="icanvas2.h" />
+    <ClInclude Include="ilfunc.h" />
+    <ClInclude Include="init.h" />
+    <ClInclude Include="lftype.h" />
+    <ClInclude Include="mathmac.h" />
+    <ClInclude Include="permap.h" />
+    <ClInclude Include="pftype.h" />
+    <ClInclude Include="plyparam.h" />
+    <ClInclude Include="plyrast.h" />
+    <ClInclude Include="plyshell.h" />
+    <ClInclude Include="plytyp.h" />
+    <ClInclude Include="point.h" />
+    <ClInclude Include="poly.h" />
+    <ClInclude Include="polyint.h" />
+    <ClInclude Include="profile.h" />
+    <ClInclude Include="pt.h" />
+    <ClInclude Include="ptmap.h" />
+    <ClInclude Include="ptmapper.h" />
+    <ClInclude Include="pt_asm.h" />
+    <ClInclude Include="rastel.h" />
+    <ClInclude Include="raster.h" />
+    <ClInclude Include="recip.h" />
+    <ClInclude Include="scale.h" />
+    <ClInclude Include="scancvt.h" />
+    <ClInclude Include="scshell.h" />
+    <ClInclude Include="setdrv.h" />
+    <ClInclude Include="sftype.h" />
+    <ClInclude Include="swarn.h" />
+    <ClInclude Include="tftype.h" />
+    <ClInclude Include="tmapd.h" />
+    <ClInclude Include="tmapf.h" />
+    <ClInclude Include="tmapfcn.h" />
+    <ClInclude Include="tmaps.h" />
+    <ClInclude Include="trirast.h" />
+    <ClInclude Include="water.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -9,9 +9,6 @@
 #include <textgadg.h>
 #include <tngtextg.h>
 
-// Other usefuls
-#include <_ui.h>
-
 // fonts
 #include <fakefont.h>
 

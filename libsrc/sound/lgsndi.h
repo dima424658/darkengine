@@ -428,7 +428,7 @@ public:
    STDMETHOD_(void,     RegisterFadeCallback)(eSndFaders t, SndEndCallback cBack, void *p);
    STDMETHOD_(void,     DumpData)( BOOL turnOn );  // start dumping data to raw file
    STDMETHOD_(uint32,   PlayTimeRemaining)(void);     // return milliseconds of playtime left
-   STDMETHOD_(void,     SetName)(char *pUserName);
+   STDMETHOD_(void,     SetName)(const char *pUserName);
    STDMETHOD_(char *,   GetName)(void);
    STDMETHOD_(void,     Squelch)(int32 sqLevel, uint32 sqCount, eSndSquelchMode mode);
    STDMETHOD_(uint32,   TimeToSamples)(uint32 millisecs);
@@ -471,7 +471,7 @@ public:
    void        MoveToList( cSndSample **ppHead );
    void        RemoveFromList();
    uint32      GetGroupQuick( void );
-   void        TBD( char *message );
+   void        TBD(const char *message );
 
 protected:
 	virtual HRESULT      Start();

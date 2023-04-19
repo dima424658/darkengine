@@ -16,7 +16,7 @@
 #include <r3ds.h>
 #include <md.h>
 
-#define max(x,y) (((x)>(y))?(x):(y))
+#undef rad2
 
 #ifndef SHIP
    #define TEST_VERSION(fname,model)   \

@@ -18,7 +18,7 @@ void g2_poly_shell(g2s_poly_params *p, int num_scanlines)
       r.bytes += p->raster_row;
 loop_entry:
       if ((r.raster->n>0)&&(!g2d_skip_il))
-         p->il(r.raster, p);
+         p->inner_loop(r.raster, p);
    } while (--num_scanlines);
    gr_free_temp(p->raster_list.bytes);
 }

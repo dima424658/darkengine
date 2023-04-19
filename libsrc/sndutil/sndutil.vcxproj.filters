@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="sndrezst.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="splcmain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="splicer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="streamer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="strmmain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utilmain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="foneshot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsplicer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fstremer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imaadpcm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mstremer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="onemain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="oneshot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="roneshot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rsplicer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rstremer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sndrezst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sndutil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="splicer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="streamer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utilmain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="imaadpcm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="oneshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

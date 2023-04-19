@@ -344,7 +344,7 @@ bool DatapathAdd(Datapath *pdp, const char *path)
 
 	while (*p)
 		{
-         char* pplus = strchr(p,'+');
+         const char* pplus = strchr(p,'+');
 		psemi = strchr(p, ';');
       if (pplus != NULL) psemi = (psemi == NULL) ? pplus : min(psemi,pplus);
 		if (psemi == NULL)
@@ -416,9 +416,9 @@ bool DatapathAddDir(Datapath *pdp, const char *pdir)
 //	Returns: ptr to path string, or ptr to "" if last file was opened
 //				in current directory or couldn't be opened at all.
 
-char *DatapathLastPath(Datapath *pdp)
+const char *DatapathLastPath(Datapath *pdp)
 {
-static char *emptyString = "";
+static const char *emptyString = "";
 
 	if (pdp->last)
 		return(pdp->datapath[pdp->last - 1]);

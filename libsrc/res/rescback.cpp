@@ -8,7 +8,6 @@
 
 #include <res.h>
 #include <res_.h>
-#include <_res.h>
 
 // Installable callback array on type
 fResCallback pfresCallbacks[NUM_RESTYPENAMES];

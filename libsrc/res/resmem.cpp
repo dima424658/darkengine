@@ -291,7 +291,7 @@ ulong LGAPI ResPager(ulong size, sAllocLimits * pLimits)
    const ulong totalAlloc = pLimits->totalAlloc;
 
 #ifndef SHIP
-   static highWarnBytes = kResPageHighAllocLevel;
+   static ulong highWarnBytes = kResPageHighAllocLevel;
    if (totalAlloc > highWarnBytes)
    {
       mprintf("WARNING: Memory allocation suspiciously high (%d bytes)!\n", totalAlloc);

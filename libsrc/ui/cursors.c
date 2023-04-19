@@ -15,8 +15,6 @@
 #include <string.h>
 #include <vmouse.h>
 
-#include <_ui.h>
-
 #define SPEW_ANAL Spew
 
 #define BMT_SAVEUNDER BMT_FLAT8

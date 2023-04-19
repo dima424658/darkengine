@@ -18,6 +18,7 @@
 #include <sndseg.h>
 #include <playlist.h>
 #include <mprintf.h>
+#include <timelog.h>
 
 //
 // This module holds all the stuff which refills an ISndSample stream buffer from
@@ -96,7 +97,7 @@ cSndSource::ReadData( void    *pDst,
    if ( mResyncNeeded ) {
       mpSrc1->SetPosition( mResyncPos - mSrc1Offset );
    }
-   LOG3( "SSrc::ReadData [%d] %d bytes resync==%d\n", mSerialNum, nBytes, mResyncNeeded );
+   TLOG3( "SSrc::ReadData [%d] %d bytes resync==%d\n", mSerialNum, nBytes, mResyncNeeded );
 
    // fetch the first source, convert if necessary
    pAData = (char *) mpSrc1->GetData( pDst, nBytes );
@@ -172,7 +173,7 @@ cSndSource::FillStream( uint32    nBytes )
    uint32            bytesToDo, newPos;
    //SSPLCallback      *pCallback;
 
-   LOG3( "SSrc::FillStream [%d] %d bytes, pos %d\n", mSerialNum, nBytes, mListBytesTaken );
+   TLOG3( "SSrc::FillStream [%d] %d bytes, pos %d\n", mSerialNum, nBytes, mListBytesTaken );
    // TBD - callbacks
 
    // if nBytes is 0 at this point, that is a flag that the stream should shutdown,

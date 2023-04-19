@@ -365,7 +365,7 @@ void mp_forecast_joint_pos(multiped *mp, mps_start_info *info, float frame,
    if (info)
    {
       motion = mp_alloc_motion(mp, info);
-      mp_setup_motion(mp,motion);
+      mp_setup_motion(mp,motion, 0);
    }
       
    else

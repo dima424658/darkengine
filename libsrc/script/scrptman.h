@@ -265,7 +265,7 @@ private:
 
    eScrTraceAction FindDebugFlags(sScrMsg *pMsg);
 
-   SaveLoad();
+   HRESULT SaveLoad();
 
    ////////////////////////////////////
 

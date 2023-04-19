@@ -12,6 +12,8 @@
 #include <grtm.h>
 #include <g2clip.h>
 
+typedef void (g2ut_func)(grs_bitmap* bm, int n, grs_vertex** vpl);
+
 static int do_map(grs_bitmap *bm, int n, grs_vertex **vpl, int clip_type, g2ut_func *f)
 {
    grs_vertex **cvpl=NULL;

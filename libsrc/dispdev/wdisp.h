@@ -180,6 +180,12 @@ public:
     // Query kind, flags, and ddraw guid
     STDMETHOD_(void, GetKind2)(eDisplayDeviceKind *, int *, GUID **);
 
+    // Set gamma correction level
+    STDMETHOD_(BOOL, SetGamma)(double gamma);
+
+    // Set page flipping
+    STDMETHOD_(BOOL, SetFlip)(BOOL bFlip);
+
     // Create a GDI bitmap
     HBITMAP CreateGDIBitmap(sGdiBitmapInfo * pBitmapInfo);
 
@@ -245,12 +251,12 @@ private:
         STDMETHOD_(BOOL, ProcessMessage)(UINT msg, WPARAM wParam, LPARAM lParam, long * pRetVal);
         STDMETHOD_(void, GetWidthHeight)(unsigned * pWidth, unsigned * pHeight);
         STDMETHOD_(void, OnTaskSwitch)  (BOOL);
-        STDMETHOD_(BOOL, GetDirectDraw) (IDirectDraw **);
+        STDMETHOD_(BOOL, GetDirectDraw) (IDirectDraw4 **);
         STDMETHOD_(void, WaitForMutex)();
         STDMETHOD_(void, ReleaseMutex)();
         STDMETHOD_(void, CursorBltFromGDIScreen)(sGrBitmap *, int x, int y);
         STDMETHOD_(void, CursorBltToGDIScreen)(sGrBitmap *, int x, int y);
-        STDMETHOD_(BOOL, GetBitmapSurface)(sGrBitmap *, IDirectDrawSurface **);
+        STDMETHOD_(BOOL, GetBitmapSurface)(sGrBitmap *, IDirectDrawSurface4 **);
         STDMETHOD_(void, AddTaskSwitchCallback)(WinDispDevCallbackFunc *callback);
         STDMETHOD_(void, RemoveTaskSwitchCallback)(int id);
 

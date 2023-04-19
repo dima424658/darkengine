@@ -51,7 +51,7 @@ cSndSource::cSndSource()
 {
    mSourcesMade++;
    mSerialNum = mNextSerialNum++;
-   LOG3( "SSrc::Constructor [%d] %ld made %ld destroyed", mSerialNum,
+   TLOG3( "SSrc::Constructor [%d] %ld made %ld destroyed", mSerialNum,
          mSourcesMade, mSourcesDestroyed );
 
    mpPlayer = NULL;
@@ -99,7 +99,7 @@ cSndSource::cSndSource()
 cSndSource::~cSndSource()
 {
    mSourcesDestroyed++;
-   LOG3( "SSrc::Destructor [%d] %ld made %ld destroyed", mSerialNum,
+   TLOG3( "SSrc::Destructor [%d] %ld made %ld destroyed", mSerialNum,
          mSourcesMade, mSourcesDestroyed );
    // TBD - what if a player is still connected?
    if ( mpSrc1 != NULL ) {

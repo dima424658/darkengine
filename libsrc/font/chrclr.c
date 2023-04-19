@@ -17,7 +17,7 @@
 /* clear the rectangle occupied by the character c at (x,y) on the
    current canvas.  clips to the current clipping rectangle. */
 
-int gr_font_char_clear (grs_font *f, char c, int x, int y)
+int gr_font_char_clear (grs_font *f, char c, short x, short y)
 {
    long color;                /* klugey save of current color */
    short w, h;                /* width and height of character */
@@ -34,7 +34,7 @@ int gr_font_char_clear (grs_font *f, char c, int x, int y)
    return r;
 }
 
-void gr_font_char_uclear (grs_font *f, char c, int x, int y)
+void gr_font_char_uclear (grs_font *f, char c, short x, short y)
 {
    long color;                /* klugey save of current color */
    short w, h;                /* width and height of character */

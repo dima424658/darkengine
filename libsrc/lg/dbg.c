@@ -431,7 +431,6 @@
 #include <kb.h>
 #include <kbcook.h>
 #include <keydefs.h>
-#include <nameconv.h>
 
 #include <coremutx.h>
 #include <lgassert.h>
@@ -448,7 +447,7 @@ char dbgLogPath[128] = ".\\";
 static ulong spewSrc;
 #endif
 
-static void (*dbg_f_report_user)(int errType, char *msg) = NULL;
+static void (*dbg_f_report_user)(int errType, const char *msg) = NULL;
 
 int (*f_getch)() = getch;
 
@@ -456,7 +455,7 @@ int errErrCode;
 
 extern char *pExitMsg;
 
-void DbgHandleC(int reportType, ulong src, char *fmt, __va_list __arg);
+void DbgHandleC(int reportType, ulong src, const char *fmt, va_list __arg);
 
 //	----------------------------------------------------------
 //		REPORTING ROUTINES
@@ -467,7 +466,7 @@ void DbgHandleC(int reportType, ulong src, char *fmt, __va_list __arg);
 //		ecode = error code to exit with
 //		msg   = message
 
-void DbgReportError(int ecode, char *msg, ...)
+void DbgReportError(int ecode, const char *msg, ...)
 {
 	va_list ap;
     CoreThreadLock();
@@ -486,7 +485,7 @@ void DbgReportError(int ecode, char *msg, ...)
 //
 //		msg = message
 
-void DbgReportWarnUser(char *msg, ...)
+void DbgReportWarnUser(const char *msg, ...)
 {
 	va_list ap;
 
@@ -503,7 +502,7 @@ void DbgReportWarnUser(char *msg, ...)
 //
 //		msg = message
 
-void DbgReportWarning(char *msg, ...)
+void DbgReportWarning(const char *msg, ...)
 {
 	va_list ap;
     CoreThreadLock();
@@ -551,7 +550,7 @@ bool DbgSpewTest(ulong src)
 //
 //		msg = message
 
-void DbgDoSpew(char *msg, ...)
+void DbgDoSpew(const char *msg, ...)
 {
 	va_list ap;
     CoreThreadLock();
@@ -684,7 +683,7 @@ void DbgSetSlotName(int bank, int slot, char *name)
 //
 //	Returns: bank number 0-31 or -1 if not found
 
-int DbgFindBankName(char *name)
+int DbgFindBankName(const char *name)
 {
 	int bank;
 
@@ -705,7 +704,7 @@ int DbgFindBankName(char *name)
 //
 //	Returns: slot number 0-26 or -1 if not found
 
-int DbgFindSlotName(int bank, char *name)
+int DbgFindSlotName(int bank, const char *name)
 {
 	char **ppslotname;
 	int slot;
@@ -734,7 +733,7 @@ int DbgFindSlotName(int bank, char *name)
 //
 //		path = ptr to path string
 
-void DbgSetLogPath(char *path)
+void DbgSetLogPath(const char *path)
 {
 	int bank,slot;
 
@@ -765,7 +764,7 @@ void DbgSetLogPath(char *path)
 //
 //	Returns: TRUE if file opened successfully, FALSE if not
 
-bool DbgSetLogFile(ulong src, char *name)
+bool DbgSetLogFile(ulong src, const char *name)
 {
 	int index,slot;
 	uchar *pfi;
@@ -1007,7 +1006,7 @@ static bool exiting = FALSE;
 }
 
 char *dbgTags[] = {"","WARNING: ","WARN USER: ","ERROR: "};
-void DbgHandleC(int reportType, ulong src, char *fmt, __va_list __arg)
+void DbgHandleC(int reportType, ulong src, const char *fmt, va_list __arg)
 {
 //	__va_list myarg;		KLC 8/29/96, removed
 	char buff[1024];

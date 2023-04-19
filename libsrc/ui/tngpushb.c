@@ -2,7 +2,6 @@
 #include <io.h>
 
 #include <tngpushb.h>
-#include <_ui.h>
 
 // Initializes the TNG G
 errtype tng_pushbutton_init(void *ui_data, TNG *ptng, TNGStyle *sty, int button_type, void *display_data, Point size)

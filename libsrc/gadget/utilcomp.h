@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/gadget/utilcomp.h,v 1.2 1996/09/19 17:58:11 xemu Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/utilcomp.h 1.2 1996/09/19 17:58:11 xemu Exp $
 
 #ifndef __UTILCOMP_H
 #define __UTILCOMP_H

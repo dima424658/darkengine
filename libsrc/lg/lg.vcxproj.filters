@@ -1,0 +1,173 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="coremutx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="datapath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dbg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dbgpp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="findfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hashfns.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgalt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgassert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lglocmsg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lglog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgprntf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgsprntf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="memreq.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="memstat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stktrace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thrdtool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="timings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tmpalloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="breakkey.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bugtrak.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="codewrit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="crc32.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="datapath.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dbg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dbgcfg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dbgpp.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dpathdir.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="exit.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="findfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hashfns.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgassert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lglog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgprntf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgsprntf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memgrow.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memreq.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memstat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stack.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stktrace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="thrdtool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="timings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tmpalloc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="appagg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="breakkey.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bugtrak.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="codewrit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="coremutx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="oheapwal.asm">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>

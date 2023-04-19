@@ -1270,7 +1270,7 @@ cSndSample::PlayTimeRemaining()
 // set the sample name (used in logging/debugging)
 //
 STDMETHODIMP_(void)
-cSndSample::SetName( char *pUserName )
+cSndSample::SetName( const char *pUserName )
 {
 #ifdef DO_TIME_LOGGING
    sprintf( mpName, "{%s}[%ld:%ld]", pUserName, mGroup, mSerialNum );
@@ -1407,7 +1407,7 @@ cSndSample::GetAmbientVolume( void )
 // debug aid
 //
 void
-cSndSample::TBD( char *message)
+cSndSample::TBD(const char *message)
 {
    TLOG1( "Sample TBD: %s\n", ((long) message) );
 #ifndef SHIP   

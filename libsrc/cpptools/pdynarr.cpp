@@ -17,7 +17,7 @@ tGetPriorityFunc cPriDynArrayCompareHolder::gm_pfnGetPriority;
 
 ///////////////////////////////////////
 
-int cPriDynArrayCompareHolder::Compare(const tDynArrayItem * pLeft, const tDynArrayItem * pRight)
+int cPriDynArrayCompareHolder::Compare(const void* pLeft, const void* pRight)
     {
     int retVal = ComparePriorities((*gm_pfnGetPriority)(pLeft), (*gm_pfnGetPriority)(pRight));
 #if 0 // def DEBUG

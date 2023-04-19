@@ -32,7 +32,7 @@ do { \
 #define put_mono(c)
 #endif
 
-static int tmgr_init(r3s_texture bm, int num_entries, int flags);
+static int tmgr_init(r3s_texture bm, int max_textures, int* texture_size_list, int num_texture_sizes, int flags);
 static void tmgr_shutdown(void);
 static void tmgr_start_frame(int f);
 static void tmgr_end_frame(void);
@@ -544,7 +544,7 @@ static void tmgr_unload_texture(r3s_texture bm)
    put_mono('.');
 }
 
-static void tmgr_reload_texture(grs_bitmap *bm)
+static void tmgr_reload_texture(r3s_texture bm)
 {
    tdrv_texture_info info;
 
@@ -679,7 +679,7 @@ static void tmgr_end_frame(void)
    in_frame = FALSE;
 }
 
-static int tmgr_init(r3s_texture bm, int num_textures, int flags)
+static int tmgr_init(r3s_texture bm, int in_max_textures, int *texture_size_list, int num_texture_sizes, int flags)
 {
    if (texinfo!=NULL)
       tmgr_shutdown();
@@ -691,8 +691,8 @@ static int tmgr_init(r3s_texture bm, int num_textures, int flags)
    put_mono('a');
    bytes_loaded = 0;
    texmem_loaded = 0;
-   max_textures = num_textures;
-   texinfo = (tmgr_texture_info *)Malloc(num_textures * sizeof(*texinfo));
+   max_textures = in_max_textures;
+   texinfo = (tmgr_texture_info *)Malloc(in_max_textures * sizeof(*texinfo));
    init_bitmap_list();
    init_size_tables();
    default_bm = bm;

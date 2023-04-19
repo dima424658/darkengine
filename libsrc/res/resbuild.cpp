@@ -42,7 +42,6 @@
 #include <res_.h>
 #include <lzw.h>
 #include <pkzip.h>
-#include <_res.h>
 
 #define CTRL_Z 26       // make sure comment ends with one, so can type a file
 
@@ -57,7 +56,7 @@ void ResCopyBytes(int fd, long writePos, long readPos, long size);
 //
 //  ResSetComment() sets comment in res header.
 
-void ResSetComment(int filenum, char *comment)
+void ResSetComment(int filenum, const char *comment)
 {
    ResFileHeader *phead;
    DBG(DSRC_RES_ChkIdRef,

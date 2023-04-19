@@ -61,8 +61,6 @@
 #include <lzw.h>
 #include <pkzip.h>
 
-#include <_res.h>
-
 //  -----------------------------------------------------------
 //
 // Warning on load

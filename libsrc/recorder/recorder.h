@@ -8,6 +8,7 @@
 #ifndef __RECORDER_H
 #define __RECORDER_H
 
+#include <aggmemb.h>
 #include <comtools.h>
 #include <recapi.h>
 #include <filespec.h>

@@ -44,8 +44,8 @@ public:
                                                   int flags,
                                                   sGrModeCap * pReturnModeInfo) = 0;
 
-    virtual BOOL DoGetDirectDraw(IDirectDraw **);
-    virtual BOOL DoGetBitmapSurface(sGrBitmap *, IDirectDrawSurface **);
+    virtual BOOL DoGetDirectDraw(IDirectDraw4 **);
+    virtual BOOL DoGetBitmapSurface(sGrBitmap *, IDirectDrawSurface4 **);
     
     HWND GetMainWnd();
 

@@ -1,0 +1,177 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="mousedev.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mousesys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mousevel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="recinput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="defehand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fanjoy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpbase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpcompo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpdynf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inperr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpinit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpman.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inputimp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="joyapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="joynew.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="joystick.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="joywin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kbarray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kbcntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kbcook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kbdecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kbmod.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kbs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kbscan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kbstate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="keydefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mouse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="mousesys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="recinput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="defehand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fanjoy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hatcal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inpcompo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inpdynf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inperr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inpguid.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inpinit.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inpman.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="joyold.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="joystick.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="joywin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kbasctab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kbcntry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kbcook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kbshut.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kbstart.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kbsys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kbwin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

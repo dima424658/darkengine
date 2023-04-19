@@ -247,11 +247,11 @@ extern int errErrCode;
 //	These are prototypes for the 4 reporting routines, which should be
 //	called via the macros given above, and not directly.
 
-void DbgReportError(int errcode, char *msg, ...);
-void DbgReportWarnUser(char *msg, ...);
-void DbgReportWarning(char *msg, ...);
+void DbgReportError(int errcode, const char *msg, ...);
+void DbgReportWarnUser(const char *msg, ...);
+void DbgReportWarning(const char *msg, ...);
 bool DbgSpewTest(ulong src);
-void DbgDoSpew(char *msg, ...);
+void DbgDoSpew(const char *msg, ...);
 
 //	Set debug config screen to use function for getting keys
 
@@ -261,13 +261,13 @@ extern int (*f_getch)();
 //	All logfiles are written to the same directory, which defaults to
 //	the current directory, but can be changed.
 
-void DbgSetLogPath(char *path);
+void DbgSetLogPath(const char *path);
 
 //	This routine sets the log file associated with a source.
 //	Opening, writing, and closing of the log file is automatic, as
 //	is sharing of files with the same name.
 
-bool DbgSetLogFile(ulong src, char *name);
+bool DbgSetLogFile(ulong src, const char *name);
 
 //	These are really internal things
 
@@ -285,16 +285,16 @@ extern char *dbgTags[];
 ** so instead we break it up into two parts:
 */
 
-typedef void ReportRoutine(int reportType, char *msg);
+typedef void ReportRoutine(int reportType, const char *msg);
 void DbgSetReportRoutine(ReportRoutine *);
 
 //	Allows user to configure debug system
 
 void DbgInit();							// auto-loads settings from "debug.dbg"
 void DbgMonoConfig();					// let operator config on mono screen
-bool DbgAddConfigPath(char *path);	// add path for finding config files
-int DbgLoadConfig(char *fname);		// load config file
-int DbgSaveConfig(char *fname);		// save config file
+bool DbgAddConfigPath(const char *path);	// add path for finding config files
+int DbgLoadConfig(const char *fname);		// load config file
+int DbgSaveConfig(const char *fname);		// save config file
 
 
 // note this is the else DBG_ON from the top of the file, sitting here all
@@ -324,15 +324,15 @@ int DbgSaveConfig(char *fname);		// save config file
 #define Assert(expr,msg)
 #define Assrt(expr)
 #define Spew(src,msg)
-void DbgReportError(int errcode, char *msg, ...);
-void DbgReportWarnUser(char *msg, ...);
+void DbgReportError(int errcode, const char *msg, ...);
+void DbgReportWarnUser(const char *msg, ...);
 #define DbgInstallGetch(f)
 #define DbgSetLogPath(path)
 #define DbgSetLogFile(src, name) (0)
 #define DbgOpenLogFile(index) (0)
 #define DbgCloseLogFiles()
 //#define DbgHandle(reportType,src,buff)
-typedef void ReportRoutine(int reportType, char *msg);
+typedef void ReportRoutine(int reportType, const char *msg);
 void DbgSetReportRoutine(ReportRoutine *);
 #define DbgInit()
 #define DbgMonoConfig()
@@ -358,7 +358,7 @@ extern "C"  {
 
 //	These routines are in exit.c, and handle exit functions.
 
-void Exit(int errcode, char *msg);	// shut down with msg
+void Exit(int errcode, const char *msg);	// shut down with msg
 #define AtExit(func) atexit(func);	// add func to atexit list
 void PrintExitMsg();						// prints exit message
 

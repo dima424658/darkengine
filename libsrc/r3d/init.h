@@ -1,3 +1,5 @@
+#include <ctxts.h>
+
 // Initializing commands
 
 EXTERN void r3_init_defaults(int trans_depth,int clip_planes,r3e_space space,int ctxt_cnt,int stride);

@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/gadget/gadbutt.h,v 1.1 1996/08/26 02:02:49 mahk Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/gadbutt.h 1.1 1996/08/26 02:02:49 mahk Exp $
 
 #ifndef __GADBUTT_H
 #define __GADBUTT_H

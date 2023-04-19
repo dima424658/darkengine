@@ -604,9 +604,9 @@ public:
    void InsertBefore(cNode& before, const ELEM& e) { cParent::InsertBefore(&before,new cNode(e));};
    void InsertAfter(cNode& before, const ELEM& e) { cParent::InsertAfter(&before,new cNode(e));};
    void Delete(cNode& n) { if (&n != NULL) delete Remove(&n);};
-   cIter Iter() const { return cIter(GetFirst());};
+   cIter Iter() const { return cIter(cDList::GetFirst()); };
 
-   ~cSimpleDList() { DestroyAll();};
+   ~cSimpleDList() { cDList::DestroyAll();};
 };
 
 ///////////////////////////////////////////////////////////////////////////////

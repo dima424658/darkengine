@@ -20,76 +20,6 @@
 
 #pragma code_seg("lgalloc")
 
-///////////////////////////////////////////////////////////////////////////////
-
-#ifdef _WIN32
-
-#include <virtmem.h>
-
-#define kPoolCoreGrowSize (1024 * 64)
-#define kPoolCoreMaxSize  (1024 * 1024 * 64)
-
-class cPoolCore
-{
-public:
-    static void * AllocPage();
-    static void   FreePage(void *);
-
-private:
-    static void * gm_pCoreStack;
-    static void * gm_pCoreStackLimit;
-
-#ifdef DEBUG
-    static ulong gm_nTotalCoreBytes;
-#endif
-
-};
-
-void * cPoolCore::gm_pCoreStack;
-void * cPoolCore::gm_pCoreStackLimit;
-#ifdef DEBUG
-ulong cPoolCore::gm_nTotalCoreBytes;
-#endif
-
-void * cPoolCore::AllocPage()
-{
-//    if (size % 2 != 0)
-//        MessageBox(NULL, "Only even allocations?!", NULL, MB_OK);
-
-    if (!gm_pCoreStack)
-    {
-        gm_pCoreStack = VirtualAlloc(NULL, kPoolCoreMaxSize, MEM_RESERVE, PAGE_READWRITE);
-        AssertMsg(gm_pCoreStack, "VirtualAlloc failed!");
-        VirtualAlloc(gm_pCoreStack, kPoolCoreGrowSize, MEM_COMMIT, PAGE_READWRITE);
-        gm_pCoreStackLimit = (uchar *)gm_pCoreStack + kPoolCoreGrowSize;
-    }
-
-    void * pReturn = gm_pCoreStack;
-    gm_pCoreStack = (uchar *)gm_pCoreStack + kPageSize;
-
-    while (gm_pCoreStack > gm_pCoreStackLimit)
-    {
-        if (VirtualAlloc(gm_pCoreStackLimit, kPoolCoreGrowSize, MEM_COMMIT, PAGE_READWRITE))
-        {
-            gm_pCoreStackLimit = (uchar *)gm_pCoreStackLimit + kPoolCoreGrowSize;
-        }
-        else
-        {
-            CriticalMsg("VirtualAlloc failed!");
-            return NULL;
-        }
-    }
-
-#ifdef DEBUG
-    gm_nTotalCoreBytes += kPageSize;
-#endif
-
-    return pReturn;
-}
-
-#endif
-///////////////////////////////////////////////////////////////////////////////
-
 struct sPoolBlock;
 
 struct sFreePoolPart
@@ -185,7 +115,7 @@ void cPoolAllocator::ThreadNewBlock()
     AssertMsg(!m_pFreeList, "ThreadNew called when not empty");
 
     // First get a new batch ...
-    m_pFreeList = (sPoolBlock *)(PoolCoreAllocPage());
+    m_pFreeList = new sPoolBlock[m_nBlockingFactor];
 
     if (!m_pFreeList)
         return;

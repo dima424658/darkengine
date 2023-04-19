@@ -3,7 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
-// $Header: r:/t2repos/thief2/libsrc/gadget/gadtext.h,v 1.4 1997/02/11 15:01:46 mahk Exp $
+// $Header: x:/prj/tech/libsrc/gadget/RCS/gadtext.h 1.4 1997/02/11 15:01:46 mahk Exp $
 
 #ifndef __GADTEXT_H
 #define __GADTEXT_H

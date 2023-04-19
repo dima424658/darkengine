@@ -3,7 +3,7 @@
 #ifndef __GRPLY_H
 #define __GRPLY_H
 #include <g2d.h>
-#include <icanvas.h>
+#include <icanvas2.h>
 #include <pftype.h>
 #include <dev2d.h>
 #include <g2spoint.h>

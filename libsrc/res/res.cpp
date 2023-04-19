@@ -52,7 +52,6 @@
 #include <res_.h>
 #include <lzw.h>
 #include <memall.h>
-#include <_res.h>
 
 //  The resource descriptor table
 

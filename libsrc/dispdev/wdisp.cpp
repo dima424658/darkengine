@@ -658,6 +658,26 @@ STDMETHODIMP cWinDisplayDevice::GetRenderTargets(sGrRenderTargets *)
 }
 
 ///////////////////////////////////////
+//
+// Set gamma correction level
+//
+
+STDMETHODIMP_(BOOL) cWinDisplayDevice::SetGamma(double gamma)
+{
+    return FALSE;
+}
+
+///////////////////////////////////////
+//
+// Set page flipping
+//
+
+STDMETHODIMP_(BOOL) cWinDisplayDevice::SetFlip(BOOL bFlip)
+{
+    return FALSE;
+}
+
+///////////////////////////////////////
 
 void cWinDisplayDevice::Sync2DPointers()
 {
@@ -977,7 +997,7 @@ STDMETHODIMP_(void) cWinDisplayDevice::cIWinDisplayDeviceProxy::
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(BOOL) cWinDisplayDevice::cIWinDisplayDeviceProxy::GetDirectDraw(IDirectDraw ** ppDD)
+STDMETHODIMP_(BOOL) cWinDisplayDevice::cIWinDisplayDeviceProxy::GetDirectDraw(IDirectDraw4 ** ppDD)
 {
     if (m_pOuter->m_pDisplayProvider)
         return m_pOuter->m_pDisplayProvider->DoGetDirectDraw(ppDD);
@@ -1014,7 +1034,7 @@ STDMETHODIMP_(void) cWinDisplayDevice::cIWinDisplayDeviceProxy::CursorBltToGDISc
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(BOOL) cWinDisplayDevice::cIWinDisplayDeviceProxy::GetBitmapSurface(sGrBitmap * pBm, IDirectDrawSurface ** ppDDS)
+STDMETHODIMP_(BOOL) cWinDisplayDevice::cIWinDisplayDeviceProxy::GetBitmapSurface(sGrBitmap * pBm, IDirectDrawSurface4 ** ppDDS)
 {
     if (m_pOuter->m_pDisplayProvider)
         return m_pOuter->m_pDisplayProvider->DoGetBitmapSurface(pBm, ppDDS);

@@ -333,7 +333,7 @@ BOOL __stdcall ReduceDots(char *psz)
     const char cFirstChar = *psz;
     if (cFirstChar)
         {
-        const cSecondChar = *(psz+1);
+        const char cSecondChar = *(psz+1);
         // Set back stop to slash after drive...
         if (cSecondChar == ':')
             {

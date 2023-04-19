@@ -7,6 +7,8 @@
 #include <matrix.h>
 #include <mds.h>
 
+#undef rad2
+
 // Uncomment to use old brute-force (non-BSP) intersection methods
 // #define USE_OLD_SEGMENT_HIT_DETECT
 // #define USE_OLD_SPHERE_HIT_DETECT

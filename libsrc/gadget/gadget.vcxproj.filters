@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="uibutton.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="uitexted.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util2d.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="drawelem.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gadblist.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gadget.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gadtext.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gcompose.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="guistyle.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="drawelem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadbase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadblist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadbox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadbutt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadgint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadmenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadscale.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadtext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gcompose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="guistyle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgadover.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="uibutton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="uigadget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="uitexted.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util2d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utilcomp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

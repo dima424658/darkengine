@@ -14,7 +14,7 @@
 #define __GRSCALE_H
 
 #include <g2d.h>
-#include <icanvas.h>
+#include <icanvas2.h>
 #include <sftype.h>
 
 #define gr_scale_bitmap \

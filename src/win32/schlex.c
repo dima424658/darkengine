@@ -374,8 +374,8 @@ extern	int	yymapch	YY_ARGS((int delim, int escape));
 #endif
 
 /* stdin and stdout may not neccessarily be constants */
-YY_DECL	FILE   *yyin = stdin;
-YY_DECL	FILE   *yyout = stdout;
+YY_DECL	FILE* yyin = NULL;
+YY_DECL	FILE* yyout = NULL;
 YY_DECL	int	yylineno = 1;		/* line number */
 
 /*

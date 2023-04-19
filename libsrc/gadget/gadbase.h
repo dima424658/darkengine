@@ -7,6 +7,7 @@
 
 #ifndef __GADBASE_H
 #define __GADBASE_H
+#pragma once
 
 #include <cursors.h>
 #include <slab.h>
@@ -118,3 +119,6 @@ EXTERN int LGadSetCursor(grs_bitmap *bm,Point anchor, int paltype, Cursor *c);
 EXTERN int LGadFlush();
 
 #endif // __GADBASE_H
+
+
+

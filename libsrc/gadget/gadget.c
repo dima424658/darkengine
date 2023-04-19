@@ -222,7 +222,7 @@ bool LGadMouseHandler(uiEvent *e, Region *r, void *data)
 
    cb = vb->vmc;
    if ((e->type == UI_EVENT_MOUSE) && cb)
-      return(cb(me->pos.x,me->pos.y,(short)me->action,vb));
+      return(cb(me->pos.x,me->pos.y,(short)me->action,me->wheel,vb));
    return(FALSE);
 }
 
@@ -287,10 +287,9 @@ the inner callback. */
    } while(0)
 
 
-LGadRoot *LGadSetupRoot(LGadRoot *vr, short w, short h, Ref curs_id, int paltype)
+LGadRoot *LGadSetupRoot(LGadRoot *vr, short w, short h, IDataSource *pCurs, Point anchor, int paltype)
 {
    grs_bitmap *c;
-   Point p;
 
    if (vr == NULL)
    {
@@ -316,13 +315,11 @@ LGadRoot *LGadSetupRoot(LGadRoot *vr, short w, short h, Ref curs_id, int paltype
       return(NULL);
    }
 #endif
-
-   if (curs_id != 0)
-      c = UtilLockBitmapRef(curs_id);
+   vr->pCursor = pCurs;
+   if (pCurs != NULL)
+      c = (grs_bitmap*)IDataSource_Lock(pCurs);
    else
       c = NULL;
-
-   vr->cursor_id = curs_id;
 
 #ifdef FAIL_ON_NO_CURSOR
    if (c == NULL)
@@ -343,10 +340,9 @@ LGadRoot *LGadSetupRoot(LGadRoot *vr, short w, short h, Ref curs_id, int paltype
       c->align = CURSOR_ALIGN;
       lgad_set_pal16(paltype,CURSOR_ALIGN);
 
-      UtilRefAnchor(curs_id,&p);
       vr->curs = Malloc(sizeof(Cursor));
       AssertMsg(vr->curs != NULL, "Not enough memory for cursor");
-      uiMakeBitmapCursor(vr->curs, c, p);
+      uiMakeBitmapCursor(vr->curs, c, anchor);
    }
    else
    {
@@ -393,8 +389,8 @@ int LGadDestroyRoot(LGadRoot *deadroot)
    if (!deadroot->subroot)
    {
       uiDestroySlab(deadroot->root_slab);
-      if (deadroot->cursor_id != 0)
-         RefUnlock(deadroot->cursor_id);
+      if (deadroot->pCursor != NULL)
+          IDataSource_Unlock(deadroot->pCursor);
       if (deadroot->curs != NULL)
          Free(deadroot->curs);
       if (deadroot->root_slab != NULL)
@@ -1435,13 +1431,13 @@ void ScaleDrawCallback(DrawElement* elem, DrawElemState state)
          ew = vs->internal_w;
       x = ew + vs->dot_margin;
       y = vs->dot_margin;
-      ElementDraw(draw,NULL, 0, 0, x, grd_canvas->bm.h);
+      ElementDraw(draw,dsNORMAL, 0, 0, x, grd_canvas->bm.h);
    }
    else
    {
       x = vs->dot_margin;
       y = grd_canvas->bm.h - (vs->dot_h + vs->dot_margin);
-      ElementDraw(draw, NULL, 0, 0, grd_canvas->bm.w, y);
+      ElementDraw(draw, dsNORMAL, 0, 0, grd_canvas->bm.w, y);
    }
    draw->draw_flags = fl; // restore to old val
 
@@ -1480,7 +1476,7 @@ void ScaleDraw(void *data, LGadBox *vb)
    de.bcolor = BUTTON_DRAWELEM(vs).bcolor;
 
    // note assumption that we are in a canvas just right for us to draw into
-   ElementDraw(&de,NULL,0,0,grd_canvas->bm.w,grd_canvas->bm.h);
+   ElementDraw(&de,dsNORMAL,0,0,grd_canvas->bm.w,grd_canvas->bm.h);
 }
 #pragma on(unreferenced)
 void LGadInitScale(LGadScale *vs)
@@ -2779,7 +2775,7 @@ void EditMenuDrawCallback(DrawElement* elem, DrawElemState state)
             // strip out border and internal types so that we can use them on the input part
             fl = vm->elems[i].draw_flags;
             vm->elems[i].draw_flags = fl & DRAWFLAG_FORMAT_BITS;
-            ElementDraw(&(vm->elems[i]),NULL,x,y,ew,eh);
+            ElementDraw(&(vm->elems[i]),dsNORMAL,x,y,ew,eh);
             vm->elems[i].draw_flags = fl;
 
             // draw the input half
@@ -2810,7 +2806,7 @@ void EditMenuDrawCallback(DrawElement* elem, DrawElemState state)
 
             // go!  Note that we use the height of the label part so the editable
             // part can't be smaller than the label part.
-            ElementDraw(&d,NULL,x+ew+MENU_MARGIN,y,w-ew-MENU_MARGIN,eh);
+            ElementDraw(&d,dsNORMAL,x+ew+MENU_MARGIN,y,w-ew-MENU_MARGIN,eh);
             break;
          case EDITTYPE_CALLBACK:
          case EDITTYPE_CLOSE:
@@ -2821,11 +2817,11 @@ void EditMenuDrawCallback(DrawElement* elem, DrawElemState state)
             {
                temp_val = atoi(vm->varlist[i].edit);
                vm->elems[i].draw_data2 = (void *)&temp_val;
-               ElementDraw(&(vm->elems[i]),NULL,x,y,w,eh);
+               ElementDraw(&(vm->elems[i]),dsNORMAL,x,y,w,eh);
                vm->elems[i].draw_data2 = NULL;
             }
             else
-               ElementDraw(&(vm->elems[i]),NULL,x,y,w,eh);
+               ElementDraw(&(vm->elems[i]),dsNORMAL,x,y,w,eh);
             break;
       }
 

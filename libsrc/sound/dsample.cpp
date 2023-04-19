@@ -136,7 +136,8 @@ cDSndSample::MakeAudible()
       }
    } else {
       // a non-3D sample with volume, frequency & pan control
-      db.dwFlags = DSBCAPS_CTRLDEFAULT;
+	  //db.dwFlags = DSBCAPS_CTRLDEFAULT;
+	   db.dwFlags = DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN;
    }
    db.lpwfxFormat = &fmt;
 

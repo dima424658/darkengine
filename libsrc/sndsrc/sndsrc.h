@@ -1,13 +1,8 @@
-/*
-@Copyright Looking Glass Studios, Inc.
-1996,1997,1998,1999,2000 Unpublished Work.
-*/
-
 ////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/sndsrc/RCS/sndsrc.h $
 // $Author: PATMAC $
-// $Date: 1970/01/01 00:00:00 $
-// $Revision: 1.7 $
+// $Date: 1997/11/01 01:57:45 $
+// $Revision: 1.4 $
 //
 // (c) 1997 Looking Glass Technologies Inc.
 // Pat McElhatton
@@ -47,18 +42,14 @@ extern "C"
 typedef unsigned long SndPlaylistElement;
 typedef unsigned long *SndPlaylist;
 
-// Default number of gate variables
-#define SNDSRC_DEFAULT_MAX_GATES 8
+// number of gate variables
+#define SNDSRC_MAX_GATES 8
 
-// Default number of labels
-#define SNDSRC_DEFAULT_MAX_LABELS 8
+// number of labels
+#define SNDSRC_MAX_LABELS 8
 
 ISndSource *
 SndCreateSource( sSndAttribs *pAttribs);
-
-ISndSource *
-SndCreateSourceEx( sSndAttribs *pAttribs, uint32 maxLabels, uint32 maxGates );
-
 
 typedef void (*SndSourceEndCallback)(ISndSource *, void *);
 
@@ -81,8 +72,6 @@ DECLARE_INTERFACE_(ISndSource, IUnknown)
 
 	STDMETHOD_( BOOL, SetGate )( THIS_ uint32 gateNum, uint32 gateValue ) PURE;
 
-	STDMETHOD_( uint32, GetGate )( THIS_ uint32 gateNum ) PURE;
-
 	STDMETHOD_( void, RegisterEndCallback )( THIS_ SndSourceEndCallback func, void *pCBData ) PURE;
 
 	STDMETHOD_( void, GetPositions ) ( THIS_ uint32 *pPlay, uint32 *pSource, uint32 *pLeft ) PURE;
@@ -95,10 +84,6 @@ DECLARE_INTERFACE_(ISndSource, IUnknown)
 
 	STDMETHOD_( uint32, TimeToSamples ) ( THIS_ uint32 milliSecs ) PURE;
 
-	STDMETHOD_( void, BranchToLabel ) ( THIS_ uint32 BranchToLabel ) PURE;
-
-	STDMETHOD_( uint32, GetMostRecentLabel ) ( THIS ) PURE;
-
 };
 
 #define ISndSource_GetSerialNumber( p )            COMCall0( p, GetSerialNumber )
@@ -106,15 +91,12 @@ DECLARE_INTERFACE_(ISndSource, IUnknown)
 #define ISndSource_ConnectToPlayer( p, a )         COMCall1( p, ConnectToPlayer, a )
 #define ISndSource_DisconnectFromPlayer( p )       COMCall0( p, DisconnectFromPlayer )
 #define ISndSource_SetGate( p, a, b )              COMCall2( p, SetGate, a, b )
-#define ISndSource_GetGate( p, a )                 COMCall1( p, GetGate, a )
 #define ISndSource_RegisterEndCallback( p, a, b )  COMCall2( p, RegisterEndCallback, a, b )
 #define ISndSource_GetPositions( p, a, b, c )      COMCall3( p, GetPositions, a, b, c )
 #define ISndSource_SetPosition( p, a )             COMCall1( p, SetPosition, a )
 #define ISndSource_GetAttribs( p, a )              COMCall1( p, GetAttribs, a )
 #define ISndSource_SamplesToTime( p, a )           COMCall1( p, SamplesToTime, a )
 #define ISndSource_TimeToSamples( p, a )           COMCall1( p, TimeToSamples, a )
-#define ISndSource_BranchToLabel( p, a )           COMCall1( p, BranchToLabel, a )
-#define ISndSource_GetMostRecentLabel( p )         COMCall0( p, GetMostRecentLabel )
 #define ISndSource_Release( p )                    COMCall0(p, Release)
 
 

@@ -6,6 +6,10 @@
 #include <appbiped.h>
 #include <math.h>
 
+
+void abp_compute_arm_normal(mxs_vector* n, multiped* mp, limb* l, mxs_vector* end_pos);
+void abp_compute_leg_normal(mxs_vector* n, multiped* mp, limb* l, mxs_vector* end_pos);
+
 //
 
 void mp_mirror_motion(quat * rot, mxs_vector * xlat, uint sig)

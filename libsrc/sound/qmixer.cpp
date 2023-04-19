@@ -59,7 +59,7 @@ BOOL SndCreateQSMixer(ISndMixer **ppMixer, IUnknown *pOuter)
 
 static void
 DisplayQSError( UINT    res,
-                char    *pStr )
+                const char    *pStr )
 {
    char daText[512];
 

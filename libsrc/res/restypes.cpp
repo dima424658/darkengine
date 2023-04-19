@@ -11,7 +11,7 @@
 
 //  Resource type names
 
-char *resTypeNames[NUM_RESTYPENAMES] = {
+const char *resTypeNames[NUM_RESTYPENAMES] = {
    "UNKNOWN",                                    // RTYPE_UNKNOWN    (aka BIN)
    "STRING",                                     // RTYPE_STRING
    "IMAGE",                                      // RTYPE_IMAGE      (aka IMG)

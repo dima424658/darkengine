@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="tngslidr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tngtextg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="uires.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vmouse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="barrykey.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="butarray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="curdat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cursors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="curtyp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="event.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fakefont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gadgets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hotkey.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libdbg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="plain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pushbutt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="qboxgadg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="region.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="slab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="slider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textgadg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="texttool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tng.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tngapp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tngbarry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tngfont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tngmenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tngplain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tngpushb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tngqbox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="tngtextg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="uires.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vmouse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="butarray.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="curdrw.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cursors.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="event.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gadgets.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hotkey.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="plain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pushbutt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="qboxgadg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="region.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="slab.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="slider.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="textgadg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="texttool.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tng.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tngbarry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tngfont.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tngmenu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tngplain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tngpushb.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tngqbox.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tngslidr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

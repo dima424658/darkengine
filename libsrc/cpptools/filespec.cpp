@@ -1005,7 +1005,7 @@ static BOOL __stdcall PatternMatch(const char *pString, const char *pPattern)
             case '[':
             {
                 int k = 0;
-                register cc;
+                char cc;
 
                 while ((cc = *++pPattern) != 0)
                 {

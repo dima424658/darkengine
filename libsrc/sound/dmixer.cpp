@@ -39,7 +39,6 @@
 
 #ifdef USE_A3D
 
-#include <ia3d.h>
 extern "C" {
 //_declspec (dllexport) 
 HRESULT WINAPI

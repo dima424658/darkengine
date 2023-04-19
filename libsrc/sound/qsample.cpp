@@ -55,7 +55,7 @@ UINT InternalSetPan( HQMIXER pMixer, int chan, int32 pan );
 
 static void
 DisplayQSError( UINT    res,
-                char    *pStr )
+                const char    *pStr )
 {
    char daText[512];
 

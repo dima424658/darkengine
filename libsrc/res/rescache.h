@@ -138,6 +138,9 @@ public:
     // Dump the oldest items to free the specified amount of memory
     STDMETHOD_(ulong, Purge)(ulong nBytes);
 
+    // Get information about the cache usage
+    STDMETHOD_(void, GetStats)(sCacheStats* pStats);
+
     // Find a client without ref counting
     cResCache * DoFindClient(const GUID * pID);
 

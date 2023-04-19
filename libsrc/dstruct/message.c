@@ -22,7 +22,6 @@
 
 #include <message.h>
 #include <lgsprntf.h>
-#include <_dstruct.h>
 
 #define MESSAGE_HASH_SIZE 16	// Number of hash chains to messages
 

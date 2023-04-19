@@ -110,7 +110,7 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
    Id                   rezId;
    int                  i;
 
-   LOG1( "SSrc::SetPlaylist [%d]\n", mSerialNum );
+   TLOG1( "SSrc::SetPlaylist [%d]\n", mSerialNum );
 
    // scan the playlist, filling in fields which need info from
    //   the sound resource (like #samples, offset to 1st sample)
@@ -383,7 +383,7 @@ cSndSource::NextSegment( BOOL    createSegs )
    switch( op ) {
       case plEndList:
          // don't advance mpPlaylist past Endlist op
-         LOG1( "SSrc::NextSegment [%d] endList\n", mSerialNum );
+         TLOG1( "SSrc::NextSegment [%d] endList\n", mSerialNum );
          elementSize = 0;
          mSegBytesLeft = 0;
          if ( createSegs ) {
@@ -399,7 +399,7 @@ cSndSource::NextSegment( BOOL    createSegs )
          break;
 
       case plSilence:
-         LOG2( "SSrc::NextSegment [%d] silence %d\n", mSerialNum, pDataOp->nSamples );
+         TLOG2( "SSrc::NextSegment [%d] silence %d\n", mSerialNum, pDataOp->nSamples );
          mSegBytesLeft = pDataOp->nSamples * mBytesPerSample;
          if ( createSegs ) {
             if ( mpSrc1 ) {
@@ -415,7 +415,7 @@ cSndSource::NextSegment( BOOL    createSegs )
 
       case plCallback:
          pCallbackOp = (SSPLCallback *) mpPlaylist;
-         LOG2( "SSrc::NextSegment [%d] callback %d args\n", mSerialNum, pCallbackOp->nArgs );
+         TLOG2( "SSrc::NextSegment [%d] callback %d args\n", mSerialNum, pCallbackOp->nArgs );
          argListSize = pCallbackOp->nArgs;
          if ( createSegs && (pCallbackOp->func != NULL) ) {
             // do the callback
@@ -426,7 +426,7 @@ cSndSource::NextSegment( BOOL    createSegs )
       case plRezSingle:
       case plFileSingle:
       case plMemSingle:
-         LOG3( "SSrc::NextSegment [%d] rez/file/mem single id 0x%x, %d samples\n",
+         TLOG3( "SSrc::NextSegment [%d] rez/file/mem single id 0x%x, %d samples\n",
                mSerialNum, pDataOp->id, pDataOp->nSamples );
          mSegBytesLeft = pDataOp->nSamples * mBytesPerSample;
          if ( pDataOp->format1 & kSndPlaylistFlagDoDouble ) {
@@ -451,7 +451,7 @@ cSndSource::NextSegment( BOOL    createSegs )
       case plRezDual:
       case plFileDual:
       case plMemDual:
-         LOG2( "SSrc::NextSegment [%d] rez/file/mem dual %d\n",
+         TLOG2( "SSrc::NextSegment [%d] rez/file/mem dual %d\n",
                mSerialNum, pDataOp->nSamples );
          mSegBytesLeft = pDataOp->nSamples * mBytesPerSample;
          if ( pDataOp->format1 & kSndPlaylistFlagDoDouble ) {
@@ -464,7 +464,7 @@ cSndSource::NextSegment( BOOL    createSegs )
          break;
 
       case plRawMemSingle:
-         LOG2( "SSrc::NextSegment [%d] raw mem single %d\n",
+         TLOG2( "SSrc::NextSegment [%d] raw mem single %d\n",
                mSerialNum, pDataOp->nSamples );
          mSegBytesLeft = pDataOp->nSamples * mBytesPerSample;
          if ( createSegs ) {
@@ -484,7 +484,7 @@ cSndSource::NextSegment( BOOL    createSegs )
          break;
 
       case plRawMemDual:
-         LOG2( "SSrc::NextSegment [%d] raw mem dual %d\n",
+         TLOG2( "SSrc::NextSegment [%d] raw mem dual %d\n",
                mSerialNum, pDataOp->nSamples );
          mSegBytesLeft = pDataOp->nSamples * mBytesPerSample;
          if ( createSegs ) {
@@ -494,7 +494,7 @@ cSndSource::NextSegment( BOOL    createSegs )
          break;
 
       case plLabel:
-         LOG2( "SSrc::NextSegment [%d] label %d\n", mSerialNum, pDataOp->nSamples );
+         TLOG2( "SSrc::NextSegment [%d] label %d\n", mSerialNum, pDataOp->nSamples );
          mSegBytesLeft = 0;
          break;
 
@@ -526,12 +526,12 @@ cSndSource::NextSegment( BOOL    createSegs )
                switch ( pBranch->branchType ) {
 
                   case SSPLBTBranch:
-                     LOG2( "SSrc::NextSegment [%d] branch to %d\n", mSerialNum, pBranch->labelNum );
+                     TLOG2( "SSrc::NextSegment [%d] branch to %d\n", mSerialNum, pBranch->labelNum );
                      mpPlaylist = pBranchDest;
                      break;
 
                   case SSPLBTBranchZero:
-                     LOG3( "SSrc::NextSegment [%d] branchZero to %d, gateValue %d\n",
+                     TLOG3( "SSrc::NextSegment [%d] branchZero to %d, gateValue %d\n",
                            mSerialNum, pBranch->labelNum, gateValue );
                      if ( gateValue == 0 ) {
                         mpPlaylist = pBranchDest;
@@ -539,7 +539,7 @@ cSndSource::NextSegment( BOOL    createSegs )
                      break;
 
                   case SSPLBTBranchNotZero:
-                     LOG3( "SSrc::NextSegment [%d] branchNotZero to %d, gateValue %d\n",
+                     TLOG3( "SSrc::NextSegment [%d] branchNotZero to %d, gateValue %d\n",
                            mSerialNum, pBranch->labelNum, gateValue );
                      if ( gateValue != 0 ) {
                         mpPlaylist = pBranchDest;
@@ -547,7 +547,7 @@ cSndSource::NextSegment( BOOL    createSegs )
                      break;
 
                   case SSPLBTDecrementBranchNotZero:
-                     LOG3( "SSrc::NextSegment [%d] DecrementBranchNotZero to %d, gateValue %d\n",
+                     TLOG3( "SSrc::NextSegment [%d] DecrementBranchNotZero to %d, gateValue %d\n",
                            mSerialNum, pBranch->labelNum, gateValue );
                      mGates[ pBranch->gateNum ] = (--gateValue);
                      if ( gateValue != 0 ) {
@@ -562,7 +562,7 @@ cSndSource::NextSegment( BOOL    createSegs )
       case plSetGate:
          mSegBytesLeft = 0;
          pSetGate = (SSPLSetGate *) mpPlaylist;
-         LOG3( "SSrc::NextSegment [%d] setGate %d to %d\n",
+         TLOG3( "SSrc::NextSegment [%d] setGate %d to %d\n",
                mSerialNum, pSetGate->gateNum, pSetGate->gateValue );
          if ( createSegs && (pSetGate->gateNum < SNDSRC_MAX_GATES) ) {
             mGates[ pSetGate->gateNum ] = pSetGate->gateValue;
@@ -611,7 +611,7 @@ cSndSource::SetPosition( uint32     pos )
    uint32      *pOp2 = NULL;
    BOOL        notDone = TRUE;
 
-   LOG2( "SSrc::SetPosition [%d] pos %d\n", mSerialNum, pos );
+   TLOG2( "SSrc::SetPosition [%d] pos %d\n", mSerialNum, pos );
 
    mResyncNeeded = TRUE;
    mResyncPos = pos;
@@ -756,7 +756,7 @@ cSndSource::CreateSegment( uint32   *pOp )
    doDouble = FALSE;
    attribs = mAttribs;
 
-   LOG2( "SSrc::CreateSegment [%d] op %d\n", mSerialNum, *pOp );
+   TLOG2( "SSrc::CreateSegment [%d] op %d\n", mSerialNum, *pOp );
 
    switch ( *pOp ) {
 

@@ -64,18 +64,20 @@ static bool default_setpal_func(StylePalette palette)
 
 static bool default_setfont_func(StyleFont font)
 {
-   if (font == 0 || !ResInUse(font)) 
+   if (font == NULL)
       return FALSE;
-   gr_set_font((grs_font*)ResLock(font));
+
+   gr_set_font((grs_font*)IDataSource_Lock(font));
    return TRUE;
 }
 
 static bool default_unsetfont_func(StyleFont font)
 {
-   if (font == 0 || !ResInUse(font)) 
-      return FALSE;
-   ResUnlock(font);
-   return TRUE;
+    if (font == NULL)
+        return FALSE;
+
+    IDataSource_Unlock(font);
+    return TRUE;
 }
 
 

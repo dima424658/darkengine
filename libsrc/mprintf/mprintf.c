@@ -17,9 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys\stat.h>
-#ifdef _MSC_VER
-#include <msconv.h>
-#endif
 #include <lgsprntf.h>
 #include <mprintf.h>
 #include <coremutx.h>

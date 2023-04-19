@@ -15,6 +15,8 @@
 #ifndef __AGGDDRAW_H
 #define __AGGDDRAW_H
 
+#include <aggmemb.h>
+
 class cAggDirectDraw : public IDirectDraw
 {
 public:

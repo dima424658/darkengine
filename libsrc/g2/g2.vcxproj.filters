@@ -1,0 +1,536 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="n88il.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="o2w88i.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="o88bil.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="o88il.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="ptfloat.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="ptlinear.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="ptmap.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="ptmap_8.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="ptmap_n.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="ptmapper.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="ptpersp.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="uvgrad.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="chkedgeb.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="chkedges.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="co88il.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="fl8lo2wi.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="fl8nni.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="fl8o2ni.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="fl8o2wi.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="lo88il.asm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="lo816il.asm">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="area.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="blend.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cc816.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="chkply.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clip.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clplin.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="co88.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cominit.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dlh816.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="drytmap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="f16fl8ll.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="f16fl8s.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="f16lm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="f16pm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="f16s.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8fl8l.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8fl8ll.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8fl8s.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8il.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8l.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8lin.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8lm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8lo2wc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8nnic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8o2wic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8pm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8s.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8sply.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2circ.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2d.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2el.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2makewr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2ov.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2poly.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2ring.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2rot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="g2tm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gen8il.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gen16il.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genf16l.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genf16s.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genfl8l.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genfl8s.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genil.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genlil.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genline.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genlm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genply.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genrast.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genrsds.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="genrsdtm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gens.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gensil.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gensply.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="golftmap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="grtm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="grwater.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="init.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lh816.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lht816.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lmap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lo88.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lo816.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="o88.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="permap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="plyshell.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="point.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pt_duv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pt_grad.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pt_main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pt_map.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="r88.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rastel.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="raster.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scshell.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="setdrv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shadhack.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shadtmap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="svgainit.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="t88oc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="t816oc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tmapd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tmsetup.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trifan.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trigrad.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trirast.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="blncon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="blnfcn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="f16tf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fl8lf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fl8lin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fl8sf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fl8tf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="flat8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="flat16.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="frame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="g2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="g2clip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="g2d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="g2makewr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="g2pt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="g2spoint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="g2tm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="general.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="genrast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gensf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gentf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="grchkply.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="grcurv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="grlin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="grply.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="grscale.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="grtm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="icanvas2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ilfunc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="init.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lftype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mathmac.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="permap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pftype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="plyparam.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="plyrast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="plyshell.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="plytyp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="poly.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="polyint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="profile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pt_asm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ptmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ptmapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rastel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="raster.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="recip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scale.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scancvt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scshell.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="setdrv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sftype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="swarn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tftype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tmapd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tmapf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tmapfcn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tmaps.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trirast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="water.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

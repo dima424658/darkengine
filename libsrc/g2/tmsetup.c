@@ -5,7 +5,7 @@
 #include <tmapd.h>
 #include <g2tm.h>
 #include <g2d.h>
-#include <icanvas.h>
+#include <icanvas2.h>
 
 #define poly_setup ((void (*)(grs_bitmap *))(g2d_canvas_table[G2C_UPOLY]))
 #define spoly_setup ((void (*)(grs_bitmap *))(g2d_canvas_table[G2C_USPOLY]))
