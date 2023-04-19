@@ -50,7 +50,7 @@ EXTERN LGadRoot* LGadCurrentRoot(void);
 EXTERN LGadRoot* LGadSetupSubRoot(LGadRoot* subroot, LGadRoot* parent, short x, short y, short w, short h);
 
 // Destroy a root
-EXTERN LGadDestroyRoot(LGadRoot *vr);
+EXTERN int LGadDestroyRoot(LGadRoot *vr);
 
 // Change the root cursor 
 EXTERN void LGadSetRootCursor(LGadRoot* root, IDataSource* bm, Point hotspot); 

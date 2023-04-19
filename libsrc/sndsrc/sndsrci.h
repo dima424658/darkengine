@@ -57,6 +57,8 @@ public:
 
 	STDMETHOD_( BOOL, SetGate )( uint32 gateNum, uint32 gateValue );
 
+	STDMETHOD_(uint32, GetGate)(uint32 gateNum);
+
 	STDMETHOD_( void, RegisterEndCallback )( SndSourceEndCallback func, void *pCBData );
 
 	STDMETHOD_( void, GetPositions ) ( uint32 *pPlay, uint32 *pSource, uint32 *pLeft );
@@ -68,6 +70,10 @@ public:
 	STDMETHOD_( uint32, SamplesToTime ) ( uint32 samples );
 
 	STDMETHOD_( uint32, TimeToSamples ) ( uint32 milliSecs );
+
+	STDMETHOD_(void, BranchToLabel) (uint32 BranchToLabel);
+
+	STDMETHOD_(uint32, GetMostRecentLabel) ();
 
    // non-COM methods
    void           FillStream( uint32 nBytes );
@@ -114,7 +120,7 @@ private:
    char                 *mpTmpBuffer;
    uint32               mTmpBufferBytes;
 
-   SndPlaylistElement   *mpLabels[SNDSRC_MAX_LABELS];
-   uint32               mGates[SNDSRC_MAX_GATES];
+   SndPlaylistElement   *mpLabels[SNDSRC_DEFAULT_MAX_LABELS];
+   uint32               mGates[SNDSRC_DEFAULT_MAX_GATES];
 };
 

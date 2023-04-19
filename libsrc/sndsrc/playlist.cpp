@@ -128,10 +128,10 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
    mListBytesTotal = 0;
    mSegNum = 0;
 
-   for ( i = 0; i < SNDSRC_MAX_LABELS; i++ ) {
+   for ( i = 0; i < SNDSRC_DEFAULT_MAX_LABELS; i++ ) {
       mpLabels[i] = NULL;
    }
-   for ( i = 0; i < SNDSRC_MAX_GATES; i++ ) {
+   for ( i = 0; i < SNDSRC_DEFAULT_MAX_GATES; i++ ) {
       mGates[i] = 0;
    }
 
@@ -300,7 +300,7 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
 
          case plLabel:
             pLabel = (SSPLLabel *) pOp;
-            if ( pLabel->labelNum < SNDSRC_MAX_LABELS ) {
+            if ( pLabel->labelNum < SNDSRC_DEFAULT_MAX_LABELS ) {
                mpLabels[pLabel->labelNum] = (SndPlaylistElement *) ( ((uint32) pOp) + sizeof(SSPLLabel) );
             } else {
                Warning( ("Playlist label number out of range!\n") );
@@ -309,17 +309,17 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
 
          case plBranch:
             pBranch = (SSPLBranch *) pOp;
-            if ( pBranch->labelNum >= SNDSRC_MAX_LABELS ) {
+            if ( pBranch->labelNum >= SNDSRC_DEFAULT_MAX_LABELS ) {
                Warning( ("Playlist branch label out of range!\n") );
             }
-            if ( pBranch->gateNum >= SNDSRC_MAX_GATES ) {
+            if ( pBranch->gateNum >= SNDSRC_DEFAULT_MAX_GATES ) {
                Warning( ("Playlist branch gate out of range!\n") );
             }
             break;
 
          case plSetGate:
             pSetGate = (SSPLSetGate *) pOp;
-            if ( pSetGate->gateNum >= SNDSRC_MAX_GATES ) {
+            if ( pSetGate->gateNum >= SNDSRC_DEFAULT_MAX_GATES ) {
                Warning( ("Playlist gate out of range!\n") );
             }
             break;
@@ -510,17 +510,17 @@ cSndSource::NextSegment( BOOL    createSegs )
             // figure out branch destination address
             labelNum = ~0;
             if ( pBranch->indirect ) {
-               if ( pBranch->labelNum < SNDSRC_MAX_GATES ) {
+               if ( pBranch->labelNum < SNDSRC_DEFAULT_MAX_GATES ) {
                   labelNum = mGates[ pBranch->labelNum ];
                }
             } else {
                labelNum = pBranch->labelNum;
             }
-            pBranchDest = ( labelNum < SNDSRC_MAX_LABELS ) ?
+            pBranchDest = ( labelNum < SNDSRC_DEFAULT_MAX_LABELS ) ?
                mpLabels[labelNum] : NULL;
 
             if ( (pBranchDest != NULL ) &&
-                 (pBranch->gateNum < SNDSRC_MAX_GATES) ) {
+                 (pBranch->gateNum < SNDSRC_DEFAULT_MAX_GATES) ) {
 
                gateValue = mGates[ pBranch->gateNum ];
                switch ( pBranch->branchType ) {
@@ -564,7 +564,7 @@ cSndSource::NextSegment( BOOL    createSegs )
          pSetGate = (SSPLSetGate *) mpPlaylist;
          TLOG3( "SSrc::NextSegment [%d] setGate %d to %d\n",
                mSerialNum, pSetGate->gateNum, pSetGate->gateValue );
-         if ( createSegs && (pSetGate->gateNum < SNDSRC_MAX_GATES) ) {
+         if ( createSegs && (pSetGate->gateNum < SNDSRC_DEFAULT_MAX_GATES) ) {
             mGates[ pSetGate->gateNum ] = pSetGate->gateValue;
          }
          break;
