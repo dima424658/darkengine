@@ -342,7 +342,7 @@ public:
    STDMETHOD_(BOOL,IsSimplyRelevant)(ObjID obj) const {return cBase::IsSimplyRelevant(obj); } ;    
 
    // modify an object in place
-   STDMETHOD_(BOOL,Touch)(ObjID obj)  {return cBase::Touch(obj,NULL); } ; 
+   STDMETHOD_(BOOL,Touch)(ObjID obj)  {return cStoredProperty::Touch(obj,NULL); } ;
 
    //  Add a listener
    STDMETHOD_(PropListenerHandle, Listen)(PropertyListenMsgSet interests, PropertyListenFunc func, PropListenerData data) { return cBase::Listen(interests,func,data); } ; 
@@ -362,13 +362,13 @@ public:
       if (id == *pIID)
       {
          *ppI = this;
-         AddRef();
+         this->AddRef();
          return S_OK;
       }
       if (id == IID_IPropertyStore)
       {
          *ppI = &mStoreDel; 
-         AddRef(); 
+         this->AddRef();
          return S_OK; 
       }
       else 
@@ -440,14 +440,14 @@ public:
       STOREDPROP_TIMER(Get); 
 
       sDatum* pdat = (sDatum*)pval; 
-      BOOL result = mpStore->Get(obj,pdat);
+      BOOL result = this->mpStore->Get(obj,pdat);
       if (!result)
       {
          PROP_TIMER_STOP(); 
-         ObjID donor = GetDonor(obj);
+         ObjID donor = this->GetDonor(obj);
          PROP_TIMER_START(); 
          if (donor != OBJ_NULL)
-            result = mpStore->Get(donor,pdat);
+            result = this->mpStore->Get(donor,pdat);
       }
       return result; 
    }
@@ -456,27 +456,27 @@ public:
    {
       STOREDPROP_TIMER(Get); 
       sDatum* pdat = (sDatum*)ptr; 
-      return mpStore->Get(obj,pdat);
+      return this->mpStore->Get(obj,pdat);
    }
 
    STDMETHOD(Set) (ObjID obj, TYPE val) 
    {
       uPropVal dat = val;
-      return cBase::Set(obj, dat.d);
+      return cStoredProperty::Set(obj, dat.d);
    }
 
    STDMETHOD_ (BOOL, IterNextValue) (sPropertyObjIter* iter,ObjID* next, TYPE (*val)) const
    {
       STOREDPROP_TIMER(IterNext); 
       sDatum* pdat = (sDatum*)val; 
-      return mpStore->IterNext(iter,next,pdat); 
+      return this->mpStore->IterNext(iter,next,pdat);
    }
 
    STDMETHOD_(BOOL,TouchValue)(ObjID obj, TYPE val)  
    {
       uPropVal dat = val;
       sDatum d = dat.d; 
-      return cBase::Touch(obj,&d); 
+      return cStoredProperty::Touch(obj,&d);
    }; 
 }; 
  
@@ -528,14 +528,14 @@ public:
       
       // We can't pass &mStore into the constructor, because it hasn't been initialized 
       // yet, so we set it up here instead.  
-      SetStore(&mStore);  
+      this->SetStore(&mStore);  
    } 
 
    ~cSpecificProperty()
    {
       mStore.Reset(); 
       // unset the store before it goes away
-      SetStore(NULL); 
+      this->SetStore(NULL);
    }
 
    // 
@@ -556,7 +556,7 @@ public:
       if (!result)
       {
          PROP_TIMER_STOP(); 
-         ObjID donor = GetDonor(obj);
+         ObjID donor = this->GetDonor(obj);
          PROP_TIMER_START(); 
 
          if (donor != OBJ_NULL)
@@ -575,7 +575,7 @@ public:
    STDMETHOD(Set) (ObjID obj, TYPE val) 
    {
       uPropVal dat = val;
-      return cBase::Set(obj, dat.d);
+      return cStoredProperty::Set(obj, dat.d);
    }
 
    STDMETHOD_ (BOOL, IterNextValue) (sPropertyObjIter* iter,ObjID* next, TYPE (*val)) const
@@ -589,7 +589,7 @@ public:
    {
       uPropVal dat = val;
       sDatum d = dat.d; 
-      return cBase::Touch(obj,&d); 
+      return cStoredProperty::Touch(obj,&d);
    } ; 
 
 protected:

@@ -39,7 +39,7 @@ STDMETHODIMP AI_ACTOR_BASE::QueryInterface(REFIID id, void ** ppI)
 {
    if (IsEqualGUID(id, IID_IAIActor))
    {
-      AddRef();
+      this->AddRef();
       *ppI = (IAIActor *)this;
       return S_OK;
    }
@@ -54,7 +54,7 @@ STDMETHODIMP_(BOOL) AI_ACTOR_BASE::SaveActions(ITagFile * pTagFile, cAIActions *
    unsigned nActions = pActions->Size();
    AITagMove(pTagFile, &nActions);
    for (int i = 0; i < nActions; i++)
-      m_pAI->AccessBehaviorSet()->SaveAction(pTagFile, (*pActions)[i]);
+      this->m_pAI->AccessBehaviorSet()->SaveAction(pTagFile, (*pActions)[i]);
    return TRUE;
 }
 
@@ -68,7 +68,7 @@ STDMETHODIMP_(BOOL) AI_ACTOR_BASE::LoadActions(ITagFile * pTagFile, cAIActions *
    AITagMove(pTagFile, &nActions);
    for (int i = 0; i < nActions; i++)
    {
-      IAIAction *pAction = m_pAI->AccessBehaviorSet()->LoadAndCreateAction(pTagFile, this);
+      IAIAction *pAction = this->m_pAI->AccessBehaviorSet()->LoadAndCreateAction(pTagFile, this);
       if (pAction)
          pActions->Append(pAction);
    }      
@@ -91,7 +91,7 @@ STDMETHODIMP AI_ACTOR_BASE::SuggestActions(cAIGoal * pGoal, const cAIActions & p
 AI_ACTOR_BASE_TEMPLATE  
 cAIMoveAction * AI_ACTOR_BASE::CreateMoveAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateMoveAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateMoveAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -99,7 +99,7 @@ cAIMoveAction * AI_ACTOR_BASE::CreateMoveAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAILocoAction * AI_ACTOR_BASE::CreateLocoAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateLocoAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateLocoAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -107,7 +107,7 @@ cAILocoAction * AI_ACTOR_BASE::CreateLocoAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAIMotionAction * AI_ACTOR_BASE::CreateMotionAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateMotionAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateMotionAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -115,7 +115,7 @@ cAIMotionAction * AI_ACTOR_BASE::CreateMotionAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAISoundAction * AI_ACTOR_BASE::CreateSoundAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateSoundAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateSoundAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -123,7 +123,7 @@ cAISoundAction * AI_ACTOR_BASE::CreateSoundAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAIOrientAction * AI_ACTOR_BASE::CreateOrientAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateOrientAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateOrientAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -131,7 +131,7 @@ cAIOrientAction * AI_ACTOR_BASE::CreateOrientAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAIFrobAction * AI_ACTOR_BASE::CreateFrobAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateFrobAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateFrobAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -139,7 +139,7 @@ cAIFrobAction * AI_ACTOR_BASE::CreateFrobAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAIFollowAction * AI_ACTOR_BASE::CreateFollowAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateFollowAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateFollowAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -147,7 +147,7 @@ cAIFollowAction * AI_ACTOR_BASE::CreateFollowAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAIInvestAction * AI_ACTOR_BASE::CreateInvestAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateInvestAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateInvestAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -155,7 +155,7 @@ cAIInvestAction * AI_ACTOR_BASE::CreateInvestAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAIWanderAction * AI_ACTOR_BASE::CreateWanderAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateWanderAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateWanderAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -163,7 +163,7 @@ cAIWanderAction * AI_ACTOR_BASE::CreateWanderAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAIPsdScrAction * AI_ACTOR_BASE::CreatePsdScrAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreatePsdScrAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreatePsdScrAction(this, data);
 }
 
 ///////////////////////////////////////
@@ -171,7 +171,7 @@ cAIPsdScrAction * AI_ACTOR_BASE::CreatePsdScrAction(DWORD data)
 AI_ACTOR_BASE_TEMPLATE  
 cAIWaitAction * AI_ACTOR_BASE::CreateWaitAction(DWORD data)
 {
-   return m_pAI->AccessBehaviorSet()->CreateWaitAction(this, data);
+   return this->m_pAI->AccessBehaviorSet()->CreateWaitAction(this, data);
 }
 
 ///////////////////////////////////////

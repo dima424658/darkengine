@@ -193,7 +193,7 @@ public:
       sDatum val; 
       if (!mTable.Lookup(obj,&val))
       {
-         val = mOps.New(); 
+         val = this->mOps.New(); 
          mTable.Insert(obj,val); 
       }
 
@@ -205,7 +205,7 @@ public:
       sDatum val;
       if (mTable.Lookup(obj,&val))
       {
-         mOps.Delete(val);    
+         this->mOps.Delete(val);    
          mTable.Delete(obj);
          return S_OK; 
          
@@ -230,11 +230,11 @@ public:
       sDatum setval; 
       if (mTable.Lookup(obj,&setval))
       {
-         mOps.Copy(&setval,val);
+         this->mOps.Copy(&setval,val);
          retval = S_FALSE; 
       }
       else
-         setval = mOps.CopyNew(val);
+         setval = this->mOps.CopyNew(val);
       mTable.Set(obj,setval);
       return retval; 
    }
@@ -245,7 +245,7 @@ public:
       sDatum srcval; 
       if (mTable.Lookup(src,&srcval))
       {
-         sDatum targval = mOps.CopyNew(srcval); 
+         sDatum targval = this->mOps.CopyNew(srcval); 
          mTable.Set(targ,targval); 
          return srcval;
       }
@@ -257,7 +257,7 @@ public:
       cTable::cIter iter;  
       for (iter = mTable.Iter(); !iter.Done(); iter.Next())
       {
-         mOps.Delete(iter.Value());
+         this->mOps.Delete(iter.Value());
       }
       mTable.Clear(); 
       return S_OK; 

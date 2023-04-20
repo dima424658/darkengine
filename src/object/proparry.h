@@ -129,7 +129,7 @@ public:
       sDatum val; 
       if (InBounds(obj) && !InUse(obj))
       {
-         val = mOps.New(); 
+         val = this->mOps.New(); 
          mArray[obj] = val; 
          SetInUse(obj); 
       }
@@ -141,7 +141,7 @@ public:
    {
       if (InBounds(obj) && InUse(obj))
       {
-         mOps.Delete(mArray[obj]); 
+         this->mOps.Delete(mArray[obj]); 
          mArray[obj] = sDatum(NULL); 
          ClearInUse(obj); 
          return S_OK; 
@@ -184,12 +184,12 @@ public:
 
       if (InUse(obj))
       {
-         mOps.Copy(&mArray[obj],val); 
+         this->mOps.Copy(&mArray[obj],val); 
          return S_FALSE;
       }
       else
       {
-         mArray[obj] = mOps.CopyNew(val);  
+         mArray[obj] = this->mOps.CopyNew(val);
          SetInUse(obj); 
          return S_OK; 
       }
@@ -204,11 +204,11 @@ public:
 
       if (InUse(targ))
       {
-         mOps.Copy(&mArray[targ],val); 
+         this->mOps.Copy(&mArray[targ],val); 
       }
       else
       {
-         mArray[targ] = mOps.CopyNew(val); 
+         mArray[targ] = this->mOps.CopyNew(val); 
          SetInUse(targ); 
       }
       return val; 
@@ -219,7 +219,7 @@ public:
       for (int i = MinObj(); i < MaxObj(); i++)
          if (InUse(i))
          {
-            mOps.Delete(mArray[i]); 
+            this->mOps.Delete(mArray[i]); 
             mArray[i] = sDatum(NULL); 
             ClearInUse(i); 
          }
@@ -277,12 +277,12 @@ public:
    cGenericArrayPropertyStore()
       : cArrayPropertyStore<cDelegatingDataOps>()
    {
-      mOps.InitDelegation(this); 
+      this->mOps.InitDelegation(this); 
    }
 
    STDMETHOD(SetOps)(IDataOps* ops)
    {  
-      mOps.SetOps(ops); 
+      this->mOps.SetOps(ops); 
       return S_OK; 
    }
 

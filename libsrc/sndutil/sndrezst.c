@@ -57,7 +57,7 @@ refillStream( ISndSample   *pSample,
    pInfo = (sndStreamStuff *) pCBData;
    bytesLeft = pInfo->endOffset - pInfo->playOffset;
 
-   LOG3( "refillStream %d needed, %d left, %d offset", bytesNeeded,
+   TLOG3( "refillStream %d needed, %d left, %d offset", bytesNeeded,
          bytesLeft, pInfo->playOffset);
 
    if ( bytesNeeded > bytesLeft ) {
@@ -80,7 +80,7 @@ endStream( ISndSample   *pSample,
    sndStreamStuff *pInfo;
 
 mprintf("end stream\n");
-   LOG0( "endStream" );
+   TLOG0( "endStream" );
    pInfo = (sndStreamStuff *) pCBData;
 
    // first tell the app about samples demise

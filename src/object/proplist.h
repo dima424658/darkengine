@@ -78,7 +78,7 @@ public:
 
    STDMETHOD_(sDatum,Create)(ObjID obj)
    {
-      sDatum dat = mOps.New(); 
+      sDatum dat = this->mOps.New(); 
       sPair pair (obj, dat);  
 
       mList.Prepend(pair); 
@@ -91,7 +91,7 @@ public:
       cList::cNode* pair = mList.Search(obj);
       if (pair)
       {
-         mOps.Delete(pair->Value().val); 
+         this->mOps.Delete(pair->Value().val); 
          mList.Delete(*pair); 
          return S_OK; 
       }
@@ -120,12 +120,12 @@ public:
 
       if (node)
       {
-         mOps.Copy(&node->Value().val,val); 
+         this->mOps.Copy(&node->Value().val,val); 
          return S_FALSE;
       }
       else
       {
-         sPair newpair (obj, mOps.CopyNew(val) ); 
+         sPair newpair (obj, this->mOps.CopyNew(val) ); 
          mList.Prepend(newpair); 
          return S_OK; 
       }
@@ -141,12 +141,12 @@ public:
       
       if (targnode)
       {
-         mOps.Copy(&targnode->Value().val,srcpair->val); 
+         this->mOps.Copy(&targnode->Value().val,srcpair->val); 
          return targnode->Value().val; 
       }
       else
       {
-         sPair newpair (targ, mOps.CopyNew(srcpair->val) ); 
+         sPair newpair (targ, this->mOps.CopyNew(srcpair->val) ); 
          mList.Prepend(newpair); 
          return newpair.val; 
       }
@@ -157,7 +157,7 @@ public:
    {
       for (cList::cIter iter = mList.Iter(); !iter.Done(); iter.Next())
       {
-         mOps.Delete(iter.Value().val);
+         this->mOps.Delete(iter.Value().val);
          mList.Delete(iter.Node()); 
       }
       return S_OK; 
@@ -204,12 +204,12 @@ class cGenericListPropertyStore : public cListPropertyStore<cDelegatingDataOps>
 public:
    cGenericListPropertyStore()
    {
-      mOps.InitDelegation(this); 
+      this->mOps.InitDelegation(this); 
    }
 
    STDMETHOD(SetOps)(IDataOps* ops)
    {  
-      mOps.SetOps(ops); 
+      this->mOps.SetOps(ops); 
       return S_OK; 
    }
 

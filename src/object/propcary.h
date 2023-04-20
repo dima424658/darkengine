@@ -120,7 +120,7 @@ public:
          idx = NewIdx(); 
          mMap.SetIndex(obj,idx); 
          mObjIDs[idx] = obj;
-         mValues[idx] = mOps.New(); 
+         mValues[idx] = this->mOps.New(); 
       }
       return mValues[idx]; 
    }
@@ -130,7 +130,7 @@ public:
       int idx = Obj2Idx(obj); 
       if (idx)
       {
-         mOps.Delete(mValues[idx]);    
+         this->mOps.Delete(mValues[idx]);    
          mValues[idx] = sDatum(); 
          mObjIDs[idx] = OBJ_NULL; 
          mMap.SetIndex(obj,0); 
@@ -159,14 +159,14 @@ public:
       int idx = Obj2Idx(obj);
       if (idx) 
       {
-         mOps.Copy(&mValues[idx],val); 
+         this->mOps.Copy(&mValues[idx],val); 
          return S_FALSE;
       }
       else
       {
          idx = NewIdx();
          mMap.SetIndex(obj,idx);
-         mValues[idx] = mOps.CopyNew(val); 
+         mValues[idx] = this->mOps.CopyNew(val);
          mObjIDs[idx] = obj; 
          return S_OK; 
       }
@@ -181,13 +181,13 @@ public:
       sDatum srcval = mValues[srcidx]; 
       if (targidx)
       {
-         mOps.Copy(&mValues[targidx],srcval); 
+          this->mOps.Copy(&mValues[targidx],srcval);
       }
       else
       {
          targidx = NewIdx();
          mMap.SetIndex(targ,targidx);
-         mValues[targidx] = mOps.CopyNew(srcval); 
+         mValues[targidx] = this->mOps.CopyNew(srcval);
          mObjIDs[targidx] = targ; 
       }
       return mValues[targidx]; 
@@ -198,7 +198,7 @@ public:
       for (int i = 0; i < mObjIDs.Size(); i++)
          if (mObjIDs[i] != OBJ_NULL)
          {
-            mOps.Delete(mValues[i]);
+            this->mOps.Delete(mValues[i]);
             mValues[i] = sDatum(); 
             mObjIDs[i] = OBJ_NULL; 
          }

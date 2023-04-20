@@ -40,7 +40,7 @@ STDMETHODIMP AI_COMPONENT_BASE::QueryInterface(REFIID id, void ** ppI)
 {
    if (IsEqualGUID(id, IID_IAIComponent))
    {
-      AddRef();
+      this->AddRef();
       *ppI = (IAIComponent *)this;
       return S_OK;
    }

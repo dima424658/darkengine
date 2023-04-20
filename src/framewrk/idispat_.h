@@ -55,7 +55,7 @@ public:
 
    STDMETHOD(SendMsg)(const sDispatchMsg* msg)
    {
-      cListeners::cIter iter;
+      typename cListeners::cIter iter;
       for (iter = mListeners.Iter(); !iter.Done(); iter.Next())
       {
          sElem& elem = iter.Value(); 

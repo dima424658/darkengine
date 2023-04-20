@@ -23,13 +23,13 @@ public:
    cComplexProperty(const sPropertyDesc* desc, IPropertyStore* store)
       : cParent(desc,store)
    {
-      mpStore->SetOps(&mOps); 
+      this->mpStore->SetOps(&mOps); 
    }
 
    cComplexProperty(const sPropertyDesc* desc, ePropertyImpl impl)
       : cParent(desc,CreateGenericPropertyStore(impl))
    {
-      mpStore->SetOps(&mOps); 
+      this->mpStore->SetOps(&mOps); 
    }
 
    

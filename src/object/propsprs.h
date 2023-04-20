@@ -97,7 +97,7 @@ public:
    // Helpers
    //
 
-   inline sKey Key(ObjID obj) const { return sObjPropPair(obj,mID); }; 
+   inline sKey Key(ObjID obj) const { return sObjPropPair(obj,this->mID); }; 
 
    //
    // METHODS 
@@ -115,7 +115,7 @@ public:
       sDatum val; 
       if (!mTable.Lookup(key,&val))
       {
-         val = mOps.New(); 
+         val = this->mOps.New(); 
          PUSH_BLAME(); 
          mTable.Set(key,val); 
          POP_BLAME(); 
@@ -130,7 +130,7 @@ public:
       sDatum val;
       if (mTable.Lookup(key,&val))
       {
-         mOps.Delete(val);    
+         this->mOps.Delete(val);    
          mTable.Delete(key);
          return S_OK; 
          
@@ -155,11 +155,11 @@ public:
       sDatum setval; 
       if (mTable.Lookup(key,&setval))
       {
-         mOps.Copy(&setval,val);
+         this->mOps.Copy(&setval,val);
          retval = S_FALSE; 
       }
       else
-         setval = mOps.CopyNew(val);
+         setval = this->mOps.CopyNew(val);
       PUSH_BLAME(); 
       mTable.Set(key,setval);
       POP_BLAME(); 
@@ -171,7 +171,7 @@ public:
       sDatum srcval; 
       if (mTable.Lookup(Key(src),&srcval))
       {
-         sDatum targval = mOps.CopyNew(srcval); 
+         sDatum targval = this->mOps.CopyNew(srcval);
          PUSH_BLAME(); 
          mTable.Set(Key(targ),targval); 
          POP_BLAME(); 
@@ -184,9 +184,9 @@ public:
    {
       cTable::cIter iter;  
       for (iter = mTable.Iter(); !iter.Done(); iter.Next())
-         if (iter.Key().prop == mID)
+         if (iter.Key().prop == this->mID)
          {
-            mOps.Delete(iter.Value());
+            this->mOps.Delete(iter.Value());
             mTable.Delete(iter.Key()); 
          }
       return S_OK; 
@@ -206,7 +206,7 @@ public:
       cTable::cIter& iter = *(cTable::cIter*)piter; 
 
       // Skip over entries that aren't us. 
-      while (!iter.Done() && iter.Key().prop != mID)
+      while (!iter.Done() && iter.Key().prop != this->mID)
          iter.Next(); 
 
       if (iter.Done())
@@ -241,12 +241,12 @@ class cGenericSparseHashPropertyStore : public cSparseHashPropertyStore<cDelegat
 public:
    cGenericSparseHashPropertyStore()
    {
-      mOps.InitDelegation(this); 
+      this->mOps.InitDelegation(this); 
    }
 
    STDMETHOD(SetOps)(IDataOps* ops)
    {  
-      mOps.SetOps(ops); 
+      this->mOps.SetOps(ops); 
       return S_OK; 
    }
 

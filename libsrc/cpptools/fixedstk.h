@@ -44,7 +44,7 @@ class cFixedStack
 
     #define cFixedStack_Advance(index) \
     { \
-        register unsigned temp = index; \
+        unsigned temp = index; \
         temp++; \
         temp &= unsigned(kMaxElems - 1); \
         index = temp; \
@@ -52,7 +52,7 @@ class cFixedStack
 
     #define cFixedStack_Retreat(index) \
     { \
-        register unsigned temp = index; \
+        unsigned temp = index; \
         temp--; \
         temp &= unsigned(kMaxElems - 1); \
         index = temp; \

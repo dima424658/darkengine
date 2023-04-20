@@ -217,7 +217,7 @@ public:
    // Array sorting and searching (qsort, linear search, bninary search)
    //
    using tCompareFunc = int (*)(const T * pLeft, const T * pRight); // Comparison functions for sort
-   using tSearchFunc = typedef int (*)(const void * pKey, const T * pRight); // Comparison functions for search
+   using tSearchFunc = int (*)(const void * pKey, const T * pRight); // Comparison functions for search
 
    void     Sort(tCompareFunc);
    unsigned LSearch(const void *, tSearchFunc) const;

@@ -359,7 +359,7 @@ struct sMxdMatrix : mxds_matrix
    inline sMxdMatrix &RotZ(const sMxdMatrix &m,sMxAng a);
 
    // Rotate about a vector
-   inline sMxdMatrix &sMxdMatrix::RotVec(const sMxdVector &v, sMxAng a);
+   inline sMxdMatrix &RotVec(const sMxdVector &v, sMxAng a);
 
    // Create a matrix rotated about that axis by radian amount
    inline sMxdMatrix &RotXRad(double rad)

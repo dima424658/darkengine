@@ -672,7 +672,7 @@ struct sPlayerInfoEntry {
    char *pAddress;
    ObjID playerObj;
 
-   sPlayerInfoEntry::sPlayerInfoEntry()
+   sPlayerInfoEntry()
       : pName(NULL),
         pAddress(NULL),
         playerObj(OBJ_NULL)
@@ -686,7 +686,7 @@ private:
 
 public:
 
-   cPlayerInfoTable::~cPlayerInfoTable()
+   ~cPlayerInfoTable()
    {
       int i;
       for (i = 0;

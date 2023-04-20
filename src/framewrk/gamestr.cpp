@@ -274,7 +274,7 @@ public:
 
    void DoDumpProp(sTablePropElem* elem)
    {
-      cFileSpec fname = table_basepath+elem->table; 
+      cFileSpec fname = cFileSpec(table_basepath + elem->table);
       fname.SetFileExtension("STR"); 
 
       cStr fnamestr; 

@@ -63,7 +63,7 @@ public:
    cStringPropertyExtensions(const sPropertyDesc* desc, IPropertyStore* store)
       : BASECLASS(desc,store)
    {
-      SetOps(&cStringDataOps::gOps); 
+      this->SetOps(&cStringDataOps::gOps); 
    }
 
    STDMETHOD_(BOOL,Get)(ObjID obj, const char* (*ptr)) const

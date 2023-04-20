@@ -62,7 +62,7 @@ CreateSoundRezStreamer( ISndMixer        *pMixer,
    pInfo->extras[0] = rezId;
    rezLen = ResSize( rezId );
 
-   LOG2("CreateSoundRezStreamer %ld rezLen, %ld buffLen",
+   TLOG2("CreateSoundRezStreamer %ld rezLen, %ld buffLen",
         rezLen, bufferLen );
    pSample = CreateSoundStreamer( pMixer, getRezData, pInfo, rezLen, pBuffer,
                                   bufferLen, endCB, pEndCBData );
