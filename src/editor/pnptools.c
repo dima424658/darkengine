@@ -53,7 +53,7 @@ void buildYLineRect(Rect *fill, Rect *src, int vline, float hsplit, int side, in
    fill->lr.x-=bx;
 }
 
-void PnP_ExecCommandInt(char *cmd, int val)
+void PnP_ExecCommandInt(const char *cmd, int val)
 {
    char pbuf[16];
    itoa(val,pbuf,10);
@@ -61,7 +61,7 @@ void PnP_ExecCommandInt(char *cmd, int val)
       Warning(("Couldnt find command <%s> to execute (w/%d)",cmd,val));
 }
 
-void PnP_ExecCommandFloat(char *cmd, float val)
+void PnP_ExecCommandFloat(const char *cmd, float val)
 {
    char pbuf[24];
    gcvt(val,10,pbuf);
@@ -319,7 +319,7 @@ bool pnp_oneshot_cb(short action, void* data, LGadBox* vb)
    return FALSE;
 }
 
-void _PnP_ButtonOneShot(Rect *space, char *name, void (*shoot)(int data), int data)
+void _PnP_ButtonOneShot(Rect *space, const char *name, void (*shoot)(int data), int data)
 {
    oneshotdata* shooter = Malloc(sizeof(oneshotdata));
    DrawElement draw; 
@@ -341,7 +341,7 @@ void _PnP_ButtonOneShot(Rect *space, char *name, void (*shoot)(int data), int da
 }
 
 
-int PnP_ButtonOneShot(Rect *space, char *name, void (*shoot)(int data), int data)
+int PnP_ButtonOneShot(Rect *space, const char *name, void (*shoot)(int data), int data)
 {
    _PnP_ButtonOneShot(space,name,shoot,data);
    return curPnP->GadgOwner++;
@@ -390,7 +390,7 @@ static bool vslider_cb(short action, void* arg, LGadBox* vb)
    return FALSE;
 }
 
-void _pnp_vslider(Rect* area, char* title, pnp_vslider_data* _data)
+void _pnp_vslider(Rect* area, const char* title, pnp_vslider_data* _data)
 {
    pnp_vslider_data* data = _data;
    DrawElement draw;

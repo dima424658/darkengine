@@ -858,7 +858,7 @@ bool cLoadout::sButtList::BListCB(ushort action, int button, void* data, LGadBox
 #define kHackSndBuy   (1)
 #define kHackSndClear (2)
 #define kHackSndError (3)
-static char *hacked_sound_name[]={"select1","kaching","select2","atten1"};
+static const char *hacked_sound_name[]={"select1","kaching","select2","atten1"};
 #define PlayHackedSound(idx) SFX_Play_Raw(SFX_STATIC,NULL,hacked_sound_name[idx]);
 
 void cLoadout::OnButtonList(ushort action, int button)

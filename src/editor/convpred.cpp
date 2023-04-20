@@ -40,7 +40,7 @@ static const char* _g_AIConversationActorNames[] =
    "ActorSix",
 };
 
-static char *_g_AIConversationFlagBits[] = 
+static const char *_g_AIConversationFlagBits[] =
 {
    "Don't Block",
 };

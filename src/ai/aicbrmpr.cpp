@@ -71,7 +71,7 @@ IAIRangedApplicabilitiesProperty* g_pAIRangedApplicabilitiesProperty = NULL;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static char *g_AIRangedModeNames[kAIRC_NumApplicabilities] = 
+static const char *g_AIRangedModeNames[kAIRC_NumApplicabilities] =
 { 
    "None", 
    "Minimum", 

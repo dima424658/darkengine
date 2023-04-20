@@ -41,7 +41,7 @@ EXTERN int g_AIRangedCombatModeWeights[kAIRC_NumApplicabilities] =
    1000, // kAIRC_AppVeryHigh
 };
 
-cAIAction* cAIRangedMode::CreateMotionAction(char* pTagString)
+cAIAction* cAIRangedMode::CreateMotionAction(const char* pTagString)
 {
    cTagSet tags(pTagString);
    cAIAction* pAction = m_pOwner->CreateMotionAction();

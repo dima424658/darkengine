@@ -60,7 +60,7 @@ void CommandRegister(Command *cmd_set, int count, ulong contexts)
    ++command_list_size;
 }
 
-Command *CommandFind(char *s, int n)
+Command *CommandFind(const char *s, int n)
 {
    int i,j, count;
    Command *set;
@@ -77,15 +77,15 @@ Command *CommandFind(char *s, int n)
    return 0;
 }
 
-Command *CommandFindString(char *s)
+Command *CommandFindString(const char *s)
 {
    return CommandFind(s, strlen(s));
 }
 
-bool CommandParse(char *inp, Command **res_1, char **res_2)
+bool CommandParse(const char *inp, Command **res_1, const char **res_2)
 {
    // parse out to the first blank
-   char *s;
+   const char *s;
    int n;
    Command *cmd;
 
@@ -110,8 +110,8 @@ bool CommandParse(char *inp, Command **res_1, char **res_2)
    return TRUE;
 }
 
-static char *fail_return = "No such Command";
-char *CommandExecute(char *inp)
+static const char *fail_return = "No such Command";
+char *CommandExecute(const char *inp)
 {
    // parse out to the first blank
    char *s;
@@ -128,7 +128,7 @@ char *CommandExecute(char *inp)
    }
 }
 
-bool CommandExecuteParam(char *inp, char *parm)
+bool CommandExecuteParam(const char *inp, char *parm)
 {
    Command *cmd = CommandFindString(inp);
    if (cmd) {
@@ -154,7 +154,7 @@ bool atobool(char *s)
 #define get_val_and_exec(f,s,cvrt,prmpt,def) \
    if (do_prompt) f(prmpt(s)); else if ((s)&&(*s)) f(cvrt(s)); else f(def)
 
-void CommandExecuteParsed(Command *cmd, char *s)
+void CommandExecuteParsed(Command *cmd, const char *s)
 {
    BOOL do_prompt;
    
@@ -297,7 +297,7 @@ void CommandExecuteParsed(Command *cmd, char *s)
 
 ///////////////////// built-in commands ////////////////////
 
-static char *type_name[] =
+static const char *type_name[] =
 {
    "function",
    "bool function",
@@ -314,7 +314,7 @@ static char *type_name[] =
    "integer toggle"
 };
 
-static void help_commands(char *s)
+static void help_commands(const char *s)
 {
    if (s && *s) 
    {
@@ -371,7 +371,7 @@ static void help_commands(char *s)
 // track command finds
 static int which_list=0, which_cmd=0;
 
-char *command_find(char *prefix, BOOL restart)
+const char *command_find(const char *prefix, BOOL restart)
 {
    int match_len=0;
    BOOL found_us=FALSE;
@@ -442,7 +442,7 @@ BOOL CommandParseStringArgs(char *args, char *arg1, int arg1_len,
    return FALSE;
 }
 
-static void dump_commands(char *s)
+static void dump_commands(const char *s)
 {
    FILE *f;
    int j,i;
@@ -470,7 +470,7 @@ static void dump_commands(char *s)
 
 // wouldnt it be cool if this used the "script_path" variable????
 // for now, ill do that outside of here, as this is "pure system of 90s"
-void CommandRunScript(char *s)
+void CommandRunScript(const char *s)
 {
    static char buf[256];
    FILE *f;

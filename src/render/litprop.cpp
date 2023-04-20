@@ -259,7 +259,7 @@ public:
 };
 
 // ummm, i wish these were in ship builds...
-char* mode_strings[]
+const char* mode_strings[]
 = {
    "flip between min & max",
    "slide smoothly",

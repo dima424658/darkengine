@@ -214,7 +214,7 @@ public:
          Wield(which);
 
 #ifdef DBG_ON
-      static char* sel_names[] = { "weapon", "item" };
+      static const char* sel_names[] = { "weapon", "item" };
       ConfigSpew("inv_select_spew",("Current %s is now %d\n",sel_names[which],obj));
 #endif // DBG_ON
 
@@ -578,7 +578,7 @@ void InventoryCreate()
 // Contains sdesc
 //
 
-static char* contain_type_strings[] =
+static const char* contain_type_strings[] =
 {
    "Alternate",
    "Hand",

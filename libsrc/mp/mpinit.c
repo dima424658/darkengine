@@ -361,7 +361,7 @@ void mp_build_tables(void)
 
 int mp_alloc_count = 0;
 
-void * mp_alloc(size_t size, char * file, int line)
+void * mp_alloc(size_t size, const char * file, int line)
 {
 	void * result = Malloc(size);
 

@@ -281,7 +281,7 @@ static sPropertyDesc creature_desc =
 
 #define NUM_STRINGS(name) (sizeof(name)/sizeof(name[0]))
 
-char *g_aCreatureTypeNames[] = {"Dummy"};
+const char *g_aCreatureTypeNames[] = {"Dummy"};
 
 static sFieldDesc creatureFields[] =
 {
@@ -433,7 +433,7 @@ static sPropertyDesc creaturePoseDesc =
    kPropertyChangeLocally,
 };
 
-static char *poseTypeNames[] =
+static const char *poseTypeNames[] =
 {
    "Tags",
    "Motion Name",

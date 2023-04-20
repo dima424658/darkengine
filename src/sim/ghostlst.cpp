@@ -231,9 +231,9 @@ BOOL GhostAllowDeregisterPacket(ObjID obj)
 }
 
 #ifdef GHOST_DEBUGGING
-static char *ghost_events[]={"Dying", "Wounded", "Swinging", "Firing", "Sleep", "Revive", "Dead", "Sleeping"};
+static const char *ghost_events[]={"Dying", "Wounded", "Swinging", "Firing", "Sleep", "Revive", "Dead", "Sleeping"};
 #define NUM_GHOST_EVENTS (sizeof(ghost_events)/sizeof(ghost_events[0]))
-char *EventString(int x)
+const char *EventString(int x)
 {
    for (int i=(1<<0), j=0; i<(1<<NUM_GHOST_EVENTS); i<<=1, j++)
       if ((x&i)==x)
@@ -543,7 +543,7 @@ void _GhostDebugSetup(ObjID obj, sGhostLocal *pGL, sGhostRemote *pGR)
    }
 }
 
-void _GhostPrintGhostPos(ObjID obj, sGhostHeartbeat *pGH, int flags, char *prefix, int seq_id)
+void _GhostPrintGhostPos(ObjID obj, sGhostHeartbeat *pGH, int flags, const char *prefix, int seq_id)
 {
    char seq_buf[64], buf[1024];
    if (seq_id!=-1)

@@ -214,7 +214,7 @@ static int _PickGetVolPct(sPickState *pPSt, sPickCfg *pPCfg)
 }
 
 // pass 0 to mean default volume (current schemas are locked,lockpik,pinset,noluck,unlocked)
-static int _PickSound(char *schName, ObjID snd_loc, int vol_pct)
+static int _PickSound(const char *schName, ObjID snd_loc, int vol_pct)
 {
    sSchemaCallParams callDat={SCH_SET_OBJ,};
    if (vol_pct) 
@@ -855,7 +855,7 @@ static sFieldDesc pick_src_fields [] =
    { "PickBits", kFieldTypeBits, sizeof(int), 0, kFieldFlagUnsigned },
 };
 
-static char *pick_flag_names[] = { "Reset On Fail", "Randomize Time" };
+static const char *pick_flag_names[] = { "Reset On Fail", "Randomize Time" };
 
 #define DEFINE_TUMBLER_FIELDS(tnumstr,field) \
    { "LockBits "tnumstr,   kFieldTypeBits, FieldLocation(sPickCfg,field##.data_bits) }, \

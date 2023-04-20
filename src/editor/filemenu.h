@@ -31,8 +31,8 @@ typedef enum eFileMenuMode eFileMenuMode;
 
 struct sFileMenuFilter 
 {
-   char* text;  // text filter description
-   char* pattern; // wildcarded file patter
+   const char* text;  // text filter description
+   const char* pattern; // wildcarded file patter
 };
 
 typedef struct sFileMenuFilter sFileMenuFilter;

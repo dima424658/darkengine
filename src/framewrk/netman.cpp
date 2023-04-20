@@ -1552,7 +1552,7 @@ public:
 #define NO_CULPRIT "None"   
 
    // Bandwidth (BW) of sends and receives over TimeSpan. (All are output parameters)
-   void BandwidthStats(float *timeSpan, ulong *sendBW, ulong *receiveBW, char **culprit)
+   void BandwidthStats(float *timeSpan, ulong *sendBW, ulong *receiveBW, const char **culprit)
    {
       int dt=(m_StatList[m_ListPos].time - m_StatList[(m_ListPos+1) % STAT_LIST_LENGTH].time);
       *timeSpan = dt/1000.0;
@@ -1584,7 +1584,7 @@ public:
       }
    }
 
-   void FrameStats(ulong *bytesSent, ulong *bytesReceived, char **culprit) 
+   void FrameStats(ulong *bytesSent, ulong *bytesReceived, const char **culprit) 
    {
       int ix = (m_ListPos==0 ? STAT_LIST_LENGTH-1 : m_ListPos-1);
       *bytesSent = m_StatList[ix].sent;
@@ -4266,13 +4266,13 @@ public:
    STDMETHOD_(void, BandwidthStats)(float *timeSpan,
                                     ulong *sendBW,
                                     ulong *receiveBW,
-                                    char **culprit) 
+                                    const char **culprit) 
    {
       m_NetStats.BandwidthStats(timeSpan, sendBW, receiveBW, culprit);
    }
 
    // Bytes sent and received in the _previous_ frame.
-   STDMETHOD_(void, FrameStats)(ulong *bytesSent, ulong *bytesReceived, char **culprit) 
+   STDMETHOD_(void, FrameStats)(ulong *bytesSent, ulong *bytesReceived, const char **culprit) 
    {
       m_NetStats.FrameStats(bytesSent, bytesReceived, culprit);
    }

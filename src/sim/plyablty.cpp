@@ -114,7 +114,7 @@ BOOL cPlayerAbility::GetSoundSchemaName(int skillID,Label *pName)
 
    sPlayerSkillFullDesc *pSkill=&m_Desc.pSkills[skillID];
 
-   char *pSName;
+   const char *pSName;
    if(NULL==(pSName=pSkill->sndSchemaName))
       return FALSE;
 

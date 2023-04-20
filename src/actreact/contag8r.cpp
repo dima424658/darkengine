@@ -341,7 +341,7 @@ static sReactionDesc impact_rdesc =
 // Param sdesc
 //
 
-static char* coll_results[] = { "Bounce", "Stick", "Slay" }; 
+static const char* coll_results[] = { "Bounce", "Stick", "Slay" }; 
 
 #define NUM_COLL_RESULTS (sizeof(coll_results)/sizeof(coll_results[0]))
 

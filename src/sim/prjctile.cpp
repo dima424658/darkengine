@@ -416,7 +416,7 @@ ObjID launchProjectile(ObjID launcher, ObjID proj_arch, float power, int flags, 
 
 #define PROJECTILE_COLLISION  (COLLISION_NORESULT | COLLISION_SLAY)
 
-static char name[] = "Projectile";
+static const char name[] = "Projectile";
 
 void InitProjectileArchetype(void)
 {

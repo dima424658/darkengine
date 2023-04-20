@@ -79,7 +79,7 @@ public:
 
 };
 
-static char *flags_names[] =
+static const char *flags_names[] =
  { "Environmental", "NoSharpCurve", "TurnedOff", "RemoveProp (OneShot)", "Music", "Synch", "NoFade", "DestroyObj", "DoAutoOff" };
 
 // structure descriptor fun

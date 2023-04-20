@@ -322,7 +322,7 @@ protected:
 };
 
 
-static char *g_apszFaceVisageName[kFaceVisageCount]
+static const char *g_apszFaceVisageName[kFaceVisageCount]
 = {
    "Neutral",
    "Smile",

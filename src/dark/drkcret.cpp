@@ -55,7 +55,7 @@ static cManeuverFactory *g_aDarkManeuverFactory[] = {\
    g_pSingleManeuverFactory,
 };   
 
-static char *motor_controller_names[] = { 
+static const char *motor_controller_names[] = {
    "GroundLoco",
    "Combat",
    "GroundAction",

@@ -20,7 +20,7 @@
 // installed.  If not, put up a message box asking for such.  If user
 // cancels out, return FALSE.
 
-char *get_no_cd_message(char *fill_in, char *msg)
+char *get_no_cd_message(char *fill_in, const char *msg)
 {
    char cfg_var[128];
    char lang[32];
@@ -138,7 +138,7 @@ BOOL CheckCopyProtection(void)
 
 //////////////////
 // fist one here is the "old path" from which we fix
-static char *path_configs[]=
+static const char *path_configs[]=
  { "cd_path", "resname_base", "load_path", "script_module_path", "movie_path" };
 
 // gonna replace " X:\" and "+X:\"

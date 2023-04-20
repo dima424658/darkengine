@@ -27,7 +27,7 @@
 #define UNKNOWN_NAME "UNKNOWN"
 
 
-static char* indef_article(const char* word)
+static const char* indef_article(const char* word)
 {
    static char vowels[] = "AEIOU";
 
@@ -37,7 +37,7 @@ static char* indef_article(const char* word)
       return "A";
 }
 
-const char*  ObjEditName(ObjID obj)
+const const char*  ObjEditName(ObjID obj)
 {
    static char namebuf[1024];
 

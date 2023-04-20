@@ -70,7 +70,7 @@ char *diskPathMunge(char *targ, const char *base_path, const char *base_2, const
 // if there is no extension on the file, attaches it
 // returns in targ, post is extra (with the "." included)
 // if targ is NULL puts it back in base
-char *attachPostfix(char *targ, char *base, const char *post)
+char *attachPostfix(char *targ, const char *base, const char *post)
 {
    char *brkset="\\/.";
    char *flast=NULL, *tmp;

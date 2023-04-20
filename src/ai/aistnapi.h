@@ -13,7 +13,7 @@
 
 #include <objtype.h>
 
-EXTERN BOOL DoAISetStun(ObjID obj, char *begin, char *loop, int ms);
+EXTERN BOOL DoAISetStun(ObjID obj, const char *begin, const char *loop, int ms);
 EXTERN BOOL AIGetStun(ObjID obj); 
 
 EXTERN BOOL DoAIUnsetStun(ObjID obj);

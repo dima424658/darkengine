@@ -699,12 +699,12 @@ protected:
       {
          fprintf (fp, "\n");
 
-         char *controls[] = { "bow_zoom", "joystick_enable", "mouse_invert", "lookspring",
+         const char *controls[] = { "bow_zoom", "joystick_enable", "mouse_invert", "lookspring",
                               "freelook", "mouse_sensitivity", "joy_rotate", "joystick_sensitivity",
                               "joystick_deadzone", "rudder_sensitivity", "rudder_deadzone",
                               "auto_equip", "auto_search", "goal_notify", "climb_touch", "\0"};
          char str[32];
-         char **p_control = controls;
+         const char **p_control = controls;
 
          while (**p_control) {
             sprintf (str, "echo $%s", *p_control);
@@ -967,8 +967,8 @@ protected:
       cStr tmpStr;
 
       if (bind_num >= mNumBindable) {
-         static char *dummy = "";
-         mBindButtonElems[butt_num].draw_data = dummy;
+         static const char *dummy = "";
+         mBindButtonElems[butt_num].draw_data = (void*)dummy;
          return;
       }
 
@@ -1380,9 +1380,11 @@ protected:
       
    //////////////////////////////////////////////////////
 
-   void LoadButtBmp (IRes *butt_res[4], DrawElement *draw_elem, char *prefix)
+   void LoadButtBmp (IRes *butt_res[4], DrawElement *draw_elem, const char *prefix)
    {
-      char *sffx [] = {"norm", "down", "hlit", "hlit"}, str[128];
+      const char *sffx [] = {"norm", "down", "hlit", "hlit"};
+      char str[128];
+
       AutoAppIPtr (ResMan);
       for (int i = 0; i < 4; i++) {
          butt_res[i] = pResMan->Bind (strcat (strcpy (str, prefix), sffx[i]), RESTYPE_IMAGE, NULL, mResPath);
@@ -1397,7 +1399,7 @@ protected:
 
    //////////////////////////////////////////////////////
 
-   void SetUIString (cStr &str, DrawElement &draw_elem, char *name, char *suffix)
+   void SetUIString (cStr &str, DrawElement &draw_elem, const char *name, char *suffix)
    {
       str = FetchUIString (panel_name, name, mResPath);
       if (suffix)
@@ -1407,7 +1409,7 @@ protected:
 
    //////////////////////////////////////////////////////
 
-   void AppendRects (char *rect_file, cRectArray &old_rects)
+   void AppendRects (const char *rect_file, cRectArray &old_rects)
    {
       long old_sz, tmp_sz;
       cRectArray tmp_rects; 
@@ -1461,7 +1463,7 @@ protected:
 
    //////////////////////////////////////////////////////
 
-   void DrawString (char *strname, int rect_num)
+   void DrawString (const char *strname, int rect_num)
    {
       cStr str = FetchUIString (panel_name, strname, mResPath);//copy the string 
       char *s = (char*)(const char*)str;//get a mutable pointer

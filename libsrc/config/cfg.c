@@ -16,13 +16,13 @@ uint real_simple_readfunc(char* var)
 }
 #pragma on(unreferenced)
 
-errtype config_load(char* fn)
+errtype config_load(const char* fn)
 {
    return config_read_file(fn,real_simple_readfunc);
 }
 
 #define ASSERT_OK(x) do { errtype goof = x; if (goof != OK) return goof; } while(0)
-errtype config_startup(char* fn)
+errtype config_startup(const char* fn)
 {
    ASSERT_OK(config_init());
    return config_load(fn);

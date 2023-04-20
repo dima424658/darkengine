@@ -193,7 +193,7 @@ static sPropertyDesc rTypePropDesc =
 //
 // Render type sdesc
 //
-static char* rend_type_strings[] =
+static const char* rend_type_strings[] =
 {
    "Normal",
    "Not Rendered",
@@ -388,7 +388,7 @@ static sPropertyDesc baPropDesc =
    { "Renderer", "Bitmap Animation" }, // ui strings
 };
 
-static char* bitmap_flags[] =
+static const char* bitmap_flags[] =
 {
    "Kill on completion",
 };

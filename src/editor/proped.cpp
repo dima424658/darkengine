@@ -165,7 +165,7 @@ STDMETHODIMP cSdescPropEditTrait::Edit(ObjID obj)
       psDialogFuncType AlternateDialogFunction = NULL;
       if (config_is_defined("hens_changes"))
       {
-         char* candidates [] =
+         const char* candidates [] =
          {
             "Alert response",
             "Body response",

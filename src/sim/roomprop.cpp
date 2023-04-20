@@ -160,7 +160,7 @@ void AcousticsPropTerm(void)
 // Structure Descriptor
 #ifdef EDITOR
 // must match hateful lgsound.h definitions
-static char *EAXCodeNames[]=
+static const char *EAXCodeNames[]=
 {
  "Generic",
  "PaddedCell",
@@ -192,7 +192,7 @@ static char *EAXCodeNames[]=
 
 const int g_nRoomTypes = 22;
 
-char *g_RoomTypes[g_nRoomTypes] =
+const char *g_RoomTypes[g_nRoomTypes] =
 {
    "Generic",
    "Small Dead",

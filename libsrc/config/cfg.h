@@ -25,7 +25,7 @@ extern "C"
 // Loads or save all config varables in 
 // the specified filename.
 // 
-errtype config_load(char* filename);
+errtype config_load(const char* filename);
 #define config_save(filename) config_write_file(fn,NULL);
 
 //--------------------------------------
@@ -35,7 +35,7 @@ errtype config_load(char* filename);
 // if the specified filename is not NULL, 
 // config_load's that file.
 //
-errtype config_startup(char* filename);
+errtype config_startup(const char* filename);
 
 
 

@@ -493,7 +493,7 @@ void PlaytestFrameReal()
 //////////////////////
 // idiocy helper function for CheatToggleBools
 
-void CheatCheckToggleBool(bool *var, char *cmd, char *name)
+void CheatCheckToggleBool(bool *var, char *cmd, const char *name)
 {
    BOOL new_val=!(*var);
    if (!CheatsActive())

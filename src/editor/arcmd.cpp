@@ -112,7 +112,7 @@ static void query_tron()
          char buf[80]; 
          sprintf(buf, "Min: %.2f Max: %.2f ", tron.trigger.min,tron.trigger.max);
          mprintf(buf);
-         char* effectstr = "None";
+         const char* effectstr = "None";
          if (tron.effect.kind != REACTION_NULL)
          {
             effectstr = (char*)pReactions->DescribeReaction(tron.effect.kind)->name;

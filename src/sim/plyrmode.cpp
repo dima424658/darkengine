@@ -280,7 +280,7 @@ cPlayerMode::~cPlayerMode()
 ////////////////////////////////////////
 
 // @HACK: we really want to specified whether speed modifiers are transient
-static char *NullifyOnLoadList[] = 
+static const char *NullifyOnLoadList[] = 
 {
    "PlayerAbility",
    "SwordEquip",

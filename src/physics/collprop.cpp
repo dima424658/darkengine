@@ -38,7 +38,7 @@ static sPropertyDesc collisionprop_desc =
    { "Physics: Misc", "Collision Type" }
 };
 
-static char* coll_bits[] = 
+static const char* coll_bits[] =
 { 
    "Bounce", 
    "Destroy on Impact", 

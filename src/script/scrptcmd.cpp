@@ -182,7 +182,7 @@ static void trace_line(int iLine)
 }
 
 
-static char *dump_flag(int iFlag)
+static const char *dump_flag(int iFlag)
 {
    if (iFlag)
       return "ON ";
@@ -191,7 +191,7 @@ static char *dump_flag(int iFlag)
 }
 
 
-static char *dump_action(eScrTraceAction Action)
+static const char *dump_action(eScrTraceAction Action)
 {
    if (Action == kBreak)
       return "Break";

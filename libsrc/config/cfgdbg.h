@@ -19,8 +19,8 @@ extern "C"
 
 
 // this is braindamaged, but it is rex-compiant.
-bool CfgSpewTest(char* var);
-void CfgDoSpew(char* msg, ...);
+bool CfgSpewTest(const char* var);
+void CfgDoSpew(const char* msg, ...);
 
 // is this system on at all?  defaults to TRUE
 extern bool config_spew_on;

@@ -211,7 +211,7 @@ struct sPhysMsg : public sScrMsg, public sPhysMsgBase
    sPhysMsg(ObjID objID, int submod, ePhysContact cd, ePhysContactType type, ObjID contact_object, int contact_submod):
       sPhysMsgBase(submod, cd, type, contact_object, contact_submod)
    {
-      static char *contact_names[2] = { "PhysContactCreate", "PhysContactDestroy" };
+      static const char *contact_names[] = { "PhysContactCreate", "PhysContactDestroy" };
 
       to = objID;
       free((void *)message);
@@ -222,7 +222,7 @@ struct sPhysMsg : public sScrMsg, public sPhysMsgBase
    sPhysMsg(ObjID objID, ePhysEnterExit type, ObjID trans_object, int trans_submod):
       sPhysMsgBase(type, trans_object, trans_submod)
    {
-      static char *enter_exit_names[2] = { "PhysEnter", "PhysExit" };
+      static const char *enter_exit_names[] = { "PhysEnter", "PhysExit" };
 
       to = objID;
       free((void *)message);

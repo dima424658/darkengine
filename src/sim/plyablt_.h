@@ -37,8 +37,8 @@ struct sPlayerSkillFullDesc
    ePlayerTransition trans;
    sSkillConnectDesc connect;
    sMPlayerSkillData skillData;
-   char *tagNames;
-   char *sndSchemaName;
+   const char *tagNames;
+   const char *sndSchemaName;
    float timeToMax; 
    int mouseSpeed;
    int mouseZone;

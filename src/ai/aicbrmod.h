@@ -75,7 +75,7 @@ protected:
    float GetCurrentLocationScore(void) const;
 
    // Motions
-   cAIAction* CreateMotionAction(char* pTagString);
+   cAIAction* CreateMotionAction(const char* pTagString);
 
    // Current Location
    cAIRangedLocation* GetCurrentLocation(void) const;

@@ -152,7 +152,7 @@ void dbSetCurrentFile(char *buf)
 }
 //----------------------------------------
 
-static void set_file_var(char* var, char* filename, bool save)
+static void set_file_var(const char* var, const char* filename, bool save)
 {
    char name[256];
    attachPostfix(name,filename,"." DB_FILE_SUFFIX);
@@ -211,7 +211,7 @@ static edbFiletype find_for_load_extensionless(char* fullname, char* filename)
 
 //----------------------------------------
 
-static void set_gamesys_file(char* fn)
+static void set_gamesys_file(const char* fn)
 {
    while(isspace(*fn)) fn++;
    strcpy(gCurrGameFile, strip_pathname(fn));
@@ -419,7 +419,7 @@ edbFiletype dbSaveTagFile(ITagFile* file, edbFiletype filetype)
 
 // @TODO: change this to three phases when map/mis splits up
 static ulong load_order[] = { kFiletypeGAM, kFiletypeMAP|kFiletypeMIS};
-static char* phase_names[] = { "gamesys", "mission"};
+static const char* phase_names[] = { "gamesys", "mission"};
 
 typedef BOOL (*find_file_func)(ulong ftype, const char* fname, char* filebuf);
 static find_file_func special_file_find = NULL;

@@ -53,7 +53,7 @@ char* FileDialog(eFileMenuMode mode, sFileMenuFilter* pFilters, const char* def_
 
       // look for def_ext inside pattern, in order to figure out default pattern.
       if (idx == 0)
-         for (char* s = f->pattern; *s != '\0'; s++)
+         for (const char* s = f->pattern; *s != '\0'; s++)
             if (strnicmp(s,def_ext,extlen) == 0)
             {
                idx = i; 
@@ -153,7 +153,7 @@ void FileMenu(void)
    IWinApp* pWA;
    HINSTANCE hMainInst, hConInst;
    WNDCLASS wc;
-   static char *szName = "File menu";
+   static const char *szName = "File menu";
    int top, left, width, height;
 
    // are we already active?

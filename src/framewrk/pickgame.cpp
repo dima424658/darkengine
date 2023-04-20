@@ -31,7 +31,7 @@ struct sFoundVar
 
 typedef cDynArray<sFoundVar*> VarArray;
 
-static char* prefix = "";
+static const char* prefix = "";
 static VarArray* itervars = NULL;
 
 static bool iter_func(char* var)

@@ -63,7 +63,7 @@ extern "C" int TERRAIN_ID;
 extern "C" ObjID gLockedBrushes [];
 extern "C" BOOL brushIsLocked (editBrush* brush);
 
-char* TERRAIN_STRING = "all_terrain";
+const char* TERRAIN_STRING = "all_terrain";
 
 static void linked_woe(sLink&)
 {
@@ -297,7 +297,7 @@ void list_all_objs(int arg)
 ////////////////////////////////////////
 
 // helper for link_draw_on and link_draw_off: sanity checker/status printer
-static BOOL check_link_for_drawing(char *link_name, char *operation)
+static BOOL check_link_for_drawing(const char *link_name, const char *operation)
 {
    char status_string[120];
    BOOL rv = FALSE;

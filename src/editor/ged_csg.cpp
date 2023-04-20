@@ -218,7 +218,7 @@ int max_light_scripts = MAX_LIGHT_SCRIPTS;
 int num_media_ops = 10;
 #define NUM_MEDIA num_media_ops
 
-char *mediaop_names[] =
+const char *mediaop_names[] =
 {
    "fill solid",
    "fill air",
@@ -279,7 +279,7 @@ MediaOp media_op[MAX_OP] =
 
 EXTERN void write_cell(FILE *f, PortalCell *p);
 
-BOOL gedcsg_save_world_rep(char *fname)
+BOOL gedcsg_save_world_rep(const char *fname)
 {
    FILE *f = fopen(fname, "wb");
    int i;

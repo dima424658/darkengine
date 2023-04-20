@@ -27,24 +27,24 @@
 // global strings, much match the enums
 
 // has to match the TweqType enum ordering
-char *tweq_type_names[] =
+const char *tweq_type_names[] =
  { "TweqScale", "TweqRotate", "TweqJoints", "TweqModels", "TweqDelete",
    "TweqEmitter", "TweqFlicker", "TweqLock", "TweqAll", "TweqNull" };
 
-static char *tweq_do_ops[] =
+static const char *tweq_do_ops[] =
  { "DoDefault", "DoActivate", "DoHalt", "DoReset", "DoContinue", "DoForward", "DoReverse" };
 
 //////////////////////
 // bitfield names
 
-static char *animc_bit_names[] = { "NoLimit", "Sim", "Wrap", "OneBounce", "SimSmallRad", "SimLargeRad", "OffScreen" };
-static char *miscc_bit_names[] = { "Anchor", "Scripts", "Random", "Grav", "ZeroVel", "TellAi", "PushOut", "NegativeLogic", "Relative Velocity", "NoPhysics", "AnchorVhot", "HostOnly" };
-static char *curve_bit_names[] = { "JitterLow", "JitterHi", "Mul" };
+static const char *animc_bit_names[] = { "NoLimit", "Sim", "Wrap", "OneBounce", "SimSmallRad", "SimLargeRad", "OffScreen" };
+static const char *miscc_bit_names[] = { "Anchor", "Scripts", "Random", "Grav", "ZeroVel", "TellAi", "PushOut", "NegativeLogic", "Relative Velocity", "NoPhysics", "AnchorVhot", "HostOnly" };
+static const char *curve_bit_names[] = { "JitterLow", "JitterHi", "Mul" };
 
-static char *halt_act_names[]  = { "Destroy Obj", "Remove Prop", "Stop Tweq", "Continue", "Slay Obj" };
-static char *anims_bit_names[] = { "On", "Reverse", "ReSynch", "GoEdge", "LapOne" };
+static const char *halt_act_names[]  = { "Destroy Obj", "Remove Prop", "Stop Tweq", "Continue", "Slay Obj" };
+static const char *anims_bit_names[] = { "On", "Reverse", "ReSynch", "GoEdge", "LapOne" };
 
-static char *miscs_bit_names[] = { "Null" };
+static const char *miscs_bit_names[] = { "Null" };
 
 //////////////////////
 // horrible macros for common structures for flags and stuff

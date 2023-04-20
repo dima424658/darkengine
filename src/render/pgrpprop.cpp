@@ -359,7 +359,7 @@ static sPropertyDesc particle_group_desc =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static char *prend_type_strings[] =
+static const char *prend_type_strings[] =
 {
    "Single-colored pixels",
    "Multi-colored pixels",
@@ -369,7 +369,7 @@ static char *prend_type_strings[] =
    "Scaled bitmap",
 };
 
-char *motion_type_strings[] =
+const char *motion_type_strings[] =
 {
    "Immobile",
    "Move with velocity",
@@ -379,7 +379,7 @@ char *motion_type_strings[] =
    "Fire and forget",
 };
 
-char *anim_type_strings[] =
+const char *anim_type_strings[] =
 {
    "Launched one-shot",
    "Launched continually",
@@ -572,7 +572,7 @@ static sPropertyDesc particle_launch_info_desc =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-char *launch_type[] = 
+const char *launch_type[] =
 {
    "Bounding Box",
    "Sphere",

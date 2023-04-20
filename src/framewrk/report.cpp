@@ -73,7 +73,7 @@ struct sReportCallback
 typedef cSimpleDList<sReportCallback *> cCBChain;
 static cCBChain callbackChain;
 
-static BOOL _register_cb(void *cb, int flags, char *name, void *data)
+static BOOL _register_cb(void *cb, int flags, const char *name, void *data)
 {
    sReportCallback *newCb=new sReportCallback;
    newCb->flags=flags;
@@ -103,12 +103,12 @@ static BOOL _unregister_cb(void *cb, int flags, void *data)
 }
 
 // register a callback into the report system
-BOOL ReportRegisterObjCallback(ReportObjCallback cb, char *name, void *data)
+BOOL ReportRegisterObjCallback(ReportObjCallback cb, const char *name, void *data)
 {
    return _register_cb(cb,kReportPerObj|kReportFlg_IsObj,name,data);
 }
 
-BOOL ReportRegisterGenCallback(ReportGenCallback cb, eReportType type, char *name, void *data)
+BOOL ReportRegisterGenCallback(ReportGenCallback cb, eReportType type, const char *name, void *data)
 {
    return _register_cb(cb,type,name,data);   
 }
@@ -140,13 +140,13 @@ struct sReportConfig
    Label fname;
 };
 
-static char *report_warn_names[]=
+static const char *report_warn_names[]=
  { "Errors only", "Warnings too", "Info", "Dump Everything possible" };
 
-static char *report_type_names[]=
+static const char *report_type_names[]=
  { "Header", "Per Obj", "All Obj", "WorldDB", "Rooms", "AIPath", "Script", "Debug", "Models", "Game" };
 
-static char *report_flag_names[]=
+static const char *report_flag_names[]=
  { "HotRegion", "Selection", "Hilight", "AllObj", "Concrete", "Abstract", "ToFile", "ToMono", "ToScreen" };
 
 static sFieldDesc report_config_fields[]=
@@ -276,7 +276,7 @@ static void _buffer_clear(void)
    _rpt_buffer=NULL; _rpt_buff_size=0;
 }
 
-static void _buffer_add_to(char *new_txt)
+static void _buffer_add_to(const char *new_txt)
 {
    int added_len=strlen(new_txt);
    if (added_len==0) return;
@@ -361,7 +361,7 @@ static void _report_do_type(sReportConfig *report, eReportType type)
    free(temp_output);
 }
 
-static char *get_level_name(void)
+static const char *get_level_name(void)
 {
    static char buf[64];
    dbCurrentFile(buf,60);

@@ -19,7 +19,7 @@ typedef struct _pnp_vslider_data
    void* update_data;
 } pnp_vslider_data;
 
-EXTERN void _pnp_vslider(Rect* area, char* title, pnp_vslider_data* _data);
+EXTERN void _pnp_vslider(Rect* area, const char* title, pnp_vslider_data* _data);
 EXTERN void _pnp_vslider_destroy(void* g);
 
 

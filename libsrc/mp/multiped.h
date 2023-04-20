@@ -444,7 +444,7 @@ EXTERN void mp_place_effector(multiped * mp, mps_motion_node * m, quat * rot);
 
 // Memory debug stuff.
 EXTERN int mp_alloc_count;
-EXTERN void * mp_alloc(size_t size, char *, int);
+EXTERN void * mp_alloc(size_t size, const char *, int);
 EXTERN void mp_free(void * ptr);
 
 //

@@ -83,14 +83,14 @@ void ged_hilight_room(int roomID)
    hilight_end(kHilightDone);
 }
 
-ObjID ged_get_room_named(char *name)
+ObjID ged_get_room_named(const char *name)
 {
    AutoAppIPtr_(ObjectSystem, pObjSys);
 
    return pObjSys->GetObjectNamed(name);
 }
 
-ObjID ged_create_room_obj(char *name, ObjID archetype, BOOL concrete)
+ObjID ged_create_room_obj(const char *name, ObjID archetype, BOOL concrete)
 {
    AutoAppIPtr_(TraitManager, pTM);
    ObjID new_room;

@@ -41,7 +41,7 @@ static sPropertyDesc netcat_prop_desc =
 //
 // Network Category sdesc 
 //
-static char* network_category_strings[] = 
+static const char* network_category_strings[] =
 { 
    "Local Only",
    "Hosted",

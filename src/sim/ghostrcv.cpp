@@ -473,7 +473,7 @@ int GetGhostMotionNumber(void)
 // internal calls/structure
 
 // use a tagset to build a high level goal/plan
-IMotionPlan *_BuildTagBasedPlan(sGhostRemote *pGR, char *motion)
+IMotionPlan *_BuildTagBasedPlan(sGhostRemote *pGR, const char *motion)
 {
    sMcMoveParams params;
    cTagSet SpecMotion(motion);
@@ -534,7 +534,7 @@ IMotionPlan *_BuildSchemaOffsetPlan(sGhostRemote *pGR, int schema_idx, int mot_n
 
 // go run the next correct mocap for this ghost...
 // using either the motion tags or the internal numbers sent over the wire
-void _MocapRunMe(sGhostRemote *pGR, char *motion)
+void _MocapRunMe(sGhostRemote *pGR, const char *motion)
 {
    IMotionPlan *pPlan=NULL;
    if (motion[0]!='\0')
@@ -599,11 +599,11 @@ void _AnalyzeVelocity(sGhostRemote *pGR, eGhostMotionSpeed *spd, int *dir)
       *spd=kGhostSpeedNone;
 }
 
-char *_ChooseCapture(sGhostRemote *pGR, BOOL cur_idle)
+const char *_ChooseCapture(sGhostRemote *pGR, BOOL cur_idle)
 {
    uchar             next_mode=kGhostModeNone;
    eGhostMotionSpeed cur_speed=kGhostSpeedNone;
-   char             *c_str=NULL;
+   const char        *c_str = NULL;
    int               ghost_dir, init_state=pGR->critter.r_state;
    pGR->critter.r_state&=~(kGhostRcvStand|kGhostRcvLoco);  // always clear them
 
@@ -808,7 +808,7 @@ void _MocapEval(sGhostRemote *pGR, float dt)
       }
       if (ObjIsPosed(pGR->obj))  // ???? - fix Dr. Watts, basically
          return;
-      char *_capture_str=_ChooseCapture(pGR,cur_idle);
+      const char *_capture_str=_ChooseCapture(pGR,cur_idle);
       if (_capture_str==NULL)
          return;        // early exit
       if (!cur_idle)

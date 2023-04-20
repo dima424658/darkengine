@@ -48,7 +48,7 @@ typedef struct sCreatureDesc
    int nTorsos;
    int nLimbs;
    int nJoints;
-   char *defLengthsName;
+   const char *defLengthsName;
    int nPhysModels;
    float physRadius; 
    sCrPhysModOffset *pCrPhysModOffsets;

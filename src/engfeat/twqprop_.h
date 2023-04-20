@@ -24,7 +24,7 @@ EXTERN void SendTweqMessage(ObjID to, enum eTweqType type, enum eTweqOperation o
 //////
 // in tweqprop.cpp
 
-EXTERN char *tweq_type_names[];
+EXTERN const char *tweq_type_names[];
 
 EXTERN IProperty *tweq_prop_states[];
 EXTERN IProperty *tweq_prop_config[];

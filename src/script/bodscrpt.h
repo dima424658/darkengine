@@ -42,7 +42,7 @@ struct sBodyMsg : public sScrMsg
    sBodyMsg(const ObjID obj_to, const eBodyAction action, const char *motionName, const ulong flagValue=0)
       : ActionType(action), FlagValue(flagValue), MotionName(motionName)
    {
-      static char *body_msg_names[3] = { "MotionStart", "MotionEnd", "MotionFlagReached"};
+      static const char *body_msg_names[] = { "MotionStart", "MotionEnd", "MotionFlagReached"};
 
       // setup base scrMsg fields
       to = obj_to;

@@ -324,7 +324,7 @@ void DrkSoundFrame(void)
 //    -num        *pArg is decibels to subtract from volume
 //
 static void
-main_volume_cmd( char *pArg )
+main_volume_cmd( const char *pArg )
 {
    int volume;
    BOOL isRelative = TRUE;
@@ -365,7 +365,7 @@ main_volume_cmd( char *pArg )
 //    -num        *pArg is decibels to subtract from volume
 //
 static void
-ambient_volume_cmd( char *pArg )
+ambient_volume_cmd( const char *pArg )
 {
    int volume, val;
    BOOL isRelative = TRUE;

@@ -22,7 +22,7 @@ EXTERN void CommandInit(void);
 
   // parse & execute a particular command
   // returns NULL if command existed, an error msg otherwise
-EXTERN char *CommandExecute(char *cmd);
+EXTERN char *CommandExecute(const char *cmd);
 
 // types of commands
 
@@ -52,16 +52,16 @@ enum CommandType
 
 typedef struct
 {
-   char *name;
+   const char *name;
    enum CommandType type;
    void *val;
-   char *comment;
+   const char *comment;
    ulong contexts;
 } Command;
 
-EXTERN bool CommandParse(char *inp, Command **res_1, char **res_2);
+EXTERN bool CommandParse(const char *inp, Command **res_1, const char **res_2);
 EXTERN void CommandExecuteParsed(Command *, char *parms);
-EXTERN bool CommandExecuteParam(char *cmd, char *param);
+EXTERN bool CommandExecuteParam(const char *cmd, char *param);
 
   // register an array of commands
 EXTERN void CommandRegister(Command *, int count, ulong contexts);

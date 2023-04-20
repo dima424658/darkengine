@@ -131,9 +131,9 @@ EXTERN BOOL SFX_IsChannelAvail(void);
 EXTERN BOOL SFX_PreLoad(const char *pName);
 
 //  *parm can always be NULL to default, or can be filled in by APP
-EXTERN int SFX_Play_Raw(int type, sfx_parm *parm, char *sfx_name);
-EXTERN int SFX_Play_Obj(int type, sfx_parm *parm, char *sfx_name, int objid);
-EXTERN int SFX_Play_Vec(int type, sfx_parm *parm, char *sfx_name, mxs_vector *vector);
+EXTERN int SFX_Play_Raw(int type, sfx_parm *parm, const char *sfx_name);
+EXTERN int SFX_Play_Obj(int type, sfx_parm *parm, const char *sfx_name, int objid);
+EXTERN int SFX_Play_Vec(int type, sfx_parm *parm, const char *sfx_name, mxs_vector *vector);
 
 // Set stereo reversal
 EXTERN void SFX_SetReverseStereo(BOOL state);

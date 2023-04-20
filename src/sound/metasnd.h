@@ -37,7 +37,7 @@ EXTERN void metaSndExitGame(void);
 
 /////////
 // yea yea
-EXTERN void metaSndInit(char *snd_prefix);
+EXTERN void metaSndInit(const char *snd_prefix);
 EXTERN void metaSndTerm(void);
 
 #endif  // __METASND_H

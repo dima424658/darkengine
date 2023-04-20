@@ -54,7 +54,7 @@ IIntProperty* pDarkStatProp = NULL;
 ///////////////////
 // core stuff
 
-void _DarkStatIntAdd(char *StatName, int val, BOOL campaign)
+void _DarkStatIntAdd(const char *StatName, int val, BOOL campaign)
 {
    AutoAppIPtr(QuestData);
    if (pQuestData->Exists(StatName))
@@ -64,7 +64,7 @@ void _DarkStatIntAdd(char *StatName, int val, BOOL campaign)
    stat_track(("Stat %s had %d added, now %d\n",StatName,val,pQuestData->Get(StatName)));
 }
 
-int _DarkStatIntGet(char *StatName)
+int _DarkStatIntGet(const char *StatName)
 {
    AutoAppIPtr(QuestData);
    if (pQuestData->Exists(StatName))
@@ -72,7 +72,7 @@ int _DarkStatIntGet(char *StatName)
    return 0;
 }
 
-void _DarkStatIntSet(char *StatName, int val, BOOL campaign)
+void _DarkStatIntSet(const char *StatName, int val, BOOL campaign)
 {
    AutoAppIPtr(QuestData);
    if (pQuestData->Exists(StatName))
@@ -82,12 +82,12 @@ void _DarkStatIntSet(char *StatName, int val, BOOL campaign)
    stat_track(("Stat %s set to %d, now %d\n",StatName,val,pQuestData->Get(StatName)));
 }
 
-void DarkStatIntAdd(char *StatName, int val)
+void DarkStatIntAdd(const char *StatName, int val)
 {
    _DarkStatIntAdd(StatName,val,FALSE);
 }
 
-void DarkStatIntSet(char *StatName, int val)
+void DarkStatIntSet(const char *StatName, int val)
 {
    _DarkStatIntSet(StatName,val,FALSE);
 }
@@ -203,7 +203,7 @@ void DarkStatInitMission(void)
 // property
 
 static sPropertyDesc DarkStatPropDesc={"DarkStat", 0, NULL, 0, 0, { "Dark GameSys", "Stats" }};
-static char* darkstat_names[] = { "Innocent", "Enemy", "Hidden", "FoundBody", "Robot" };
+static const char* darkstat_names[] = { "Innocent", "Enemy", "Hidden", "FoundBody", "Robot" };
 
 #define NUM_STAT_STRINGS (sizeof(rend_type_strings)/sizeof(rend_type_strings[0]))
 #define DARKSTAT_TYPENAME "tDarkStat"

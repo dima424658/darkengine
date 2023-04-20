@@ -42,7 +42,7 @@
 
 //static sPropertyDesc ProxPropDesc = { "Prox", 0, NULL, 0, 0, { "Prox", "Generic"} };
 
-IBoolProperty *ProxBuildProp(char *prox_name)
+IBoolProperty *ProxBuildProp(const char *prox_name)
 {
    sPropertyDesc *ProxPropDesc=new sPropertyDesc;
    memset(ProxPropDesc,0,sizeof(sPropertyDesc));

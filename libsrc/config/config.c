@@ -920,13 +920,13 @@ void config_add_to_or_extract_from_recording( void )
 bool config_spew_on = TRUE;
 static char* _spewsrc = NULL;
 
-bool CfgSpewTest(char* var)
+bool CfgSpewTest(const char* var)
 {
    _spewsrc = var;
    return config_is_defined(var);
 }
 
-void CfgDoSpew(char* msg, ...)
+void CfgDoSpew(const char* msg, ...)
 {
    char buf[1024];
    va_list ap;

@@ -120,7 +120,7 @@ void CreateGunFlashes(ObjID archetypeID, ObjID gunID,
 // The flash link
 //
 
-static char* flashFlags[] = 
+static const char* flashFlags[] =
 {
    "Projectile Flash",
    "Random Bank", 

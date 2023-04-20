@@ -139,14 +139,14 @@ void StatusDrawStringAll(void)
 }
 
 
-int str_wid(char* s)
+int str_wid(const char* s)
 {
    guiStyleSetupFont(NULL,StyleFontNormal); 
    gr_font_string_width(gr_get_font(),s); 
    guiStyleCleanupFont(NULL,StyleFontNormal); 
 }
 
-void StatusField(int x, char *s)
+void StatusField(int x, const char *s)
 {
    int cur_sz;
 
@@ -179,7 +179,7 @@ void StatusField(int x, char *s)
 #endif
 }
 
-void Status(char *s)
+void Status(const char *s)
 {
    StatusField(SF_STATUS, s);
 #ifndef SHIP   

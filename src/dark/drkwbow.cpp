@@ -546,7 +546,7 @@ void StartBowAttack()
    bow_mprintf(("SBA\n"));
 }
 
-static int BowSound(char *name)
+static int BowSound(const char *name)
 {
    sSchemaCallParams callDat={SCH_SET_OBJ,};
    callDat.sourceID=PlayerObject();

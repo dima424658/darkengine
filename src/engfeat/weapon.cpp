@@ -134,8 +134,8 @@ void TermWeapon()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static char* WeaponArchName = "Weapon";
-static char* ProjArchName = "Projectile";
+static const char* WeaponArchName = "Weapon";
+static const char* ProjArchName = "Projectile";
 
 BOOL IsWeapon(ObjID weapon)
 {
@@ -467,7 +467,7 @@ void  MakeAIWeaponNonPhysical(ObjID owner, ObjID weapon)
 /////////////////////////////////////////////////////////////
 
 // weapon_mode_names:  Allows designers to customize the weapon attachment for different creature modes.
-char *weapon_mode_names[] = 
+const char *weapon_mode_names[] =
 {
    "BLOCK",    // Blocking movements.
    "MELEE",    // Melee combat.

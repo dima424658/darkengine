@@ -14,6 +14,6 @@ typedef const char* menustring;
 
 // bring up menu of the strings in list, of which there are cnt, titled Title
 // return -1 if no pick, else the picked item
-EXTERN int PickFromStringList(char *title, const menustring* list, int cnt);
+EXTERN int PickFromStringList(const char *title, const menustring* list, int cnt);
 
 #endif  // __SIMPWRAP_H

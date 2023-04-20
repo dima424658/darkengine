@@ -44,7 +44,7 @@
 ////////////////////////////////////////
 
 static int g_MediaAmbHandle = -1;
-static char *g_MediaAmbWater = "underwat";
+static const char *g_MediaAmbWater = "underwat";
 
 
 void ObjMediaTrans(ObjID objID, int cellID, eMediaState old_medium, eMediaState new_medium)

@@ -23,7 +23,7 @@
 ////////////////////////////////////////
 
 // For sdescs and stuff that want string names of joints
-char *g_pJointNames[kCJ_NumCreatureJoints + 1] = 
+const char *g_pJointNames[kCJ_NumCreatureJoints + 1] =
 {
    "N/A",
    "Head",

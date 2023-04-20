@@ -64,10 +64,10 @@ LGadEditMenu loadname_menu;
 LGadEditMenu saveas_menu;
 
 DrawElement saveloadmenu_elems[] = {
-   { DRAWTYPE_TEXT, "Load Name", }, 
-   { DRAWTYPE_TEXT, "Save ", },
-   { DRAWTYPE_TEXT, "Quit MotEditor", },
-   { DRAWTYPE_TEXT, "Done", },
+   { DRAWTYPE_TEXT, (void*)"Load Name", }, 
+   { DRAWTYPE_TEXT, (void*)"Save ", },
+   { DRAWTYPE_TEXT, (void*)"Quit MotEditor", },
+   { DRAWTYPE_TEXT, (void*)"Done", },
 };
 
 //extern Id mainMotionID,mainCompMotionID;
@@ -118,10 +118,10 @@ bool SaveLoadButtonFunc(short action,void *data, LGadBox *b)
 
 // ******* PLAY OPTIONS *******
 
-char *playopt_loop_names[] = { "PLAY ONCE","PLAY LOOP" };
-//char *playopt_which_names[] = { "MAIN ONLY", "WITH ALL MOTIONS" };
-char *playopt_blend_names[] = { "NO BLENDING", "WITH BLENDING" };
-char *playopt_freq_names[] = { "TIME BASED", "FRAME BASED" };
+const char *playopt_loop_names[] = { "PLAY ONCE","PLAY LOOP" };
+//const char *playopt_which_names[] = { "MAIN ONLY", "WITH ALL MOTIONS" };
+const char *playopt_blend_names[] = { "NO BLENDING", "WITH BLENDING" };
+const char *playopt_freq_names[] = { "TIME BASED", "FRAME BASED" };
 
 #define NUM_STRINGS(name) (sizeof(name)/sizeof(name[0]))
 
@@ -177,18 +177,18 @@ mps_motion_info edit_motinfo;
 LGadEditMenu headbasic_menu;
 
 DrawElement headermenu_elems[] = {
-   { DRAWTYPE_TEXT, "Basic Info" }, 
-   { DRAWTYPE_TEXT, "Done"},
+   { DRAWTYPE_TEXT, (void*)"Basic Info" }, 
+   { DRAWTYPE_TEXT, (void*)"Done"},
 };
 
 DrawElement headbasic_elems[] = {
-   { DRAWTYPE_TEXT, "Name", 0, 0, 0, FORMAT(DRAWFLAG_FORMAT_LEFT) },
-   { DRAWTYPE_TEXT, "Num Frames", 0, 0, 0, FORMAT(DRAWFLAG_FORMAT_LEFT) },
-   { DRAWTYPE_TEXT, "Capture Frequency", 0, 0, 0, FORMAT(DRAWFLAG_FORMAT_LEFT) },
-   { DRAWTYPE_TEXT, "Done", 0, 0, 0, FORMAT(DRAWFLAG_FORMAT_LEFT) },
+   { DRAWTYPE_TEXT, (void*)"Name", 0, 0, 0, FORMAT(DRAWFLAG_FORMAT_LEFT) },
+   { DRAWTYPE_TEXT, (void*)"Num Frames", 0, 0, 0, FORMAT(DRAWFLAG_FORMAT_LEFT) },
+   { DRAWTYPE_TEXT, (void*)"Capture Frequency", 0, 0, 0, FORMAT(DRAWFLAG_FORMAT_LEFT) },
+   { DRAWTYPE_TEXT, (void*)"Done", 0, 0, 0, FORMAT(DRAWFLAG_FORMAT_LEFT) },
 };
 
-DrawElement headbasic_title = { DRAWTYPE_TEXT, "Basic Motion Header", 0, 1 };
+DrawElement headbasic_title = { DRAWTYPE_TEXT, (char*)"Basic Motion Header", 0, 1 };
 
 VarElem headbasic_varelems[] = {
    { (void *)(edit_motinfo.name), EDITTYPE_STRING, EDITFLAG_READONLY },
@@ -253,11 +253,11 @@ EXTERN LGadBox *flag_box;
 LGadEditMenu flag_menu;
 
 DrawElement framemenu_elems[] = {
-   { DRAWTYPE_TEXT, "Set Flag" }, 
-   { DRAWTYPE_TEXT, "Mark Left" }, 
-   { DRAWTYPE_TEXT, "Mark Right" }, 
-   { DRAWTYPE_TEXT, "Clear Marks" }, 
-   { DRAWTYPE_TEXT, "Done"},
+   { DRAWTYPE_TEXT, (void*)"Set Flag" }, 
+   { DRAWTYPE_TEXT, (void*)"Mark Left" }, 
+   { DRAWTYPE_TEXT, (void*)"Mark Right" }, 
+   { DRAWTYPE_TEXT, (void*)"Clear Marks" }, 
+   { DRAWTYPE_TEXT, (void*)"Done"},
 };
 
 #pragma off(unreferenced)

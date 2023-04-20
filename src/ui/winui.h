@@ -11,10 +11,10 @@
 #define __GED_WIN_H
 
 // get a y or n 
-EXTERN BOOL winui_GetYorN(char *msg);
+EXTERN BOOL winui_GetYorN(const char *msg);
 
 // display a text message
-EXTERN void winui_Text(char *msg);
+EXTERN void winui_Text(const char *msg);
 
 #endif  // __GED_WIN_H
 

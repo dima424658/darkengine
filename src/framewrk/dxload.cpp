@@ -17,7 +17,7 @@ extern BOOL LoadDirectDraw();
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-static char *sNoDSound = 
+static const char *sNoDSound =
         "DirectSound is not installed.\n\
 You will not be able to hear any sound or music while playing Thief 2\n\
 and you may experience other difficulties.  Thief 2 was designed and \n\
@@ -25,12 +25,12 @@ tested assuming all users have access to sound.\n\
 We strongly recommend installing DirectX to enable sound support.\n\
 Continue Anyway?";
 
-static char *sNoDDraw = 
+static const char *sNoDDraw =
         "DirectX version 6 or higher is not installed.\n\
 Please install DirectX 6 before playing.  DirectX installer\n\
 Can be accessed through the autoplay dialog.\n";
 
-static char *sNoD3DDevice = 
+static const char *sNoD3DDevice =
 "Your video card is not compatible with Thief 2.\n";
 EXTERN BOOL g_no_dx6 = FALSE;
 

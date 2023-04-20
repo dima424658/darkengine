@@ -29,7 +29,7 @@ ImplDynFunc(DoSimpleMenu, "darkdlgs.dll", "_DoSimpleMenu@12", simpmenu_woe);
 
 #define SimpleMenu (DynFunc(DoSimpleMenu).GetProcAddress())
 
-int PickFromStringList(char *title, const menustring* list, int cnt)
+int PickFromStringList(const char *title, const menustring* list, int cnt)
 {
    return SimpleMenu(title,list,cnt);
 }

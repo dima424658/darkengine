@@ -41,7 +41,7 @@ struct sAttackMsg : public sScrMsg
    sAttackMsg(ObjID to_, ObjID weapon_, int type)
       : weapon(weapon_)
    {
-      static char *attack_msg_names[] = { "StartWindup", "StartAttack", "EndAttack" };
+      static const char *attack_msg_names[] = { "StartWindup", "StartAttack", "EndAttack" };
 
       to = to_;
       free((void *)message);

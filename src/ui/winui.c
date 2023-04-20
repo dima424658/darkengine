@@ -16,14 +16,14 @@
 #include <dbmem.h>   // must be last header! 
 
 // get y or n response
-BOOL winui_GetYorN(char *msg)
+BOOL winui_GetYorN(const char *msg)
 {
    int rv=MessageBox(NULL,msg,"Dromed Yes or No Question",MB_YESNO|MB_DEFBUTTON2|MB_ICONQUESTION);
    return rv==IDYES;
 }
 
 // draw a big menu
-void winui_Text(char *msg)
+void winui_Text(const char *msg)
 {
    MessageBox(NULL,msg,"Dromed Info",MB_OK);
 }

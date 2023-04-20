@@ -134,7 +134,7 @@ EXTERN void CoreMotionPropsInit();
 
 EXTERN void CoreMotionPropsShutdown();
 
-EXTERN void MotorControllerPropInit(char **motControllerNames,int nMotControllers);
+EXTERN void MotorControllerPropInit(const char **motControllerNames,int nMotControllers);
 
 EXTERN BOOL ObjGetMotControllerID(ObjID obj, int *pID);
 

@@ -20,6 +20,6 @@
 EXTERN void ModelNamePropInit(void);
 EXTERN void ModelNamePropTerm(void);
 EXTERN BOOL ObjGetModelName(ObjID obj, char *name);
-EXTERN void ObjSetModelName(ObjID obj, char *name);
+EXTERN void ObjSetModelName(ObjID obj, const char *name);
 
 #endif   // __MNAMPROP_H

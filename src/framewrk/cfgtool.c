@@ -190,7 +190,7 @@ void process_config_scripts(const char* prefix)
 ////////////////////////////////////////////////////////////
 
 // @ROBUSTIFY: make args const.
-BOOL find_file_in_config_path(char* targ, char* filename, char* path_var)
+BOOL find_file_in_config_path(char* targ, const char* filename, const char* path_var)
 {
    Datapath path;
    char pathbuf[256] = "";

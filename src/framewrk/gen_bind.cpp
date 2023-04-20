@@ -120,7 +120,7 @@ static void GetStates ()
 General binding callbacks
 --------------------------
 */
-static char *ForwardProc (char *, char *val, BOOL)
+static char *ForwardProc (const char *, const char *val, BOOL)
 {
 
    //   mprintf("Forward %g %d\n",atof(val),atoi(val));
@@ -194,7 +194,7 @@ static char *ForwardProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *JoyForwardProc (char *, char *val, BOOL)
+static char *JoyForwardProc (const char *, const char *val, BOOL)
 {
 
    float f = atof (val);
@@ -230,7 +230,7 @@ static char *JoyForwardProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *TurnProc (char *, char *val, BOOL)
+static char *TurnProc (const char *, const char *val, BOOL)
 {
    //   mprintf("Turn %g %d\n",atof(val),atoi(val));
    
@@ -251,7 +251,7 @@ static char *TurnProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *JoyTurnProc (char *, char *val, BOOL)
+static char *JoyTurnProc (const char *, const char *val, BOOL)
 {
    float f = atof (val);
 
@@ -279,7 +279,7 @@ static char *JoyTurnProc (char *, char *val, BOOL)
 }
 
 
-static char *SidestepProc (char *, char *val, BOOL)
+static char *SidestepProc (const char *, const char *val, BOOL)
 {
    float f = atof (val);
 
@@ -295,7 +295,7 @@ static char *SidestepProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *JoySidestepProc (char *, char *val, BOOL)
+static char *JoySidestepProc (const char *, const char *val, BOOL)
 {
    float f = atof (val);
 
@@ -326,7 +326,7 @@ static char *JoySidestepProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *JoyXAxisProc (char *dummy1, char *val, BOOL dummy2)
+static char *JoyXAxisProc (const char *dummy1, const char *val, BOOL dummy2)
 {
    BOOL joy_rotate = ((atof (g_pInputBinder->ProcessCmd ("echo $joy_rotate")) == 0.0) ? FALSE : TRUE)
       && !GetForceSidestepState();
@@ -361,7 +361,7 @@ static char *JoyXAxisProc (char *dummy1, char *val, BOOL dummy2)
    return NULL;
 }
 
-static char *CameraHomeProc (char *, char *val, BOOL)
+static char *CameraHomeProc (const char *, const char *val, BOOL)
 {
   Camera* playercam = PlayerCamera();
   CameraAttach(playercam,PlayerObject());
@@ -369,7 +369,7 @@ static char *CameraHomeProc (char *, char *val, BOOL)
   return NULL;  
 }
 
-static char *FlyProc (char *, char *val, BOOL)
+static char *FlyProc (const char *, const char *val, BOOL)
 {
 #ifdef PLAYTEST
    double dval = atof (val);
@@ -394,7 +394,7 @@ static char *FlyProc (char *, char *val, BOOL)
 }
 
 
-static char *MTurnProc (char *, char *val, BOOL)
+static char *MTurnProc (const char *, const char *val, BOOL)
 {
    if (gNoLookAround || GetPlayerMode() == kPM_Dead)
       return NULL;
@@ -412,7 +412,7 @@ static char *MTurnProc (char *, char *val, BOOL)
 }
 
 
-static char *MLookProc (char *, char *val, BOOL)
+static char *MLookProc (const char *, const char *val, BOOL)
 {
    if (gNoLookAround || GetPlayerMode() == kPM_Dead)
       return NULL;
@@ -434,7 +434,7 @@ static char *MLookProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *LookProc(char *, char *val, BOOL)
+static char *LookProc(const char *, const char *val, BOOL)
 {
    if (GetPlayerMode() == kPM_Dead)
       return NULL;
@@ -451,7 +451,7 @@ static char *LookProc(char *, char *val, BOOL)
    return NULL;
 }
 
-static char *LookUpProc (char *, char *val, BOOL)
+static char *LookUpProc (const char *, const char *val, BOOL)
 {
    double dval = atof (val);
    if ((dval != 0) && (GetPlayerMode() == kPM_Dead))
@@ -468,7 +468,7 @@ static char *LookUpProc (char *, char *val, BOOL)
 }
 
 
-static char *LookDownProc (char *, char *val, BOOL)
+static char *LookDownProc (const char *, const char *val, BOOL)
 {
    double dval = atof (val);
    if ((dval != 0) && (GetPlayerMode() == kPM_Dead))
@@ -485,7 +485,7 @@ static char *LookDownProc (char *, char *val, BOOL)
 }
 
 
-static char *LookCenterProc (char *, char *, BOOL)
+static char *LookCenterProc (const char *, const char *, BOOL)
 {
    if (GetPlayerMode() == kPM_Dead)
       return NULL;
@@ -496,7 +496,7 @@ static char *LookCenterProc (char *, char *, BOOL)
    return NULL;
 }
 
-static char *TiltLeftProc (char *, char *val, BOOL)
+static char *TiltLeftProc (const char *, const char *val, BOOL)
 {
 
    double dval = atof (val);
@@ -519,7 +519,7 @@ static char *TiltLeftProc (char *, char *val, BOOL)
 }
 
 
-static char *TiltRightProc (char *, char *val, BOOL)
+static char *TiltRightProc (const char *, const char *val, BOOL)
 {
 
    double dval = atof (val);
@@ -542,7 +542,7 @@ static char *TiltRightProc (char *, char *val, BOOL)
 }
 
 
-static char *LeanLeftProc (char *, char *val, BOOL)
+static char *LeanLeftProc (const char *, const char *val, BOOL)
 {
    double dval = atof (val);
 
@@ -584,7 +584,7 @@ static char *LeanLeftProc (char *, char *val, BOOL)
 }
 
 
-static char *LeanRightProc (char *, char *val, BOOL)
+static char *LeanRightProc (const char *, const char *val, BOOL)
 {
    double dval = atof (val);
 
@@ -626,7 +626,7 @@ static char *LeanRightProc (char *, char *val, BOOL)
 }             
 
 
-static char *LeanForwardProc (char *, char *val, BOOL)
+static char *LeanForwardProc (const char *, const char *val, BOOL)
 {
 
    double dval = atof (val);
@@ -669,7 +669,7 @@ static char *LeanForwardProc (char *, char *val, BOOL)
 }             
 
 
-static char *JumpProc (char *, char *val, BOOL)
+static char *JumpProc (const char *, const char *val, BOOL)
 {
    // support for special movement-lockout mode
    if (gNoMoveKeys)
@@ -694,7 +694,7 @@ static char *JumpProc (char *, char *val, BOOL)
 }             
 
 
-static char *CrouchProc (char *, char *val, BOOL)
+static char *CrouchProc (const char *, const char *val, BOOL)
 {
    // support for special movement-lockout mode
    if (gNoMoveKeys)
@@ -714,7 +714,7 @@ static char *CrouchProc (char *, char *val, BOOL)
    return NULL;
 }             
 
-static char *CrouchHoldProc (char *, char *val, BOOL)
+static char *CrouchHoldProc (const char *, const char *val, BOOL)
 {
    double dval = atof (val);
 
@@ -739,7 +739,7 @@ static char *CrouchHoldProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *FreelookOnProc (char *, char *val, BOOL)
+static char *FreelookOnProc (const char *, const char *val, BOOL)
 {
    if (GetPlayerMode() == kPM_Dead)
       return NULL;
@@ -764,7 +764,7 @@ static char *FreelookOnProc (char *, char *val, BOOL)
 }             
 
 
-static char *CreepOnProc (char *, char *val, BOOL)
+static char *CreepOnProc (const char *, const char *val, BOOL)
 {
    double dval = atof (val);
 
@@ -814,7 +814,7 @@ static char *CreepOnProc (char *, char *val, BOOL)
    return NULL;
 }             
 
-static char *RunOnProc (char *, char *val, BOOL)
+static char *RunOnProc (const char *, const char *val, BOOL)
 {
    double dval = atof (val);
 
@@ -872,7 +872,7 @@ static char *RunOnProc (char *, char *val, BOOL)
 }             
 
 
-static char *SlideOnProc (char *, char *val, BOOL)
+static char *SlideOnProc (const char *, const char *val, BOOL)
 {
 
    double dval = atof (val);
@@ -892,7 +892,7 @@ static char *SlideOnProc (char *, char *val, BOOL)
 
 
 // this is like the mouse turn proc, but for the joystick rudder (rotation around z axis)
-static char *RudderTurnProc (char *, char *val, BOOL)
+static char *RudderTurnProc (const char *, const char *val, BOOL)
 {
    if (GetPlayerMode() == kPM_Dead)
       return NULL;
@@ -926,7 +926,7 @@ static char *RudderTurnProc (char *, char *val, BOOL)
 }
 
 
-static char *DummyProc (char *, char *, BOOL)
+static char *DummyProc (const char *, const char *, BOOL)
 {
    return NULL;
 }
@@ -1041,7 +1041,7 @@ Master bind cmd processor. Will receive any cmds the binding system did not pick
 and pass them along to the game's command system.
 -------------------------------------------------------------------------------------
 */
-char *GenericBind (char *cmd, char *val, BOOL already_down)
+char *GenericBind (const char *cmd, const char *val, BOOL already_down)
 {
    CommandExecute (cmd);
    return NULL;

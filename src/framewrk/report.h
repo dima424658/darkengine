@@ -69,8 +69,8 @@ typedef void (*ReportGenCallback)(int WarnLevel, void *data, char *buffer);
 
 #ifdef REPORT
 // register a callback into the report system
-EXTERN BOOL ReportRegisterObjCallback(ReportObjCallback cb, char *name, void *data);
-EXTERN BOOL ReportRegisterGenCallback(ReportGenCallback cb, enum eReportType type, char *name, void *data);
+EXTERN BOOL ReportRegisterObjCallback(ReportObjCallback cb, const char *name, void *data);
+EXTERN BOOL ReportRegisterGenCallback(ReportGenCallback cb, enum eReportType type, const char *name, void *data);
 
 // unregister a callback from the report system
 //  (is it ok to just use name/cb for identity, or do we need data too?)

@@ -77,12 +77,12 @@ EXTERN void DarkStatSetBit(ObjID obj, int bit, BOOL val);
 // functions to change stats, etc
 
 // for simple integer stats to add a value
-EXTERN void DarkStatIntAdd(char *StatName, int val);
+EXTERN void DarkStatIntAdd(const char *StatName, int val);
 // for simple integer stats you want to just increment
 #define DarkStatInc(stat) DarkStatIntAdd(stat,1)
 
 // for setting a val directly
-EXTERN void DarkStatIntSet(char *StatName, int val);
+EXTERN void DarkStatIntSet(const char *StatName, int val);
 
 /////////////////////
 // init/term - control

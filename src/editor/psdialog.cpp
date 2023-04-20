@@ -40,7 +40,7 @@ static sStructDesc gStepStructDesc = StructDescBuild(sAIPsdScrAct, kStructFlagNo
 //   data         - Pointer to the entire data structure
 //   steps        - Pointer to the pseudo-script array within the data structure
 //
-IStructEditor* NewPseudoScriptDialog (char* title, int maxSteps, sStructDesc* headerStruct, void* data, sAIPsdScrAct* steps)
+IStructEditor* NewPseudoScriptDialog (const char* title, int maxSteps, sStructDesc* headerStruct, void* data, sAIPsdScrAct* steps)
 {
     int i;
     int numMenuSlots = maxSteps + 2;

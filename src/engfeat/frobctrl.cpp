@@ -66,9 +66,9 @@ IMPLEMENT_SCRMSG_PERSISTENT(sFrobMsg)
 }
 
 //  kFrobLocNone, kFrobLocInv, kFrobLocWorld
-static char *loc_names[]={"World","Inv","Tool"};
+static const char *loc_names[]={"World","Inv","Tool"};
 //  kFrobLevFocus, kFrobLevSelect
-static char *lev_names[]={"Focus","Select"};
+static const char *lev_names[]={"Focus","Select"};
 
 static void hostFrobExecute(sFrobActivate *situation, eFrobLoc type);
 
@@ -177,7 +177,7 @@ static sNetMsgDesc sFrobAcknowledgeDesc =
 //////////
 
 // actually do the send...
-BOOL SendFrobMsg(sFrobActivate *info, char *base_name, BOOL abort)
+BOOL SendFrobMsg(sFrobActivate *info, const char *base_name, BOOL abort)
 {
    char buf[120];
    strcpy(buf,"Frob");

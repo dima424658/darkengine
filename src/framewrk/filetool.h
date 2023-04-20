@@ -17,7 +17,7 @@ EXTERN char *diskPathMunge(char *targ, const char *base_path, const char *base_2
 // if there is no extension on the file, attaches it
 // returns in targ, post is extra (with the "." included)
 // if targ is NULL puts it back in base
-EXTERN char *attachPostfix(char *targ, char *base, const char *post);
+EXTERN char *attachPostfix(char *targ, const char *base, const char *post);
 
 // copies from current location in src_hnd to file named name
 EXTERN bool CopyOpenFile(const char *name, int src_hnd);

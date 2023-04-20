@@ -35,7 +35,7 @@
 
 
 // These are in ged_csg.c.
-extern "C" char *mediaop_names[];
+extern "C" const char *mediaop_names[];
 extern "C" int num_media_ops;
 
 

@@ -294,9 +294,9 @@ static powerup_info powerup_archs[]=
    { "LockPick", kAllowedInvStoreOnly },
 };
 
-static char *_ErrStr(BOOL error)
+static const char *_ErrStr(BOOL error)
 {
-   return error?"ERROR":"     ";
+   return error ? "ERROR" : "     ";
 }
 
 #define InvNoAllow(flg)       ((flg&kAllowedWorldOnly)!=0)
@@ -453,7 +453,10 @@ char *DarkReportHelperDiffString(ObjID obj, char *buffer)
          sprintf(p," Diff %s%s%s",(diffs&1)?"":"N",(diffs&2)?"":"H",(diffs&4)?"":"E");
          return p;
       }
-   return "";   // if we are here, we have nothing to say
+
+   strcpy(p, "");
+
+   return p;   // if we are here, we have nothing to say
 }
 
 ////////////////////////

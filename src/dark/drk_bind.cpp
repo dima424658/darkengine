@@ -63,7 +63,7 @@ static BOOL disallow_action_and_unwind(void)
 }
 
 
-static char *BlockProc (char *, char *val, BOOL)
+static char *BlockProc (const char *, const char *val, BOOL)
 {
    if (gNoMoveKeys)
      return NULL;
@@ -80,7 +80,7 @@ static char *BlockProc (char *, char *val, BOOL)
 }             
 
 
-static char *UseWeaponOrItemProc (char *cmd, char *val, BOOL)
+static char *UseWeaponOrItemProc (const char *cmd, const char *val, BOOL)
 {  // this is NOT TOO COOL
    if (strnicmp(cmd,"use_weapon",strlen("use_weapon"))==0)
    {
@@ -164,7 +164,7 @@ zoomOut( void )
   player_cam->zoom = curzoom;
 }
 
-static char *EyeZoomInProc (char *, char *val, BOOL)
+static char *EyeZoomInProc (const char *, const char *val, BOOL)
 {
    int i, count;
    BOOL bZoomIn;
@@ -189,7 +189,7 @@ static char *EyeZoomInProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *EyeZoomOutProc (char *, char *val, BOOL)
+static char *EyeZoomOutProc (const char *, const char *val, BOOL)
 {
    int i, count;
    BOOL bZoomIn;
@@ -214,7 +214,7 @@ static char *EyeZoomOutProc (char *, char *val, BOOL)
   return NULL;
 }
 
-static char *EyeNoZoomProc (char *, char *val, BOOL)
+static char *EyeNoZoomProc (const char *, const char *val, BOOL)
 {
   if (disallow_action_and_unwind())
     return NULL;
@@ -233,7 +233,7 @@ static char *EyeNoZoomProc (char *, char *val, BOOL)
   return NULL;
 }
 
-static char *EyeDrunkZoomProc (char *, char *val, BOOL)
+static char *EyeDrunkZoomProc (const char *, const char *val, BOOL)
 {
   if (disallow_action_and_unwind())
     return NULL;
@@ -255,7 +255,7 @@ static char *EyeDrunkZoomProc (char *, char *val, BOOL)
   return NULL;
 }
 
-static char *JumpBlockProc (char *, char *val, BOOL)
+static char *JumpBlockProc (const char *, const char *val, BOOL)
 {
    if (gNoMoveKeys)
       return NULL;
@@ -299,7 +299,7 @@ static char *JumpBlockProc (char *, char *val, BOOL)
    return NULL;
 }
 
-static char *DummyProc (char *, char *, BOOL)
+static char *DummyProc (const char *, const char *, BOOL)
 {
   return NULL;
 }

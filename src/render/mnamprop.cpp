@@ -198,7 +198,7 @@ BOOL ObjGetModelName(ObjID obj, char *name)
    return retval;
 }
 
-void ObjSetModelName(ObjID obj, char *name)
+void ObjSetModelName(ObjID obj, const char *name)
 {
    Assert_(modelnameprop);
    modelnameprop->Set(obj, (Label*)name);

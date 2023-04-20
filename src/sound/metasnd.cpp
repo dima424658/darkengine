@@ -42,15 +42,15 @@ static BOOL metaGameSound=TRUE;  // if we want to be able to turn it off
 #define kMetaSndNumTypes (5)
 
 static char  metaSndNames[kMetaSndPanelCount][kMetaSndNumTypes][16];
-static char *screens[kMetaSndPanelCount]={"def","main","saveload","options","loadout","book","game"};
-static char *posts[kMetaSndNumTypes]={"tick","select","attend","ambient1","ambient2"};
+static const char *screens[kMetaSndPanelCount]={"def","main","saveload","options","loadout","book","game"};
+static const char *posts[kMetaSndNumTypes]={"tick","select","attend","ambient1","ambient2"};
 static int   metaSndAmbHandle=SFX_NO_HND;
 
 #define metaGetNamed(scr,snd) (metaSndNames[scr][kMetaSnd##snd])
 #define metaGetNum(scr,num)   (metaSndNames[scr][num])
 
 // load the stuff
-void metaSndLoadGUINames(char *prefix)
+void metaSndLoadGUINames(const char *prefix)
 {
    char buf[64];
    for (int i=0; i<kMetaSndPanelCount; i++)
@@ -179,7 +179,7 @@ void metaSndExitGame(void)
 ///////////
 // init/term
 
-void metaSndInit(char *snd_prefix)
+void metaSndInit(const char *snd_prefix)
 {
    metaSndLoadGUINames(snd_prefix);
    if (config_is_defined("no_metagame_sound"))

@@ -26,7 +26,7 @@
 //
 
 
-char* bit_names[] = { "Spew", "Permit Concretes" };
+const char* bit_names[] = { "Spew", "Permit Concretes" };
 
 static sFieldDesc param_fields [] = 
 {

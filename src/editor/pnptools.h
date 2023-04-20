@@ -17,8 +17,8 @@
 EXTERN void buildYLineRect(Rect *fill, Rect *src, int vline, float hsplit, int side, int bx, int by);
 
 // these are sort of randomly here, but convienient
-EXTERN void PnP_ExecCommandInt(char *cmd, int val);
-EXTERN void PnP_ExecCommandFloat(char *cmd, float val);
+EXTERN void PnP_ExecCommandInt(const char *cmd, int val);
+EXTERN void PnP_ExecCommandFloat(const char *cmd, float val);
 
 ////////////////////////////////////////
 // here come all the actual PnP tools
@@ -60,7 +60,7 @@ EXTERN int PnP_TextBox(Rect *space, char *text);
 // a 0-1 toggle which is a bool, at space, calls update if non null w/data
 EXTERN int PnP_ButtonToggle(Rect *space, char *off, char *on, bool *var,
                   void (*update)(Rect *where, bool val, int data), int data);
-EXTERN int PnP_ButtonOneShot(Rect *space, char *name, void (*shoot)(int data), int data);
+EXTERN int PnP_ButtonOneShot(Rect *space, const char *name, void (*shoot)(int data), int data);
 
 // ranged slider, calls update w/data, scale is set, 
 typedef enum _PnP_SliderOp
@@ -75,18 +75,18 @@ typedef enum _PnP_SliderOp
 #define PNP_SLIDER_CLICKS 0x8 // get click events
 
 
-EXTERN int PnP_SliderFloat(Rect *space, char *name, float lo, float hi, float scale, float *var,
+EXTERN int PnP_SliderFloat(Rect *space, const char *name, float lo, float hi, float scale, float *var,
                      void (*update)(PnP_SliderOp op, Rect *where, float val, int data), int data, ulong flags);
-EXTERN int PnP_SliderInt(Rect *space, char *name, int lo, int hi, int scale, int *var,
+EXTERN int PnP_SliderInt(Rect *space, const char *name, int lo, int hi, int scale, int *var,
                    void (*update)(PnP_SliderOp op, Rect *where, int val, int data), int data, ulong flags);
-EXTERN int PnP_SliderFixang(Rect *space, char *name, ushort lo, ushort hi, ushort scale,
+EXTERN int PnP_SliderFixang(Rect *space, const char *name, ushort lo, ushort hi, ushort scale,
                             ushort *var, void (*update)(PnP_SliderOp op, Rect *where, ushort val, int data), 
                             int data, ulong flags);
-EXTERN int PnP_SliderShort(Rect *space, char *name, short lo, short hi, short scale, 
+EXTERN int PnP_SliderShort(Rect *space, const char *name, short lo, short hi, short scale,
                            short *var, void (*update)(PnP_SliderOp op, Rect *where, short val, int data), 
                            int data, ulong flags);
 
-EXTERN int PnP_SliderString(Rect *space, char *name,  int num, char** vals, int *var, 
+EXTERN int PnP_SliderString(Rect *space, const char *name,  int num, char** vals, int *var,
                      void (*update)(PnP_SliderOp op, Rect *where, int val, int data), int data, ulong flags);
 
 // dynamic string length resetting code

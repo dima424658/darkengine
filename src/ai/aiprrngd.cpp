@@ -63,7 +63,7 @@ IAIRangedWoundSoundProperty *g_pRangedWoundSoundProp = NULL;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static char *constraint_types[] = 
+static const char *constraint_types[] =
 {
    "None",
    "# others",
@@ -71,7 +71,7 @@ static char *constraint_types[] =
 };
 
 // Make sure this stays in sync with eAITargetingMethod!
-static char *targeting_methods[] = 
+static const char *targeting_methods[] =
 {
    "Straight-Line",
    "Arcing",
@@ -79,7 +79,7 @@ static char *targeting_methods[] =
    "Overhead"
 };
 
-static char *range_values_5[] = 
+static const char *range_values_5[] =
 {
    "Very Low",
    "Low",
@@ -88,7 +88,7 @@ static char *range_values_5[] =
    "Very High"
 };
 
-static char *range_values_6[] = 
+static const char *range_values_6[] =
 {
    "Never",
    "Very Rarely",

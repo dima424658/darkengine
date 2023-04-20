@@ -37,7 +37,7 @@ enum ePPState
    kPressurePlateActivating,
 };
 
-static char *state_names[] =
+static const char *state_names[] =
 {
    "PressurePlateInactive",
    "PressurePlateActive",

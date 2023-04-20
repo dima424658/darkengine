@@ -206,7 +206,7 @@ void SchemaSampleListSpew(sSchemaPlaySample *pSample)
 #define SchemaSampleListsSpew(when) if (config_is_defined("SampleList")) SchemaSampleListsSpewFn(when)
 #define SchemaListSpew(when) if (config_is_defined("SchemaList")) SchemaListSpewFn(when)
 
-void SchemaSampleListsSpewFn(char *when)
+void SchemaSampleListsSpewFn(const char *when)
 {
    sSchemaPlay *pSchemaPlay;
 
@@ -225,7 +225,7 @@ void SchemaSampleListsSpewFn(char *when)
    mprintf("\n");
 }
 
-void SchemaListSpewFn(char *when)
+void SchemaListSpewFn(const char *when)
 {
    sSchemaPlay *pSchemaPlay = playingSchemas.GetFirst();
 
@@ -1295,7 +1295,7 @@ void SchemaLoopStartNext(sSchemaPlay *pSchemaPlay)
 
 
 #ifndef SHIP
-static void RecordCallbacks(ulong *pNumCallbacks, char *pszLabel,
+static void RecordCallbacks(ulong *pNumCallbacks, const char *pszLabel,
                             cCallbackHandleArray *pHandles,
                             cCallbackDataArray *pCallbackData)
 {
@@ -1306,7 +1306,7 @@ static void RecordCallbacks(ulong *pNumCallbacks, char *pszLabel,
 }
 
 
-static void ExtractCallbacks(ulong *pNumCallbacks, char *pszLabel,
+static void ExtractCallbacks(ulong *pNumCallbacks, const char *pszLabel,
                              cCallbackHandleArray *pHandles,
                              cCallbackDataArray *pCallbackData)
 {

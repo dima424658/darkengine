@@ -60,7 +60,8 @@ char *ReportHelperRoomString(ObjID obj, mxs_vector *pos, char *buffer)
       sprintf(p," room %s",rm->GetName());
       return p;
    }
-   return "";     // if we are here, we have nothing to say
+   strcpy(p, "");
+   return p;     // if we are here, we have nothing to say
 }
 
 // for in room DB?
@@ -116,7 +117,8 @@ char *ReportHelperStackString(ObjID obj, char *buffer)
          sprintf(p," stack %d",count);
          return p;
       }
-   return "";     // if we are here, we have nothing to say
+   strcpy(p, "");
+   return p;     // if we are here, we have nothing to say
 }
 
 BOOL ReportHelperHasStack(ObjID obj)

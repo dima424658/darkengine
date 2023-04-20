@@ -28,7 +28,7 @@ static BOOL _is_data_all_zero(void *data, int len)
    return TRUE;
 }
 
-static char *_do_analyze_tweq(ObjID obj, void *data, int len, BOOL warn, char *buf, char *name)
+static char *_do_analyze_tweq(ObjID obj, void *data, int len, BOOL warn, char *buf, const char *name)
 {
    if (_is_data_all_zero(data,len))
       sprintf(buf,"ERROR Likely: %s has a zero'ed %s config prop\n",ObjEditName(obj),name);
@@ -87,7 +87,7 @@ static void _tweq_report(int WarnLevel, void *data, char *buffer)
       p=_do_analyze_tweq(obj,pEmtCfg,sizeof(sTweqEmitterConfig),warn,p,"Emitter");
    tweq_emitter_prop->IterStart(&iter);         
 
-   char *emitter_names[]={"ExtraEmitter1","ExtraEmitter2","ExtraEmitter3","ExtraEmitter4"};
+   const char *emitter_names[]={"ExtraEmitter1","ExtraEmitter2","ExtraEmitter3","ExtraEmitter4"};
    for (int i=0; i<NUM_EXTRA_EMITTERS; i++)
    {
       tweq_extra_emitter_prop[i]->IterStart(&iter);

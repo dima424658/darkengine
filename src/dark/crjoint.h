@@ -48,7 +48,7 @@ enum eCreatureJoints
    kCJ_NumCreatureJoints,
 };
 
-EXTERN char *g_pJointNames[];
+EXTERN const char *g_pJointNames[];
 
 EXTERN int  GetCreatureJointID(ObjID creature, int joint);
 

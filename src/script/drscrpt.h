@@ -85,7 +85,7 @@ struct sDoorMsg : public sScrMsg
         PrevActionType(prev_action),
         isProxy(proxy)
    {
-      static char *room_msg_names[5] = { "DoorOpen", "DoorClose", "DoorOpening", "DoorClosing", "DoorHalt" };
+      static const char *room_msg_names[5] = { "DoorOpen", "DoorClose", "DoorOpening", "DoorClosing", "DoorHalt" };
 
       // setup base scrMsg fields
       to = obj_to;

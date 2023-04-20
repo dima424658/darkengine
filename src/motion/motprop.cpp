@@ -162,7 +162,7 @@ static sPropertyDesc motSwordActionPropDesc =
 
 #define SWORDACTION_TYPENAME "eMSwordActionType"
 
-static char *motSwordActionNames[] = 
+static const char *motSwordActionNames[] =
 {
    "Swing",
    "General Block",
@@ -360,9 +360,9 @@ static sStructDesc gaitDescStruct = StructDescBuild(sMGaitSkillData,kStructFlagN
 //    INITIALIZATION
 //
 
-EXTERN void MotorControllerPropInit(char **motControllerNames,int nMotControllers);
+EXTERN void MotorControllerPropInit(const char **motControllerNames,int nMotControllers);
 
-void MotorControllerPropInit(char **motControllerNames,int nMotControllers)
+void MotorControllerPropInit(const char **motControllerNames,int nMotControllers)
 {
    AutoAppIPtr_(StructDescTools,pTools);
 

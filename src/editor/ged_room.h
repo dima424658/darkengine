@@ -21,10 +21,10 @@ EXTERN BOOL g_RoomsOK;
 EXTERN void ged_compile_rooms(void);
 
 // Get the object id of a room named
-EXTERN ObjID ged_get_room_named(char *name);
+EXTERN ObjID ged_get_room_named(const char *name);
 
 // Create a new room object
-EXTERN ObjID ged_create_room_obj(char *name, ObjID archetype, BOOL concrete);
+EXTERN ObjID ged_create_room_obj(const char *name, ObjID archetype, BOOL concrete);
 
 // Make an object a room object
 EXTERN void ged_make_room_obj(ObjID objID);

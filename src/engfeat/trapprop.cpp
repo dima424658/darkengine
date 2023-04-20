@@ -34,7 +34,7 @@ static sPropertyDesc trapFlagsDesc =
 };
 
 
-static char *trapflag_names[] =
+static const char *trapflag_names[] =
 { "Once", "Invert", "NoOn", "NoOff"};
 
 static sFieldDesc trapFlagsFields[] =

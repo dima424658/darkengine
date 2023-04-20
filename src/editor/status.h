@@ -20,8 +20,8 @@
 
 #define SF_NUM_FIELDS (SF_TIME+1)
 
-EXTERN void StatusField(int x, char *s);
-EXTERN void Status(char *s);
+EXTERN void StatusField(int x, const char *s);
+EXTERN void Status(const char *s);
 
 EXTERN void StatusEnable(void);
 EXTERN void StatusDisable(void);

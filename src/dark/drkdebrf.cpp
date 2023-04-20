@@ -1311,7 +1311,7 @@ class cLoadingSaveGame: public cLoading
    {
       cLoading::InitUI();
       // erase diff button
-      mElems[(int)kDifficulty].draw_data = ""; 
+      mElems[(int)kDifficulty].draw_data = (void*)""; 
       // Do all goals have fiction strings?
       mFlags &= ~kFictionGoals; 
    }

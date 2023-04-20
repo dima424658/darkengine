@@ -54,7 +54,7 @@ typedef BOOL (*tBindAggCallback) (struct _intrnl_var_channel **ppChannels, long 
 // whether or not the control was already down.
 // Most callbacks should return NULL, as this
 // is more internal.
-typedef char *(*tBindProcCallback) (char *pCmd, char *pValStr, BOOL bAlreadyDown);
+typedef char *(*tBindProcCallback) (const char *pCmd, const char *pValStr, BOOL bAlreadyDown);
 
 
 
@@ -217,7 +217,7 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    // to interact with the binder. Most users
    // should not have to call this.
    //
-   STDMETHOD_(char *, ProcessCmd) (THIS_ char *pCmdStr) PURE;
+   STDMETHOD_(char *, ProcessCmd) (THIS_ const char *pCmdStr) PURE;
 
    //
    // Trap a control, and bind it to pCmdStr, if the filter callback allows it.
@@ -262,14 +262,14 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    // Loads a .bnd file into the specified iContext. If pPrefix is not NULL,
    // we bind only the matching prefixed binds.
    //
-   STDMETHOD_(char *, LoadBndFile) (THIS_ char *pBndFname, unsigned long iContext, char *pPrefix) PURE;
+   STDMETHOD_(char *, LoadBndFile) (THIS_ const char *pBndFname, unsigned long iContext, const char *pPrefix) PURE;
 
    //
    // Saves a bind file under the current context only. Should undoubtedly
    // change this in the future. If pHeader is non-NULL, the string will
    // be placed at the top of the file.
    //
-   STDMETHOD_(char *, SaveBndFile) (THIS_ char *pBndFname, char *pHeader) PURE;
+   STDMETHOD_(char *, SaveBndFile) (THIS_ const char *pBndFname, char *pHeader) PURE;
 
    //
    // Methods for setting and unsetting bind command variables.

@@ -18,7 +18,7 @@ typedef cDynArray<ObjID> cDynObjArray;
 typedef BOOL (*ProxCallback)(ObjID obj, float rad_2);
 
 // build a prox prop named prox_name
-EXTERN IBoolProperty *ProxBuildProp(char *prox_name);
+EXTERN IBoolProperty *ProxBuildProp(const char *prox_name);
 
 // check within rad for prox's conforming to pProx
 // if objList, fill it in, if pCB, call it with each, if both, do both

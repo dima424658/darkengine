@@ -22,7 +22,7 @@
 
 ////////////////////////////////////////
 
-static char *model_types[] = 
+static const char *model_types[] =
 {
    "OBB",
    "Sphere",
@@ -30,14 +30,14 @@ static char *model_types[] =
    "None"
 };
 
-static char *rot_bits[] = 
+static const char *rot_bits[] =
 {
    "X Axis",
    "Y Axis", 
    "Z Axis",
 };
 
-static char *rest_bits[] = 
+static const char *rest_bits[] =
 {
    "+X Axis",
    "+Y Axis", 
@@ -47,7 +47,7 @@ static char *rest_bits[] =
    "-Z Axis",
 }; 
 
-static char *control_bits[] = 
+static const char *control_bits[] =
 {
    "Axis Velocity",
    "Velocity",

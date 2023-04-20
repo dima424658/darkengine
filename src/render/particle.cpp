@@ -49,7 +49,7 @@ ObjID partArch = ROOT_ARCHETYPE;
 
 #define PARTICLE_COLLISION  (COLLISION_NONE)
 
-static char name[] = "Particle" ;
+static const char name[] = "Particle" ;
 
 void InitParticleArchetype(void)
 {

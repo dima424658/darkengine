@@ -17,7 +17,7 @@
 // Inventory type sdesc 
 //
 
-static char* inv_type_strings[] = 
+static const char* inv_type_strings[] =
 { 
    "Junk", 
    "Item",

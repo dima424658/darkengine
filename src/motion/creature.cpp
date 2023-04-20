@@ -3897,7 +3897,7 @@ BOOL cCreature::SubFrameUpdate(const ulong dt)
 
    const sCreatureDesc *pCDesc=g_pCreatureDescPtr[m_CreatureType];
 
-   char *collideSpeech[]={"OW! My groin!","OW! Me chest!","Arghhh matey!","No chicken feet!\n"};
+   const char *collideSpeech[]={"OW! My groin!","OW! Me chest!","Arghhh matey!","No chicken feet!\n"};
 
    g_MotionEnded=FALSE;
 

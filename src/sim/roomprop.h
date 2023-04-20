@@ -48,7 +48,7 @@ EXTERN int GetGameSysSecretEAXVar(void);
 EXTERN int GetMissionSecretEAXVar(void);
 
 EXTERN const int  g_nRoomTypes;
-EXTERN char      *g_RoomTypes[];
+EXTERN const char *g_RoomTypes[];
 
 ///////////////////////////////////////////////////////////////////////////////
 //

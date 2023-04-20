@@ -54,7 +54,7 @@ public:
    STDMETHOD (SuggestActions)(cAIGoal * pGoal, const cAIActions & previous, cAIActions * pNew);
 
    // ways to set that you are stunned
-   BOOL SetStunned(char    *beginTagsStr, char    *loopTagsStr, int ms);
+   BOOL SetStunned(const char    *beginTagsStr, const char    *loopTagsStr, int ms);
    BOOL SetStunned(cTagSet *beginTags,    cTagSet *loopTags,    int ms);
    BOOL GetStunned() { return m_Stunned; }; 
 
@@ -72,7 +72,7 @@ private:
 
    BOOL     m_NewStun;
 
-   static cDynArray<cAIStun *> cAIStun::gm_StunAbilities;
+   static cDynArray<cAIStun *> gm_StunAbilities;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -66,7 +66,7 @@ EXTERN void optimize_level(void);
 
 ////////////////////
 // mediaop info for others
-EXTERN char *mediaop_names[]; // if you want to name media-ops
+EXTERN const char *mediaop_names[]; // if you want to name media-ops
 EXTERN int   num_media_ops;
 
 // register commands for the system

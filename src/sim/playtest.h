@@ -27,7 +27,7 @@ EXTERN void hello_debugger(void);
 EXTERN BOOL cheats_active;
 #define CheatsActive() (cheats_active)
 
-EXTERN void CheatCheckToggleBool(bool *var, char *cmd, char *name);
+EXTERN void CheatCheckToggleBool(bool *var, char *cmd, const char *name);
 #define CheatCheckToggle(var,cmd,name) CheatCheckToggleBool((bool *)(var),cmd,name)
 
 // Accessor to allocator tools for .c files

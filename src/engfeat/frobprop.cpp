@@ -75,7 +75,7 @@ public:
 };
 
 
-char *action_bit_names[] = { "Move", "Script", "Delete", "Ignore", "FocusScript", "Tool Cursor", "Use Ammo", "Default", "Deselect" };
+const char *action_bit_names[] = { "Move", "Script", "Delete", "Ignore", "FocusScript", "Tool Cursor", "Use Ammo", "Default", "Deselect" };
 
 // @TODO: really an array of MAX_FROB_CMDS commands, use define when we have array sdescs
 // structure descriptor fun
@@ -115,7 +115,7 @@ static sRelationDesc     frobProxyRelDesc  = { "FrobProxy", };
 static sRelationDataDesc frobProxyDataDesc = { "FrobProxyInfo", sizeof(int), };
 // auto-create ??
 
-static char *proxy_bit_names[]= {"Do Inv", "No World", "Do ToolSrc", "No ToolDst", "AllowDirect"};
+static const char *proxy_bit_names[]= {"Do Inv", "No World", "Do ToolSrc", "No ToolDst", "AllowDirect"};
 
 static sFieldDesc   frob_proxy_fields[] =
  { { "FrobProxyMask", kFieldTypeBits, sizeof(int), 0, FullFieldNames(proxy_bit_names) }, };
@@ -141,7 +141,7 @@ static sPropertyDesc frobhand_prop_desc =
 //
 // Frob Handler sdesc 
 //
-static char* frob_handler_strings[] = 
+static const char* frob_handler_strings[] =
 { 
    "Host",  // Default
    "Local Only",

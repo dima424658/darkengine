@@ -140,7 +140,7 @@ guiStyle masterGameStyle =
    },
 }; 
 
-static char* color_cfg_vars[] =
+static const char* color_cfg_vars[] =
 {
    "color_fg",
    "color_bg",

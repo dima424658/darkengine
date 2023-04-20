@@ -153,7 +153,7 @@ static sPropertyDesc CanAttach_desc =
    }
 };
 
-static char* CanAttach_flags[] =
+static const char* CanAttach_flags[] =
 {
    "Rope",
    "Vine",

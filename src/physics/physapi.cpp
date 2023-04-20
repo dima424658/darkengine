@@ -558,7 +558,7 @@ extern void RemoveObjectCollisions(ObjID objID);
 // Checks for moveable model, provide warnings, and sets up
 // pModel for the caller
 //
-static BOOL CheckMoveable(ObjID objID, char *func_name)
+static BOOL CheckMoveable(ObjID objID, const char *func_name)
 {
    if ((g_pModel = g_PhysModels.Get(objID)) == NULL)
    {

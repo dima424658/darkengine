@@ -130,7 +130,7 @@ STDMETHODIMP cLinkEditTrait::Unparse(ObjID obj, char* buf, int buflen)
 
 
    cAutoIPtr<ILinkQuery> pQuery (pLinkMan->Query(obj,LINKOBJ_WILDCARD,mID)); 
-   char* prefix = ""; 
+   const char* prefix = "";
    buf[0] = '\0'; 
 
    for (; !pQuery->Done(); pQuery->Next())

@@ -36,7 +36,7 @@ EXTERN void GhostInitRemoteStruct(sGhostRemote *pGR);
 // call with any ONE of the three, if you have the pG, use that, save time
 // sets up the debugging globals for ghost spew stuff
 EXTERN void _GhostDebugSetup(ObjID obj, sGhostLocal *pGL, sGhostRemote *pGR);
-EXTERN void _GhostPrintGhostPos(ObjID obj, sGhostHeartbeat *pGH, int flags, char *prefix, int seq_id);
+EXTERN void _GhostPrintGhostPos(ObjID obj, sGhostHeartbeat *pGH, int flags, const char *prefix, int seq_id);
 #else
 #define _GhostDebugSetup(o,l,r)
 #define _GhostPrintGhostPos(o,pGH,f,p,s)

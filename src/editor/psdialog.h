@@ -11,5 +11,5 @@
 #include <isdesced.h>
 #include <sdesbase.h>
 
-IStructEditor* NewPseudoScriptDialog (char* title, int maxSteps, sStructDesc* headerStruct, void* data, sAIPsdScrAct* steps);
+IStructEditor* NewPseudoScriptDialog (const char* title, int maxSteps, sStructDesc* headerStruct, void* data, sAIPsdScrAct* steps);
 

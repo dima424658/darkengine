@@ -118,7 +118,7 @@ static void _ghost_histo_dump_obj(sGhostHisto *pHisto)
       mprintf("\n");
 }
 
-void _ghost_histo_show(char *cmd)
+void _ghost_histo_show(const char *cmd)
 {
    tHashSetHandle local_iter;    // go through local ghosts
    sGhostHisto *pGH=gGhostHisto.GetFirst(local_iter);

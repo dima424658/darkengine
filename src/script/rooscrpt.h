@@ -66,7 +66,7 @@ struct sRoomMsg : public sScrMsg
    sRoomMsg(ObjID froom, ObjID toroom, ObjID moveobj, eObjType objt, eRoomChange transt)
       : FromObjId(froom), ToObjId(toroom), MoveObjId(moveobj), ObjType(objt), TransitionType(transt)
    {
-      static char *room_msg_names[4][2]=
+      static const char *room_msg_names[4][2]=
       {
          { "PlayerRoomEnter", "PlayerRoomExit" },
          { "RemotePlayerRoomEnter", "RemotePlayerRoomExit" },

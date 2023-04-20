@@ -516,8 +516,8 @@ protected:
       MessageNamed("initial"); 
    }
 
-   const char* cSaveBndPanel::SlotFileName(int which);
-   void cSaveBndPanel::ComputeSlot(int which);
+   const char* SlotFileName(int which);
+   void ComputeSlot(int which);
    void DoFileOp(int which);
    void BndAppendControls (char *fname);
    void OnSelect(int which); 
@@ -597,13 +597,13 @@ void cSaveBndPanel::BndAppendControls (char *fname)
    {
       fprintf (fp, "\n");
 
-      char *controls[] = { "bow_zoom", "joystick_enable", "mouse_invert", "lookspring",
+      const char *controls[] = { "bow_zoom", "joystick_enable", "mouse_invert", "lookspring",
                            "freelook", "mouse_sensitivity", "joy_rotate", "joystick_sensitivity",
                            "joystick_deadzone", "rudder_sensitivity", "rudder_deadzone",
                            "auto_equip", "auto_search", "goal_notify", "climb_touch", "\0"};
 
       char str[32];
-      char **p_control = controls;
+      const char **p_control = controls;
 
       while (**p_control) {
          sprintf (str, "echo $%s", *p_control);

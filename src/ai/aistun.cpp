@@ -342,7 +342,7 @@ BOOL cAIStun::SetStunned(cTagSet *beginTags,    cTagSet *loopTags,    int ms)
    return TRUE;
 }
 
-BOOL cAIStun::SetStunned(char    *beginTagsStr, char    *loopTagsStr, int ms)
+BOOL cAIStun::SetStunned(const char    *beginTagsStr, const char    *loopTagsStr, int ms)
 {  // this is just gonna convert the strings to tags
    cTagSet beginTags, loopTags;
    loopTags.FromString(loopTagsStr);
@@ -370,7 +370,7 @@ BOOL cAIStun::UnsetStunned(void)
 
 /////////////////////////////////////////////////
 
-EXTERN BOOL DoAISetStun(ObjID obj, char *begin, char *loop, int ms)
+EXTERN BOOL DoAISetStun(ObjID obj, const char *begin, const char *loop, int ms)
 {
    cAIStun *pAIStun = cAIStun::AccessAIStun(obj);
    if (pAIStun)

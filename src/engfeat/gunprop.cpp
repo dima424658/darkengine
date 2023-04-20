@@ -47,7 +47,7 @@ cBaseGunDescs::cBaseGunDescs()
       m_desc[i] = g_defaultBaseGunDesc;
 }
 
-static char *apBaseGunDescFlagNames[] = {"Continuous Fire",};
+static const char *apBaseGunDescFlagNames[] = {"Continuous Fire",};
 
 #define BASE_GUN_FIELD(i) \
    {"Setting " #i ": Burst", kFieldTypeInt, FieldLocation(cBaseGunDescs, m_desc[i].m_burst),}, \
@@ -270,7 +270,7 @@ public:
 
 IPlayerGunDescProperty *g_playerGunDescProperty;
 
-static char *flagBits[] =
+static const char *flagBits[] =
 {
    "KUp",
    "KDown",
@@ -283,7 +283,7 @@ static char *flagBits[] =
    "Delayed Burst",
 };
 
-static char *handednessTypes[] =
+static const char *handednessTypes[] =
 {
    "OneHanded",
    "TwoHanded",
@@ -800,7 +800,7 @@ static sPropertyDesc weaponTypePropDesc =
 
 // It sucks that this needs to manually stay in synch with the weapon skills
 // in shkplcst.h, but I think I'm going to leave it like this for the moment...
-static char *weaponTypeBits[] =
+static const char *weaponTypeBits[] =
 {
    "Conventional",
    "Energy",

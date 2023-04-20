@@ -16,7 +16,7 @@ EXTERN void _ghost_histo_add(ObjID ghost, int reason, int time);
 
 // clear/show the data
 EXTERN void _ghost_histo_clear(void);
-EXTERN void _ghost_histo_show(char *cmd);
+EXTERN void _ghost_histo_show(const char *cmd);
 
 // init/term
 EXTERN void _ghost_histo_init(int num_reasons, int short_time);
