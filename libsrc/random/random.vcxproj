@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/lg;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/lg;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/lg;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/lg;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -155,7 +155,9 @@
     <ClInclude Include="rng.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="random.cpp" />
+    <ClCompile Include="rng.cpp" />
+    <ClCompile Include="rngcong.cpp" />
+    <ClCompile Include="rngfib.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
