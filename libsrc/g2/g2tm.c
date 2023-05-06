@@ -8,7 +8,7 @@
  *
  */
 
-#include <buffer.h>
+#include <g2buffer.h>
 #include <grtm.h>
 #include <g2clip.h>
 

@@ -5,6 +5,7 @@
 
 #include <tmdecl.h>
 #include <tmftab.h>
+#include <tmmac.h>
 #include <tmd.inc>
 #include <tmflag.inc>
 #include <tmlow.inc>

@@ -108,6 +108,9 @@
     <ClInclude Include="tngqbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_ui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tngtextg.c">

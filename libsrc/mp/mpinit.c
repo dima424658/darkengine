@@ -222,6 +222,26 @@ BOOL mp_clone_multiped(multiped *dst, multiped *src)
    return TRUE;
 }
 
+int mp_read_multiped(multiped* mp, void* buf, int(*swizzle_func)(int, motion_callback* pcallback))
+{
+	return 0; // TODO
+}
+
+int mp_get_write_buffsize(multiped* mp)
+{
+	return 0; // TODO
+}
+
+void mp_write_multiped(multiped* mp, void* buf)
+{
+	return 0; // TODO
+}
+
+void mp_get_multiped_motions(multiped* mp, int* mots, int* max_mots)
+{
+	return 0; // TODO
+}
+
 
 //
 // All other mp_add_???_motion() functions should call this to do the actual

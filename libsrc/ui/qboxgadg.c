@@ -14,6 +14,7 @@
 #include <tngqbox.h>
 #include <region.h>
 #include <2d.h>
+#include <_ui.h>
 #include <event.h>
 #include <mouse.h>
 #include <kbcook.h>

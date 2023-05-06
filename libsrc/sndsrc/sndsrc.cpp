@@ -42,6 +42,16 @@ SndCreateSource( sSndAttribs *pAttribs )
    return (ISndSource *) pSrc;
 }
 
+ISndSource *
+SndCreateSourceEx( sSndAttribs* pAttribs, uint32 maxLabels, uint32 maxGates )
+{
+   // TODO
+   cSndSource *pSrc = new cSndSource;
+
+   pSrc->SetAttribs( pAttribs );
+
+   return (ISndSource *) pSrc;
+}
 
 ///////////////////////////////////
 // cSndSource constructor
@@ -174,6 +184,11 @@ cSndSource::SetGate( uint32   /* gateNum */,
    return TRUE;
 }
 
+STDMETHODIMP_(uint32) cSndSource::GetGate(uint32 gateNum)
+{
+    return 0; // TODO
+}
+
 
 ///////////////////////////////////
 // RegisterEndCallback - set callback which is invoked when playlist
@@ -241,6 +256,16 @@ cSndSource::TimeToSamples( uint32   milliseconds )
 
    nSamples = samples;
    return nSamples;
+}
+
+STDMETHODIMP_(void) cSndSource::BranchToLabel(uint32 BranchToLabel)
+{
+    // TODO
+}
+
+STDMETHODIMP_(uint32) cSndSource::GetMostRecentLabel()
+{
+    return 0; // TODO
 }
 
 

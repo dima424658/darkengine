@@ -115,6 +115,10 @@ void StarSetCheckBkgnd(BOOL check)
    check_bkgnd = check;
 }
 
+void StarSetStarRenderCallback(tStarRenderCallback callback)
+{
+    // TODO
+}
 
 // sets global pointers in the star library
 // to the number of stars, their positions, their colors

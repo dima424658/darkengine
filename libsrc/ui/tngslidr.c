@@ -1,5 +1,6 @@
 #include <tngapp.h>
 #include <tngslidr.h>
+#include <_ui.h>
 
 // Initializes the TNG slider
 errtype tng_slider_init(void *ui_data, TNG *ptng, TNGStyle *sty, int alignment, int min, int max, int value, int increm, Point size)

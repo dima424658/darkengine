@@ -169,6 +169,9 @@ mmf_polysort polysort=NULL;
 // segment render stuff
 
 
+BOOL mm_punt_render;
+BOOL mm_punt_sort;
+BOOL mm_punt_xform;
 
 #ifndef SHIP
    #define TEST_VERSION(fname,model)   \
@@ -722,6 +725,16 @@ int mm_rigid_segment_from_joint(mms_model *m, uint joint_index)
          return i;
 
    return -1;
+}
+
+float mm_set_global_alpha(float fNewGlobalAlpha)
+{
+    return 0.0f; // TODO
+}
+
+float mm_set_global_glow_level(float fNewGlowLevel)
+{
+    return 0.0f; // TODO
 }
 
 

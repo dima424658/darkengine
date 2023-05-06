@@ -14,6 +14,8 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include <algorithm>
+
 #include <windows.h>
 
 #include <assert.h>
@@ -1262,7 +1264,7 @@ cSndMixer::CheckTimer( void )
  
          // get resolution from desired resolution & system limits
          resolution = 
-            min(max(mTimerCaps.wPeriodMin, kTmBestResolution), 
+            std::min(std::max(mTimerCaps.wPeriodMin, static_cast<UINT>(kTmBestResolution)),
                 mTimerCaps.wPeriodMax);
 
          // break the DirectX display lock to avoid hang in timer calls

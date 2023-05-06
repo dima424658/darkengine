@@ -18,19 +18,10 @@
     <ClCompile Include="sndrezst.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="splcmain.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="splicer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="streamer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="strmmain.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="utilmain.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="foneshot.c">
@@ -46,9 +37,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="mstremer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="onemain.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="oneshot.c">

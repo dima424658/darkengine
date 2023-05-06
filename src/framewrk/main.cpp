@@ -15,7 +15,7 @@
 #include <loopapi.h>
 
 #include <init.h>
-#include <allocovr.h>
+// #include <allocovr.h>
 
 // must be last header
 #include <dbmem.h>
@@ -38,7 +38,3 @@ int LGAPI MAIN(int argc, const char* argv[])
 
    return 0;
 }
-
-
-
-

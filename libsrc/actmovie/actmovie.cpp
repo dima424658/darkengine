@@ -765,6 +765,23 @@ BOOL cActiveMoviePlayer1::BlankLines()
    return (m_flags&kMovieBlankLines);
 }
 
+BOOL cActiveMoviePlayer1::GetVolume(int* pOutVol)
+{
+    // TODO
+    return FALSE;
+}
+
+BOOL cActiveMoviePlayer1::SetVolume(int inVol)
+{
+    // TODO
+    return FALSE;
+}
+
+void cActiveMoviePlayer1::SetTermKeys(char* keylist)
+{
+    // TODO
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // CLASS: cActiveMovieDraw
@@ -1177,7 +1194,7 @@ void cActiveMovieDraw::SetAllocator(cActiveMovieAlloc *pActiveMovieAlloc)
 //
 
 cActiveMovieAlloc::cActiveMovieAlloc(cActiveMovieDraw *pActiveMovieDraw,
-                                     char *pName, LPUNKNOWN pUnk, HRESULT *phr):
+                                     const char *pName, LPUNKNOWN pUnk, HRESULT *phr):
    cBaseAllocator(pName, pUnk, phr),
    m_bUsingCanvas(FALSE)
 {

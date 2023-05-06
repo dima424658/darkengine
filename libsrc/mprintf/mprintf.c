@@ -57,16 +57,6 @@
 #define MONO_FILE    "mprintf.log"
 #define MONO_DUMP    "mono.dmp"
 
-#ifdef _WIN32
-__declspec(dllimport) 
-void 
-__stdcall
-OutputDebugStringA(
-    const char * lpOutputString
-    );
-#define OutputDebugString(s) OutputDebugStringA(s)
-#endif
-
 bool mono_to_debugger = FALSE;
 
 /* have we yet called mono_init()? */

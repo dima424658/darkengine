@@ -242,7 +242,7 @@ SLIDER_TEMPLATE int pnpSlider<type,DESC,SLIDER,METHODS>::Register(int num)
 }
 
 #define BuildCycle(type,Type,format) \
-EXTERN int PnP_Slider##Type(Rect* space, char* name, type lo, type hi, type scale, type *var, \
+EXTERN int PnP_Slider##Type(Rect* space, const char* name, type lo, type hi, type scale, type *var, \
                      void (*update)(PnP_SliderOp op, Rect* where, type val, int data), int data, ulong flags) \
 { \
    SLIDER_INSTANCE(type)* slider; \

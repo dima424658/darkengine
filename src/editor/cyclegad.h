@@ -96,7 +96,7 @@ typedef struct _CycleGadgDesc
    void* var;
    DrawElement* arrow_drawelems;
    CycleCallback cb;
-   char* format_string;  // printf/scanf format string
+   const char* format_string;  // printf/scanf format string
    void* user_data;
    ulong flags;
    struct _CycleGadg *next;

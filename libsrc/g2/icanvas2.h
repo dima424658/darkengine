@@ -53,4 +53,4 @@ enum {
 
    G2C_TYPES
 };
-#endif /* !__ICANVAS_H */
+#endif /* !__ICANVAS2_H */

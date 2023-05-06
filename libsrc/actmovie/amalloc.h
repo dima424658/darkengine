@@ -54,7 +54,7 @@ class cMediaSample : public IMediaSample
     {
 public:
 
-    cMediaSample(char * pName, cBaseAllocator * pAllocator, HRESULT * phr,
+    cMediaSample(const char * pName, cBaseAllocator * pAllocator, HRESULT * phr,
                   BYTE * pBuffer = NULL, long length = 0);
 
     virtual ~cMediaSample();
@@ -152,7 +152,7 @@ protected:
 
 public:
    cBitmapSample(
-                 TCHAR *pName,
+                 const TCHAR *pName,
                  cBaseAllocator *pAllocator,   
                  HRESULT *phr,
                  grs_bitmap *pBitmap,
@@ -205,7 +205,7 @@ public:
 class cBaseAllocator : public IMemAllocator
     {
 public:
-    cBaseAllocator(char *, LPUNKNOWN, HRESULT *, BOOL bEvent = TRUE);
+    cBaseAllocator(const char *, LPUNKNOWN, HRESULT *, BOOL bEvent = TRUE);
     virtual ~ cBaseAllocator();
 
     // IUnknown Methods

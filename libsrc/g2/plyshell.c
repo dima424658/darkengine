@@ -4,7 +4,7 @@
 
 #include <plyparam.h>
 #include <plyrast.h>
-#include <buffer.h>
+#include <g2buffer.h>
 
 
 bool g2d_skip_il = FALSE;

@@ -24,10 +24,6 @@ class cDABaseSrvFns
 {
 public:
    static BOOL DoResize(void ** ppItems, unsigned nItemSize, unsigned nNewSlots);
-   
-#ifndef SHIP
-   static const char gm_pszOutOfRange[]; // Out of range message
-#endif
 
 #ifdef DEBUG
    static void TrackCreate(unsigned nItemSize);
@@ -42,7 +38,7 @@ public:
 #endif
 };
 
-#define DynArrayAssertIndex(index) AssertMsg1((unsigned)(index) < m_nItems, ServiceFuncs::gm_pszOutOfRange, index)
+#define DynArrayAssertIndex(index) AssertMsg1((unsigned)(index) < m_nItems, "Out of range message", index)
 
 ///////////////////////////////////////////////////////////////////////////////
 

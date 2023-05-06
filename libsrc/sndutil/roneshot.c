@@ -57,7 +57,7 @@ CreateSoundRezOneShot( ISndMixer        *pMixer,
    pInfo->extras[0] = rezId;
    rezLen = ResSize( rezId );
 
-   LOG2("CreateSoundRezOneShot %d rezId, %ld rezLen",
+   TLOG2("CreateSoundRezOneShot %d rezId, %ld rezLen",
         rezId, rezLen );
    pSample = CreateSoundOneShot( pMixer, getRezData, pInfo, rezLen,
                                  endCB, pEndCBData );

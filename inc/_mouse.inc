@@ -1,0 +1,33 @@
+; Debug header file x:\prj\tech\h/_mouse.__i made from libdbg.dbg by DBGMAKEH
+
+DB_MOUSE equ 3
+DS_MOUSE_Init equ 01h
+DSRC_MOUSE_Init equ 018000001h
+DS_MOUSE_Shutdown equ 02h
+DSRC_MOUSE_Shutdown equ 018000002h
+DS_MOUSE_GetXY equ 04h
+DSRC_MOUSE_GetXY equ 018000004h
+DS_MOUSE_PutXY equ 08h
+DSRC_MOUSE_PutXY equ 018000008h
+DS_MOUSE_LookNext equ 010h
+DSRC_MOUSE_LookNext equ 018000010h
+DS_MOUSE_Next equ 020h
+DSRC_MOUSE_Next equ 018000020h
+DS_MOUSE_Flush equ 040h
+DSRC_MOUSE_Flush equ 018000040h
+DS_MOUSE_Generate equ 080h
+DSRC_MOUSE_Generate equ 018000080h
+DS_MOUSE_SetCallback equ 0100h
+DSRC_MOUSE_SetCallback equ 018000100h
+DS_MOUSE_UnsetCallback equ 0200h
+DSRC_MOUSE_UnsetCallback equ 018000200h
+DS_MOUSE_Callback equ 0400h
+DSRC_MOUSE_Callback equ 018000400h
+DS_MOUSE_CheckBtn equ 0800h
+DSRC_MOUSE_CheckBtn equ 018000800h
+DS_MOUSE_ConstrainXY equ 01000h
+DSRC_MOUSE_ConstrainXY equ 018001000h
+DS_MOUSE_SetRate equ 02000h
+DSRC_MOUSE_SetRate equ 018002000h
+DS_MOUSE_Extremes equ 04000h
+DSRC_MOUSE_Extremes equ 018004000h

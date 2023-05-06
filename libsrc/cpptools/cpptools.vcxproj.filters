@@ -57,6 +57,12 @@
     <ClCompile Include="str.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="dynarsrv.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dynarray.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="delmlist.h">

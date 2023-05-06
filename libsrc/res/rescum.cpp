@@ -32,7 +32,7 @@ ResCumStat cumStatType[NUM_RESTYPENAMES];        // table of cum. stats by type
 
 //  Internal routines
 
-void TruncName(char *dest, char *src, int len);
+void TruncName(char *dest, const char *src, int len);
 //  Macro to multiply two longs and divide, and return full long
 
 #ifdef __WATCOMC__
@@ -187,7 +187,7 @@ void ResSpewCumStats()
 //      INTERNAL ROUTINES
 //  -----------------------------------------------------------
 
-static void TruncName(char *dest, char *src, int len)
+static void TruncName(char *dest, const char *src, int len)
 {
    int i, j;
 //  Copy from src to dest, truncate

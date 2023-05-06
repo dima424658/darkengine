@@ -148,6 +148,11 @@ void ShutdownTextureSys(void)
    SafeRelease(pWinDisplayDevice);
 }
 
+void lgd3d_get_opaque_texture_bitmask(grs_rgb_bitmask* bitmask)
+{
+    // TODO
+}
+
 void lgd3d_set_texture_clut(uchar *clut)
 {
    texture_clut = clut;
@@ -413,6 +418,16 @@ void lgd3d_set_pal_slot(uint start, uint n, uchar *pal_data, int slot)
    }
 }
 
+BOOL lgd3d_get_texture_wrapping(DWORD dwLevel)
+{
+    return FALSE; // TODO
+}
+
+BOOL lgd3d_set_texture_wrapping(DWORD dwLevel, BOOL bSetSmooth)
+{
+    return FALSE; // TODO
+}
+
 void lgd3d_set_pal(uint start, uint n, uchar *pal_data)
 {
    lgd3d_set_pal_slot(start, n, pal_data, 0);
@@ -440,6 +455,26 @@ void lgd3d_set_chromakey(int r, int g, int b)
    } else {
       chroma_key += ((g>>2)<<5) + ((r>>3)<<11);
    }
+}
+
+void lgd3d_set_dithering(int bOn)
+{
+    // TODO
+}
+
+int lgd3d_is_dithering_on(void)
+{
+    return 0; // TODO
+}
+
+void lgd3d_set_antialiasing(int bOn)
+{
+    // TODO
+}
+
+int lgd3d_is_antialiasing_on(void)
+{
+    return 0; // TODO
 }
 
 

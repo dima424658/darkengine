@@ -70,7 +70,7 @@ CreateSoundRezSplicer( ISndMixer       *pMixer,
    sndSegInternal       *pSeg0;
    uint32               i;
 
-   LOG2("CreateSoundRezSplicer %ld numRez, %ld buffLen",
+   TLOG2("CreateSoundRezSplicer %ld numRez, %ld buffLen",
         numSegs, bufferLen );
 
    if ( numSegs < 1 ) {

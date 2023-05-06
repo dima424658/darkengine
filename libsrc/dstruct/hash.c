@@ -4,6 +4,7 @@
 #include <error.h>
 #include <hash.h> 
 #include <mprintf.h>
+#include <_dstruct.h>
 /*
  * $Source: x:/prj/tech/libsrc/dstruct/RCS/hash.c $
  * $Revision: 1.7 $

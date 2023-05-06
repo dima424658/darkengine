@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef __INIT_H
-#define __INIT_H
+#ifndef __G2INIT_H
+#define __G2INIT_H
 #include <dev2d.h>
 
 extern int g2_init();

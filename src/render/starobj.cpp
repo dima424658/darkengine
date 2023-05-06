@@ -353,8 +353,8 @@ void cStars::Term()
 }
 
 // From lgd3d:
-extern double z2d;
-extern double w2d;
+EXTERN double z2d;
+EXTERN double w2d;
 
 void cStars::Render()
 {

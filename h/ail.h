@@ -29,8 +29,6 @@
 //++                                                                        ++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-#ifndef _WIN32
-
 #ifndef AIL_VERSION
 
 #define AIL_VERSION      "3.03"
@@ -279,7 +277,7 @@ typedef signed   long  LONG;
 
 #endif
 
-typedef void * CALLBACK;            // Generic callback function prototype
+typedef void * CALLBACK_T;            // Generic callback function prototype
 
 typedef ULONG REALFAR;              // Real-mode far pointer type
 
@@ -536,9 +534,9 @@ typedef struct _SAMPLE           // Sample instance
 
    LONG     vol_scale[2][256];   // [left/mono=0,right=1][256] channel volume
 
-   CALLBACK SOB;                 // Start-of-block callback function
-   CALLBACK EOB;                 // End-of-buffer callback function
-   CALLBACK EOS;                 // End-of-sample callback function
+   CALLBACK_T SOB;                 // Start-of-block callback function
+   CALLBACK_T EOB;                 // End-of-buffer callback function
+   CALLBACK_T EOS;                 // End-of-sample callback function
 
    LONG     user_data  [8];      // Miscellaneous user data
    LONG     system_data[8];      // Miscellaneous system data
@@ -637,10 +635,10 @@ typedef struct                            // XMIDI sequence state table
 
    UBYTE   *ICA;                          // Indirect Controller Array
 
-   CALLBACK prefix_callback;              // XMIDI Callback Prefix handler
-   CALLBACK trigger_callback;             // XMIDI Callback Trigger handler
-   CALLBACK beat_callback;                // XMIDI beat/bar change handler
-   CALLBACK EOS;                          // End-of-sequence callback function
+   CALLBACK_T prefix_callback;              // XMIDI Callback Prefix handler
+   CALLBACK_T trigger_callback;             // XMIDI Callback Trigger handler
+   CALLBACK_T beat_callback;                // XMIDI beat/bar change handler
+   CALLBACK_T EOS;                          // End-of-sequence callback function
 
    LONG     loop_count;                   // 0=one-shot, -1=indefinite, ...
 
@@ -709,8 +707,8 @@ typedef struct _MDI_DRIVER          // Handle to XMIDI driver
 
    LONG        notes [NUM_CHANS];   // # of active notes in channel
 
-   CALLBACK    event_trap;          // MIDI event trap callback function
-   CALLBACK    timbre_trap;         // MIDI timbre request callback function
+   CALLBACK_T    event_trap;          // MIDI event trap callback function
+   CALLBACK_T    timbre_trap;         // MIDI timbre request callback function
 
    LONG        message_count;       // MIDI message count
    LONG        offset;              // MIDI buffer offset
@@ -768,8 +766,8 @@ typedef struct                      // Virtual "wave synthesizer" descriptor
 
    WAVE_ENTRY *library;             // Pointer to wave library
 
-   CALLBACK   *prev_event_fn;       // Previous MIDI event trap function
-   CALLBACK   *prev_timb_fn;        // Previous timbre request trap function
+   CALLBACK_T   *prev_event_fn;       // Previous MIDI event trap function
+   CALLBACK_T   *prev_timb_fn;        // Previous timbre request trap function
 
    CTRL_LOG    controls;            // MIDI controller states
 
@@ -788,8 +786,6 @@ typedef struct                      // Virtual "wave synthesizer" descriptor
    ULONG       event;               // Event counter for LRU timestamps
 }
 WAVE_SYNTH;
-
-typedef WAVE_SYNTH * HWAVE;         // Handle to virtual wave synthesizer
 
 typedef struct                      // VDI interface register structure
 {
@@ -875,7 +871,7 @@ extern LONG    cdecl  AIL_read_INI                  (AIL_INI    *INI,
 // Process services
 //
 
-extern HTIMER  cdecl  AIL_register_timer            (CALLBACK    callback_fn);
+extern HTIMER  cdecl  AIL_register_timer            (CALLBACK_T    callback_fn);
 
 extern ULONG   cdecl  AIL_set_timer_user            (HTIMER      timer,
                                                      ULONG       user);
@@ -1001,17 +997,17 @@ extern void     cdecl AIL_set_sample_position       (HSAMPLE S,
 
 extern ULONG    cdecl AIL_sample_position           (HSAMPLE S);
 
-extern CALLBACK cdecl AIL_register_SOB_callback     (HSAMPLE S,
-                                                     CALLBACK SOB);
+extern CALLBACK_T cdecl AIL_register_SOB_callback   (HSAMPLE S,
+                                                     CALLBACK_T SOB);
 
-extern CALLBACK cdecl AIL_register_EOB_callback     (HSAMPLE S,
-                                                     CALLBACK EOB);
+extern CALLBACK_T cdecl AIL_register_EOB_callback   (HSAMPLE S,
+                                                     CALLBACK_T EOB);
 
-extern CALLBACK cdecl AIL_register_EOS_callback     (HSAMPLE S,
-                                                     CALLBACK EOS);
+extern CALLBACK_T cdecl AIL_register_EOS_callback   (HSAMPLE S,
+                                                     CALLBACK_T EOS);
 
-extern CALLBACK cdecl AIL_register_EOF_callback     (HSAMPLE S,
-                                                     CALLBACK EOFILE);
+extern CALLBACK_T cdecl AIL_register_EOF_callback   (HSAMPLE S,
+                                                     CALLBACK_T EOFILE);
 
 extern void     cdecl AIL_set_sample_user_data      (HSAMPLE S,
                                                      ULONG   index,
@@ -1119,24 +1115,24 @@ extern void     cdecl AIL_sequence_position         (HSEQUENCE S,
 extern void     cdecl AIL_branch_index              (HSEQUENCE S,
                                                      ULONG     marker);
 
-extern CALLBACK cdecl AIL_register_prefix_callback  (HSEQUENCE S,
-                                                     CALLBACK  callback);
+extern CALLBACK_T cdecl AIL_register_prefix_callback  (HSEQUENCE S,
+                                                     CALLBACK_T  callback);
 
-extern CALLBACK cdecl AIL_register_trigger_callback (HSEQUENCE S,
-                                                     CALLBACK  callback);
+extern CALLBACK_T cdecl AIL_register_trigger_callback (HSEQUENCE S,
+                                                     CALLBACK_T  callback);
 
-extern CALLBACK cdecl AIL_register_sequence_callback
+extern CALLBACK_T cdecl AIL_register_sequence_callback
                                                     (HSEQUENCE S,
-                                                     CALLBACK  callback);
+                                                     CALLBACK_T  callback);
 
-extern CALLBACK cdecl AIL_register_beat_callback    (HSEQUENCE   S,
-                                                     CALLBACK    callback);
+extern CALLBACK_T cdecl AIL_register_beat_callback    (HSEQUENCE   S,
+                                                     CALLBACK_T    callback);
 
-extern CALLBACK cdecl AIL_register_event_callback   (HMDIDRIVER  mdi,
-                                                     CALLBACK    callback);
+extern CALLBACK_T cdecl AIL_register_event_callback   (HMDIDRIVER  mdi,
+                                                     CALLBACK_T    callback);
 
-extern CALLBACK cdecl AIL_register_timbre_callback  (HMDIDRIVER  mdi,
-                                                     CALLBACK    callback);
+extern CALLBACK_T cdecl AIL_register_timbre_callback  (HMDIDRIVER  mdi,
+                                                     CALLBACK_T    callback);
 
 extern void     cdecl AIL_set_sequence_user_data    (HSEQUENCE S,
                                                      ULONG     index,
@@ -1187,8 +1183,6 @@ extern void     cdecl AIL_destroy_wave_synthesizer  (HWAVE W);
 
 #ifdef __HIGHC__
 #pragma Global_aliasing_convention();
-#endif
-
 #endif
 
 #endif

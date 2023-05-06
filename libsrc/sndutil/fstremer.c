@@ -110,7 +110,7 @@ CreateSoundFileStreamer( ISndMixer        *pMixer,
    pInfo->extras[1] = (uint32) endCB;
    pInfo->extras[2] = (uint32) pEndCBData;
 
-   LOG2("CreateSoundFileStreamer %ld fileLen, %ld buffLen",
+   TLOG2("CreateSoundFileStreamer %ld fileLen, %ld buffLen",
         fileLen, bufferLen );
    pSample = CreateSoundStreamer( pMixer, getFileData, pInfo, fileLen, pBuffer,
                                   bufferLen, endFileStream, pInfo );

@@ -479,6 +479,11 @@ void md_render_vcall(mds_model *m)
    r3_start_block();
 }
 
+void md_use_lgd3d()
+{
+    // TODO
+}
+
 // Normal way to render a model.  Pass in pointer to the model and parms
 // list
 void md_render_model(mds_model *m,mds_parm parms[])

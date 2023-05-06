@@ -51,10 +51,14 @@
 #include <resbase.h>
 #include <dbmem.h>
 
+#include <thrdtool.h>
+
 #undef INTERFACE
 
 #define RES_BASE_TEMPLATE  template <class INTERFACE, const GUID * pIID_INTERFACE>
 #define RES_BASE           cResourceBase<INTERFACE, pIID_INTERFACE>
+
+#define AUTO_RES_THREAD_LOCK() cAutoResThreadLock resThreadLock{}
 
 ///////////////////////////////////////
 

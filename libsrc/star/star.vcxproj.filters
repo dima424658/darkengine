@@ -25,9 +25,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ststar.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="star.c">
       <Filter>Source Files</Filter>
     </ClCompile>

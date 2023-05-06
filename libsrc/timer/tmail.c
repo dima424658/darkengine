@@ -8,6 +8,7 @@
 #include <tmftab.h>
 
 /* AIL to timer function mappings */
+// TODO: undefined AIL_* symbols
 
 #pragma off (unreferenced)
 

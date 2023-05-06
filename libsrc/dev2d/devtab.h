@@ -17,12 +17,12 @@
 extern "C" {
 #endif
 
-extern (*no_video_device_table[])();
-extern (*flat8_device_table[])();
-extern (*win32_device_table[])();
-extern (*com_device_table[])();
-extern (*vga_device_table[])();
-extern (*vesa_device_table[])();
+extern void (*no_video_device_table[])();
+extern void (*flat8_device_table[])();
+extern void (*win32_device_table[])();
+extern void (*com_device_table[])();
+extern void (*vga_device_table[])();
+extern void (*vesa_device_table[])();
 
 #ifdef __cplusplus
 };

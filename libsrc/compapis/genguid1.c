@@ -89,3 +89,21 @@ DEFINE_OLEGUID(IID_IExternalConnection, 0x00000019L, 0, 0);
 // winshell:
 #include <wnshguid.h>
 #include <wdspguid.h>
+
+// sdesc:
+#include <sdesguid.h>
+
+// namedres:
+#include <resguid.h>
+
+// dark:
+#include <scriptguid.h>
+
+// actmovie:
+#include <actguid.h>
+
+// net:
+#include <netguid.h>
+
+// input:
+#include <inpguid.h>

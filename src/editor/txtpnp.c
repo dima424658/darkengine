@@ -100,16 +100,16 @@ static _PnP_GadgData txtPnP;
 extern short *_geditGetTxPtr(editBrush *br);
 
 // media data
-extern char *mediaop_names[];
+extern const char *mediaop_names[];
 extern int num_media_ops;
 
 // face data
-static char *cube_faces[] =  // for a natural cube
+static const char *cube_faces[] =  // for a natural cube
   {"default", "north", "west", "south", "east", "top", "bottom"};
-static char *side_names[] =  // for various sides of a multibrush
+static const char *side_names[] =  // for various sides of a multibrush
   {"side 1","side 2","side 3","side 4","side 5","side 6","side 7","side 8","side 9","side 10",
    "side 11","side 12","side 13","side 14","side 15","side 16","side 17","side 18","side 19", "side 20"};
-char *faces[] =       // the actual use me in the PnP thing
+const char *faces[] =       // the actual use me in the PnP thing
   {"", "", "", "", "", "", "", "", "", "", "", "", ""};
 
 int cur_max_face=0, cur_primal=-1;

@@ -1,4 +1,5 @@
 #include <tngmenu.h>
+#include <_ui.h>
 #include <string.h>
 #include <tngfont.h>
 #include <barrykey.h>

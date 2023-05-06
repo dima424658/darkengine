@@ -6,7 +6,7 @@
  */
 
 #include <dev2d.h>
-#include <buffer.h>
+#include <g2buffer.h>
 #include <rastel.h>
 
 bool gd_secret_hack_nest_rings;

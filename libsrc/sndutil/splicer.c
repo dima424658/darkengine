@@ -96,7 +96,7 @@ static void
 
 
 //TBD
-#define EXPLODE LOG0
+#define EXPLODE TLOG0
 
 //
 // refillSplicedStream - refill stream with spliced data
@@ -124,7 +124,7 @@ refillSplicedStream( ISndSample  *pSample,
    bytesPerSample = pInfo->bitsPerSample >> 3;
 
 
-   LOG3( "refillSplicer start %ld end %ld offset %ld", pSeg->startSample,
+   TLOG3( "refillSplicer start %ld end %ld offset %ld", pSeg->startSample,
          pSeg->endSample, pInfo->seg1Offset );
 
    if ( ISndSample_ResyncNeeded( pSample, &resyncSample ) ) {
@@ -133,11 +133,11 @@ refillSplicedStream( ISndSample  *pSample,
       // source stream to resyncSample
       // 1. Find correct segment (handle past end of data case)
       // 2. Seek within that segment, & reinit for splice case
-      LOG1("\nsplicer - resyncing to position %d", resyncSample );
+      TLOG1("\nsplicer - resyncing to position %d", resyncSample );
       seekPastEnd = FALSE;
       while ( resyncSample > pSeg->endSample ) {
          if ( pSeg < pInfo->pSegN ) {
-            LOG2( "skipping segment from %ld to %ld", pSeg->startSample, pSeg->endSample );
+            TLOG2( "skipping segment from %ld to %ld", pSeg->startSample, pSeg->endSample );
             pSeg++;
          } else {
             // seek past end of splice data - sample is done playing
@@ -146,7 +146,7 @@ refillSplicedStream( ISndSample  *pSample,
          }
       }
       if ( seekPastEnd || (pSeg >= pInfo->pSegN) ) {
-         LOG0("splice empty - no segments left");
+         TLOG0("splice empty - no segments left");
          // feed no-data to stream to start stream close-down process
          ISndSample_LoadBufferIndirect( pSample, getSpliceSingleData, pInfo, 0 );
          return;
@@ -198,7 +198,7 @@ refillSplicedStream( ISndSample  *pSample,
       
    //mprintf( "refillSplicer %d needed, %d available, %d offset\n", bytesNeeded,
    //   bytesAvail, pInfo->seg1Offset);
-   LOG3( "refillSplicer %d needed, %d available, %d offset", bytesNeeded,
+   TLOG3( "refillSplicer %d needed, %d available, %d offset", bytesNeeded,
          bytesAvail, pInfo->seg1Offset);
 
    notDone = TRUE;
@@ -223,7 +223,7 @@ refillSplicedStream( ISndSample  *pSample,
                }
                if ( (endGap > 0) && (bytesAvail == 0) ) {
                   state = kSpliceSilence;
-                  LOG3( "splice empty->silence seg[%d], %d bytesAvail, %d endGap",
+                  TLOG3( "splice empty->silence seg[%d], %d bytesAvail, %d endGap",
                         pSeg - pInfo->pSeg0, bytesAvail, endGap );
                } else {
                   //if ( pSeg->loopMe ) {
@@ -231,7 +231,7 @@ refillSplicedStream( ISndSample  *pSample,
                   //           pSeg->numBytes, pSeg->offset, pSeg->endGap );
                   //}
 
-                  LOG3( "splice empty->single seg[%d], %d bytesAvail, %d endGap",
+                  TLOG3( "splice empty->single seg[%d], %d bytesAvail, %d endGap",
                         pSeg - pInfo->pSeg0, bytesAvail, endGap );
                   state = kSpliceSingle;
                   pInfo->seg1Offset = pSeg->offset;
@@ -239,7 +239,7 @@ refillSplicedStream( ISndSample  *pSample,
 
             } else {
                notDone = FALSE;
-               LOG0("splice empty - no segments left");
+               TLOG0("splice empty - no segments left");
                // feed no-data to stream to start stream close-down process
                ISndSample_LoadBufferIndirect( pSample, getSpliceSingleData, pInfo, 0 );
             }
@@ -377,7 +377,7 @@ endSplicedStream( ISndSample  *pSample,
    sndSplicerStuff *pInfo;
 
    //mprintf( "endStream\n" );
-   LOG0( "endStream" );
+   TLOG0( "endStream" );
    pInfo = (sndSplicerStuff *) pCBData;
 
    // first tell the app about samples demise
@@ -441,7 +441,7 @@ CreateSoundSplicer( ISndMixer          *pMixer,
    uint32            segStartSample;
    int               bytesPerSample;
 
-   LOG2("CreateSoundSplicer %ld numRez, %ld buffLen",
+   TLOG2("CreateSoundSplicer %ld numRez, %ld buffLen",
         numSegs, bufferLen );
 
    if ( numSegs < 1 ) {

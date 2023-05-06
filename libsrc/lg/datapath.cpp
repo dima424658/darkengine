@@ -81,7 +81,9 @@
 #include <datapath.h>
 #include <memall.h>
 
+#ifndef min
 #define min(a, b) ((a < b) ? a : b)
+#endif // min
 
 // Use this for watcom
 #if defined(__WATCOMC__) || defined(__SC__)

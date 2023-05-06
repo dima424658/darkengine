@@ -13,7 +13,7 @@
 #include <tmapd.h>
 #include <tmapfcn.h>
 #include <raster.h>
-#include <buffer.h>
+#include <g2buffer.h>
 #include <mprintf.h>
 
 void lmap_shell(grs_vertex **vpl)

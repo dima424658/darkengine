@@ -3,6 +3,7 @@
 #define __HOTKEY_SRC
 #include <hotkey.h> 
 #include <hash.h>
+#include <_ui.h>
 
 #ifdef HOTKEY_HELP
 #include <string.h>

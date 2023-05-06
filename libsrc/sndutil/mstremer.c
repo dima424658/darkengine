@@ -65,7 +65,7 @@ CreateSoundMemoryStreamer( ISndMixer        *pMixer,
    pInfo = (sndStreamStuff *) Malloc( sizeof( sndStreamStuff ) );
    pInfo->extras[0] = (uint32) pAudioData;
 
-   LOG2("CreateSoundMemoryStreamer %ld audioLen, %ld buffLen",
+   TLOG2("CreateSoundMemoryStreamer %ld audioLen, %ld buffLen",
         audioDataLen, bufferLen );
    pSample = CreateSoundStreamer( pMixer, getMemData, pInfo, audioDataLen,
                                   pBuffer, bufferLen, endCB, pEndCBData );

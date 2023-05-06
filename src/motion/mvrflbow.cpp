@@ -104,7 +104,9 @@ EXTERN quat g_FlexBotEndRot;
 
 #define MAX_INTERESTED_MOTIONS 10
 
+#ifndef min
 #define min(x,y) ((x)<(y)?(x):(y))
+#endif // !min
 
 cFlexBowManeuver::cFlexBowManeuver(IMotor *pMotor, cMotionCoordinator *pCoord, const cMotionSchema *pSchema, const sMcMoveParams& params)
 {

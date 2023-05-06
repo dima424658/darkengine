@@ -88,7 +88,7 @@ CreateSoundFileSplicer( ISndMixer       *pMixer,
    char                 fname[256];
    FILE                 *inFile;
 
-   LOG2("CreateSoundFileSplicer %ld numRez, %ld buffLen",
+   TLOG2("CreateSoundFileSplicer %ld numRez, %ld buffLen",
         numSegs, bufferLen );
 
    if ( numSegs < 1 ) {

@@ -15,68 +15,29 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="n88il.asm">
-      <Filter>Source Files</Filter>
+    <None Include="plyrast.inc">
+      <Filter>Header Files</Filter>
     </None>
-    <None Include="o2w88i.asm">
-      <Filter>Source Files</Filter>
+    <None Include="plytyp.inc">
+      <Filter>Header Files</Filter>
     </None>
-    <None Include="o88bil.asm">
-      <Filter>Source Files</Filter>
+    <None Include="tmapd.inc">
+      <Filter>Header Files</Filter>
     </None>
-    <None Include="o88il.asm">
-      <Filter>Source Files</Filter>
+    <None Include="tmaps.inc">
+      <Filter>Header Files</Filter>
     </None>
-    <None Include="ptfloat.asm">
-      <Filter>Source Files</Filter>
+    <None Include="g2spoint.inc">
+      <Filter>Header Files</Filter>
     </None>
-    <None Include="ptlinear.asm">
-      <Filter>Source Files</Filter>
+    <None Include="icanvas.inc">
+      <Filter>Header Files</Filter>
     </None>
-    <None Include="ptmap.asm">
-      <Filter>Source Files</Filter>
+    <None Include="plyparam.inc">
+      <Filter>Header Files</Filter>
     </None>
-    <None Include="ptmap_8.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="ptmap_n.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="ptmapper.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="ptpersp.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="uvgrad.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="chkedgeb.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="chkedges.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="co88il.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="fl8lo2wi.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="fl8nni.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="fl8o2ni.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="fl8o2wi.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="lo88il.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="lo816il.asm">
-      <Filter>Source Files</Filter>
+    <None Include="..\lg\dbgmacro.inc">
+      <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -433,9 +394,6 @@
     <ClInclude Include="ilfunc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="init.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lftype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -532,5 +490,73 @@
     <ClInclude Include="water.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="g2init.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="chkedgeb.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="chkedges.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="co88il.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="fl8lo2wi.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="fl8nni.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="fl8o2ni.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="fl8o2wi.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="lo88il.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="lo816il.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="n88il.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="o2w88i.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="o88bil.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="o88il.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="ptfloat.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="ptlinear.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="ptmap.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="ptmap_8.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="ptmap_n.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="ptmapper.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="ptpersp.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="uvgrad.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
   </ItemGroup>
 </Project>

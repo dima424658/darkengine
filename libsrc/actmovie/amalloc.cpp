@@ -62,7 +62,7 @@ IMPLEMENT_UNAGGREGATABLE(cMediaSample, IMediaSample);
 ///////////////////////////////////////
 
 #pragma off(unreferenced)
-cMediaSample::cMediaSample(char *pName,
+cMediaSample::cMediaSample(const char *pName,
                            cBaseAllocator * pAllocator,
                            HRESULT * phr,
                            BYTE * pBuffer,
@@ -489,7 +489,7 @@ IMPLEMENT_UNAGGREGATABLE_SELF_DELETE(cBaseAllocator, IMemAllocator);
 ///////////////////////////////////////
 
 #pragma off(unreferenced)
-cBaseAllocator::cBaseAllocator(char *pName, LPUNKNOWN pUnk, HRESULT * phr, BOOL bEvent)
+cBaseAllocator::cBaseAllocator(const char *pName, LPUNKNOWN pUnk, HRESULT * phr, BOOL bEvent)
   : m_lAllocated(0),
     m_bChanged(FALSE),
     m_bCommitted(FALSE),
@@ -1097,7 +1097,7 @@ LPDDSURFACEDESC cDDSample::GetDDSurfaceDesc()
 
 #pragma off(unreferenced)
 cBitmapSample::cBitmapSample(
-                             TCHAR *pName,
+                             const TCHAR *pName,
                              cBaseAllocator *pAllocator,   
                              HRESULT *phr,
                              grs_bitmap *pBitmap,

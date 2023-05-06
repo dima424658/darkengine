@@ -95,6 +95,11 @@ fix fix_safe_pyth_dist_info (fix a, fix b, char *file, int line)
 #pragma on(unreferenced)
 #endif
 
+fix fix_sqrt(fix x)
+{
+    return 0; // TODO
+}
+
 //////////////////////////////
 //
 // We can use the fix function because the difference in scale doesn't matter.
@@ -320,4 +325,12 @@ fixang fix_atan2 (fix y, fix x)
    return th;
 }
 
+fix fix_div_safe(fix a, fix b)
+{
+    return 0; // TODO
+}
 
+fix fix_mul_div_safe(fix m0, fix m1, fix d)
+{
+    return 0; // TODO
+}

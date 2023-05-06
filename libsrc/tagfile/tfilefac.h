@@ -7,6 +7,9 @@
 #pragma once  
 #ifndef __TFILEFAC_H
 #define __TFILEFAC_H
+
+#include <tagfile.h>
+
 //
 // This is the API for specifying an alternate source of tag files to be used
 // and dbLoad

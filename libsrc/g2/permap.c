@@ -2,7 +2,7 @@
 // subdividing perspective mapper.
 
 #include <dev2d.h>
-#include <buffer.h>
+#include <g2buffer.h>
 #include <g2clip.h>
 #include <g2tm.h>
 #include <tmapd.h>

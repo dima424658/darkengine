@@ -297,16 +297,15 @@ DecompressIMABlock(
                    )
 {
    IMAADPCM       leftDecomp, rightDecomp;
-   IMAHeaderWord  *pIMAHdr;
+   IMAHeaderWord  *pIMAHdr = (IMAHeaderWord*)pInBuff;
 
    // Each block starts with a IMAHeaderWord, which contains
    // the predicted first sample of the block and the stepsize
    // index.  Note that 
    if ( nSamples > 1 ) {
+       // decompress a block
       switch( nChannels ) {
          case 1:
-            // decompress a block
-            pIMAHdr = (IMAHeaderWord *) pInBuff;
             pOutBuff[0] = pIMAHdr->curValue;
             leftDecomp.Init( pIMAHdr->curValue, pIMAHdr->stepIndex );
             leftDecomp.Decompress( pInBuff + sizeof(IMAHeaderWord),

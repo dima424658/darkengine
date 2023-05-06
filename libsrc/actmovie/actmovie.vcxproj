@@ -17,7 +17,6 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -53,37 +52,48 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
-
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="Shared" >
+  <ImportGroup Label="Shared">
   </ImportGroup>
-    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    </ImportGroup>
-    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    </ImportGroup>
-    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    </ImportGroup>
-    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    </ImportGroup>
-
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\res;$(SolutionDir)winsrc\input;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\res;$(SolutionDir)winsrc\input;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\res;$(SolutionDir)winsrc\input;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\res;$(SolutionDir)winsrc\input;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -93,12 +103,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -108,12 +120,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -123,19 +137,42 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-
-  <ItemGroup></ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="actmovie.h" />
+    <ClInclude Include="amalloc.h" />
+    <ClInclude Include="amvideo.h" />
+    <ClInclude Include="control.h" />
+    <ClInclude Include="evcode.h" />
+    <ClInclude Include="getlgvid.h" />
+    <ClInclude Include="imutil.h" />
+    <ClInclude Include="lgvdguid.h" />
+    <ClInclude Include="lgvidapi.h" />
+    <ClInclude Include="mtype.h" />
+    <ClInclude Include="strmif.h" />
+    <ClInclude Include="uuids.h" />
+    <ClInclude Include="vfwmsgs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="actmovie.cpp" />
+    <ClCompile Include="amalloc.cpp" />
+    <ClCompile Include="amguids.cpp" />
+    <ClCompile Include="getlgvid.cpp" />
+    <ClCompile Include="imutil.cpp" />
+    <ClCompile Include="mtype.cpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

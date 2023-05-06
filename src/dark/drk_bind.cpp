@@ -111,7 +111,7 @@ static char *UseWeaponOrItemProc (const char *cmd, const char *val, BOOL)
 }             
 
 
-static char *InvSelectProc (char *cmd, char *val, BOOL)
+static char *InvSelectProc (const char *cmd, const char *val, BOOL)
 {
    if (disallow_action_and_unwind())
       return NULL;
@@ -120,7 +120,7 @@ static char *InvSelectProc (char *cmd, char *val, BOOL)
    strcpy (str, cmd);
    strcat (str, " ");
    strcat (str, val);
-   *val = '\0'; 
+   // *val = '\0';  // TODO
 
    CommandExecute (str);
    return NULL;

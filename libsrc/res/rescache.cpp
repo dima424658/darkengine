@@ -17,6 +17,8 @@
 
 #include <mprintf.h>
 
+#include <allocapi.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static cResSharedCache g_ResSharedCache;
@@ -655,6 +657,26 @@ STDMETHODIMP_(ulong) cResSharedCache::Purge(ulong nBytesToPurge)
 {
     cAutoResThreadLock lock;
     return cResCache::SharedPurge(nBytesToPurge);
+}
+
+STDMETHODIMP_(void) cResSharedCache::GetStats(sCacheStats* pStats)
+{
+    // TODO
+    MEMORYSTATUS Buffer;
+    Buffer.dwLength = 32;
+    GlobalMemoryStatus(&Buffer);
+    memcpy(pStats, &Buffer, sizeof(Buffer));
+
+    sAllocLimits limits;
+    AllocGetLimits(&limits);
+
+    sCacheState state;
+    g_pResSharedCache->GetState(&state);
+
+    pStats->allocCap = limits.allocCap;
+    pStats->totalMalloc = limits.totalAlloc;
+    pStats->lockedMalloc = limits.totalAlloc - state.nBytes;
+    pStats->cachedMalloc = state.nBytes;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

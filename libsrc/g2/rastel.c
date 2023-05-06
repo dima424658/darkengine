@@ -7,7 +7,7 @@
 
 #include <dev2d.h>
 #include <fixreal.h>
-#include <buffer.h>
+#include <g2buffer.h>
 #include <raster.h>
 
 grs_raster *gr_rasterize_fix_elipse (fix _x0, fix _y0, fix _a, fix _b)

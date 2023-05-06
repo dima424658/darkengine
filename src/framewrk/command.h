@@ -77,7 +77,7 @@ EXTERN Command *CommandFindString(char *s);
 EXTERN void CommandRunScript(char* filename);
 
 // for command completion/tab in cmdterm
-EXTERN char *command_find(char *prefix, BOOL restart);
+EXTERN const char *command_find(const char *prefix, BOOL restart);
 EXTERN char *cur_command_help_str(char *buf);
 
 // for commands with two string args, here's a function to parse

@@ -401,6 +401,11 @@ int LGadDestroyRoot(LGadRoot *deadroot)
    return(0);
 }
 
+EXTERN void LGadSetRootCursor(LGadRoot* root, IDataSource* bm, Point hotspot)
+{
+    // TODO
+}
+
 LGadRoot* LGadSetupSubRoot(LGadRoot* subroot, LGadRoot* parent, short x, short y, short w, short h)
 {
    if (subroot == NULL)
@@ -3054,6 +3059,12 @@ extern void DrawElementInit(void);
 
 
 #pragma off(unreferenced)
+
+EXTERN void LGadSetDefaultFont(IDataSource* pFont)
+{
+    // TODO
+}
+
 int LGadInit(void)
 {
    hotkey_init(NUM_HOTKEYS);

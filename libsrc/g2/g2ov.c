@@ -6,7 +6,7 @@
  */
 
 #include <dev2d.h>
-#include <buffer.h>
+#include <g2buffer.h>
 #include <rastel.h>
 
 int g2_oval (fix x0, fix y0, fix a, fix b)

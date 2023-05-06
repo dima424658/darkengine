@@ -5,8 +5,6 @@
 
 // $Header: r:/t2repos/thief2/src/object/listset.h,v 1.1 1997/10/06 19:05:16 mahk Exp $
 #pragma once  
-#ifndef __LISTSET_H
-#define __LISTSET_H
 
 #include <dlistsim.h>
 
@@ -18,6 +16,8 @@
 template <class ELEM>
 class cSimpleListSet : public cSimpleDList<ELEM>
 {
+protected:
+   typedef cSimpleDList<ELEM> cParent;
    ulong nElems;
 
 public:
@@ -29,8 +29,3 @@ public:
    void RemoveAll();
    ulong Size() { return nElems; }; 
 };
-
-#endif // __LISTSET_H
-
-
-

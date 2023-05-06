@@ -84,6 +84,9 @@
     <ClInclude Include="codewrit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_lg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="crc32.cpp">
@@ -168,6 +171,18 @@
   <ItemGroup>
     <None Include="oheapwal.asm">
       <Filter>Source Files</Filter>
+    </None>
+    <None Include="_lg.inc">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="lg.inc">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="memmacro.inc">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="dbg.inc">
+      <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
 </Project>

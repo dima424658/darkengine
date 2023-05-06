@@ -202,6 +202,8 @@ static struct _init_object
 } InitObject; 
 
 
+extern const GUID UUID_Res;
+
 static sRelativeConstraint ResSysConstraints[] = 
 {
    { kConstrainAfter, &UUID_Res},

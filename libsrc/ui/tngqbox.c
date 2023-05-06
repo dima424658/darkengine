@@ -6,6 +6,7 @@
 #include <tngapp.h>
 #include <string.h>
 #include <tngqbox.h>
+#include <_ui.h>
 #include <tngslidr.h>
 #include <tngtextg.h>
 

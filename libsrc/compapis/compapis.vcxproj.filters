@@ -99,6 +99,21 @@
     <ClInclude Include="appapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sdesguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scriptguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="actguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="compapis.txt" />

@@ -514,8 +514,13 @@ void cGroundLocoManeuver::GetExpectedEndMoveState(sMcMoveState &moveState)
 #define kVerticalTolerance 0.2 // feet
 #define kGroundRaycastOffset 1.5 // feet
 
+#ifndef min
 #define min(x,y) ((x)<(y)?(x):(y))
+#endif // !min
+
+#ifndef max
 #define max(x,y) ((x)>(y)?(x):(y))
+#endif // !max
 
 void cGroundLocoManeuver::Execute()
 {

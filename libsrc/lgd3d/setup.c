@@ -442,3 +442,8 @@ void lgd3d_end_frame(void)
    if (g_tmgr!=NULL)
       g_tmgr->end_frame();
 }
+
+BOOL lgd3d_overlays_master_switch(BOOL bOverlaysOn)
+{
+    return FALSE; // TODO
+}

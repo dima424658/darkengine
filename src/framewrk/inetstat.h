@@ -26,13 +26,13 @@ DECLARE_INTERFACE_( INetStats, IUnknown )
                                     float *timeSpan, 
                                     ulong *sendBW, 
                                     ulong *receiveBW,
-                                    char **culprit) PURE;
+                                    const char **culprit) PURE;
 
    // Bytes sent and received in the previous frame.
    STDMETHOD_(void, FrameStats)(THIS_ 
                                 ulong *bytesSent, 
                                 ulong *bytesReceived,
-                                char **culprit) PURE;
+                                const char **culprit) PURE;
 
    // max bytes sent/recv in the last 5 seconds
    STDMETHOD_(void, MaxStats)(THIS_

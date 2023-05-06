@@ -1029,6 +1029,24 @@ cDSndSample::Set3DMethod( eSnd3DMethod method )
    }
 }
 
+STDMETHODIMP_(eSnd3DMethod) cDSndSample::Get3DMethod(void)
+{
+    return cSndSample::Get3DMethod(); // TODO
+}
+
+STDMETHODIMP_(void) cDSndSample::Set3DReverbMix(float mix)
+{ // TODO
+}
+
+STDMETHODIMP_(void) cDSndSample::Set3DOcclusion(int32 occlusionMillibels)
+{ // TODO
+}
+
+STDMETHODIMP_(int32) cDSndSample::Kludge(int kludgeSelector, void* pKludgeStruct, int32 sizeKludgeStruct)
+{ // TODO
+    return 0;
+}
+
 
 //
 // redo pan/volume for audible samples

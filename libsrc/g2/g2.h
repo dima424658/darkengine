@@ -20,8 +20,8 @@
 #include <grply.h>
 #include <grscale.h>
 #include <g2tm.h>
-#include <init.h>
-#include <buffer.h>
+#include <g2init.h>
+#include <g2buffer.h>
 #include <blnfcn.h>
 #include <water.h>
 #include <grchkply.h>

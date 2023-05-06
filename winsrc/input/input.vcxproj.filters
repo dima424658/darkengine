@@ -108,6 +108,9 @@
     <ClInclude Include="mouse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_mouse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mousesys.cpp">

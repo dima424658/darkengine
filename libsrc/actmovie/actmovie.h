@@ -11,6 +11,7 @@
 #ifndef __ACTMOVIE_H
 #define __ACTMOVIE_H
 
+#include <aggmemb.h>
 #include <movieapi.h>
 #include <lgvidapi.h>
 #include <amalloc.h>
@@ -111,7 +112,7 @@ class cActiveMovieAlloc: public cBaseAllocator
 {
 public:
    cActiveMovieAlloc(cActiveMovieDraw *pActiveMovieDraw,
-                     char *pName, LPUNKNOWN pUnk, HRESULT *phr);
+                     const char *pName, LPUNKNOWN pUnk, HRESULT *phr);
    ~cActiveMovieAlloc();
    STDMETHOD(SetProperties)(THIS_ ALLOCATOR_PROPERTIES *pRequest, ALLOCATOR_PROPERTIES *pActual);
    BOOL UsingCanvas();
@@ -122,9 +123,9 @@ protected:
    HRESULT Alloc(void);
    // utility functions
    DWORD CanvasSize() {return (DWORD)(grd_canvas->bm.h*grd_canvas->bm.row);};
-   HRESULT cActiveMovieAlloc::AllocBitmapSample(grs_bitmap *pBitmap, LONG size);
+   HRESULT AllocBitmapSample(grs_bitmap *pBitmap, LONG size);
 #ifdef AM_DDRAW
-   HRESULT cActiveMovieAlloc::AllocDDSample(LPDIRECTDRAWSURFACE pDDSurface, LONG size);
+   HRESULT AllocDDSample(LPDIRECTDRAWSURFACE pDDSurface, LONG size);
 #endif
    // data
    cActiveMovieDraw *m_pActiveMovieDraw; // containing object
@@ -182,8 +183,15 @@ private:
     // Stop the currently playing movie
     STDMETHOD_(BOOL, Stop)();
 
+    // Get/Set the sound volume (-10000..0).
+    STDMETHOD_(BOOL, GetVolume)(int* pOutVol);
+    STDMETHOD_(BOOL, SetVolume)(int inVol);
+
     // Query the state of the player
     STDMETHOD_(eMP1State, GetState)();
+
+    // Specify the list of keys that terminate movie playing
+    STDMETHOD_(void, SetTermKeys)(char* keylist);
 
     // Asynchronously play the currently opened movie
     BOOL PlayAsynchronous();

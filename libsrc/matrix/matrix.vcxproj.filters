@@ -104,6 +104,9 @@
     <ClCompile Include="matvecd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="matrix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="transasm.asm">

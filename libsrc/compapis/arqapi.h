@@ -177,7 +177,7 @@ struct sARQResult
 
 enum eARQResultFlags
 {
-    // The buffer was malloc’ed by read queue system
+    // The buffer was malloc'ed by read queue system
     kARQMalloc    = 0x01,
 
     // The request is associated with streaming data

@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 #include <sndrezst.h>
 #include <timelog.h>
+#include <mprintf.h>
 
 //
 // internal struct created by CreateSoundRezStreamer,
@@ -79,7 +80,7 @@ endStream( ISndSample   *pSample,
 {
    sndStreamStuff *pInfo;
 
-mprintf("end stream\n");
+   mprintf("end stream\n");
    TLOG0( "endStream" );
    pInfo = (sndStreamStuff *) pCBData;
 
@@ -128,7 +129,7 @@ CreateSoundRezStreamer( ISndMixer        *pMixer,
    }
    pBuffer = malloc( bufferLen );
    
-   LOG3("CreateSoundRezStreamer %ld bytesToRead, %ld rezLen, %ld buffLen", bytesToRead,
+   TLOG3("CreateSoundRezStreamer %ld bytesToRead, %ld rezLen, %ld buffLen", bytesToRead,
         rezLen, bufferLen );
 
    // Get the rez header, and examine it to find type of sound resource
@@ -203,7 +204,7 @@ CreateSoundRezOneShot( ISndMixer        *pMixer,
    ISndSample *pSample;
    void *pBuffer;
    sndStreamStuff *pInfo;
-   uint32 bytesToRead, bytesToWrite;
+   //uint32 bytesToRead, bytesToWrite;
 
    rezLen = ResSize( rezId );
    pBuffer = malloc( rezLen );   // actually, the buffer could be shorter
@@ -360,7 +361,7 @@ getSpliceDualData( void     *pCBData,
 
 
 //TBD
-#define EXPLODE LOG0
+#define EXPLODE TLOG0
 
 //
 // refillSplicedStream - refill stream with spliced data
@@ -385,7 +386,7 @@ refillSplicedStream( ISndSample  *pSample,
    endGap = pSeg->endGap;
    state = pInfo->state;
       
-   LOG3( "refillSplicer %d needed, %d available, %d offset", bytesNeeded,
+   TLOG3( "refillSplicer %d needed, %d available, %d offset", bytesNeeded,
          bytesAvail, pInfo->seg1Offset);
 
    notDone = TRUE;
@@ -410,17 +411,17 @@ refillSplicedStream( ISndSample  *pSample,
                }
                if ( (endGap > 0) && (bytesAvail == 0) ) {
                   state = kSpliceSilence;
-                  LOG3( "splice empty->silence %d segsLeft, %d bytesAvail, %d endGap",
+                  TLOG3( "splice empty->silence %d segsLeft, %d bytesAvail, %d endGap",
                         pInfo->segsLeft, bytesAvail, endGap );
                } else {
                   state = kSpliceSingle;
                   pInfo->seg1Offset = pSeg->offset;
-                  LOG3( "splice empty->single: %d segsLeft, %d bytesAvail, %d endGap",
+                  TLOG3( "splice empty->single: %d segsLeft, %d bytesAvail, %d endGap",
                         pInfo->segsLeft, bytesAvail, endGap );
                }
             } else {
                notDone = FALSE;
-               LOG0("splice empty - no segments left");
+               TLOG0("splice empty - no segments left");
                // feed no-data to stream to start stream close-down process
                ISndSample_LoadBufferIndirect( pSample, getSpliceSingleData, pInfo, 0 );
             }
@@ -445,19 +446,19 @@ refillSplicedStream( ISndSample  *pSample,
                // need to switch state, either to dual splice or empty
                if ( endGap == 0 ) {
                   state = kSpliceEmpty;
-                  LOG3( "splice single->empty %d segsLeft, %d bytesAvail, %d endGap",
+                  TLOG3( "splice single->empty %d segsLeft, %d bytesAvail, %d endGap",
                         pInfo->segsLeft, bytesAvail, endGap );
                   pSeg++;
                } else if ( endGap < 0 ) {
                   state = kSpliceDual;
                   bytesAvail = (-endGap);
                   pInfo->seg2Offset = pSeg[1].offset;
-                  LOG3( "splice single->dual %d segsLeft, %d bytesAvail, %d endGap",
+                  TLOG3( "splice single->dual %d segsLeft, %d bytesAvail, %d endGap",
                         pInfo->segsLeft, bytesAvail, endGap );
                } else {
                   state = kSpliceSilence;
                   bytesAvail = endGap;
-                  LOG3( "splice single->silence %d segsLeft, %d bytesAvail, %d endGap",
+                  TLOG3( "splice single->silence %d segsLeft, %d bytesAvail, %d endGap",
                         pInfo->segsLeft, bytesAvail, endGap );
                }
             }
@@ -552,7 +553,7 @@ endSplicedStream( ISndSample  *pSample,
 {
    sndSplicerStuff *pInfo;
 
-   LOG0( "endStream" );
+   TLOG0( "endStream" );
    pInfo = (sndSplicerStuff *) pCBData;
 
    // first tell the app about samples demise
@@ -603,7 +604,7 @@ CreateSoundRezSplicer( ISndMixer       *pMixer,
    float             bytesPerMilliSecond;
    uint32            i;
 
-   LOG2("CreateSoundRezSplicer %ld numRez, %ld buffLen",
+   TLOG2("CreateSoundRezSplicer %ld numRez, %ld buffLen",
         numSegs, bufferLen );
 
    if ( numSegs < 1 ) {

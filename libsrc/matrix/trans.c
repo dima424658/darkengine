@@ -11,7 +11,7 @@
 
 #include <matrix.h>
 
-#define MX_VERSION
+// #define MX_VERSION
 
 // so that MXD_VERSION will use the C version, MX_VERSION the ASM
 #ifdef MX_VERSION

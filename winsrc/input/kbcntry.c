@@ -5,7 +5,7 @@
 #define ALPHA(x) (ASCII(x)|CNV_CAPS)
 #define SPECIAL(x) ((ushort)((x)|CNV_SPECIAL|CNV_CTRL|CNV_ALT|CNV_SHIFT))
 
-short *kbd_country_tab[];
+ushort *kbd_country_tab[];
 
 //global for which country installed
 uchar kbd_country = KBC_US;
@@ -274,14 +274,14 @@ ushort kbd_end_tab[][4] = {
 
 
 //Table of pointers
-ushort *kbd_country_tab[KBC_CNTRY+1] = {
+ushort *kbd_country_tab[] = {
    NULL,
-   kbd_fr_tab,
-   kbd_gr_tab,
-   kbd_uk_tab,
-   kbd_cf_tab,
-   kbd_it_tab,
-   kbd_sp_tab,
-   kbd_end_tab
+   kbd_fr_tab[0],
+   kbd_gr_tab[0],
+   kbd_uk_tab[0],
+   kbd_cf_tab[0],
+   kbd_it_tab[0],
+   kbd_sp_tab[0],
+   kbd_end_tab[0]
 };
 

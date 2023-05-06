@@ -54,7 +54,7 @@ static void init_game_cfg_vars(const char* name)
 
    if (name == NULL) return;
    prefix = prefixbuf;
-   sprintf(prefix,"%s_",name);
+   sprintf(prefixbuf,"%s_",name);
    
    VarArray Vars;
    itervars = &Vars;

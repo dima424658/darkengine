@@ -67,7 +67,7 @@ refillPCMStream( ISndSample   *pSample,
    }
    bytesLeft = pInfo->endOffset - pInfo->playOffset;
 
-   LOG3( "refillStream %d needed, %d left, %d offset", bytesNeeded,
+   TLOG3( "refillStream %d needed, %d left, %d offset", bytesNeeded,
          bytesLeft, pInfo->playOffset);
 
    if ( bytesNeeded > bytesLeft ) {
@@ -94,7 +94,7 @@ refillADPCMStream( ISndSample    *pSample,
    uint32            newPos, blockPos, blockNum;
 
    pInfo = (sndStreamStuff *) pCBData;
-   LOG3( "refillADPCMStream %d needed, %d left, %d offset", bytesNeeded,
+   TLOG3( "refillADPCMStream %d needed, %d left, %d offset", bytesNeeded,
          pInfo->outBytesLeft, pInfo->playOffset);
 
    pAttribs = &(pInfo->attribs);
@@ -201,7 +201,7 @@ endStream( ISndSample   *pSample,
    sndStreamStuff *pInfo;
 
    //mprintf("end stream\n");
-   LOG0( "endStream" );
+   TLOG0( "endStream" );
    pInfo = (sndStreamStuff *) pCBData;
 
    // first tell the app about samples demise
@@ -262,7 +262,7 @@ CreateSoundStreamer( ISndMixer         *pMixer,
       useExternalBuffer = TRUE;
    }
 
-   LOG3("CreateSoundStreamer %ld bytesToRead, %ld dataLen, %ld buffLen", bytesToRead,
+   TLOG3("CreateSoundStreamer %ld bytesToRead, %ld dataLen, %ld buffLen", bytesToRead,
         dataLen, bufferLen );
 
    // Get the rez header, and examine it to find type of sound resource

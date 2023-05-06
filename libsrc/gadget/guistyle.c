@@ -18,6 +18,17 @@
 
 static guiStyle* curr_style = NULL;
 
+int guiScreenColor(int color)
+{
+    // TODO
+    return 0;
+}
+
+void guiCompileStyleColors(guiStyle* targ, const guiStyle* src)
+{
+    // TODO
+}
+
 void SetCurrentStyle(guiStyle* style)
 {
    curr_style = style;

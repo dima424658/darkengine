@@ -182,19 +182,32 @@ typedef struct IUnknown  IUnknown;
 #endif
 
 #ifndef __cplusplus
+
+#ifndef IUnknown_QueryInterface
 #define IUnknown_QueryInterface(This,riid,ppvObject)    \
     (This)->lpVtbl -> QueryInterface(This,riid,ppvObject)
+#endif // !IUnknown_QueryInterface
 
+#ifndef IUnknown_AddRef
 #define IUnknown_AddRef(This)   \
     (This)->lpVtbl -> AddRef(This)
+#endif // !IUnknown_AddRef
 
+#ifndef IUnknown_Release
 #define IUnknown_Release(This)  \
     (This)->lpVtbl -> Release(This)
+#endif // !IUnknown_Release
 
 #else
+#ifndef IUnknown_QueryInterface
 #define IUnknown_QueryInterface(p, a, b)   COMQueryInterface(p, a, b)
-#define IUnknown_AddRef(p)                 COMAddRef(p)
+#endif // !IUnknown_QueryInterface
+#ifndef IUnknown_AddRef
+#define IUnknown_AddRef(p)       
+#endif // !IUnknown_AddRef          COMAddRef(p)
+#ifndef IUnknown_Release
 #define IUnknown_Release(p)                COMRelease(p)
+#endif // !IUnknown_Release
 #endif
 
 

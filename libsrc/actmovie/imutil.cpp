@@ -285,7 +285,7 @@ DWORD GetBitmapSize(const BITMAPINFOHEADER *pHeader)
 const struct {
     const GUID *pSubtype;
     WORD BitCount;
-    TCHAR *pName;
+    const TCHAR *pName;
 } BitCountMap[] = { &MEDIASUBTYPE_RGB1,        1,   TEXT("RGB Monochrome"),
                     &MEDIASUBTYPE_RGB4,        4,   TEXT("RGB VGA"),
                     &MEDIASUBTYPE_RGB8,        8,   TEXT("RGB 8"),

@@ -7,6 +7,9 @@
 #include <tngmenu.h>
 #include <mouse.h>
 
+// Other usefuls
+#include <_ui.h>
+
 void gad_menu_up(TNG *ptng)
 {
    Gadget *retgad;

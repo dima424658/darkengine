@@ -73,13 +73,13 @@ DECLARE_SCRIPT_SERVICE_IMPL(cDarkUISrv,DarkUI)
 
          if (n > 0)
          {
-            cStr or = FetchUIString("misc","between_key_bindings"); 
+            cStr _or = FetchUIString("misc","between_key_bindings"); 
             cStr result = strings[0]; 
 
             // concatenate them together 
             for (int i = 1; i < n; i++)
             {
-               result += or; 
+               result += _or;
                result += (const char*)strings[i]; 
             }
             return (const char*)result; 

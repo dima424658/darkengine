@@ -55,7 +55,7 @@ uchar get_key_repeat_count(long msg_long)
 
 bool is_alt_down(long msg_long)
 {
-	return((bool)msg_long & 0x20000000);
+	return((bool)(msg_long & 0x20000000));
 }
 
 uchar get_key_scancode(long msg_long)

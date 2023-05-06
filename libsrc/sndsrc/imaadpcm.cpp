@@ -153,6 +153,10 @@ DecompressIMABlockPartial( char           *pInBuff,
                            BOOL           getHeader,
                            unsigned long  *pState )
 {
-   return nullptr;
+   return nullptr; // TODO
 }
 
+char* DecompressIMABlkPartial(IMA_ADPCM* pDecoder, BOOL isStereo, char* pIn, short* pOut, long nSamps, BOOL getHeader)
+{
+    return nullptr; // TODO
+}

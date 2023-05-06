@@ -12,7 +12,7 @@
 #ifndef VOLCONV_H
 #define VOLCONV_H
 
-float VolLinearToMillibel (float linearVol);
-float VolMillibelToLinear (float millibels);
+EXTERN float VolLinearToMillibel (float linearVol);
+EXTERN float VolMillibelToLinear (float millibels);
 
 #endif // VOLCONV_H

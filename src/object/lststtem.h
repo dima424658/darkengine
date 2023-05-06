@@ -4,41 +4,37 @@
 */
 
 // $Header: r:/t2repos/thief2/src/object/lststtem.h,v 1.1 1997/10/06 19:05:57 mahk Exp $
-#pragma once  
-#ifndef __LSTSTTEM_H
-#define __LSTSTTEM_H
+#pragma once
 
+#include <dlist.h>
 #include <listset.h>
 #include <dlisttem.h>
 
 //------------------------------------------------------------
 // TEMPLATE: cSimpleListSet
 //
-#define LIST_TEMPLATE template <class ELEM>
-#define LISTSET cSimpleListSet<ELEM>
 
-
-LIST_TEMPLATE BOOL LISTSET::AddElem(const ELEM& elem)
+template <class ELEM> BOOL cSimpleListSet<ELEM>::AddElem(const ELEM& elem)
 {
-   for (cIter iter = Iter(); !iter.Done(); iter.Next())
+   for (auto iter = cParent::Iter(); !iter.Done(); iter.Next())
    {
       if (elem == iter.Value())
          return FALSE;
    }
-   Prepend(elem);
+   cParent::Prepend(elem);
    nElems++;
    return TRUE;
 }
 
 ////////////////////////////////////////
 
-LIST_TEMPLATE BOOL LISTSET::RemoveElem(const ELEM& elem)
+template <class ELEM> BOOL cSimpleListSet<ELEM>::RemoveElem(const ELEM& elem)
 {
-   for (cIter iter = Iter(); !iter.Done(); iter.Next())
+   for (auto iter = cParent::Iter(); !iter.Done(); iter.Next())
    {
       if (elem == iter.Value())
       {
-         Delete(iter.Node());
+         cParent::Delete(iter.Node());
          nElems--;
          return TRUE;
       }
@@ -48,9 +44,9 @@ LIST_TEMPLATE BOOL LISTSET::RemoveElem(const ELEM& elem)
 
 ////////////////////////////////////////
 
-LIST_TEMPLATE BOOL LISTSET::HasElem(const ELEM& elem)
+template <class ELEM> BOOL cSimpleListSet<ELEM>::HasElem(const ELEM& elem)
 {
-   for (cIter iter = Iter(); !iter.Done(); iter.Next())
+   for (auto iter = cParent::Iter(); !iter.Done(); iter.Next())
    {
       if (elem == iter.Value())
       {
@@ -62,17 +58,11 @@ LIST_TEMPLATE BOOL LISTSET::HasElem(const ELEM& elem)
 
 ////////////////////////////////////////
 
-LIST_TEMPLATE void LISTSET::RemoveAll(void)
+template <class ELEM> void cSimpleListSet<ELEM>::RemoveAll(void)
 {
-   for (cIter iter = Iter(); !iter.Done(); iter.Next())
+   for (auto iter = cParent::Iter(); !iter.Done(); iter.Next())
    {
-      Delete(iter.Node());
+      cParent::Delete(iter.Node());
    }      
    nElems = 0;
 }
-
-#undef LIST_TEMPLATE
-#undef LISTSET
-
-
-#endif // __LSTSTTEM_H

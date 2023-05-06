@@ -122,5 +122,8 @@
     <ClInclude Include="lzw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_res.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

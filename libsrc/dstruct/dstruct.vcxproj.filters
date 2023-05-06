@@ -98,5 +98,8 @@
     <ClInclude Include="slist.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_dstruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

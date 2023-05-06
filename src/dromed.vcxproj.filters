@@ -6375,11 +6375,13 @@
     <ClCompile Include="Inc.c" />
     <ClCompile Include="Inctab.cpp" />
     <ClCompile Include="Killme.cpp" />
-    <ClCompile Include="pch.cpp" />
     <ClCompile Include="Songyacc.c" />
     <ClCompile Include="Testloop.c" />
     <ClCompile Include="Testmode.c" />
     <ClCompile Include="Version.c" />
+    <ClCompile Include="portal\Ptsurf.cpp">
+      <Filter>Portal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="portal\Ptfloat.asm">

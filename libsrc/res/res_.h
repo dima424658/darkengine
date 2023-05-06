@@ -72,6 +72,9 @@
 #ifndef __RES_H
 #include <res.h>
 #endif
+#ifndef ___RES_H
+#include <_res.h>
+#endif
 
 // ----------------------------------------------------------
 // The Watcom C++ parser is verbose in warning of possible integral

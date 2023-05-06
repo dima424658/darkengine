@@ -60,8 +60,8 @@ EXTERN long RandRangeLongQ(int n);
 #if defined(__cplusplus) && !defined(USE_RANDOM_HELPER_FUNCTIONS)
 
 #include <rng.h>
-extern RNG *gRNGCongruential;
-extern RNG *gRNGFibonacci;
+EXTERN RNG *gRNGCongruential;
+EXTERN RNG *gRNGFibonacci;
 #define RandLong() (gRNGFibonacci->GetLong())
 #define RandFloat() (gRNGFibonacci->GetFloat())
 #define RandNorm() (gRNGFibonacci->GetNorm())

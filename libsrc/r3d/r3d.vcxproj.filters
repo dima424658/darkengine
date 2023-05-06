@@ -220,8 +220,16 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="projfast.asm">
+    <MASM Include="projfast.asm">
       <Filter>Source Files</Filter>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ctxts.inc">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="r3spoint.inc">
+      <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@
 #include <tngapp.h>
 #include <rect.h>
 #include <2d.h>
+#include <_ui.h>
 
 //	TNGDrawBase() draws base graphics for a TNG gadget.  All
 //	TNG gadgets should call this function to draw their base as

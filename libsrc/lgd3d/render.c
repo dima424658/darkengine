@@ -68,14 +68,19 @@ cliprect lgd3d_clip;
 #define end()
 #endif
 
-static double z2d = 1.0;
-static double w2d = 1.0;
+double z2d = 1.0;
+double w2d = 1.0;
 static double z_near = 1.0;
 static double z_far = 200.0;
 static double inv_z_far = 1.0 / 200.0;
 static double z1 = 200.0 / 199.0; // z_far / (z_far - z_near)
 static double z2 = 200.0 / 199.0; // z_near * z_far / (z_far - z_near)
 static double zbias = 0.0;
+
+void lgd3d_clear_z_rect(int x0, int y0, int x1, int y1)
+{
+    // TODO
+}
 
 void lgd3d_set_z(float z)
 {
@@ -87,12 +92,32 @@ void lgd3d_set_z(float z)
    w2d = 1.0 / z;
 }
 
+int lgd3d_is_zwrite_on(void)
+{
+    return 0; // TODO
+}
+
+int lgd3d_is_zcompare_on(void)
+{
+    return 0; // TODO
+}
+
 double lgd3d_set_zbias(double new_bias)
 {
    double old_bias = zbias;
    z1 += old_bias - new_bias;
    zbias = new_bias;
    return old_bias;
+}
+
+void lgd3d_push_zbias_i(int nZBias)
+{
+    // TODO
+}
+
+void lgd3d_pop_zbias(void)
+{
+    // TODO
 }
 
 
@@ -543,6 +568,27 @@ void lgd3d_set_fog_density(float density)
    SetRenderState(D3DRENDERSTATE_FOGTABLEDENSITY, fog_tabledensity.dwVal);
    SetLightState(D3DLIGHTSTATE_FOGDENSITY, fog_tabledensity.dwVal);
    put_mono('.');
+}
+
+int lgd3d_is_fog_on(void)
+{
+    return 0; // TODO
+}
+
+int lgd3d_use_linear_table_fog(int bUseIt)
+{
+    // TODO
+    return 0;
+}
+
+void lgd3d_set_linear_fog_distance(float fDistance)
+{
+    // TODO
+}
+
+void lgd3d_set_texture_level(int n)
+{
+    // TODO
 }
 
 //
@@ -1225,7 +1271,7 @@ static int lgd3d_rgb_poly(int n, r3s_point **ppl)
    return CLIP_NONE;
 }
 
-static int lgd3d_lit_trifan(int n, r3s_point **ppl)
+int lgd3d_lit_trifan(int n, r3s_point **ppl)
 {
    LPD3DTLVERTEX vlist;
    int j;

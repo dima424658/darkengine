@@ -14,7 +14,9 @@
 #include <initguid.h>
 #include <datopiid.h>
 
+#ifndef min
 #define min(x,y) ((x)<(y)?(x):(y))
+#endif // !min
 
 ////////////////////////////////////////////////////////////
 // cDataOpsTagFile

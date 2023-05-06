@@ -2,6 +2,7 @@
 #include <gadgets.h>
 #include <slider.h>
 #include <event.h>
+#include <_ui.h>
 #include <dbg.h>
 #include <tngslidr.h>
 

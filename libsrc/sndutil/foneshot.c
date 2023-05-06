@@ -85,7 +85,7 @@ CreateSoundFileOneShot( ISndMixer        *pMixer,
    pInfo = (sndOneShotStuff *) Malloc( sizeof( sndOneShotStuff ) );
    pInfo->extras[0] = (uint32) inFile;
 
-   LOG1("CreateSoundFileStreamer %ld fileLen", fileLen );
+   TLOG1("CreateSoundFileStreamer %ld fileLen", fileLen );
    pSample = CreateSoundOneShot( pMixer, getFileData, pInfo, fileLen,
                                  endCB, pEndCBData );
 	return pSample;

@@ -8,7 +8,9 @@
 #include <r3ds.h>
 #include <md.h>
 
+#ifndef max
 #define max(x,y) (((x)>(y))?(x):(y))
+#endif // max
 
 // This is implemented in scale.c
 extern float radius_from_bbox(mxs_vector *bmin,mxs_vector *bmax);

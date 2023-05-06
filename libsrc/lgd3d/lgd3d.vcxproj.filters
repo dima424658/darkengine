@@ -68,5 +68,11 @@
     <ClCompile Include="setup.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lgd3d.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6sts_s.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -24,7 +24,7 @@ endOneShot( ISndSample   *pSample,
    sndOneShotStuff *pInfo;
 
    //mprintf("end one-shot\n");
-   LOG0( "endStream" );
+   TLOG0( "endStream" );
    pInfo = (sndOneShotStuff *) pCBData;
 
    // first tell the app about samples demise
@@ -91,7 +91,7 @@ CreateSoundOneShot( ISndMixer          *pMixer,
       bytesToRead = soundRezLen;
    }
 
-   LOG2("CreateSoundOneShot %ld bytesToRead, %ld dataLen", bytesToRead,
+   TLOG2("CreateSoundOneShot %ld bytesToRead, %ld dataLen", bytesToRead,
         soundRezLen );
 
    // Get the rez header, and examine it to find type of sound resource

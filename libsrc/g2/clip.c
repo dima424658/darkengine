@@ -2,7 +2,7 @@
 
 #include <dev2d.h>  // (sigh) only for clip codes...
 #include <g2clip.h>
-#include <buffer.h>
+#include <g2buffer.h>
 #include <lgassert.h>
 
 #define CLIP_MASK 0xfffffff0

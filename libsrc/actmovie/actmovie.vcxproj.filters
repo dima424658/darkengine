@@ -14,4 +14,65 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="evcode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="getlgvid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="imutil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgvdguid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgvidapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mtype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="strmif.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="uuids.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vfwmsgs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="actmovie.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="amalloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="amvideo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="control.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="getlgvid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imutil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mtype.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="actmovie.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="amalloc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="amguids.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
 </Project>

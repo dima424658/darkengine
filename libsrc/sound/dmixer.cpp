@@ -34,7 +34,7 @@
 // short-term workaround: the A3D libs/headers don't work for Watcom, so disable
 //  A3D acceleration in Watcom builds  - patmc 3-27-98
 
-#define USE_A3D
+// #define USE_A3D
 #endif
 
 #ifdef USE_A3D
@@ -647,6 +647,67 @@ cDSndMixer::Set3DDeferMode( BOOL  deferOn )
       res = mpListener->CommitDeferredSettings();
       DSOUND_ERROR_CHECK( res, "Mix:Set3DDeferMode" );
    }
+}
+
+STDMETHODIMP_(void)
+cDSndMixer::FreeHWChannelCount(int32* pHWChans, int32* p3DHWChans)
+{
+    // TODO
+}
+
+STDMETHODIMP_(int32)
+cDSndMixer::Init3DReverb(void)
+{
+    // TODO
+    return 0;
+}
+
+STDMETHODIMP_(void)
+cDSndMixer::Shutdown3DReverb(void)
+{
+    // TODO
+}
+
+STDMETHODIMP_(BOOL)
+cDSndMixer::Have3DReverb(void)
+{
+    // TODO
+    return 0;
+}
+
+STDMETHODIMP_(BOOL)
+cDSndMixer::CanDo3DReverb(void)
+{
+    // TODO
+    return 0;
+}
+
+STDMETHODIMP_(BOOL)
+cDSndMixer::Set3DReverbSettings(ReverbSettings* pReverbSettings)
+{
+    // TODO
+    return 0;
+}
+
+STDMETHODIMP_(BOOL)
+cDSndMixer::Get3DReverbSettings(ReverbSettings* pReverbSettings)
+{
+    // TODO
+    return 0;
+}
+
+STDMETHODIMP_(BOOL)
+cDSndMixer::Have3DOcclusion(void)
+{
+    // TODO
+    return 0;
+}
+
+STDMETHODIMP_(int32)
+cDSndMixer::Kludge(int kludgeSelector, void* pKludgeStruct, int32 sizeKludgeStruct)
+{
+    // TODO
+    return 0;
 }
 
 

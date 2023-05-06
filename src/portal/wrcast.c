@@ -234,6 +234,8 @@
 #endif
 
 
+#define DSRC_PORTAL_Raycast 0xf8000001
+
 #define DBG_Raycast(x)   DBG(DSRC_PORTAL_Raycast, x)
 #define SpewRaycast(x)   Spew(DSRC_PORTAL_Raycast, x)
 

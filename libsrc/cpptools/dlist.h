@@ -105,8 +105,6 @@
 // }
 //
 
-#define __CPPTOOLSAPI
-
 #define kDListInvalidPtr ((cDListNodeBase *)0xffffffff)
 #ifndef SHIP
 extern const char * g_pszDlistInsertError;
@@ -135,7 +133,7 @@ extern const char * g_pszDlistInsertError;
 // List node base class
 //
 
-class __CPPTOOLSAPI cDListNodeBase
+class cDListNodeBase
 {
 friend class cDListBase;
 
@@ -159,22 +157,12 @@ private:
 // List template base class
 //
 
-class __CPPTOOLSAPI cDListBase
+class cDListBase
 {
 public:
     void Clear();
     void SetEmpty();
 
-#ifndef __WATCOMC__
-    // @Note (toml 05-18-96): The Watcom 10.5 parser has a bug handling
-    // declarations of instances of cDListNodeBase derivations,
-    // but only when optimizing is enabled (!). It claims a client of
-    // a class derived from cDListBase cannot create an instance of
-    // that derivation because this constructor is protected.  This
-    // is incorrect behavior and should be tested against future versions
-    // of Watcom.  Microsoft and Symantec handle it ok.
-protected:
-#endif
     cDListBase();
 
 protected:
@@ -592,21 +580,21 @@ class cSimpleDList : public cDList<cSimpleDListNode<ELEM>,1>
 
 public:
    // for convenience
-   typedef cDList<cSimpleDListNode<ELEM>,1> cParent;
-   typedef cSimpleDListNode<ELEM> cNode;
+   using cNode = cSimpleDListNode<ELEM>;
+   typedef cDList<cNode,1> cParent;
    typedef cSimpleDListIter<ELEM> cIter;
 
-   void Append(const ELEM& e) { cParent::Append(new cNode(e));};
-   void Prepend(const ELEM& e) { cParent::Prepend(new cNode(e));};
-   void AppendNode(cNode* node) { cParent::Append(node); }; 
-   void PrependNode(cNode* node) { cParent::Prepend(node); }; 
+   void Append(const ELEM& e) { cParent::Append(new cNode(e)); };
+   void Prepend(const ELEM& e) { cParent::Prepend(new cNode(e)); };
+   void AppendNode(cNode* node) { cParent::Append(node); };
+   void PrependNode(cNode* node) { cParent::Prepend(node); };
 
-   void InsertBefore(cNode& before, const ELEM& e) { cParent::InsertBefore(&before,new cNode(e));};
-   void InsertAfter(cNode& before, const ELEM& e) { cParent::InsertAfter(&before,new cNode(e));};
-   void Delete(cNode& n) { if (&n != NULL) delete Remove(&n);};
-   cIter Iter() const { return cIter(cDList::GetFirst()); };
+   void InsertBefore(cNode& before, const ELEM& e) { cParent::InsertBefore(&before, new cNode(e)); };
+   void InsertAfter(cNode& before, const ELEM& e) { cParent::InsertAfter(&before, new cNode(e));};
+   void Delete(cNode& n) { if (&n != NULL) delete cParent::Remove(&n);};
+   cIter Iter() const { return cIter(cParent::GetFirst()); };
 
-   ~cSimpleDList() { cDList::DestroyAll();};
+   ~cSimpleDList() { cParent::DestroyAll();};
 };
 
 ///////////////////////////////////////////////////////////////////////////////

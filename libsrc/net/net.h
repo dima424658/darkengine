@@ -11,7 +11,7 @@
 
 #include <dplay.h>
 #include <comtools.h>
-#include <netiid.h>
+#include <netguid.h>
 
 #ifndef SHIP
 #define NET_ALLOW_SIMULATION

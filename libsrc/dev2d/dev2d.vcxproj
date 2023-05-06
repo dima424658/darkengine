@@ -86,9 +86,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -102,9 +103,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -118,9 +120,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -137,6 +140,7 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -147,12 +151,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="cseg.inc" />
     <None Include="cstring.asm" />
+    <None Include="dseg.inc" />
     <None Include="f16f16c.asm" />
     <None Include="f16f16l.asm" />
     <None Include="f16fl8il.asm" />
     <None Include="f16il.asm" />
     <None Include="f16set.asm" />
+    <None Include="fl8cnv.c" />
+    <None Include="grs.inc" />
     <None Include="light.asm" />
     <None Include="rsdblt.asm" />
     <None Include="rsdblt16.asm" />
@@ -183,6 +191,7 @@
     <ClCompile Include="ddevblt.c" />
     <ClCompile Include="devstubs.c" />
     <ClCompile Include="f16bm.c" />
+    <ClCompile Include="f16cnv.c" />
     <ClCompile Include="f16f16.c" />
     <ClCompile Include="f16fl8.c" />
     <ClCompile Include="f16hlin.c" />
@@ -193,6 +202,7 @@
     <ClCompile Include="f16pix8.c" />
     <ClCompile Include="f16rsd8.c" />
     <ClCompile Include="f16vlin.c" />
+    <ClCompile Include="f16vlinf.c" />
     <ClCompile Include="fcolor.c" />
     <ClCompile Include="fl8bk8.c" />
     <ClCompile Include="fl8bm.c" />

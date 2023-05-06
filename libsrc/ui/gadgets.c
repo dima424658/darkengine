@@ -14,6 +14,7 @@
 #include <mouse.h>
 #include <2d.h>
 #include <dbg.h>
+#include <_ui.h>
 #include <rect.h>
 #include <error.h>
 #include <kbcook.h>

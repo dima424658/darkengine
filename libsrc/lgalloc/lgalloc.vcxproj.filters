@@ -126,4 +126,9 @@
   <ItemGroup>
     <Text Include="memcore.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="memall.inc">
+      <Filter>Header Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

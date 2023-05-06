@@ -4,7 +4,7 @@
 #include <grtm.h>
 #include <grspoint.h>
 #include <g2tm.h>
-#include <buffer.h>
+#include <g2buffer.h>
 
 static void vpl_to_ppl(grs_bitmap *bm, int n, grs_vertex **vpl, g2s_point **ppl)
 {

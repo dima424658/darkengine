@@ -8,7 +8,7 @@
 
 #include <dev2d.h>
 #include <raster.h>
-#include <buffer.h>
+#include <g2buffer.h>
 #include <string.h>
 
 // Returns NULL for empty scanlist

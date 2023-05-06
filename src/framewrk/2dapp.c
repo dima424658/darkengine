@@ -93,6 +93,7 @@ static struct _init_object
    DECLARE_C_COMPLEX_AGGREGATE_CONTROL();
 } InitObject;
 
+extern const GUID UUID_Res;
 
 static sRelativeConstraint Gr2dConstraints[] =
 {

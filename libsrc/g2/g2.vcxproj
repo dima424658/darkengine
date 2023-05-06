@@ -54,6 +54,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -71,24 +72,25 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)inc;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)inc;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)inc;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)inc;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/prof;$(SolutionDir)libsrc/r3d;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -102,9 +104,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -118,9 +121,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -137,6 +141,7 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -147,27 +152,77 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="chkedgeb.asm" />
-    <None Include="chkedges.asm" />
-    <None Include="co88il.asm" />
-    <None Include="fl8lo2wi.asm" />
-    <None Include="fl8nni.asm" />
-    <None Include="fl8o2ni.asm" />
-    <None Include="fl8o2wi.asm" />
-    <None Include="lo816il.asm" />
-    <None Include="lo88il.asm" />
-    <None Include="n88il.asm" />
-    <None Include="o2w88i.asm" />
-    <None Include="o88bil.asm" />
-    <None Include="o88il.asm" />
-    <None Include="ptfloat.asm" />
-    <None Include="ptlinear.asm" />
-    <None Include="ptmap.asm" />
-    <None Include="ptmapper.asm" />
-    <None Include="ptmap_8.asm" />
-    <None Include="ptmap_n.asm" />
-    <None Include="ptpersp.asm" />
-    <None Include="uvgrad.asm" />
+    <MASM Include="chkedgeb.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="chkedges.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="co88il.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="fl8lo2wi.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="fl8nni.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="fl8o2ni.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="fl8o2wi.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <None Include="..\lg\dbgmacro.inc" />
+    <None Include="g2spoint.inc" />
+    <None Include="icanvas.inc" />
+    <MASM Include="lo816il.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="lo88il.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="n88il.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="o2w88i.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="o88bil.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="o88il.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <None Include="plyparam.inc" />
+    <None Include="plyrast.inc" />
+    <None Include="plytyp.inc" />
+    <MASM Include="ptfloat.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="ptlinear.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="ptmap.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="ptmapper.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="ptmap_8.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="ptmap_n.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="ptpersp.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <None Include="tmapd.inc" />
+    <None Include="tmaps.inc" />
+    <MASM Include="uvgrad.asm">
+      <FileType>Document</FileType>
+    </MASM>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="area.c" />
@@ -273,6 +328,7 @@
     <ClInclude Include="g2.h" />
     <ClInclude Include="g2clip.h" />
     <ClInclude Include="g2d.h" />
+    <ClInclude Include="g2init.h" />
     <ClInclude Include="g2makewr.h" />
     <ClInclude Include="g2pt.h" />
     <ClInclude Include="g2spoint.h" />
@@ -289,7 +345,6 @@
     <ClInclude Include="grtm.h" />
     <ClInclude Include="icanvas2.h" />
     <ClInclude Include="ilfunc.h" />
-    <ClInclude Include="init.h" />
     <ClInclude Include="lftype.h" />
     <ClInclude Include="mathmac.h" />
     <ClInclude Include="permap.h" />
@@ -325,5 +380,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

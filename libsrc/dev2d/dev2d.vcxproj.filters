@@ -57,6 +57,18 @@
     <None Include="f16fl8il.asm">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="fl8cnv.c">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="cseg.inc">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="dseg.inc">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="grs.inc">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="astring.c">
@@ -336,6 +348,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="comdfcn.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="f16cnv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="f16vlinf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
