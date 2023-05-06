@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Tables">
+      <UniqueIdentifier>{8c1aedb4-f0d6-43f6-8d63-e12fedd8faa2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="plyrast.inc">
@@ -302,6 +305,57 @@
     <ClCompile Include="trirast.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="f16cnv.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="f16llmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="f16lmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="f16sf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="f16usf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8llmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8lmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8sf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8ulf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8usf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="gencnv.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="genllmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="genlmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="gensf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8cnv.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="genusf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="pt_asm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="blncon.h">
@@ -495,9 +549,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="chkedgeb.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
     <MASM Include="chkedges.asm">
       <Filter>Source Files</Filter>
     </MASM>
@@ -556,6 +607,9 @@
       <Filter>Source Files</Filter>
     </MASM>
     <MASM Include="uvgrad.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="chkedgeb.asm">
       <Filter>Source Files</Filter>
     </MASM>
   </ItemGroup>

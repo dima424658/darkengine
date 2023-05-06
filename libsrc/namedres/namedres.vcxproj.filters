@@ -104,5 +104,8 @@
     <ClCompile Include="resman.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="resutil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

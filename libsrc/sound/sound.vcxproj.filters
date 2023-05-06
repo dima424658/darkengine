@@ -54,6 +54,9 @@
     <ClCompile Include="sndfmt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="volconv.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sndvoc.h">

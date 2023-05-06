@@ -117,9 +117,9 @@ MemCheckOff		PROTO		@proto_memall60
 @proto_memall61		TYPEDEF		PROTO C :SWORD
 MemGrowHeap		PROTO		@proto_memall61
 
-EXTERNDEF		C MemLockHeap:
+EXTERNDEF		C MemLockHeap: PTR PTR
 
-EXTERNDEF		C MemUnlockHeap:
+EXTERNDEF		C MemUnlockHeap: PTR PTR
 
 ; 	Calling previous (underlying) allocators (only from top level!)
 ; 	Allocating conventional memory

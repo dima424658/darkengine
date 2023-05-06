@@ -42,6 +42,9 @@
     <ClCompile Include="fancy.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="md.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="md.h">

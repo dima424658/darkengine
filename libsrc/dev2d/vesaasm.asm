@@ -21,7 +21,6 @@ include mode.inc
 include grs.inc
 include vesa.inc
 
-_DATA segment
 externdef _bankShift:BYTE               ; the amount to shift
 externdef _setBankFuncPtr:DWORD         ; protected mode bank swither address
 externdef _setDispStartFuncPtr:DWORD    ; protected mode display start function address
@@ -33,7 +32,7 @@ externdef _dpmi_reg_data:PTR            ; point at the dpmi register data
 externdef _grd_mode:DWORD               ; the current mode number
 externdef _grd_screen:DWORD             ; need the screen info
 externdef _useBlankInPalSet:BYTE        ; used to determine if must wait to set palette
-_DATA ends
+
 
 _TEXT segment
 

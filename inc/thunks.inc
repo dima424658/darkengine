@@ -47,19 +47,11 @@ THUNKS_INC equ 1
 ; Not sure if this particular macro will ever be useful, but here it is.
 ;
  _FUNCNAME   MACRO   funcname
-            ifdef CDECL_ASM
-                _&funcname&
-            else
-                &funcname&_
-            endif
+            _&funcname&
             ENDM
 
  _FUNCNAME_ASM   MACRO   funcname
-            ifdef CDECL_ASM
-                _&funcname&_asm
-            else
-                &funcname&_asm_
-            endif
+            _&funcname&_asm
             ENDM
 
 
@@ -68,11 +60,7 @@ THUNKS_INC equ 1
  _EXTFUNC MACRO   parms:vararg
     for p,<parms>
       ifnb <p>
-        ifdef CDECL_ASM
-           externdef _&p&:near
-        else
-           externdef &p&_:near
-        endif
+        externdef _&p&:near
       endif
     endm
     endm
@@ -88,7 +76,6 @@ THUNKS_INC equ 1
                 echo Error: _FUNCDEF #args nargs out of allowed range 0-4
                 .err
             endif
-            ifdef CDECL_ASM
                 public _&funcname&
                 _&funcname&:
                 push ebp
@@ -116,23 +103,14 @@ THUNKS_INC equ 1
                 ret
                 public _&funcname&_asm
                 _&funcname&_asm:
-            else
-                public &funcname&_asm_
-                &funcname&_asm_:
-            endif
             public &funcname&_
             &funcname&_:
             ENDM
 
 ;doesn't generate thunk, just appropriate naming convention
  _FUNCDEF_ASM   MACRO   funcname
-            ifdef CDECL_ASM
-                public _&funcname&_asm
-                _&funcname&_asm:
-            else
-                public &funcname&_asm_
-                &funcname&_asm_:
-            endif
+            public _&funcname&_asm
+            _&funcname&_asm:
             public &funcname&_
             &funcname&_:
             ENDM
@@ -142,66 +120,57 @@ THUNKS_INC equ 1
 ; call the WATCOM version.
 ;
 _CALLFUNC   MACRO   funcname, nargs:=<0>
-            ifdef CDECL_ASM
-                ifidn <nargs>,<4>
-                    push ecx
-                    push ebx
-                    push edx
-                    push eax
-                endif
-                ifidn <nargs>,<3>
-                    push ecx
-                    
-                    push ebx
-                    push edx
-                    push eax
-                endif
-                ifidn <nargs>,<2>
-                    push ecx
-                    
-                    push edx
-                    push eax
-                endif
-                ifidn <nargs>,<1>
-                    push ecx
-                    
-                    push eax
-                endif
+            ifidn <nargs>,<4>
+                push ecx
+                push ebx
+                push edx
+                push eax
+            endif
+            ifidn <nargs>,<3>
+                push ecx
+                
+                push ebx
+                push edx
+                push eax
+            endif
+            ifidn <nargs>,<2>
+                push ecx
+                
+                push edx
+                push eax
+            endif
+            ifidn <nargs>,<1>
+                push ecx
+                
+                push eax
+            endif
 
-                call _&funcname&
+            call _&funcname&
 
-                ifidn <nargs>,<4>
-                    add ESP,010h
-                endif
-                ifidn <nargs>,<3>
-                    add ESP, 0Ch
-                    pop ecx
-                endif
-                ifidn <nargs>,<2>
-                    add ESP, 08h
-                    pop ecx
-                endif
-                ifidn <nargs>,<1>
-                    add ESP, 04h
-                    pop ecx
-                endif
-            else
-                call &funcname&_
+            ifidn <nargs>,<4>
+                add ESP,010h
+            endif
+            ifidn <nargs>,<3>
+                add ESP, 0Ch
+                pop ecx
+            endif
+            ifidn <nargs>,<2>
+                add ESP, 08h
+                pop ecx
+            endif
+            ifidn <nargs>,<1>
+                add ESP, 04h
+                pop ecx
             endif
             ENDM
 
 _CALLNAME   MACRO   funcname, nargs:=<0>
-            ifdef CDECL_ASM
-                _CALL _&funcname&, nargs
-            else
-                _CALL &funcname&_, nargs
-            endif
+            _CALL _&funcname&, nargs
             ENDM
 
 ; Use this when calling throught a function pointer if you're mixing C and ASM.  
 ;
 _CALLFUNCPTR   MACRO   funcname, nargs:=<0>
-            ifdef CDECL_ASM
                 ifidn <nargs>,<4>
                     push ecx
                     push ebx
@@ -244,9 +213,6 @@ _CALLFUNCPTR   MACRO   funcname, nargs:=<0>
                     add ESP, 04h
                     pop ecx
                 endif
-            else
-                call &funcname&
-            endif
             ENDM
 
 ; Use this when jumping to assembly functions defined with the _FUNCDEF macro.

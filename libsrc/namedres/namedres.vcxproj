@@ -180,6 +180,7 @@
     <ClCompile Include="mdlrstyp.cpp" />
     <ClCompile Include="palrstyp.cpp" />
     <ClCompile Include="resman.cpp" />
+    <ClCompile Include="resutil.cpp" />
     <ClCompile Include="sndrstyp.cpp" />
     <ClCompile Include="strrstyp.cpp" />
   </ItemGroup>

@@ -54,6 +54,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -71,16 +72,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/matrix;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)inc;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/matrix;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/matrix;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)inc;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/matrix;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/matrix;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)inc;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/matrix;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/matrix;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)inc;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/matrix;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -151,52 +152,93 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="cpp.hint" />
     <None Include="cseg.inc" />
-    <None Include="cstring.asm" />
+    <MASM Include="cstring.asm">
+      <FileType>Document</FileType>
+    </MASM>
     <None Include="dseg.inc" />
-    <None Include="f16f16c.asm" />
-    <None Include="f16f16l.asm" />
-    <None Include="f16fl8il.asm" />
-    <None Include="f16il.asm" />
-    <None Include="f16set.asm" />
-    <None Include="fl8cnv.c" />
+    <MASM Include="f16f16c.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="f16f16l.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="f16fl8il.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="f16il.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="f16set.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <ClCompile Include="fl8cnv.c">
+      <FileType>CppCode</FileType>
+    </ClCompile>
     <None Include="grs.inc" />
-    <None Include="light.asm" />
-    <None Include="rsdblt.asm" />
-    <None Include="rsdblt16.asm" />
-    <None Include="rsdblt8.asm" />
-    <None Include="rsdunpck.asm" />
-    <None Include="vesaasm.asm" />
-    <None Include="vgaasm.asm" />
-    <None Include="vgasmod.asm" />
+    <MASM Include="light.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="rsdblt.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="rsdblt16.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="rsdblt8.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="rsdunpck.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="vesaasm.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="vgaasm.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="vgasmod.asm">
+      <FileType>Document</FileType>
+    </MASM>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="astring.c" />
     <ClCompile Include="bank.c" />
     <ClCompile Include="bitmap.c" />
     <ClCompile Include="bk8bm.c" />
+    <ClCompile Include="bk8cnv.c" />
     <ClCompile Include="bk8fl8.c" />
     <ClCompile Include="bk8hlin.c" />
+    <ClCompile Include="bk8hlinf.c" />
     <ClCompile Include="bk8lin.c" />
+    <ClCompile Include="bk8p8f.c" />
     <ClCompile Include="bk8pix.c" />
     <ClCompile Include="bk8pix8.c" />
+    <ClCompile Include="bk8ubmf.c" />
     <ClCompile Include="bk8vlin.c" />
+    <ClCompile Include="bk8vlinf.c" />
     <ClCompile Include="blend.c" />
     <ClCompile Include="canvas.c" />
     <ClCompile Include="clpfl8.c" />
     <ClCompile Include="clut16.c" />
     <ClCompile Include="comdfcn.cc" />
+    <ClCompile Include="comdtab.c" />
     <ClCompile Include="cominit.c" />
     <ClCompile Include="cpal.c" />
     <ClCompile Include="ddevblt.c" />
+    <ClCompile Include="ddevcnv.c" />
     <ClCompile Include="devstubs.c" />
     <ClCompile Include="f16bm.c" />
     <ClCompile Include="f16cnv.c" />
     <ClCompile Include="f16f16.c" />
     <ClCompile Include="f16fl8.c" />
     <ClCompile Include="f16hlin.c" />
+    <ClCompile Include="f16hlinf.c" />
     <ClCompile Include="f16lin.c" />
     <ClCompile Include="f16mono.c" />
+    <ClCompile Include="f16p16f.c" />
+    <ClCompile Include="f16p8f.c" />
     <ClCompile Include="f16pix.c" />
     <ClCompile Include="f16pix16.c" />
     <ClCompile Include="f16pix8.c" />
@@ -204,23 +246,31 @@
     <ClCompile Include="f16vlin.c" />
     <ClCompile Include="f16vlinf.c" />
     <ClCompile Include="fcolor.c" />
+    <ClCompile Include="fl16ubmf.c" />
     <ClCompile Include="fl8bk8.c" />
     <ClCompile Include="fl8bm.c" />
+    <ClCompile Include="fl8dtab.c" />
     <ClCompile Include="fl8fl8.c" />
     <ClCompile Include="fl8hlin.c" />
+    <ClCompile Include="fl8hlinf.c" />
     <ClCompile Include="fl8lin.c" />
     <ClCompile Include="fl8mono.c" />
     <ClCompile Include="fl8mx.c" />
+    <ClCompile Include="fl8p16f.c" />
+    <ClCompile Include="fl8p8f.c" />
     <ClCompile Include="fl8pix.c" />
     <ClCompile Include="fl8pix8.c" />
     <ClCompile Include="fl8rsd8.c" />
+    <ClCompile Include="fl8ubmf.c" />
     <ClCompile Include="fl8vlin.c" />
+    <ClCompile Include="fl8vlinf.c" />
     <ClCompile Include="gdbm.c" />
     <ClCompile Include="gdgbm.c" />
     <ClCompile Include="gdlin.c" />
     <ClCompile Include="gdpix.c" />
     <ClCompile Include="gdrect.c" />
     <ClCompile Include="genbm.c" />
+    <ClCompile Include="genbmf.c" />
     <ClCompile Include="genf16.c" />
     <ClCompile Include="genf16u.c" />
     <ClCompile Include="genfl8.c" />
@@ -243,13 +293,19 @@
     <ClCompile Include="ltab.c" />
     <ClCompile Include="mode.c" />
     <ClCompile Include="mxbm.c" />
+    <ClCompile Include="mxcnv.c" />
     <ClCompile Include="mxfl8.c" />
     <ClCompile Include="mxhlin.c" />
+    <ClCompile Include="mxhlinf.c" />
     <ClCompile Include="mxlatch.c" />
     <ClCompile Include="mxlin.c" />
+    <ClCompile Include="mxp8f.c" />
     <ClCompile Include="mxpix.c" />
     <ClCompile Include="mxpix8.c" />
+    <ClCompile Include="mxubmf.c" />
     <ClCompile Include="mxvlin.c" />
+    <ClCompile Include="mxvlinf.c" />
+    <ClCompile Include="novdtab.c" />
     <ClCompile Include="novinit.c" />
     <ClCompile Include="nulcnv.c" />
     <ClCompile Include="nulldfcn.c" />
@@ -264,8 +320,11 @@
     <ClCompile Include="tluctab.c" />
     <ClCompile Include="valloc.c" />
     <ClCompile Include="vesac.c" />
+    <ClCompile Include="vgadtab.c" />
     <ClCompile Include="vgastate.c" />
+    <ClCompile Include="vsadtab.c" />
     <ClCompile Include="vsastate.c" />
+    <ClCompile Include="w32dtab.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alpha.h" />
@@ -348,5 +407,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

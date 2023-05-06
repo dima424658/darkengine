@@ -13,53 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Tables">
+      <UniqueIdentifier>{8330df45-656d-42db-b51e-6e270ebb23d8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="f16il.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="f16set.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="light.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="rsdblt.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="rsdblt8.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="rsdblt16.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="rsdunpck.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="vesaasm.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="vgaasm.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="vgasmod.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="cstring.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="f16f16c.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="f16f16l.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="f16fl8il.asm">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="fl8cnv.c">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="cseg.inc">
       <Filter>Header Files</Filter>
     </None>
@@ -69,6 +27,7 @@
     <None Include="grs.inc">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="astring.c">
@@ -350,11 +309,95 @@
     <ClCompile Include="comdfcn.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="bk8cnv.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="bk8hlinf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="bk8p8f.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="bk8ubmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="bk8vlinf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="comdtab.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="ddevcnv.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
     <ClCompile Include="f16cnv.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="f16hlinf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="f16p8f.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="f16p16f.c">
+      <Filter>Source Files\Tables</Filter>
     </ClCompile>
     <ClCompile Include="f16vlinf.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl16ubmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8dtab.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8hlinf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8p8f.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8p16f.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8ubmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8vlinf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="genbmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="mxcnv.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="mxhlinf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="mxp8f.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="mxubmf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="mxvlinf.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="novdtab.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="vgadtab.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="vsadtab.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="w32dtab.c">
+      <Filter>Source Files\Tables</Filter>
+    </ClCompile>
+    <ClCompile Include="fl8cnv.c">
+      <Filter>Source Files\Tables</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -589,5 +632,49 @@
     <ClInclude Include="vgareg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="cstring.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="f16f16c.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="f16f16l.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="f16fl8il.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="f16il.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="f16set.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="light.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="rsdblt.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="rsdblt8.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="rsdblt16.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="rsdunpck.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="vesaasm.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="vgaasm.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="vgasmod.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
   </ItemGroup>
 </Project>

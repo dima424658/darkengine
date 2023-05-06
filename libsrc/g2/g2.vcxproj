@@ -152,9 +152,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <MASM Include="chkedgeb.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <MASM Include="chkedgeb.asm" />
     <MASM Include="chkedges.asm">
       <FileType>Document</FileType>
     </MASM>
@@ -175,6 +173,10 @@
     </MASM>
     <None Include="..\lg\dbgmacro.inc" />
     <None Include="g2spoint.inc" />
+    <ClCompile Include="fl8cnv.c" />
+    <ClCompile Include="gensf.c">
+      <FileType>CppCode</FileType>
+    </ClCompile>
     <None Include="icanvas.inc" />
     <MASM Include="lo816il.asm">
       <FileType>Document</FileType>
@@ -235,24 +237,34 @@
     <ClCompile Include="cominit.c" />
     <ClCompile Include="dlh816.c" />
     <ClCompile Include="drytmap.c" />
+    <ClCompile Include="f16cnv.c" />
     <ClCompile Include="f16fl8ll.c" />
     <ClCompile Include="f16fl8s.c" />
+    <ClCompile Include="f16llmf.c" />
     <ClCompile Include="f16lm.c" />
+    <ClCompile Include="f16lmf.c" />
     <ClCompile Include="f16pm.c" />
     <ClCompile Include="f16s.c" />
+    <ClCompile Include="f16sf.c" />
+    <ClCompile Include="f16usf.c" />
     <ClCompile Include="fl8fl8l.c" />
     <ClCompile Include="fl8fl8ll.c" />
     <ClCompile Include="fl8fl8s.c" />
     <ClCompile Include="fl8il.c" />
     <ClCompile Include="fl8l.c" />
     <ClCompile Include="fl8lin.c" />
+    <ClCompile Include="fl8llmf.c" />
     <ClCompile Include="fl8lm.c" />
+    <ClCompile Include="fl8lmf.c" />
     <ClCompile Include="fl8lo2wc.c" />
     <ClCompile Include="fl8nnic.c" />
     <ClCompile Include="fl8o2wic.c" />
     <ClCompile Include="fl8pm.c" />
     <ClCompile Include="fl8s.c" />
+    <ClCompile Include="fl8sf.c" />
     <ClCompile Include="fl8sply.c" />
+    <ClCompile Include="fl8ulf.c" />
+    <ClCompile Include="fl8usf.c" />
     <ClCompile Include="g2circ.c" />
     <ClCompile Include="g2d.c" />
     <ClCompile Include="g2el.c" />
@@ -264,6 +276,7 @@
     <ClCompile Include="g2tm.c" />
     <ClCompile Include="gen16il.c" />
     <ClCompile Include="gen8il.c" />
+    <ClCompile Include="gencnv.c" />
     <ClCompile Include="genf16l.c" />
     <ClCompile Include="genf16s.c" />
     <ClCompile Include="genfl8l.c" />
@@ -271,7 +284,9 @@
     <ClCompile Include="genil.c" />
     <ClCompile Include="genlil.c" />
     <ClCompile Include="genline.c" />
+    <ClCompile Include="genllmf.c" />
     <ClCompile Include="genlm.c" />
+    <ClCompile Include="genlmf.c" />
     <ClCompile Include="genply.c" />
     <ClCompile Include="genrast.c" />
     <ClCompile Include="genrsds.c" />
@@ -279,6 +294,7 @@
     <ClCompile Include="gens.c" />
     <ClCompile Include="gensil.c" />
     <ClCompile Include="gensply.c" />
+    <ClCompile Include="genusf.c" />
     <ClCompile Include="golftmap.c" />
     <ClCompile Include="grtm.c" />
     <ClCompile Include="grwater.c" />
@@ -292,6 +308,7 @@
     <ClCompile Include="permap.c" />
     <ClCompile Include="plyshell.c" />
     <ClCompile Include="point.c" />
+    <ClCompile Include="pt_asm.c" />
     <ClCompile Include="pt_duv.c" />
     <ClCompile Include="pt_grad.c" />
     <ClCompile Include="pt_main.c" />

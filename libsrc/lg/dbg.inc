@@ -174,7 +174,7 @@ Exit		PROTO		@proto_dbg57
 
 ;  shut down with msg
 ;  add func to atexit list
-EXTERNDEF		C PrintExitMsg:
+EXTERNDEF		C PrintExitMsg: PTR PTR
 
 ;  prints exit message
 EXTERNDEF		C pExitMsg:PTR SBYTE

@@ -155,6 +155,7 @@
     <ClCompile Include="fancy.c" />
     <ClCompile Include="hitdet.c" />
     <ClCompile Include="light.c" />
+    <ClCompile Include="md.c" />
     <ClCompile Include="mipmap.c" />
     <ClCompile Include="render.c" />
     <ClCompile Include="scale.c" />
