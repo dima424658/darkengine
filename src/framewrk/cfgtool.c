@@ -143,7 +143,7 @@ static bool include_iter(char* var)
 void process_config_includes(const char* prefix)
 {
    int i; 
-   char buf[80];
+   char buf[256];
 
    iter_val = buf;
    iter_prefix = prefix;
@@ -171,7 +171,7 @@ static bool script_iter(char* var)
 {
    if (strnicmp(iter_prefix,var,strlen(iter_prefix)) == 0)
    {
-      char buf[80];
+      char buf[256];
       find_file_in_config_path(buf,iter_val,SCRIPT_PATH);
       CommandRunScript(buf);
    }
@@ -180,7 +180,7 @@ static bool script_iter(char* var)
 
 void process_config_scripts(const char* prefix)
 {
-   char buf[80];
+   char buf[256];
    iter_val = buf;
    iter_prefix = prefix;
    config_get_raw_all(script_iter,buf,sizeof(buf));
@@ -196,9 +196,11 @@ BOOL find_file_in_config_path(char* targ, const char* filename, const char* path
    char pathbuf[256] = "";
    BOOL result;
    DatapathClear(&path);
-   config_get_raw(path_var,pathbuf,sizeof(pathbuf));
+   if (!config_get_raw(path_var, pathbuf, sizeof(pathbuf)))
+       return FALSE;
+
    DatapathAdd(&path,pathbuf);
-   result = DatapathFind(&path,filename,targ,80);
+   result = DatapathFind(&path,filename,targ,256);
    DatapathFree(&path);
    return result;
 }

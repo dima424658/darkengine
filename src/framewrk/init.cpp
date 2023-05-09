@@ -176,8 +176,10 @@ static void pick_game(void)
    //
    // Include "game.cfg" 
    //
-   char game[128]; 
-   config_get_raw("game",game,sizeof(game)); 
+   char game[256]; 
+   
+   if (config_get_raw("game", game, sizeof(game)) == FALSE)
+       CriticalMsg("\"game\" entry not found");
 
    // punt trailing space
    char* s; 
@@ -187,8 +189,8 @@ static void pick_game(void)
    strcat(game,".cfg");
    
    char path[256]; 
-   Verify(find_file_in_config_path(path,game,"include_path")); 
-   config_load(path); 
+   // Verify(find_file_in_config_path(path,game,"include_path")); 
+   // config_load(path); 
 }
 
 

@@ -54,6 +54,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -71,19 +72,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore ;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config  ;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(OutDir);$(SolutionDir)dx7sdk\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore ;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config  ;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(OutDir);$(SolutionDir)dx7sdk\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore ;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config  ;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(OutDir);$(SolutionDir)dx7sdk\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore ;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config  ;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(OutDir);$(SolutionDir)dx7sdk\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -98,7 +99,7 @@
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>dinput.lib;d3dx.lib;dsound.lib;dxguid.lib;actmovie.lib;entrywin.lib;arq.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -117,7 +118,7 @@
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -137,7 +138,7 @@
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>dinput.lib;d3dx.lib;dsound.lib;dxguid.lib;actmovie.lib;entrywin.lib;arq.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -156,7 +157,7 @@
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -1969,7 +1970,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="framewrk\Main.cpp" />
-    <ClCompile Include="Framewrk\Missblat.cpp" />
+    <ClCompile Include="Framewrk\Missblat.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="framewrk\Missdiff.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -2277,6 +2283,7 @@
     <ClCompile Include="portal\Portsurf.c" />
     <ClCompile Include="portal\Portwatr.c" />
     <ClCompile Include="portal\Ptdrawhw.c" />
+    <ClCompile Include="portal\ptsurf.cpp" />
     <ClCompile Include="portal\Pt_clut.c" />
     <ClCompile Include="portal\Pt_main.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2568,54 +2575,64 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="portal\Ptfloat.asm">
+    <MASM Include="portal\Ptfloat.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptlinear.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="portal\Ptlinear.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptmap.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="portal\Ptmap.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptmapper.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="portal\Ptmapper.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptmap_8.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="portal\Ptmap_8.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptmap_n.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="portal\Ptmap_n.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptpersp.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="portal\Ptpersp.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptsurf.asm">
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptsurf16.asm">
-    </CustomBuild>
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="portal\Ptsurf.asm">
+      <FileType>Document</FileType>
+    </MASM>
+    <MASM Include="portal\Ptsurf16.asm">
+      <FileType>Document</FileType>
+    </MASM>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

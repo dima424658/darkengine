@@ -18,9 +18,30 @@
     <ClInclude Include="loopapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="loopman.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="loopdisp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="darkloop.cpp">
+    <ClCompile Include="loopman.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loopfact.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loopmode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loopdisp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gloopcli.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loopque.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

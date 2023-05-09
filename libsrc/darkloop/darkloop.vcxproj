@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\lg;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\lg;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\lg;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\lg;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -152,9 +152,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="loopapi.h" />
+    <ClInclude Include="loopdisp.h" />
+    <ClInclude Include="loopman.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="darkloop.cpp" />
+    <ClCompile Include="gloopcli.cpp" />
+    <ClCompile Include="loopdisp.cpp" />
+    <ClCompile Include="loopfact.cpp" />
+    <ClCompile Include="loopman.cpp" />
+    <ClCompile Include="loopmode.cpp" />
+    <ClCompile Include="loopque.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

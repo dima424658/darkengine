@@ -6379,34 +6379,35 @@
     <ClCompile Include="Testloop.c" />
     <ClCompile Include="Testmode.c" />
     <ClCompile Include="Version.c" />
+    <ClCompile Include="portal\ptsurf.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="portal\Ptfloat.asm">
+    <MASM Include="portal\Ptfloat.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptlinear.asm">
+    </MASM>
+    <MASM Include="portal\Ptlinear.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptmap.asm">
+    </MASM>
+    <MASM Include="portal\Ptmap.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptmap_8.asm">
+    </MASM>
+    <MASM Include="portal\Ptmap_8.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptmap_n.asm">
+    </MASM>
+    <MASM Include="portal\Ptmap_n.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptmapper.asm">
+    </MASM>
+    <MASM Include="portal\Ptmapper.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptpersp.asm">
+    </MASM>
+    <MASM Include="portal\Ptpersp.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptsurf.asm">
+    </MASM>
+    <MASM Include="portal\Ptsurf.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="portal\Ptsurf16.asm">
+    </MASM>
+    <MASM Include="portal\Ptsurf16.asm">
       <Filter>Portal\Portal ASM files</Filter>
-    </CustomBuild>
+    </MASM>
   </ItemGroup>
 </Project>

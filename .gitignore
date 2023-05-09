@@ -44,3 +44,5 @@ Release
 *.tlog
 *.pdb
 *.rsp
+
+redist
