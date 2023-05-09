@@ -347,6 +347,7 @@ void LGAPI LogStackTrace(const char * pszTitle)
 
 void LGAPI _LogWriteMsgFileLine(const char *m, const char *f, unsigned l)
     {
+    printf("%s in file %s:%d\n", m, f, l);
     if (g_Log.pfnLogger)
        {
        g_Log.Lock();
@@ -827,7 +828,7 @@ static const char * InterpretLParam(unsigned uMessage, unsigned long lParam)
 const char * LGAPI LogStrWinMsg(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
     static char szBuf[256];
-    snprintf(szBuf, sizeof(szBuf) - 1, "0x%x, %s, %s, %s", hwnd, GetMessageName(msg), InterpretWParam(msg, wParam), InterpretLParam(msg, lParam));
+    snprintf(szBuf, sizeof(szBuf) - 1, "0x%p, %s, %s, %s", hwnd, GetMessageName(msg), InterpretWParam(msg, wParam), InterpretLParam(msg, lParam));
     return szBuf;
     }
 

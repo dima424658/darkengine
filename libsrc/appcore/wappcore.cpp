@@ -206,7 +206,7 @@ eWinPumpResult cWindowsApplication::cWinAppOperations::DispatchOneMessage(MSG * 
     const int fGetResult = GetMessage(pMsg, NULL, nFilterMin, nFilterMax);
 
     AssertMsg(fGetResult >= 0, "Error calling GetMessage()");
-    DebugMsgTrue(retVal == 0, "Recevied WM_QUIT");
+    // DebugMsgTrue(retVal == 0, "Recevied WM_QUIT");
 
     if (fGetResult && !PreTranslateMessage(pMsg))
     {

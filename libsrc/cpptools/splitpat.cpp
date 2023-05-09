@@ -23,6 +23,7 @@
 #include <string.h>
 #include <splitpat.h>
 
+#define LDEBUG
 #ifdef LDEBUG
 #define LAssertMsg(b, s) AssertMsg(b, s)
 #else
@@ -296,7 +297,9 @@ inline int MaxExtForKind(eFileSystemKind /* Kind */)
 
 BOOL cPathSplitter::DoSplitTo(eComponent /* SplitToComponent */)
     {
-    BEGIN_DEBUG_STR(cFmtStr("cPathSplitter::DoSplitTo() (%s)", (pcszTarget) ? pcszTarget : "NULL"));
+    char buffer[256];
+    sprintf(buffer, "cPathSplitter::DoSplitTo() (%s)", (pcszTarget) ? pcszTarget : "NULL");
+    BEGIN_DEBUG_STR(buffer);
     ///////////////////////
     // Immediate conditions
     if (LastSplitTo == kDrive)
@@ -440,23 +443,31 @@ BOOL cPathSplitter::DoSplitTo(eComponent /* SplitToComponent */)
         }
     else
         {
-        DebugStr(cFmtStr("Drive not found (%d && %d)", !!(pScan >= pcszTarget), !!(*pScan == ':')));
+        char buffer[256];
+        sprintf(buffer, "Drive not found (%d && %d)", !!(pScan >= pcszTarget), !!(*pScan == ':'));
+        DebugStr(buffer);
         Drive.IfNotFoundAssumeZeroLenAt(pEndDrive);
         }
 
     LastSplitTo = kDrive;
 
-#if LDEBUG
+#ifdef LDEBUG
     DebugMsg("Split result is:");
     cStr s;
     GetDrive(s);
-    DebugStr(cFmtStr("Drive is \"%s\"", s.operator const char *()));
+
+    char buffer[256];
+    sprintf(buffer, "Drive is \"%s\"", s.operator const char* ());
+    DebugStr(buffer);
     GetDirectory(s);
-    DebugStr(cFmtStr("Directory is \"%s\"", s.operator const char *()));
+    sprintf(buffer, "Directory is \"%s\"", s.operator const char* ());
+    DebugStr(buffer);
     GetName(s);
-    DebugStr(cFmtStr("Name is \"%s\"", s.operator const char *()));
+    sprintf(buffer, "Name is \"%s\"", s.operator const char* ());
+    DebugStr(buffer);
     GetExtension(s);
-    DebugStr(cFmtStr("Extension is \"%s\"", s.operator const char *()));
+    sprintf(buffer, "Extension is \"%s\"", s.operator const char* ());
+    DebugStr(buffer);
 #endif
 
     return TRUE;

@@ -527,7 +527,9 @@ unsigned __fastcall cHashSetBase::NextPrime(unsigned i)
 //
 void cHashSetBase::DumpTable()
 {
-    DebugStr(cFmtStr("Hash table %p of size %d:", this, m_nPts));
+    char buffer[256];
+    sprintf(buffer, "Hash table %p of size %d:", this, m_nPts);
+    DebugStr(buffer);
     for (unsigned i = 0; i < m_nPts; i++)
     {
         int c = 0;

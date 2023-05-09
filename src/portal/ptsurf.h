@@ -9,16 +9,16 @@
 #ifndef _PTSURF_H_
 #define _PTSURF_H_
 
-void pt_surfbuild_16_asm(void);
-void pt_surfbuild_8_asm (void);
-void pt_surfbuild_4_asm (void);
-void pt_surfbuild_2_asm (void);
-void pt_surfbuild_1_asm (void);
+EXTERN void pt_surfbuild_16_asm(void);
+EXTERN void pt_surfbuild_8_asm (void);
+EXTERN void pt_surfbuild_4_asm (void);
+EXTERN void pt_surfbuild_2_asm (void);
+EXTERN void pt_surfbuild_1_asm (void);
 
-void pt_surfbuild_setup_16_asm(void);
-void pt_surfbuild_setup_8_asm (void);
-void pt_surfbuild_setup_4_asm (void);
-void pt_surfbuild_setup_2_asm (void);
-void pt_surfbuild_setup_1_asm (void);
+EXTERN void pt_surfbuild_setup_16_asm(void);
+EXTERN void pt_surfbuild_setup_8_asm (void);
+EXTERN void pt_surfbuild_setup_4_asm (void);
+EXTERN void pt_surfbuild_setup_2_asm (void);
+EXTERN void pt_surfbuild_setup_1_asm (void);
 
 #endif // _PTSURF_H_

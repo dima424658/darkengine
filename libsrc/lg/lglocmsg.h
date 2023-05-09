@@ -36,6 +36,7 @@
     #define DEBUG_STRING_PLACEMENT
 #endif
 
+#define LDEBUG
 #if defined(LDEBUG) && defined(DEBUG)
 
     #pragma message ("Local debugging is enabled")

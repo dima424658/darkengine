@@ -160,7 +160,9 @@ cFileSpec::cFileSpec(const cFilePath &path, const char *name)
 //
 cFileSpec::~cFileSpec()
 {
-    DebugStr(cFmtStr("%p->cFileSpec::~cFileSpec(%p, %s)", this, pName, pName));
+    char buffer[256];
+    sprintf(buffer, "%p->cFileSpec::~cFileSpec(%p, %s)", this, pName, pName);
+    DebugStr(buffer);
     free(pName);
 }
 

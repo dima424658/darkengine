@@ -20,6 +20,13 @@ extern "C"
 	int _g_referenceEntryPoint = 0;
 }
 
+int main(int argc, const char* argv[])
+{
+
+	return _AppMain(argc, argv);
+}
+
+/*
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR pszCmdLine, int fShow)
 {
 	// Turn Windows command line into classic arguments    @TBD (toml 04-24-96):  won't do quoted arguments correctly
@@ -33,5 +40,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR pszCmdLine, int fShow
 
 	return _AppMain(argc, argv);
 }
+*/
 
 #endif

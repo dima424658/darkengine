@@ -70,18 +70,11 @@ private:
     };
 
 #define DECLARE_POOL() \
-    public:             \
-        void *operator new(size_t );    \
-        void *operator new(size_t, const char *, int);    \
-        void operator delete(void* , size_t ); \
     private:            \
         static _cPoolWrapper m_Pool;
 
 #define IMPLEMENT_POOL(CLASS) \
-    _cPoolWrapper CLASS::m_Pool(sizeof(CLASS)); \
-    void *CLASS::operator new(size_t n)             {return m_Pool.PoolAlloc(n);} \
-    void *CLASS::operator new(size_t n, const char *, int) {return m_Pool.PoolAlloc(n);} \
-    void CLASS::operator delete(void* p, size_t n)  {m_Pool.PoolFree(p,n);}
+    _cPoolWrapper CLASS::m_Pool(sizeof(CLASS));
 
 #endif
 
