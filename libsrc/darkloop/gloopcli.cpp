@@ -1,4 +1,5 @@
 #include <loopapi.h>
+#include <aggmemb.h>
 
 class cGenericLoopClient : public cLoopClient<kCTU_Default>
 {
@@ -11,7 +12,7 @@ public:
 	virtual ~cGenericLoopClient() = default;
 
 	// Handle a message from the owning loop mode dispatcher
-	eLoopMessageResult ReceiveMessage(eLoopMessage hMessage, tLoopMessageData hData) override
+	STDMETHOD_(eLoopMessageResult, ReceiveMessage)(eLoopMessage hMessage, tLoopMessageData hData) override
 	{
 		return m_pCallback(m_pContext, hMessage, hData);
 	}

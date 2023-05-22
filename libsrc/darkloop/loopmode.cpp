@@ -7,7 +7,7 @@
 class cLoopMode : public cCTUnaggregated<ILoopMode, &IID_ILoopMode, kCTU_Default>
 {
 public:
-	cLoopMode(sLoopModeDesc* desc)
+	cLoopMode(const sLoopModeDesc* desc)
 	{
 		AssertMsg(desc->ppClientIDs, "Empty loop modes are not supported");
 		std::memcpy(&m_desc, desc, sizeof(sLoopModeDesc));
@@ -48,3 +48,7 @@ private:
 	sLoopModeDesc m_desc;
 };
 
+ILoopMode* LGAPI _LoopModeCreate(const sLoopModeDesc* desc)
+{
+	return new cLoopMode{desc};
+}

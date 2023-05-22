@@ -24,6 +24,18 @@
     <ClInclude Include="loopdisp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="loopfact.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="loopstk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="loopque.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="loop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="loopman.cpp">
@@ -42,6 +54,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="loopque.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loopapi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loopstk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

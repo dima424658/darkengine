@@ -114,7 +114,7 @@ DECLARE_INTERFACE_(ILoopClientFactory, IUnknown)
 // Create a factory from a null-terminated array of descriptors
 //
 
-EXTERN ILoopClientFactory * LGAPI CreateLoopFactory(const sLoopClientDesc ** descs);
+EXTERN ILoopClientFactory * LGAPI CreateLoopFactory(const sLoopClientDesc** descs);
 
 ///////////////////////////////////////////////////////////////////////////////
 //

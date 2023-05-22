@@ -1,7 +1,10 @@
 #pragma once
 
-#include "loopapi.h"
+#include <loopapi.h>
+#include <loop.h>
+#include <loopfact.h>
 #include <aggmemb.h>
+#include <interset.h>
 
 class cLoopManager : public ILoopManager
 {
@@ -9,48 +12,49 @@ public:
 	cLoopManager(IUnknown* pOuterUnknown, unsigned nMaxModes);
 
 	// Add a client
-	HRESULT STDMETHODCALLTYPE AddClient(ILoopClient*, ulong* pCookie) override;
+	STDMETHOD(AddClient)(THIS_ ILoopClient*, ulong* pCookie) override;
 
-	//  Remove a client
-	HRESULT STDMETHODCALLTYPE RemoveClient(ulong cookie) override;
+	// Remove a client
+	STDMETHOD(RemoveClient)(THIS_ ulong cookie) override;
 
 	// Add a client factory
-	HRESULT STDMETHODCALLTYPE AddClientFactory(ILoopClientFactory*, ulong* pCookie) override;
+	STDMETHOD(AddClientFactory)(THIS_ ILoopClientFactory*, ulong* pCookie) override;
 
 	// Remove a client factory
-	HRESULT STDMETHODCALLTYPE RemoveClientFactory(ulong cookie) override;
+	STDMETHOD(RemoveClientFactory)(THIS_ ulong cookie) override;
 
 	// Find/create a client
-	HRESULT STDMETHODCALLTYPE GetClient(tLoopClientID*, tLoopClientData, ILoopClient**) override;
+	STDMETHOD(GetClient)(THIS_ tLoopClientID*, tLoopClientData, ILoopClient**) override;
 
 	// Add a mode
-	HRESULT STDMETHODCALLTYPE AddMode(const sLoopModeDesc*) override;
+	STDMETHOD(AddMode)(THIS_ const sLoopModeDesc*) override;
 
 	// Get a mode
-	ILoopMode* STDMETHODCALLTYPE GetMode(tLoopModeID*) override;
+	STDMETHOD_(ILoopMode*, GetMode)(THIS_ tLoopModeID*) override;
 
 	// Remove a mode
-	HRESULT STDMETHODCALLTYPE RemoveMode(tLoopModeID*) override;
+	STDMETHOD(RemoveMode)(THIS_ tLoopModeID*) override;
 
 	// Set/Get the elements shared by all modes
-	HRESULT STDMETHODCALLTYPE SetBaseMode(tLoopModeID*) override;
-	ILoopMode* STDMETHODCALLTYPE GetBaseMode() override;
+	STDMETHOD(SetBaseMode)(THIS_ tLoopModeID*) override;
+	STDMETHOD_(ILoopMode*, GetBaseMode)(THIS) override;
 
 private:
+	DECLARE_AGGREGATION(cLoopManager);
 
-	///////////////////////////////////
-	//
-	// Aggregate member protocol
-	//
+	HRESULT Init() { return S_OK; }
+	HRESULT End()
+	{
+		m_Factory.ReleaseAll();
+		m_nLoopModes.ReleaseAll(true);
+	
+		return S_OK;
+	}
 
-	HRESULT Connect();
-	HRESULT PostConnect();
-	HRESULT Init();
-	HRESULT End();
-	HRESULT Disconnect();
-
-protected:
-
-	// IUnknown methods
-	DECLARE_COMPLEX_AGGREGATION(cLoopManager);
+private:
+	cLoop m_Loop;
+	uint m_nMaxModes;
+	cLoopClientFactory m_Factory;
+	cInterfaceTable m_nLoopModes;
+	tLoopModeID* m_pBaseMode;
 };
