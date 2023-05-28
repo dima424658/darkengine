@@ -2,76 +2,33 @@
 
 #include <imgrstyp.h>
 #include <resapi.h>
+#include <resimage.h>
 #include <resbastm.h>
 #include <aggmemb.h>
+
+#ifndef NO_DB_MEM
+// Must be last header
+#include <memall.h>
 #include <dbmem.h>
+#endif
 
-static const char *extMaps[] =
+struct sExtMap
 {
-	".pcx",
-	".tga",
-	".cel",
-	".gif",
-	".bmp"
+	const char* ext;
+	eImgKind kind;
 };
 
-class cImageResource : public cResourceBase<IRes, &IID_IRes>
+static sExtMap extMaps[] =
 {
-public:
-	cImageResource(IStore* pStore,
-				   const char* pName,
-				   IResType* pType,
-				   const char* pExt);
-
-	void *STDMETHODCALLTYPE LoadData(ulong *pSize,
-									 ulong *pTimestamp,
-									 IResMemOverride *pResMem) override;
-
-	BOOL STDMETHODCALLTYPE FreeData(void *pData,
-									ulong nSize,
-									IResMemOverride *pResMem) override;
-
-	int STDMETHODCALLTYPE ExtractPartial(const long nStart,
-										 const long nEnd,
-										 void *pBuf) override;
-
-	void STDMETHODCALLTYPE ExtractBlocks(void *pBuf,
-										 const long nSize,
-										 tResBlockCallback,
-										 void *pCallbackData) override;
-
-protected:
-	const char* m_pExt;
+  { ".pcx", eImgKind::kImgPCX },
+  { ".tga", eImgKind::kImgTGA },
+  { ".cel", eImgKind::kImgCEL },
+  { ".gif", eImgKind::kImgGIF },
+  { ".bmp", eImgKind::kImgBMP }
 };
 
-cImageResource::cImageResource(IStore* pStore, const char* pName, IResType* pType, const char* pExt)
-	: cResourceBase(pStore, pName, pType), m_pExt{ pExt } {}
-
-void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride* pResMem)
-{
-	// TODO
-	return nullptr;
-}
-
-BOOL cImageResource::FreeData(void* pData, ulong nSize, IResMemOverride* pResMem)
-{
-	// TODO
-	return 0;
-}
-
-int cImageResource::ExtractPartial(const long nStart, const long nEnd, void* pBuf)
-{
-	// TODO
-	return 0;
-}
-
-void cImageResource::ExtractBlocks(void* pBuf, const long nSize, tResBlockCallback, void* pCallbackData)
-{
-	// TODO
-}
-
-class cImageResourceType : public cCTDelegating<IResType>,
-						   public cCTAggregateMemberControl<kCTU_Default>
+class cImageResourceType :
+	public cCTUnaggregated<IResType, &IID_IResType, kCTU_Default>
 {
 public:
 	// Get the name of this type. This is an arbitrary static string,
@@ -111,26 +68,26 @@ const char *STDMETHODCALLTYPE cImageResourceType::GetName()
 void STDMETHODCALLTYPE cImageResourceType::EnumerateExts(tResEnumExtsCallback callback, void *pClientData)
 {
 	for (int i = 0; i < std::size(extMaps); ++i)
-		callback(extMaps[i], this, pClientData);
+		callback(extMaps[i].ext, this, pClientData);
 }
 
 BOOL STDMETHODCALLTYPE cImageResourceType::IsLegalExt(const char *pExt)
 {
 	for (int i = 0; i < std::size(extMaps); ++i)
-		if (stricmp(pExt, extMaps[i]) == 0)
-			return 1;
-	return 0;
+		if (stricmp(pExt, extMaps[i].ext) == 0)
+			return TRUE;
+
+	return FALSE;
 }
 
 IRes *STDMETHODCALLTYPE cImageResourceType::CreateRes(IStore *pStore, const char *pName, const char *pExt, IResMemOverride **ppResMem)
 {
-	if(!IsLegalExt(pExt))
-	{
-    	Warning(("Invalid extension %s given to create image resource!", pExt));
-		return nullptr;
-	}
+	for (int i = 0; i < std::size(extMaps); ++i)
+		if (stricmp(pExt, extMaps[i].ext) == 0)
+			return new cImageResource(pStore, pName, this, extMaps[i].kind);
 
-	return new cImageResource(pStore, pName, this, pExt);
+	Warning(("Invalid extension %s given to create image resource!", pExt));
+	return nullptr;
 }
 
 EXTERN IResType *MakeImageResourceType()

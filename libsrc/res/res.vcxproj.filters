@@ -33,9 +33,6 @@
     <ClCompile Include="resagg.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="resarq.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="resbuild.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -90,9 +87,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resagg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resarq.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rescache.h">

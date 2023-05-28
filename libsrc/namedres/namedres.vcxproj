@@ -71,22 +71,22 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/res;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/lgd3d;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/md;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/r3d;$(SolutionDir)3rdsrc/zlib/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/res;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/mprintf;$(SolutionDir)3rdsrc/zlib;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/res;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/lgd3d;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/md;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/r3d;$(SolutionDir)3rdsrc/zlib/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/res;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/mprintf;$(SolutionDir)3rdsrc/zlib;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -103,7 +103,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -120,7 +120,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;DEBUG;DBG_ON;WARN_ON;SPEW_ON;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -137,7 +137,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -152,37 +152,81 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="binrstyp.h" />
+    <ClInclude Include="bmp.h" />
+    <ClInclude Include="cel.h" />
     <ClInclude Include="datasrc.h" />
+    <ClInclude Include="defresm.h" />
+    <ClInclude Include="defstfct.h" />
     <ClInclude Include="dfrstype.h" />
+    <ClInclude Include="filestrm.h" />
     <ClInclude Include="fonrstyp.h" />
+    <ClInclude Include="gif.h" />
     <ClInclude Include="imgrstyp.h" />
     <ClInclude Include="mdlrstyp.h" />
     <ClInclude Include="miprstyp.h" />
     <ClInclude Include="palrstyp.h" />
+    <ClInclude Include="pathutil.h" />
+    <ClInclude Include="pcx.h" />
     <ClInclude Include="resapi.h" />
+    <ClInclude Include="resarq.h" />
     <ClInclude Include="resbase.h" />
     <ClInclude Include="resbastm.h" />
     <ClInclude Include="reshack.h" />
     <ClInclude Include="reshelp.h" />
+    <ClInclude Include="resimage.h" />
     <ClInclude Include="resistr.h" />
+    <ClInclude Include="resman.h" />
+    <ClInclude Include="resmanhs.h" />
+    <ClInclude Include="respall.h" />
+    <ClInclude Include="resstat.h" />
+    <ClInclude Include="resstr.h" />
     <ClInclude Include="resutil.h" />
     <ClInclude Include="rgmiptyp.h" />
+    <ClInclude Include="search.h" />
     <ClInclude Include="sndrstyp.h" />
+    <ClInclude Include="storbase.h" />
     <ClInclude Include="storeapi.h" />
+    <ClInclude Include="storedir.h" />
+    <ClInclude Include="storeman.h" />
+    <ClInclude Include="storezip.h" />
     <ClInclude Include="strrstyp.h" />
+    <ClInclude Include="tga.h" />
     <ClInclude Include="zipstfct.h" />
+    <ClInclude Include="zipstrm.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="binrstyp.cpp" />
+    <ClCompile Include="bmp.cpp" />
+    <ClCompile Include="cel.cpp" />
+    <ClCompile Include="defresm.cpp" />
+    <ClCompile Include="defstfct.cpp" />
+    <ClCompile Include="filestrm.cpp" />
     <ClCompile Include="fonrstyp.cpp" />
-    <ClCompile Include="imageresource.cpp" />
+    <ClCompile Include="gif.cpp" />
     <ClCompile Include="imgrstyp.cpp" />
     <ClCompile Include="mdlrstyp.cpp" />
     <ClCompile Include="palrstyp.cpp" />
+    <ClCompile Include="pathutil.cpp" />
+    <ClCompile Include="pcx.cpp" />
+    <ClCompile Include="resarq.cpp" />
+    <ClCompile Include="resimage.cpp" />
     <ClCompile Include="resman.cpp" />
+    <ClCompile Include="resmanhs.cpp" />
+    <ClCompile Include="resmanx.cpp" />
+    <ClCompile Include="respall.cpp" />
+    <ClCompile Include="resstat.cpp" />
+    <ClCompile Include="resstr.cpp" />
     <ClCompile Include="resutil.cpp" />
+    <ClCompile Include="search.cpp" />
     <ClCompile Include="sndrstyp.cpp" />
+    <ClCompile Include="storbase.cpp" />
+    <ClCompile Include="storedir.cpp" />
+    <ClCompile Include="storeman.cpp" />
+    <ClCompile Include="storezip.cpp" />
     <ClCompile Include="strrstyp.cpp" />
+    <ClCompile Include="tga.cpp" />
+    <ClCompile Include="zipstfct.cpp" />
+    <ClCompile Include="zipstrm.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

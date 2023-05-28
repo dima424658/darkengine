@@ -26,17 +26,11 @@
 
 #include <res.h>
 #include <res_.h>
-#include <resarq.h>
+#include <resapi.h>
+#include <resman.h>
 #include <resthred.h>
 
 #include <hshsttem.h>
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// cResARQFulfiller request pool
-//
-
-IMPLEMENT_POOL(cResARQFulfiller::sResRequest);
 
 #ifndef NO_DB_MEM
 // Must be last header
@@ -45,99 +39,156 @@ IMPLEMENT_POOL(cResARQFulfiller::sResRequest);
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-
-static cResARQFulfiller g_ResARQFulfiller;
-
-///////////////////////////////////////
-
-void LGAPI ResARQInit()
-{
-    g_ResARQFulfiller.Init();
-    g_pfnResARQClearPreloadFunc = ResARQClearPreload;
-}
-
-///////////////////////////////////////
-
-void LGAPI ResARQClearPreload(Id id)
-{
-    g_ResARQFulfiller.ClearPreload(id);
-}
-
-///////////////////////////////////////
-
-void LGAPI ResARQTerm()
-{
-    g_ResARQFulfiller.Term();
-    // @TBD (toml 09-11-96): Remove all requests from table!
-}
-
-///////////////////////////////////////
-
-BOOL LGAPI ResAsyncLock(Id id, int priority)
-{
-    ValidateRes(id);
-
-    return g_ResARQFulfiller.Lock(id, priority);
-}
-
-///////////////////////////////////////
-
-BOOL LGAPI ResAsyncExtract(Id id, int priority, void *buf, long bufSize)
-{
-    ValidateRes(id);
-
-    return g_ResARQFulfiller.Extract(id, priority, buf, bufSize);
-}
-
-///////////////////////////////////////
-
-BOOL LGAPI ResAsyncPreload(Id id)
-{
-    ValidateRes(id);
-
-    return g_ResARQFulfiller.Preload(id);
-}
-
-///////////////////////////////////////
-
-BOOL LGAPI ResAsyncIsFulfilled (Id id)
-{
-    ValidateRes(id);
-
-    return g_ResARQFulfiller.IsFulfilled(id);
-}
-
-///////////////////////////////////////
-
-HRESULT LGAPI ResAsyncKill(Id id)
-{
-    ValidateRes(id);
-
-    return g_ResARQFulfiller.Kill(id);
-}
-
-///////////////////////////////////////
-
-HRESULT LGAPI ResAsyncGetResult(Id id, void ** ppResult)
-{
-    ValidateRes(id);
-
-    return g_ResARQFulfiller.GetResult(id, ppResult);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
 //
 // CLASS: cResARQFulfiller
 //
 
-IMPLEMENT_UNAGGREGATABLE_NO_FINAL_RELEASE(cResARQFulfiller, IAsyncReadFulfiller);
+class cResARQFulfiller : public cCTUnaggregated<IAsyncReadFulfiller, &IID_IAsyncReadFulfiller, kCTU_NoSelfDelete>
+{
+public:
+    cResARQFulfiller();
+    ~cResARQFulfiller();
+
+    ///////////////////////////////////
+
+    void    Init();
+    void    Term();
+
+    ///////////////////////////////////
+
+    bool    Lock(IRes* pRes, int priority);
+    bool    Extract(IRes* pRes, int priority, void* pBuf, long bufSize);
+    bool    Preload(IRes* pRes);
+    bool    IsFulfilled(IRes* pRes);
+    HRESULT Kill(IRes* pRes);
+    HRESULT GetResult(IRes* pRes, void** ppResult);
+
+    void ClearPreload(cResourceTypeData* pId);
+    bool IsAsynchronous();
+
+    ///////////////////////////////////
+
+    STDMETHOD(DoFulfill)(const sARQRequest* pRequest, sARQResult* pResult);
+    STDMETHOD(DoKill)(const sARQRequest* pRequest, BOOL fDiscard);
+
+    ///////////////////////////////////
+
+private:
+
+    struct sResRequest;
+    class cResControlTable : public cPtrHashSet<sResRequest*>
+    {
+    private:
+        virtual tHashSetKey GetKey(tHashSetNode node) const;
+    };
+
+    ///////////////////////////////////
+    //
+    // Asynchronous resource requests are tracked using a hash table of
+    // sResRequest structures
+    //
+
+    struct sResRequest
+    {
+        enum eRequestKind
+        {
+            kLock,
+            kExtract,
+            kPreload
+        };
+
+        ///////////////////////////////
+
+        sResRequest(cResControlTable& owningControlTable,
+            cResourceTypeData* id, IRes* pRes, int priority,
+            sResRequest::eRequestKind kind, void* pBuf, int bufSize)
+            :
+            pControl{ nullptr },
+            id{ id },
+            pResource{ pRes },
+            priority{ priority },
+            kind{ kind },
+            pBuf{ pBuf },
+            bufSize{ bufSize },
+            nRequests{ 0 },
+            m_OwningControlTable{ owningControlTable },
+            satisfyingPreload{ 0 }
+        {
+            pResource->AddRef();
+            m_OwningControlTable.Insert(this);
+        }
+
+        ~sResRequest()
+        {
+            Verify(m_OwningControlTable.Remove(this));
+            pResource->Release();
+            if (pControl)
+                pControl->Release();
+            memset(this, 0xfe, sizeof(sResRequest));
+        }
+
+        ///////////////////////////////
+
+        IAsyncReadControl* pControl;
+        cResourceTypeData* id;
+        IRes* pResource;
+        int                 priority;
+        eRequestKind        kind;
+        void* pBuf;
+        long                bufSize;
+        uint                nRequests;
+
+        cResControlTable& m_OwningControlTable;
+
+        bool                satisfyingPreload;
+    };
+
+    ///////////////////////////////////
+
+    bool    QueueRequest(IRes* pRes, int priority, sResRequest::eRequestKind kind, void* pBuf = nullptr, long bufSize = 0);
+    HRESULT SatisfyRequest(sResRequest* pResRequest, void** ppResult);
+
+    ///////////////////////////////////
+
+    IAsyncReadQueue* m_pAsyncReadQueue;
+    cResControlTable        m_Controls;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+static cResARQFulfiller g_ResARQFulfiller;
+static cResMan* g_pResMan;
 
 ///////////////////////////////////////
 
+bool cResARQFulfiller::Lock(IRes* pRes, int priority)
+{
+    return QueueRequest(pRes, priority, sResRequest::kLock);
+}
+
+///////////////////////////////////////
+
+bool cResARQFulfiller::Extract(IRes* pRes, int priority, void* pBuf, long bufSize)
+{
+    return QueueRequest(pRes, priority, sResRequest::kExtract, pBuf, bufSize);
+}
+
+///////////////////////////////////////
+
+bool cResARQFulfiller::Preload(IRes* pRes)
+{
+    return QueueRequest(pRes, kPriorityLowest, sResRequest::kPreload);
+}
+
+///////////////////////////////////////
+
+bool cResARQFulfiller::IsAsynchronous()
+{
+    return m_pAsyncReadQueue != nullptr;
+}
+
 cResARQFulfiller::cResARQFulfiller()
-  : m_pAsyncReadQueue(NULL),
-    m_fSatisfyingPreload(FALSE)
+    : m_pAsyncReadQueue{ nullptr }, m_Controls{}
 {
 }
 
@@ -167,11 +218,12 @@ void cResARQFulfiller::Term()
 
 ///////////////////////////////////////
 
-BOOL cResARQFulfiller::IsFulfilled(Id id)
+bool cResARQFulfiller::IsFulfilled(IRes* pRes)
 {
-    sResRequest * pResRequest = m_Controls.Search(&id);
+    auto* pResourceTypeData = g_pResMan->GetResourceTypeData(pRes);
+    auto* pResRequest = m_Controls.Search(pResourceTypeData);
 
-    AssertMsg1(pResRequest, "Resource 0x%x was never queued", id);
+    AssertMsg1(pResRequest, "Resource 0x%x was never queued", pResourceTypeData->GetName());
 
     // If we're actually operating asynchronously...
     if (pResRequest && IsAsynchronous())
@@ -179,16 +231,18 @@ BOOL cResARQFulfiller::IsFulfilled(Id id)
         return pResRequest->pControl->IsFulfilled();
 
     // Otherwise, just promise sucess
-    return TRUE;
+    return true;
 }
 
 ///////////////////////////////////////
 // @TBD (toml 03-21-97): should change arq kill to return s_false for this
 
-HRESULT cResARQFulfiller::Kill(Id id)
+HRESULT cResARQFulfiller::Kill(IRes* pRes)
 {
     ResThreadLock();
-    sResRequest * pResRequest = m_Controls.Search(&id);
+
+    auto* pResourceTypeData = g_pResMan->GetResourceTypeData(pRes);
+    auto* pResRequest = m_Controls.Search(pResourceTypeData);
 
     if (pResRequest)
     {
@@ -204,7 +258,7 @@ HRESULT cResARQFulfiller::Kill(Id id)
                 ResThreadLock();
 
                 if (retVal == E_FAIL && pResRequest->kind == sResRequest::kLock)
-                    ResUnlock(pResRequest->id);
+                    g_pResMan->UnlockResource(pResRequest->pResource);
             }
 
             delete pResRequest;
@@ -219,10 +273,11 @@ HRESULT cResARQFulfiller::Kill(Id id)
 
 ///////////////////////////////////////
 
-HRESULT cResARQFulfiller::GetResult(Id id, void ** ppResult)
+HRESULT cResARQFulfiller::GetResult(IRes* pRes, void ** ppResult)
 {
     ResThreadLock();
-    sResRequest * pResRequest = m_Controls.Search(&id);
+    auto* pResourceTypeData = g_pResMan->GetResourceTypeData(pRes);
+    auto* pResRequest = m_Controls.Search(pResourceTypeData);
 
     if (pResRequest)
     {
@@ -249,7 +304,7 @@ HRESULT cResARQFulfiller::GetResult(Id id, void ** ppResult)
             if (pResRequest->nRequests > 1 &&
                 pResRequest->kind == sResRequest::kLock) // @Note (toml 04-08-97): this should be cleaned up
             {
-                ResLock(id);
+                g_pResMan->LockResource(pResRequest->pResource);
             }
 
             *ppResult = result.buffer;
@@ -271,25 +326,23 @@ HRESULT cResARQFulfiller::GetResult(Id id, void ** ppResult)
 
     CriticalMsg("Tried to get the result of an unknown async request.");
 
-    *ppResult = NULL;
+    *ppResult = nullptr;
     ResThreadUnlock();
     return E_FAIL;
 }
 
 ///////////////////////////////////////
 
-void cResARQFulfiller::ClearPreload(Id id)
+void cResARQFulfiller::ClearPreload(cResourceTypeData* pId)
 {
     cAutoResThreadLock lock;
 
     if (IsAsynchronous())
     {
-        sResRequest * pResRequest = m_Controls.Search(&id);
+        auto* pResRequest = m_Controls.Search(pId);
 
         if (pResRequest && pResRequest->kind == sResRequest::kPreload)
-        {
-            Kill(id);
-        }
+            Kill(pResRequest->pResource);
     }
 }
 
@@ -307,26 +360,34 @@ STDMETHODIMP cResARQFulfiller::DoFulfill(const sARQRequest * pRequest, sARQResul
     pResult->length      = 0;
     pResult->result      = SatisfyRequest(pResRequest, &pResult->buffer);
 
+    if(pResRequest->kind == sResRequest::eRequestKind::kPreload)
+    {
+        --pResRequest->nRequests;
+        if (pResRequest->nRequests == 0)
+            delete pResRequest;
+    }
+
     return pResult->result;
 }
 
 ///////////////////////////////////////
 
-STDMETHODIMP cResARQFulfiller::DoKill(const sARQRequest *, BOOL /*fDiscard*/)
+STDMETHODIMP cResARQFulfiller::DoKill(const sARQRequest * /*pRequest*/, BOOL /*fDiscard*/)
 {
     return S_OK;
 }
 
 ///////////////////////////////////////
 
-BOOL cResARQFulfiller::QueueRequest(Id id, int priority,
+bool cResARQFulfiller::QueueRequest(IRes* pRes, int priority,
                                     sResRequest::eRequestKind kind,
                                     void * pBuf, long bufSize)
 {
 // @TBD (toml 09-12-96): on lock, if resource is already in memory, could we just to another
 // lock here & circumvent the ARQ? hmm...
     cAutoResThreadLock lock;
-    sResRequest * pResRequest = m_Controls.Search(&id);
+    auto* pResourceTypeData = g_pResMan->GetResourceTypeData(pRes);
+    auto* pResRequest = m_Controls.Search(pResourceTypeData);
 
     // If we have a request for this Id already...
     if (pResRequest)
@@ -341,32 +402,32 @@ BOOL cResARQFulfiller::QueueRequest(Id id, int priority,
                 if (kind == sResRequest::kExtract)
                 {
                     CriticalMsg("Can't mix async Lock/Extract");
-                    return FALSE;
+                    return false;
                 }
 
                 // A lock supercedes a preload
                 if (kind == sResRequest::kPreload)
-                    return TRUE;
+                    return true;
 
                 // If the new one is of equal or lower priority...
                 if (ComparePriorities(pResRequest->priority, priority) >= 0)
                 {
                     // ... we're ok
-                    pResRequest->nRequests++;
-                    return TRUE;
+                    ++pResRequest->nRequests;
+                    return true;
                 }
 
                 // Otherwise, the request is boosting priority
                 // @TBD (toml 09-11-96): resubmit here, matching request counter + 1
                 Warning(("ResAsync: Cannot boost request priority (not yet imlemented)"));
-                return TRUE;
+                return true;
 
             // If there's an extract...
             //
             case sResRequest::kExtract:
                 // We can't resolve it, because there's no distinguishing for ResAsyncGetResult()
                 CriticalMsg("Can't mix async Extract with any other async resource operation");
-                return FALSE;
+                return false;
 
             // If what we have is a preload...
             //
@@ -374,19 +435,17 @@ BOOL cResARQFulfiller::QueueRequest(Id id, int priority,
 
                 // If the new one is preload we're fine...
                 if (kind == sResRequest::kPreload)
-                {
-                    return TRUE;
-                }
+                    return true;
 
                 // @TBD (toml 09-11-96): resubmit here as a lock if lock, blow up if extract
                 // @TBD (toml 09-11-96): We can't resolve it right now, because we're lazy!
                 CriticalMsg("Oof! Don't know how to turn a preload into something else right now!");
-                return FALSE;
+                return false;
 
             default:
                 CriticalMsg("Unknown async request kind!");
         }
-        return FALSE;
+        return false;
     }
 
     // If it's a preload request...
@@ -394,17 +453,17 @@ BOOL cResARQFulfiller::QueueRequest(Id id, int priority,
     {
         // ... and it's already locked, there's nothing to do but make sure it's at the back of the LRU...
         // ... or if we're not operating asynchronously just do it...
-        if (ResPtr(id) || !IsAsynchronous())
+        if (pResourceTypeData->m_pData != nullptr || !IsAsynchronous())
         {
-            ::ResLock(id);
-            ::ResUnlock(id);
-            return TRUE;
+            g_pResMan->LockResource(pResRequest->pResource);
+            g_pResMan->UnlockResource(pResRequest->pResource);
+            return true;
         }
     }
 
     // Reaching here, we have a fresh request to handle...
-    AssertMsg(!pResRequest, "Expected request to be new");
-    pResRequest = new sResRequest(m_Controls, id, priority, kind, pBuf, bufSize);
+    // AssertMsg(!pResRequest, "Expected request to be new");
+    pResRequest = new sResRequest{ m_Controls, pResourceTypeData, pRes, priority, kind, pBuf, bufSize };
 
     // If we're actually operating asynchronously...
     if (IsAsynchronous())
@@ -425,15 +484,14 @@ BOOL cResARQFulfiller::QueueRequest(Id id, int priority,
         if (m_pAsyncReadQueue->QueueRequest(&request, &pResRequest->pControl) != S_OK)
         {
             delete pResRequest;
-            return FALSE;
+            return false;
         }
-
     }
 
     // When not asynchronous, leave the request hanging around in the table to be picked
     // up later when GetResult() is called
     pResRequest->nRequests++;
-    return TRUE;
+    return true;
 }
 
 ///////////////////////////////////////
@@ -448,21 +506,18 @@ HRESULT cResARQFulfiller::SatisfyRequest(sResRequest * pResRequest, void ** ppRe
     {
         case sResRequest::kLock:
             AssertMsg(ppResult, "Must have a destination for ResLock()");
-            pResult = ResLock(pResRequest->id);
+            pResult = g_pResMan->LockResource(pResRequest->pResource);
             break;
 
         case sResRequest::kExtract:
-            pResult = ResExtract(pResRequest->id, pResRequest->pBuf);
+            pResult = g_pResMan->ExtractResource(pResRequest->pResource, pResRequest->pBuf);
             break;
 
         case sResRequest::kPreload:
         {
-            Id id = pResRequest->id;
-            m_fSatisfyingPreload++;
-
-            pResult = ResLock(id); // This will delete pResRequest
-            ResUnlock(id);
-            m_fSatisfyingPreload--;
+            pResRequest->satisfyingPreload = true;
+            pResult = pResRequest->pResource->PreLoad();
+            pResRequest->satisfyingPreload = false;
             break;
         }
 
@@ -488,3 +543,53 @@ tHashSetKey cResARQFulfiller::cResControlTable::GetKey(tHashSetNode node) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+//
+// CLASS: cResARQ
+//
+
+void cResManARQ::Init(cResMan* pManager)
+{
+    g_ResARQFulfiller.Init();
+    g_pResMan = pManager;
+}
+
+void cResManARQ::Term()
+{
+    g_pResMan = nullptr;
+    g_ResARQFulfiller.Term();
+}
+
+void cResManARQ::ClearPreload(cResourceTypeData* id)
+{
+    g_ResARQFulfiller.ClearPreload(id);
+}
+
+int cResManARQ::Lock(IRes* pRes, int priority)
+{
+    return g_ResARQFulfiller.Lock(pRes, priority);
+}
+
+int cResManARQ::Extract(IRes* pRes, int priority, void* buf, long bufSize)
+{
+    return g_ResARQFulfiller.Extract(pRes, priority, buf, bufSize);
+}
+
+int cResManARQ::Preload(IRes* pRes)
+{
+    return g_ResARQFulfiller.Preload(pRes);
+}
+
+int cResManARQ::IsFulfilled(IRes* pRes)
+{
+    return g_ResARQFulfiller.Preload(pRes);
+}
+
+long cResManARQ::Kill(IRes* pRes)
+{
+    return g_ResARQFulfiller.Kill(pRes);
+}
+
+long cResManARQ::GetResult(IRes* pRes, void** ppResult)
+{
+    return g_ResARQFulfiller.GetResult(pRes, ppResult);
+}

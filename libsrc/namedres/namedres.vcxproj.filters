@@ -13,6 +13,24 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Resource Types">
+      <UniqueIdentifier>{110316b9-e374-457b-9494-e492b78ac432}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resource Types">
+      <UniqueIdentifier>{63a03b73-3393-4859-bcae-26fb1bb8fb1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources">
+      <UniqueIdentifier>{9f051e30-2054-4553-952e-d1d7adca04a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources">
+      <UniqueIdentifier>{8db12670-2058-4806-9dcc-8b3f6d4adb32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resource Readers">
+      <UniqueIdentifier>{24ab8541-cc5e-4f71-88d4-3cac8ac04cc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resource Readers">
+      <UniqueIdentifier>{3769e371-cdf5-4ac1-8aa9-c62ec804bcfc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="reshack.h">
@@ -27,85 +45,217 @@
     <ClInclude Include="resutil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rgmiptyp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="sndrstyp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="storeapi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="strrstyp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="zipstfct.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="binrstyp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="datasrc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dfrstype.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fonrstyp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="imgrstyp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mdlrstyp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="miprstyp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="palrstyp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resbase.h">
+    <ClInclude Include="resmanhs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resbastm.h">
+    <ClInclude Include="resstat.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="defresm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resarq.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resman.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="storeman.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pathutil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="storedir.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="storbase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filestrm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="defstfct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="search.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="storezip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="zipstrm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="binrstyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="dfrstype.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="fonrstyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="mdlrstyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="imgrstyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="miprstyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="palrstyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="rgmiptyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="sndrstyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="strrstyp.h">
+      <Filter>Header Files\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="resbase.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="resbastm.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="resimage.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="respall.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="bmp.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
+    <ClInclude Include="cel.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
+    <ClInclude Include="gif.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
+    <ClInclude Include="pcx.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
+    <ClInclude Include="tga.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
+    <ClInclude Include="resstr.h">
+      <Filter>Header Files\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="binrstyp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mdlrstyp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="imgrstyp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="imageresource.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="palrstyp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="strrstyp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="sndrstyp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fonrstyp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="resman.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="resutil.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="resmanhs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="resmanx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="resstat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="defresm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="resarq.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pathutil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="storeman.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="storbase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="storedir.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filestrm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="defstfct.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="search.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="zipstfct.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="storezip.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="zipstrm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="binrstyp.cpp">
+      <Filter>Source Files\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="fonrstyp.cpp">
+      <Filter>Source Files\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="imgrstyp.cpp">
+      <Filter>Source Files\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="mdlrstyp.cpp">
+      <Filter>Source Files\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="palrstyp.cpp">
+      <Filter>Source Files\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="sndrstyp.cpp">
+      <Filter>Source Files\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="strrstyp.cpp">
+      <Filter>Source Files\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="resimage.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="respall.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="bmp.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
+    </ClCompile>
+    <ClCompile Include="resstr.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="cel.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
+    </ClCompile>
+    <ClCompile Include="gif.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
+    </ClCompile>
+    <ClCompile Include="pcx.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
+    </ClCompile>
+    <ClCompile Include="tga.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

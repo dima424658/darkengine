@@ -158,7 +158,6 @@
     <ClCompile Include="res.cpp" />
     <ClCompile Include="resacc.cpp" />
     <ClCompile Include="resagg.c" />
-    <ClCompile Include="resarq.cpp" />
     <ClCompile Include="resbuild.cpp" />
     <ClCompile Include="rescache.cpp" />
     <ClCompile Include="rescback.cpp" />
@@ -179,7 +178,6 @@
     <ClInclude Include="pkzip.h" />
     <ClInclude Include="res.h" />
     <ClInclude Include="resagg.h" />
-    <ClInclude Include="resarq.h" />
     <ClInclude Include="rescache.h" />
     <ClInclude Include="resguid.h" />
     <ClInclude Include="resimpl.h" />

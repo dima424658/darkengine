@@ -10,8 +10,6 @@
 #include <resthred.h>
 #include <res_.h>
 
-#include <resarq.h>
-
 tResARQClearPreloadFunc g_pfnResARQClearPreloadFunc;
 
 

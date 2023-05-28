@@ -2,10 +2,16 @@
 #include <resapi.h>
 #include <resbastm.h>
 #include <aggmemb.h>
-#include <dbmem.h>
 
-class cModelResourceType : public cCTDelegating<IResType>,
-						   public cCTAggregateMemberControl<kCTU_Default>
+#ifndef NO_DB_MEM
+// Must be last header
+#include <memall.h>
+#include <dbmem.h>
+#endif
+
+
+class cModelResourceType :
+	public cCTUnaggregated<IResType, &IID_IResType, kCTU_Default>
 {
 public:
 	// Get the name of this type. This is an arbitrary static string,

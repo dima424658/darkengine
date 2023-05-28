@@ -2,11 +2,15 @@
 #include <resapi.h>
 #include <resbastm.h>
 #include <aggmemb.h>
+
+#ifndef NO_DB_MEM
+// Must be last header
+#include <memall.h>
 #include <dbmem.h>
+#endif
 
 class cBinaryResourceType :
-	public cCTDelegating<IResType>,
-	public cCTAggregateMemberControl<kCTU_Default>
+	public cCTUnaggregated<IResType, &IID_IResType, kCTU_Default>
 {
 public:
 	// Get the name of this type. This is an arbitrary static string,
@@ -53,7 +57,7 @@ void STDMETHODCALLTYPE cBinaryResourceType::EnumerateExts(tResEnumExtsCallback c
 
 BOOL STDMETHODCALLTYPE cBinaryResourceType::IsLegalExt(const char* pExt)
 {
-	return 1;
+	return TRUE;
 }
 
 IRes* STDMETHODCALLTYPE cBinaryResourceType::CreateRes(IStore* pStore, const char* pName, const char* pExt, IResMemOverride** ppResMem)
@@ -61,7 +65,7 @@ IRes* STDMETHODCALLTYPE cBinaryResourceType::CreateRes(IStore* pStore, const cha
 	return new cResourceBase<IRes, &IID_IRes>(pStore, pName, this);
 }
 
-EXTERN IResType* MakeBinaryResourceType()
+IResType* MakeBinaryResourceType()
 {
 	return new cBinaryResourceType();
 }
