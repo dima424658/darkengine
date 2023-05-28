@@ -196,9 +196,7 @@ BOOL find_file_in_config_path(char* targ, const char* filename, const char* path
    char pathbuf[256] = "";
    BOOL result;
    DatapathClear(&path);
-   if (!config_get_raw(path_var, pathbuf, sizeof(pathbuf)))
-       return FALSE;
-
+   config_get_raw(path_var, pathbuf, sizeof(pathbuf));
    DatapathAdd(&path,pathbuf);
    result = DatapathFind(&path,filename,targ,256);
    DatapathFree(&path);
