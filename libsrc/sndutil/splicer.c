@@ -263,7 +263,7 @@ refillSplicedStream( ISndSample  *pSample,
                // need to switch state, either to dual splice or empty
                if ( endGap == 0 ) {
                   state = kSpliceEmpty;
-                  LOG3( "splice single->empty seg[%d], %d bytesAvail, %d endGap",
+                  TLOG3( "splice single->empty seg[%d], %d bytesAvail, %d endGap",
                         pSeg - pInfo->pSeg0, bytesAvail, endGap );
                   // tell data read function we are done with segment
                   pInfo->getData( pSeg, NULL, 0, 0 );

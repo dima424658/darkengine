@@ -502,7 +502,7 @@ refillSplicedStream( ISndSample  *pSample,
                   // decrease bytes available by size of splice just completed
                   bytesAvail = pSeg->numBytes + oldEndGap;
                }
-               LOG3( "splice dual->single %d segsLeft, %d bytesAvail, %d endGap",
+               TLOG3( "splice dual->single %d segsLeft, %d bytesAvail, %d endGap",
                      pInfo->segsLeft, bytesAvail, endGap );
             }
             break;

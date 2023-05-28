@@ -188,12 +188,14 @@ DECLARE_INTERFACE_(IDebugMalloc, IMalloc)
       {
          __cAutoAllocCredit(const char * pszFile, int line)
          {
-            g_pMalloc->PushCredit(pszFile, line);
+            if (g_pMalloc)
+                g_pMalloc->PushCredit(pszFile, line);
          }
          
          ~__cAutoAllocCredit()
          {
-            g_pMalloc->PopCredit();
+            if (g_pMalloc)
+                g_pMalloc->PopCredit();
          }
       };
       #define LGALLOC_AUTO_CREDIT() __cAutoAllocCredit _AAC_ ## __LINE__ (__FILE__, __LINE__)

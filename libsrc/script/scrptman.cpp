@@ -205,7 +205,7 @@ STDMETHODIMP cScriptMan::AddModule(const char * pszModule)
       fsModule.SetRelativePath(buf);
 
    fsModule.MakeFullPath();
-   DebugMsg1("Attempting to load %s...", fsModule.GetName())
+   DebugMsg1("Attempting to load %s...", fsModule.GetName());
 
    LoadModule(fsModule, &moduleInfo);
 
