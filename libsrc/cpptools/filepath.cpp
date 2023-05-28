@@ -516,7 +516,12 @@ BOOL sFindContext::DoFindNext(cStr & StrResult)
 //
 BOOL cFilePath::FindFirst(cFileSpec &fs, sFindContext& FC) const
 {
-    cStr WcString = m_path + pcszWildAll;
+    return FindFirst(fs, FC, pcszWildAll);
+}
+
+BOOL cFilePath::FindFirst(cFileSpec& fs, sFindContext& FC, const char* pWildcard) const
+{
+    cStr WcString = m_path + pWildcard;
     cStr StrFoundFile;
 
     if (FC.DoFindFirst(sFindContext::kFindingFiles, WcString, StrFoundFile))

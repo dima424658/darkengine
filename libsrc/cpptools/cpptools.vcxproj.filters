@@ -63,6 +63,9 @@
     <ClCompile Include="dynarray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="growblk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="delmlist.h">
@@ -141,6 +144,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="templexp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="growblk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
