@@ -33,9 +33,15 @@
     <ClInclude Include="isdesced.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sdesc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sdestool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sdesc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

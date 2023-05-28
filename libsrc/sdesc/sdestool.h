@@ -33,7 +33,7 @@ DECLARE_INTERFACE_(IStructDescTools,IUnknown)
    // Parse and unparse a field
    //
    STDMETHOD(ParseField)(THIS_ const sFieldDesc* fdesc, const char* string, void* struc) PURE;
-   STDMETHOD(UnparseField)(THIS_ const sFieldDesc* fdesc, const void* struc, char* string, int buflen) PURE; 
+   STDMETHOD(UnparseField)(THIS_ const sFieldDesc* fdesc, const void* struc, char* string, int buflen) PURE;
 
    // 
    // Parse & Unparse a "simple" structure (e.g. a one-field structure)
