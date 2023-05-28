@@ -14,8 +14,9 @@ public:
 public:
 	// Constructor
 	cLoop(IUnknown* pOuterUnknown, cLoopManager* pLoopManager);
+	~cLoop();
 
-	DECLARE_SIMPLE_AGGREGATION(cLoop);
+	DECLARE_DELEGATION(cLoop);
 
 
 	// Run the loop
@@ -93,7 +94,7 @@ private:
 
 	uint m_fTempDiagnostics;
 	ulong m_tempDiagnosticSet;
-	
+
 	ulong m_TempProfileSet;
 	tLoopClientID* m_pTempProfileClientId;
 };

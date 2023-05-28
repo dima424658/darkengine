@@ -56,9 +56,6 @@
     <ClCompile Include="loopque.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="loopapi.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="loopstk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

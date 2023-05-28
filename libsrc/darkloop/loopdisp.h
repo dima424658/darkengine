@@ -14,6 +14,13 @@ struct sClientInfo
 
 struct cClientInfoList
 {
+	~cClientInfoList()
+	{
+		for (int i = 0; i < list.Size(); ++i)
+			if (list[i])
+				delete list[i];
+	}
+
 	int Append(const struct sClientInfo& o) { return list.Append(new sClientInfo{ o }); }
 	sClientInfo& operator[](int i) { return *list[i]; }
 	int Size() { return list.Size(); }
@@ -32,6 +39,7 @@ class cLoopDispatch : public cCTUnaggregated<ILoopDispatch, &IID_ILoopDispatch, 
 {
 public:
 	cLoopDispatch(ILoopMode* mode, sLoopModeInitParmList paramList, tLoopMessageSet messageSet);
+	~cLoopDispatch();
 
 	// Send a message down/up the dispatch chain
 	STDMETHOD(SendMessage)(eLoopMessage message, tLoopMessageData hData, int flags) override;
@@ -67,7 +75,7 @@ public:
 #endif
 
 private:
-	int DispatchNormalFrame(ILoopClient*, tLoopMessageData hData);
+	bool DispatchNormalFrame(ILoopClient*, tLoopMessageData hData);
 	void AddClientsFromMode(ILoopMode*, ConstraintTable& table);
 	void SortClients(ConstraintTable& table);
 
@@ -75,9 +83,9 @@ private:
 	ulong m_msgs;
 	cLoopQueue m_Queue;
 
-	cPriIntArray<ILoopClient> m_DispatchLists[32];
 	ILoopMode* m_pLoopMode;
 	cClientInfoList m_aClientInfo;
+	cPriIntArray<ILoopClient> m_DispatchLists[32];
 
 	uint m_fDiagnostics;
 	tLoopMessageSet m_diagnosticSet;

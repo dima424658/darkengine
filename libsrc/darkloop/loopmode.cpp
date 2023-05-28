@@ -7,31 +7,38 @@
 class cLoopMode : public cCTUnaggregated<ILoopMode, &IID_ILoopMode, kCTU_Default>
 {
 public:
-	cLoopMode(const sLoopModeDesc* desc)
+	cLoopMode(const sLoopModeDesc* pDescription)
 	{
-		AssertMsg(desc->ppClientIDs, "Empty loop modes are not supported");
-		std::memcpy(&m_desc, desc, sizeof(sLoopModeDesc));
+		AssertMsg(pDescription->ppClientIDs, "Empty loop modes are not supported");
+
+		m_desc = *pDescription;
+		m_desc.ppClientIDs = new tLoopClientID * [m_desc.nClients];
+		memcpy(m_desc.ppClientIDs, pDescription->ppClientIDs, sizeof(tLoopClientID*) * pDescription->nClients);
 	}
 
-	virtual ~cLoopMode() = default;
+	virtual ~cLoopMode()
+	{
+		delete m_desc.ppClientIDs;
+		m_desc.ppClientIDs = nullptr;
+	}
 
 	// Get the info on the loop mode
-	const sLoopModeName* STDMETHODCALLTYPE GetName() override
+	STDMETHOD_(const sLoopModeName*, GetName)() override
 	{
 		return &m_desc.name;
 	}
 
 	// Create the mode dispatch chain
-	HRESULT STDMETHODCALLTYPE CreateDispatch(sLoopModeInitParmList paramList, ILoopDispatch** dispatch) override
+	STDMETHOD(CreateDispatch)(sLoopModeInitParmList paramList, ILoopDispatch** dispatch) override
 	{
 		return CreatePartialDispatch(paramList, -1, dispatch);
 	}
 
 	// int a1, _DWORD *Src, int a3, int *a4
 	// Create a dispatch chain that only handles certain messages
-	HRESULT STDMETHODCALLTYPE CreatePartialDispatch(sLoopModeInitParmList paramList, tLoopMessageSet messageSet, ILoopDispatch** dispatch) override
+	STDMETHOD(CreatePartialDispatch)(sLoopModeInitParmList paramList, tLoopMessageSet messageSet, ILoopDispatch** dispatch) override
 	{
-		*dispatch = new cLoopDispatch(this, paramList, messageSet);
+		*dispatch = new cLoopDispatch{ this, paramList, messageSet };
 		if (*dispatch)
 			return S_OK;
 		else
@@ -39,7 +46,7 @@ public:
 	}
 
 	// Describe this mode
-	const sLoopModeDesc* STDMETHODCALLTYPE Describe() override
+	STDMETHOD_(const sLoopModeDesc*, Describe)() override
 	{
 		return &m_desc;
 	}
@@ -48,7 +55,7 @@ private:
 	sLoopModeDesc m_desc;
 };
 
-ILoopMode* LGAPI _LoopModeCreate(const sLoopModeDesc* desc)
+ILoopMode* LGAPI _LoopModeCreate(const sLoopModeDesc* pDescription)
 {
-	return new cLoopMode{desc};
+	return new cLoopMode{ pDescription };
 }

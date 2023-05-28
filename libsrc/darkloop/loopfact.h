@@ -46,10 +46,10 @@ public:
 
 	void ReleaseAll();
 
-	STDMETHOD_(int, AddClient)(const sLoopClientDesc* pClientDesc);
+	HRESULT AddClient(const sLoopClientDesc* pClientDesc);
 	HRESULT RemoveClient(ulong cookie);
 
-	int AddClients(const sLoopClientDesc** ppClientDesc);
+	HRESULT AddClients(const sLoopClientDesc** ppClientDesc);
 
 private:
 	cLoopClientDescTable m_ClientDescs;

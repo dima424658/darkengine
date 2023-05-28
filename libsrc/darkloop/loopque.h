@@ -20,12 +20,11 @@ public:
 	cLoopQueue();
 
 	void Append(const sLoopQueueMessage& message);
-	int GetMessage(sLoopQueueMessage* pMessage);
+	BOOL GetMessage(sLoopQueueMessage* pMessage);
 	void PackAppend(const sLoopQueueMessage& message);
 
 private:
-	unsigned int m_nRemovePoint;
-	unsigned int m_nInsertPoint;
+	ulong m_nRemovePoint;
+	ulong m_nInsertPoint;
 	sLoopQueueMessage m_Messages[kQueueSize];
 };
-

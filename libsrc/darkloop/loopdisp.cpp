@@ -6,7 +6,7 @@
 #include <appagg.h>
 #include <mprintf.h>
 
-int MessageToIndex(int message)
+int MessageToIndex(eLoopMessage message)
 {
 	int i = 0;
 	int currentMessage = 1;
@@ -59,14 +59,7 @@ static const char* ppszLoopMessageNames[] =
 
 const char* LGAPI LoopGetMessageName(eLoopMessage message)
 {
-	auto currentMessage = 1;
-	auto iMessage = 0;
-	while (currentMessage && !(message & currentMessage))
-	{
-		++iMessage;
-		currentMessage *= 2;
-	}
-
+	auto iMessage = MessageToIndex(message);
 	if (iMessage == 33)
 		iMessage = 0;
 
@@ -111,178 +104,201 @@ char LoopTrackClear()
 	return mono_setwin(2u);
 }
 
-cLoopDispatch::cLoopDispatch(ILoopMode* mode, sLoopModeInitParmList paramList, tLoopMessageSet messageSet)
-	: m_Queue{}, m_aClientInfo{}, m_AverageFrameTimer{}, m_TotalModeTime{}, m_Parms{ paramList }
+cLoopDispatch::cLoopDispatch(ILoopMode* loop, sLoopModeInitParmList parmList, tLoopMessageSet msgs)
+	: m_msgs{ msgs | 3 },
+	m_Queue{},
+	m_pLoopMode{ loop },
+	m_aClientInfo{},
+	m_fDiagnostics{ 0 },
+	m_diagnosticSet{ 0 },
+	m_ProfileSet{ 0 },
+	m_pProfileClientId{ 0 },
+	m_AverageFrameTimer{},
+	m_TotalModeTime{},
+	m_Parms{ parmList }
 {
-	ConstraintTable table{};
-	AddClientsFromMode(mode, table);
+	ConstraintTable constraints{};
+	AddClientsFromMode(loop, constraints);
 
 	AutoAppIPtr(LoopManager);
 
 	if (pLoopManager)
 	{
-		auto mode = pLoopManager->GetBaseMode();
-		AddClientsFromMode(mode, table);
-		mode->Release();
+		auto pBaseMode = pLoopManager->GetBaseMode();
+		AddClientsFromMode(pBaseMode, constraints);
+		pBaseMode->Release();
 	}
 
-	SortClients(table);
+	SortClients(constraints);
+
+	pLoopManager->Release(); // TODO: do we need this???
+	pLoopManager = nullptr;
 
 	SendSimpleMessage(kMsgStart);
 }
 
-STDMETHODIMP_(HRESULT) cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData, int flags)
+cLoopDispatch::~cLoopDispatch()
 {
+	SendMessage(kMsgEnd, nullptr, 2);
+
+	for (int i = 0; i < m_aClientInfo.Size(); ++i)
+		if (m_aClientInfo[i].priIntInfo.pInterface)
+		{
+			m_aClientInfo[i].priIntInfo.pInterface->Release();
+			m_aClientInfo[i].priIntInfo.pInterface = nullptr;
+		}
+}
+
+HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData, int flags)
+{
+	if (!(m_msgs & message))
+	{
+		if (message && !(m_msgs & message))
+			Warning(("Message 0x%02X not supported by this dispatch chain\n", message));
+
+		return S_FALSE;
+	}
+
 	auto result = S_OK;
 
-	if ((m_msgs & message) != 0)
+	auto fLoopTime = m_fDiagnostics & 0x01;
+	auto fFrameHeapchk = m_fDiagnostics & 0x08;
+	auto fClientHeapchk = m_fDiagnostics & 0x10;
+	auto fLoopTrack = (m_fDiagnostics & 0x01) && (message & m_diagnosticSet);
+
+	auto fPassedSkipTime = false;
+	auto fLoopTimeThisMsg = false;
+	if (message & (kMsgResumeMode | kMsgStart))
+		m_TotalModeTime.Start();
+
+	if (m_TotalModeTime.IsActive())
 	{
-		auto fLoopTimeThisMsg = false;
-		auto fPassedSkipTime = false;
-
-		auto fLoopTime = m_fDiagnostics & 2;
-		auto fFrameHeapchk = m_fDiagnostics & 8;
-		auto fClientHeapchk = m_fDiagnostics & 0x10;
-		auto fLoopTrack = (m_fDiagnostics & 1) && (message & m_diagnosticSet);
-
-		if (message & (kMsgResumeMode | kMsgStart))
-			m_TotalModeTime.Start();
-
-		if (m_TotalModeTime.IsActive())
-		{
-			m_TotalModeTime.Stop();
-			fPassedSkipTime = m_TotalModeTime.GetResult() > 2500.0;
-			m_TotalModeTime.Start();
-			fLoopTimeThisMsg = fPassedSkipTime && fLoopTime && (message & 0x3C0) != 0;
-		}
-		else
-		{
-			fLoopTimeThisMsg = false;
-		}
-
-		if (fLoopTimeThisMsg)
-			m_AverageFrameTimer.Start();
-
-		auto& targetList = m_DispatchLists[2 * MessageToIndex(message)];
-
-		for (int i = 0; i <= targetList.Size() - 1; ++i)
-		{
-			auto idx = (flags & 1) ? i : targetList.Size() - 1 - i;
-			auto pClient = targetList[idx]->pInterface;
-			auto& pszClient = targetList[idx]->nameStr;
-
-			if (fLoopTrack)
-				LoopTrack(message, pszClient);
-
-			cAverageTimer* pTimer;
-			if (fLoopTimeThisMsg)
-			{
-				pTimer = &reinterpret_cast<sClientInfo*>(targetList[idx]->pData)->timer;
-				pTimer->Start();
-			}
-
-			eLoopMessageResult clientResult;
-			if (m_ProfileSet & message)
-				clientResult = LoopProfileSend(pClient, message, hData);
-			else
-				clientResult = pClient->ReceiveMessage(message, hData);
-
-			if (fLoopTimeThisMsg)
-				pTimer->Stop();
-
-			if (fClientHeapchk)
-				_heapchk();
-
-			if (clientResult == 1)
-			{
-				result = E_FAIL;
-				break;
-			}
-		}
-
-		if (fFrameHeapchk)
-			_heapchk();
-
-		if ((message & 0x2002) != 0)
-			m_TotalModeTime.Stop();
-
-		if (fLoopTime)
-		{
-			if (fLoopTimeThisMsg)
-				m_AverageFrameTimer.Stop();
-			if (fPassedSkipTime && (message & 0x200) != 0)
-			{
-				m_AverageFrameTimer.Mark();
-				for (int j = 0; j < m_aClientInfo.Size(); ++j)
-					m_aClientInfo[j].timer.Mark();
-
-			}
-			if ((message & 0x2002) != 0)
-			{
-				if (m_AverageFrameTimer.IsActive())
-				{
-					m_AverageFrameTimer.Stop();
-					for (int k = 0; k < m_aClientInfo.Size(); ++k)
-						m_aClientInfo[k].timer.Stop();
-				}
-
-				DumpTimerInfo();
-				ClearTimers();
-			}
-		}
-
-		if (fLoopTrack)
-			LoopTrackClear();
-
-		return result;
+		m_TotalModeTime.Stop();
+		fPassedSkipTime = m_TotalModeTime.GetResult() > 2500.0;
+		m_TotalModeTime.Start();
+		fLoopTimeThisMsg = fPassedSkipTime && fLoopTime
+			&& (message & (kMsgBeginFrame | kMsgNormalFrame | kMsgPauseFrame | kMsgEndFrame));
 	}
 	else
+		fLoopTimeThisMsg = false;
+
+	if (fLoopTimeThisMsg)
+		m_AverageFrameTimer.Start();
+
+	auto& targetList = m_DispatchLists[MessageToIndex(message)];
+
+	auto iLast = static_cast<int>(targetList.Size()) - 1;
+	for (int i = 0; i <= iLast; ++i)
 	{
-		if (message && (m_msgs & message) == 0)
-			Warning(("Message 0x%02X not supported by this dispatch chain\n", message));
-		return 1;
-	}
-}
+		auto idx = (flags & 0x01) ? i : iLast - i;
+		auto pClient = targetList[idx]->pInterface;
+		auto& pszClient = targetList[idx]->nameStr;
 
-STDMETHODIMP_(HRESULT) cLoopDispatch::SendSimpleMessage(eLoopMessage message)
-{
-	return SendMessage(message, nullptr, 1);
-}
+		if (fLoopTrack)
+			LoopTrack(message, pszClient);
 
-STDMETHODIMP_(HRESULT) cLoopDispatch::PostMessage(eLoopMessage message, tLoopMessageData hData, int flags)
-{
-	sLoopQueueMessage msg{};
-	msg.message = message;
-	msg.hData = hData;
-	msg.flags = flags;
+		cAverageTimer* pTimer = nullptr;
+		if (fLoopTimeThisMsg)
+		{
+			pTimer = &reinterpret_cast<sClientInfo*>(targetList[idx]->pData)->timer;
+			pTimer->Start();
+		}
 
-	m_Queue.Append(msg);
+		eLoopMessageResult clientResult{};
+		if (m_ProfileSet & message)
+			clientResult = LoopProfileSend(pClient, message, hData);
+		else
+			clientResult = pClient->ReceiveMessage(message, hData);
 
-	return S_OK;
-}
+		if (fLoopTimeThisMsg)
+			pTimer->Stop();
 
-STDMETHODIMP_(HRESULT) cLoopDispatch::PostSimpleMessage(eLoopMessage message)
-{
-	return PostMessage(message, nullptr, 0);
-}
+		if (fClientHeapchk)
+			_heapchk();
 
-STDMETHODIMP_(HRESULT) cLoopDispatch::ProcessQueue()
-{
-	auto result = S_FALSE;
-
-	do
-	{
-		sLoopQueueMessage message{};
-		if (!m_Queue.GetMessage(&message))
+		if (clientResult == kLoopDispatchHalt)
+		{
+			result = E_FAIL;
 			break;
+		}
+	}
 
-		result = SendMessage(message.message, message.hData, message.flags);
-	} while (result != S_OK);
+	if (fFrameHeapchk)
+		_heapchk();
+
+	if (message & (kMsgSuspendMode || kMsgEnd))
+		m_TotalModeTime.Stop();
+
+	if (fLoopTime)
+	{
+		if (fLoopTimeThisMsg)
+			m_AverageFrameTimer.Stop();
+
+		if (fPassedSkipTime && (message & kMsgEndFrame))
+		{
+			m_AverageFrameTimer.Mark();
+			for (int j = 0; j < m_aClientInfo.Size(); ++j)
+				m_aClientInfo[j].timer.Mark();
+		}
+
+		if (message & (kMsgSuspendMode || kMsgEnd))
+		{
+			if (m_AverageFrameTimer.IsActive())
+			{
+				m_AverageFrameTimer.Stop();
+				for (int k = 0; k < m_aClientInfo.Size(); ++k)
+					m_aClientInfo[k].timer.Stop();
+			}
+
+			DumpTimerInfo();
+			ClearTimers();
+		}
+	}
+
+	if (fLoopTrack)
+		LoopTrackClear();
 
 	return result;
 }
 
-STDMETHODIMP_(const sLoopModeName*) cLoopDispatch::Describe(sLoopModeInitParmList* list)
+HRESULT cLoopDispatch::SendSimpleMessage(eLoopMessage message)
+{
+	return SendMessage(message, nullptr, 1);
+}
+
+HRESULT cLoopDispatch::PostMessage(eLoopMessage message, tLoopMessageData hData, int flags)
+{
+	sLoopQueueMessage queueMessage{};
+	queueMessage.message = message;
+	queueMessage.hData = hData;
+	queueMessage.flags = flags;
+
+	m_Queue.Append(queueMessage);
+
+	return S_OK;
+}
+
+HRESULT cLoopDispatch::PostSimpleMessage(eLoopMessage message)
+{
+	return PostMessage(message, nullptr, 0);
+}
+
+HRESULT cLoopDispatch::ProcessQueue()
+{
+	auto result = S_FALSE;
+
+	sLoopQueueMessage message{};
+	while (m_Queue.GetMessage(&message))
+	{
+		result = SendMessage(message.message, message.hData, message.flags);
+		if (result != S_OK)
+			return result;
+	}
+
+	return result;
+}
+
+const sLoopModeName* cLoopDispatch::Describe(sLoopModeInitParmList* list)
 {
 	auto name = m_pLoopMode->GetName();
 	if (list)
@@ -291,31 +307,31 @@ STDMETHODIMP_(const sLoopModeName*) cLoopDispatch::Describe(sLoopModeInitParmLis
 	return name;
 }
 
-STDMETHODIMP_(void) cLoopDispatch::SetDiagnostics(unsigned fDiagnostics, tLoopMessageSet messages)
+void cLoopDispatch::SetDiagnostics(unsigned fDiagnostics, tLoopMessageSet messages)
 {
 	m_fDiagnostics = fDiagnostics;
 	m_diagnosticSet = messages;
 }
 
-STDMETHODIMP_(void) cLoopDispatch::GetDiagnostics(unsigned* pfDiagnostics, tLoopMessageSet* pMessages)
+void cLoopDispatch::GetDiagnostics(unsigned* pfDiagnostics, tLoopMessageSet* pMessages)
 {
 	*pfDiagnostics = m_fDiagnostics;
 	*pMessages = m_diagnosticSet;
 }
 
-STDMETHODIMP_(void) cLoopDispatch::SetProfile(tLoopMessageSet messages, tLoopClientID* pClientId)
+void cLoopDispatch::SetProfile(tLoopMessageSet messages, tLoopClientID* pClientId)
 {
 	m_ProfileSet = messages;
 	m_pProfileClientId = pClientId;
 }
 
-STDMETHODIMP_(void) cLoopDispatch::GetProfile(tLoopMessageSet* pMessages, tLoopClientID** ppClientId)
+void cLoopDispatch::GetProfile(tLoopMessageSet* pMessages, tLoopClientID** ppClientId)
 {
 	*pMessages = m_ProfileSet;
 	*ppClientId = m_pProfileClientId;
 }
 
-STDMETHODIMP_(void) cLoopDispatch::ClearTimers()
+void cLoopDispatch::ClearTimers()
 {
 	m_TotalModeTime.Clear();
 	m_AverageFrameTimer.Clear();
@@ -328,7 +344,7 @@ int TimerSortFunc(cAverageTimer* const* pLeft, cAverageTimer* const* pRight)
 {
 	auto result = (*pRight)->GetResult() - (*pLeft)->GetResult();
 
-	if (result == 0.0)
+	if (result == 0.0) // TODO: just return result ?
 		return 0;
 	else if (result > 0.0)
 		return 1;
@@ -336,7 +352,7 @@ int TimerSortFunc(cAverageTimer* const* pLeft, cAverageTimer* const* pRight)
 		return -1;
 }
 
-STDMETHODIMP_(void) cLoopDispatch::DumpTimerInfo()
+void cLoopDispatch::DumpTimerInfo()
 {
 	cAnsiStr msg{};
 
@@ -369,13 +385,16 @@ STDMETHODIMP_(void) cLoopDispatch::DumpTimerInfo()
 			" \n",
 			m_pLoopMode->GetName()->szName,
 			m_AverageFrameTimer.GetIters(),
-			m_AverageFrameTimer.GetTotalTime(), 0.0,
-			0.0, 0.0, // TODO
-			0.0, 0.0);
+			m_AverageFrameTimer.GetTotalTime(),
+			0.0,
+			m_AverageFrameTimer.GetResult(),
+			m_TotalModeTime.GetResult() - 2500.0 - static_cast<double>(m_AverageFrameTimer.GetTotalTime()),
+			1000.0 / m_AverageFrameTimer.GetResult(),
+			1000.0 / ((m_TotalModeTime.GetResult() - 2500.0) / static_cast<double>(m_AverageFrameTimer.GetIters())));
 	}
 
 	mprint(msg);
-	if (m_AverageFrameTimer.GetIters() >= 0xA)
+	if (m_AverageFrameTimer.GetIters() >= 10)
 	{
 		mprintf(" Loop Client                Average Time     %% of Frame  Max Time  Min Time\n"
 			" ----------------------------------------------------------------------------\n");
@@ -424,26 +443,27 @@ STDMETHODIMP_(void) cLoopDispatch::DumpTimerInfo()
 	}
 }
 
-int cLoopDispatch::DispatchNormalFrame(ILoopClient* pClient, tLoopMessageData hData)
+bool cLoopDispatch::DispatchNormalFrame(ILoopClient* pClient, tLoopMessageData hData)
 {
-	return 0; // TODO
+	return pClient->ReceiveMessage(kMsgNormalFrame, hData) != kLoopDispatchHalt;
 }
 
 void TableAddClientConstraints(ConstraintTable& table, const sLoopClientDesc* desc)
 {
-	for (auto pRel = desc + 1; pRel->pID; pRel = (sLoopClientDesc*)((char*)pRel + 12))
+	for (auto pRel = desc->dispatchConstraints; pRel->constraint.kind != kNullConstraint; ++pRel)
 	{
-		if (pRel->pID != (GUID*)1 && pRel->pID != (GUID*)2)
+		if (pRel->constraint.kind != kConstrainBefore && pRel->constraint.kind != kConstrainAfter)
 			CriticalMsg("Bad constraint");
 
 		sAbsoluteConstraint absoluteConstraint{};
-		MakeAbsolute(*reinterpret_cast<const sRelativeConstraint*>(pRel), desc->pID, absoluteConstraint);
+		MakeAbsolute(pRel->constraint, desc->pID, absoluteConstraint);
+
 		int currentMessage = 1;
 		int i = 0;
 		while (currentMessage)
 		{
-			if (currentMessage & pRel->szName[4])
-				table.table->Append(absoluteConstraint);
+			if (currentMessage & pRel->messages)
+				table.table[i].Append(absoluteConstraint);
 
 			++i;
 			currentMessage *= 2;
@@ -479,7 +499,7 @@ void cLoopDispatch::AddClientsFromMode(ILoopMode* pLoop, ConstraintTable& constr
 
 		auto next_client = false;
 		for (auto i = 0; i < m_aClientInfo.Size(); ++i)
-			if(m_aClientInfo[i].priIntInfo.pID == pID)
+			if (m_aClientInfo[i].priIntInfo.pID == pID)
 			{
 				next_client = true;
 				break;
@@ -487,8 +507,8 @@ void cLoopDispatch::AddClientsFromMode(ILoopMode* pLoop, ConstraintTable& constr
 
 		if (!next_client)
 		{
-			ILoopClient* pClient = nullptr;
 			auto pInitParms = initParmTable.Search(*ppIDs);
+			ILoopClient* pClient = nullptr;
 
 			pLoopManager->GetClient(pID, pInitParms != nullptr ? pInitParms->data : nullptr, &pClient);
 
@@ -500,8 +520,9 @@ void cLoopDispatch::AddClientsFromMode(ILoopMode* pLoop, ConstraintTable& constr
 				auto& info = m_aClientInfo[infoidx];
 				info.timer.SetName(pClientDesc->szName);
 				info.priIntInfo.pID = pID;
-				info.priIntInfo.priority = pClientDesc->priority;
 				info.priIntInfo.pInterface = pClient;
+				info.priIntInfo.priority = pClientDesc->priority;
+				info.priIntInfo.nameStr = pClientDesc->szName;
 				info.priIntInfo.pData = &m_aClientInfo[infoidx];
 				info.interests = pClientDesc->interests;
 

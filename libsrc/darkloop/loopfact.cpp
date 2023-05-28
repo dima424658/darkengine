@@ -27,11 +27,13 @@ short cLoopClientFactory::GetVersion()
 
 tLoopClientID** cLoopClientFactory::QuerySupport()
 {
-	cDynArray<tLoopClientID*> clientGuids;
-	tHashSetHandle handle;
+	cDynArray<tLoopClientID*> clientGuids{};
+	tHashSetHandle h{};
 
-	for (auto pClientDesc = m_ClientDescs.GetFirst(handle); pClientDesc; pClientDesc = m_ClientDescs.GetNext(handle))
+	for (auto* pClientDesc = m_ClientDescs.GetFirst(h); pClientDesc; pClientDesc = m_ClientDescs.GetNext(h))
 		clientGuids.Append(pClientDesc->pID);
+
+	clientGuids.Append(&GUID_NULL);
 
 	return clientGuids.Detach();
 }
@@ -51,7 +53,7 @@ HRESULT cLoopClientFactory::GetClient(tLoopClientID* pID, tLoopClientData data, 
 		switch (pClientDesc->factoryType)
 		{
 		case kLCF_None:
-			return ppResult != 0 ? S_OK : E_FAIL;
+			return ppResult != nullptr ? S_OK : E_FAIL;
 		case kLCF_Singleton:
 			*ppResult = pClientDesc->pClient;
 			(*ppResult)->AddRef();
@@ -73,10 +75,9 @@ HRESULT cLoopClientFactory::GetClient(tLoopClientID* pID, tLoopClientData data, 
 			m_InnerFactories[i]->GetClient(pID, data, ppResult);
 	}
 
-	return ppResult != 0 ? S_OK : E_FAIL;
+	return ppResult != nullptr ? S_OK : E_FAIL;
 }
 
-// Inner Factory stuff
 HRESULT cLoopClientFactory::AddInnerFactory(ILoopClientFactory* pFactory)
 {
 	m_InnerFactories.Append(pFactory);
@@ -108,12 +109,12 @@ void cLoopClientFactory::ReleaseAll()
 		if (m_InnerFactories[i])
 		{
 			m_InnerFactories[i]->Release();
-			m_InnerFactories[i] = nullptr;
+			// m_InnerFactories[i] = nullptr;
 		}
 	}
 }
 
-int cLoopClientFactory::AddClient(const sLoopClientDesc* pClientDesc)
+HRESULT cLoopClientFactory::AddClient(const sLoopClientDesc* pClientDesc)
 {
 	if (m_ClientDescs.Search(pClientDesc->pID))
 		CriticalMsg("Double add of loop client");
@@ -124,7 +125,7 @@ int cLoopClientFactory::AddClient(const sLoopClientDesc* pClientDesc)
 	if (loopClientFactoryType == kLCF_Singleton || loopClientFactoryType == kLCF_FactObj)
 		pClientDesc->pClient->AddRef();
 
-	return 0;
+	return S_OK;
 }
 
 HRESULT cLoopClientFactory::RemoveClient(ulong cookie)
@@ -132,22 +133,20 @@ HRESULT cLoopClientFactory::RemoveClient(ulong cookie)
 	auto pClientDesc = m_ClientDescs.RemoveByKey(reinterpret_cast<tLoopClientID*>(cookie));
 	if (!pClientDesc)
 		CriticalMsg("Client to remove from simple factory is not present");
-	else
+	else if(pClientDesc->factoryType == kLCF_Singleton || pClientDesc->factoryType == kLCF_FactObj)
 		pClientDesc->pClient->Release();
 	
 	return pClientDesc != nullptr ? S_OK : E_FAIL;
 }
 
-int cLoopClientFactory::AddClients(const sLoopClientDesc** ppClientDesc)
+HRESULT cLoopClientFactory::AddClients(const sLoopClientDesc** ppClientDesc)
 {
 	int result = S_OK;
 
-	while (*ppClientDesc)
+	for (;*ppClientDesc; ++ppClientDesc)
 	{
-		if (AddClient(*ppClientDesc))
+		if (AddClient(*ppClientDesc) != S_OK)
 			result = E_FAIL;
-
-		++ppClientDesc;
 	}
 
 	return result;
@@ -155,7 +154,7 @@ int cLoopClientFactory::AddClients(const sLoopClientDesc** ppClientDesc)
 
 ILoopClientFactory* LGAPI CreateLoopFactory(const sLoopClientDesc** descs)
 {
-	cLoopClientFactory* pLoopClientFactory = new cLoopClientFactory();
+	auto* pLoopClientFactory = new cLoopClientFactory{};
 	if (pLoopClientFactory)
 	{
 		pLoopClientFactory->AddClients(descs);

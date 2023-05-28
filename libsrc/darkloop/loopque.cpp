@@ -9,7 +9,7 @@ cLoopQueue::cLoopQueue()
 
 void cLoopQueue::Append(const sLoopQueueMessage& message)
 {
-	if (m_nInsertPoint >= std::size(m_Messages))
+	if (m_nInsertPoint >= kQueueSize)
 	{
 		PackAppend(message);
 	}
@@ -20,23 +20,25 @@ void cLoopQueue::Append(const sLoopQueueMessage& message)
 	}
 }
 
-int cLoopQueue::GetMessage(sLoopQueueMessage* pMessage)
+BOOL cLoopQueue::GetMessage(sLoopQueueMessage* pMessage)
 {
 	if (m_nRemovePoint == m_nInsertPoint)
-		return 0;
+		return FALSE;
 
 	*pMessage = m_Messages[m_nRemovePoint];
 	++m_nRemovePoint;
+
+	return TRUE;
 }
 
 void cLoopQueue::PackAppend(const sLoopQueueMessage& message)
 {
 	if (m_nRemovePoint == 0)
 	{
-		CriticalMsg1("Loop queue overflow (size is %d)", std::size(m_Messages));
+		CriticalMsg1("Loop queue overflow (size is %d)", kQueueSize);
 		return;
 	}
-   
+
 	std::memmove(m_Messages, &m_Messages[m_nRemovePoint], sizeof(sLoopQueueMessage) * (m_nInsertPoint - m_nRemovePoint));
 	m_nInsertPoint -= m_nRemovePoint;
 	m_nRemovePoint = 0;
