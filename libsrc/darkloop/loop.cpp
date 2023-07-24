@@ -80,9 +80,9 @@ int cLoop::Go(sLoopInstantiator* loop)
 	{
 		if (m_fState & 0x20)
 		{
-			auto msgMode = kMsgEnterMode;
+			auto inmsg = kMsgEnterMode;
 			if (m_fState & 0x80)
-				msgMode = kMsgResumeMode;
+				inmsg = kMsgResumeMode;
 			else
 				m_pNextDispatch->ProcessQueue();
 
@@ -90,8 +90,8 @@ int cLoop::Go(sLoopInstantiator* loop)
 			m_pNextDispatch = nullptr;
 			m_pCurrentDispatch->SetDiagnostics(m_fTempDiagnostics, m_tempDiagnosticSet);
 			m_pCurrentDispatch->SetProfile(m_TempProfileSet, m_pTempProfileClientId);
-			m_pCurrentDispatch->SendMessage(msgMode, reinterpret_cast<tLoopMessageData>(&trans), 1);
-
+			m_pCurrentDispatch->SendMessage(inmsg, reinterpret_cast<tLoopMessageData>(&trans), 1);
+			
 			m_fState &= ~(0x80 | 0x20 | 0x10);
 			m_FrameInfo.nTicks = tm_get_millisec();
 			m_FrameInfo.dTicks = 0;
@@ -100,23 +100,23 @@ int cLoop::Go(sLoopInstantiator* loop)
 		if (m_fState & 0x10)
 		{
 			m_FrameInfo.fMinorMode = m_fNewMinorMode;
-			m_pCurrentDispatch->SendMessage(kMsgMinorModeChange, reinterpret_cast<tLoopMessageData>(&m_FrameInfo), 1);
+			m_pCurrentDispatch->SendMessage(kMsgMinorModeChange, reinterpret_cast<tLoopMessageData>(&m_FrameInfo), kDispatchForward);
 			m_fState &= ~0x10;
 		}
 
 		if (pGameShell != nullptr)
 			pGameShell->BeginFrame();
 
-		m_pCurrentDispatch->SendMessage(kMsgBeginFrame, reinterpret_cast<tLoopMessageData>(&m_FrameInfo), 1);
+		m_pCurrentDispatch->SendMessage(kMsgBeginFrame, reinterpret_cast<tLoopMessageData>(&m_FrameInfo), kDispatchForward);
 		if (pGameShell != nullptr)
 			pGameShell->PumpEvents(0);
 
-		m_pCurrentDispatch->SendMessage(frameMessage, reinterpret_cast<tLoopMessageData>(&m_FrameInfo), 1);
+		m_pCurrentDispatch->SendMessage(frameMessage, reinterpret_cast<tLoopMessageData>(&m_FrameInfo), kDispatchForward);
 		if (pGameShell != nullptr)
 			pGameShell->PumpEvents(0);
 
 		m_pCurrentDispatch->ProcessQueue();
-		m_pCurrentDispatch->SendMessage(kMsgEndFrame, reinterpret_cast<tLoopMessageData>(&m_FrameInfo), 2);
+		m_pCurrentDispatch->SendMessage(kMsgEndFrame, reinterpret_cast<tLoopMessageData>(&m_FrameInfo), kDispatchReverse);
 		if (pGameShell != nullptr)
 			pGameShell->EndFrame();
 
@@ -240,7 +240,7 @@ HRESULT cLoop::ChangeMode(eLoopModeChangeKind kind, sLoopInstantiator* loop)
 
 	if (m_fState & 0x20)
 	{
-		if (loop->pID == m_pNextDispatch->Describe(nullptr)->pID)
+		if (*loop->pID == *m_pNextDispatch->Describe(nullptr)->pID)
 			return S_FALSE;
 	}
 
@@ -291,7 +291,7 @@ HRESULT cLoop::ChangeMode(eLoopModeChangeKind kind, sLoopInstantiator* loop)
 		{
 			trans.from.pID = mode.dispatch->Describe(&trans.from.init)->pID;
 
-			if (trans.from.pID == trans.to.pID)
+			if (*trans.from.pID == *trans.to.pID)
 			{
 				dispatch = mode.dispatch;
 

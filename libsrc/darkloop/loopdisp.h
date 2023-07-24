@@ -21,10 +21,11 @@ struct cClientInfoList
 				delete list[i];
 	}
 
-	int Append(const struct sClientInfo& o) { return list.Append(new sClientInfo{ o }); }
+	int Append(const struct sClientInfo& info) { return list.Append(new sClientInfo{ info }); }
 	sClientInfo& operator[](int i) { return *list[i]; }
 	int Size() { return list.Size(); }
 
+private:
 	cDynArray<sClientInfo*> list;
 };
 
@@ -32,6 +33,9 @@ struct ConstraintTable
 {
 	enum { kConstraintTableSize = 32 };
 
+	cDynArray<sAbsoluteConstraint>& operator[](int idx) { return table[idx]; }
+
+private:
 	cDynArray<sAbsoluteConstraint> table[kConstraintTableSize]{};
 };
 
@@ -85,7 +89,7 @@ private:
 
 	ILoopMode* m_pLoopMode;
 	cClientInfoList m_aClientInfo;
-	cPriIntArray<ILoopClient> m_DispatchLists[32];
+	cPriIntArray<ILoopClient> m_DispatchLists[ConstraintTable::kConstraintTableSize];
 
 	uint m_fDiagnostics;
 	tLoopMessageSet m_diagnosticSet;
@@ -105,8 +109,8 @@ private:
 
 		sLoopModeInitParm* Search(const GUID* pID)
 		{
-			for (auto p = &m_list[0]; p->pID != nullptr; ++p)
-				if (p->pID == pID)
+			for (auto* p = &m_list[0]; p->pID != nullptr; ++p)
+				if (*p->pID == *pID)
 					return p;
 
 			return nullptr;
@@ -117,7 +121,7 @@ private:
 	private:
 		sLoopModeInitParmList copy_parm(sLoopModeInitParmList list)
 		{
-			if (list == nullptr)
+			if (!list)
 				return nullptr;
 
 			int n = 0;

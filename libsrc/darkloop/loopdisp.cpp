@@ -6,10 +6,10 @@
 #include <appagg.h>
 #include <mprintf.h>
 
-int MessageToIndex(eLoopMessage message)
+unsigned MessageToIndex(eLoopMessage message)
 {
-	int i = 0;
-	int currentMessage = 1;
+	unsigned i = 0;
+	unsigned currentMessage = 1;
 
 	while (currentMessage && !(message & currentMessage))
 	{
@@ -109,6 +109,7 @@ cLoopDispatch::cLoopDispatch(ILoopMode* loop, sLoopModeInitParmList parmList, tL
 	m_Queue{},
 	m_pLoopMode{ loop },
 	m_aClientInfo{},
+	m_DispatchLists{},
 	m_fDiagnostics{ 0 },
 	m_diagnosticSet{ 0 },
 	m_ProfileSet{ 0 },
@@ -124,15 +125,12 @@ cLoopDispatch::cLoopDispatch(ILoopMode* loop, sLoopModeInitParmList parmList, tL
 
 	if (pLoopManager)
 	{
-		auto pBaseMode = pLoopManager->GetBaseMode();
+		auto* pBaseMode = pLoopManager->GetBaseMode();
 		AddClientsFromMode(pBaseMode, constraints);
 		pBaseMode->Release();
 	}
 
 	SortClients(constraints);
-
-	pLoopManager->Release(); // TODO: do we need this???
-	pLoopManager = nullptr;
 
 	SendSimpleMessage(kMsgStart);
 }
@@ -161,10 +159,10 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 
 	auto result = S_OK;
 
-	auto fLoopTime = m_fDiagnostics & 0x01;
-	auto fFrameHeapchk = m_fDiagnostics & 0x08;
-	auto fClientHeapchk = m_fDiagnostics & 0x10;
-	auto fLoopTrack = (m_fDiagnostics & 0x01) && (message & m_diagnosticSet);
+	auto fLoopTime = m_fDiagnostics & kLoopDiagTracking;
+	auto fFrameHeapchk = m_fDiagnostics & kLoopDiagFrameHeapchk;
+	auto fClientHeapchk = m_fDiagnostics & kLoopDiagClientHeapchk;
+	auto fLoopTrack = (m_fDiagnostics & kLoopDiagTracking) && (message & m_diagnosticSet);
 
 	auto fPassedSkipTime = false;
 	auto fLoopTimeThisMsg = false;
@@ -177,7 +175,7 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 		fPassedSkipTime = m_TotalModeTime.GetResult() > 2500.0;
 		m_TotalModeTime.Start();
 		fLoopTimeThisMsg = fPassedSkipTime && fLoopTime
-			&& (message & (kMsgBeginFrame | kMsgNormalFrame | kMsgPauseFrame | kMsgEndFrame));
+			&& (message & kMsgsFrame);
 	}
 	else
 		fLoopTimeThisMsg = false;
@@ -190,8 +188,8 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 	auto iLast = static_cast<int>(targetList.Size()) - 1;
 	for (int i = 0; i <= iLast; ++i)
 	{
-		auto idx = (flags & 0x01) ? i : iLast - i;
-		auto pClient = targetList[idx]->pInterface;
+		auto idx = (flags & kDispatchForward) ? i : iLast - i;
+		auto* pClient = targetList[idx]->pInterface;
 		auto& pszClient = targetList[idx]->nameStr;
 
 		if (fLoopTrack)
@@ -300,7 +298,7 @@ HRESULT cLoopDispatch::ProcessQueue()
 
 const sLoopModeName* cLoopDispatch::Describe(sLoopModeInitParmList* list)
 {
-	auto name = m_pLoopMode->GetName();
+	auto* name = m_pLoopMode->GetName();
 	if (list)
 		*list = m_Parms.List();
 
@@ -458,12 +456,12 @@ void TableAddClientConstraints(ConstraintTable& table, const sLoopClientDesc* de
 		sAbsoluteConstraint absoluteConstraint{};
 		MakeAbsolute(pRel->constraint, desc->pID, absoluteConstraint);
 
-		int currentMessage = 1;
-		int i = 0;
+		unsigned currentMessage = 1;
+		unsigned i = 0;
 		while (currentMessage)
 		{
 			if (currentMessage & pRel->messages)
-				table.table[i].Append(absoluteConstraint);
+				table[i].Append(absoluteConstraint);
 
 			++i;
 			currentMessage *= 2;
@@ -478,28 +476,27 @@ void cLoopDispatch::AddClientsFromMode(ILoopMode* pLoop, ConstraintTable& constr
 
 	AutoAppIPtr(LoopManager);
 
-	if (pLoopManager == nullptr)
+	if (!pLoopManager)
 		CriticalMsg("Failed to locate ILoopManager implementation");
 
-
 	auto fFirstWarning = true;
-	auto desc = pLoop->Describe();
+	auto* desc = pLoop->Describe();
 
 	auto& initParmTable = m_Parms;
 
-	auto ppIDs = desc->ppClientIDs;
-	auto ppLimit = &ppIDs[desc->nClients];
+	auto** ppIDs = desc->ppClientIDs;
+	auto** ppLimit = &ppIDs[desc->nClients];
 
 	for (; ppIDs < ppLimit; ++ppIDs)
 	{
-		auto pID = *ppIDs;
+		auto* pID = *ppIDs;
 
 		if (*pID == GUID_NULL)
 			break;
 
 		auto next_client = false;
-		for (auto i = 0; i < m_aClientInfo.Size(); ++i)
-			if (m_aClientInfo[i].priIntInfo.pID == pID)
+		for (auto idx = 0; idx < m_aClientInfo.Size(); ++idx)
+			if (*pID == *m_aClientInfo[idx].priIntInfo.pID)
 			{
 				next_client = true;
 				break;
@@ -507,14 +504,13 @@ void cLoopDispatch::AddClientsFromMode(ILoopMode* pLoop, ConstraintTable& constr
 
 		if (!next_client)
 		{
-			auto pInitParms = initParmTable.Search(*ppIDs);
+			auto* pInitParms = initParmTable.Search(pID);
+			
 			ILoopClient* pClient = nullptr;
-
 			pLoopManager->GetClient(pID, pInitParms != nullptr ? pInitParms->data : nullptr, &pClient);
-
 			if (pClient)
 			{
-				auto pClientDesc = pClient->GetDescription();
+				auto* pClientDesc = pClient->GetDescription();
 				auto infoidx = m_aClientInfo.Append({});
 
 				auto& info = m_aClientInfo[infoidx];
@@ -528,8 +524,8 @@ void cLoopDispatch::AddClientsFromMode(ILoopMode* pLoop, ConstraintTable& constr
 
 				if (m_msgs & info.interests)
 				{
-					auto msg = 1;
-					auto i = 0;
+					unsigned msg = 1;
+					unsigned i = 0;
 					while (msg)
 					{
 						if (m_msgs & msg & info.interests)
@@ -542,7 +538,7 @@ void cLoopDispatch::AddClientsFromMode(ILoopMode* pLoop, ConstraintTable& constr
 			}
 			else
 			{
-				auto mode = pLoopManager->GetMode(pID);
+				auto* mode = pLoopManager->GetMode(pID);
 				if (mode)
 				{
 					AddClientsFromMode(mode, constraints);
@@ -563,5 +559,5 @@ void cLoopDispatch::AddClientsFromMode(ILoopMode* pLoop, ConstraintTable& constr
 void cLoopDispatch::SortClients(ConstraintTable& constraints)
 {
 	for (int i = 0; i < ConstraintTable::kConstraintTableSize; ++i)
-		m_DispatchLists[i].Sort(constraints.table[i].AsPointer(), constraints.table[i].Size());
+		m_DispatchLists[i].Sort(constraints[i].AsPointer(), constraints[i].Size());
 }

@@ -106,10 +106,9 @@ HRESULT cLoopManager::RemoveMode(tLoopModeID* pID)
 	return S_OK;
 }
 
-HRESULT cLoopManager::SetBaseMode(tLoopModeID* pID) // TODO
+HRESULT cLoopManager::SetBaseMode(tLoopModeID* pID)
 {
-	auto* pMode = m_nLoopModes.Search(pID);
-	if (!pMode)
+	if (!m_nLoopModes.Search(pID))
 	{
 		CriticalMsg("Attempted to set a base mode that was never added");
 		m_pBaseMode = nullptr;
@@ -122,7 +121,7 @@ HRESULT cLoopManager::SetBaseMode(tLoopModeID* pID) // TODO
 	return S_OK;
 }
 
-ILoopMode* cLoopManager::GetBaseMode() // TODO
+ILoopMode* cLoopManager::GetBaseMode()
 {
 	if (m_pBaseMode)
 		return GetMode(m_pBaseMode);

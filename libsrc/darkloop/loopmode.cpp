@@ -31,7 +31,7 @@ public:
 	// Create the mode dispatch chain
 	STDMETHOD(CreateDispatch)(sLoopModeInitParmList paramList, ILoopDispatch** dispatch) override
 	{
-		return CreatePartialDispatch(paramList, -1, dispatch);
+		return CreatePartialDispatch(paramList, -1u, dispatch);
 	}
 
 	// int a1, _DWORD *Src, int a3, int *a4
