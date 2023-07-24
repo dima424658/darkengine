@@ -55,10 +55,11 @@ cResMan::~cResMan()
 HRESULT LGAPI ResCacheCallback(const sCacheMsg* pMsg)
 {
 	if (pMsg->message < 0 || pMsg->message > 1)
-		return 1;
+		return S_FALSE;
 
 	reinterpret_cast<cResMan*>(pMsg->pClientContext)->FreeData(reinterpret_cast<cResourceTypeData*>(pMsg->itemId), TRUE);
-	return 0;
+	
+	return S_OK;
 }
 
 ///////////////////////////////////////
@@ -1113,7 +1114,7 @@ void* cResMan::DoLockResource(IRes* pResource, cResourceTypeData* pData)
 				if (pData->m_pResMem)
 					pData->m_pData = pResControl->LoadData(&pData->m_nSize, 0, pData->m_pResMem);
 				else
-					pResControl->LoadData(&pData->m_nSize, 0, &m_DefResMem);
+					pData->m_pData = pResControl->LoadData(&pData->m_nSize, 0, &m_DefResMem);
 
 				if (!pData->m_pData)
 					CriticalMsg1("Failed to load resource data %s", pData->GetName());

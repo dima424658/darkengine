@@ -87,7 +87,7 @@ cResourceTypeData::~cResourceTypeData()
 
 	if (m_pRes)
 	{
-		// m_pRes->Release(); TODO: do we need release?
+		// m_pRes->Release(); TODO: do we need to release?
 		m_pRes = nullptr;
 	}
 }

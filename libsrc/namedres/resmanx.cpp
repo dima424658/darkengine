@@ -288,12 +288,11 @@ IRes* cResMan::CreateResource(IStore* pStorage, const char* pName, const char* p
 		return nullptr;
 	}
 
-	IResMemOverride* pResMem;
+	IResMemOverride* pResMem = nullptr;
 	auto* pResource = pType->CreateRes(pStorage, pName, pExt, &pResMem);
 
 	if (pResource)
 	{
-
 		auto* pData = m_ResTable.FindResData(pName, pStorage, 1);
 		if (!pData)
 			CriticalMsg("Couldn't create entry in global resource table!");

@@ -230,14 +230,15 @@ void cFileStream::ReadBlocks(void* pBuf, long nSize, tStoreStreamBlockCallback c
 		return;
 
 	auto bDone = false;
+	auto nRead = 0;
+	auto nBlockIx = 0;
+
 	while (!bDone)
 	{
-		auto nRead = fread(pBuf, 1u, nSize, m_pFile);
-		m_nLastPos += nRead; // TODO
+		nRead = fread(pBuf, 1u, nSize, m_pFile);
 		if (nRead < nSize)
 			bDone = true;
 
-		auto nBlockIx = 0;
 		if (callback)
 		{
 			nSize = callback(pBuf, nRead, nBlockIx, pCallbackData);
@@ -247,7 +248,7 @@ void cFileStream::ReadBlocks(void* pBuf, long nSize, tStoreStreamBlockCallback c
 
 		++nBlockIx;
 	}
-	// m_nLastPos += nRead;
+	m_nLastPos += nRead;
 }
 
 ///////////////////////////////////////

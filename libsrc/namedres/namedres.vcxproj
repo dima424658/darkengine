@@ -74,13 +74,13 @@
     <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/lgd3d;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/md;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/r3d;$(SolutionDir)3rdsrc/zlib/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/mprintf;$(SolutionDir)3rdsrc/zlib;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/lgd3d;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/md;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/r3d;$(SolutionDir)3rdsrc/zlib/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/lgd3d;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/md;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/r3d;$(SolutionDir)3rdsrc/zlib/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/mprintf;$(SolutionDir)3rdsrc/zlib;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/arq;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/lgd3d;$(SolutionDir)libsrc/res;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/md;$(SolutionDir)libsrc/mprintf;$(SolutionDir)libsrc/r3d;$(SolutionDir)3rdsrc/zlib/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

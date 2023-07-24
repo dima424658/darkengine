@@ -289,7 +289,7 @@ int ZInflateStreamToMem(IStoreStream* pStream, int nStreamSize, void* pData, int
 	zBlock.opaque = 0;
 
 	auto ret = inflateInit2(&zBlock, -15);
-	if (ret == Z_OK)
+	if (ret != Z_OK)
 		CriticalMsg1("zlib inflateInit failed with %d\n", ret);
 
 	do
