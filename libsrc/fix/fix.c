@@ -1,5 +1,7 @@
 // $Header: x:/prj/tech/libsrc/fix/RCS/fix.c 1.28 1997/04/24 13:59:30 TOML Exp $
 
+#include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <lg.h>
@@ -54,7 +56,7 @@ long long_fast_pyth_dist (long a, long b)
 #ifdef __WATCOMC__
 #pragma off(unreferenced)
 #endif
-fix fix_safe_pyth_dist_info (fix a, fix b, char *file, int line)
+fix fix_safe_pyth_dist_info (fix a, fix b, const char *file, int line)
 {
    fix save_a=a, save_b=b;
    fix tmp;
@@ -97,7 +99,7 @@ fix fix_safe_pyth_dist_info (fix a, fix b, char *file, int line)
 
 fix fix_sqrt(fix x)
 {
-    return 0; // TODO
+   return fix_from_float(sqrtf(x)); // TODO
 }
 
 //////////////////////////////
@@ -327,10 +329,21 @@ fixang fix_atan2 (fix y, fix x)
 
 fix fix_div_safe(fix a, fix b)
 {
-    return 0; // TODO
+   assert(b != 0);
+
+   int result = ((int64_t)(abs(a)) << 16) / (int64_t)abs(b);
+   if(a < 0 && b < 0 || a > 0 && b > 0)
+      return result;
+   else
+      return -result;
 }
 
 fix fix_mul_div_safe(fix m0, fix m1, fix d)
 {
-    return 0; // TODO
+   assert(d != 0);
+
+   int64_t result = (int64_t)(m0) * (int64_t)(m1);
+   result /= d;
+
+   return result;
 }

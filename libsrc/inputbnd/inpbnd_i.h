@@ -16,6 +16,8 @@
 #include <event.h>
 #include <types.h>
 
+#include <aatree.h>
+
 
 #define GAME_VAR 0
 #define USER_VAR 1
@@ -33,7 +35,7 @@
 //
 
 // Standard UI handler
-typedef bool (*tBindHandler) (uiEvent *pEvent, Region *pReg, void *pState);
+typedef BOOL (*tBindHandler) (uiEvent *pEvent);
 
 // Passes to you the control string, command string, and user data.
 // Return TRUE if you accept the bind request.
@@ -48,7 +50,7 @@ typedef void (*tTrapBindPostFunc) (BOOL bBound);
 // of IB_VARSTRMAX length, for which to stuff the prevailing
 // value of the conflicting channels. Should also return
 // TRUE if conflict was resolved.
-typedef BOOL (*tBindAggCallback) (struct _intrnl_var_channel **ppChannels, long iNum, char *pBuf);
+typedef BOOL CDECL (*tBindAggCallback) (struct _intrnl_var_channel **ppChannels, long iNum, char *pBuf);
 
 // Accepts variable name, value in string form, and 
 // whether or not the control was already down.
@@ -100,8 +102,12 @@ typedef struct _intrnl_var_channel {
    unsigned long context;
 } intrnl_var_channel;
 
-
-
+typedef struct _intrnl_var
+{
+  IB_var var;
+  aatree<intrnl_var_channel> channels;
+  short stamp;
+} intrnl_var;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Structure used to associate binding contexts. In a bind file, a bind command
@@ -194,23 +200,23 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    // Binds pCmd to pControl. Multiple worded commands should
    // be wrapped in quotes. Returns TRUE if all went well.
    //
-   STDMETHOD_(BOOL, Bind) (THIS_ char *pControl, char *pCmd) PURE;
+   STDMETHOD_(BOOL, Bind) (THIS_ const char *pControl, const char *pCmd) PURE;
 
    //
    // Uninds pControl. Returns FALSE if pControl is invalid.
    //
-   STDMETHOD_(BOOL, Unbind) (THIS_ char *pControl) PURE;
+   STDMETHOD_(BOOL, Unbind) (THIS_ const char *pControl) PURE;
 
    //
    // Stuffs pCmdBuf with whatever command pControl is bound to.
    //
-   STDMETHOD_(void, QueryBind) (THIS_ char *pControl, char *pCmdBuf, long iBufLen) PURE;
+   STDMETHOD_(void, QueryBind) (THIS_ const char *pControl, char *pCmdBuf, long iBufLen) PURE;
 
    //
    // Stuffs pValBuf with the value of pVarStr. Currently does not take
    // channels into account.
    //
-   STDMETHOD_(void, GetVarValue) (THIS_ char *pVarStr, char *pValBuf, long iBufLen) PURE;
+   STDMETHOD_(void, GetVarValue) (THIS_ const char *pVarStr, char *pValBuf, long iBufLen) PURE;
 
    //
    // Accepts a string which contains commands
@@ -223,7 +229,7 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    // Trap a control, and bind it to pCmdStr, if the filter callback allows it.
    // Both callbacks and pUserData may be NULL, however.
    //
-   STDMETHOD_(void, TrapBind) (THIS_ char *pCmdStr, tTrapBindFilter, tTrapBindPostFunc, void *pUserData) PURE;
+   STDMETHOD_(void, TrapBind) (THIS_ const char *pCmdStr, tTrapBindFilter, tTrapBindPostFunc, void *pUserData) PURE;
 
    //
    // Merely sets the internal mapper to the correct context. 
@@ -239,7 +245,7 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    //
    // Registers the application's joystick processor, inherited from above.
    //
-   STDMETHOD_(void, RegisterJoyProcObj) (void *pJoyProc) PURE;
+   STDMETHOD_(void, RegisterJoyProcObj) (cIBJoyAxisProcess *pJoyProc) PURE;
 
 
    //

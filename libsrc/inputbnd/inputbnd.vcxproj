@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -71,10 +71,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/dstruct;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/font;$(SolutionDir)libsrc/g2;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/ui;$(SolutionDir)winsrc/input;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/dstruct;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/font;$(SolutionDir)libsrc/g2;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/ui;$(SolutionDir)winsrc/input;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/dstruct;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/font;$(SolutionDir)libsrc/g2;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/ui;$(SolutionDir)winsrc/input;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/dstruct;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/font;$(SolutionDir)libsrc/g2;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/ui;$(SolutionDir)winsrc/input;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/dev2d;$(SolutionDir)libsrc/dstruct;$(SolutionDir)libsrc/fix;$(SolutionDir)libsrc/font;$(SolutionDir)libsrc/g2;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/ui;$(SolutionDir)winsrc/input;$(IncludePath)</IncludePath>
@@ -151,10 +151,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ibmapper.h" />
     <ClInclude Include="inpbnd_i.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ibmapper.cpp" />
+    <ClCompile Include="ibvarman.cpp" />
     <ClCompile Include="inpbnd_i.cpp" />
+    <ClCompile Include="inpguid.cpp" />
+    <ClCompile Include="inputbnd.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

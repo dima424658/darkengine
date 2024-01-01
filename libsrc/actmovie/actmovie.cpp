@@ -37,6 +37,8 @@
 
 #include <mouse.h>
 #include <kb.h>
+#include <kbcook.h>
+#include <control.h>
 
 #include <initguid.h>
 #include <lgvdguid.h>
@@ -70,11 +72,13 @@ cActiveMoviePlayer1::cActiveMoviePlayer1(IUnknown * pOuterUnknown, unsigned flag
   : m_state(kMP1NothingOpen),
     m_hNotify(0),
     m_flags(0),
+    m_fCanPlay(FALSE),
+    m_ErrorSignal(0),
     m_pGraphBuilder(NULL),
     m_pMediaEvent(NULL),
     m_pMediaControl(NULL),
+    m_pBasicAudio(NULL),
     m_pActiveMovieDraw(NULL),
-    m_fCanPlay(FALSE),
     m_fCreateFlags(flags)
 {
     // Add internal components to outer aggregate, ensuring IDisplayDevice comes first...
@@ -106,6 +110,8 @@ cActiveMoviePlayer1::~cActiveMoviePlayer1()
 
 HRESULT cActiveMoviePlayer1::Init()
 {
+    m_TermKeys[0] = '\0';
+
     if (GetLGVideoRenderer() == S_OK)
         m_fCanPlay = TRUE;
     return CoInitialize(NULL);
@@ -486,6 +492,7 @@ STDMETHODIMP_(void) cActiveMoviePlayer1::Close()
         SafeRelease(m_pGraphBuilder);
         SafeRelease(m_pMediaEvent);
         SafeRelease(m_pMediaControl);
+        SafeRelease(m_pBasicAudio);
     }
 
     m_hNotify = NULL;
@@ -603,8 +610,20 @@ STDMETHODIMP_(BOOL) cActiveMoviePlayer1::Play(int flags)
                             mouse_flush();
                         }
 
-                        keyEvent = kb_look_next();
-                        if (keyEvent.code != KBC_NONE)
+                        keyEvent = kb_next();
+                        if ( m_TermKeys[0] != '\0' )
+                        {
+                           bool results;
+                           ushort keycode;
+                           kb_cook(keyEvent, &keycode, &results);
+                           char kc = (keycode >> 16) & 0xFE;
+                           for (int n = 0; n < strlen(m_TermKeys); ++n )
+                           {
+                              if ( kc == m_TermKeys[n] )
+                                 fQuit = TRUE;
+                           }
+                        }
+                        else if (keyEvent.code != KBC_NONE)
                         {
                             fQuit = TRUE;
                         }
@@ -680,6 +699,21 @@ STDMETHODIMP_(BOOL) cActiveMoviePlayer1::Stop()
     return FALSE;
 }
 
+STDMETHODIMP_(BOOL) cActiveMoviePlayer1::GetVolume(long *pOutVol)
+{
+  return m_pBasicAudio && m_pBasicAudio->get_Volume(pOutVol) >= 0;
+}
+
+STDMETHODIMP_(BOOL) cActiveMoviePlayer1::SetVolume(long inVol)
+{
+  return m_pBasicAudio && m_pBasicAudio->put_Volume(inVol) >= 0;
+}
+
+STDMETHODIMP_(void) cActiveMoviePlayer1::SetTermKeys(char *keylist)
+{
+  strncpy(m_TermKeys, keylist, 256);
+  m_TermKeys[255] = '\0';
+}
 
 ///////////////////////////////////
 //
@@ -688,6 +722,26 @@ STDMETHODIMP_(BOOL) cActiveMoviePlayer1::Stop()
 
 STDMETHODIMP_(eMP1State) cActiveMoviePlayer1::GetState()
 {
+    if(m_state == kMP1Playing)
+    {
+        long eventCode, pIgnored1, pIgnored2;
+        DWORD result = WaitForSingleObject(m_hNotify, 0);
+        if (result == WAIT_OBJECT_0)
+        {
+            // hey, we got a notification about our filter graph
+            if (m_pMediaEvent->GetEvent(&eventCode, &pIgnored1, &pIgnored2, 0) == NOERROR)
+            {
+                DebugMsg1("Play() got event %d\n", eventCode);
+                if ((eventCode == EC_COMPLETE) ||
+                    (eventCode == EC_USERABORT) ||
+                    (eventCode == EC_ERRORABORT))
+                {
+                    Stop();
+                }
+            }
+        }
+    }
+
     return m_state;
 }
 
@@ -740,8 +794,9 @@ BOOL cActiveMoviePlayer1::CreateGraphBuilder()
     {
         m_pGraphBuilder->QueryInterface(IID_IMediaEvent, (void **)&m_pMediaEvent);
         m_pGraphBuilder->QueryInterface(IID_IMediaControl, (void **)&m_pMediaControl);
+        m_pGraphBuilder->QueryInterface(IID_IBasicAudio, (void **)&m_pBasicAudio);
 
-        if (m_pMediaEvent && m_pMediaControl)
+        if (m_pMediaEvent && m_pMediaControl && m_pBasicAudio)
         {
             if (m_pMediaEvent->GetEventHandle((OAEVENT*)&m_hNotify) == NOERROR)
                 return TRUE;
@@ -755,6 +810,7 @@ BOOL cActiveMoviePlayer1::CreateGraphBuilder()
     SafeRelease(m_pGraphBuilder);
     SafeRelease(m_pMediaEvent);
     SafeRelease(m_pMediaControl);
+    SafeRelease(m_pBasicAudio);
 
     return FALSE;
     END_DEBUG;
@@ -763,23 +819,6 @@ BOOL cActiveMoviePlayer1::CreateGraphBuilder()
 BOOL cActiveMoviePlayer1::BlankLines()
 {
    return (m_flags&kMovieBlankLines);
-}
-
-BOOL cActiveMoviePlayer1::GetVolume(int* pOutVol)
-{
-    // TODO
-    return FALSE;
-}
-
-BOOL cActiveMoviePlayer1::SetVolume(int inVol)
-{
-    // TODO
-    return FALSE;
-}
-
-void cActiveMoviePlayer1::SetTermKeys(char* keylist)
-{
-    // TODO
 }
 
 ///////////////////////////////////////////////////////////////////////////////

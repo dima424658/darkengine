@@ -50,6 +50,21 @@ int md_sizeof_mipmap(r3s_texture mmap)
    }
 }
 
+//----- (009174DD) --------------------------------------------------------
+int md_sizeof_mipmap_bits(grs_bitmap *mmap)
+{
+   int size = 0;
+   while (TRUE)
+   {
+      size += mmap->h * mmap->row;
+      if ( mmap->w == 1 && mmap->h == 1 )
+         break;
+      ++mmap;
+   }
+
+   return size;
+}
+
 // Down samples a source bitmap image into a collection of them.
 // Pass it a single bitmap
 // it passes you back a multimap from it.

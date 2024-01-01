@@ -22,6 +22,7 @@
 F_DECLARE_INTERFACE(IGraphBuilder);
 F_DECLARE_INTERFACE(IMediaEvent);
 F_DECLARE_INTERFACE(IMediaControl);
+F_DECLARE_INTERFACE(IBasicAudio);
 F_DECLARE_INTERFACE(IVideoWindow);
 
 class cActiveMoviePlayer1;
@@ -184,8 +185,8 @@ private:
     STDMETHOD_(BOOL, Stop)();
 
     // Get/Set the sound volume (-10000..0).
-    STDMETHOD_(BOOL, GetVolume)(int* pOutVol);
-    STDMETHOD_(BOOL, SetVolume)(int inVol);
+    STDMETHOD_(BOOL, GetVolume)(long* pOutVol);
+    STDMETHOD_(BOOL, SetVolume)(long inVol);
 
     // Query the state of the player
     STDMETHOD_(eMP1State, GetState)();
@@ -233,10 +234,11 @@ private:
     IMediaEvent *       m_pMediaEvent;
     IMediaControl *     m_pMediaControl;
 
+    IBasicAudio *       m_pBasicAudio;
     cActiveMovieDraw *  m_pActiveMovieDraw;     // the helper class for drawing
     
     unsigned m_fCreateFlags;
-
+    char     m_TermKeys[256];
 };
 
 

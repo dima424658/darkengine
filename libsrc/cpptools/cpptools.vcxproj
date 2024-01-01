@@ -162,6 +162,7 @@
     <ClCompile Include="filepath.cpp" />
     <ClCompile Include="filespec.cpp" />
     <ClCompile Include="fnamutil.cpp" />
+    <ClCompile Include="growblk.cpp" />
     <ClCompile Include="hashpp.cpp" />
     <ClCompile Include="hashset.cpp" />
     <ClCompile Include="packflag.cpp" />
@@ -183,6 +184,7 @@
     <ClInclude Include="fixedque.h" />
     <ClInclude Include="fixedstk.h" />
     <ClInclude Include="fnamutil.h" />
+    <ClInclude Include="growblk.h" />
     <ClInclude Include="hashfast.h" />
     <ClInclude Include="hashfunc.h" />
     <ClInclude Include="hashpp.h" />

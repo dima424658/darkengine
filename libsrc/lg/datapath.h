@@ -86,6 +86,7 @@ extern "C"  {
 
 #define NUM_DATAPATHS 16			   // was 8, which should have been plenty
                                     // however, defdep needs more, for instance
+#pragma pack(4)
 typedef struct Datapath
 {
 	uchar numDatapaths;					// # valid paths
@@ -94,6 +95,7 @@ typedef struct Datapath
 	char *datapath[NUM_DATAPATHS];	// ptrs to paths, malloc'ed
    int   find_flags;                // flags for find
 } Datapath;
+#pragma pack()
 
 //	DatapathClear() clears a datapath (not needed for static/global ones)
 //	DatapathFree() frees all alloc'ed paths and clears a datapath

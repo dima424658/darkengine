@@ -7,11 +7,6 @@ BOOL IBAddActiveAgg(_intrnl_var_channel**, long, char*)
 	return FALSE; // TODO
 }
 
-tResult LGAPI _CreateInputBinder(REFIID, IInputBinder** ppInputBinder, IUnknown* pOuter)
-{
-	return 0; // TODO
-}
-
 cIBJoyAxisProcess::cIBJoyAxisProcess()
 	: m_deadzone_x{}, m_deadzone_y{}, m_deadzone_z{}, m_deadzone_r{} { }
 

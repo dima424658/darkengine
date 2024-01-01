@@ -146,8 +146,8 @@ DECLARE_INTERFACE_(IMoviePlayer1, IUnknown)
     //
     // Get/Set the sound volume (-10000..0).
     //
-    STDMETHOD_(BOOL, GetVolume)(THIS_ int* pOutVol) PURE;
-    STDMETHOD_(BOOL, SetVolume)(THIS_ int inVol) PURE;
+    STDMETHOD_(BOOL, GetVolume)(THIS_ long* pOutVol) PURE;
+    STDMETHOD_(BOOL, SetVolume)(THIS_ long inVol) PURE;
 
     //
     // Query the state of the player
