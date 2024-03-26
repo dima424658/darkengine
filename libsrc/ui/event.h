@@ -137,7 +137,7 @@ typedef struct _ui_user_defined_event
    one at a time until an event handler chooses to accept it.   */
 
 
-typedef bool (*uiHandlerProc)(uiEvent* e, Region* r, void* state);
+typedef BOOL (*uiHandlerProc)(uiEvent* e, Region* r, void* state);
 
 // If an event-handler's proc returns true, it has accepted the event, and no
 // other event handler will see the event.  An event handler will only be

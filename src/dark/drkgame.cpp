@@ -259,7 +259,7 @@ static bool game_key_parse(int keycode)
 }
 
 #pragma off(unreferenced)
-static bool key_handler_func(uiEvent* ev, Region* r, void* data)
+static BOOL key_handler_func(uiEvent* ev, Region* r, void* data)
 {
    uiCookedKeyEvent* kev = (uiCookedKeyEvent*)ev;
    return game_key_parse(kev->code);

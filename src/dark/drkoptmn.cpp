@@ -662,7 +662,7 @@ protected:
       mPerSubRectNum [(int)kSubControls] = (int)kNumControlRects;
 
       //set starting button strings
-      char *str;
+      const char *str;
 
       str = g_pInputBinder->ProcessCmd ("echo $joystick_enable");
       SetUIString (mSubPanelStrs[(int)kJoyEnable], mSubPanelElems[(int)kJoyEnable], "control_1",
@@ -797,7 +797,7 @@ protected:
       mPerSubRectNum [(int)kSubGame] = kNumGameRects;
 		      
       //set starting button strings
-      char *str;
+      const char *str;
 
       str = g_pInputBinder->ProcessCmd ("echo $climb_touch");
       g_climb_on_touch = ((atof (str) != 0.0) ? TRUE : FALSE);
@@ -1025,7 +1025,7 @@ protected:
 
    //////////////////////////////////////////////////////
 
-   static bool StaticBindKeyHandler (uiEvent *p_event, Region *p_reg, void *state)
+   static BOOL StaticBindKeyHandler (uiEvent *p_event, Region *p_reg, void *state)
    {
       bool ret = FALSE;
 
@@ -1123,7 +1123,7 @@ protected:
 
    //////////////////////////////////////////////////////
 
-   static bool 
+   static BOOL 
    StaticMouseWheelHandler (uiEvent *p_event, Region *p_reg, void *state)
    {
       bool ret = FALSE;
@@ -1973,7 +1973,8 @@ protected:
 
          case kJoyEnable:
          {
-            char *joyed = g_pInputBinder->ProcessCmd ("echo $joystick_enable"), buf[16];
+            const char *joyed = g_pInputBinder->ProcessCmd ("echo $joystick_enable");
+            char buf[16];
             sprintf (buf, "control_%d", button);
             if (atof (joyed) == 0.0) {
                g_pInputBinder->ProcessCmd ("joystick_enable 1");
@@ -1990,7 +1991,7 @@ protected:
 	    //we display the joyrotate bit.
 	    if (g_joystickActive)
 	      {
-		char *str;
+		const char *str;
 		str = g_pInputBinder->ProcessCmd ("echo $joy_rotate");
 		SetUIString (mSubPanelStrs[(int)kJoyRotate], mSubPanelElems[(int)kJoyRotate], "control_5",
 			     (char *)(const char *)mMiscStrs[(atof (str) != 0.0) ? kMiscStrLeftRight : kMiscStrForwardBackward]);
@@ -2005,7 +2006,8 @@ protected:
       
 	 case kLookspring:
          {
-            char *inverted = g_pInputBinder->ProcessCmd ("echo $lookspring"), buf[16];
+            const char *inverted = g_pInputBinder->ProcessCmd ("echo $lookspring");
+            char buf[16];
             sprintf (buf, "control_%d", button);
             if (atof (inverted) == 0.0) {
                g_pInputBinder->ProcessCmd ("lookspring 1");
@@ -2028,7 +2030,8 @@ protected:
          {
             if (g_joystickActive)
             {
-               char *rotate = g_pInputBinder->ProcessCmd ("echo $joy_rotate"), buf[16];
+               const char *rotate = g_pInputBinder->ProcessCmd ("echo $joy_rotate");
+               char buf[16];
                sprintf (buf, "control_%d", button);
                if (atof (rotate) == 0.0) {
                   g_pInputBinder->ProcessCmd ("joy_rotate 1");
@@ -2046,7 +2049,8 @@ protected:
       
          case kMouseInvert:
          {
-            char *inverted = g_pInputBinder->ProcessCmd ("echo $mouse_invert"), buf[16];
+            const char *inverted = g_pInputBinder->ProcessCmd ("echo $mouse_invert");
+            char buf[16];
             sprintf (buf, "control_%d", button);
             if (atof (inverted) == 0.0) {
                g_pInputBinder->ProcessCmd ("mouse_invert 1");
@@ -2064,7 +2068,8 @@ protected:
       
          case kFreelook:
          {
-            char *inverted = g_pInputBinder->ProcessCmd ("echo $freelook"), buf[16];
+            const char *inverted = g_pInputBinder->ProcessCmd ("echo $freelook");
+            char buf[16];
             sprintf (buf, "control_%d", button);
             if (atof (inverted) == 0.0) {
                g_pInputBinder->ProcessCmd ("freelook 1");
@@ -2085,7 +2090,8 @@ protected:
 
 	 case kClimbTouch:
 	 {
-	   char *climbtouching = g_pInputBinder->ProcessCmd ("echo $climb_touch"), buf[16];
+	   const char *climbtouching = g_pInputBinder->ProcessCmd ("echo $climb_touch");
+      char buf[16];
 	   //reverse of above, since we are about to reverse it.
 	   g_climb_on_touch = ((atof (climbtouching) != 0.0) ? FALSE : TRUE);
 	   sprintf (buf, "gameopt_0", button);
@@ -2106,7 +2112,8 @@ protected:
 
          case kAutoSearch:
          {
-            char *autosearched = g_pInputBinder->ProcessCmd ("echo $auto_search"), buf[16];
+            const char *autosearched = g_pInputBinder->ProcessCmd ("echo $auto_search");
+            char buf[16];
             sprintf (buf, "gameopt_1");
             if (atof (autosearched) == 0.0) {
                g_pInputBinder->ProcessCmd ("auto_search 1");
@@ -2125,7 +2132,8 @@ protected:
 
          case kBowZoom:
          {
-            char *zoomed = g_pInputBinder->ProcessCmd ("echo $bow_zoom"), buf[16];
+            const char *zoomed = g_pInputBinder->ProcessCmd ("echo $bow_zoom");
+            char buf[16];
             sprintf (buf, "gameopt_2");
             if (atof (zoomed) == 0.0) {
                g_pInputBinder->ProcessCmd ("bow_zoom 1");
@@ -2144,7 +2152,8 @@ protected:
 
          case kGoalNotify:
          {
-            char *notified = g_pInputBinder->ProcessCmd ("echo $goal_notify"), buf[16];
+            const char *notified = g_pInputBinder->ProcessCmd ("echo $goal_notify");
+            char buf[16];
             sprintf (buf, "gameopt_3", button);
             if (atof (notified) == 0.0) {
                g_pInputBinder->ProcessCmd ("goal_notify 1");
@@ -2163,7 +2172,8 @@ protected:
       
 		 case kAutoEquip:
          {
-            char *notified = g_pInputBinder->ProcessCmd ("echo $auto_equip"), buf[16];
+            const char *notified = g_pInputBinder->ProcessCmd ("echo $auto_equip");
+            char buf[16];
             sprintf (buf, "gameopt_4", button);
             if (atof (notified) == 0.0) {
                g_pInputBinder->ProcessCmd ("auto_equip 1");

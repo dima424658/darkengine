@@ -4663,7 +4663,7 @@ static void CheckSphereOBBContact(cPhysSphereModel *pSphereModel, tPhysSubModId 
 
 	  if (pSphereModel->GetObjID() == PlayerObject())
       {
-		  char *str;	  	   
+		  const char *str;
 		  str = g_pInputBinder->ProcessCmd ("echo $climb_touch");	  	   
 		  g_climb_on_touch = ((atof (str) != 0.0) ? TRUE : FALSE);	  
 	  }

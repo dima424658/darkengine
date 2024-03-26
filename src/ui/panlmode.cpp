@@ -94,7 +94,7 @@ public:
    STDMETHOD_(eLoopMessageResult, ReceiveMessage)(eLoopMessage, tLoopMessageData hData);
 
 protected:
-   static bool PanelEventHandler(uiEvent *ev, Region *reg, void *data);
+   static BOOL PanelEventHandler(uiEvent *ev, Region *reg, void *data);
 
    void DrawImage(ePanelModeImage which, BOOL center);
 };
@@ -105,7 +105,7 @@ protected:
 
 // Event handler 
 
-bool cPanelLoopClient::PanelEventHandler(uiEvent *ev, Region *reg, void *data)
+BOOL cPanelLoopClient::PanelEventHandler(uiEvent *ev, Region *reg, void *data)
 {
    cPanelLoopClient* us = (cPanelLoopClient*)data; 
    const sPanelModeDesc* desc = us->mpPanel->Describe();

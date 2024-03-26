@@ -52,13 +52,6 @@ cIBVariableManager::~cIBVariableManager()
 //----- (008D1B80) --------------------------------------------------------
 int cIBVariableManager::VarSet(IB_var* vars, int alias)
 {
-	intrnl_var* v4; // eax
-	unsigned int flags; // eax
-	intrnl_var* v6; // [esp+0h] [ebp-54h]
-	intrnl_var* v8; // [esp+14h] [ebp-40h]
-	IB_var* cur_var; // [esp+24h] [ebp-30h]
-	char name[32]; // [esp+2Ch] [ebp-28h] BYREF
-
 	if (!vars)
 		return 0;
 
@@ -75,6 +68,7 @@ int cIBVariableManager::VarSet(IB_var* vars, int alias)
 			continue;
 		}
 
+		char name[32]; // [esp+2Ch] [ebp-28h] BYREF
 		strcpy(name, cur_var->name);
 		strlwr(name);
 
@@ -88,7 +82,7 @@ int cIBVariableManager::VarSet(IB_var* vars, int alias)
 			continue;
 		}
 
-		auto* int_var = new intrnl_var();
+		int_var = new intrnl_var();
 		memcpy(int_var, cur_var, sizeof(intrnl_var));
 		if (alias)
 			int_var->var.flags = int_var->var.flags | 2;
@@ -373,7 +367,7 @@ const char* cIBVariableManager::Cmd(const char* pCmd, int already_down)
 
 	if (!strcmp("echo", tokens[0]))
 	{
-		TokensToStr(m_misc_str, sizeof(m_misc_str) / sizeof(m_misc_str[0]), tokens + 1, num_tokens - 1);
+		TokensToStr(m_misc_str, sizeof(m_misc_str) / sizeof(m_misc_str[0]), const_cast<const char**>(tokens) + 1, num_tokens - 1);
 		ret_str = m_misc_str;
 		goto cleanup;
 	}
@@ -404,7 +398,7 @@ const char* cIBVariableManager::Cmd(const char* pCmd, int already_down)
 	
 	if (num_tokens > 0 && **tokens)
 	{
-		ret_str = ProcessCommand(tokens, num_tokens, already_down);
+		ret_str = ProcessCommand(const_cast<const char**>(tokens), num_tokens, already_down);
 		goto cleanup;
 	}
 

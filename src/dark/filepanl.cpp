@@ -113,7 +113,7 @@ void cFilePanel::TermUI()
 
 //----------------------------------------
 
-bool cFilePanel::textbox_cb(uiEvent* ev, Region* r, void* user_data)
+BOOL cFilePanel::textbox_cb(uiEvent* ev, Region* r, void* user_data)
 {
    sSlot* slot = (sSlot*)user_data; 
    slot->us->OnTextBox(slot,ev); 

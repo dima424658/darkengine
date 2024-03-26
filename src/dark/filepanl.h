@@ -78,7 +78,7 @@ protected:
    void Message(const char* msg); 
    void MessageNamed(const char* name); 
 
-   static bool textbox_cb(uiEvent* e, Region* r, void* data); 
+   static BOOL textbox_cb(uiEvent* e, Region* r, void* data); 
    static bool textgadg_cb(LGadTextBox* box, LGadTextBoxEvent event, int eventdata, void *data);
 
    void OnTextGadg(sSlot* slot, LGadTextBoxEvent event, int eventdata); 

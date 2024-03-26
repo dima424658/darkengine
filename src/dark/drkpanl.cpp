@@ -108,7 +108,7 @@ static guiStyle def_style =
 };
 
 
-bool cDarkPanel::region_cb(uiEvent *ev, Region *reg, void *data)
+BOOL cDarkPanel::region_cb(uiEvent *ev, Region *reg, void *data)
 {
    cDarkPanel* us = (cDarkPanel*)data; 
    if (ev->type == UI_EVENT_KBD_COOKED)

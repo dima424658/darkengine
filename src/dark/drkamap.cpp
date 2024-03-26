@@ -434,7 +434,7 @@ protected:
 
 mapMode cAutomap::mMapMode;
 
-static bool
+static BOOL
 regionCB( uiEvent  *pEvent,
            Region   *pReg,
            void     *pState )

@@ -175,7 +175,7 @@ void UiJoyInit ()
    //  triggered joy event will have a reasonable value for the rudder
    joyBPos.x = joyMidRudder;
 
-   g_pInputBinder->RegisterJoyProcObj((void *)&g_dark_joy_control);
+   g_pInputBinder->RegisterJoyProcObj(&g_dark_joy_control);
 }
 
 

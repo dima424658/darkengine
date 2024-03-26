@@ -63,7 +63,7 @@ public:
 	// to interact with the binder. Most users
 	// should not have to call this.
 	//
-	STDMETHOD_(char*, ProcessCmd) (THIS_ const char* pCmdStr);
+	STDMETHOD_(const char*, ProcessCmd) (THIS_ const char* pCmdStr);
 
 	//
 	// Trap a control, and bind it to pCmdStr, if the filter callback allows it.
@@ -108,7 +108,7 @@ public:
 	// Loads a .bnd file into the specified iContext. If pPrefix is not NULL,
 	// we bind only the matching prefixed binds.
 	//
-	STDMETHOD_(char*, LoadBndFile) (THIS_ const char* pBndFname, unsigned long iContext, const char* pPrefix);
+	STDMETHOD_(const char*, LoadBndFile) (THIS_ const char* pBndFname, unsigned long iContext, const char* pPrefix);
 
 	//
 	// Saves a bind file under the current context only. Should undoubtedly
@@ -123,9 +123,9 @@ public:
 	STDMETHOD_(BOOL, VarSet) (THIS_ IB_var* pVars);//must be NULL-terminated
 	STDMETHOD_(BOOL, VarSetn) (THIS_ IB_var* pVars, long iNum);
 	// if bUser is set, then the variable(s) can be unset by the player.
-	STDMETHOD_(char*, VarUnset) (THIS_ char** ppVarNames, BOOL bUser);//must be NULL-terminated
-	STDMETHOD_(char*, VarUnsetn) (THIS_ char** ppVarNames, long iNum, BOOL bUser);
-	STDMETHOD_(char*, VarUnsetAll) (THIS);
+	STDMETHOD_(const char*, VarUnset) (THIS_ char** ppVarNames, BOOL bUser);//must be NULL-terminated
+	STDMETHOD_(const char*, VarUnsetn) (THIS_ char** ppVarNames, long iNum, BOOL bUser);
+	STDMETHOD_(const char*, VarUnsetAll) (THIS);
 
 
 	//
@@ -277,7 +277,7 @@ STDMETHODIMP_(void) cInputBinder::GetVarValue(const char* pVarStr, char* pValBuf
 	strncpy(pValBuf, ProcessCmd(pBuf), iBufLen);
 }
 
-STDMETHODIMP_(char*) cInputBinder::ProcessCmd(const char* pCmdStr)
+STDMETHODIMP_(const char*) cInputBinder::ProcessCmd(const char* pCmdStr)
 {
 	SetGlobObjs();
 	return m_IB_variable_manager->Cmd(pCmdStr, 0);
@@ -322,7 +322,7 @@ STDMETHODIMP_(void) cInputBinder::ContextAssociate(sBindContext* pBindContext)
 		m_BndCtxtArray.Append(pBindContext[i]);
 }
 
-STDMETHODIMP_(char*) cInputBinder::LoadBndFile(const char* pBndFname, unsigned long iContext, const char* pPrefix)
+STDMETHODIMP_(const char*) cInputBinder::LoadBndFile(const char* pBndFname, unsigned long iContext, const char* pPrefix)
 {
 	char str[128] = {};
 
@@ -372,19 +372,19 @@ STDMETHODIMP_(BOOL) cInputBinder::VarSetn(IB_var* pVars, long iNum)
 	return m_IB_variable_manager->VarSet(pVars, iNum, 1);
 }
 
-STDMETHODIMP_(char*) cInputBinder::VarUnset(char** ppVarNames, BOOL bUser)
+STDMETHODIMP_(const char*) cInputBinder::VarUnset(char** ppVarNames, BOOL bUser)
 {
 	SetGlobObjs();
 	return m_IB_variable_manager->VarUnset(ppVarNames, bUser);
 }
 
-STDMETHODIMP_(char*) cInputBinder::VarUnsetn(char** ppVarNames, long iNum, BOOL bUser)
+STDMETHODIMP_(const char*) cInputBinder::VarUnsetn(char** ppVarNames, long iNum, BOOL bUser)
 {
 	SetGlobObjs();
 	return m_IB_variable_manager->VarUnset(ppVarNames, iNum, bUser);
 }
 
-STDMETHODIMP_(char*) cInputBinder::VarUnsetAll()
+STDMETHODIMP_(const char*) cInputBinder::VarUnsetAll()
 {
 	return m_IB_variable_manager->VarUnsetAll();
 }

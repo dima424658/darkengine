@@ -5,14 +5,14 @@
 #include <str.h>
 #include <dlist.h>
 
-typedef cContDListNode<cAnsiStr, 0> cAnsiStrNode;
-typedef cContDListNode<sControlDown, 0> cControlDownNode;
-
 struct sControlDown
 {
 	cAnsiStr control;
 	char* pCmd;
 };
+
+typedef cContDListNode<cAnsiStr, 0> cAnsiStrNode;
+typedef cContDListNode<sControlDown, 0> cControlDownNode;
 
 #pragma pack(1)
 class cIBInputMapper

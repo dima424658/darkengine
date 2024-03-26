@@ -8,7 +8,7 @@ public:
 	struct aa_node
 	{
 		char* name;
-		char* info;
+		T* info;
 		int info_array_size;
 		aa_node* left;
 		aa_node* right;
@@ -63,19 +63,19 @@ inline aatree<T>::aatree()
 	root = null_node;
 }
 template <typename T>
-inline aatree<T>::~aatree()
+aatree<T>::~aatree()
 {
 	DeleteAll(1);
 }
 
 template <typename T>
-inline void aatree<T>::Add(const char* name, T* info, int info_array_size)
+void aatree<T>::Add(const char* name, T* info, int info_array_size)
 {
 	Insert(name, info, &root, null_node, info_array_size);
 }
 
 template <typename T>
-inline int aatree<T>::Delete(const char* name, int delete_info, T* info)
+int aatree<T>::Delete(const char* name, int delete_info, T* info)
 {
 	auto ret_val = Remove(name, &root, delete_info, info);
 	ResetParents(root, nullptr);
@@ -83,26 +83,26 @@ inline int aatree<T>::Delete(const char* name, int delete_info, T* info)
 }
 
 template <typename T>
-inline void aatree<T>::DeleteAll(int delete_info)
+void aatree<T>::DeleteAll(int delete_info)
 {
 	FreeTree(&root, delete_info);
 	root = null_node;
 }
 
 template <typename T>
-inline T* aatree<T>::Find(const char* name)
+T* aatree<T>::Find(const char* name)
 {
 	return Search(name, root);
 }
 
 template <typename T>
-inline int aatree<T>::GetNumNodes()
+int aatree<T>::GetNumNodes()
 {
 	return num_nodes;
 }
 
 template <typename T>
-inline void aatree<T>::ResetVisited(aatree<T>::aa_node* cur)
+void aatree<T>::ResetVisited(aatree<T>::aa_node* cur)
 {
 	if (!cur)
 		cur = cur_visited = root;
@@ -118,7 +118,7 @@ inline void aatree<T>::ResetVisited(aatree<T>::aa_node* cur)
 
 
 template<typename T>
-inline void aatree<T>::VisitBefore(T* info, aatree<T>::aa_node* cur)
+void aatree<T>::VisitBefore(T* info, aatree<T>::aa_node* cur)
 {
 	if (!cur)
 		cur = cur_visited = root;
@@ -135,7 +135,7 @@ inline void aatree<T>::VisitBefore(T* info, aatree<T>::aa_node* cur)
 }
 
 template<typename T>
-inline T* aatree<T>::GetNextInOrder(char* str)
+T* aatree<T>::GetNextInOrder(char* str)
 {
 	if (cur_visited == null_node)
 		return nullptr;
@@ -166,7 +166,7 @@ inline T* aatree<T>::GetNextInOrder(char* str)
 }
 
 template<typename T>
-inline void aatree<T>::Insert(const char* name, T* info, aa_node** ppOutNode, aa_node* parent, int info_array_size)
+void aatree<T>::Insert(const char* name, T* info, aatree<T>::aa_node** ppOutNode, aatree<T>::aa_node* parent, int info_array_size)
 {
 	assert(ppOutNode != nullptr);
 
@@ -201,7 +201,7 @@ inline void aatree<T>::Insert(const char* name, T* info, aa_node** ppOutNode, aa
 }
 
 template<typename T>
-inline void aatree<T>::ResetParents(aa_node* cur, aa_node* parent)
+void aatree<T>::ResetParents(aatree<T>::aa_node* cur, aatree<T>::aa_node* parent)
 {
 	if (!parent)
 		parent = null_node;
@@ -216,7 +216,7 @@ inline void aatree<T>::ResetParents(aa_node* cur, aa_node* parent)
 }
 
 template<typename T>
-inline int aatree<T>::Remove(const char* name, aa_node** ppOutNode, int delete_info, T* info)
+int aatree<T>::Remove(const char* name, aatree<T>::aa_node** ppOutNode, int delete_info, T* info)
 {
 	static aa_node* last_ptr = nullptr;
 	static aa_node* del_ptr = nullptr;
@@ -282,7 +282,7 @@ inline int aatree<T>::Remove(const char* name, aa_node** ppOutNode, int delete_i
 }
 
 template<typename T>
-inline void aatree<T>::FreeTree(aa_node** ppOutNode, int delete_info)
+void aatree<T>::FreeTree(aatree<T>::aa_node** ppOutNode, int delete_info)
 {
 	auto*& pOutNode = *ppOutNode;
 	if (pOutNode == null_node)
@@ -300,7 +300,7 @@ inline void aatree<T>::FreeTree(aa_node** ppOutNode, int delete_info)
 }
 
 template<typename T>
-inline T* aatree<T>::Search(const char* name, aa_node* cur)
+T* aatree<T>::Search(const char* name, aatree<T>::aa_node* cur)
 {
 	if (cur == null_node)
 		return nullptr;
@@ -317,7 +317,7 @@ inline T* aatree<T>::Search(const char* name, aa_node* cur)
 }
 
 template<typename T>
-inline void aatree<T>::Skew(aa_node** ppOutNode)
+void aatree<T>::Skew(aatree<T>::aa_node** ppOutNode)
 {
 	auto*& pOutNode = *ppOutNode;
 	if (pOutNode->left->level == pOutNode->level)
@@ -325,7 +325,7 @@ inline void aatree<T>::Skew(aa_node** ppOutNode)
 }
 
 template<typename T>
-inline void aatree<T>::Split(aa_node** ppOutNode)
+void aatree<T>::Split(aatree<T>::aa_node** ppOutNode)
 {
 	auto*& pOutNode = *ppOutNode;
 	if (pOutNode->right->right->level == pOutNode->level)
@@ -336,7 +336,7 @@ inline void aatree<T>::Split(aa_node** ppOutNode)
 }
 
 template<typename T>
-inline aatree<T>::aa_node* aatree<T>::RotateWithLeftChild(aa_node* pNode)
+typename aatree<T>::aa_node* aatree<T>::RotateWithLeftChild(aatree<T>::aa_node* pNode)
 {
 	auto* tmp = pNode->left;
 	pNode->left = tmp->right;
@@ -349,7 +349,7 @@ inline aatree<T>::aa_node* aatree<T>::RotateWithLeftChild(aa_node* pNode)
 }
 
 template<typename T>
-inline aatree<T>::aa_node* aatree<T>::RotateWithRightChild(aa_node* pNode)
+typename aatree<T>::aa_node* aatree<T>::RotateWithRightChild(aatree<T>::aa_node* pNode)
 {
 	auto* tmp = pNode->right;
 	pNode->right = tmp->left;

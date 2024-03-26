@@ -223,7 +223,7 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    // to interact with the binder. Most users
    // should not have to call this.
    //
-   STDMETHOD_(char *, ProcessCmd) (THIS_ const char *pCmdStr) PURE;
+   STDMETHOD_(const char *, ProcessCmd) (THIS_ const char *pCmdStr) PURE;
 
    //
    // Trap a control, and bind it to pCmdStr, if the filter callback allows it.
@@ -268,7 +268,7 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    // Loads a .bnd file into the specified iContext. If pPrefix is not NULL,
    // we bind only the matching prefixed binds.
    //
-   STDMETHOD_(char *, LoadBndFile) (THIS_ const char *pBndFname, unsigned long iContext, const char *pPrefix) PURE;
+   STDMETHOD_(const char *, LoadBndFile) (THIS_ const char *pBndFname, unsigned long iContext, const char *pPrefix) PURE;
 
    //
    // Saves a bind file under the current context only. Should undoubtedly
@@ -283,9 +283,9 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    STDMETHOD_(BOOL, VarSet) (THIS_ IB_var *pVars) PURE;//must be NULL-terminated
    STDMETHOD_(BOOL, VarSetn) (THIS_ IB_var *pVars, long iNum) PURE;
    // if bUser is set, then the variable(s) can be unset by the player.
-   STDMETHOD_(char *, VarUnset) (THIS_ char **ppVarNames, BOOL bUser) PURE;//must be NULL-terminated
-   STDMETHOD_(char *, VarUnsetn) (THIS_ char **ppVarNames, long iNum, BOOL bUser) PURE;
-   STDMETHOD_(char *, VarUnsetAll) (THIS) PURE;
+   STDMETHOD_(const char *, VarUnset) (THIS_ char **ppVarNames, BOOL bUser) PURE;//must be NULL-terminated
+   STDMETHOD_(const char *, VarUnsetn) (THIS_ char **ppVarNames, long iNum, BOOL bUser) PURE;
+   STDMETHOD_(const char *, VarUnsetAll) (THIS) PURE;
 
 
    //

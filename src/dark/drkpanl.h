@@ -45,7 +45,7 @@ public:
    void SetResPath(const char* path);
 
 protected:  
-   static bool region_cb(uiEvent *ev, Region *reg, void *data);
+   static BOOL region_cb(uiEvent *ev, Region *reg, void *data);
    //
    // Modal button panel ops
    //

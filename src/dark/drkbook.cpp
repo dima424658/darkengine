@@ -65,7 +65,7 @@ protected:
    void InitUI(); 
    void TermUI(); 
 
-   static bool region_cb(uiEvent *ev, Region *reg, void *data);
+   static BOOL region_cb(uiEvent *ev, Region *reg, void *data);
 
 
    // Lookup the text string
@@ -192,7 +192,7 @@ void cBook::TermUI()
 
 ////////////////////////////////////////
 
-bool cBook::region_cb(uiEvent *ev, Region *reg, void *data)
+BOOL cBook::region_cb(uiEvent *ev, Region *reg, void *data)
 {
    cBook* us = (cBook*)data; 
 

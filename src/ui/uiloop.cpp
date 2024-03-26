@@ -154,7 +154,7 @@ static void visual_message(uiStateRecord* state, DispatchData* data)
 ////////////////////////////////////////
 
 #pragma off(unreferenced)
-static bool hotkey_handler(uiEvent* ev, Region* reg, void* data)
+static BOOL hotkey_handler(uiEvent* ev, Region* reg, void* data)
 {
    uiCookedKeyEvent* kev = (uiCookedKeyEvent*)ev;
    hotkey_dispatch(kev->code);

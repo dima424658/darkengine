@@ -61,14 +61,14 @@ For installing and removing the binding handler
 */
 void InstallIBHandler (ulong context, ulong events, BOOL poll)
 {
-   bool (*inpbnd_handler)(uiEvent *, Region *, void *);
+   tBindHandler inpbnd_handler;
    g_pInputBinder->GetHandler (&inpbnd_handler);
 
    uiSlab* slabptr;
    uiGetCurrentSlab(&slabptr);
    g_root = slabptr->creg;
    
-   uiInstallRegionHandler (g_root, events, inpbnd_handler, NULL, &g_cookie);
+   uiInstallRegionHandler (g_root, events, reinterpret_cast<uiHandlerProc>(inpbnd_handler), NULL, &g_cookie);
    g_pInputBinder->SetContext (context,poll);
    // we need to poll here because SetContext can early exit with polling
    // this is to prevent stuck keys
@@ -425,7 +425,7 @@ static char *MLookProc (const char *, const char *val, BOOL)
       double dval = atof (val);
       double sens = atof (g_pInputBinder->ProcessCmd ("echo $mouse_sensitivity"));
 
-      char *inverted = g_pInputBinder->ProcessCmd ("echo $mouse_invert");
+      const char *inverted = g_pInputBinder->ProcessCmd ("echo $mouse_invert");
       if (atof (inverted) == 0.0)
          headmoveSetRelPosY (-dval * sens);//non-inverted
       else
