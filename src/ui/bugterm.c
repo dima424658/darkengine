@@ -221,9 +221,9 @@ bool bugterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
             bugterm.statebits &= ~kStatePaused;
          }
       
-         g_pInputBinder->lpVtbl->GetContext (g_pInputBinder, &context);
+         IInputBinder_GetContext(g_pInputBinder, &context);
          if (context == HK_COMMAND_MODE && HotkeyContext == HK_GAME_MODE) {
-            g_pInputBinder->lpVtbl->SetContext (g_pInputBinder, HK_GAME_MODE, TRUE);
+             IInputBinder_SetContext(g_pInputBinder, HK_GAME_MODE, TRUE);
          }
 
          if (strlen(bugterm.cmdbuf) > 0)
@@ -238,9 +238,9 @@ bool bugterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
          break;
       case KB_FLAG_DOWN|KB_FLAG_CTRL|'g':
       case KB_FLAG_DOWN|KEY_ESC:
-         g_pInputBinder->lpVtbl->GetContext (g_pInputBinder, &context);
+         IInputBinder_GetContext (g_pInputBinder, &context);
          if (context == HK_COMMAND_MODE && HotkeyContext == HK_GAME_MODE) {
-            g_pInputBinder->lpVtbl->SetContext (g_pInputBinder, HK_GAME_MODE,TRUE);
+            IInputBinder_SetContext (g_pInputBinder, HK_GAME_MODE,TRUE);
          }
          if (text&&((*text)!='\0'))
             Status("");
@@ -380,9 +380,9 @@ void bugterm_focus()
    LGadDrawBox(VB(&bugterm.textbox),NULL);
    LGadDrawBox(VB(&bugterm.titlebox),NULL);
 
-   g_pInputBinder->lpVtbl->GetContext (g_pInputBinder, &context);
+   IInputBinder_GetContext (g_pInputBinder, &context);
    if (context == HK_GAME_MODE)
-      g_pInputBinder->lpVtbl->SetContext (g_pInputBinder, HK_COMMAND_MODE, TRUE);
+      IInputBinder_SetContext (g_pInputBinder, HK_COMMAND_MODE, TRUE);
 
    // pause the sim state
    SimStatePause();

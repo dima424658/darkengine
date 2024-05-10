@@ -313,10 +313,10 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          state->in_mode = TRUE;
 
          //input binding stuff
-         g_pInputBinder->lpVtbl->GetHandler (g_pInputBinder, &inpbnd_handler);
+         IInputBinder_GetHandler (g_pInputBinder, &inpbnd_handler);
          uiInstallRegionHandler (root, UI_EVENT_KBD_COOKED, inpbnd_handler, NULL, &cookie);
-         g_pInputBinder->lpVtbl->SetMasterProcessCallback (g_pInputBinder, ProcessEditKey);
-         g_pInputBinder->lpVtbl->SetContext (g_pInputBinder, HK_BRUSH_EDIT, TRUE);
+         IInputBinder_SetMasterProcessCallback (g_pInputBinder, ProcessEditKey);
+         IInputBinder_SetContext (g_pInputBinder, HK_BRUSH_EDIT, TRUE);
          HotkeyContext = HK_BRUSH_EDIT;
 
          StatusEnable();

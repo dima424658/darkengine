@@ -2,7 +2,16 @@
 
 #include <inpbnd_i.h>
 
+#include <aatree.h>
+
 class cIBInputMapper;
+
+typedef struct _intrnl_var
+{
+	IB_var var;
+	aatree<intrnl_var_channel> channels;
+	short stamp;
+} intrnl_var;
 
 class cIBVariableManager
 {

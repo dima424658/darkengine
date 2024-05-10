@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef __cplusplus
+#error unsupported language
+#endif // !__cplusplus
+
+
 template <typename T>
 struct aatree
 {

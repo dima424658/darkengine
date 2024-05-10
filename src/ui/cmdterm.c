@@ -327,11 +327,11 @@ bool cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
             CmdTerm.statebits &= ~kStatePaused;
          }
 
-         g_pInputBinder->lpVtbl->GetContext (g_pInputBinder, &context);
+         IInputBinder_GetContext (g_pInputBinder, &context);
          if (context == HK_COMMAND_MODE && HotkeyContext == HK_GAME_MODE) {
-            g_pInputBinder->lpVtbl->SetContext (g_pInputBinder, HK_GAME_MODE, TRUE);
+            IInputBinder_SetContext (g_pInputBinder, HK_GAME_MODE, TRUE);
          }
-         if ((ret = g_pInputBinder->lpVtbl->ProcessCmd (g_pInputBinder, text)) != NULL)  // command might do status' itself
+         if ((ret = IInputBinder_ProcessCmd (g_pInputBinder, text)) != NULL)  // command might do status' itself
             Status(ret);
          else
             history_add(text);       // only add commands which succeed
@@ -341,9 +341,9 @@ bool cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
          break;
       case KB_FLAG_DOWN|KB_FLAG_CTRL|'g':
       case KB_FLAG_DOWN|KEY_ESC:
-         g_pInputBinder->lpVtbl->GetContext (g_pInputBinder, &context);
+         IInputBinder_GetContext (g_pInputBinder, &context);
          if (context == HK_COMMAND_MODE && HotkeyContext == HK_GAME_MODE) {
-            g_pInputBinder->lpVtbl->SetContext (g_pInputBinder, HK_GAME_MODE,TRUE);
+            IInputBinder_SetContext (g_pInputBinder, HK_GAME_MODE,TRUE);
          }
          if (text&&((*text)!='\0'))
             Status("");
@@ -497,9 +497,9 @@ void cmdterm_focus(char* prefix)
    SimStatePause();
    
 
-   g_pInputBinder->lpVtbl->GetContext (g_pInputBinder, &context);
+   IInputBinder_GetContext (g_pInputBinder, &context);
    if (context == HK_GAME_MODE)
-      g_pInputBinder->lpVtbl->SetContext (g_pInputBinder, HK_COMMAND_MODE, TRUE);
+      IInputBinder_SetContext (g_pInputBinder, HK_COMMAND_MODE, TRUE);
    
    CmdTerm.statebits |= kStatePaused;
 }

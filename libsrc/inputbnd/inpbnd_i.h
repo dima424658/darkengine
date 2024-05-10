@@ -16,8 +16,6 @@
 #include <event.h>
 #include <types.h>
 
-#include <aatree.h>
-
 
 #define GAME_VAR 0
 #define USER_VAR 1
@@ -102,13 +100,6 @@ typedef struct _intrnl_var_channel {
    unsigned long context;
 } intrnl_var_channel;
 
-typedef struct _intrnl_var
-{
-  IB_var var;
-  aatree<intrnl_var_channel> channels;
-  short stamp;
-} intrnl_var;
-
 ///////////////////////////////////////////////////////////////////////////////
 // Structure used to associate binding contexts. In a bind file, a bind command
 // may be prefixed by a string. This structure is used to map the string (case-
@@ -132,7 +123,7 @@ Expect joystick axis' to be given in -1.0 to 1.0 range,
 inclusive.
 --------------------------------------------------------------
 */
-class cIBJoyAxisProcess {
+struct cIBJoyAxisProcess {
 public:
    cIBJoyAxisProcess ();
 
@@ -157,6 +148,8 @@ private:
    double m_deadzone_x, m_deadzone_y, m_deadzone_z, m_deadzone_r;
 };
 
+#else
+typedef struct cIBJoyAxisProcess cIBJoyAxisProcess;
 #endif
 
 
@@ -353,20 +346,20 @@ EXTERN tResult LGAPI _CreateInputBinder(REFIID, IInputBinder **ppInputBinder, IU
 #define IInputBinder_QueryInterface(p, a, b)  COMQueryInterface(p, a, b)
 #define IInputBinder_AddRef(p)  COMAddRef(p)
 #define IInputBinder_Release(p)  COMRelease(p)
-#define IInputBinder_Init(p, a, b)  COMCall2(p, a, b)
-#define IInputBinder_Term(p)  COMCall0(p)
-#define IInputBinder_GetHandler(p, a)  COMCall1(p, a)
-#define IInputBinder_ProcessCmd(p, a)  COMCall1(p, a)
-#define IInputBinder_Update(p)  COMCall0(p)
-#define IInputBinder_LoadBndFile(p, a, b, c)  COMCall3(p, a, b, c)
-#define IInputBinder_LoadBndFile(p, a, b, c)  COMCall3(p, a, b, c)
-#define IInputBinder_SaveBndFile(p, a)  COMCall1(p, a)
-#define IInputBinder_VarSet(p, a)  COMCall1(p, a)
-#define IInputBinder_VarSetn(p, a, b)  COMCall2(p, a, b)
-#define IInputBinder_VarUnset(p, a, b)  COMCall2(p, a, b)
-#define IInputBinder_VarUnsetn(p, a, b, c)  COMCall3(p, a, b, c)
-#define IInputBinder_SetContext(p, a)  COMCall2(p, a, b)
-#define IInputBinder_GetContext(p, a)  COMCall1(p, a)
+#define IInputBinder_Init(p, a, b)  COMCall2(p, Init, a, b)
+#define IInputBinder_Term(p)  COMCall0(p, Term)
+#define IInputBinder_GetHandler(p, a)  COMCall1(p, GetHandler, a)
+#define IInputBinder_ProcessCmd(p, a)  COMCall1(p, ProcessCmd, a)
+#define IInputBinder_Update(p)  COMCall0(p, Update)
+#define IInputBinder_LoadBndFile(p, a, b, c)  COMCall3(p, LoadBndFile, a, b, c)
+#define IInputBinder_LoadBndFile(p, a, b, c)  COMCall3(p, LoadBndFile, a, b, c)
+#define IInputBinder_SaveBndFile(p, a)  COMCall1(p, SaveBndFile, a)
+#define IInputBinder_VarSet(p, a)  COMCall1(p, VarSet, a)
+#define IInputBinder_VarSetn(p, a, b)  COMCall2(p, VarSetn, a, b)
+#define IInputBinder_VarUnset(p, a, b)  COMCall2(p, VarUnset, a, b)
+#define IInputBinder_VarUnsetn(p, a, b, c)  COMCall3(p, VarUnsetn, a, b, c)
+#define IInputBinder_SetContext(p, a, b)  COMCall2(p, SetContext, a, b)
+#define IInputBinder_GetContext(p, a)  COMCall1(p, GetContext, a)
 
 
 
