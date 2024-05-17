@@ -287,7 +287,9 @@ unsigned cHashSetBase::SecondaryHash(unsigned primary)
 //
 tHashSetNode cHashSetBase::Insert(tHashSetNode a)
 {
+#ifdef DEBUG_HASHSET
     BEGIN_DEBUG_MSG1("cHashSetBase::Insert(%p)", a);
+#endif
 
 // Find where it should go
     tHashSetHandle h = FindIndex(GetKey(a));
@@ -312,13 +314,14 @@ tHashSetNode cHashSetBase::Insert(tHashSetNode a)
 
 #ifdef DEBUG_HASHSET
     DumpTable();
-#endif
-
     DebugMsg1("Returning %p", a);
+#endif
 
     return a;
 
+#ifdef DEBUG_HASHSET
     END_DEBUG;
+#endif
 }
 
 
