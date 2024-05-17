@@ -18,7 +18,7 @@ void GetNormalizedPath(const char* pOldPath, char** ppNewPath)
 	}
 
 	auto nameLen = strlen(pOldPath);
-	auto lastChar = pOldPath[nameLen - 1];
+	auto lastChar = nameLen ? pOldPath[nameLen - 1] : '\0';
 	auto needSlash = false;
 
 	if (lastChar != '\\' && lastChar != '/')

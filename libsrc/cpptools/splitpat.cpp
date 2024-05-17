@@ -443,8 +443,7 @@ BOOL cPathSplitter::DoSplitTo(eComponent /* SplitToComponent */)
         }
     else
         {
-        char buffer[256];
-        sprintf(buffer, "Drive not found (%d && %d)", !!(pScan >= pcszTarget), !!(*pScan == ':'));
+        sprintf(buffer, "Drive not found (%d && %d)", !!(pScan >= pcszTarget), !!(pScan >= pcszTarget && *pScan == ':'));
         DebugStr(buffer);
         Drive.IfNotFoundAssumeZeroLenAt(pEndDrive);
         }

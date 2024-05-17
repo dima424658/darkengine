@@ -470,7 +470,7 @@ inline BOOL cHashSetBase::IsEmpty() const
 
 inline tHashSetHandle cHashSetBase::FindIndex(tHashSetKey a) const
 {
-    tHashSetHandle h;
+    tHashSetHandle h = {};
     h.Index = Hash(a) % m_nPts;
 
     h.pPrev = 0;
