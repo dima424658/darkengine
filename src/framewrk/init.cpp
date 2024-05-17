@@ -189,8 +189,8 @@ static void pick_game(void)
    strcat(game,".cfg");
    
    char path[256]; 
-   // Verify(find_file_in_config_path(path,game,"include_path")); 
-   // config_load(path); 
+   Verify(find_file_in_config_path(path,game,"include_path")); 
+   config_load(path); 
 }
 
 
