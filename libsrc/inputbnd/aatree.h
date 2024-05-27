@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #ifndef __cplusplus
 #error unsupported language
 #endif // !__cplusplus
@@ -34,6 +36,8 @@ public:
 	int Delete(const char* pName, int iDeleteInfo, T* pInfo);
 	void DeleteAll(int pDeleteInfo);
 	T* Find(const char* pName);
+	void ChangeInfo(const char* pName, T* pInfo, int iInfoArraySize);
+	void ChangeNodeInfo(const char* pName, T* pInfo, aa_node* pCurrent, int iInfoArraySize);
 	int GetNumNodes();
 	void ResetVisited(aa_node* pCurrent);
 	void VisitBefore(T* pInfo, aa_node* pCurrent);
@@ -98,6 +102,33 @@ template <typename T>
 T* aatree<T>::Find(const char* name)
 {
 	return Search(name, root);
+}
+
+template <typename T>
+void aatree<T>::ChangeInfo(const char* pName, T* pInfo, int iInfoArraySize)
+{
+	ChangeNodeInfo(pName, pInfo, root, iInfoArraySize);
+}
+
+template <typename T>
+void aatree<T>::ChangeNodeInfo(const char* pName, T* pInfo, aatree<T>::aa_node* pCurrent, int iInfoArraySize)
+{
+	if (pCurrent == null_node)
+		return;
+
+	if (strcmp(pName, pCurrent->name) == 0)
+	{
+		pCurrent->info = pInfo;
+		pCurrent->info_array_size = iInfoArraySize;
+	}
+	else if (strcmp(pName, pCurrent->name) >= 0)
+	{
+		ChangeNodeInfo(pName, pInfo, pCurrent->right, iInfoArraySize);
+	}
+	else
+	{
+		ChangeNodeInfo(pName, pInfo, pCurrent->left, iInfoArraySize);
+	}
 }
 
 template <typename T>
@@ -184,7 +215,7 @@ void aatree<T>::Insert(const char* name, T* info, aatree<T>::aa_node** ppOutNode
 		new_node->info = info;
 		new_node->info_array_size = info_array_size;
 		new_node->right = null_node;
-		new_node->left = new_node->right;
+		new_node->left = null_node;
 		new_node->parent = parent;
 		new_node->level = 1;
 		new_node->visited = 0;

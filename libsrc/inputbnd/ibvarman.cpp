@@ -4,7 +4,7 @@
 #include <memory>
 
 extern cIBInputMapper* g_IB_input_mapper;
-extern cIBVariableManager* gIB_variable_manager;
+extern cIBVariableManager* g_IB_variable_manager;
 
 static const char* SkipWhiteSpace(const char* str);
 static void GetChunk(char* dest, const char** src, char ch1, char ch2);
@@ -38,7 +38,7 @@ void cIBVariableManager::Init()
 	m_glob_cb = 0;
 	m_bnd_path = 0;
 	SetBndSearchPath(".");
-	gIB_variable_manager = this;
+	g_IB_variable_manager = this;
 	SetMasterAggregation(IBMaxActiveAgg);
 }
 
@@ -60,7 +60,7 @@ int cIBVariableManager::VarSet(IB_var* vars, int alias)
 	char* cmd_line_chan[] = { new char[40], new char[40] };
 	strcpy(cmd_line_chan[0], "cmd_line");
 
-	for (auto* cur_var = vars; vars->name[0]; ++cur_var)
+	for (auto* cur_var = vars; cur_var->name[0] != '\0'; ++cur_var)
 	{
 		if (strlen(cur_var->name) >= 32 || strlen(cur_var->val) >= 32)
 		{
@@ -82,14 +82,14 @@ int cIBVariableManager::VarSet(IB_var* vars, int alias)
 			continue;
 		}
 
-		int_var = new intrnl_var();
-		memcpy(int_var, cur_var, sizeof(intrnl_var));
+		int_var = new intrnl_var{};
+		memcpy(&int_var->var, cur_var, sizeof(IB_var));
 		if (alias)
 			int_var->var.flags = int_var->var.flags | 2;
 		if (!cur_var->val[0])
 			sprintf(int_var->var.val, "%8.8f", 0.0);
 
-		strcpy(int_var->var.last_val, int_var->var.val);
+		strncpy(int_var->var.last_val, int_var->var.val, IB_VARSTRMAX);
 		strlwr(int_var->var.name);
 		strlwr(int_var->var.val);
 		m_vars.Add(int_var->var.name, int_var, 1);
@@ -272,7 +272,7 @@ const char* cIBVariableManager::Cmd(const char* pCmd, int already_down)
 			ret_str = "Syntax error";
 			goto cleanup;
 		}
-		
+
 		if (strlen(tokens[1]) >= 32)
 		{
 			ret_str = "Field too long";
@@ -300,7 +300,7 @@ const char* cIBVariableManager::Cmd(const char* pCmd, int already_down)
 		delete[] dest;
 		goto cleanup;
 	}
-	
+
 	if (!strcmp("ibset", tokens[0]) || !strcmp("alias", tokens[0]))
 	{
 		if (num_tokens != 2 && num_tokens != 3)
@@ -346,7 +346,7 @@ const char* cIBVariableManager::Cmd(const char* pCmd, int already_down)
 
 		goto cleanup;
 	}
-	
+
 	if (!strcmp("ibunset", tokens[0]) || !strcmp("alias", tokens[0]))
 	{
 		if (num_tokens != 2)
@@ -395,7 +395,7 @@ const char* cIBVariableManager::Cmd(const char* pCmd, int already_down)
 		g_IB_input_mapper->SaveBnd(tokens[1], 0);
 		goto cleanup;
 	}
-	
+
 	if (num_tokens > 0 && **tokens)
 	{
 		ret_str = ProcessCommand(const_cast<const char**>(tokens), num_tokens, already_down);
@@ -459,7 +459,7 @@ const char* cIBVariableManager::ProcessCommand(
 		strcpy(control, tokens[num_tokens - 1]);
 		num_tokens -= 2;
 	}
-	
+
 	char* val = nullptr;
 	if (active_toggle)
 	{
@@ -503,21 +503,21 @@ const char* cIBVariableManager::ProcessCommand(
 
 		strcpy(val, tokens[cur_token]);
 	}
-	
+
 	tBindAggCallback agg = nullptr;
 	if (var->var.agg)
 		agg = var->var.agg;
 	else
 		agg = m_glob_agg;
-	
+
 	bool chan_ret = false;
 	char final_val[32] = {};
 
 	if (agg)
 	{
 		auto num_chans = var->channels.GetNumNodes();
-		auto* chan_array = new intrnl_var_channel*[num_chans];
-		
+		auto* chan_array = new intrnl_var_channel * [num_chans];
+
 		var->channels.ResetVisited(nullptr);
 		for (int i = 0; i < num_chans; ++i)
 			chan_array[i] = var->channels.GetNextInOrder(nullptr);
@@ -563,9 +563,9 @@ const char* cIBVariableManager::GetVarVal(char* dest, const char* val_name)
 const char* cIBVariableManager::AddChannel(const char* const* control)
 {
 	int cur_token = 1;
-	
+
 	bool active_toggle = control[0][1] == '+' || control[0][1] == '-';
-	
+
 	int num_tokens = 0;
 	auto* tokens = Tokenize(&control[1][active_toggle ? 1 : 0], &num_tokens, 0);
 	if (num_tokens == 0)
@@ -734,7 +734,7 @@ const char* cIBVariableManager::LoadBnd(const char* bnd_filename, const char* pr
 		return "File not found";
 
 	fseek(fp, 0, 0);
-	
+
 	do
 	{
 		char str[128];
@@ -779,10 +779,10 @@ char** cIBVariableManager::Tokenize(const char* cmd, int* num_tokens, int expand
 	}
 
 	auto tmp_tokens_num = 32;
-	auto* tmp_tokens = new char*[tmp_tokens_num];
+	auto* tmp_tokens = new char* [tmp_tokens_num];
 	for (int i = 0; i < tmp_tokens_num; ++i)
 		tmp_tokens[i] = new char[128];
-	
+
 	bool expand_var = false;
 	cmd = SkipWhiteSpace(cmd);
 	int num = 0;
@@ -847,7 +847,7 @@ char** cIBVariableManager::Tokenize(const char* cmd, int* num_tokens, int expand
 				{
 					if (j + num < 32)
 					{
-						delete[] (&tmp_tokens[j])[num];
+						delete[](&tmp_tokens[j])[num];
 						(&tmp_tokens[j])[num] = expanded_tokens[j];
 					}
 					else
@@ -866,7 +866,7 @@ char** cIBVariableManager::Tokenize(const char* cmd, int* num_tokens, int expand
 	}
 
 	*num_tokens = num;
-	auto* tokens = new char*[num];
+	auto* tokens = new char* [num];
 	for (int i = 0; i < num; ++i)
 	{
 		tokens[i] = new char[strlen(tmp_tokens[i]) + 1];
@@ -874,7 +874,7 @@ char** cIBVariableManager::Tokenize(const char* cmd, int* num_tokens, int expand
 	}
 
 	FreeTokens(tmp_tokens, tmp_tokens_num);
-	
+
 	return tokens;
 }
 

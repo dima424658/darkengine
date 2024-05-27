@@ -37,7 +37,7 @@ typedef BOOL (*tBindHandler) (uiEvent *pEvent);
 
 // Passes to you the control string, command string, and user data.
 // Return TRUE if you accept the bind request.
-typedef BOOL (*tTrapBindFilter) (char *pControl, char *pCmd, void *pUserData);
+typedef BOOL (*tTrapBindFilter) (char *pControl, const char *pCmd, void *pUserData);
 
 // For doing any work after a bind trap has occured. bBound will contain
 // whether or not the control was bound to the command.
@@ -59,10 +59,10 @@ typedef char *(*tBindProcCallback) (const char *pCmd, const char *pValStr, BOOL 
 
 
 //provided aggregation callbacks
-EXTERN BOOL IBMaxActiveAgg (struct _intrnl_var_channel **, long, char *);
-EXTERN BOOL IBAddActiveAgg (struct _intrnl_var_channel **, long, char *);
-EXTERN BOOL IBAveActiveAgg (struct _intrnl_var_channel **, long, char *);
-EXTERN BOOL IBMRUActiveAgg (struct _intrnl_var_channel **, long, char *);
+EXTERN BOOL CDECL IBMaxActiveAgg (struct _intrnl_var_channel **, long, char *);
+EXTERN BOOL CDECL IBAddActiveAgg (struct _intrnl_var_channel **, long, char *);
+// EXTERN BOOL CDECL IBAveActiveAgg (struct _intrnl_var_channel **, long, char *);
+// EXTERN BOOL CDECL IBMRUActiveAgg (struct _intrnl_var_channel **, long, char *);
 
 
 
@@ -321,7 +321,7 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    // then into ppControls. Maximum controls is 4 (some control+alt+crtl+shift).
    // pNumControls will be stuffed with the number of controls separated.
    //
-   STDMETHOD_(char *, DecomposeControl) (THIS_ char *pControlStr, char ppControls[4][32], long *pNumControls) PURE;
+   STDMETHOD_(const char *, DecomposeControl) (THIS_ char *pControlStr, char ppControls[4][32], long *pNumControls) PURE;
 
    //
    // Clears all binds in the current context.
@@ -360,6 +360,7 @@ EXTERN tResult LGAPI _CreateInputBinder(REFIID, IInputBinder **ppInputBinder, IU
 #define IInputBinder_VarUnsetn(p, a, b, c)  COMCall3(p, VarUnsetn, a, b, c)
 #define IInputBinder_SetContext(p, a, b)  COMCall2(p, SetContext, a, b)
 #define IInputBinder_GetContext(p, a)  COMCall1(p, GetContext, a)
+#define IInputBinder_SetMasterProcessCallback(p, a) COMCall1(p, SetMasterProcessCallback, a)
 
 
 

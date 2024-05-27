@@ -1281,7 +1281,7 @@ protected:
 
    //////////////////////////////////////////////////////
 
-   static BOOL BindFilter (char *control, char *cmd, void *data)
+   static BOOL BindFilter (char *control, const char *cmd, void *data)
    {
       //we'll reserve ESC for breaking from a bind query
       if (!strcmp (control, "esc"))

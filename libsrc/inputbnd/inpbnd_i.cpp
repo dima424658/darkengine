@@ -2,9 +2,50 @@
 
 #include <cstdlib>
 
-BOOL IBAddActiveAgg(_intrnl_var_channel**, long, char*)
+
+BOOL CDECL IBMaxActiveAgg(intrnl_var_channel** chans, long num_chans, char* str)
 {
-	return FALSE; // TODO
+	bool first = false;
+	double max = 0.0;
+	const char* maxStr = nullptr;
+
+	for (int i = 0; i < num_chans; ++i)
+	{
+		if (chans[i]->active == TRUE)
+		{
+			auto cur = atof(chans[i]->val);
+			if (cur > max || !first)
+			{
+				first = 1;
+				max = cur;
+				maxStr = chans[i]->val;
+			}
+		}
+	}
+
+	if (first)
+		strcpy(str, maxStr);
+
+	return first;
+}
+
+BOOL CDECL IBAddActiveAgg(intrnl_var_channel** chans, long num_chans, char* str)
+{
+	auto found = false;
+	auto sum = 0.0;
+	for (int i = 0; i < num_chans; ++i)
+	{
+		if (chans[i]->active)
+		{
+			found = true;
+			sum = atof(chans[i]->val) + sum;
+		}
+	}
+
+	if (found)
+		sprintf(str, "%8.8f", sum);
+
+	return found;
 }
 
 cIBJoyAxisProcess::cIBJoyAxisProcess()

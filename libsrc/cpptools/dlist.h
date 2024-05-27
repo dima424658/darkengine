@@ -230,6 +230,7 @@ template <class CONTAINED_TYPE, int ID>
 class cContDListNode : public cDListNode< cContDListNode<CONTAINED_TYPE, ID>, ID>
 {
 public:
+   inline cContDListNode() {}
    CONTAINED_TYPE item;
 };
 

@@ -8,7 +8,7 @@
 #include <ibmapper.h>
 
 cIBVariableManager* g_IB_variable_manager = nullptr;
-cIBInputMapper* g_IB_input_mapper = nullptr;
+extern cIBInputMapper* g_IB_input_mapper;
 
 class cInputBinder : public cCTDelegating<IInputBinder>,
 	public cCTAggregateMemberControl<kCTU_Default>
@@ -168,7 +168,7 @@ public:
 	// then into ppControls. Maximum controls is 4 (some control+alt+crtl+shift).
 	// pNumControls will be stuffed with the number of controls separated.
 	//
-	STDMETHOD_(char*, DecomposeControl) (THIS_ char* pControlStr, char ppControls[4][32], long* pNumControls);
+	STDMETHOD_(const char*, DecomposeControl) (THIS_ char* pControlStr, char ppControls[4][32], long* pNumControls);
 
 	//
 	// Clears all binds in the current context.
@@ -455,7 +455,7 @@ STDMETHODIMP_(void) cInputBinder::SetResPath(char* pPath)
 	m_IB_variable_manager->SetBndSearchPath(pPath);
 }
 
-STDMETHODIMP_(char*) cInputBinder::DecomposeControl(char* pControlStr, char ppControls[4][32], long* pNumControls)
+STDMETHODIMP_(const char*) cInputBinder::DecomposeControl(char* pControlStr, char ppControls[4][32], long* pNumControls)
 {
 	SetGlobObjs();
 

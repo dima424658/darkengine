@@ -297,6 +297,7 @@ STDMETHODIMP cObjectSystem::End()
       SafeRelease(m_Sinks[i]); 
 
    delete [] BaseActiveArray;
+   BaseActiveArray = nullptr;
 
 
    SafeRelease(PropMan);
@@ -932,6 +933,7 @@ STDMETHODIMP cObjectSystem::DatabaseNotify(eObjNotifyMsg msg, ObjNotifyData raw)
       case kObjNotifyDefault:
          BottomObj = ROOT_ARCHETYPE;
          TopObj = 0;
+         assert(BaseActiveArray != nullptr);
          BaseActiveElem(ROOT_ARCHETYPE) |= BaseActiveMask(ROOT_ARCHETYPE);
          BaseActiveElem(OBJ_NULL) &= ~BaseActiveMask(OBJ_NULL);
          build_obj_lists();

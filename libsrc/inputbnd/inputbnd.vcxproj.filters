@@ -18,9 +18,27 @@
     <ClInclude Include="inpbnd_i.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ibmapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ibvarman.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="inpbnd_i.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ibmapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ibvarman.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inpguid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inputbnd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
