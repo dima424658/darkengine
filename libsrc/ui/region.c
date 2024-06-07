@@ -699,10 +699,10 @@ int region_convert_toparent(Region *from_reg, Rect *orig, Rect *conv)
 // Converts a rectangle within a region to the absolute coords for that region, not relative
 errtype region_abs_rect(Region *reg, Rect *orig_rect, Rect *conv)
 {
-   conv->ul.x = orig_rect->ul.x;
-   conv->ul.y = orig_rect->ul.y;
-   conv->lr.x = orig_rect->lr.x;
-   conv->lr.y = orig_rect->lr.y;
+        conv->ul.x = orig_rect->ul.x;
+        conv->ul.y = orig_rect->ul.y;
+        conv->lr.x = orig_rect->lr.x;
+        conv->lr.y = orig_rect->lr.y;
    if (reg->parent != NULL)
    {
       conv->ul.x += reg->parent->abs_x;
