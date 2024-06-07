@@ -1,0 +1,1 @@
+void lgd3d_set_zlinear(int lin);
