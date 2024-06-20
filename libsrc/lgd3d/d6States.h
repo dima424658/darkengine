@@ -219,3 +219,119 @@ extern cD6States* pcStates;
 extern IDirect3DDevice3* g_lpD3Ddevice;
 extern IDirectDraw4* g_lpDD_ext;
 extern BOOL g_bUseDepthBuffer, g_bUseTableFog, g_bUseVertexFog;
+
+/* code from lgd3d.h */
+
+#define LGRT_SINGLE_TEXTURE_SINGLE_PASS     0L
+#define LGRT_MULTI_TEXTURE_SINGLE_PASS      1L
+
+    //NOTE: multipass multitexturing is not supported!!!
+
+    // Capabilities that can be requested:
+
+#define LGD3DF_SPEW                    0x00000002L
+
+//depth buffer:
+#define LGD3DF_ZBUFFER                 0x00000001L // Z-buffer 
+#define LGD3DF_WBUFFER                 0x00000004L // W-buffer 
+#define LGD3DF_DEPTH_BUFFER_REQUIRED   0x00000008L // the 
+// selected (Z_ or W-) depth buffer REQUIRED!
+//fog:
+#define LGD3DF_TABLE_FOG               0x00000010L // table based pixel fog
+#define LGD3DF_VERTEX_FOG              0x00000020L 
+
+//dithering
+#define LGD3DF_DITHER                  0x00000040L // use dithering 
+
+//antialiasing
+#define LGD3DF_ANTIALIAS				   0x00000080L // use (sort independent) antialiasing 
+
+#define LGD3DF_MULTI_TEXTURING         0x00000100L // we support ONLY two sets of textures and
+// and texture coordinates
+
+#define LGD3DF_MODULATEALPHA			   0x00000200L // we want to use modulate alpha for single texture mode
+#define LGD3DF_BLENDDIFFUSE				0x00000400L // we want to use blend diffuse for single texture mode
+
+#define LGD3DF_MULTITEXTURE_COLOR		0x00000800L // we want to use color light maps for single or multi texture mode
+#define LGD3DF_MULTITEXTURE_ALPHA		0x00001000L // we want to use alpha light maps for single or multi texture mode
+
+#define LGD3DF_DO_WINDOWED             0x00002000L
+
+#define LGD3DF_MT_BLENDDIFFUSE         0x00004000L // we want to use alpha light maps for single or multi texture mode
+
+// Supported capabilities: (returned by the enumeration)
+
+//depth buffer
+#define LGD3DF_CAN_DO_ZBUFFER				0x00010000L
+#define LGD3DF_CAN_DO_WBUFFER				0x00040000L // W-buffer 
+//fog:
+#define LGD3DF_CAN_DO_TABLE_FOG			0x00080000L // table based pixel fog
+#define LGD3DF_CAN_DO_VERTEX_FOG			0x00100000L // vertex fog
+//dithering
+#define LGD3DF_CAN_DO_DITHER				0x00200000L // can dither
+#define LGD3DF_CAN_DO_ANTIALIAS			0x00400000L // can use (sort independent) antialiasing 
+
+#define LGD3DF_CAN_DO_SINGLE_PASS_MT	0x02000000L // we can do single pass double texturing
+#define LGD3DF_CAN_DO_WINDOWED         0x04000000L // we can play the game in lil' window
+
+#define LGD3DF_CAN_DO_ITERATE_ALPHA    0x08000000L // can do Gouraud interpolation between vetices alpha color
+
+
+///////////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////
+
+    // Multi texturing
+
+    //used for single level texturing
+#define LGD3DTB_MODULATE            0L    //default        
+#define LGD3DTB_MODULATEALPHA       1L
+#define LGD3DTB_BLENDDIFFUSE        2L
+
+#define LGD3DTB_NO_STATES           3L
+
+    //2 levels texturing:
+#define LGD3D_MULTITEXTURE_COLOR             0L  //default
+#define LGD3D_MULTITEXTURE_ALPHA             1L  
+#define LGD3D_MULTITEXTURE_BLEND_TEX_ALPHA   2L  
+
+#define LGD3D_MULTITEXTURE_NO_STATES         3L
+
+    // additional sets of texture coordinates are added
+    typedef struct {
+        float   u, v;
+    } LGD3D_tex_coord;
+
+    // error codes:( the first argument of "lgd3d_get_error" )
+#define LGD3D_EC_OK                             0L
+#define LGD3D_EC_DD_KAPUT                       1L
+#define LGD3D_EC_RESTORE_ALL_SURFS              2L
+#define LGD3D_EC_QUERY_D3D                      3L
+#define LGD3D_EC_GET_DD_CAPS                    4L
+#define LGD3D_EC_ZBUFF_ENUMERATION              5L
+#define LGD3D_EC_CREATE_3D_DEVICE               6L
+#define LGD3D_EC_CREATE_VIEWPORT                7L
+#define LGD3D_EC_ADD_VIEWPORT                   8L
+#define LGD3D_EC_SET_VIEWPORT                   9L
+#define LGD3D_EC_SET_CURR_VP                    10L
+#define LGD3D_EC_CREATE_BK_MATERIAL             11L
+#define LGD3D_EC_SET_BK_MATERIAL                12L
+#define LGD3D_EC_GET_BK_MAT_HANDLE              13L
+#define LGD3D_EC_GET_SURF_DESC                  14L
+#define LGD3D_EC_GET_3D_CAPS                    15L
+#define LGD3D_EC_VD_MPASS_MT                    16L
+#define LGD3D_EC_VD_S_DEFAULT                   17L
+#define LGD3D_EC_VD_SPASS_MT                    18L
+#define LGD3D_EC_VD_M_DEFAULT                   19L
+#define LGD3D_EC_VD_SPASS_BLENDDIFFUSE          20L
+#define LGD3D_EC_VD_MPASS_BLENDDIFFUSE          21L
+
+BOOL lgd3d_get_error(DWORD* pdwCode, DWORD* phResult);
+extern int bSpewOn;
+extern char* GetDDErrorMsg(int hRes);
+extern int g_bPrefer_RGB;
+
+extern void SetLGD3DErrorCode(ulong dwCode, long hRes);
+extern char* GetLgd3dErrorCode(ulong dwErrorCode);
+
+extern BOOL lgd3d_g_bInitialized;
