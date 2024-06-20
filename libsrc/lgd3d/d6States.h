@@ -1,6 +1,5 @@
 #pragma once
 
-#include <lgd3d.h>
 #include <tdrv.h>
 
 #include <ddraw.h>
