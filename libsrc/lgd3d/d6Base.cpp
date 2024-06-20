@@ -1,4 +1,4 @@
-#include "lgd3d.h"
+
 #include <lgSS2P.h>
 
 #include "d6States.h"
