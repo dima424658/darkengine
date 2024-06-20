@@ -1,6 +1,10 @@
 #include <types.h>
 #include <lgd3d.h>
 #include <wdispapi.h>
+#include <d3d.h>
+
+DevDesc g_sD3DDevDesc;
+IDirectDraw4* g_lpDD_ext;
 
 class cD6Frame {
 public:
