@@ -1,4 +1,4 @@
-#include <lgd3d.h>
+
 #include <d3d.h>
 #include <wdispapi.h>
 #include <wdispcb.h>
