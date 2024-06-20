@@ -1,19 +1,26 @@
 #pragma once
 
+#include <lgd3d.h>
+#include <tdrv.h>
+
 #include <ddraw.h>
+#include <d3d.h>
 #include <d3dtypes.h>
 
 #include <types.h>
 #include <grs.h>
 
 
-struct d3d_cookie {
- uint8 wlog;
- uint8 hlog;
- uint8 flags;
- uint8 palette;
- unsigned long value;
-};
+typedef struct d3d_cookie {
+    union {
+        struct {
+             uchar wlog, hlog;
+             uchar flags;
+             uchar palette;
+        };
+        ulong value;
+    };
+} d3d_cookie;
 
 struct tdrv_texture_info
 {
@@ -75,36 +82,46 @@ struct sRenderStates
     D3DTEXTUREMINFILTER eMinTexFilter;
 };
 
+typedef struct
+{
+    IDirect3DTexture2* lpTexture;
+    IDirectDrawSurface4* lpSurface;
+    grs_bitmap* pTdrvBitmap;
+    d3d_cookie TdrvCookie;
+} sTextureData;
+
 class cD6States
 {
 public:
     virtual int Initialize(DWORD dwRequestedFlags);
 
-private:
+protected:
     unsigned long m_DeviceSurfaceCaps;
     int *m_texture_size_list;
     unsigned long m_texture_caps;
-    bool m_bTextureListInitialized;
+    BOOL m_bTextureListInitialized;
     sRenderStates *m_psCurrentRS;
     sRenderStates *m_psSetRS;
-    bool m_bTexture_RGB;
-    bool m_bUsingLocalMem;
-    bool m_bLocalMem_available;
-    bool m_bAGP_available;
-    bool m_bWBuffer;
-    bool m_bCanDither;
-    bool m_bCanAntialias;
-    bool m_bSpecular;
-    bool m_bCanModulate;
-    bool m_bCanModulateAlpha;
+private:
+    BOOL m_bTexture_RGB;
+    BOOL m_bUsingLocalMem;
+    BOOL m_bLocalMem_available;
+    BOOL m_bAGP_available;
+    BOOL m_bWBuffer;
+    BOOL m_bCanDither;
+    BOOL m_bCanAntialias;
+    BOOL m_bSpecular;
+    BOOL m_bCanModulate;
+    BOOL m_bCanModulateAlpha;
 
 protected:
     void EnumerateTextureFormats();
     void InitTextureManager();
     virtual int SetDefaultsStates(DWORD dwRequestedFlags);
-    void SetCommonDefaultStates(DWORD dwRequestedFlags, bool bMultiTexture);
+    void SetCommonDefaultStates(DWORD dwRequestedFlags, BOOL bMultiTexture);
 
-    cD6States(const cD6States &);
+    // copy ctr was created by compiler
+    // cD6States(const cD6States &);
     cD6States();
     virtual ~cD6States();
 
@@ -131,40 +148,40 @@ public:
     long CreateDDSurface(d3d_cookie cookie, DDSURFACEDESC2 *pddsd, IDirectDrawSurface4 **ppDDS);
     void LoadSurface(tdrv_texture_info *info, DDSURFACEDESC2 *pddsd);
     int get_texture_id();
-    virtual void TurnOffTexuring(bool bTexOff);
+    virtual void TurnOffTexuring(BOOL bTexOff);
     void SetTextureNow();
-    virtual cD6States *DeInstance();
-    void SetDithering(bool bOn);
+    virtual cD6States *DeInstance() = 0; // abstract for cD6States
+    void SetDithering(BOOL bOn);
     int GetDitheringState();
-    void SetAntialiasing(bool bOn);
+    void SetAntialiasing(BOOL bOn);
     int GetAntialiasingState();
     virtual void EnableDepthBuffer(int nFlag);
     int GetDepthBufferState();
-    virtual void SetZWrite(bool bZWriteOn);
+    virtual void SetZWrite(BOOL bZWriteOn);
     bool IsZWriteOn();
-    virtual void SetZCompare(bool bZCompreOn);
+    virtual void SetZCompare(BOOL bZCompreOn);
     bool IsZCompareOn();
     virtual void SetFogDensity(float fDensity);
-    int UseLinearTableFog(bool bOn);
+    int UseLinearTableFog(BOOL bOn);
     void SetFogStartAndEnd(float fStart, float fEnd);
     void SetLinearFogDistance(float fDistance);
     void SetAlphaColor(float fAlpha);
-    void EnableAlphaBlending(bool bAlphaOn);
-    bool IsAlphaBlendingOn();
+    void EnableAlphaBlending(BOOL bAlphaOn);
+    BOOL IsAlphaBlendingOn();
     void SetAlphaModulateHack(int iBlendMode);
     void ResetDefaultAlphaModulate();
     void SetTextureMapMode(DWORD dwFlag);
     void GetTexBlendingModes(DWORD *pdw0LevelMode, DWORD *pdw1LevelMode);
-    int SetSmoothShading(bool bSmoothOn);
-    bool IsSmoothShadingOn();
-    void EnableFog(bool bFogOn);
-    bool IsFogOn();
+    int SetSmoothShading(BOOL bSmoothOn);
+    BOOL IsSmoothShadingOn();
+    void EnableFog(BOOL bFogOn);
+    BOOL IsFogOn();
     void SetFogSpecularLevel(float fLevel);
     void SetFogColor(int r, int g, int b);
     unsigned long get_color();
     void SetTexturePalette(int start, int n, uint8 *pal, int slot);
-    void EnablePalette(bool bPalOn);
-    bool IsPaletteOn();
+    void EnablePalette(BOOL bPalOn);
+    BOOL IsPaletteOn();
     void SetPalSlotFlags(int start, int n, uint8 *pal_data, int slot, char flags);
     void SetAlphaPalette(uint16 *pal);
     virtual void SetChromaKey(int r, int g, int b);
@@ -174,4 +191,32 @@ public:
 
 private:
     float LinearWorldIntoFogCoef(float fLin);
+public:
+    // cD6States& operator=(const cD6States&);
 };
+
+
+#define SetRenderStateForGlobal(dev, key, value) \
+    if (hRes = dev->SetRenderState(key, value), hRes != S_OK) \
+    { \
+        CriticalMsg3(pcDXef, "SetRenderStateForGlobal failed", (ushort)hRes, GetDDErrorMsg(hRes)); \
+    }
+
+#define SetTextureStageStateForGlobal(dev, stage, key, value) \
+    if (hResult = dev->SetTextureStageState(stage, key, value), hResult != S_OK) \
+    { \
+        CriticalMsg3(pcDXef, "SetTextureStageState failed", (ushort)hResult, GetDDErrorMsg(hResult)); \
+    }
+
+#define SetTextureStageColors(dev, stage, rs) \
+    SetTextureStageStateForGlobal(dev, stage, D3DTSS_COLOROP, rs->saTexBlend[stage].eColorOperation); \
+    SetTextureStageStateForGlobal(dev, stage, D3DTSS_COLORARG1, rs->saTexBlend[stage].dwColorArg1); \
+    SetTextureStageStateForGlobal(dev, stage, D3DTSS_COLORARG2, rs->saTexBlend[stage].dwColorArg2); \
+    SetTextureStageStateForGlobal(dev, stage, D3DTSS_ALPHAOP, rs->saTexBlend[stage].eAlphaOperation); \
+    SetTextureStageStateForGlobal(dev, stage, D3DTSS_ALPHAARG1, rs->saTexBlend[stage].dwAlphaArg1); \
+    SetTextureStageStateForGlobal(dev, stage, D3DTSS_ALPHAARG2, rs->saTexBlend[stage].dwAlphaArg2);
+
+extern cD6States* pcStates;
+extern IDirect3DDevice3* g_lpD3Ddevice;
+extern IDirectDraw4* g_lpDD_ext;
+extern BOOL g_bUseDepthBuffer, g_bUseTableFog, g_bUseVertexFog;
