@@ -1,6 +1,10 @@
 #include <types.h>
 #include <ddraw.h>
 #include <d3dcaps.h>
+#include <d3d.h>
+
+IDirect3DDevice3* g_lpD3Ddevice;
+int bSpewOn;
 
 int lgd3d_enumerate_devices();
 int lgd3d_enumerate_devices_capable_of(unsigned long flags);
