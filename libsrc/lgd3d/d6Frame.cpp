@@ -1,5 +1,4 @@
 #include <types.h>
-#include <lgd3d.h>
 #include <wdispapi.h>
 #include <d3d.h>
 
