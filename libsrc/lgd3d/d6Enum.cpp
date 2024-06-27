@@ -9,10 +9,12 @@
 #include <lgassert.h>
 #include <dddynf.h>
 #include <mprintf.h>
+#include <emode.h>
 
 static bool bWBuffer;
 static int nNoDevices = -2;
-static lgd3ds_device_info* psDeviceList[10];
+#define MAX_DEVICE_NUMBER 10
+static lgd3ds_device_info* psDeviceList[MAX_DEVICE_NUMBER];
 static bool bNoD3d = true;
 static bool bDepthBuffer = false;
 static bool bWindowed = false;
@@ -196,38 +198,38 @@ HRESULT CALLBACK c_EnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescription, 
 		return 1;
 	}
 
-	if ((pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ZBUFFERLESSHSR) != 0)
+	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ZBUFFERLESSHSR)
 	{
-		pDeviceDesc->dpcTriCaps.dwRasterCaps &= 0xFE;
+		pDeviceDesc->dpcTriCaps.dwRasterCaps &= ~D3DPRASTERCAPS_DITHER;
 	}
 
-	if ((pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGTABLE) != 0)
+	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGTABLE)
 	{
 		capabilities_flags = 0x80000;
 	}
-	else if (info->requested_flags & 0x10)
+	else if (info->requested_flags & LGD3DF_TABLE_FOG)
 	{
 		mprintf("no table fog\n");
 		return 1;
 	}
 
-	if ((pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGVERTEX) != 0)
+	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGVERTEX)
 	{
 		capabilities_flags |= 0x100000u;
 	}
-	else if (info->requested_flags & 0x20)
+	else if (info->requested_flags & LGD3DF_VERTEX_FOG)
 	{
 		mprintf("no vertex fog\n");
 		return 1;
 	}
 
-	if ((pDeviceDesc->dpcTriCaps.dwShadeCaps & D3DPRASTERCAPS_ZBIAS) != 0)
+	if (pDeviceDesc->dpcTriCaps.dwShadeCaps & D3DPRASTERCAPS_ZBIAS)
 		capabilities_flags |= 0x8000000u;
 
 	if (bDepthBuffer)
 	{
 		capabilities_flags |= 0x10000u;
-		if ((pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_WBUFFER) != 0)
+		if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_WBUFFER)
 			capabilities_flags |= 0x40000u;
 	}
 
@@ -237,13 +239,13 @@ HRESULT CALLBACK c_EnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescription, 
 	if (pDeviceDesc->wMaxTextureBlendStages >= 2 && pDeviceDesc->wMaxSimultaneousTextures >= 2 && pDeviceDesc->dwFVFCaps >= 2)
 		capabilities_flags |= 0x2000000u;
 
-	if ((pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_DITHER) != 0)
+	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_DITHER)
 		capabilities_flags |= 0x200000u;
 
-	if ((pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ANTIALIASSORTINDEPENDENT) != 0)
+	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ANTIALIASSORTINDEPENDENT)
 		capabilities_flags |= 0x400000u;
 
-	if (info->device_number >= 10)
+	if (info->device_number >= MAX_DEVICE_NUMBER)
 		CriticalMsg("Too many d3d devices available.");
 
 	lgd3ds_device_info* device_info;
