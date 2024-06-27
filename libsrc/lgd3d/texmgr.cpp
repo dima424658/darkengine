@@ -24,14 +24,3 @@ int tmgr_init(grs_bitmap *bm, int num_textures, int *size_list, int num_sizes);
 tmgr_texture_info *init_bitmap_list();
 void tmgr_shutdown();
 int tmgr_stats();
-
-int lgd3d_enumerate_devices();
-int lgd3d_enumerate_devices_capable_of(unsigned int flags);
-void lgd3d_unenumerate_devices();
-lgd3ds_device_info *lgd3d_get_device_info(int device_number);
-
-void GetDevices(LGD3D_sEnumerationInfo *info);
-
-BOOL CALLBACK c_DDEnumCallback(GUID* lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, LPVOID lpContext);
-HRESULT CALLBACK c_EnumDisplayModesCallback(LPDDSURFACEDESC2 pSD, LPVOID data);
-HRESULT CALLBACK c_EnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescription, LPSTR lpDeviceName, LPD3DDEVICEDESC pDeviceDesc, LPD3DDEVICEDESC lpD3DHELDeviceDesc, LPVOID lpUserArg);
