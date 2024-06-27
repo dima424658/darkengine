@@ -6,6 +6,8 @@
 #include <r3ds.h>
 #include <g2spoint.h>
 
+#include <lgd3d.h>
+
 class cD6Primitives {
 protected:
     cD6Primitives(const class cD6Primitives &);
