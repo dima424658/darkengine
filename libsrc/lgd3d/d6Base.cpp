@@ -1,9 +1,12 @@
 
-#include <lgSS2P.h>
+//#include "lgSS2P.h"
 
 #include "d6States.h"
 
 #include <types.h>
+
+unsigned long dwErrorCode;
+unsigned long hD3DError;
 
 static BOOL lgd3d_get_error(DWORD* pdwCode, DWORD* phResult)
 {
