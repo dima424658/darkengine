@@ -31,5 +31,5 @@ lgd3ds_device_info *lgd3d_get_device_info(int device_number);
 int __stdcall c_DDEnumCallback(_GUID *lpGUID, char *lpDriverDescription, char *lpDriverName, LGD3D_sEnumerationInfo *lpContext);
 void GetDevices(LGD3D_sEnumerationInfo *info); 
 int __stdcall c_EnumDisplayModesCallback(_DDSURFACEDESC2 *pSD, char *data);
-int __stdcall c_EnumDevicesCallback(_GUID *lpGuid, char *lpDeviceDescription, char *lpDeviceName, _D3DDeviceDesc *pDeviceDesc, _D3DDeviceDesc *lpD3DHELDeviceDesc, void *lpUserArg); 
+int __stdcall c_EnumDevicesCallback(_GUID *lpGuid, char *lpDeviceDescription, char *lpDeviceName, DevDesc *pDeviceDesc, DevDesc *lpD3DHELDeviceDesc, void *lpUserArg); 
 int (__stdcall *__thiscall __cDynFunc__DirectDrawEnumerateA::GetProcAddress(__cDynFunc__DirectDrawEnumerateA *this))(int (__stdcall *)(_GUID *, char *, char *, void *), void *); 

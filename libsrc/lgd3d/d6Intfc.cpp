@@ -1,8 +1,14 @@
 #include <types.h>
-#include <d3dtypes.h>
 #include <grs.h>
 #include <r3ds.h>
 #include <g2spoint.h>
+#include <d6States.h>
+
+#include <d3d.h>
+#include <d3dtypes.h>
+
+bool lgd3d_g_bInitialized = false;
+
 
 void lgd3d_set_RGB();
 void lgd3d_set_hardware();
