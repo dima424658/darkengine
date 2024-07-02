@@ -1,7 +1,8 @@
-#include <types.h>
-#include <ddraw.h>
-#include <d3dcaps.h>
+
 #include <d3d.h>
+#include <d3dcaps.h>
+#include <ddraw.h>
+#include <types.h>
 
 #include <comtools.h>
 #include <dbg.h>
@@ -10,6 +11,7 @@
 #include <dddynf.h>
 #include <mprintf.h>
 #include <emode.h>
+#include <mode.h>
 
 static bool bWBuffer;
 static int nNoDevices = -2;
@@ -28,6 +30,11 @@ struct LGD3D_sEnumerationInfo
 	int num_supported;
 	DWORD requested_flags;
 };
+
+
+BOOL CALLBACK c_DDEnumCallback(GUID* lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, LPVOID lpContext);
+HRESULT CALLBACK c_EnumDisplayModesCallback(LPDDSURFACEDESC2 pSD, LPVOID data);
+HRESULT CALLBACK c_EnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescription, LPSTR lpDeviceName, LPD3DDEVICEDESC pDeviceDesc, LPD3DDEVICEDESC lpD3DHELDeviceDesc, LPVOID lpUserArg);
 
 int lgd3d_enumerate_devices()
 {

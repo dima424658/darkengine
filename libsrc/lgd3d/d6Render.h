@@ -11,8 +11,8 @@ protected:
 	~cD6Renderer();
 
 public:
-	cD6Renderer* Instance(DWORD dwInitialBufferType, DWORD* pdwRequestedFlags);
-	cD6Renderer* DeInstance();
+	static cD6Renderer* Instance(DWORD dwInitialBufferType, DWORD* pdwRequestedFlags);
+	static cD6Renderer* DeInstance();
 
 private:
 	void CreateStatesStack(DWORD dwInitialSize, DWORD dwEntrySize);
