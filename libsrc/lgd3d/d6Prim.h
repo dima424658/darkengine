@@ -2,11 +2,9 @@
 
 #include <d3dtypes.h>
 
-#include <types.h>
+#include <lgd3d.h>
 #include <r3ds.h>
 #include <g2spoint.h>
-
-#include <lgd3d.h>
 
 class cD6Primitives {
 protected:
@@ -15,7 +13,7 @@ protected:
     ~cD6Primitives();
 
 public:
-    cD6Primitives * DeInstance();
+    virtual cD6Primitives * DeInstance();
 
 private:
     int m_bPrimitivesPending;

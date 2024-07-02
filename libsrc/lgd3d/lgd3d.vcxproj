@@ -36,7 +36,10 @@
     <ClInclude Include="d6Prim.h" />
     <ClInclude Include="d6Render.h" />
     <ClInclude Include="d6States.h" />
+    <ClInclude Include="lgd3d.h" />
+    <ClInclude Include="lgSS2P.h" />
     <ClInclude Include="lgSurf_i.h" />
+    <ClInclude Include="tmgr.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

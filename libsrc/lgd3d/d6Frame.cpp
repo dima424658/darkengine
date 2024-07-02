@@ -1,5 +1,6 @@
 #include <types.h>
 #include <lgd3d.h>
+#include <comtools.h>
 #include <wdispapi.h>
 #include <lgSurf_i.h>
 #include <lgassert.h>
@@ -15,8 +16,8 @@ IDirectDrawSurface4* g_lpRenderBuffer = nullptr;
 IDirectDrawSurface4* g_lpDepthBuffer = nullptr;
 IDirect3DDevice3* g_lpD3Ddevice = nullptr;
 
-extern bool lgd3d_g_bInitialized;
-bool bSpewOn;
+extern BOOL lgd3d_g_bInitialized;
+BOOL bSpewOn;
 int g_bWFog;
 
 DWORD g_dwScreenWidth;
@@ -40,6 +41,7 @@ IDirect3DViewport3* g_lpViewport;
 IDirect3DMaterial3* g_lpBackgroundMaterial;
 int g_b8888supported;
 
+HRESULT CALLBACK c_EnumZBufferFormats(LPDDPIXELFORMAT lpDDPixFmt, LPVOID lpContext);
 
 static inline void RaiseLGD3DErrorCode(DWORD dwCode, DWORD hResult)
 {
