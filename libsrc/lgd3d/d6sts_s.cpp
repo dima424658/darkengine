@@ -1,10 +1,14 @@
 
-#include <d3d.h>
+#include <comtools.h>
 #include <wdispapi.h>
+
+#include <d3d.h>
+#include <ddraw.h>
+
 #include <wdispcb.h>
 #include <appagg.h>
-#include <texture.h>
 #include <mprintf.h>
+
 
 BOOL lgd3d_blend_trans = TRUE;
 
@@ -18,9 +22,12 @@ BOOL lgd3d_blend_trans = TRUE;
 
 // #include "d3dmacs.h"
 #include "d6States.h"
+#include <d6Prim.h>
+#include <d6Render.h>
 
 #include <lgassert.h>
 #include <dbg.h>
+#include <lgd3d.h>
 
 
 #ifndef SHIP
@@ -31,6 +38,9 @@ static char* pcLGD3Def = (char*)"LGD3D error no %d : %s : message: %d\n%s";
 
 #define CheckHResult(hRes, msg) \
 AssertMsg3(hRes==0, hResErrorMsg, msg, (hRes>>16)&0x7fff, hRes&0xffff)
+
+extern cD6Primitives* pcRenderBuffer;
+extern cD6Renderer* pcRenderer;
 
 class cImStates : public cD6States
 {
@@ -72,11 +82,12 @@ public:
     virtual void SetLightMapMode(DWORD dwFlag) override;
     virtual void SetTextureLevel(int n) override;
     virtual int EnableMTMode(DWORD dwMTOn) override;
-    virtual void TurnOffTexuring(bool bTexOff) override;
+    virtual void TurnOffTexuring(BOOL bTexOff) override;
 };
 
 DDPIXELFORMAT* g_FormatList[5];
 
+#define LGD3D_MAX_TEXTURES 1024
 sTextureData g_saTextures[LGD3D_MAX_TEXTURES];
 
 DDPIXELFORMAT g_RGBTextureFormat;
@@ -143,7 +154,7 @@ void blit_16to16_scale(tdrv_texture_info *info, uint16 *dst, int drow);
 void blit_32to32(tdrv_texture_info *info, uint16 *dst, int drow); 
 void blit_32to32_scale(tdrv_texture_info *info, uint16 *dst, int drow); 
 void blit_32to16(tdrv_texture_info *info, uint16 *dst, unsigned int drow);
-int EnumTextureFormatsCallback(_DDPIXELFORMAT *lpDDPixFmt, void *lpContext); 
+int STDMETHODCALLTYPE EnumTextureFormatsCallback(DDPIXELFORMAT* lpDDPixFmt, void* lpContext);
 void CheckSurfaces(sWinDispDevCallbackInfo *info); 
 void InitDefaultTexture(int size); 
 int FindClosestColor(float r, float g, float b); 
@@ -354,7 +365,7 @@ int init_size_tables(int** p_size_list)
     init_size_table(rgb_size_table, TF_ALPHA);
     init_size_table(trgb_size_table, TF_ALPHA | TF_RGB);
     init_size_table(b8888_size_table, TF_TRANS);
-    munge_size_tables(p_size_list);
+    return munge_size_tables(p_size_list);
 }
 
 void InitDefaultTexture(int size)
@@ -418,13 +429,12 @@ int cD6States::Initialize(ulong dwRequestedFlags)
 
     pWinDisplayDevice = AppGetObj(IWinDisplayDevice);
     pWinDisplayDevice->AddTaskSwitchCallback(CheckSurfaces);
-    if (pWinDisplayDevice)
-        pWinDisplayDevice->Release();
+    SafeRelease(pWinDisplayDevice);
 
     InitDefaultTexture(16);
 
     InitTextureManager();
-    SetDefaultsStates(dwRequestedFlags);
+    return SetDefaultsStates(dwRequestedFlags);
 }
 
 #define NONLOCAL_CAPS DDSCAPS_TEXTURE | DDSCAPS_VIDEOMEMORY | DDSCAPS_NONLOCALVIDMEM | DDSCAPS_ALLOCONLOAD
@@ -907,8 +917,8 @@ void cD6States::release_texture(int n)
         }
     }
 
-    RELEASE(psTexData->lpTexture);
-    RELEASE(psTexData->lpSurface);
+    SafeRelease(psTexData->lpTexture);
+    SafeRelease(psTexData->lpSurface);
 
     psTexData->pTdrvBitmap = 0;
 }
@@ -931,7 +941,7 @@ int cD6States::reload_texture(tdrv_texture_info* info)
         pixel_format = g_FormatList[2];
 
     if (pixel_format->dwFlags == 0)
-        return TDRV_FAILURE;
+        return TMGR_FAILURE;
 
     memset(&pddsd, 0, sizeof(pddsd));
     pddsd.dwSize = sizeof(pddsd);
@@ -971,7 +981,7 @@ int cD6States::reload_texture(tdrv_texture_info* info)
             SafeRelease(SysmemTexture);
             SafeRelease(SysmemSurface);
             *pDeviceSurface = NULL;
-            return TDRV_FAILURE;
+            return TMGR_FAILURE;
         }
 
         DeviceSurface = *pDeviceSurface;
@@ -1014,7 +1024,7 @@ int cD6States::reload_texture(tdrv_texture_info* info)
     g_saTextures[info->id].pTdrvBitmap = info->bm;
     g_saTextures[info->id].TdrvCookie.value = info->cookie;
 
-    return TDRV_SUCCESS;
+    return TMGR_SUCCESS;
 }
 
 
