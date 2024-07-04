@@ -26,7 +26,7 @@ void cD6Renderer::DeleteStatesStack()
 {
 }
 
-int cD6Renderer::SwitchOverlaysOnOff(bool bOn)
+int cD6Renderer::SwitchOverlaysOnOff(BOOL bOn)
 {
 	return 0;
 }
@@ -43,7 +43,7 @@ void cD6Renderer::CleanDepthBuffer(int x1, int y1, int x2, int y2)
 {
 }
 
-void cD6Renderer::CleanRenderSurface(bool bDepthBufferToo)
+void cD6Renderer::CleanRenderSurface(BOOL bDepthBufferToo)
 {
 }
 

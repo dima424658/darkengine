@@ -53,7 +53,7 @@ typedef struct tmgr_texture_info
 	uchar* clut;
 	int next;
 	int size_index;
-	uint cookie;
+	ulong cookie;
 } tmgr_texture_info;
 
 
@@ -62,6 +62,12 @@ extern texture_manager *get_dopey_texture_manager( void* driver );
 
 
 extern texture_manager        *g_tmgr;       // this is kinda silly, but it'll do for now...
+
+/* tdrv.h infos */
+#define TMGR_ID_SOLID     -1
+#define TMGR_ID_CALLBACK  -2
+#define TMGR_ID_INVALID   -3
+/* tdrv end */
 
 #ifdef __cplusplus
 }

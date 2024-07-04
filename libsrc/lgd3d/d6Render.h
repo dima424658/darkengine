@@ -19,11 +19,11 @@ private:
 	void DeleteStatesStack();
 
 public:
-	int SwitchOverlaysOnOff(bool bOn);
+	int SwitchOverlaysOnOff(BOOL bOn);
 	void StartFrame(int nFrame);
 	void EndFrame();
 	void CleanDepthBuffer(int x1, int y1, int x2, int y2);
-	void CleanRenderSurface(bool bDepthBufferToo);
+	void CleanRenderSurface(BOOL bDepthBufferToo);
 	long InitViewport();
 
 	DWORD m_dwEntrySize;
@@ -35,5 +35,5 @@ public:
 	DWORD* m_pdwRSCData;
 	char* m_pCurrentEntry;
 	char* m_pSetEntry;
-	bool m_bOverlaysOn;
+	BOOL m_bOverlaysOn;
 };

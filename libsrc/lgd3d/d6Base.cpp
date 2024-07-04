@@ -5,6 +5,13 @@
 #include <ddraw.h>
 #include <d3d.h>
 
+#include <d6States.h>
+
+double z_near = 1.0, z_far = 200, inv_z_far = 0.005;
+double z1 = 1.005025125628141, z2 = 1.005025125628141;
+double z2d = 1.0, w2d = 1.0;
+double zbias;
+
 static DWORD dwErrorCode;
 static int hD3DError;
 
@@ -475,4 +482,58 @@ const char* GetDDErrorMsg(long hRes)
 	default:
 		return "Unrecognized error value.";
 	}
+}
+
+void set1(D3DMATRIX* m)
+{
+	m->_24 = 0.0;
+	m->_23 = 0.0;
+	m->_21 = 0.0;
+	m->_14 = 0.0;
+	m->_13 = 0.0;
+	m->_12 = 0.0;
+	m->_43 = 0.0;
+	m->_42 = 0.0;
+	m->_41 = 0.0;
+	m->_34 = 0.0;
+	m->_32 = 0.0;
+	m->_31 = 0.0;
+	m->_44 = 1.0;
+	m->_33 = 1.0;
+	m->_22 = 1.0;
+	m->_11 = 1.0;
+}
+
+void setwbnf(IDirect3DDevice3* lpDev, double dvWNear, double dvWFar)
+{
+	// WVP
+	D3DMATRIX matWorld, matView, matProj;
+	float Q;
+
+	set1(&matWorld);
+	set1(&matView);
+	set1(&matProj);
+	if (dvWFar > dvWNear)
+	{
+		lpDev->SetTransform(D3DTRANSFORMSTATE_WORLD, &matWorld);
+		lpDev->SetTransform(D3DTRANSFORMSTATE_VIEW, &matView);
+		Q = dvWFar / (dvWFar - dvWNear);
+		matProj._33 = Q;
+		matProj._43 = -dvWNear * Q;
+		matProj._34 = 1.0;
+		matProj._44 = 0.0;
+		lpDev->SetTransform(D3DTRANSFORMSTATE_PROJECTION, &matProj);
+	}
+}
+
+void lgd3d_set_znearfar(double znear, double zfar)
+{
+	z_near = znear;
+	z_far = zfar;
+	inv_z_far = 1.0 / zfar;
+	z1 = zfar / (zfar - znear);
+	z2 = znear * z1;
+	z1 = z1 - zbias;
+	if (pcStates)
+		setwbnf(g_lpD3Ddevice, znear, zfar);
 }

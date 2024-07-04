@@ -430,6 +430,10 @@ extern int lgd3d_g2TrifanMTD( int n, g2s_point **vpl, LGD3D_tex_coord **vptc );
 
 BOOL lgd3d_get_error(  DWORD* pdwCode, DWORD* phResult );
 
+extern uchar* texture_clut, *lgd3d_clut;
+extern BOOL lgd3d_punt_d3d;
+extern BOOL g_bWFog;
+extern double z_near, z_far;
 
 #ifdef __cplusplus
 }
