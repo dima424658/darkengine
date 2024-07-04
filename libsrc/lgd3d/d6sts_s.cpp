@@ -27,15 +27,15 @@
 #endif
 
 // #include "d3dmacs.h"
-#include "tmgr.h" // for g_tmgr
 #include <pal16.h>
-#include "d6States.h"
-#include <d6Prim.h>
-#include <d6Render.h>
-
 #include <lgassert.h>
 #include <dbg.h>
 #include <lgd3d.h>
+#include <lgSS2P.h>
+
+#include <d6States.h>
+#include <d6Prim.h>
+#include <d6Render.h>
 
 
 #ifndef SHIP
@@ -49,6 +49,7 @@ AssertMsg3(hRes==0, pcDXef, msg, hRes, GetDDErrorMsg(hRes))
 
 extern cD6Primitives* pcRenderBuffer;
 extern cD6Renderer* pcRenderer;
+cD6States *pcStates = nullptr;
 
 class cImStates : public cD6States
 {
@@ -161,8 +162,9 @@ sTexBlendArgs sMultiTexBlendArgsProtos[3][2] =
 int b_SS2_UseSageTexManager;
 
 ushort** texture_pal_list[4] = { texture_pal_opaque, texture_pal_opaque, /* is it working? */ &alpha_pal, texture_pal_trans};
+extern "C" BOOL lgd3d_blend_trans;
 BOOL lgd3d_blend_trans = TRUE;
-static D3DBLEND table[4] = { D3DBLEND_ZERO, D3DBLEND_ONE, D3DBLEND_SRCCOLOR, D3DBLEND_DESTCOLOR };
+static D3DBLEND table[] = { D3DBLEND_ZERO, D3DBLEND_ONE, D3DBLEND_SRCCOLOR, D3DBLEND_DESTCOLOR };
 
 void GetAvailableTexMem(ulong* local, ulong* agp);
 
@@ -181,7 +183,7 @@ void blit_16to16(tdrv_texture_info *info, uint16 *dst, int drow);
 void blit_16to16_scale(tdrv_texture_info *info, uint16 *dst, int drow); 
 void blit_32to32(tdrv_texture_info *info, uint16 *dst, int drow); 
 void blit_32to32_scale(tdrv_texture_info *info, uint16 *dst, int drow); 
-void blit_32to16(tdrv_texture_info *info, uint16 *dst, unsigned int drow);
+void blit_32to16(tdrv_texture_info *info, uint16 *dst, int drow);
 int STDMETHODCALLTYPE EnumTextureFormatsCallback(DDPIXELFORMAT* lpDDPixFmt, void* lpContext);
 void CheckSurfaces(sWinDispDevCallbackInfo *info); 
 void InitDefaultTexture(int size); 
@@ -410,7 +412,7 @@ void cD6States::InitTextureManager()
     if (g_tmgr)
     {
         g_tmgr->shutdown();
-        g_tmgr = 0;
+        g_tmgr = nullptr;
     }
 
     g_tmgr = get_dopey_texture_manager(pcStates);
@@ -1865,28 +1867,25 @@ cImStates::cImStates()
 
 cImStates::~cImStates()
 {
-	sTextureData* psTD;
-	IWinDisplayDevice* pWinDisplayDevice;
-	int i;
-
 	if (m_bTextureListInitialized)
 	{
-		if (g_tmgr != NULL)
+		if (g_tmgr != nullptr)
 		{
 			g_tmgr->shutdown();
-			g_tmgr = 0;
+			g_tmgr = nullptr;
 		}
-		pWinDisplayDevice = AppGetObj(IWinDisplayDevice);
-		pWinDisplayDevice->RemoveTaskSwitchCallback(callback_id);
-		if (pWinDisplayDevice)
-			pWinDisplayDevice->Release();
 
-		for (i = 0; i < LGD3D_MAX_TEXTURES; i++)
+		auto* pWinDisplayDevice = AppGetObj(IWinDisplayDevice);
+		pWinDisplayDevice->RemoveTaskSwitchCallback(callback_id);
+		SafeRelease(pWinDisplayDevice);
+
+		for (int i = 0; i < LGD3D_MAX_TEXTURES; i++)
 		{
-			psTD = &g_saTextures[i];
+			auto* psTD = &g_saTextures[i];
 			SafeRelease(psTD->lpTexture);
 			SafeRelease(psTD->lpSurface);
 		}
+
 		m_bTextureListInitialized = FALSE;
 	}
 
@@ -1896,7 +1895,7 @@ cImStates::~cImStates()
 		default_bm = NULL;
 	}
 
-	for (i = 0; i < MAX_PALETTES; i++)
+	for (int i = 0; i < MAX_PALETTES; i++)
 	{
 		if (texture_pal_opaque[i])
 		{
