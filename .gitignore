@@ -44,5 +44,8 @@ Release
 *.tlog
 *.pdb
 *.rsp
+*.sdf
+*.suo
+ipch/
 
 redist

@@ -89,6 +89,8 @@ typedef struct
 
 class cD6States
 {
+    friend class cMSStates;
+
 public:
     virtual int Initialize(DWORD dwRequestedFlags);
 
@@ -120,7 +122,8 @@ protected:
     // copy ctr was created by compiler
     // cD6States(const cD6States &);
     cD6States();
-    virtual ~cD6States();
+    // also abstract
+    virtual ~cD6States() = 0;
 
 public:
     int load_texture(tdrv_texture_info *info);
@@ -153,13 +156,13 @@ public:
     void SetAntialiasing(BOOL bOn);
     int GetAntialiasingState();
     virtual void EnableDepthBuffer(int nFlag);
-    int GetDepthBufferState();
+    D3DZBUFFERTYPE GetDepthBufferState();
     virtual void SetZWrite(BOOL bZWriteOn);
-    bool IsZWriteOn();
+    BOOL IsZWriteOn();
     virtual void SetZCompare(BOOL bZCompreOn);
-    bool IsZCompareOn();
+    BOOL IsZCompareOn();
     virtual void SetFogDensity(float fDensity);
-    int UseLinearTableFog(BOOL bOn);
+    BOOL UseLinearTableFog(BOOL bOn);
     void SetFogStartAndEnd(float fStart, float fEnd);
     void SetLinearFogDistance(float fDistance);
     void SetAlphaColor(float fAlpha);
@@ -169,22 +172,22 @@ public:
     void ResetDefaultAlphaModulate();
     void SetTextureMapMode(DWORD dwFlag);
     void GetTexBlendingModes(DWORD *pdw0LevelMode, DWORD *pdw1LevelMode);
-    int SetSmoothShading(BOOL bSmoothOn);
+    BOOL SetSmoothShading(BOOL bSmoothOn);
     BOOL IsSmoothShadingOn();
     void EnableFog(BOOL bFogOn);
     BOOL IsFogOn();
     void SetFogSpecularLevel(float fLevel);
     void SetFogColor(int r, int g, int b);
     unsigned long get_color();
-    void SetTexturePalette(int start, int n, uint8 *pal, int slot);
+    void SetTexturePalette(int start, int n, uchar *pal, int slot);
     void EnablePalette(BOOL bPalOn);
     BOOL IsPaletteOn();
     void SetPalSlotFlags(int start, int n, uint8 *pal_data, int slot, char flags);
     void SetAlphaPalette(uint16 *pal);
     virtual void SetChromaKey(int r, int g, int b);
     int GetTexWrapping(DWORD dwLevel);
-    int SetTexWrapping(DWORD dwLevel, bool bSetSmooth);
-    int EnableSpecular(bool bUseIt);
+    BOOL SetTexWrapping(DWORD dwLevel, BOOL bSetSmooth);
+    BOOL EnableSpecular(BOOL bUseIt);
 
 private:
     float LinearWorldIntoFogCoef(float fLin);
@@ -217,12 +220,13 @@ extern cD6States* pcStates;
 extern IDirect3DDevice3* g_lpD3Ddevice;
 extern IDirectDraw4* g_lpDD_ext;
 extern BOOL g_bUseDepthBuffer, g_bUseTableFog, g_bUseVertexFog;
+extern BOOL g_bTexSuspended;
 
 extern int bSpewOn;
 extern char* GetDDErrorMsg(int hRes);
 extern int g_bPrefer_RGB;
 
 extern void SetLGD3DErrorCode(ulong dwCode, long hRes);
-extern char* GetLgd3dErrorCode(ulong dwErrorCode);
+extern const char* GetLgd3dErrorCode(ulong dwErrorCode);
 
 extern BOOL lgd3d_g_bInitialized;
