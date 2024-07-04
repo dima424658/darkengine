@@ -1,23 +1,10 @@
-#include <cassert>
 
-#include <lgd3d.h>
-
-#define D3D_OVERLOADS
 #include <ddraw.h>
 #include <d3d.h>
 
-#include <d6States.h>
+#include <lgd3d.h>
+#include <lgassert.h>
 
-double z_near = 1.0;
-double z_far = 200.0;
-// near / far
-double inv_z_far = 1 / 200;
-// far / (far - near)
-double z1 = 200.0 / (200.0 - 1.0);
-// near * far / (far - near)
-double z2 = 1.0 * 200.0 / (200.0 - 1.0);
-double z2d = 1.0, w2d = 1.0;
-double zbias = 0.0;
 
 static DWORD dwErrorCode;
 static int hD3DError;
@@ -41,7 +28,7 @@ void SetLGD3DErrorCode(DWORD dwCode, DWORD hResult)
 
 const char* GetLgd3dErrorCode(DWORD dwErrorCode)
 {
-	assert(dwErrorCode != LGD3D_EC_OK);
+	Assert_(dwErrorCode != LGD3D_EC_OK);
 
 	switch (dwErrorCode)
 	{
@@ -491,47 +478,3 @@ const char* GetDDErrorMsg(long hRes)
 	}
 }
 
-void set1(D3DMATRIX* m)
-{
-	*m = {
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	};
-}
-
-void setwbnf(IDirect3DDevice3* lpDev, double dvWNear, double dvWFar)
-{
-	// WVP
-	D3DMATRIX matWorld, matView, matProj;
-
-	set1(&matWorld);
-	set1(&matView);
-	set1(&matProj);
-	if (dvWFar > dvWNear)
-	{
-		lpDev->SetTransform(D3DTRANSFORMSTATE_WORLD, &matWorld);
-		lpDev->SetTransform(D3DTRANSFORMSTATE_VIEW, &matView);
-		// Generate left-handed perspective projection
-		float Q = dvWFar / (dvWFar - dvWNear);
-		matProj(2, 2) = Q;
-		matProj(3, 2) = -dvWNear * Q;
-		matProj(2, 3) = 1.0;
-		matProj(3, 3) = 0.0;
-		lpDev->SetTransform(D3DTRANSFORMSTATE_PROJECTION, &matProj);
-		
-	}
-}
-
-void lgd3d_set_znearfar(double znear, double zfar)
-{
-	z_near = znear;
-	z_far = zfar;
-	inv_z_far = 1.0 / zfar;
-	z1 = zfar / (zfar - znear);
-	z2 = znear * z1;
-	z1 = z1 - zbias;
-	if (pcStates)
-		setwbnf(g_lpD3Ddevice, znear, zfar);
-}

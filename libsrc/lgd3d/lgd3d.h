@@ -113,7 +113,7 @@ extern int lgd3d_enumerate_devices_capable_of( ulong flags );
 extern void lgd3d_set_RGB(void);
 extern void lgd3d_set_hardware(void);
 extern void lgd3d_set_software(void);
-extern void lgd3d_texture_set_RGB(bool is_RGB);
+extern void lgd3d_texture_set_RGB(BOOL is_RGB);
 
 // state query functions (won't change between init and shutdown)
 extern BOOL lgd3d_is_RGB(void);
@@ -192,7 +192,7 @@ extern void lgd3d_set_blend(BOOL do_blend);
 extern void lgd3d_blend_normal(void);
 
 extern void lgd3d_blend_multiply(int blend_mode); //from below
-enum {
+typedef enum {
    BLEND_DEST_ZERO=0,
    BLEND_SRC_ZERO=0,
    BLEND_SRC_ONE=1,
@@ -201,7 +201,7 @@ enum {
    BLEND_DEST_ONE=4,
    BLEND_DEST_SRC=8,
    BLEND_DEST_DEST=12
-};
+} eBlendMode;
 
 
 //efects:
@@ -313,10 +313,6 @@ extern BOOL lgd3d_set_poly_mode( ePolyMode eNewMode );
 extern ePolyMode lgd3d_get_poly_mode();
 
 
-extern int lgd3d_trifan(int n, r3s_point **vpl);
-extern int lgd3d_lit_trifan(int n, r3s_point **vpl);
-extern int lgd3d_poly(int n, r3s_point **vpl);
-extern int lgd3d_spoly(int n, r3s_point **vpl);
 extern int lgd3d_g2upoly(int n, g2s_point **vpl);
 extern int lgd3d_g2poly(int n, g2s_point **vpl);
 extern int lgd3d_g2utrifan(int n, g2s_point **vpl);
@@ -334,10 +330,10 @@ extern void lgd3d_rgblit_tmap_setup(grs_bitmap *bm);
 extern void lgd3d_rgbalit_tmap_setup(grs_bitmap *bm);
 extern void lgd3d_rgbafoglit_tmap_setup(grs_bitmap *bm); // rgba + fog 
 extern void lgd3d_diffspecular_tmap_setup(grs_bitmap *bm); // rgba + fog 
-extern void lgd3d_poly_setup(grs_bitmap *bm);
-extern void lgd3d_spoly_setup(grs_bitmap *bm);
-extern void lgd3d_rgb_poly_setup(grs_bitmap *bm);
-extern void lgd3d_rgba_poly_setup(grs_bitmap *bm);
+extern void lgd3d_poly_setup();
+extern void lgd3d_spoly_setup();
+extern void lgd3d_rgb_poly_setup();
+extern void lgd3d_rgba_poly_setup();
 
 
 // indexed primitives:
@@ -350,12 +346,38 @@ typedef void (*fp_release_IP)( void );
 
 extern fp_release_IP                lgd3d_release_ip_func;
 
+
+extern int lgd3d_poly(int n, r3s_point **vpl);
 extern int lgd3d_indexed_poly(int n, r3s_point **vpl, r3ixs_info *info);
+
+extern int lgd3d_spoly(int n, r3s_point **vpl);
 extern int lgd3d_indexed_spoly(int n, r3s_point **vpl, r3ixs_info *info);
-extern void lgd3d_rgblit_tmap_setup(grs_bitmap *bm);
+
+extern int lgd3d_rgb_poly(int n, r3s_point **ppl);
+extern int lgd3d_rgb_indexed_poly(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_rgba_poly(int n, r3s_point **ppl);
+extern int lgd3d_rgba_indexed_poly(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_trifan(int n, r3s_point **vpl);
+extern int lgd3d_indexed_trifan(int n, r3s_point **vpl, r3ixs_info *info);
+
+extern int lgd3d_lit_trifan(int n, r3s_point **vpl);
 extern int lgd3d_lit_indexed_trifan(int n, r3s_point **vpl, r3ixs_info *info);
 
-extern int lgd3d_release_indexed_primitives( void );
+extern int lgd3d_rgblit_trifan(int n, r3s_point **ppl);
+extern int lgd3d_rgblit_indexed_trifan(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_rgbalit_trifan(int n, r3s_point **ppl);
+extern int lgd3d_rgbalit_indexed_trifan(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_rgbafoglit_trifan(int n, r3s_point **ppl);
+extern int lgd3d_rgbafoglit_indexed_trifan(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_diffspecular_trifan(int n, r3s_point **ppl);
+extern int lgd3d_diffspecular_indexed_trifan(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern void lgd3d_release_indexed_primitives( void );
 
 
 
@@ -428,7 +450,10 @@ extern int lgd3d_g2TrifanMTD( int n, g2s_point **vpl, LGD3D_tex_coord **vptc );
 
 
 
-BOOL lgd3d_get_error(  DWORD* pdwCode, DWORD* phResult );
+BOOL lgd3d_get_error( DWORD* pdwCode, DWORD* phResult );
+const char* GetDDErrorMsg(long hRes);
+void SetLGD3DErrorCode(DWORD dwCode, DWORD hResult);
+const char* GetLgd3dErrorCode(DWORD dwErrorCode);
 
 extern uchar* texture_clut, *lgd3d_clut;
 extern BOOL lgd3d_punt_d3d;

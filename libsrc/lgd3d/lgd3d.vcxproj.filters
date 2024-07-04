@@ -39,6 +39,9 @@
     <ClInclude Include="tmgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="d6Frame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="d6sts_s.cpp">
