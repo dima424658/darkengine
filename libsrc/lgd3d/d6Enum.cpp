@@ -69,7 +69,7 @@ void lgd3d_unenumerate_devices()
 {
 	for (int i = 0; i < nNoDevices; ++i)
 	{
-		delete psDeviceList; // FIXME char[]
+		delete psDeviceList[i]; // FIXME char[]
 		psDeviceList[i] = nullptr;
 	}
 
@@ -90,14 +90,14 @@ void GetDevices(LGD3D_sEnumerationInfo* info)
 	IDirectDraw* lpdd = nullptr;
 	if (FAILED(DynDirectDrawCreate(p_ddraw_guid, &lpdd, nullptr)))
 	{
-		DbgReportWarning("Can't create ddraw object.\n");
+		Warning(("Can't create ddraw object.\n"));
 		return;
 	}
 
 	IDirectDraw4* lpdd4 = nullptr;
 	if (lpdd->QueryInterface(IID_IDirectDraw4, reinterpret_cast<void**>(&lpdd4)) != S_OK)
 	{
-		DbgReportWarning("Can't obtain DDraw4 interface.\n");
+		Warning(("Can't obtain DDraw4 interface.\n"));
 		SafeRelease(lpdd);
 		return;
 	}
@@ -106,7 +106,7 @@ void GetDevices(LGD3D_sEnumerationInfo* info)
 	ddcaps.dwSize = sizeof(ddcaps);
 	if (lpdd4->GetCaps(&ddcaps, nullptr) != DD_OK || (ddcaps.dwCaps & DDCAPS_3D) == 0)
 	{
-		DbgReportWarning("Not a 3d accelerator.\n");
+		Warning(("Not a 3d accelerator.\n"));
 		SafeRelease(lpdd4);
 		SafeRelease(lpdd);
 		return;
@@ -118,7 +118,7 @@ void GetDevices(LGD3D_sEnumerationInfo* info)
 	IDirect3D3* lpd3d = nullptr;
 	if (lpdd4->QueryInterface(IID_IDirect3D3, reinterpret_cast<void**>(&lpd3d)) != S_OK)
 	{
-		DbgReportWarning("Can't obtain D3D interface.\n");
+		Warning(("Can't obtain D3D interface.\n"));
 		SafeRelease(lpdd4);
 		SafeRelease(lpdd);
 		return;
@@ -129,11 +129,11 @@ void GetDevices(LGD3D_sEnumerationInfo* info)
 	lpdd4->EnumDisplayModes(0, nullptr, info, c_EnumDisplayModesCallback);
 	if (info->num_supported <= 0)
 	{
-		DbgReportWarning("Couldn't find any display modes.\n");
+		Warning(("Couldn't find any display modes.\n"));
 	}
 	else if (lpd3d->EnumDevices(c_EnumDevicesCallback, info))
 	{
-		DbgReportWarning("EnumDevices failed.\n");
+		Warning(("EnumDevices failed.\n"));
 	}
 
 	SafeRelease(lpd3d);
@@ -212,7 +212,7 @@ HRESULT CALLBACK c_EnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescription, 
 
 	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGTABLE)
 	{
-		capabilities_flags = 0x80000;
+		capabilities_flags = LGD3DF_CAN_DO_TABLE_FOG;
 	}
 	else if (info->requested_flags & LGD3DF_TABLE_FOG)
 	{
@@ -222,7 +222,7 @@ HRESULT CALLBACK c_EnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescription, 
 
 	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGVERTEX)
 	{
-		capabilities_flags |= 0x100000u;
+		capabilities_flags |= LGD3DF_CAN_DO_VERTEX_FOG;
 	}
 	else if (info->requested_flags & LGD3DF_VERTEX_FOG)
 	{
@@ -231,29 +231,28 @@ HRESULT CALLBACK c_EnumDevicesCallback(GUID* lpGuid, LPSTR lpDeviceDescription, 
 	}
 
 	if (pDeviceDesc->dpcTriCaps.dwShadeCaps & D3DPRASTERCAPS_ZBIAS)
-		capabilities_flags |= 0x8000000u;
+		capabilities_flags |= LGD3DF_CAN_DO_ITERATE_ALPHA;
 
 	if (bDepthBuffer)
 	{
-		capabilities_flags |= 0x10000u;
+		capabilities_flags |= LGD3DF_CAN_DO_ZBUFFER;
 		if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_WBUFFER)
-			capabilities_flags |= 0x40000u;
+			capabilities_flags |= LGD3DF_CAN_DO_WBUFFER;
 	}
 
 	if (bWindowed)
-		capabilities_flags |= 0x4000000u;
+		capabilities_flags |= LGD3DF_CAN_DO_WINDOWED;
 
 	if (pDeviceDesc->wMaxTextureBlendStages >= 2 && pDeviceDesc->wMaxSimultaneousTextures >= 2 && pDeviceDesc->dwFVFCaps >= 2)
-		capabilities_flags |= 0x2000000u;
+		capabilities_flags |= LGD3DF_CAN_DO_SINGLE_PASS_MT;
 
 	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_DITHER)
-		capabilities_flags |= 0x200000u;
+		capabilities_flags |= LGD3DF_CAN_DO_SINGLE_PASS_MT;
 
 	if (pDeviceDesc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ANTIALIASSORTINDEPENDENT)
-		capabilities_flags |= 0x400000u;
+		capabilities_flags |= LGD3DF_CAN_DO_ANTIALIAS;
 
-	if (info->device_number >= MAX_DEVICE_NUMBER)
-		CriticalMsg("Too many d3d devices available.");
+	AssertMsg(info->device_number < MAX_DEVICE_NUMBER, "Too many d3d devices available.");
 
 	lgd3ds_device_info* device_info;
 	auto malloc_size = strlen(info->p_ddraw_desc) + sizeof(short) * info->num_supported + 291;
