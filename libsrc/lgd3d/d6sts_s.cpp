@@ -144,14 +144,14 @@ cMSStates* cMSStates::m_Instance = NULL;
 
 int alpha_size_table[81], generic_size_table[81], rgb_size_table[81], trgb_size_table[81], b8888_size_table[81];
 
-sTexBlendArgs sTexBlendArgsProtos[3][2] =
+sTexBlendArgs sTexBlendArgsProtos[LGD3DTB_NO_STATES][2] =
 {
     { { D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_DIFFUSE, D3DTOP_SELECTARG2, D3DTA_TEXTURE, D3DTA_DIFFUSE }, { D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_CURRENT, D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_DIFFUSE } },
     { { D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_DIFFUSE, D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_DIFFUSE }, { D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_CURRENT, D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_DIFFUSE } },
     { { D3DTOP_BLENDDIFFUSEALPHA, D3DTA_TEXTURE, D3DTA_DIFFUSE, D3DTOP_SELECTARG2, D3DTA_TEXTURE, D3DTA_DIFFUSE }, { D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_CURRENT, D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_DIFFUSE } }
 };
 
-sTexBlendArgs sMultiTexBlendArgsProtos[3][2] =
+sTexBlendArgs sMultiTexBlendArgsProtos[LGD3DTB_NO_STATES][2] =
 {
     { { D3DTOP_SELECTARG1, D3DTA_TEXTURE, D3DTA_DIFFUSE, D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_DIFFUSE }, { D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_CURRENT, D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_DIFFUSE } },
     { { D3DTOP_SELECTARG1, D3DTA_TEXTURE, D3DTA_DIFFUSE, D3DTOP_SELECTARG2, D3DTA_TEXTURE, D3DTA_DIFFUSE }, { D3DTOP_SELECTARG2, D3DTA_TEXTURE, D3DTA_CURRENT, D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_CURRENT } },
@@ -161,10 +161,10 @@ sTexBlendArgs sMultiTexBlendArgsProtos[3][2] =
 // TODO: initialize in ScrnInit3d
 int b_SS2_UseSageTexManager;
 
-ushort** texture_pal_list[4] = { texture_pal_opaque, texture_pal_opaque, /* is it working? */ &alpha_pal, texture_pal_trans};
+ushort** texture_pal_list[PF_MAX] = { texture_pal_opaque, texture_pal_opaque, /* is it working? */ &alpha_pal, texture_pal_trans};
 extern "C" BOOL lgd3d_blend_trans;
 BOOL lgd3d_blend_trans = TRUE;
-static D3DBLEND table[] = { D3DBLEND_ZERO, D3DBLEND_ONE, D3DBLEND_SRCCOLOR, D3DBLEND_DESTCOLOR };
+static D3DBLEND table[PF_MAX] = { D3DBLEND_ZERO, D3DBLEND_ONE, D3DBLEND_SRCCOLOR, D3DBLEND_DESTCOLOR };
 
 void GetAvailableTexMem(ulong* local, ulong* agp);
 
@@ -536,7 +536,7 @@ void cD6States::SetCommonDefaultStates(ulong dwRequestedFlags, int bMultiTexture
     }
 
     m_bCanModulate = g_lpD3Ddevice->ValidateDevice(&dwPasses) == S_OK;
-    memcpy(m_psCurrentRS->saTexBlend, sTexBlendArgsProtos[1], sizeof(m_psCurrentRS->saTexBlend));
+    memcpy(m_psCurrentRS->saTexBlend, [1], sizeof(m_psCurrentRS->saTexBlend));
 
     SetTextureStageStateForGlobal(g_lpD3Ddevice, 0, D3DTSS_TEXCOORDINDEX, 0);
     SetTextureStageColors(g_lpD3Ddevice, 0, m_psCurrentRS);
