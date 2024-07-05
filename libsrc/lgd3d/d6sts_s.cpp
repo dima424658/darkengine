@@ -536,7 +536,7 @@ void cD6States::SetCommonDefaultStates(ulong dwRequestedFlags, int bMultiTexture
     }
 
     m_bCanModulate = g_lpD3Ddevice->ValidateDevice(&dwPasses) == S_OK;
-    memcpy(m_psCurrentRS->saTexBlend, [1], sizeof(m_psCurrentRS->saTexBlend));
+    memcpy(m_psCurrentRS->saTexBlend, sTexBlendArgsProtos[1], sizeof(m_psCurrentRS->saTexBlend));
 
     SetTextureStageStateForGlobal(g_lpD3Ddevice, 0, D3DTSS_TEXCOORDINDEX, 0);
     SetTextureStageColors(g_lpD3Ddevice, 0, m_psCurrentRS);
