@@ -222,11 +222,7 @@ extern IDirectDraw4* g_lpDD_ext;
 extern BOOL g_bUseDepthBuffer, g_bUseTableFog, g_bUseVertexFog;
 extern BOOL g_bTexSuspended;
 
-extern int bSpewOn;
-extern char* GetDDErrorMsg(int hRes);
-extern int g_bPrefer_RGB;
-
-extern void SetLGD3DErrorCode(ulong dwCode, long hRes);
-extern const char* GetLgd3dErrorCode(ulong dwErrorCode);
+extern BOOL bSpewOn;
+extern BOOL g_bPrefer_RGB;
 
 extern BOOL lgd3d_g_bInitialized;

@@ -1,7 +1,6 @@
+#include <d6Frame.h>
+
 #include <types.h>
-#include <lgd3d.h>
-#include <comtools.h>
-#include <wdispapi.h>
 #include <lgSurf_i.h>
 #include <lgassert.h>
 #include <ddraw.h>
@@ -23,23 +22,21 @@ int g_bWFog;
 DWORD g_dwScreenWidth;
 DWORD g_dwScreenHeight;
 D3DMATERIALHANDLE g_hBackgroundMaterial;
-DDPIXELFORMAT g_RGBTextureFormat;
+extern DDPIXELFORMAT g_RGBTextureFormat;
 DDSURFACEDESC2 g_sDescOfRenderBuffer;
 D3DDEVICEDESC g_sD3DDevDesc;
 DDPIXELFORMAT g_sDDPFDepth;
-DDPIXELFORMAT* g_FormatList[5];
+extern DDPIXELFORMAT* g_FormatList[5];
 
 float g_XOffset;
 float g_YOffset;
-int g_bUseDepthBuffer;
-int g_bUseTableFog;
-int g_bUseVertexFog;
+extern BOOL g_bUseDepthBuffer, g_bUseTableFog, g_bUseVertexFog;
 
 cD6Renderer* pcRenderer;
 IDirect3D3* g_lpD3D;
 IDirect3DViewport3* g_lpViewport;
 IDirect3DMaterial3* g_lpBackgroundMaterial;
-int g_b8888supported;
+extern BOOL g_b8888supported;
 
 HRESULT CALLBACK c_EnumZBufferFormats(LPDDPIXELFORMAT lpDDPixFmt, LPVOID lpContext);
 
@@ -53,28 +50,6 @@ static inline void RaiseLGD3DErrorCode(DWORD dwCode, DWORD hResult)
 
 	lgd3d_g_bInitialized = false;
 }
-
-class cD6Frame
-{
-public:
-	cD6Frame(ILGSurface* pILGSurface);
-	cD6Frame(DWORD dwWidth, DWORD dwHeight, lgd3ds_device_info* psDeviceInfo);
-	~cD6Frame();
-
-private:
-	void InitializeGlobals(DWORD dwWidth, DWORD dwHeight, DWORD dwRequestedFlags);
-	void InitializeEnvironment(lgd3ds_device_info* psDeviceInfo);
-	HRESULT GetDDstuffFromDisplay();
-	HRESULT CreateDepthBuffer();
-	int CreateD3D(const GUID& sDeviceGUID);
-	void ExamineRenderingCapabilities();
-
-private:
-	DWORD m_dwRequestedFlags;
-	bool m_bDepthBuffer;
-	DWORD m_dwTextureOpCaps;
-	IWinDisplayDevice* m_pWinDisplayDevice;
-};
 
 cD6Frame::cD6Frame(ILGSurface* pILGSurface)
 {

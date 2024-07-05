@@ -49,7 +49,7 @@ typedef ulong grs_rgb;
 
 /* hey, it's an rgb bitmask */
 typedef struct grs_rgb_bitmask {
-   ulong red, green, blue;
+   ulong red, green, blue, alpha;
 } grs_rgb_bitmask;
 
 /* structure for bitmaps to be drawn from and to.  if a bitmap is contained

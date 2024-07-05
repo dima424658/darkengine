@@ -32,6 +32,7 @@
     <ClCompile Include="texmgr.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="d6Frame.h" />
     <ClInclude Include="d6Over.h" />
     <ClInclude Include="d6Prim.h" />
     <ClInclude Include="d6Render.h" />
@@ -113,6 +114,7 @@
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
