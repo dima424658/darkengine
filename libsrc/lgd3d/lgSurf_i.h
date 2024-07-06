@@ -272,12 +272,12 @@ DECLARE_INTERFACE_(ILGDD4Surface, IUnknown)
 
     STDMETHOD_( int, GetDeviceInfoIndex ) (THIS);
 
-    STDMETHOD_( int, GetDirectDraw ) (
+    STDMETHOD_( BOOL, GetDirectDraw ) (
         THIS_
         /*[out]*/   IDirectDraw4 **ppDD
     );
 
-    STDMETHOD_( int, GetRenderSurface ) (
+    STDMETHOD_( BOOL, GetRenderSurface ) (
         THIS_
         /*[out]*/   IDirectDrawSurface4 **ppRS
     );
