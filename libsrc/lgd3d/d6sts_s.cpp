@@ -2568,7 +2568,11 @@ void cMSStates::SetLightMapMode(DWORD dwFlag)
 		m_psCurrentRS->dwTexBlendMode[1] = dwFlag;
 	else
 		Warning(("cMSStates::SetLightMapMode(): mode %i out of range.\n", dwFlag));
+}
 
+void cMSStates::SetTextureLevel(int n)
+{
+	m_dwCurrentTexLevel = n;
 }
 
 void calc_size(tdrv_texture_info* info, d3d_cookie cookie)
