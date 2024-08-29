@@ -19,12 +19,12 @@ private:
 	void DeleteStatesStack();
 
 public:
-	int SwitchOverlaysOnOff(BOOL bOn);
+	BOOL SwitchOverlaysOnOff(BOOL bOn);
 	void StartFrame(int nFrame);
 	void EndFrame();
 	void CleanDepthBuffer(int x1, int y1, int x2, int y2);
 	void CleanRenderSurface(BOOL bDepthBufferToo);
-	long InitViewport();
+	HRESULT InitViewport();
 
 	DWORD m_dwEntrySize;
 	DWORD m_dwNoEntries;
