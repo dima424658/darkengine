@@ -210,7 +210,7 @@ void cD6Renderer::CleanDepthBuffer(int x1, int y1, int x2, int y2)
 	pcStates->EnableAlphaBlending(TRUE);
 
 	D3DTLVERTEX* pTLVerts = pcRenderBuffer->ReservePolySlots(4);
-	memset(pTLVerts, 0, 0x80u);
+	memset(pTLVerts, 0, sizeof(D3DTLVERTEX) * 4);
 
 	for (int i = 0; i < 4; ++i)
 	{
