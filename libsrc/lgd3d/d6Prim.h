@@ -22,18 +22,18 @@ protected:
 public:
     virtual cD6Primitives * DeInstance();
 
-private:
-    int m_bPrimitivesPending;
-    int m_bFlushingOn;
+protected:
+    BOOL m_bPrimitivesPending;
+    BOOL m_bFlushingOn;
     int m_nAlpha;
     unsigned long m_dcFogSpecular;
-    int m_bPointMode;
+    BOOL m_bPointMode;
     int m_iSavedTexId;
     enum ePolyMode m_ePolyMode;
 
 public:
     ePolyMode GetPolyMode();
-    int SetPolyMode(ePolyMode eNewMode);
+    BOOL SetPolyMode(ePolyMode eNewMode);
 
 protected:
     void DrawStandardEdges(void *pVertera, unsigned int dwNoVeriteces);
@@ -48,7 +48,7 @@ public:
     virtual void StartNonTexMode();
     virtual void EndNonTexMode();
 
-private:
+protected:
     unsigned long m_dwNoCashedPoints;
     unsigned long m_dwPointBufferSize;
     D3DTLVERTEX m_saPointBuffer[50];
@@ -58,15 +58,15 @@ private:
     unsigned long m_dwVertexBufferSize;
 
 public:
-    virtual D3DTLVERTEX * ReservePointSlots(int n);
+    virtual D3DTLVERTEX* ReservePointSlots(int n);
     virtual void FlushPoints();
     void SetPointBufferSize(unsigned long); // static?
     unsigned long GetPointBufferSize(); // static?
     virtual int DrawPoint(r3s_point *p);
 
-    D3DTLVERTEX * ReservePolySlots(int n);
+    D3DTLVERTEX* ReservePolySlots(unsigned int n);
     virtual void DrawPoly(BOOL bSuspendTexturing);
-    virtual int Poly(int n, r3s_point * * ppl);
+    virtual BOOL Poly(int n, r3s_point * * ppl);
     virtual int SPoly(int n, r3s_point * * ppl);
     virtual int RGB_Poly(int n, r3s_point * * ppl);
     virtual int RGBA_Poly(int n, r3s_point * * ppl);

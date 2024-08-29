@@ -24,6 +24,7 @@
     <ClCompile Include="d6Frame.cpp" />
     <ClCompile Include="d6Intfc.cpp" />
     <ClCompile Include="d6Over.cpp" />
+    <ClCompile Include="d6Prim.cpp" />
     <ClCompile Include="d6Prim_s.cpp" />
     <ClCompile Include="d6Render.cpp" />
     <ClCompile Include="d6Sts_s.cpp" />
