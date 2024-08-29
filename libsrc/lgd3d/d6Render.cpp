@@ -195,19 +195,7 @@ void cD6Renderer::CleanDepthBuffer(int x1, int y1, int x2, int y2)
 		fY2 = (float)g_dwScreenHeight;
 	}
 
-#if 0
-	((void(__thiscall*)(cD6Primitives*, _DWORD, _DWORD, unsigned int, _DWORD, _DWORD, _DWORD, unsigned int, _DWORD, cD6Renderer*))pcRenderBuffer->cD6Primitives::FlushPrimitives)(
-		pcRenderBuffer,
-		v5,
-		HIDWORD(v5),
-		g_dwScreenHeight,
-		0,
-		v6,
-		HIDWORD(v6),
-		g_dwScreenWidth,
-		0,
-		this);
-#endif
+	pcRenderBuffer->FlushPrimitives();
 
 	BOOL bZWriteOn = pcStates->IsZWriteOn();
 	BOOL bZCompareOn = pcStates->IsZCompareOn();
