@@ -51,50 +51,6 @@ extern cD6Primitives* pcRenderBuffer;
 extern cD6Renderer* pcRenderer;
 cD6States *pcStates = nullptr;
 
-class cImStates : public cD6States
-{
-public:
-    // singleton?
-    static cD6States* Instance();
-    virtual cD6States *DeInstance() override;
-
-protected:
-    // cImStates(const class cImStates &);
-    cImStates();
-    virtual ~cImStates();
-
-private:
-    static cImStates *m_Instance;
-};
-
-class cMSStates : public cD6States {
-public:
-    static cD6States * Instance();
-    virtual cD6States * DeInstance() override;
-    virtual int Initialize(DWORD dwRequestedFlags) override;
-    virtual int SetDefaultsStates(DWORD dwRequestedFlags) override;
-
-protected:
-    // cMSStates(const cMSStates &);
-    cMSStates();
-    virtual ~cMSStates();
-
-private:
-    static cMSStates * m_Instance;
-    unsigned long m_dwCurrentTexLevel;
-    int m_bTexturePending;
-    grs_bitmap * m_LastLightMapBm;
-
-public:
-    virtual void set_texture_id(int n) override;
-    virtual int reload_texture(tdrv_texture_info *info) override;
-    virtual void cook_info(tdrv_texture_info *info) override;
-    virtual void SetLightMapMode(DWORD dwFlag) override;
-    virtual void SetTextureLevel(int n) override;
-    virtual int EnableMTMode(DWORD dwMTOn) override;
-    virtual void TurnOffTexuring(BOOL bTexOff) override;
-};
-
 #define PF_GENERIC   0
 #define PF_RGB       1
 #define PF_ALPHA     2
@@ -1843,7 +1799,7 @@ BOOL cD6States::EnableSpecular(BOOL bUseIt)
 cD6States* cImStates::Instance()
 {
 	if (m_Instance == NULL)
-		m_Instance = new cImStates;
+		m_Instance = new cImStates();
 
 	return m_Instance;
 }
@@ -1922,7 +1878,7 @@ cImStates::~cImStates()
 cD6States* cMSStates::Instance()
 {
 	if (m_Instance == NULL)
-		m_Instance = new cMSStates;
+		m_Instance = new cMSStates();
 
 	return m_Instance;
 }
