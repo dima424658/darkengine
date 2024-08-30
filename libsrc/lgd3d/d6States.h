@@ -195,6 +195,50 @@ public:
     // cD6States& operator=(const cD6States&);
 };
 
+class cImStates : public cD6States
+{
+public:
+    // singleton?
+    static cD6States* Instance();
+    virtual cD6States* DeInstance() override;
+
+protected:
+    // cImStates(const class cImStates &);
+    cImStates();
+    virtual ~cImStates();
+
+private:
+    static cImStates* m_Instance;
+};
+
+class cMSStates : public cD6States {
+public:
+    static cD6States* Instance();
+    virtual cD6States* DeInstance() override;
+    virtual int Initialize(DWORD dwRequestedFlags) override;
+    virtual int SetDefaultsStates(DWORD dwRequestedFlags) override;
+
+protected:
+    // cMSStates(const cMSStates &);
+    cMSStates();
+    virtual ~cMSStates();
+
+private:
+    static cMSStates* m_Instance;
+    unsigned long m_dwCurrentTexLevel;
+    int m_bTexturePending;
+    grs_bitmap* m_LastLightMapBm;
+
+public:
+    virtual void set_texture_id(int n) override;
+    virtual int reload_texture(tdrv_texture_info* info) override;
+    virtual void cook_info(tdrv_texture_info* info) override;
+    virtual void SetLightMapMode(DWORD dwFlag) override;
+    virtual void SetTextureLevel(int n) override;
+    virtual int EnableMTMode(DWORD dwMTOn) override;
+    virtual void TurnOffTexuring(BOOL bTexOff) override;
+};
+
 
 #define SetRenderStateForGlobal(dev, key, value) \
     if (hRes = dev->SetRenderState(key, value), hRes != S_OK) \
