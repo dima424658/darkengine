@@ -26,7 +26,7 @@ protected:
     BOOL m_bPrimitivesPending;
     BOOL m_bFlushingOn;
     int m_nAlpha;
-    unsigned long m_dcFogSpecular;
+    ulong m_dcFogSpecular;
     BOOL m_bPointMode;
     int m_iSavedTexId;
     enum ePolyMode m_ePolyMode;
@@ -49,19 +49,19 @@ public:
     virtual void EndNonTexMode();
 
 protected:
-    unsigned long m_dwNoCashedPoints;
-    unsigned long m_dwPointBufferSize;
+    DWORD m_dwNoCashedPoints;
+    DWORD m_dwPointBufferSize;
     D3DTLVERTEX m_saPointBuffer[50];
 
     D3DTLVERTEX m_saVertexBuffer[50];
-    unsigned long m_dwNoCashedVertices;
-    unsigned long m_dwVertexBufferSize;
+    DWORD m_dwNoCashedVertices;
+    DWORD m_dwVertexBufferSize;
 
 public:
     virtual D3DTLVERTEX* ReservePointSlots(int n);
     virtual void FlushPoints();
-    void SetPointBufferSize(unsigned long); // static?
-    unsigned long GetPointBufferSize(); // static?
+    void SetPointBufferSize(DWORD); // static?
+    DWORD GetPointBufferSize(); // static?
     virtual int DrawPoint(r3s_point *p);
 
     D3DTLVERTEX* ReservePolySlots(unsigned int n);
@@ -84,18 +84,18 @@ public:
 
 protected:
     virtual void InitializeVIBCounters();
-    virtual int CreateVertIndBuffer(DWORD dwInitialNoEntries);
+    virtual BOOL CreateVertIndBuffer(DWORD dwInitialNoEntries);
     virtual void DeleteVertIndBuffer();
-    virtual int ResizeVertIndBuffer(DWORD dwNewNoEntries);
+    virtual BOOL ResizeVertIndBuffer(DWORD dwNewNoEntries);
 
 private:
     D3DTLVERTEX * m_pVIB;
     DWORD m_dwNoVIBEntries;
     DWORD m_dwVIBSizeInEntries;
-    unsigned short m_waIndices[256];
+    ushort m_waIndices[256];
     DWORD m_dwVIBmax;
     DWORD m_dwNoIndices;
-    unsigned short m_waTempIndices[50];
+    ushort m_waTempIndices[50];
     DWORD m_dwMinVIndex;
     DWORD m_dwMaxVIndex;
     DWORD m_dwTempIndCounter;
