@@ -12,26 +12,20 @@ extern DWORD				g_dwScreenHeight;
 extern float				g_XOffset;
 extern float				g_YOffset;
 
-#define _BYTE  uint8
-#define BYTEn(x, n)   (*((_BYTE*)&(x)+n))
-#define BYTE1(x)   BYTEn(x,  1)         // byte 1 (counting from 0)
 
 cD6Renderer::cD6Renderer(DWORD dwInitialBufferType, DWORD* pdwRequestedFlags)
 {
 	m_bOverlaysOn = TRUE;
 
-	if (dwInitialBufferType)
-	{
-		if (dwInitialBufferType == 1)
-		{
-			pcRenderBuffer = cMSBuffer::Instance();
-			pcStates = cMSStates::Instance();
-		}
-	}
-	else
+	if (dwInitialBufferType == 0)
 	{
 		pcRenderBuffer = cImBuffer::Instance();
 		pcStates = cImStates::Instance();
+	}
+	else if (dwInitialBufferType == 1)
+	{
+		pcRenderBuffer = cMSBuffer::Instance();
+		pcStates = cMSStates::Instance();
 	}
 
 	DWORD RenderStatesSize = pcStates->GetRenderStatesSize();
@@ -40,8 +34,8 @@ cD6Renderer::cD6Renderer(DWORD dwInitialBufferType, DWORD* pdwRequestedFlags)
 	{
 		if (dwInitialBufferType != 1)
 		{
-			lgd3d_g_bInitialized = 0;
-			DbgReportWarning("Could not Initialize D3D states\n");
+			lgd3d_g_bInitialized = FALSE;
+			Warning(("Could not Initialize D3D states\n"));
 		}
 
 		pcStates->DeInstance();
@@ -50,24 +44,21 @@ cD6Renderer::cD6Renderer(DWORD dwInitialBufferType, DWORD* pdwRequestedFlags)
 		DeleteStatesStack();
 
 		// bit flag?
-		DWORD v4 = *pdwRequestedFlags;
-		BYTE1(v4) = BYTE1(*pdwRequestedFlags) & 0xFE;
-		*pdwRequestedFlags = v4;
+		pdwRequestedFlags ~= 0x100;
 	
 		pcRenderBuffer = cImBuffer::Instance();
 		pcStates = cImStates::Instance();
 
-		DWORD v5 = pcStates->GetRenderStatesSize();
-		CreateStatesStack(10, v5);
+		CreateStatesStack(10, pcStates->GetRenderStatesSize());
 
 		if (pcStates->Initialize(*pdwRequestedFlags))
 		{
-			DbgReportWarning("Can not use multitextures.  Reverting to single texture mode.\n");
+			Warning(("Can not use multitextures.  Reverting to single texture mode.\n"));
 		}
 		else
 		{
-			lgd3d_g_bInitialized = 0;
-			DbgReportWarning("Could not Initialize D3D states\n");
+			lgd3d_g_bInitialized = FALSE;
+			Warning(("Could not Initialize D3D states\n"));
 		}
 	}
 }
@@ -114,7 +105,7 @@ void cD6Renderer::CreateStatesStack(DWORD dwInitialSize, DWORD dwEntrySize)
 
 	m_pStackData = (char*)malloc(dwInitialSize * dwEntrySize); // #TODO: should be void* ?
 	m_pSetEntry = (char*)malloc(dwEntrySize);
-	m_pdwRSCData = (DWORD*)malloc(4 * dwInitialSize);
+	m_pdwRSCData = (DWORD*)malloc(sizeof(DWORD) * dwInitialSize);
 
 	if (!m_pStackData || !m_pSetEntry || !m_pdwRSCData)
 		CriticalMsg("Memory Allocation failure!");
@@ -132,9 +123,9 @@ void cD6Renderer::DeleteStatesStack()
 	free(m_pStackData);
 	free(m_pdwRSCData);
 
-	m_pSetEntry = 0;
-	m_pStackData = 0;
-	m_pdwRSCData = 0;
+	m_pSetEntry = nullptr;
+	m_pStackData = nullptr;
+	m_pdwRSCData = nullptr;
 }
 
 BOOL cD6Renderer::SwitchOverlaysOnOff(BOOL bOn)
@@ -172,18 +163,18 @@ void cD6Renderer::CleanDepthBuffer(int x1, int y1, int x2, int y2)
 {
 	int width = 0, height = 0;
 
-	float fX1 = (double)x1 + g_XOffset;
-	float fX2 = (double)x2 + g_XOffset;
-	float fY1 = (double)y1 + g_YOffset;
-	float fY2 = (double)y2 + g_YOffset;
+	float fX1 = x1 + g_XOffset;
+	float fX2 = x2 + g_XOffset;
+	float fY1 = y1 + g_YOffset;
+	float fY2 = y2 + g_YOffset;
 
 	if (fX1 < 0.0)
 		fX1 = 0.0;
 	
-	if ((double)g_dwScreenWidth < fX2)
+	if (g_dwScreenWidth < fX2)
 	{
 		width = g_dwScreenWidth;
-		fX2 = (float)g_dwScreenWidth;
+		fX2 = g_dwScreenWidth;
 	}
 	
 	if (fY1 < 0.0)
@@ -251,9 +242,7 @@ void cD6Renderer::CleanRenderSurface(BOOL bDepthBufferToo)
 	HRESULT hr = g_lpViewport->Clear(1, &sRect, dwFlags);
 	if (FAILED(hr))
 	{
-		const char* DDErrorMsg = GetDDErrorMsg(hr);
-		const char* msg = _LogFmt("%s: error %d\n%s", "CleanRenderSurface failed", hr, DDErrorMsg);
-		CriticalMsg(msg);
+		CriticalMsg2("%s: error %d\n%s", "CleanRenderSurface failed", hr, GetDDErrorMsg(hr));
 	}
 }
 
