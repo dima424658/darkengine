@@ -16,37 +16,34 @@ uint16 waEdgeIndices[50];
 extern float g_XOffset;
 extern float g_YOffset;
 
+
+extern double z_near, z_far, inv_z_far;
+extern double z1, z2;
+
 extern "C" {
 	extern BOOL zlinear;
+	extern double z2d, w2d;
 }
 
-uint16 hack_light_alpha_pal[16] =
+uint16 hack_light_alpha_pal[] =
 {
-  4095u,
-  8191u,
-  12287u,
-  16383u,
-  20479u,
-  24575u,
-  28671u,
-  32767u,
-  36863u,
-  40959u,
-  45055u,
-  49151u,
-  53247u,
-  57343u,
-  61439u,
-  65535u
-}; // idb
-
-double z_near = 1.0; // idb
-double z_far = 200.0; // idb
-double inv_z_far = 0.005; // idb
-double z1 = 1.005025125628141; // idb
-double z2 = 1.005025125628141; // idb
-double z2d = 1.0; // idb
-double w2d = 1.0; // idb
+	0x0FFF,
+	0x1FFF,
+	0x2FFF,
+	0x3FFF,
+	0x4FFF,
+	0x5FFF,
+	0x6FFF,
+	0x7FFF,
+	0x8FFF,
+	0x9FFF,
+	0xAFFF,
+	0xBFFF,
+	0xCFFF,
+	0xDFFF,
+	0xEFFF,
+	0xFFFF
+};
 
 cD6Primitives::cD6Primitives()
 	: m_bFlushingOn {FALSE},
@@ -132,43 +129,530 @@ void cD6Primitives::DrawPoly(BOOL bSuspendTexturing)
 BOOL cD6Primitives::Poly(int n, r3s_point** ppl)
 {
 	auto c0 = pcStates->get_color();
-
 	auto* vlist = ReservePolySlots(n);
-	for (int j = 0; j < n; ++j )
+
+	for (int j = 0; j < n; ++j)
 	{
 		vlist[j].color = c0;
 		vlist[j].specular = m_dcFogSpecular;
 
-		auto& _dest = vlist[j];
-		auto* _src = ppl[j];
-
-		auto _sx = _src->grp.sx + fix_from_float(0.5);
-		auto _sy = _src->grp.sy + fix_from_float(0.5);
-
-		auto _sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
-		auto _sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
-		_dest.sx = fix_float(_sx) + g_XOffset;
-		_dest.sy = fix_float(_sy) + g_YOffset;
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
 
 		if (zlinear)
 		{
-			_dest.sz = z2d;
+			vlist[j].sz = z2d;
 		}
 		else if (lgd3d_z_normal)
 		{
-			_dest.sz = _src->p.z * inv_z_far;
+			vlist[j].sz = ppl[j]->p.z * inv_z_far;
 		}
 		else
 		{
-			_dest.sz = z1 - _src->grp.w * z2;
-			_dest.rhw = _src->grp.w;
-			_dest.sz = std::clamp(_dest.sz, 0.0, 1.0);
+			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
 
 	DrawPoly(TRUE);
 
 	return FALSE;
+}
+
+BOOL cD6Primitives::SPoly(int n, r3s_point **ppl)
+{
+	auto c0 = pcStates->get_color();
+	auto* vlist = ReservePolySlots(n);
+
+	for (int j = 0; j < n; ++j )
+	{
+		auto i = std::min(ppl[j]->grp.i, 1.0);
+		auto r = std::min(((c0 >> 16) & 0xFF) * i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * i, 255);
+		auto b = std::min((c0 & 0xFF) * i, 255);
+
+		vlist[j].color = (c0 & 0xFF000000) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = m_dcFogSpecular;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j]->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j]->sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j]->sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j]->rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(TRUE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGB_Poly(int n, r3s_point **ppl)
+{
+	auto c0 = pcStates->get_color();
+	auto* vlist = ReservePolySlots(n);
+
+	for ( int j = 0; j < n; ++j )
+	{
+		auto r = std::min(((c0 >> 16) & 0xFF) * ppl[j][0].grp.i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * ppl[j][1].p.x, 255);
+		auto b = std::min((c0 & 0xFF) * ppl[j][1].p.y, 255);
+
+		vlist[j].color = (m_nAlpha << 24) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = m_dcFogSpecular;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j]->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j]->sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j]->sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j]->rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(TRUE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGBA_Poly(int n, r3s_point **ppl)
+{
+	auto c0 = pcStates->get_color();
+	auto* vlist = ReservePolySlots(n);
+
+	for ( int j = 0; j < n; ++j )
+	{
+		auto r = std::min(((c0 >> 16) & 0xFF) * ppl[j][0].grp.i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * ppl[j][1].p.x, 255);
+		auto b = std::min((c0 & 0xFF) * ppl[j][1].p.y, 255);
+		auto a = std::min(m_nAlpha * ppl[j][1].p.z, 255);
+
+		vlist[j].color = (a << 24) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = m_dcFogSpecular;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j].sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(TRUE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::Trifan(int n, r3s_point **ppl)
+{
+	auto c0 = (m_nAlpha << 24) + 0xFFFFFF;
+	auto* vlist = ReservePolySlots(n);
+
+	for (int j = 0; j < n; ++j )
+	{
+		vlist[j].color = c0;
+		vlist[j].specular = m_dcFogSpecular;
+		vlist[j].tu = ppl[j]->grp.u;
+		vlist[j].tv = ppl[j]->grp.v;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j].sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(FALSE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::LitTrifan(int n, r3s_point **ppl)
+{
+	auto c0 = (m_nAlpha << 24) + 0xFFFFFF;
+	auto* vlist = ReservePolySlots(n);
+
+	for ( int j = 0; j < n; ++j )
+	{
+		auto i = std::min(ppl[j]->grp.i, 1.0);
+		auto r = std::min(((c0 >> 16) & 0xFF) * i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * i, 255);
+		auto b = std::min((c0 & 0xFF) * i, 255);
+
+		vlist[j].color = (c0 & 0xFF000000) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = m_dcFogSpecular;
+		vlist[j].tu = ppl[j]->grp.u;
+		vlist[j].tv = ppl[j]->grp.v;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j].sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(FALSE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGBlitTrifan(int n, r3s_point **ppl)
+{
+	auto* vlist = ReservePolySlots(n);
+
+	for (int j = 0; j < n; ++j )
+	{
+		auto r = std::min(255.0 * ppl[j]->grp.coord[0], 255);
+		auto g = std::min(255.0 * ppl[j]->grp.coord[3], 255);
+		auto b = std::min(255.0 * ppl[j]->grp.coord[4], 255);
+
+		vlist[j].color = (m_nAlpha << 24) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = m_dcFogSpecular;
+		vlist[j].tu = ppl[j]->grp.u;
+		vlist[j].tv = ppl[j]->grp.v;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j].sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(FALSE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGBAlitTrifan(int n, r3s_point **ppl)
+{
+	auto* vlist = ReservePolySlots(n);
+
+	for (int j = 0; j < n; ++j )
+	{
+		auto r = std::min(255.0 * ppl[j]->grp.coord[0], 255);
+		auto g = std::min(255.0 * ppl[j]->grp.coord[3], 255);
+		auto b = std::min(255.0 * ppl[j]->grp.coord[4], 255);
+		auto a = std::min(255.0 * ppl[j]->grp.coord[5], 255);
+
+		vlist[j].color = (a << 24) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = m_dcFogSpecular;
+		vlist[j].tu = ppl[j]->grp.u;
+		vlist[j].tv = ppl[j]->grp.v;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j].sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(FALSE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGBAFogLitTrifan(int n, r3s_point **ppl)
+{
+	auto* vlist = ReservePolySlots(n);
+
+	for (int j = 0; j < n; ++j )
+	{
+		auto r = std::min(255 * ppl[j]->grp.coord[0], 255);
+		auto g = std::min(255 * ppl[j]->grp.coord[3], 255);
+		auto b = std::min(255 * ppl[j]->grp.coord[4], 255);
+		auto a = std::min(255 * ppl[j]->grp.coord[5], 255);
+		auto f = std::min((1.0 - ppl[j]->grp.coord[6]) * 255, 255);
+
+		vlist[j].color = (a << 24) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = f << 24;
+		vlist[j].tu = ppl[j]->grp.u;
+		vlist[j].tv = ppl[j]->grp.v;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j].sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(FALSE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::DiffuseSpecularLitTrifan(int n, r3s_point **ppl)
+{
+	auto* vlist = ReservePolySlots(n);
+
+	for (int j = 0; j < n; ++j )
+	{
+		auto r = std::min(255 * ppl[j]->grp.coord[0], 255);
+		auto g = std::min(255 * ppl[j]->grp.coord[3], 255);
+		auto b = std::min(255 * ppl[j]->grp.coord[4], 255);
+		auto a = std::min(255 * ppl[j]->grp.coord[5], 255);
+
+		auto aa = std::min(255 * ppl[j]->grp.coord[7], 255);
+		auto ra = std::min(255 * ppl[j]->grp.coord[8], 255);
+		auto ga = std::min(255 * ppl[j]->grp.coord[9], 255);
+		auto ba = std::min(255 * ppl[j]->grp.coord[10], 255);
+
+		vlist[j].color = (a << 24) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = (ba << 24) | (ra << 16) | (ga << 8) | ba;
+		vlist[j].tu = ppl[j]->grp.u;
+		vlist[j].tv = ppl[j]->grp.v;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			vlist[j].sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+		}
+		else
+		{
+			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
+			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
+		}
+	}
+
+	DrawPoly(FALSE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::g2UPoly(int n, g2s_point **ppl)
+{
+	auto c0 = pcStates->get_color();
+	auto* vlist = ReservePolySlots(n);
+
+	for ( int j = 0; j < n; ++j )
+	{
+		vlist[j].color = c0;
+		vlist[j].specular = m_dcFogSpecular;
+		vlist[j].sz =z2d;
+		vlist[j].rhw = w2d;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+	}
+
+	DrawPoly(TRUE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::g2Poly(int n, g2s_point **ppl)
+{
+	g2s_point **cpl = nullptr;
+	auto m = g2_clip_poly(n, G2C_CLIP_NONE, ppl, &cpl);
+	if (m >= 3)
+	{
+		g2UPoly(m, cpl);
+		code = 0;
+	}
+	else
+	{
+		code = 16;
+	}
+
+	if (cpl != nullptr && cpl != ppl)
+		temp_free(cpl);
+
+	return code;
+}
+
+BOOL cD6Primitives::g2UTrifan(int n, g2s_point **ppl)
+{
+	auto c0 = (m_nAlpha << 24) + 0xFFFFFF;
+	auto* vlist = ReservePolySlots(n);
+
+	for (int j = 0; j < n; ++j )
+	{
+		auto i = ppl[j]->coord[0];
+		auto r = std::min(((c0 >> 16) & 0xFF) * i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * i, 255);
+		auto b = std::min((c0 & 0xFF) * i, 255);
+
+		vlist[j].color = (c0 & 0xFF000000) | (r << 16) | (g << 8) | b;
+		vlist[j].specular = m_dcFogSpecular;
+		vlist[j].tu = ppl[j]->coord[1];
+		vlist[j].tv = ppl[j]->coord[2];
+		vlist[j].sz = z2d;
+		vlist[j].rhw = w2d;
+
+		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		vlist[j].sx = fix_float(_sx) + g_XOffset;
+		vlist[j].sy = fix_float(_sy) + g_YOffset;
+	}
+
+	DrawPoly(FALSE);
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::g2Trifan(int n, g2s_point **ppl)
+{
+	g2s_point **cpl = nullptr;
+	auto m = g2_clip_poly(n, G2C_CLIP_UVI, ppl, &cpl);
+	if (m >= 3)
+	{
+		g2UTrifan(m, cpl);
+		code = 0;
+	}
+	else
+	{
+		code = 16;
+	}
+
+	if (cpl != nullptr && cpl != ppl)
+		temp_free(cpl);
+
+	return code;
 }
 
 ePolyMode cD6Primitives::GetPolyMode()
@@ -189,7 +673,7 @@ BOOL cD6Primitives::SetPolyMode(ePolyMode eNewMode)
 	return TRUE;
 }
 
-void cD6Primitives::DrawStandardEdges(void* pVertera, unsigned int dwNoVeriteces)
+void cD6Primitives::DrawStandardEdges(void* pVertera, DWORD dwNoVeriteces)
 {
 	if (!g_bTexSuspended)
 	{
@@ -219,6 +703,16 @@ void cD6Primitives::FlushPrimitives()
 			m_bFlushingOn = FALSE;
 		}
 	}
+}
+
+void cD6Primitives::PassFogSpecularColor(ulong dcFogColor)
+{
+	m_dcFogSpecular = dcFogColor;
+}
+
+void cD6Primitives::PassAlphaColor(int nAlapha)
+{
+	m_nAlpha = nAlapha;
 }
 
 void cD6Primitives::StartFrame()
@@ -317,6 +811,37 @@ void cD6Primitives::DrawIndPolies()
 	m_bPrimitivesPending = TRUE;
 }
 
+void cD6Primitives::FlushIndPolies()
+{
+	if (!m_dwNoIndices)
+		return;
+
+	for (int i = 0; i < m_dwNoIndices; ++i )
+	{
+		AssertMsg(m_waIndices[i] <= m_dwMaxVIndex, "Runaway Prim index!")
+
+		if (m_dwMinVIndex)
+			m_waIndices[i] -= m_dwMinVIndex;
+	}
+
+	if (!lgd3d_punt_d3d)
+	{
+		auto hResult = g_lpD3Ddevice->DrawIndexedPrimitive(
+							D3DPT_TRIANGLELIST,
+							D3DFVF_TLVERTEX,
+							&m_pVIB[m_dwMinVIndex],
+							m_dwMaxVIndex + 1 - m_dwMinVIndex,
+							m_waIndices,
+							m_dwNoIndices,
+							D3DDP_DONOTCLIP | D3DDP_DONOTUPDATEEXTENTS);
+		AssertMsg3(SUCCEEDED(hResult), "%s: error %d\n%s ", "DrawIndexedPrimitive failed", hResult, GetDDErrorMsg(hResult));
+	}
+
+	m_dwNoIndices = 0;
+	m_dwMinVIndex = 256;
+	m_dwMaxVIndex = 0;
+}
+
 D3DTLVERTEX* cD6Primitives::ReservePointSlots(int n)
 {
 	if (!m_bPointMode)
@@ -331,8 +856,10 @@ D3DTLVERTEX* cD6Primitives::ReservePointSlots(int n)
 	AssertMsg(n + m_dwNoCashedPoints <= m_dwPointBufferSize, "ReservePointSlots(): too many points!");
 
 	auto* retval = &m_saPointBuffer[m_dwNoCashedPoints];
+
 	m_dwNoCashedPoints += n;
 	m_bPrimitivesPending = TRUE;
+
 	return retval;
 }
 
@@ -354,6 +881,42 @@ void cD6Primitives::FlushPoints()
 
 		m_dwNoCashedPoints = 0;
 	}
+}
+
+int cD6Primitives::DrawPoint(r3s_point *p)
+{
+	auto sx = p->grp.sx + fix_from_float(0.5);
+	auto sy = p->grp.sy + fix_from_float(0.5);
+	if ( sx > grd_canvas->gc.clip.f.right
+		|| sx < grd_canvas->gc.clip.f.left
+		|| sy > grd_canvas->gc.clip.f.bot
+		|| sy < grd_canvas->gc.clip.f.top )
+	{
+		return 16;
+	}
+
+	auto* vp = ReservePointSlots(1);
+	vp->sx = fix_float(sx) + g_XOffset;
+	vp->sy = fix_float(sy) + g_YOffset;
+
+	auto color = pcStates->get_color();
+	vp->color = color | 0xFF000000;
+	vp->specular = m_dcFogSpecular;
+
+	if ( zlinear )
+	{
+		vp->sz = z2d;
+	}
+	else if ( lgd3d_z_normal )
+	{
+		vp->sz = p->p.z * inv_z_far;
+	}
+	else
+	{
+		vp->sz = std::clamp(z1 - p->grp.w * z2, 0.0, 1.0);
+	}
+
+	return 0;
 }
 
 void cD6Primitives::DrawLine(r3s_point* p0, r3s_point* p1)
@@ -618,6 +1181,105 @@ void cD6Primitives::HackLightExtra(r3s_point* p, float r, grs_bitmap *bm)
 	else
 		DrawPoint(p);
 }
+
+void cD6Primitives::FlushPrimitives()
+{
+	if(!m_bPrimitivesPending || m_bFlushingOn)
+		return;
+
+	m_bFlushingOn = TRUE;
+	FlushIndPolies();
+	FlushPoints();
+	m_bPrimitivesPending = FALSE;
+	m_bFlushingOn = FALSE;
+}
+
+void cD6Primitives::EndIndexedRun()
+{
+	FlushIndPolies();
+	InitializeVIBCounters();
+}
+
+void cD6Primitives::FlushIfNoFit(int nIndicesToAdd, BOOL bSuspendTexturing)
+{
+	if ( m_bPointMode )
+	{
+		FlushPoints();
+		m_bPointMode = FALSE;
+	}
+
+	if ( bSuspendTexturing != g_bTexSuspended )
+	{
+		FlushIndPolies();
+		if ( bSuspendTexturing )
+		StartNonTexMode();
+		else
+		EndNonTexMode();
+	}
+
+	if ( nIndicesToAdd + m_dwTempIndCounter >= 50
+		|| m_dwNoIndices + 3 * (nIndicesToAdd - 2) >= m_dwVIBmax )
+	{
+		FlushIndPolies();
+		m_dwTempIndCounter = 0;
+	}
+}
+
+D3DTLVERTEX *cD6Primitives::GetIndPolySlot(int nPolySize, r3ixs_info *psIndInfo)
+{
+	auto wIndex = psIndInfo->index;
+	AssertMsg(psIndInfo->index < m_dwVIBSizeInEntries || ResizeVertIndBuffer(((wIndex >> 8) + 1) << 8),
+		"Could not reallocate memory for VIB");
+
+	wIndex = std::clamp(wIndex, m_dwMinVIndex, m_dwMaxVIndex);
+
+	m_waTempIndices[m_dwTempIndCounter++] = wIndex;
+	if (psIndInfo->flags & 1)
+		return nullptr;
+
+	return &m_pVIB[wIndex];
+}
+
+BOOL cD6Primitives::TrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc)
+{
+	return Trifan(n, ppl);
+}
+
+BOOL cD6Primitives::LitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc)
+{
+	return LitTrifan(n, ppl);
+}
+
+BOOL cD6Primitives::RGBlitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc)
+{
+	return RGBlitTrifan(n, ppl);
+}
+
+BOOL cD6Primitives::RGBAlitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc)
+{
+	return RGBAlitTrifan(n, ppl);
+}
+
+BOOL cD6Primitives::RGBAFogLitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc)
+{
+	return RGBAFogLitTrifan(n, ppl);
+}
+
+BOOL cD6Primitives::DiffuseSpecularLitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc)
+{
+	return DiffuseSpecularLitTrifan(n, ppl);
+}
+
+BOOL cD6Primitives::g2UTrifanMTD(int n, g2s_point **vpl, LGD3D_tex_coord **pptc)
+{
+	return g2UTrifan(n, vpl);
+}
+
+BOOL cD6Primitives::g2TrifanMTD(int n, g2s_point **vpl, LGD3D_tex_coord **pptc)
+{
+	return g2Trifan(n, vpl);
+}
+
 
 cMSBuffer::cMSBuffer()
 {
