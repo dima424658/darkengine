@@ -3,7 +3,8 @@
 #include "d6Prim.h"
 #include "d6States.h"
 
-typedef struct {
+typedef struct
+{
 	double left;
 	double top;
 	double right;
@@ -16,11 +17,11 @@ uint16 waEdgeIndices[50];
 extern float g_XOffset;
 extern float g_YOffset;
 
-
 extern double z_near, z_far, inv_z_far;
 extern double z1, z2;
 
-extern "C" {
+extern "C"
+{
 	extern BOOL zlinear;
 	extern double z2d, w2d;
 }
@@ -46,16 +47,16 @@ uint16 hack_light_alpha_pal[] =
 };
 
 cD6Primitives::cD6Primitives()
-	: m_bFlushingOn {FALSE},
-	m_bPointMode {FALSE},
-	m_ePolyMode {ePolyMode::kLgd3dPolyModeFillWTexture},
-	m_dwNoCashedPoints {0},
-	m_dwPointBufferSize {std::size(m_saPointBuffer)},
-	m_dwNoCashedVertices {0},
-	m_dwVertexBufferSize {std::size(m_saVertexBuffer)},
-	m_pVIB {nullptr},
-	m_hack_light_bm {nullptr},
-	m_saVertexBuffer {}
+	: m_bFlushingOn{FALSE},
+	  m_bPointMode{FALSE},
+	  m_ePolyMode{ePolyMode::kLgd3dPolyModeFillWTexture},
+	  m_dwNoCashedPoints{0},
+	  m_dwPointBufferSize{std::size(m_saPointBuffer)},
+	  m_dwNoCashedVertices{0},
+	  m_dwVertexBufferSize{std::size(m_saVertexBuffer)},
+	  m_pVIB{nullptr},
+	  m_hack_light_bm{nullptr},
+	  m_saVertexBuffer{}
 {
 	for (int i = 0; i < std::size(waEdgeIndices); ++i)
 		waEdgeIndices[i] = i;
@@ -79,12 +80,12 @@ cD6Primitives::~cD6Primitives()
 	lgd3d_release_ip_func = nullptr;
 }
 
-cD6Primitives* cD6Primitives::DeInstance()
+cD6Primitives *cD6Primitives::DeInstance()
 {
 	return nullptr;
 }
 
-D3DTLVERTEX* cD6Primitives::ReservePolySlots(unsigned int n)
+D3DTLVERTEX *cD6Primitives::ReservePolySlots(unsigned int n)
 {
 	if (m_bPointMode)
 	{
@@ -92,7 +93,7 @@ D3DTLVERTEX* cD6Primitives::ReservePolySlots(unsigned int n)
 		m_bPointMode = FALSE;
 	}
 
-	AssertMsg(n <= m_dwVertexBufferSize, "ReservePolySlots(): poly too large!")
+	AssertMsg(n <= m_dwVertexBufferSize, "ReservePolySlots(): poly too large!");
 	m_dwNoCashedVertices = n;
 
 	return m_saVertexBuffer;
@@ -116,9 +117,9 @@ void cD6Primitives::DrawPoly(BOOL bSuspendTexturing)
 	if (lgd3d_punt_d3d)
 		return;
 
-	if(m_ePolyMode & (ePolyMode::kLgd3dPolyModeFillWTexture || ePolyMode::kLgd3dPolyModeFillWColor))
+	if (m_ePolyMode & (ePolyMode::kLgd3dPolyModeFillWTexture || ePolyMode::kLgd3dPolyModeFillWColor))
 	{
-		auto hResult = g_lpD3Ddevice->DrawPrimitive(D3DPT_TRIANGLEFAN,D3DFVF_TLVERTEX,m_saVertexBuffer, m_dwNoCashedVertices, D3DDP_DONOTCLIP | D3DDP_DONOTUPDATEEXTENTS);
+		auto hResult = g_lpD3Ddevice->DrawPrimitive(D3DPT_TRIANGLEFAN, D3DFVF_TLVERTEX, m_saVertexBuffer, m_dwNoCashedVertices, D3DDP_DONOTCLIP | D3DDP_DONOTUPDATEEXTENTS);
 		AssertMsg3(SUCCEEDED(hResult), "%s: error %d\n%s ", "DrawPrimitive failed", hResult, GetDDErrorMsg(hResult));
 	}
 
@@ -126,18 +127,18 @@ void cD6Primitives::DrawPoly(BOOL bSuspendTexturing)
 		DrawStandardEdges(m_saVertexBuffer, m_dwNoCashedVertices);
 }
 
-BOOL cD6Primitives::Poly(int n, r3s_point** ppl)
+BOOL cD6Primitives::Poly(int n, r3s_point **ppl)
 {
 	auto c0 = pcStates->get_color();
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
 	for (int j = 0; j < n; ++j)
 	{
 		vlist[j].color = c0;
 		vlist[j].specular = m_dcFogSpecular;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -149,12 +150,12 @@ BOOL cD6Primitives::Poly(int n, r3s_point** ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+			vlist[j].sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j].rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -167,11 +168,11 @@ BOOL cD6Primitives::Poly(int n, r3s_point** ppl)
 BOOL cD6Primitives::SPoly(int n, r3s_point **ppl)
 {
 	auto c0 = pcStates->get_color();
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for (int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
-		auto i = std::min(ppl[j]->grp.i, 1.0);
+		auto i = std::min(ppl[j][0].grp.i, 1.0);
 		auto r = std::min(((c0 >> 16) & 0xFF) * i, 255);
 		auto g = std::min(((c0 >> 8) & 0xFF) * i, 255);
 		auto b = std::min((c0 & 0xFF) * i, 255);
@@ -179,8 +180,8 @@ BOOL cD6Primitives::SPoly(int n, r3s_point **ppl)
 		vlist[j].color = (c0 & 0xFF000000) | (r << 16) | (g << 8) | b;
 		vlist[j].specular = m_dcFogSpecular;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -192,12 +193,12 @@ BOOL cD6Primitives::SPoly(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j]->sz = ppl[j]->p.z * inv_z_far;
+			vlist[j]->sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j]->sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j]->rhw = ppl[j]->grp.w;
+			vlist[j]->sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j]->rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -210,9 +211,9 @@ BOOL cD6Primitives::SPoly(int n, r3s_point **ppl)
 BOOL cD6Primitives::RGB_Poly(int n, r3s_point **ppl)
 {
 	auto c0 = pcStates->get_color();
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for ( int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
 		auto r = std::min(((c0 >> 16) & 0xFF) * ppl[j][0].grp.i, 255);
 		auto g = std::min(((c0 >> 8) & 0xFF) * ppl[j][1].p.x, 255);
@@ -221,8 +222,8 @@ BOOL cD6Primitives::RGB_Poly(int n, r3s_point **ppl)
 		vlist[j].color = (m_nAlpha << 24) | (r << 16) | (g << 8) | b;
 		vlist[j].specular = m_dcFogSpecular;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -234,12 +235,12 @@ BOOL cD6Primitives::RGB_Poly(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j]->sz = ppl[j]->p.z * inv_z_far;
+			vlist[j]->sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j]->sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j]->rhw = ppl[j]->grp.w;
+			vlist[j]->sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j]->rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -252,9 +253,9 @@ BOOL cD6Primitives::RGB_Poly(int n, r3s_point **ppl)
 BOOL cD6Primitives::RGBA_Poly(int n, r3s_point **ppl)
 {
 	auto c0 = pcStates->get_color();
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for ( int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
 		auto r = std::min(((c0 >> 16) & 0xFF) * ppl[j][0].grp.i, 255);
 		auto g = std::min(((c0 >> 8) & 0xFF) * ppl[j][1].p.x, 255);
@@ -264,8 +265,8 @@ BOOL cD6Primitives::RGBA_Poly(int n, r3s_point **ppl)
 		vlist[j].color = (a << 24) | (r << 16) | (g << 8) | b;
 		vlist[j].specular = m_dcFogSpecular;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -277,12 +278,12 @@ BOOL cD6Primitives::RGBA_Poly(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+			vlist[j].sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j].rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -295,17 +296,17 @@ BOOL cD6Primitives::RGBA_Poly(int n, r3s_point **ppl)
 BOOL cD6Primitives::Trifan(int n, r3s_point **ppl)
 {
 	auto c0 = (m_nAlpha << 24) + 0xFFFFFF;
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for (int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
 		vlist[j].color = c0;
 		vlist[j].specular = m_dcFogSpecular;
-		vlist[j].tu = ppl[j]->grp.u;
-		vlist[j].tv = ppl[j]->grp.v;
+		vlist[j].tu = ppl[j][0].grp.u;
+		vlist[j].tv = ppl[j][0].grp.v;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -317,12 +318,12 @@ BOOL cD6Primitives::Trifan(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+			vlist[j].sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j].rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -335,22 +336,22 @@ BOOL cD6Primitives::Trifan(int n, r3s_point **ppl)
 BOOL cD6Primitives::LitTrifan(int n, r3s_point **ppl)
 {
 	auto c0 = (m_nAlpha << 24) + 0xFFFFFF;
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for ( int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
-		auto i = std::min(ppl[j]->grp.i, 1.0);
+		auto i = std::min(ppl[j][0].grp.i, 1.0);
 		auto r = std::min(((c0 >> 16) & 0xFF) * i, 255);
 		auto g = std::min(((c0 >> 8) & 0xFF) * i, 255);
 		auto b = std::min((c0 & 0xFF) * i, 255);
 
 		vlist[j].color = (c0 & 0xFF000000) | (r << 16) | (g << 8) | b;
 		vlist[j].specular = m_dcFogSpecular;
-		vlist[j].tu = ppl[j]->grp.u;
-		vlist[j].tv = ppl[j]->grp.v;
+		vlist[j].tu = ppl[j][0].grp.u;
+		vlist[j].tv = ppl[j][0].grp.v;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -362,12 +363,12 @@ BOOL cD6Primitives::LitTrifan(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+			vlist[j].sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j].rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -379,21 +380,21 @@ BOOL cD6Primitives::LitTrifan(int n, r3s_point **ppl)
 
 BOOL cD6Primitives::RGBlitTrifan(int n, r3s_point **ppl)
 {
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for (int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
-		auto r = std::min(255.0 * ppl[j]->grp.coord[0], 255);
-		auto g = std::min(255.0 * ppl[j]->grp.coord[3], 255);
-		auto b = std::min(255.0 * ppl[j]->grp.coord[4], 255);
+		auto r = std::min(255.0 * ppl[j][0].grp.coord[0], 255);
+		auto g = std::min(255.0 * ppl[j][0].grp.coord[3], 255);
+		auto b = std::min(255.0 * ppl[j][0].grp.coord[4], 255);
 
 		vlist[j].color = (m_nAlpha << 24) | (r << 16) | (g << 8) | b;
 		vlist[j].specular = m_dcFogSpecular;
-		vlist[j].tu = ppl[j]->grp.u;
-		vlist[j].tv = ppl[j]->grp.v;
+		vlist[j].tu = ppl[j][0].grp.u;
+		vlist[j].tv = ppl[j][0].grp.v;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -405,12 +406,12 @@ BOOL cD6Primitives::RGBlitTrifan(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+			vlist[j].sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j].rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -422,22 +423,22 @@ BOOL cD6Primitives::RGBlitTrifan(int n, r3s_point **ppl)
 
 BOOL cD6Primitives::RGBAlitTrifan(int n, r3s_point **ppl)
 {
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for (int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
-		auto r = std::min(255.0 * ppl[j]->grp.coord[0], 255);
-		auto g = std::min(255.0 * ppl[j]->grp.coord[3], 255);
-		auto b = std::min(255.0 * ppl[j]->grp.coord[4], 255);
-		auto a = std::min(255.0 * ppl[j]->grp.coord[5], 255);
+		auto r = std::min(255.0 * ppl[j][0].grp.coord[0], 255);
+		auto g = std::min(255.0 * ppl[j][0].grp.coord[3], 255);
+		auto b = std::min(255.0 * ppl[j][0].grp.coord[4], 255);
+		auto a = std::min(255.0 * ppl[j][0].grp.coord[5], 255);
 
 		vlist[j].color = (a << 24) | (r << 16) | (g << 8) | b;
 		vlist[j].specular = m_dcFogSpecular;
-		vlist[j].tu = ppl[j]->grp.u;
-		vlist[j].tv = ppl[j]->grp.v;
+		vlist[j].tu = ppl[j][0].grp.u;
+		vlist[j].tv = ppl[j][0].grp.v;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -449,12 +450,12 @@ BOOL cD6Primitives::RGBAlitTrifan(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+			vlist[j].sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j].rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -466,23 +467,23 @@ BOOL cD6Primitives::RGBAlitTrifan(int n, r3s_point **ppl)
 
 BOOL cD6Primitives::RGBAFogLitTrifan(int n, r3s_point **ppl)
 {
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for (int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
-		auto r = std::min(255 * ppl[j]->grp.coord[0], 255);
-		auto g = std::min(255 * ppl[j]->grp.coord[3], 255);
-		auto b = std::min(255 * ppl[j]->grp.coord[4], 255);
-		auto a = std::min(255 * ppl[j]->grp.coord[5], 255);
-		auto f = std::min((1.0 - ppl[j]->grp.coord[6]) * 255, 255);
+		auto r = std::min(255 * ppl[j][0].grp.coord[0], 255);
+		auto g = std::min(255 * ppl[j][0].grp.coord[3], 255);
+		auto b = std::min(255 * ppl[j][0].grp.coord[4], 255);
+		auto a = std::min(255 * ppl[j][0].grp.coord[5], 255);
+		auto f = std::min((1.0 - ppl[j][0].grp.coord[6]) * 255, 255);
 
 		vlist[j].color = (a << 24) | (r << 16) | (g << 8) | b;
 		vlist[j].specular = f << 24;
-		vlist[j].tu = ppl[j]->grp.u;
-		vlist[j].tv = ppl[j]->grp.v;
+		vlist[j].tu = ppl[j][0].grp.u;
+		vlist[j].tv = ppl[j][0].grp.v;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -494,12 +495,12 @@ BOOL cD6Primitives::RGBAFogLitTrifan(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+			vlist[j].sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j].rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -511,27 +512,27 @@ BOOL cD6Primitives::RGBAFogLitTrifan(int n, r3s_point **ppl)
 
 BOOL cD6Primitives::DiffuseSpecularLitTrifan(int n, r3s_point **ppl)
 {
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for (int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
-		auto r = std::min(255 * ppl[j]->grp.coord[0], 255);
-		auto g = std::min(255 * ppl[j]->grp.coord[3], 255);
-		auto b = std::min(255 * ppl[j]->grp.coord[4], 255);
-		auto a = std::min(255 * ppl[j]->grp.coord[5], 255);
+		auto r = std::min(255 * ppl[j][0].grp.coord[0], 255);
+		auto g = std::min(255 * ppl[j][0].grp.coord[3], 255);
+		auto b = std::min(255 * ppl[j][0].grp.coord[4], 255);
+		auto a = std::min(255 * ppl[j][0].grp.coord[5], 255);
 
-		auto aa = std::min(255 * ppl[j]->grp.coord[7], 255);
-		auto ra = std::min(255 * ppl[j]->grp.coord[8], 255);
-		auto ga = std::min(255 * ppl[j]->grp.coord[9], 255);
-		auto ba = std::min(255 * ppl[j]->grp.coord[10], 255);
+		auto aa = std::min(255 * ppl[j][0].grp.coord[7], 255);
+		auto ra = std::min(255 * ppl[j][0].grp.coord[8], 255);
+		auto ga = std::min(255 * ppl[j][0].grp.coord[9], 255);
+		auto ba = std::min(255 * ppl[j][0].grp.coord[10], 255);
 
 		vlist[j].color = (a << 24) | (r << 16) | (g << 8) | b;
-		vlist[j].specular = (ba << 24) | (ra << 16) | (ga << 8) | ba;
-		vlist[j].tu = ppl[j]->grp.u;
-		vlist[j].tv = ppl[j]->grp.v;
+		vlist[j].specular = (aa << 24) | (ra << 16) | (ga << 8) | ba;
+		vlist[j].tu = ppl[j][0].grp.u;
+		vlist[j].tv = ppl[j][0].grp.v;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -543,12 +544,12 @@ BOOL cD6Primitives::DiffuseSpecularLitTrifan(int n, r3s_point **ppl)
 		}
 		else if (lgd3d_z_normal)
 		{
-			vlist[j].sz = ppl[j]->p.z * inv_z_far;
+			vlist[j].sz = ppl[j][0].p.z * inv_z_far;
 		}
 		else
 		{
-			vlist[j].sz = z1 - ppl[j]->grp.w * z2;
-			vlist[j].rhw = ppl[j]->grp.w;
+			vlist[j].sz = z1 - ppl[j][0].grp.w * z2;
+			vlist[j].rhw = ppl[j][0].grp.w;
 			vlist[j].sz = std::clamp(vlist[j].sz, 0.0, 1.0);
 		}
 	}
@@ -561,17 +562,17 @@ BOOL cD6Primitives::DiffuseSpecularLitTrifan(int n, r3s_point **ppl)
 BOOL cD6Primitives::g2UPoly(int n, g2s_point **ppl)
 {
 	auto c0 = pcStates->get_color();
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for ( int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
 		vlist[j].color = c0;
 		vlist[j].specular = m_dcFogSpecular;
-		vlist[j].sz =z2d;
+		vlist[j].sz = z2d;
 		vlist[j].rhw = w2d;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -606,24 +607,24 @@ BOOL cD6Primitives::g2Poly(int n, g2s_point **ppl)
 BOOL cD6Primitives::g2UTrifan(int n, g2s_point **ppl)
 {
 	auto c0 = (m_nAlpha << 24) + 0xFFFFFF;
-	auto* vlist = ReservePolySlots(n);
+	auto *vlist = ReservePolySlots(n);
 
-	for (int j = 0; j < n; ++j )
+	for (int j = 0; j < n; ++j)
 	{
-		auto i = ppl[j]->coord[0];
+		auto i = ppl[j][0].coord[0];
 		auto r = std::min(((c0 >> 16) & 0xFF) * i, 255);
 		auto g = std::min(((c0 >> 8) & 0xFF) * i, 255);
 		auto b = std::min((c0 & 0xFF) * i, 255);
 
 		vlist[j].color = (c0 & 0xFF000000) | (r << 16) | (g << 8) | b;
 		vlist[j].specular = m_dcFogSpecular;
-		vlist[j].tu = ppl[j]->coord[1];
-		vlist[j].tv = ppl[j]->coord[2];
+		vlist[j].tu = ppl[j][0].coord[1];
+		vlist[j].tv = ppl[j][0].coord[2];
 		vlist[j].sz = z2d;
 		vlist[j].rhw = w2d;
 
-		auto _sx = ppl[j]->grp.sx + fix_from_float(0.5);
-		auto _sy = ppl[j]->grp.sy + fix_from_float(0.5);
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
 		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
 		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
 		vlist[j].sx = fix_float(_sx) + g_XOffset;
@@ -673,7 +674,7 @@ BOOL cD6Primitives::SetPolyMode(ePolyMode eNewMode)
 	return TRUE;
 }
 
-void cD6Primitives::DrawStandardEdges(void* pVertera, DWORD dwNoVeriteces)
+void cD6Primitives::DrawStandardEdges(void *pVertera, DWORD dwNoVeriteces)
 {
 	if (!g_bTexSuspended)
 	{
@@ -740,7 +741,7 @@ void cD6Primitives::Clear(int c)
 	auto fc_save = grd_canvas->gc.fcolor;
 
 	constexpr auto vlist_size = 4;
-	D3DTLVERTEX* vlist = ReservePolySlots(vlist_size);
+	auto *vlist = ReservePolySlots(vlist_size);
 
 	grd_canvas->gc.fcolor = c;
 
@@ -802,7 +803,7 @@ void cD6Primitives::DrawIndPolies()
 	{
 		m_waIndices[m_dwNoIndices] = m_waTempIndices[0];
 		// FIXME: wtf?
-		m_waIndices[m_dwNoIndices + 1] = *((WORD*)&m_dwNoIndices + i + 1);
+		m_waIndices[m_dwNoIndices + 1] = *((WORD *)&m_dwNoIndices + i + 1);
 		m_waIndices[m_dwNoIndices + 2] = m_waTempIndices[i];
 		m_dwNoIndices += 3;
 	}
@@ -816,24 +817,24 @@ void cD6Primitives::FlushIndPolies()
 	if (!m_dwNoIndices)
 		return;
 
-	for (int i = 0; i < m_dwNoIndices; ++i )
+	for (int i = 0; i < m_dwNoIndices; ++i)
 	{
 		AssertMsg(m_waIndices[i] <= m_dwMaxVIndex, "Runaway Prim index!")
 
-		if (m_dwMinVIndex)
-			m_waIndices[i] -= m_dwMinVIndex;
+			if (m_dwMinVIndex)
+				m_waIndices[i] -= m_dwMinVIndex;
 	}
 
 	if (!lgd3d_punt_d3d)
 	{
 		auto hResult = g_lpD3Ddevice->DrawIndexedPrimitive(
-							D3DPT_TRIANGLELIST,
-							D3DFVF_TLVERTEX,
-							&m_pVIB[m_dwMinVIndex],
-							m_dwMaxVIndex + 1 - m_dwMinVIndex,
-							m_waIndices,
-							m_dwNoIndices,
-							D3DDP_DONOTCLIP | D3DDP_DONOTUPDATEEXTENTS);
+			D3DPT_TRIANGLELIST,
+			D3DFVF_TLVERTEX,
+			&m_pVIB[m_dwMinVIndex],
+			m_dwMaxVIndex + 1 - m_dwMinVIndex,
+			m_waIndices,
+			m_dwNoIndices,
+			D3DDP_DONOTCLIP | D3DDP_DONOTUPDATEEXTENTS);
 		AssertMsg3(SUCCEEDED(hResult), "%s: error %d\n%s ", "DrawIndexedPrimitive failed", hResult, GetDDErrorMsg(hResult));
 	}
 
@@ -842,7 +843,7 @@ void cD6Primitives::FlushIndPolies()
 	m_dwMaxVIndex = 0;
 }
 
-D3DTLVERTEX* cD6Primitives::ReservePointSlots(int n)
+D3DTLVERTEX *cD6Primitives::ReservePointSlots(int n)
 {
 	if (!m_bPointMode)
 	{
@@ -855,7 +856,7 @@ D3DTLVERTEX* cD6Primitives::ReservePointSlots(int n)
 
 	AssertMsg(n + m_dwNoCashedPoints <= m_dwPointBufferSize, "ReservePointSlots(): too many points!");
 
-	auto* retval = &m_saPointBuffer[m_dwNoCashedPoints];
+	auto *retval = &m_saPointBuffer[m_dwNoCashedPoints];
 
 	m_dwNoCashedPoints += n;
 	m_bPrimitivesPending = TRUE;
@@ -887,15 +888,12 @@ int cD6Primitives::DrawPoint(r3s_point *p)
 {
 	auto sx = p->grp.sx + fix_from_float(0.5);
 	auto sy = p->grp.sy + fix_from_float(0.5);
-	if ( sx > grd_canvas->gc.clip.f.right
-		|| sx < grd_canvas->gc.clip.f.left
-		|| sy > grd_canvas->gc.clip.f.bot
-		|| sy < grd_canvas->gc.clip.f.top )
+	if (sx > grd_canvas->gc.clip.f.right || sx < grd_canvas->gc.clip.f.left || sy > grd_canvas->gc.clip.f.bot || sy < grd_canvas->gc.clip.f.top)
 	{
 		return 16;
 	}
 
-	auto* vp = ReservePointSlots(1);
+	auto *vp = ReservePointSlots(1);
 	vp->sx = fix_float(sx) + g_XOffset;
 	vp->sy = fix_float(sy) + g_YOffset;
 
@@ -903,11 +901,11 @@ int cD6Primitives::DrawPoint(r3s_point *p)
 	vp->color = color | 0xFF000000;
 	vp->specular = m_dcFogSpecular;
 
-	if ( zlinear )
+	if (zlinear)
 	{
 		vp->sz = z2d;
 	}
-	else if ( lgd3d_z_normal )
+	else if (lgd3d_z_normal)
 	{
 		vp->sz = p->p.z * inv_z_far;
 	}
@@ -919,7 +917,7 @@ int cD6Primitives::DrawPoint(r3s_point *p)
 	return 0;
 }
 
-void cD6Primitives::DrawLine(r3s_point* p0, r3s_point* p1)
+void cD6Primitives::DrawLine(r3s_point *p0, r3s_point *p1)
 {
 	auto c = (m_nAlpha << 24) | pcStates->get_color();
 
@@ -931,7 +929,7 @@ void cD6Primitives::DrawLine(r3s_point* p0, r3s_point* p1)
 	if (bot - top >= fix_from_float(1) && right - left >= fix_from_float(1))
 	{
 		constexpr auto vsize = 4;
-		auto* vlist = ReservePolySlots(vsize);
+		auto *vlist = ReservePolySlots(vsize);
 		for (int i = 0; i < vsize; ++i)
 		{
 			vlist[i].color = c;
@@ -980,14 +978,14 @@ void cD6Primitives::DrawLine(r3s_point* p0, r3s_point* p1)
 		auto x1 = fix_float(std::clamp(p1->grp.sx + fix_from_float(0.5), left, right)) + g_XOffset;
 		auto y0 = fix_float(std::clamp(p0->grp.sy + fix_from_float(0.5), bot, top)) + g_YOffset;
 		auto y1 = fix_float(std::clamp(p1->grp.sy + fix_from_float(0.5), bot, top)) + g_YOffset;
-	
+
 		if (y10 <= x10)
 		{
 			vlist[0].sy = y0 + 0.5;
 			vlist[1].sy = y0 - 0.5;
 			vlist[2].sy = y1 - 0.5;
 			vlist[3].sy = y1 + 0.5;
-	
+
 			vlist[0].sx = x0;
 			vlist[1].sx = x0;
 			vlist[2].sx = x1;
@@ -1025,7 +1023,7 @@ int cD6Primitives::CreateVertIndBuffer(DWORD dwInitialNoEntries)
 
 	m_dwVIBSizeInEntries = dwInitialNoEntries;
 
-	m_pVIB = (D3DTLVERTEX*)malloc(sizeof(D3DTLVERTEX) * m_dwVIBSizeInEntries);
+	m_pVIB = (D3DTLVERTEX *)malloc(sizeof(D3DTLVERTEX) * m_dwVIBSizeInEntries);
 	InitializeVIBCounters();
 
 	m_dwVIBmax = 256;
@@ -1041,7 +1039,7 @@ void cD6Primitives::DeleteVertIndBuffer()
 
 BOOL cD6Primitives::ResizeVertIndBuffer(DWORD dwNewNoEntries)
 {
-	auto* pvTemp = (D3DTLVERTEX *)realloc(m_pVIB, sizeof(D3DTLVERTEX) * dwNewNoEntries);
+	auto *pvTemp = (D3DTLVERTEX *)realloc(m_pVIB, sizeof(D3DTLVERTEX) * dwNewNoEntries);
 	if (!pvTemp)
 		return FALSE;
 
@@ -1054,7 +1052,7 @@ BOOL cD6Primitives::ResizeVertIndBuffer(DWORD dwNewNoEntries)
 void cD6Primitives::init_hack_light_bm()
 {
 	m_hack_light_bm = gr_alloc_bitmap(2u, 2u, 32, 32);
-	uchar* bits = m_hack_light_bm->bits;
+	uchar *bits = m_hack_light_bm->bits;
 	for (int i = 0; i < 32; ++i)
 	{
 		for (int j = 0; j < 32; ++j)
@@ -1068,9 +1066,8 @@ void cD6Primitives::init_hack_light_bm()
 	}
 }
 
-void cD6Primitives::do_quad_light(r3s_point* p, float r, grs_bitmap* bm)
+void cD6Primitives::do_quad_light(r3s_point *p, float r, grs_bitmap *bm)
 {
-
 
 	auto x = fix_float(p->grp.sx) + g_XOffset;
 	auto y = fix_float(p->grp.sy) + g_YOffset;
@@ -1083,7 +1080,7 @@ void cD6Primitives::do_quad_light(r3s_point* p, float r, grs_bitmap* bm)
 		lgd3d_set_texture(bm);
 
 		constexpr auto vsize = 4;
-		auto* vlist = ReservePolySlots(vsize);
+		auto *vlist = ReservePolySlots(vsize);
 		auto x_right = x + r;
 		auto x_left = x - r;
 		auto u_left = 0.0;
@@ -1159,7 +1156,7 @@ void cD6Primitives::do_quad_light(r3s_point* p, float r, grs_bitmap* bm)
 	}
 }
 
-void cD6Primitives::HackLight(r3s_point* p, float r)
+void cD6Primitives::HackLight(r3s_point *p, float r)
 {
 	if (r > 1.0)
 	{
@@ -1174,7 +1171,7 @@ void cD6Primitives::HackLight(r3s_point* p, float r)
 	}
 }
 
-void cD6Primitives::HackLightExtra(r3s_point* p, float r, grs_bitmap *bm)
+void cD6Primitives::HackLightExtra(r3s_point *p, float r, grs_bitmap *bm)
 {
 	if (r > 1.0)
 		do_quad_light(p, r, bm);
@@ -1184,7 +1181,7 @@ void cD6Primitives::HackLightExtra(r3s_point* p, float r, grs_bitmap *bm)
 
 void cD6Primitives::FlushPrimitives()
 {
-	if(!m_bPrimitivesPending || m_bFlushingOn)
+	if (!m_bPrimitivesPending || m_bFlushingOn)
 		return;
 
 	m_bFlushingOn = TRUE;
@@ -1202,23 +1199,22 @@ void cD6Primitives::EndIndexedRun()
 
 void cD6Primitives::FlushIfNoFit(int nIndicesToAdd, BOOL bSuspendTexturing)
 {
-	if ( m_bPointMode )
+	if (m_bPointMode)
 	{
 		FlushPoints();
 		m_bPointMode = FALSE;
 	}
 
-	if ( bSuspendTexturing != g_bTexSuspended )
+	if (bSuspendTexturing != g_bTexSuspended)
 	{
 		FlushIndPolies();
-		if ( bSuspendTexturing )
-		StartNonTexMode();
+		if (bSuspendTexturing)
+			StartNonTexMode();
 		else
-		EndNonTexMode();
+			EndNonTexMode();
 	}
 
-	if ( nIndicesToAdd + m_dwTempIndCounter >= 50
-		|| m_dwNoIndices + 3 * (nIndicesToAdd - 2) >= m_dwVIBmax )
+	if (nIndicesToAdd + m_dwTempIndCounter >= 50 || m_dwNoIndices + 3 * (nIndicesToAdd - 2) >= m_dwVIBmax)
 	{
 		FlushIndPolies();
 		m_dwTempIndCounter = 0;
@@ -1229,7 +1225,7 @@ D3DTLVERTEX *cD6Primitives::GetIndPolySlot(int nPolySize, r3ixs_info *psIndInfo)
 {
 	auto wIndex = psIndInfo->index;
 	AssertMsg(psIndInfo->index < m_dwVIBSizeInEntries || ResizeVertIndBuffer(((wIndex >> 8) + 1) << 8),
-		"Could not reallocate memory for VIB");
+			  "Could not reallocate memory for VIB");
 
 	wIndex = std::clamp(wIndex, m_dwMinVIndex, m_dwMaxVIndex);
 
@@ -1238,6 +1234,466 @@ D3DTLVERTEX *cD6Primitives::GetIndPolySlot(int nPolySize, r3ixs_info *psIndInfo)
 		return nullptr;
 
 	return &m_pVIB[wIndex];
+}
+
+BOOL cD6Primitives::PolyInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	auto c0 = pcStates->get_color();
+	FlushIfNoFit(n, TRUE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		pVertex->color = c0;
+		pVertex->specular = m_dcFogSpecular;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::SPolyInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	auto c0 = pcStates->get_color();
+	FlushIfNoFit(n, TRUE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		auto i = std::min(ppl[j][0].grp.i, 1.0);
+		auto r = std::min(((c0 >> 16) & 0xFF) * i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * i, 255);
+		auto b = std::min((c0 & 0xFF) * i, 255);
+
+		pVertex->color = (c0 & 0xFF000000) | (r << 16) | (g << 8) | b;
+		pVertex->specular = m_dcFogSpecular;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGB_PolyInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	auto c0 = pcStates->get_color();
+	FlushIfNoFit(n, TRUE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		auto r = std::min(((c0 >> 16) & 0xFF) * ppl[j][0].grp.i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * ppl[j][1].p.x, 255);
+		auto b = std::min((c0 & 0xFF) * ppl[j][1].p.y, 255);
+
+		pVertex->color = (m_nAlpha << 24) | (r << 16) | (g << 8) | b;
+		pVertex->specular = m_dcFogSpecular;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGBA_PolyInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	auto c0 = pcStates->get_color();
+	FlushIfNoFit(n, TRUE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		auto r = std::min(((c0 >> 16) & 0xFF) * ppl[j][0].grp.i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * ppl[j][1].p.x, 255);
+		auto b = std::min((c0 & 0xFF) * ppl[j][1].p.y, 255);
+		auto a = std::min(m_nAlpha * ppl[j][1].p.z, 255);
+
+		pVertex->color = (a << 24) | (r << 16) | (g << 8) | b;
+		pVertex->specular = m_dcFogSpecular;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::TrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	auto c0 = (m_nAlpha << 24) + 0xFFFFFF;
+	FlushIfNoFit(n, FALSE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		pVertex->color = c0;
+		pVertex->specular = m_dcFogSpecular;
+		pVertex->tu = ppl[j][0].grp.u;
+		pVertex->tv = ppl[j][0].grp.v;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::LitTrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	auto c0 = (m_nAlpha << 24) + 0xFFFFFF;
+	FlushIfNoFit(n, FALSE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		auto i = std::min(ppl[j][0].grp.i, 1.0);
+		auto r = std::min(((c0 >> 16) & 0xFF) * i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * i, 255);
+		auto b = std::min((c0 & 0xFF) * i, 255);
+
+		pVertex->color = (c0 & 0xFF000000) | (r << 16) | (g << 8) | b;
+		pVertex->specular = m_dcFogSpecular;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGBlitTrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	FlushIfNoFit(n, FALSE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		auto r = std::min(((c0 >> 16) & 0xFF) * ppl[j][0].grp.i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * ppl[j][1].p.x, 255);
+		auto b = std::min((c0 & 0xFF) * ppl[j][1].p.y, 255);
+
+		pVertex->color = (m_nAlpha << 24) | (r << 16) | (g << 8) | b;
+		pVertex->specular = m_dcFogSpecular;
+		pVertex->tu = ppl[j][0].grp.u;
+		pVertex->tv = ppl[j][0].grp.v;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGBAlitTrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	FlushIfNoFit(n, FALSE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		auto r = std::min(((c0 >> 16) & 0xFF) * ppl[j][0].grp.i, 255);
+		auto g = std::min(((c0 >> 8) & 0xFF) * ppl[j][1].p.x, 255);
+		auto b = std::min((c0 & 0xFF) * ppl[j][1].p.y, 255);
+		auto a = std::min(m_nAlpha * ppl[j][1].p.z, 255);
+
+		pVertex->color = (a << 24) | (r << 16) | (g << 8) | b;
+		pVertex->specular = m_dcFogSpecular;
+		pVertex->tu = ppl[j][0].grp.u;
+		pVertex->tv = ppl[j][0].grp.v;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::RGBAFogLitTrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	FlushIfNoFit(n, FALSE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		pVertex->tu = ppl[j][0].grp.u;
+		pVertex->tv = ppl[j][0].grp.v;
+		auto r = std::min(255 * ppl[j][0].grp.i, 255);
+		auto g = std::min(255 * ppl[j][1].p.x, 255);
+		auto b = std::min(255 * ppl[j][1].p.y, 255);
+		auto a = std::min(255 * ppl[j][1].p.z, 255);
+		auto f = std::min((1.0 - ppl[j][1].ccodes) * 255, 255);
+
+		pVertex->color = (a << 24) | (r << 16) | (g << 8) | b;
+		pVertex->specular = f << 24;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
+}
+
+BOOL cD6Primitives::DiffuseSpecularLitTrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo)
+{
+	FlushIfNoFit(n, FALSE);
+
+	for (int j = 0; j < n; ++j)
+	{
+		auto *pVertex = GetIndPolySlot(n, psIndInfo++);
+		if (pVertex == nullptr)
+			continue;
+
+		auto r = std::min(255 * ppl[j][0].grp.i, 255);
+		auto g = std::min(255 * ppl[j][1].p.x, 255);
+		auto b = std::min(255 * ppl[j][1].p.y, 255);
+		auto a = std::min(255 * ppl[j][1].p.z, 255);
+
+		auto aa = std::min(255 * ppl[j][1].grp.sx, 255);
+		auto ra = std::min(255 * ppl[j][1].grp.sy, 255);
+		auto ga = std::min(255 * ppl[j][1].grp.w, 255);
+		auto ba = std::min(255 * ppl[j][1].grp.flags, 255);
+
+		pVertex->color = (a << 24) | (r << 16) | (g << 8) | b;
+		pVertex->specular = (aa << 24) | (ra << 16) | (ga << 8) | ba;
+		pVertex->tu = ppl[j][0].grp.u;
+		pVertex->tv = ppl[j][0].grp.v;
+
+		auto _sx = ppl[j][0].grp.sx + fix_from_float(0.5);
+		auto _sy = ppl[j][0].grp.sy + fix_from_float(0.5);
+		_sx = std::clamp(_sx, grd_canvas->gc.clip.f.left, grd_canvas->gc.clip.f.right);
+		_sy = std::clamp(_sy, grd_canvas->gc.clip.f.top, grd_canvas->gc.clip.f.bot);
+		pVertex->sx = fix_float(_sx) + g_XOffset;
+		pVertex->sy = fix_float(_sy) + g_YOffset;
+
+		if (zlinear)
+		{
+			pVertex->sz = z2d;
+		}
+		else if (lgd3d_z_normal)
+		{
+			pVertex->sz = ppl[j][0].p.z * inv_z_far;
+		}
+		else
+		{
+			pVertex->sz = std::clamp(z1 - ppl[j][0].grp.w * z2, 0.0, 1.0);
+			pVertex->rhw = ppl[j][0].grp.w;
+		}
+	}
+
+	DrawIndPolies();
+
+	return FALSE;
 }
 
 BOOL cD6Primitives::TrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc)
@@ -1280,7 +1736,6 @@ BOOL cD6Primitives::g2TrifanMTD(int n, g2s_point **vpl, LGD3D_tex_coord **pptc)
 	return g2Trifan(n, vpl);
 }
 
-
 cMSBuffer::cMSBuffer()
 {
 	m_dwMaxNoMTVertices = 50;
@@ -1290,7 +1745,7 @@ cMSBuffer::~cMSBuffer()
 {
 }
 
-cD6Primitives* cMSBuffer::Instance()
+cD6Primitives *cMSBuffer::Instance()
 {
 	if (!m_Instance)
 	{
@@ -1334,7 +1789,7 @@ void cMSBuffer::DrawPoly(BOOL bSuspendTexturing)
 	}
 }
 
-MTVERTEX* cMSBuffer::ReserveMTPolySlots(int n)
+MTVERTEX *cMSBuffer::ReserveMTPolySlots(int n)
 {
 	if (n > m_dwMaxNoMTVertices)
 		CriticalMsg("ReservePolySlots(): poly too large!");
