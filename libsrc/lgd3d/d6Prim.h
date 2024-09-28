@@ -15,7 +15,6 @@ struct MTVERTEX
 
 class cD6Primitives {
 protected:
-    cD6Primitives(const class cD6Primitives &);
     cD6Primitives();
     ~cD6Primitives();
 
@@ -26,7 +25,7 @@ protected:
     BOOL m_bPrimitivesPending;
     BOOL m_bFlushingOn;
     int m_nAlpha;
-    unsigned long m_dcFogSpecular;
+    ulong m_dcFogSpecular;
     BOOL m_bPointMode;
     int m_iSavedTexId;
     enum ePolyMode m_ePolyMode;
@@ -36,11 +35,11 @@ public:
     BOOL SetPolyMode(ePolyMode eNewMode);
 
 protected:
-    void DrawStandardEdges(void *pVertera, unsigned int dwNoVeriteces);
+    void DrawStandardEdges(void *pVertera, DWORD dwNoVeriteces);
 
 public:
     virtual void FlushPrimitives();
-    void PassFogSpecularColor(unsigned int dcFogColor);
+    void PassFogSpecularColor(ulong dcFogColor);
     void PassAlphaColor(int nAlapha);
     virtual void StartFrame();
     virtual void EndFrame();
@@ -49,53 +48,51 @@ public:
     virtual void EndNonTexMode();
 
 protected:
-    unsigned long m_dwNoCashedPoints;
-    unsigned long m_dwPointBufferSize;
+    DWORD m_dwNoCashedPoints;
+    DWORD m_dwPointBufferSize;
     D3DTLVERTEX m_saPointBuffer[50];
 
     D3DTLVERTEX m_saVertexBuffer[50];
-    unsigned long m_dwNoCashedVertices;
-    unsigned long m_dwVertexBufferSize;
+    DWORD m_dwNoCashedVertices;
+    DWORD m_dwVertexBufferSize;
 
 public:
     virtual D3DTLVERTEX* ReservePointSlots(int n);
     virtual void FlushPoints();
-    void SetPointBufferSize(unsigned long); // static?
-    unsigned long GetPointBufferSize(); // static?
     virtual int DrawPoint(r3s_point *p);
 
     D3DTLVERTEX* ReservePolySlots(unsigned int n);
     virtual void DrawPoly(BOOL bSuspendTexturing);
     virtual BOOL Poly(int n, r3s_point * * ppl);
-    virtual int SPoly(int n, r3s_point * * ppl);
-    virtual int RGB_Poly(int n, r3s_point * * ppl);
-    virtual int RGBA_Poly(int n, r3s_point * * ppl);
-    virtual int Trifan(int n, r3s_point * * ppl);
-    virtual int LitTrifan(int n, r3s_point * * ppl);
-    virtual int RGBlitTrifan(int n, r3s_point * * ppl);
-    virtual int RGBAlitTrifan(int n, r3s_point * * ppl);
-    virtual int RGBAFogLitTrifan(int n, r3s_point * * ppl);
-    virtual int DiffuseSpecularLitTrifan(int n, r3s_point * * ppl);
-    virtual int g2UPoly(int n, g2s_point * * ppl);
-    virtual int g2Poly(int n, g2s_point * * ppl);
-    virtual int g2UTrifan(int n, g2s_point * * ppl);
-    virtual int g2Trifan(int n, g2s_point * * ppl);
+    virtual BOOL SPoly(int n, r3s_point * * ppl);
+    virtual BOOL RGB_Poly(int n, r3s_point * * ppl);
+    virtual BOOL RGBA_Poly(int n, r3s_point * * ppl);
+    virtual BOOL Trifan(int n, r3s_point * * ppl);
+    virtual BOOL LitTrifan(int n, r3s_point * * ppl);
+    virtual BOOL RGBlitTrifan(int n, r3s_point * * ppl);
+    virtual BOOL RGBAlitTrifan(int n, r3s_point * * ppl);
+    virtual BOOL RGBAFogLitTrifan(int n, r3s_point * * ppl);
+    virtual BOOL DiffuseSpecularLitTrifan(int n, r3s_point * * ppl);
+    virtual BOOL g2UPoly(int n, g2s_point * * ppl);
+    virtual BOOL g2Poly(int n, g2s_point * * ppl);
+    virtual BOOL g2UTrifan(int n, g2s_point * * ppl);
+    virtual BOOL g2Trifan(int n, g2s_point * * ppl);
     void DrawLine(r3s_point * p0, r3s_point * p1);
 
 protected:
     virtual void InitializeVIBCounters();
-    virtual int CreateVertIndBuffer(DWORD dwInitialNoEntries);
+    virtual BOOL CreateVertIndBuffer(DWORD dwInitialNoEntries);
     virtual void DeleteVertIndBuffer();
-    virtual int ResizeVertIndBuffer(DWORD dwNewNoEntries);
+    virtual BOOL ResizeVertIndBuffer(DWORD dwNewNoEntries);
 
 private:
     D3DTLVERTEX * m_pVIB;
     DWORD m_dwNoVIBEntries;
     DWORD m_dwVIBSizeInEntries;
-    unsigned short m_waIndices[256];
+    ushort m_waIndices[256];
     DWORD m_dwVIBmax;
     DWORD m_dwNoIndices;
-    unsigned short m_waTempIndices[50];
+    ushort m_waTempIndices[50];
     DWORD m_dwMinVIndex;
     DWORD m_dwMaxVIndex;
     DWORD m_dwTempIndCounter;
@@ -103,7 +100,7 @@ private:
 
 public:
     virtual void EndIndexedRun();
-    virtual void FlushIfNoFit(int nIndicesToAdd, bool bSuspendTexturing);
+    virtual void FlushIfNoFit(int nIndicesToAdd, BOOL bSuspendTexturing);
     virtual D3DTLVERTEX * GetIndPolySlot(int nPolySize, r3ixs_info *psIndInfo);
     virtual void DrawIndPolies();
     virtual void FlushIndPolies();
@@ -117,14 +114,14 @@ public:
     virtual int RGBAlitTrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo);
     int RGBAFogLitTrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo);
     int DiffuseSpecularLitTrifanInd(int n, r3s_point **ppl, r3ixs_info *psIndInfo);
-    virtual int TrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
-    virtual int LitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
-    virtual int RGBlitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
-    virtual int RGBAlitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
-    virtual int RGBAFogLitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
-    virtual int DiffuseSpecularLitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
-    virtual int g2UTrifanMTD(int n, g2s_point **vpl, LGD3D_tex_coord **pptc);
-    virtual int g2TrifanMTD(int n, g2s_point **vpl, LGD3D_tex_coord **pptc);
+    virtual BOOL TrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
+    virtual BOOL LitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
+    virtual BOOL RGBlitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
+    virtual BOOL RGBAlitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
+    virtual BOOL RGBAFogLitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
+    virtual BOOL DiffuseSpecularLitTrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **pptc);
+    virtual BOOL g2UTrifanMTD(int n, g2s_point **vpl, LGD3D_tex_coord **pptc);
+    virtual BOOL g2TrifanMTD(int n, g2s_point **vpl, LGD3D_tex_coord **pptc);
 
     void init_hack_light_bm();
     void do_quad_light(r3s_point *p, float r, grs_bitmap *bm);
