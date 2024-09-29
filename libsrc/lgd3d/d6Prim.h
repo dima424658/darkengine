@@ -172,14 +172,14 @@ private:
     void DrawMTPoly();
 
 public:
-    virtual int TrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
-    virtual int LitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
-    virtual int RGBlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
-    virtual int RGBAlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
-    virtual int RGBAFogLitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
-    virtual int DiffuseSpecularLitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
-    virtual int g2UTrifanMTD(int n, g2s_point** vpl, LGD3D_tex_coord** pptc) override;
-    virtual int g2TrifanMTD(int n, g2s_point** vpl, LGD3D_tex_coord** pptc) override;
+    virtual BOOL TrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
+    virtual BOOL LitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
+    virtual BOOL RGBlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
+    virtual BOOL RGBAlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
+    virtual BOOL RGBAFogLitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
+    virtual BOOL DiffuseSpecularLitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc) override;
+    virtual BOOL g2UTrifanMTD(int n, g2s_point** vpl, LGD3D_tex_coord** pptc) override;
+    virtual BOOL g2TrifanMTD(int n, g2s_point** vpl, LGD3D_tex_coord** pptc) override;
 };
 
 
