@@ -20,37 +20,37 @@
 extern "C" {
 #endif
 
-    typedef struct ILGSurface ILGSurface;
+typedef struct ILGSurface ILGSurface;
 
-    typedef struct _D3DDeviceDesc DevDesc;
+typedef struct _D3DDeviceDesc DevDesc;
 
-    typedef struct lgd3ds_device_info {
-        GUID         device_guid;
-        GUID* p_ddraw_guid;
-        DevDesc* device_desc;
-        short* supported_modes; // -1 terminated list 
-        char* p_ddraw_desc;
-        ulong        flags;
-    } lgd3ds_device_info;
-
-
-    extern int lgd3d_enumerate_devices(void);
-    extern lgd3ds_device_info* lgd3d_get_device_info(int device);
+typedef struct lgd3ds_device_info {
+   GUID         device_guid;
+   GUID*        p_ddraw_guid;
+   DevDesc*     device_desc;
+   short*       supported_modes; // -1 terminated list 
+   char*        p_ddraw_desc;
+   ulong        flags;
+} lgd3ds_device_info;
 
 
-    //////////////NEW in a 50% bigger packaging!!!////////////////////////////
+extern int lgd3d_enumerate_devices(void);
+extern lgd3ds_device_info *lgd3d_get_device_info(int device);
 
-    /// lgd3ds_device_info flags passed to the libray
-    /// or returned by the enumeration.  
 
-    extern int lgd3d_enumerate_devices_capable_of(ulong flags);
+//////////////NEW in a 50% bigger packaging!!!////////////////////////////
+
+/// lgd3ds_device_info flags passed to the libray
+/// or returned by the enumeration.  
+
+extern int lgd3d_enumerate_devices_capable_of( ulong flags );
 
 #define LGRT_SINGLE_TEXTURE_SINGLE_PASS     0L
 #define LGRT_MULTI_TEXTURE_SINGLE_PASS      1L
 
-    //NOTE: multipass multitexturing is not supported!!!
+//NOTE: multipass multitexturing is not supported!!!
 
-    // Capabilities that can be requested:
+// Capabilities that can be requested:
 
 #define LGD3DF_SPEW                    0x00000002L
 
@@ -110,140 +110,140 @@ extern "C" {
 #define LGD3DPALF_TRANS  2
 
 // pre-initiazation calls
-    extern void lgd3d_set_RGB(void);
-    extern void lgd3d_set_hardware(void);
-    extern void lgd3d_set_software(void);
-    extern void lgd3d_texture_set_RGB(bool is_RGB);
+extern void lgd3d_set_RGB(void);
+extern void lgd3d_set_hardware(void);
+extern void lgd3d_set_software(void);
+extern void lgd3d_texture_set_RGB(BOOL is_RGB);
 
-    // state query functions (won't change between init and shutdown)
-    extern BOOL lgd3d_is_RGB(void);
-    extern BOOL lgd3d_is_hardware(void);
+// state query functions (won't change between init and shutdown)
+extern BOOL lgd3d_is_RGB(void);
+extern BOOL lgd3d_is_hardware(void);
 
-    // initialization and shutdown
+// initialization and shutdown
 
-    //@TODO change this to return HRESULT error codes and support the message strings for them
+//@TODO change this to return HRESULT error codes and support the message strings for them
 
-    extern BOOL lgd3d_init(lgd3ds_device_info* device_info);
-    // N.B. If the flag LGD3DF_DEPTH_BUFFER_REQUIRED was set in device_info->flags,
-    // and a depth buffer could not be created the call would fail.  To test for this 
-    // condition check whether the flags LGD3DF_ZBUFFER and LGD3DF_WBUFFER  
-    // was UNSET in device_info->flags.
-
-
-
-    extern BOOL lgd3d_attach_to_lgsurface(ILGSurface* pILGSurface);
-    extern void lgd3d_clean_render_surface(BOOL bDepthBuffToo);
-
-    extern void lgd3d_shutdown(void);
-
-    extern void lgd3d_start_frame(int frame);  // frame count passed to texture manager
-    extern void lgd3d_end_frame(void);
-
-    extern BOOL lgd3d_overlays_master_switch(BOOL bOverlaysOn);
+extern BOOL lgd3d_init( lgd3ds_device_info *device_info );
+// N.B. If the flag LGD3DF_DEPTH_BUFFER_REQUIRED was set in device_info->flags,
+// and a depth buffer could not be created the call would fail.  To test for this 
+// condition check whether the flags LGD3DF_ZBUFFER and LGD3DF_WBUFFER  
+// was UNSET in device_info->flags.
 
 
 
-    extern void lgd3d_blit();
-    extern void lgd3d_clear(int color_index);
+extern BOOL lgd3d_attach_to_lgsurface( ILGSurface* pILGSurface );
+extern void lgd3d_clean_render_surface( BOOL bDepthBuffToo );
 
-    // application direct interface: death to COM!
-    extern void lgd3d_set_zwrite(BOOL zwrite);
-    extern void lgd3d_set_zcompare(BOOL zwrite);
-    extern void lgd3d_zclear(void);
-    extern void lgd3d_set_znearfar(double znear, double zfar);
-    extern void lgd3d_get_znearfar(double* pdZNear, double* pdZFar);
+extern void lgd3d_shutdown(void);
 
-    extern BOOL lgd3d_z_normal;
+extern void lgd3d_start_frame(int frame);  // frame count passed to texture manager
+extern void lgd3d_end_frame(void);
 
-    //z-stuff
-    extern void lgd3d_clear_z_rect(int x0, int y0, int x1, int y1);
-    extern void lgd3d_set_z(float z);    // z coord for flat (2d) polys
+extern BOOL lgd3d_overlays_master_switch( BOOL bOverlaysOn );
 
-    extern int lgd3d_get_depth_buffer_state(void);
-    extern int lgd3d_is_zwrite_on(void);
-    extern int lgd3d_is_zcompare_on(void);
 
-    // push all points closer to camera by zbias.
-    // returns old zbias.
-    extern double lgd3d_set_zbias(double zbias);
 
-    //  Z-Bias stack
+extern void lgd3d_blit();
+extern void lgd3d_clear(int color_index);
+
+// application direct interface: death to COM!
+extern void lgd3d_set_zwrite(BOOL zwrite);
+extern void lgd3d_set_zcompare(BOOL zwrite);
+extern void lgd3d_zclear(void);
+extern void lgd3d_set_znearfar(double znear, double zfar);
+extern void lgd3d_get_znearfar( double* pdZNear, double* pdZFar );
+
+extern BOOL lgd3d_z_normal;
+
+//z-stuff
+extern void lgd3d_clear_z_rect(int x0, int y0, int x1, int y1);
+extern void lgd3d_set_z(float z);    // z coord for flat (2d) polys
+
+extern int /* D3DZBUFFERTYPE? */ lgd3d_get_depth_buffer_state( void );
+extern BOOL lgd3d_is_zwrite_on( void );
+extern BOOL lgd3d_is_zcompare_on( void );
+
+// push all points closer to camera by zbias.
+// returns old zbias.
+extern double lgd3d_set_zbias(double zbias);
+
+//  Z-Bias stack
 #define LGD3D_ZBIAS_STACK_DEPTH   8
 
 // 0 <= nZbias <= 16
-    extern void lgd3d_push_zbias_i(int nZBias);
-    extern void lgd3d_pop_zbias(void);
+extern void lgd3d_push_zbias_i( int nZBias );
+extern void lgd3d_pop_zbias( void );
 
-    // States
-
-
-    //shading
-    // "smooth"(i.e., linera or bilinear) or "nearest point"
-    extern BOOL lgd3d_set_shading(BOOL bSmoothShading); //NEW
-    extern BOOL lgd3d_is_smooth_shading_on(void);
+// States
 
 
-
-    //alpha blending
-    extern int lgd3d_is_alpha_blending_on(void);
-
-    extern void lgd3d_set_alpha(float alpha);             // 0.0 <= alpha <= 1.0
-    extern void lgd3d_set_blend(BOOL do_blend);
-    extern void lgd3d_blend_normal(void);
-
-    extern void lgd3d_blend_multiply(int blend_mode); //from below
-    enum {
-        BLEND_DEST_ZERO = 0,
-        BLEND_SRC_ZERO = 0,
-        BLEND_SRC_ONE = 1,
-        BLEND_SRC_SRC = 2,
-        BLEND_SRC_DEST = 3,
-        BLEND_DEST_ONE = 4,
-        BLEND_DEST_SRC = 8,
-        BLEND_DEST_DEST = 12
-    };
+//shading
+// "smooth"(i.e., linera or bilinear) or "nearest point"
+extern BOOL lgd3d_set_shading( BOOL bSmoothShading ); //NEW
+extern BOOL lgd3d_is_smooth_shading_on( void );
 
 
-    //efects:
-    // color range is 0..255
-    extern void lgd3d_set_chromakey(int red, int green, int blue);
 
-    extern void lgd3d_set_dithering(int bOn);
-    extern int lgd3d_is_dithering_on(void);
+//alpha blending
+extern BOOL lgd3d_is_alpha_blending_on( void );
 
-    extern void lgd3d_set_antialiasing(int bOn);
-    extern int lgd3d_is_antialiasing_on(void);
+extern void lgd3d_set_alpha(float alpha);             // 0.0 <= alpha <= 1.0
+extern void lgd3d_set_blend(BOOL do_blend);
+extern void lgd3d_blend_normal(void);
 
-    extern BOOL lgd3d_enable_specular(BOOL bUseIt);
+extern void lgd3d_blend_multiply(int blend_mode); //from below
+typedef enum {
+   BLEND_DEST_ZERO=0,
+   BLEND_SRC_ZERO=0,
+   BLEND_SRC_ONE=1,
+   BLEND_SRC_SRC=2,
+   BLEND_SRC_DEST=3,
+   BLEND_DEST_ONE=4,
+   BLEND_DEST_SRC=8,
+   BLEND_DEST_DEST=12
+} eBlendMode;
 
-    //fog
-    extern void lgd3d_set_fog_level(float fog_level);     // 0.0 <= fog_level <= 1.0
-    extern void lgd3d_set_fog_color(int r, int g, int b); // 0..255
-    extern void lgd3d_set_fog_enable(BOOL enable);
-    extern void lgd3d_set_fog_density(float density);
-    extern int lgd3d_is_fog_on(void);
 
-    //  linear table fog
+//efects:
+// color range is 0..255
+extern void lgd3d_set_chromakey(int red, int green, int blue);
 
-    // returns the previous setting
-    extern int lgd3d_use_linear_table_fog(int bUseIt);
+extern void lgd3d_set_dithering( int bOn );
+extern int lgd3d_is_dithering_on( void );
+	
+extern void lgd3d_set_antialiasing( int bOn );
+extern int lgd3d_is_antialiasing_on( void );
 
-    // fogginess:     (end)____
-    //               /
-    //  _____(start)/
+extern BOOL lgd3d_enable_specular( BOOL bUseIt );
 
-    // start and end are floats in "W-coordiantes", that is, in the [ z_near , z_far ].
-    extern void lgd3d_set_fog_start_end(float fStart, float fEnd);   //please, check that  z_near <= fStart < fEnd <= z_far
+//fog
+extern void lgd3d_set_fog_level(float fog_level);     // 0.0 <= fog_level <= 1.0
+extern void lgd3d_set_fog_color(int r, int g, int b); // 0..255
+extern void lgd3d_set_fog_enable(BOOL enable);
+extern void lgd3d_set_fog_density(float density);
+extern BOOL lgd3d_is_fog_on( void );
 
-    // set the distance at which we should have full fog (results vary for different video cards)
-    extern void lgd3d_set_linear_fog_distance(float fDistance);  //please, check that  fStart <= fDistance <= fEnd 
+//  linear table fog
+ 
+// returns the previous setting
+extern int lgd3d_use_linear_table_fog( BOOL bUseIt );
 
-    //Textures:
+// fogginess:     (end)____
+//               /
+//  _____(start)/
 
-    extern void lgd3d_set_texture_level(int n);
-    extern void lgd3d_get_texblending_modes(ulong* pulLevel0Mode, ulong* pulLevel1Mode);
+// start and end are floats in "W-coordiantes", that is, in the [ z_near , z_far ].
+extern void lgd3d_set_fog_start_end( float fStart, float fEnd );   //please, check that  z_near <= fStart < fEnd <= z_far
 
-    //texture manager
+// set the distance at which we should have full fog (results vary for different video cards)
+extern void lgd3d_set_linear_fog_distance( float fDistance );  //please, check that  fStart <= fDistance <= fEnd 
+
+//Textures:
+
+extern void lgd3d_set_texture_level( int n );
+extern void lgd3d_get_texblending_modes( ulong* pulLevel0Mode, ulong* pulLevel1Mode );
+
+//texture manager
 #define lgd3d_set_texture(bm) \
 do if (g_tmgr) g_tmgr->set_texture(bm); while (0)
 
@@ -254,155 +254,177 @@ do if (g_tmgr) g_tmgr->load_texture(bm); while (0)
 do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
 
 // procedural textures
-    extern void lgd3d_hack_light(r3s_point* p, float r);
-    extern void lgd3d_hack_light_extra(r3s_point* p, float r, grs_bitmap* bm);
+extern void lgd3d_hack_light(r3s_point *p, float r);
+extern void lgd3d_hack_light_extra(r3s_point *p, float r, grs_bitmap *bm);
 
-    // texture wrapping
-    //  TRUE == wrap the texture (texture is a torus), 
-    //  FALSE == clamp the texture (texture is a closed rectangle)
-    extern BOOL lgd3d_get_texture_wrapping(DWORD dwLevel);
-    extern BOOL lgd3d_set_texture_wrapping(DWORD dwLevel, BOOL bSetSmooth);
-
-
-    // palettes
-    extern void lgd3d_set_pal(uint start, uint n, uchar* pal);
-    extern void lgd3d_set_pal_slot(uint start, uint n, uchar* pal, int slot);
-    extern void lgd3d_set_pal_slot_flags(uint start, uint n, uchar* pal, int slot, int flags);
-
-    extern void lgd3d_get_trans_texture_bitmask(grs_rgb_bitmask* bitmask);
-    extern void lgd3d_get_opaque_texture_bitmask(grs_rgb_bitmask* bitmask);
-    extern void lgd3d_get_alpha_texture_bitmask(grs_rgb_bitmask* bitmask);
-
-    extern void lgd3d_set_texture_clut(uchar* clut);
-    extern uchar* lgd3d_set_clut(uchar* clut);
-
-    extern void lgd3d_disable_palette(void);
-    extern void lgd3d_enable_palette(void);
-
-    extern void lgd3d_set_alpha_pal(ushort* pal);
+// texture wrapping
+//  TRUE == wrap the texture (texture is a torus), 
+//  FALSE == clamp the texture (texture is a closed rectangle)
+extern BOOL lgd3d_get_texture_wrapping( DWORD dwLevel );
+extern BOOL lgd3d_set_texture_wrapping( DWORD dwLevel, BOOL bSetSmooth );
 
 
-    extern void lgd3d_set_offsets(int x, int y);
-    extern void lgd3d_get_offsets(int* x, int* y);
+// palettes
+extern void lgd3d_set_pal(uint start, uint n, uchar *pal);
+extern void lgd3d_set_pal_slot(uint start, uint n, uchar *pal, int slot);
+extern void lgd3d_set_pal_slot_flags(uint start, uint n, uchar *pal, int slot, int flags);
+
+extern void lgd3d_get_trans_texture_bitmask(grs_rgb_bitmask *bitmask);
+extern void lgd3d_get_opaque_texture_bitmask(grs_rgb_bitmask *bitmask);
+extern void lgd3d_get_alpha_texture_bitmask(grs_rgb_bitmask *bitmask);
+
+extern void lgd3d_set_texture_clut(uchar *clut);
+extern uchar *lgd3d_set_clut(uchar *clut);
+
+extern void lgd3d_disable_palette(void);
+extern void lgd3d_enable_palette(void);
+
+extern void lgd3d_set_alpha_pal(ushort *pal);
 
 
-
-    // drawing:
-
-    extern int lgd3d_draw_point(r3s_point* p);
-    extern void lgd3d_draw_line(r3s_point* p0, r3s_point* p1);
-
-
-    //Poligon Drowing states
-    //NOTE: for now it does *NOT* affect indexed and multytextured polies
-
-    typedef enum ePolyMode {
-        kLgd3dPolyModeFillWTexture = 0x00000001L,
-        kLgd3dPolyModeFillWColor = 0x00000002L,
-        kLgd3dPolyModeDrawEdges = 0x00000004L,  // use color
-
-        kLgd3dPolyModeDefault = 0x00000001L, // normal, == kLgd3dPolyModeFillTexture
-        kLgd3dPolyModeWireframe = 0x00000004L, // == kLgd3dPolyModeDrawEdges
-        kLgd3dPolyModeOutlineTex = 0x00000005L, // == kLgd3dPolyModeFillWTexture + kLgd3dPolyModeDrawEdges
-        kLgd3dPolyModeOutlineColor = 0x00000006L, // == kLgd3dPolyModeFillWColor + kLgd3dPolyModeDrawEdges
-
-        kLgd3dILLEGALPolyMode = 0x00000000L
-    } ePolyMode;
-
-    extern BOOL lgd3d_set_poly_mode(ePolyMode eNewMode);
-    extern ePolyMode lgd3d_get_poly_mode();
-
-
-    extern int lgd3d_trifan(int n, r3s_point** vpl);
-    extern int lgd3d_lit_trifan(int n, r3s_point** vpl);
-    extern int lgd3d_poly(int n, r3s_point** vpl);
-    extern int lgd3d_spoly(int n, r3s_point** vpl);
-    extern int lgd3d_g2upoly(int n, g2s_point** vpl);
-    extern int lgd3d_g2poly(int n, g2s_point** vpl);
-    extern int lgd3d_g2utrifan(int n, g2s_point** vpl);
-    extern int lgd3d_g2trifan(int n, g2s_point** vpl);
-
-
-    // r3d interface
-    typedef int (*tLgd3dDrawPolyFunc)(int n, r3s_phandle* pl);
-
-    extern tLgd3dDrawPolyFunc           lgd3d_draw_poly_func;
-
-    extern void lgd3d_tmap_setup(grs_bitmap* bm);
-    extern void lgd3d_lit_tmap_setup(grs_bitmap* bm);
-    extern void lgd3d_rgblit_tmap_setup(grs_bitmap* bm);
-    extern void lgd3d_rgbalit_tmap_setup(grs_bitmap* bm);
-    extern void lgd3d_rgbafoglit_tmap_setup(grs_bitmap* bm); // rgba + fog 
-    extern void lgd3d_diffspecular_tmap_setup(grs_bitmap* bm); // rgba + fog 
-    extern void lgd3d_poly_setup(grs_bitmap* bm);
-    extern void lgd3d_spoly_setup(grs_bitmap* bm);
-    extern void lgd3d_rgb_poly_setup(grs_bitmap* bm);
-    extern void lgd3d_rgba_poly_setup(grs_bitmap* bm);
-
-
-    // indexed primitives:
-
-    typedef int (*tLgd3dDrawPolyIndexedFunc)(int n, r3s_phandle* pl, r3ixs_info* info);
-
-    extern tLgd3dDrawPolyIndexedFunc    lgd3d_draw_poly_indexed_func;
-
-    typedef void (*fp_release_IP)(void);
-
-    extern fp_release_IP                lgd3d_release_ip_func;
-
-    extern int lgd3d_indexed_poly(int n, r3s_point** vpl, r3ixs_info* info);
-    extern int lgd3d_indexed_spoly(int n, r3s_point** vpl, r3ixs_info* info);
-    extern void lgd3d_rgblit_tmap_setup(grs_bitmap* bm);
-    extern int lgd3d_lit_indexed_trifan(int n, r3s_point** vpl, r3ixs_info* info);
-
-    extern void lgd3d_release_indexed_primitives(void);
+extern void lgd3d_set_offsets(int x, int y);
+extern void lgd3d_get_offsets(int *x, int *y);
 
 
 
-    ///////////////////////////////////
+// drawing:
 
-    // Multi texturing
+extern int lgd3d_draw_point(r3s_point *p);
+extern void lgd3d_draw_line(r3s_point *p0, r3s_point *p1);
 
-    //used for single level texturing
+
+//Poligon Drowing states
+//NOTE: for now it does *NOT* affect indexed and multytextured polies
+
+typedef enum ePolyMode{
+    kLgd3dPolyModeFillWTexture  = 0x00000001L,
+    kLgd3dPolyModeFillWColor    = 0x00000002L,   
+    kLgd3dPolyModeDrawEdges     = 0x00000004L,  // use color
+    
+    kLgd3dPolyModeDefault       = 0x00000001L, // normal, == kLgd3dPolyModeFillTexture
+    kLgd3dPolyModeWireframe     = 0x00000004L, // == kLgd3dPolyModeDrawEdges
+    kLgd3dPolyModeOutlineTex    = 0x00000005L, // == kLgd3dPolyModeFillWTexture + kLgd3dPolyModeDrawEdges
+    kLgd3dPolyModeOutlineColor  = 0x00000006L, // == kLgd3dPolyModeFillWColor + kLgd3dPolyModeDrawEdges
+
+    kLgd3dILLEGALPolyMode       = 0x00000000L
+} ePolyMode;
+
+extern BOOL lgd3d_set_poly_mode( ePolyMode eNewMode );
+extern ePolyMode lgd3d_get_poly_mode();
+
+
+extern int lgd3d_g2upoly(int n, g2s_point **vpl);
+extern int lgd3d_g2poly(int n, g2s_point **vpl);
+extern int lgd3d_g2utrifan(int n, g2s_point **vpl);
+extern int lgd3d_g2trifan(int n, g2s_point **vpl);
+
+
+// r3d interface
+typedef int (*tLgd3dDrawPolyFunc)(int n, r3s_phandle *pl);
+
+extern tLgd3dDrawPolyFunc           lgd3d_draw_poly_func;
+
+extern void lgd3d_tmap_setup(grs_bitmap *bm);
+extern void lgd3d_lit_tmap_setup(grs_bitmap *bm);
+extern void lgd3d_rgblit_tmap_setup(grs_bitmap *bm);
+extern void lgd3d_rgbalit_tmap_setup(grs_bitmap *bm);
+extern void lgd3d_rgbafoglit_tmap_setup(grs_bitmap *bm); // rgba + fog 
+extern void lgd3d_diffspecular_tmap_setup(grs_bitmap *bm); // rgba + fog 
+extern void lgd3d_poly_setup();
+extern void lgd3d_spoly_setup();
+extern void lgd3d_rgb_poly_setup();
+extern void lgd3d_rgba_poly_setup();
+
+
+// indexed primitives:
+
+typedef int (*tLgd3dDrawPolyIndexedFunc)( int n, r3s_phandle *pl, r3ixs_info *info );
+    
+extern tLgd3dDrawPolyIndexedFunc    lgd3d_draw_poly_indexed_func;
+
+typedef void (*fp_release_IP)( void );
+
+extern fp_release_IP                lgd3d_release_ip_func;
+
+
+extern int lgd3d_poly(int n, r3s_point **vpl);
+extern int lgd3d_indexed_poly(int n, r3s_point **vpl, r3ixs_info *info);
+
+extern int lgd3d_spoly(int n, r3s_point **vpl);
+extern int lgd3d_indexed_spoly(int n, r3s_point **vpl, r3ixs_info *info);
+
+extern int lgd3d_rgb_poly(int n, r3s_point **ppl);
+extern int lgd3d_rgb_indexed_poly(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_rgba_poly(int n, r3s_point **ppl);
+extern int lgd3d_rgba_indexed_poly(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_trifan(int n, r3s_point **vpl);
+extern int lgd3d_indexed_trifan(int n, r3s_point **vpl, r3ixs_info *info);
+
+extern int lgd3d_lit_trifan(int n, r3s_point **vpl);
+extern int lgd3d_lit_indexed_trifan(int n, r3s_point **vpl, r3ixs_info *info);
+
+extern int lgd3d_rgblit_trifan(int n, r3s_point **ppl);
+extern int lgd3d_rgblit_indexed_trifan(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_rgbalit_trifan(int n, r3s_point **ppl);
+extern int lgd3d_rgbalit_indexed_trifan(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_rgbafoglit_trifan(int n, r3s_point **ppl);
+extern int lgd3d_rgbafoglit_indexed_trifan(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern int lgd3d_diffspecular_trifan(int n, r3s_point **ppl);
+extern int lgd3d_diffspecular_indexed_trifan(int n, r3s_point **ppl, r3ixs_info *info);
+
+extern void lgd3d_release_indexed_primitives( void );
+
+
+
+///////////////////////////////////
+
+// Multi texturing
+
+//used for single level texturing
 #define LGD3DTB_MODULATE            0L    //default        
 #define LGD3DTB_MODULATEALPHA       1L
 #define LGD3DTB_BLENDDIFFUSE        2L
 
 #define LGD3DTB_NO_STATES           3L
 
-    extern void lgd3d_set_texture_map_method(ulong flag);
+extern void lgd3d_set_texture_map_method( ulong flag );
 
-    //2 levels texturing:
+//2 levels texturing:
 #define LGD3D_MULTITEXTURE_COLOR             0L  //default
 #define LGD3D_MULTITEXTURE_ALPHA             1L  
 #define LGD3D_MULTITEXTURE_BLEND_TEX_ALPHA   2L  
 
 #define LGD3D_MULTITEXTURE_NO_STATES         3L
 
-    extern void lgd3d_set_light_map_method(ulong flag); //from the above
+extern void lgd3d_set_light_map_method( ulong flag ); //from the above
 
 
-    // additional sets of texture coordinates are added
-    typedef struct {
-        float   u, v;
-    } LGD3D_tex_coord;
-
-
-
-
-    extern int lgd3d_TrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_LitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_RGBlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_RGBAlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_RGBAFoglitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_DiffuseSpecularMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-
-    extern int lgd3d_g2UTrifanMTD(int n, g2s_point** vpl, LGD3D_tex_coord** vptc);
-    extern int lgd3d_g2TrifanMTD(int n, g2s_point** vpl, LGD3D_tex_coord** vptc);
+// additional sets of texture coordinates are added
+typedef struct {
+    float   u, v;
+} LGD3D_tex_coord;
 
 
 
-    // error codes:( the first argument of "lgd3d_get_error" )
+
+extern int lgd3d_TrifanMTD( int n, r3s_point **ppl, LGD3D_tex_coord **pptc );
+extern int lgd3d_LitTrifanMTD( int n, r3s_point **ppl, LGD3D_tex_coord **pptc );
+extern int lgd3d_RGBlitTrifanMTD( int n, r3s_point **ppl, LGD3D_tex_coord **pptc );
+extern int lgd3d_RGBAlitTrifanMTD( int n, r3s_point **ppl, LGD3D_tex_coord **pptc );
+extern int lgd3d_RGBAFoglitTrifanMTD( int n, r3s_point **ppl, LGD3D_tex_coord **pptc );
+extern int lgd3d_DiffuseSpecularMTD( int n, r3s_point **ppl, LGD3D_tex_coord **pptc );
+
+extern int lgd3d_g2UTrifanMTD( int n, g2s_point **vpl, LGD3D_tex_coord **vptc );
+extern int lgd3d_g2TrifanMTD( int n, g2s_point **vpl, LGD3D_tex_coord **vptc );
+
+
+
+// error codes:( the first argument of "lgd3d_get_error" )
 #define LGD3D_EC_OK                             0L
 #define LGD3D_EC_DD_KAPUT                       1L
 #define LGD3D_EC_RESTORE_ALL_SURFS              2L
@@ -428,11 +450,21 @@ do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
 
 
 
-    BOOL lgd3d_get_error(DWORD* pdwCode, DWORD* phResult);
+BOOL lgd3d_get_error( DWORD* pdwCode, DWORD* phResult );
+const char* GetDDErrorMsg(long hRes);
+void SetLGD3DErrorCode(DWORD dwCode, DWORD hResult);
+const char* GetLgd3dErrorCode(DWORD dwErrorCode);
 
+extern uchar* texture_clut, *lgd3d_clut;
+extern BOOL lgd3d_punt_d3d;
+extern BOOL g_bWFog;
+extern double z_near, z_far;
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+
+
+

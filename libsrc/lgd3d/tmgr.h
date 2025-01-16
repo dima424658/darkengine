@@ -1,3 +1,8 @@
+/*
+@Copyright Looking Glass Studios, Inc.
+1996,1997,1998,1999,2000 Unpublished Work.
+*/
+
 // $Header: x:/prj/tech/libsrc/lgd3d/RCS/tmgr.h 1.18 1998/09/18 16:13:05 KEVIN Exp $
 #ifndef __TMGR_H
 #define __TMGR_H
@@ -12,6 +17,11 @@ typedef struct grs_bitmap grs_bitmap;
 #define BMF_LOADED 0x40
 
 #define TMGRF_SPEW 1
+
+#define TF_ALPHA 1
+#define TF_RGB 2
+#define TF_TRANS 4
+
 
 typedef struct texture_manager {
    int (*init)(grs_bitmap *bm, int max_textures, int *texture_size_list, int num_texture_sizes, int flags);
@@ -30,19 +40,34 @@ typedef struct texture_manager {
    void (*reload_texture)(grs_bitmap *bm);
 } texture_manager;
 
-/*
-typedef struct texture_driver texture_driver;
+typedef struct tmap_chain
+{
+	int head;
+} tmap_chain;
 
-extern texture_manager *get_block_texture_manager(texture_driver *driver);
-extern texture_manager *get_dopey_texture_manager(texture_driver *driver);
-//*/
+typedef struct tmgr_texture_info
+{
+	grs_bitmap* bitmap;
+	uchar* bits;
+	int frame;
+	uchar* clut;
+	int next;
+	int size_index;
+	ulong cookie;
+} tmgr_texture_info;
+
 
 //zb
-extern texture_manager *get_block_texture_manager( void* driver );
 extern texture_manager *get_dopey_texture_manager( void* driver );
 
 
 extern texture_manager        *g_tmgr;       // this is kinda silly, but it'll do for now...
+
+/* tdrv.h infos */
+#define TMGR_ID_SOLID     -1
+#define TMGR_ID_CALLBACK  -2
+#define TMGR_ID_INVALID   -3
+/* tdrv end */
 
 #ifdef __cplusplus
 }

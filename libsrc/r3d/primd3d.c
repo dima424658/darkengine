@@ -18,8 +18,12 @@ static poly_setup_func poly_lgd3d_setup_funcs[] =
    lgd3d_spoly_setup,        //      solid gouraud clipped
    lgd3d_rgb_poly_setup,     //      solid rgb gouraud
    lgd3d_rgb_poly_setup,     //      solid rgb gouraud clipped
-   lgd3d_poly_setup_null,    //      solid pal gouraud
-   lgd3d_poly_setup_null,    //      solid pal gouraud clipped
+   lgd3d_rgba_poly_setup,    //      solid pal gouraud
+   lgd3d_rgba_poly_setup,    //      solid pal gouraud clipped
+   lgd3d_rgba_poly_setup,
+   lgd3d_rgba_poly_setup,
+   lgd3d_rgba_poly_setup,
+   lgd3d_rgba_poly_setup,
 
    // 4
    lgd3d_poly_setup_null,    //      transluc unlit
@@ -30,6 +34,10 @@ static poly_setup_func poly_lgd3d_setup_funcs[] =
    lgd3d_poly_setup_null,    //      transluc rgb gouraud clipped
    lgd3d_poly_setup_null,    //      transluc pal gouraud
    lgd3d_poly_setup_null,    //      transluc pal gouraud clipped
+   lgd3d_poly_setup_null,
+   lgd3d_poly_setup_null,
+   lgd3d_poly_setup_null,
+   lgd3d_poly_setup_null,
 
    // 8
    lgd3d_tmap_setup,         //      texture unlit
@@ -38,8 +46,12 @@ static poly_setup_func poly_lgd3d_setup_funcs[] =
    lgd3d_lit_tmap_setup,     //      texture gouraud clipped
    lgd3d_rgblit_tmap_setup,  //      texture rgb gouraud
    lgd3d_rgblit_tmap_setup,  //      texture rgb gouraud clipped
-   lgd3d_poly_setup_null,    //      texture pal gouraud
-   lgd3d_poly_setup_null,    //      texture pal gouraud clipped
+   lgd3d_rgbalit_tmap_setup, //      texture pal gouraud
+   lgd3d_rgbalit_tmap_setup, //      texture pal gouraud clipped
+   lgd3d_rgbafoglit_tmap_setup,
+   lgd3d_rgbafoglit_tmap_setup,
+   lgd3d_diffspecular_tmap_setup,
+   lgd3d_diffspecular_tmap_setup,
 
    // 16
    lgd3d_tmap_setup,         //      texture unlit
@@ -48,8 +60,12 @@ static poly_setup_func poly_lgd3d_setup_funcs[] =
    lgd3d_lit_tmap_setup,     //      texture gouraud clipped
    lgd3d_rgblit_tmap_setup,  //      linear rgb gouraud
    lgd3d_rgblit_tmap_setup,  //      linear rgb gouraud clipped
-   lgd3d_poly_setup_null,    //      linear pal gouraud
-   lgd3d_poly_setup_null     //      linear pal gouraud clipped
+   lgd3d_rgbalit_tmap_setup, //      linear pal gouraud
+   lgd3d_rgbalit_tmap_setup, //      linear pal gouraud clipped
+   lgd3d_rgbafoglit_tmap_setup,
+   lgd3d_rgbafoglit_tmap_setup,
+   lgd3d_diffspecular_tmap_setup,
+   lgd3d_diffspecular_tmap_setup
 };
 
 static int lgd3d_convert(int n, r3s_phandle *vp)

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -17,6 +17,31 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="d6Base.cpp" />
+    <ClCompile Include="d6Enum.cpp" />
+    <ClCompile Include="d6Frame.cpp" />
+    <ClCompile Include="d6Intfc.cpp" />
+    <ClCompile Include="d6Over.cpp" />
+    <ClCompile Include="d6Prim.cpp" />
+    <ClCompile Include="d6Prim_s.cpp" />
+    <ClCompile Include="d6Render.cpp" />
+    <ClCompile Include="d6Sts_s.cpp" />
+    <ClCompile Include="lgd3d_g.cpp" />
+    <ClCompile Include="lgSurf.cpp" />
+    <ClCompile Include="texmgr.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="d6Frame.h" />
+    <ClInclude Include="d6Over.h" />
+    <ClInclude Include="d6Prim.h" />
+    <ClInclude Include="d6Render.h" />
+    <ClInclude Include="d6States.h" />
+    <ClInclude Include="lgd3d.h" />
+    <ClInclude Include="lgSS2P.h" />
+    <ClInclude Include="lgSurf_i.h" />
+    <ClInclude Include="tmgr.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -90,6 +115,7 @@
       <ConformanceMode>true</ConformanceMode>
       <ForcedIncludeFiles>types.h</ForcedIncludeFiles>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -150,29 +176,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="d3dmacs.h" />
-    <ClInclude Include="d3dpoint.h" />
-    <ClInclude Include="d3dtest.h" />
-    <ClInclude Include="lgd3d.h" />
-    <ClInclude Include="lgSS2P.h" />
-    <ClInclude Include="setup.h" />
-    <ClInclude Include="tdrv.h" />
-    <ClInclude Include="texture.h" />
-    <ClInclude Include="tmgr.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="blit.c" />
-    <ClCompile Include="clip.c" />
-    <ClCompile Include="comshell.c" />
-    <ClCompile Include="d6sts_s.cpp" />
-    <ClCompile Include="enum.cpp" />
-    <ClCompile Include="lgd3d.cpp" />
-    <ClCompile Include="render.c" />
-    <ClCompile Include="setup.c" />
-    <ClCompile Include="texture.c" />
-    <ClCompile Include="tmgr.c" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

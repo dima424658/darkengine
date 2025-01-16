@@ -15,22 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="tdrv.h">
+    <ClInclude Include="d6Over.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="texture.h">
+    <ClInclude Include="d6Prim.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tmgr.h">
+    <ClInclude Include="d6Render.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="d3dmacs.h">
+    <ClInclude Include="d6States.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="d3dpoint.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="d3dtest.h">
+    <ClInclude Include="lgSurf_i.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lgd3d.h">
@@ -39,39 +36,48 @@
     <ClInclude Include="lgSS2P.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="setup.h">
+    <ClInclude Include="tmgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d6Frame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="texture.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="tmgr.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="blit.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="clip.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="comshell.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="enum.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="render.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="setup.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="lgd3d.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="d6sts_s.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6Base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6Enum.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6Frame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6Intfc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6Over.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6Prim_s.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6Render.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgd3d_g.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgSurf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="texmgr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d6Prim.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
