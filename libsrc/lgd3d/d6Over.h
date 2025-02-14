@@ -30,45 +30,44 @@ struct sBaseOverData
 };
 
 class cD6OverlayHandler;
-class cD6AlphaOverlay;
 
 class cD6OvelayType {
-    cD6OvelayType(const class cD6OvelayType &);
-    cD6OvelayType();
-    virtual ~cD6OvelayType();
+    virtual ~cD6OvelayType() = default;
 
-    void TurnOnOff(bool bOn);
-    virtual void DrawOverlay();
+    void TurnOnOff(BOOL bOn) { m_bTurnedOff = bOn == FALSE; }
+    virtual void DrawOverlay() { }
 
-    unsigned long m_dwID;
+    DWORD m_dwID;
     cD6OverlayHandler * m_pcParent;
     cD6OvelayType * m_pcNext;
     cD6OvelayType * m_pcPrevious;
-    int m_bVisible;
-    int m_bTurnedOff;
+    BOOL m_bVisible;
+    BOOL m_bTurnedOff;
 };
 
 class cD6OverlayHandler
 {
 public:
-    cD6OverlayHandler(const cD6OverlayHandler&);
     cD6OverlayHandler();
     ~cD6OverlayHandler();
 
-    void AddOverlay(cD6OvelayType* pcNewOver, unsigned long* phOver);
-    void InsertOverlayAfter(cD6OvelayType* pcNewOver, cD6OvelayType* pcAfterOver, unsigned long* phOver);
+    void AddOverlay(cD6OvelayType* pcNewOver, DWORD* phOver);
+    void InsertOverlayAfter(cD6OvelayType* pcNewOver, cD6OvelayType* pcAfterOver, DWORD* phOver);
     void RemoveOverlay(cD6OvelayType* pcOver);
     void RemoveAllOverlays();
     void KillBranch(cD6OvelayType* pcOver);
     void SetClipViewport(sOverRectangle* psInRect);
     void GetClipViewport(sOverRectangle* psInRect);
     void DrawOverlays();
-    int OverlayFromHandle(unsigned long hOver, cD6OvelayType** ppcAlphaOver);
-    int AlphaOverlayFromHandle(unsigned long hOver, cD6AlphaOverlay** ppcAlphaOver);
-    unsigned long MakeNewOverlayHandle(cD6OvelayType* pcOver);
+    BOOL OverlayFromHandle(DWORD hOver, cD6OvelayType** ppcAlphaOver);
+    BOOL AlphaOverlayFromHandle(DWORD hOver, cD6OvelayType** ppcAlphaOver);
+    DWORD MakeNewOverlayHandle(cD6OvelayType* pcOver);
 
 private:
     cD6OvelayType m_cListHead;
+    sOverRectangle m_viewRect;
+
+    static DWORD s_dwIdGenerator;
 };
 
 extern cD6OverlayHandler* pcOverlayHandler;
