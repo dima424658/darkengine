@@ -1,47 +1,57 @@
-# Dark Engine / Thief 2 runner and DromEd viewer
+# Dark Engine restoration for Windows and Linux
 
-This repository restores the historical Dark Engine sources as a Visual
-Studio 2022 project. The shared executable project builds both a Thief 2
-runner with an in-game command console and a preliminary DromEd mission
-viewer.
+This repository restores the historical Dark Engine sources as a portable,
+working codebase. It builds a Thief 2 runner on Windows and Linux, plus a
+preliminary Windows DromEd mission viewer. The engine core is shared across
+platforms; operating-system, rendering, input, audio, movie, and filesystem
+services are supplied by platform backends.
 
 The repository does not include Thief 2 missions, movies, sounds, scripts, or
 other retail assets. A legally obtained installation of *Thief II: The Metal
 Age* is required to run the game.
 
-## Current status
+## Platform status
 
-The Release/x86 Thief 2 and DromEd targets build successfully with the Visual
-Studio 2022 v143 toolset. Release/x64 builds also compile and run, but remain
-under runtime validation. Both use the modern D3D11 renderer and presentation
-path. Thief 2 can use an external retail installation and retains the standard
-startup sequence, mission loading, game UI, inventory, and automap. The DromEd
-build can load, inspect, and playtest legacy Thief 2 missions in a normal
-resizable window, using the full client area when the window size changes.
-Treat it as a viewer, not a reliable editor: editing and saving workflows are
-not yet stable or comprehensively validated, and NewDark formats and features
-are not supported.
+| Capability | Windows x86 | Windows x64 | Linux x64 |
+| --- | --- | --- | --- |
+| Thief 2 | Playable | Playable; broader validation ongoing | Playable early port |
+| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Not implemented |
+| Graphics | D3D11 | D3D11 | SDL2/OpenGL |
+| Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft |
+| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | Not implemented |
+| Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
+| Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja |
 
-Native x64 builds include a compatibility runtime for legacy 32-bit `.osm`
-script modules. It reads PE32 modules, interprets the IA-32 code, and bridges
-the supported script-manager and engine-service calls into the 64-bit process.
-This is separate from NewDark's Squirrel support and is still being expanded
-and validated against third-party OSMs.
+The Windows Release targets build with the Visual Studio 2022 v143 toolset.
+The x86 builds are the established target; native x64 builds compile and run
+but remain under active runtime validation. The Linux CMake target builds a
+native 64-bit ELF executable that can load retail missions and run gameplay.
 
-Modern scene submission now crosses the platform-neutral
-`h/render_backend.h` boundary. The Windows display and D3D11 providers live
-under `winsrc/dispdev` and `winsrc/render`; engine, UI, movie, and `lgd3d` code no longer call a
-D3D11-named API directly. This is the renderer seam for a future OpenGL
-provider, but an OpenGL implementation and a complete non-Windows build do
-not exist yet.
+Thief2 retains mission loading, the game UI, inventory, automap, and the
+in-game command console. On Windows it also retains the normal startup and
+movie flow. DromEd can load, inspect, and playtest legacy Thief 2 missions in
+a resizable window, but should still be treated as a viewer rather than a
+dependable editor. Editing and save integrity are not comprehensively
+validated, and NewDark formats and features are not supported.
+
+### Cross-platform architecture
+
+Modern scene submission crosses the platform-neutral `h/render_backend.h`
+boundary. Windows supplies D3D11 display and rendering providers under
+`winsrc`; Linux supplies SDL2/OpenGL providers under `unixsrc`. Engine, UI,
+movie, and `lgd3d` code use the shared renderer boundary rather than calling a
+platform graphics API directly.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
-synchronization, and filesystem conveniences now cross `platform_services.h`
-and `platform_io.h`. Windows providers live under `winsrc`; Unix providers
-live under `unixsrc`. On Linux, CMake builds a native 64-bit `Thief2` executable
-with SDL2/OpenGL presentation and runtime-loaded OpenAL audio. The Linux target
-can load a retail mission and run gameplay, but remains an early port: movie
-playback, complete OSM service bridging, and DromEd are not yet implemented.
+synchronization, and filesystem operations cross `platform_services.h` and
+`platform_io.h`. The shared engine retains its historical data layouts while
+the compatibility headers isolate Windows and LP64 ABI differences.
+
+Native 64-bit builds include a compatibility runtime for legacy 32-bit `.osm`
+script modules. It reads PE32 modules, interprets IA-32 code, and bridges the
+supported script-manager and engine-service calls into the host process. This
+is separate from NewDark's Squirrel support and is still being expanded and
+validated against third-party OSMs.
 
 Audio follows the same provider model. Windows uses DirectSound 3D by default,
 with native I3DL2 environmental reverb. An OpenAL provider supplies positional
@@ -52,20 +62,24 @@ cannot initialize, so the standard executable has no OpenAL dependency.
 
 Movie playback is exposed through the platform-neutral engine movie API. The
 Windows Media Foundation, DirectShow, and legacy DirectDraw implementation is
-isolated under `winsrc/movie` so another platform can supply its own backend.
+isolated under `winsrc/movie`; the Linux backend currently reports movies as
+unavailable without coupling that limitation to the engine core.
 
 Legacy PKWARE DCL-compressed resources are decoded in-process with Mark
 Adler's small `blast` decoder under `3rdparty/blast`; newly written resources
 use the engine's existing LZW codec. No external compression DLL is required.
 
+### Thief2 runner features
+
 The runner currently provides:
 
-- first-run selection and validation of a Thief 2 data directory;
-- reuse of the selected directory on later launches;
+- use of an external retail Thief 2 installation without copying its data;
+- first-run data-directory selection and reuse on Windows;
 - native display-resolution defaults when the user has not configured a
   resolution;
 - borderless fullscreen and resizable windowed presentation;
-- the standard splash/startup, intro movie, and main-menu flow; and
+- the standard Windows splash, startup, movie, and main-menu flow;
+- direct mission startup and unattended frame-limited smoke tests; and
 - a configurable command console, defaulting to `:` and `;` in every mode.
 
 ## Requirements
@@ -110,7 +124,7 @@ x64 build.
 
 ## Build instructions
 
-### Native Linux / WSL2
+### Linux / WSL2
 
 Keep the source and build trees in the Linux filesystem for good build
 performance. From a WSL shell:
@@ -124,19 +138,8 @@ cmake --build ~/darkengine-build -j "$(nproc)"
 ```
 
 The result is `~/darkengine-build/Thief2`, a native 64-bit ELF executable.
-Run it with the retail installation as the working directory because the
-engine resolves configuration and resource paths relative to that directory:
 
-```sh
-cd "/mnt/c/Games/Thief 2 - The Metal Age"
-~/darkengine-build/Thief2 quickstart=MISS1.MIS
-```
-
-For an unattended smoke test, add `auto_stop=60`. Paths on `/mnt/c` work but
-load more slowly than native Linux filesystems because Dark performs many
-small, case-insensitive resource lookups.
-
-### Thief 2 in Visual Studio
+### Windows with Visual Studio
 
 1. Open `thief2.sln` in Visual Studio 2022.
 2. Select the `Release` configuration and `x86` solution platform.
@@ -149,7 +152,7 @@ packing and C-language compatibility settings required by the legacy code.
 The game and editor intentionally use the same `src\dromed.vcxproj`; the
 `BuildThief2` property selects which source set and executable name it emits.
 
-### Developer Command Prompt
+### Windows command line
 
 From an **x86 Native Tools Command Prompt for VS 2022**, run:
 
@@ -188,7 +191,27 @@ build\Release\x64\DromEd\DromEd.exe
 Static libraries remain shared between Thief2 and DromEd within a given
 architecture. They must not vary with `BuildThief2`.
 
-## Run instructions
+## Running
+
+The executables read retail data in place; they do not copy it into this
+repository.
+
+### Linux
+
+Run the native executable with the retail installation as the working
+directory because Dark resolves configuration and resources relative to that
+directory:
+
+```sh
+cd "/mnt/c/Games/Thief 2 - The Metal Age"
+~/darkengine-build/Thief2 quickstart=MISS1.MIS
+```
+
+For an unattended smoke test, add `auto_stop=60`. Retail data on `/mnt/c`
+works under WSL2 but loads more slowly than data in the Linux filesystem
+because Dark performs many small, case-insensitive resource lookups.
+
+### Windows
 
 1. Start `build\Release\Win32\Thief2\Thief2.exe`.
 2. On the first launch, select the root of the Thief 2 installation. This is
@@ -210,7 +233,7 @@ for a new directory. To choose a different directory while the old one is
 still valid, remove the `GameDataPath` value with Registry Editor and launch
 the executable again.
 
-### Run the DromEd viewer
+### DromEd on Windows
 
 DromEd uses the same Thief 2 data-directory selection as the game runner. Start
 it directly from the build output:
@@ -416,16 +439,16 @@ repository.
   compatibility facade over the renderer-neutral backend. The unusable
   Direct3D 2 implementation and its dormant build sources have been removed;
   callers still need migration away from the facade itself.
-- The native 64-bit build still needs broader mission, save/load, and editing
+- The native 64-bit builds still need broader mission and save/load
   validation. The renderer also still uses a 16-bit internal canvas despite
-  presenting a 32-bit D3D11 image, so full 32-bit scene rendering remains to
-  be implemented.
+  presenting through 32-bit D3D11 or OpenGL output, so full 32-bit scene
+  rendering remains to be implemented.
 - Native-resolution, high-DPI, window resizing, and ultrawide behavior need
   testing across more GPUs and display configurations.
-- Gamma correction is implemented in the D3D11 presentation path. Visual
-  equivalence of shadow detail, lightmaps, and emissive-looking light-source
-  textures still needs comparison against the retail renderer on additional
-  displays.
+- Gamma correction is implemented in the Windows D3D11 presentation path.
+  Equivalent Linux/OpenGL behavior and broader visual comparison of shadow
+  detail, lightmaps, and emissive-looking light-source textures remain to be
+  completed.
 - The first-run picker and startup path need clean-machine testing against the
   common CD, GOG, and Steam directory layouts.
 - NewDark data formats are not supported. This affects both the runner's mod
@@ -459,8 +482,8 @@ repository.
   perception behavior has not been exhaustively verified for every mission.
 - Keyboard-layout behavior for the default `:` and `;` console bindings needs
   broader testing on non-US layouts.
-- The four supported Release targets currently compile and link without
-  warnings at the configured warning level. Raising that level and enabling
+- The four Windows Release targets and native Linux Thief2 target compile and
+  link with their configured toolchains. Raising warning levels and enabling
   additional static analysis remain future work.
 - Automated runtime tests are limited because licensed retail data cannot be
   included in the repository or continuous-integration environment.
