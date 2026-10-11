@@ -40,8 +40,9 @@ static IRes* gpFontRes;
 static IGameShell* gpGameShell; 
 static int gTextRGB[3] = { 0xFF, 0xFF, 0xFF }; 
 static int gTextMargins[] = { 10, 5 }; // x,y margins in % of screen 
+static short gLastTextBottom;
 
-void init_commands(); 
+static void init_commands();
 
 //
 // Init/Term
@@ -93,43 +94,56 @@ void DarkMessage(const char* msg)
 
 void DarkMessageUpdateFrame(void)
 {
-   ulong time = gpGameShell->GetTimerTick();  
-   if (time < gMsg.timeout)
+   Rect r = { 0, 0, grd_canvas->bm.w, grd_canvas->bm.h };
+   BOOL drawText = gpGameShell->GetTimerTick() < gMsg.timeout;
+
+   // compute margins
+   // left margin
+   r.ul.x = gTextMargins[0]*RectWidth(&r)/100;
+   // right margin
+   r.lr.x -= r.ul.x;
+
+   // top margin
+   r.ul.y = gTextMargins[1]*RectHeight(&r)/100;
+
+   char* s = NULL;
+   grs_font* font = NULL;
+   short w = 0;
+   short h = 0;
+   if (drawText)
    {
-      Rect r = { 0, 0, grd_canvas->bm.w, grd_canvas->bm.h }; 
+      s = (char*)(const char*)gMsg.text;
+      font = (grs_font*)gpFontRes->Lock();
+      gr_font_string_wrap(font,s,RectWidth(&r));
 
-      // compute margins
-      // left margin
-      r.ul.x = gTextMargins[0]*RectWidth(&r)/100; 
-      // right margin 
-      r.lr.x -= r.ul.x; 
+      gr_font_string_size(font,s,&w,&h);
+      r.lr.y = r.ul.y + h;
+      if (r.lr.y < gLastTextBottom)
+         r.lr.y = gLastTextBottom;
+   }
+   else
+      r.lr.y = gLastTextBottom;
 
-      // top margin 
-      r.ul.y = gTextMargins[1]*RectHeight(&r)/100; 
+   if (r.lr.y <= r.ul.y)
+      return;
 
-      char* s = (char*)(const char*)gMsg.text; 
-      grs_font* font = (grs_font*)gpFontRes->Lock(); 
-      gr_font_string_wrap(font,s,RectWidth(&r)); 
+   GUIcompose c;
+   GUIsetup(&c,&r,(GUIcomposeFlags)(ComposeFlagRead|ComposeFlagClear),GUI_CANV_ANY);
 
-      short w,h;
-      gr_font_string_size(font,s,&w,&h); 
-      r.lr.y = r.ul.y + h; 
-
-      GUIcompose c; 
-      GUIsetup(&c,&r,ComposeFlagRead,GUI_CANV_ANY); 
-
-      int x = (RectWidth(&r) - w)/ 2; 
+   if (drawText)
+   {
+      int x = (RectWidth(&r) - w)/2;
       gr_set_font(font); 
       int color = gr_make_screen_fcolor(gMsg.color); 
       gr_set_fcolor(color); 
-      gr_string(s,x,0); 
+      gr_string(s,x,0);
 
-      GUIdone(&c); 
-
-      gr_font_string_unwrap(s); 
-
-      gpFontRes->Unlock(); 
+      gr_font_string_unwrap(s);
+      gpFontRes->Unlock();
    }
+   gLastTextBottom = drawText ? r.ul.y + h : 0;
+
+   GUIdone(&c);
 }
 
 static Command commands[] = 
