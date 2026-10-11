@@ -1927,6 +1927,19 @@ void InvUIEnterMode(BOOL resuming)
    config_get_float("inv_status_margin",&gStatusMargin);
 
    config_get_int("inv_enabled",&enable_inv);
+
+#ifdef THIEF2_GAME
+   // A raw mission file has player contents but no saved PlayerInv selection
+   // block. The normal mission/loadout path establishes these selections;
+   // quickstart deliberately bypasses it, so do the equivalent once here.
+   if (!resuming && config_is_defined("quickstart"))
+   {
+      if (pInventory->Selection(kCurrentWeapon) == OBJ_NULL)
+         cycle_weapon_command(kCycleForward);
+      if (pInventory->Selection(kCurrentItem) == OBJ_NULL)
+         cycle_item_command(kCycleForward);
+   }
+#endif
 }
 
 void InvUIRefresh(void)
