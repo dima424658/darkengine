@@ -29,7 +29,7 @@ void AverageTimerOutputResult(const char * pszName, double avg, ulong max, ulong
    char buf[256];
    
    sprintf(buf, 
-          "%7lu ms; %6lu iters; avg %#8.6f ms;%3lu;%3lu: %-22s\n",
+          "%7u ms; %6u iters; avg %#8.6f ms;%3u;%3u: %-22s\n",
           totalTime, iters, avg, max, min, pszName);
    
    mprint(buf);

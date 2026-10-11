@@ -133,9 +133,7 @@ typedef struct _GUID CLSID;
 #include <winerror.h>
 #include <basetyps.h>
 #else
-//#error "Need objbase.h equivalent for target platform"
-#include <nt\winerror.h>
-#include <nt\basetyps.h>
+#include <com_compat.h>
 #endif
 
 

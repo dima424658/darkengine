@@ -31,10 +31,10 @@ public:
    long           Decompress( char *pIn, short *pOut, long nSamps );
 
    // return packed compressor state
-   unsigned long  GetState( void );
+   uint32         GetState( void );
 
    // set compressor state
-   void           SetState( unsigned long );
+   void           SetState( uint32 );
 
 private:
    /* compressor state maintained between blocks */
@@ -67,7 +67,7 @@ long DecompressIMABlock( char *pIn, short *pOut, long nSamps, int nChans );
 //  decompressor state between calls in the same block
 //
 char *DecompressIMABlockPartial( char *pIn, short *pOut, long nSamps,
-                                 BOOL getHeader, unsigned long *pState );
+                                 BOOL getHeader, uint32 *pState );
 
 // this is the header that starts each ADPCM block
 //  it needs to be public because app needs to know its size to

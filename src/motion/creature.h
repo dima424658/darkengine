@@ -81,7 +81,7 @@ public:
 //
    virtual void SetMotorResolver(IMotorResolver *pResolver);
    virtual int  GetActorType();
-   virtual void StartMotion(const int motionNum) { StartMotionWithParam(motionNum,NULL,0,NULL); }
+   virtual void StartMotion(const int motionNum) { StartMotionWithParam(motionNum, NULL, 0, 0); }
    virtual void StartMotionWithParam(const int motionNum,mps_motion_param *pParam,ulong flags,int startFrame);
    virtual void PoseAtMotionFrame(int motNum, float frame);
    virtual int  SwizzleMotion(int motNum);

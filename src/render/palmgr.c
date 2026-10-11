@@ -166,7 +166,7 @@ void calc_ipal(uchar *pal_data, uchar *ipal)
 static int get_extra_rows()
 {
 #if defined(SOFTWARE_RGB)
-   static init;
+   static int init;
    static BOOL fHardwareOnlyTerrain;
 
    if (!init)

@@ -63,8 +63,8 @@ extern "C" void (*portal_post_render_cback)(void);
 extern "C" BOOL g_lgd3d;
 
 // predeclarations
-void SetDerivedGlobals();
-void CheckForWeatherCells();
+static void SetDerivedGlobals();
+static void CheckForWeatherCells();
 
 
 /* --<<= -+-/-/-/=/=/\/- <<< ((( ((( / \ ))) ))) >>> -\/\=\=\-\-\-+- =>>-- *\

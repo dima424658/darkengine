@@ -142,7 +142,7 @@ STDMETHODIMP cAIManager::MakeProxyAI(ObjID id, ObjID targetPlayer)
    m_pTransferAIMsg->Send(targetPlayer, id,
                           pTransfer->size, pTransfer->pData);
 
-   delete pTransfer->pData;
+   delete static_cast<sTransferData *>(pTransfer->pData);
    delete pTransfer;
 
    sAIProp * pAIProp = AIGetProperty(g_pAIProperty, id, (sAIProp *) NULL);

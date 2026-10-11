@@ -225,7 +225,7 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 	if (fFrameHeapchk)
 		PlatformHeapCheck();
 
-	if (message & (kMsgSuspendMode || kMsgEnd))
+	if (message & (kMsgSuspendMode | kMsgEnd))
 		m_TotalModeTime.Stop();
 
 	if (fLoopTime)
@@ -240,7 +240,7 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 				m_aClientInfo[j].timer.Mark();
 		}
 
-		if (message & (kMsgSuspendMode || kMsgEnd))
+		if (message & (kMsgSuspendMode | kMsgEnd))
 		{
 			if (m_AverageFrameTimer.IsActive())
 			{

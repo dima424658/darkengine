@@ -601,7 +601,7 @@ static void RenderHardwareFadeMulticolor(ParticleGroup *pg, int *list, mxs_real 
 
       if (p->ccodes) continue;
 
-      h  = max(1.1f, hs * p->grp.w);
+      h  = __max(1.1f, hs * p->grp.w);
 
       if (tm < pg->fade_time)
          c = ((pg->ca) * tm / pg->fade_time) >> 4;
@@ -641,7 +641,7 @@ static void RenderHardwareFade(ParticleGroup *pg, int *list, mxs_real hs, int n)
 
       if (p->ccodes) continue;
 
-      h  = max(1.1f, hs * p->grp.w);
+      h  = __max(1.1f, hs * p->grp.w);
 
       if (tm < pg->fade_time)
          c = ((pg->ca) * tm / pg->fade_time) >> 4;
@@ -660,7 +660,7 @@ static void RenderHardwareNoFade(ParticleGroup *pg, int *list, mxs_real hs, int 
       float h;
       if (list) p = &pg->points[list[i]];
       if (p->ccodes) continue;
-      h  = max(1.1f, hs * p->grp.w);
+      h  = __max(1.1f, hs * p->grp.w);
       lgd3d_hack_light_extra(p, h, bm);
    }
 }

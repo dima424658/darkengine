@@ -2333,8 +2333,6 @@ void cCreature::PostUpdateFilter(const ulong dt)
       if (m_trackingObj == 0)
          m_trackingObj = m_MotorState.focus;
 
-      #define sq(x)  ((x) * (x))
-
       int head_joint_id = GetCreatureJointID(m_ObjID, kCJ_Neck);
       int neck_joint_id = GetCreatureJointID(m_ObjID, kCJ_Abdomen);
 
@@ -2360,7 +2358,7 @@ void cCreature::PostUpdateFilter(const ulong dt)
             ObjPos * pPos = ObjPosGet(m_trackingObj);
             if (!pPos)
             {
-               m_trackingObj = NULL;
+               m_trackingObj = OBJ_NULL;
                return;
             }
             to_target = pPos->loc.vec;
@@ -2559,7 +2557,7 @@ BOOL cCreature::MakePhysical()
    const sCreatureDesc *pCDesc=g_pCreatureDescPtr[m_CreatureType];
    int i;
    ObjID objID=m_ObjID;
-   ulong flags=NULL;
+   ulong flags = 0;
 
    if(!pCDesc->nPhysModels)
       return FALSE;
@@ -3507,7 +3505,7 @@ void cCreature::StartMotionWithParam(const int motionNum, mps_motion_param *pPar
    mps_start_info info;
    mps_motion_param defParam;
 
-   info.flags=NULL;
+   info.flags = 0;
 
    if(motionNum<0 || motionNum>=mp_num_motions)
       Warning(("cCreature::StartMotionWithParam, bad motion number %d\n",motionNum));
@@ -3565,7 +3563,7 @@ void cCreature::StartMotionWithParam(const int motionNum, mps_motion_param *pPar
       defParam=*pParam;
    } else
    {
-      defParam.flags=NULL;
+      defParam.flags = 0;
    }
    if(IsBallistic()) // ignore params that affect xlat
    {

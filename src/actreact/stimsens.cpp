@@ -273,7 +273,7 @@ public:
 
    STDMETHOD_(int,Version)() { return kVerCurrent;};
 
-   STDMETHOD_(long,Write)(sDatum dat, IDataOpsFile* file)
+   STDMETHOD(Write)(sDatum dat, IDataOpsFile* file)
    {
       const sReceptron* tron = (const sReceptron*)dat.value;
 
@@ -322,7 +322,7 @@ public:
          // add a dummy reaction with that name
          sReactionDesc dummy = { "" , NO_REACTION_PARAM, };
          strncpy(dummy.name,react.name,sizeof(dummy.name));
-         dummy.name[sizeof(dummy.name)] = '\0';
+         dummy.name[sizeof(dummy.name) - 1] = '\0';
 
          tron->effect.kind = Reactions->Add(&dummy,DummyReaction,NULL);
       }

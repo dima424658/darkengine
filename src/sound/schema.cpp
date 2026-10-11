@@ -265,7 +265,7 @@ ulong SchemaGetTime()
 // return rand 0->1 (exclusive)
 double SchemaRand()
 {
-   return (double)UnrecordedRand()/(double)(RAND_MAX+1);
+   return (double)UnrecordedRand()/((double)RAND_MAX+1.0);
 }
 
 // play samples list setup

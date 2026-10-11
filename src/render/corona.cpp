@@ -236,7 +236,7 @@ void CoronaRender()
       lgd3d_set_zcompare(FALSE);
 
       for (int i = 0; i < g_iNumLightsInFrame; ++i) {
-         register sCoronaLight *pCorona = g_apLightsInFrame[i];
+         sCoronaLight *pCorona = g_apLightsInFrame[i];
 
          float fDist = mx_dist_vec(&pCorona->m_WorldPos, &g_pCamLoc->vec);
          if (fDist > pCorona->m_fMaxDist)

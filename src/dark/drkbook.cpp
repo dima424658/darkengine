@@ -71,8 +71,8 @@ protected:
    // Lookup the text string
    const char* PageName(int i)
    {
-      static char buf[8]; 
-      sprintf(buf,"PAGE_%d",i); 
+      static char buf[32];
+      snprintf(buf,sizeof(buf),"PAGE_%d",i);
       return buf;
    }
 
@@ -515,7 +515,7 @@ static void create_panel_mode()
 
 
 
-void init_commands(void);
+static void init_commands(void);
 
 void DarkBookInit(void)
 {

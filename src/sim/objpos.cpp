@@ -111,7 +111,8 @@ protected:
    class cPosObjIDSink: public cObjIDSink
    {
    public:
-      cPosObjIDSink() 
+      explicit cPosObjIDSink(cPosProp& owner)
+         : m_owner(owner)
       {
          AutoAppIPtr(ObjIDManager);
          pObjIDManager->Connect(this); 
@@ -125,13 +126,16 @@ protected:
 
 
 
-      cPosProp& PosProp() { return *(cPosProp*)((char*)this - offsetof(cPosProp,m_Sink)); }; 
+      cPosProp& PosProp() { return m_owner; }
 
       void OnObjIDSpaceResize(const sObjBounds& bounds) 
       { 
          PosProp().mChanged.Resize(bounds.max); 
          PosProp().mNeedsReref.Resize(bounds.max); 
       }
+
+   private:
+      cPosProp& m_owner;
    }; 
 
    friend class cPosObjIDSink; 
@@ -142,7 +146,8 @@ public:
       : cParent(desc,store),
         mNeedsReref(gMaxObjID),
         mChanged(gMaxObjID),
-        mStore(*store)
+        mStore(*store),
+        m_Sink(*this)
    {
       mpStore->SetOps(&mOps);
       mDesc.flags |= kPropertySendBeginCreate; 

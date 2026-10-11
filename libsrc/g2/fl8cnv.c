@@ -1,7 +1,7 @@
 #include <dev2d.h>
 #include <icanvas2.h>
-#include <general.h>
-#include <flat8.h>
+#include "general.h"
+#include "flat8.h"
 
 void (*g2d_default_flat8_canvas_table[G2C_TYPES])() =
 { 0 };

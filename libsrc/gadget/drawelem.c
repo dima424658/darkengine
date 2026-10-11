@@ -88,10 +88,10 @@ void ElementDrawCallback(DrawElement *d, DrawElemState state, short x, short y, 
       grs_canvas canv;
       
       gr_init_sub_canvas(grd_canvas,&canv,x,y,w,h);
-      gr_cset_cliprect(&canv,max(grd_clip.left - x,0),
-                             max(grd_clip.top - y,0),
-                             min(grd_clip.right - x,w),
-                             min(grd_clip.bot - y,h));
+      gr_cset_cliprect(&canv,grd_clip.left - x > 0 ? grd_clip.left - x : 0,
+                             grd_clip.top - y > 0 ? grd_clip.top - y : 0,
+                             grd_clip.right - x < w ? grd_clip.right - x : w,
+                             grd_clip.bot - y < h ? grd_clip.bot - y : h);
       gr_push_canvas(&canv);
       dcb(d,state);
       gr_pop_canvas();
@@ -284,7 +284,7 @@ void ElementDrawText(DrawElement *d, DrawElemState state, short x, short y, shor
       case DRAWTYPE_TEXTREF:
          if (d->draw_data2 != NULL)
          {
-            font_id = (Id)(d->draw_data2);
+            font_id = (Id)(uintptr_t)d->draw_data2;
             font_override = TRUE;
          }
          break;
@@ -583,9 +583,9 @@ void ElementDraw(DrawElement *d, DrawElemState state, short x, short y, short w,
             x = x + m; w = w - m;
             w = w - trek_bms[TREK_R]->w;
 
-            m = max(max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
+            m = __max(__max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
             y = y + m; h = h - m;
-            h = h - max(max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
+            h = h - __max(__max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
 
             // unlock all those refs
             for (i=0; i < NUM_TREK_BM; i++)
@@ -642,7 +642,7 @@ void ElementDraw(DrawElement *d, DrawElemState state, short x, short y, short w,
             // alter drawing area
             x = x + trek_int_bms[2]->w;
             w = w - trek_int_bms[2]->w;
-            m = max(trek_int_bms[0]->h,trek_int_bms[1]->h);
+            m = __max(trek_int_bms[0]->h,trek_int_bms[1]->h);
             y = y + m;
             h = h - m;
 
@@ -710,8 +710,8 @@ void ElementExtrasSize(DrawElement *d, short *pw, short *ph)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_btype_ids[which_btype],i));
             *pw = *pw + trek_bms[TREK_L]->w;
             *pw = *pw + trek_bms[TREK_R]->w;
-            *ph = *ph + max(max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
-            *ph = *ph + max(max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
+            *ph = *ph + __max(__max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
+            *ph = *ph + __max(__max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
             // unlock all those refs
             for (i=0; i < NUM_TREK_BM; i++)
             {
@@ -732,7 +732,7 @@ void ElementExtrasSize(DrawElement *d, short *pw, short *ph)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_internal_id,i));
 
             *pw = *pw + trek_bms[2]->w;
-            *ph = *ph + max(trek_bms[0]->h,trek_bms[1]->h);
+            *ph = *ph + __max(trek_bms[0]->h,trek_bms[1]->h);
 
             // unlock all our art
             for (i=0; i <= 2; i++)
@@ -766,7 +766,7 @@ void ElementOffset(DrawElement *d, short *pw, short *ph)
             for (i=0; i < NUM_TREK_BM; i++)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_btype_ids[which_btype],i));
             *pw = *pw + trek_bms[TREK_L]->w;
-            *ph = *ph + max(max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
+            *ph = *ph + __max(__max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
             // unlock all those refs
             for (i=0; i < NUM_TREK_BM; i++)
             {
@@ -786,7 +786,7 @@ void ElementOffset(DrawElement *d, short *pw, short *ph)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_internal_id,i));
 
             *pw = *pw + trek_bms[2]->w;
-            *ph = *ph + max(trek_bms[0]->h,trek_bms[1]->h);
+            *ph = *ph + __max(trek_bms[0]->h,trek_bms[1]->h);
 
             // unlock all our art
             for (i=0; i <= 2; i++)
@@ -818,7 +818,7 @@ void ElementOffsetAlternate(DrawElement *d, short *pw, short *ph)
             for (i=0; i < NUM_TREK_BM; i++)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_btype_ids[which_btype],i));
             *pw = *pw + trek_bms[TREK_R]->w;
-            *ph = *ph + max(max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
+            *ph = *ph + __max(__max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
 
             // unlock all those refs
             for (i=0; i < NUM_TREK_BM; i++)

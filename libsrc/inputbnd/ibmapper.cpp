@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <limits>
 
 #include "ibmapper.h"
 #include <kbcook.h>
@@ -49,10 +50,7 @@ EXTERN int kbd_modifier_state;
 extern cIBVariableManager* g_IB_variable_manager;
 cIBInputMapper* g_IB_input_mapper = nullptr;
 
-int16 word_B25882[];
-int16* word_B25884;
-
-static uint8 mouseMask = 255;
+static uint8 bindingMouseMask = 255;
 
 const char* g_mods[3][3]{
 	{
@@ -1336,13 +1334,20 @@ int cIBInputMapper::ProcessMouseMove(uiMouseEvent* event)
 	if (x_cmd == nullptr && y_cmd == nullptr)
 		return 0;
 
-	auto old_mouse_mask = mouseMask;
-	mouseMask &= 254;
-	mouse_put_xy(res_x >> 1, res_y >> 1);
-	mouseMask = old_mouse_mask;
+	int rel_x = 0;
+	int rel_y = 0;
+	if (!mouse_consume_relative_motion(&rel_x, &rel_y))
+	{
+		auto old_mouse_mask = bindingMouseMask;
+		bindingMouseMask &= 254;
+		mouse_put_xy(res_x >> 1, res_y >> 1);
+		bindingMouseMask = old_mouse_mask;
 
-	auto x = std::clamp(event->pos.x, static_cast<short>(0), res_x);
-	auto y = std::clamp(event->pos.y, static_cast<short>(0), res_y);
+		auto x = std::clamp(event->pos.x, static_cast<short>(0), res_x);
+		auto y = std::clamp(event->pos.y, static_cast<short>(0), res_y);
+		rel_x = x - (res_x >> 1);
+		rel_y = y - (res_y >> 1);
+	}
 
 	char str[64] = {};
 	char final[64] = {};
@@ -1351,8 +1356,7 @@ int cIBInputMapper::ProcessMouseMove(uiMouseEvent* event)
 	if (cmd)
 	{
 		StripControl(final, cmd);
-		float rel_x = static_cast<float>(x - (res_x >> 1));
-		sprintf(str, " %8.8f", rel_x);
+		sprintf(str, " %8.8f", static_cast<float>(rel_x));
 		strcat(final, str);
 		g_IB_variable_manager->Cmd(final, 0);
 	}
@@ -1361,8 +1365,7 @@ int cIBInputMapper::ProcessMouseMove(uiMouseEvent* event)
 	if (cmd)
 	{
 		StripControl(final, cmd);
-		float rel_y = static_cast<float>(y - (res_y >> 1));
-		sprintf(str, " %8.8f", -rel_y);
+		sprintf(str, " %8.8f", static_cast<float>(-rel_y));
 		strcat(final, str);
 		g_IB_variable_manager->Cmd(final, 0);
 	}

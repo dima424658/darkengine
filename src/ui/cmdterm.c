@@ -1127,7 +1127,7 @@ bool cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
    if (event == TEXTBOX_SPECKEY)
    {
       const char *tmp=NULL, *ret;
-      unsigned long context;
+      ulong context;
 
       switch(evdata)
       {
@@ -1565,7 +1565,7 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
 
 void DestroyCommandTerminal(void)
 {
-   unsigned long context;
+   ulong context;
    int i;
 
    cmdterm_set_popup_cursor(FALSE);
@@ -1677,7 +1677,7 @@ static void cmdterm_activate_focus(BOOL position_cursor)
    char* buf = &CmdTerm.cmdbuf[0];
    int bufsiz = sizeof(CmdTerm.cmdbuf);
    int cursor_pos;
-   unsigned long context;
+   ulong context;
 
    if (!(CmdTerm.statebits & kStateInUse))
       return;

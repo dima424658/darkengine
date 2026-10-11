@@ -195,7 +195,8 @@ BOOL cAITurret::CheckLOF(ObjID targetID, int subModel)
    PhysRaycastSetCallback(tPhyscastObjTest(AITurretPhyscastCallback), (void*)&data);
 
    // Actual physcast
-   BOOL result = (PhysRaycast(Location(*(m_pAIState->GetPortalLocation())), targetLoc, &hitLoc, &hitObjID, 0.0,
+   Location sourceLoc(*(m_pAIState->GetPortalLocation()));
+   BOOL result = (PhysRaycast(sourceLoc, targetLoc, &hitLoc, &hitObjID, 0.0,
       kCollideSphere|kCollideSphereHat|kCollideOBB|kCollideTerrain) == kCollideNone);
    PhysRaycastClearCallback();
    return result;

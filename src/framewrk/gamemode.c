@@ -601,12 +601,12 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
             break;
          }
 
-         // A DromEd panel pauses by replacing the active SimState with the
-         // zero-flag paused state.  Reassert the play-preview state when the
-         // panel is popped; otherwise kSimRender remains clear and the newly
-         // restored game canvas is presented with no D3D scene (black).
-         SimStateSet(&gameSimState);
 #endif
+
+         // Panels pause by replacing the active SimState with a zero-flag
+         // state. Reassert game ownership on resume so rendering cannot stay
+         // disabled after Continue.
+         SimStateSet(&gameSimState);
 
          {
             // Make sure the sim is running...
@@ -618,6 +618,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          root = GetRootRegion();
          HotkeyContext = HK_GAME_MODE; 
          InstallIBHandler (HK_GAME_MODE, UI_EVENT_KBD_RAW | UI_EVENT_MOUSE | UI_EVENT_MOUSE_MOVE | UI_EVENT_JOY, TRUE);
+         mouse_set_relative_mode(TRUE);
          MissionPalSet();
          resume_mode();
          // i love the fall through, i love the control, i love it all
@@ -663,6 +664,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
       }
          // fall through 
       case kMsgSuspendMode:
+         mouse_set_relative_mode(FALSE);
          RemoveIBHandler ();
          suspend_mode();
          break;

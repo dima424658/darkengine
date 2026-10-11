@@ -98,8 +98,9 @@ typedef struct _cursor_callback_state
 } cstate;
 
 
-bool cursor_get_callback(Region* reg, Rect* rect, cstate* s)
+bool cursor_get_callback(Region* reg, Rect* rect, void* data)
 {
+   cstate* s = (cstate*)data;
    cursor_stack* cs = (cursor_stack*)(reg->cursors);
    bool anal = FALSE;
 #ifdef SPEW_ON
@@ -269,7 +270,7 @@ errtype get_region_stack(Region*r, cursor_stack** cs)
 // --------------------
 
 
-static uiCursorCallbackId;
+static int uiCursorCallbackId;
 
 errtype ui_init_cursor_stack(uiSlab* slab, Cursor* default_cursor)
 {

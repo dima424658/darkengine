@@ -124,7 +124,7 @@ public:
    virtual void ClearInterMnvrState()
       { m_MotorState.lastSchemaID=-1;
         m_MotorState.lastControllerID=-1; 
-        m_MotorState.flags=NULL;
+        m_MotorState.flags = 0;
         m_MotorState.lastMotPercentCompleted=0;
       }
 

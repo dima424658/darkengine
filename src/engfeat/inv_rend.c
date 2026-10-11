@@ -66,7 +66,7 @@
 
 // internal structure, we dont expose details of this
 struct _invRendState {
-   struct sInvRendView;
+   sInvRendView view;
    ObjID obj_id;            // obj_id for us
    int   model_idx;         // what model idx i have
    int   bitmappalnum;      //palette location, if a bitmap resource
@@ -193,13 +193,13 @@ static void render_single_obj(invRendState *us, BOOL bClearZBuffer)
       }
 
 
-      cam_base.el[0]=us->cam_dist*zoom;
+      cam_base.el[0] = us->view.cam_dist * zoom;
       if (us->flags&INVREND_DISTANT)
          cam_base.el[0]*=2.00;
 
-      mx_ang2mat(&cam_mat,&us->off_ang);
+      mx_ang2mat(&cam_mat, &us->view.off_ang);
       mx_mat_mul_vec(&cam_loc,&cam_mat,&cam_base);
-      cam_ang=us->off_ang;
+      cam_ang = us->view.off_ang;
       cam_ang.el[2]+=0x8000;   // does this work?
       cam_ang.el[1]=-cam_ang.el[1];
 
@@ -209,13 +209,13 @@ static void render_single_obj(invRendState *us, BOOL bClearZBuffer)
          for (i = 0; i < NUM_LIGHTS; i++)
          {
 #ifdef RGB_LIGHTING
-            tmplights[i].bright.x = us->lighting*lights[i].bright.x;
-            tmplights[i].bright.y = us->lighting*lights[i].bright.y;
-            tmplights[i].bright.z = us->lighting*lights[i].bright.z;
+            tmplights[i].bright.x = us->view.lighting * lights[i].bright.x;
+            tmplights[i].bright.y = us->view.lighting * lights[i].bright.y;
+            tmplights[i].bright.z = us->view.lighting * lights[i].bright.z;
 #else
-            tmplights[i].bright.x = us->lighting*lights[i].bright.x;
-            tmplights[i].bright.y = us->lighting*lights[i].bright.y;
-            tmplights[i].bright.z = us->lighting*lights[i].bright.z;
+            tmplights[i].bright.x = us->view.lighting * lights[i].bright.x;
+            tmplights[i].bright.y = us->view.lighting * lights[i].bright.y;
+            tmplights[i].bright.z = us->view.lighting * lights[i].bright.z;
 #endif
             mx_mat_mul_vec(&tmplights[i].loc,&cam_mat,&lights[i].loc);
          }
@@ -280,11 +280,11 @@ static void _invInitCamera(invRendState *us)
    if (us->flags&INVREND_MODEL)
    {
       mds_model *m;
-      us->off_ang.el[0]=us->off_ang.el[2]=0;
-      us->off_ang.el[1]=0xf000;
-      us->cam_dist=3.0;  // hopefully this gets fixed below
+      us->view.off_ang.el[0] = us->view.off_ang.el[2] = 0;
+      us->view.off_ang.el[1] = 0xf000;
+      us->view.cam_dist = 3.0;  // hopefully this gets fixed below
       if ((m=(mds_model *)objmodelGetModel(us->model_idx))!=NULL)
-         us->cam_dist=m->radius+0.7f;
+         us->view.cam_dist = m->radius + 0.7f;
    }  // set scale factor here, i guess
 }
 
@@ -401,7 +401,7 @@ static void invrend_init_state(invRendState* us, int flags, const Rect *r, grs_c
 
    us->back_buffer=draw_cnv;
 
-   us->lighting = 1.0;
+   us->view.lighting = 1.0;
 }
 
 // need to look up inv_rend property here!
@@ -557,13 +557,13 @@ void invRendDrawUpdate(invRendState *us)
       render_single_obj(us, TRUE);
 
    if (us->flags&INVREND_ROTATE)
-      us->off_ang.el[2]+=0x0100;
+      us->view.off_ang.el[2] += 0x0100;
    //   us->off_ang.el[1]+=0x100;  // if you want wack-a-tronic implementation
 }
 
 void invRendSetView(invRendState* us, const sInvRendView* view)
 {
-   *(sInvRendView*)us = *view;
+   us->view = *view;
 }
 
 // Flush objects queued for hardware rendering
@@ -599,7 +599,7 @@ void invRendFlushQueue(void)
 
 void invRendGetView(const invRendState* us, sInvRendView * view)
 {
-   *view = *(sInvRendView*)us;
+   *view = us->view;
 }
 
 ////////////////

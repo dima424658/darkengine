@@ -113,7 +113,7 @@ static sScrnMode none = { 0 };  // mode with no valid fields
 #define MIN_3D_BITDEPTH 16
 
 // squeeze the target within constraints
-void constrain(sScrnMode* target, const sScrnMode* mmin, const sScrnMode* mmax);
+static void constrain(sScrnMode* target, const sScrnMode* mmin, const sScrnMode* mmax);
 
 
 BOOL ScrnModeSet(const sScrnMode* mmin, const sScrnMode* prefer, const sScrnMode* mmax)
@@ -228,7 +228,7 @@ static void constrain(sScrnMode* target, const sScrnMode* mmin, const sScrnMode*
 EXTERN BOOL g_lgd3d;
 EXTERN int g_lgd3d_device_index;
 
-void dump_screen_mode(const sScrnMode* mode);
+static void dump_screen_mode(const sScrnMode* mode);
 
 //
 // Raw screen mode setter

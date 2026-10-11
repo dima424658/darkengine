@@ -11,6 +11,8 @@
 
 #include <objtype.h>
 
+struct Camera;
+
 #define RELAX_MODE_INSTANT   1
 #define RELAX_MODE_ONMOVE    2
 #define RELAX_MODE_NEVER     3

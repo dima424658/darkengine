@@ -1,6 +1,8 @@
 #include <platform_services.h>
 
+#include <algorithm>
 #include <chrono>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -168,6 +170,32 @@ struct sUnixFileFind
    size_t index;
 };
 
+static std::string NativeSearchPattern(const char *pattern)
+{
+   std::string text(pattern ? pattern : "");
+   std::replace(text.begin(), text.end(), '\\', '/');
+   std::filesystem::path input(text), leaf = input.filename();
+   std::filesystem::path parent = input.parent_path();
+   std::filesystem::path resolved = parent.is_absolute() ? parent.root_path() : std::filesystem::path(".");
+   for (const auto &part : parent.relative_path())
+   {
+      std::filesystem::path exact = resolved / part;
+      std::error_code error;
+      if (std::filesystem::exists(exact, error)) { resolved = exact; continue; }
+      std::string wanted = part.string();
+      std::transform(wanted.begin(), wanted.end(), wanted.begin(), [](unsigned char c){ return (char)std::tolower(c); });
+      bool found = false;
+      for (std::filesystem::directory_iterator it(resolved, error), end; !error && it != end; it.increment(error))
+      {
+         std::string candidate = it->path().filename().string();
+         std::transform(candidate.begin(), candidate.end(), candidate.begin(), [](unsigned char c){ return (char)std::tolower(c); });
+         if (candidate == wanted) { resolved /= it->path().filename(); found = true; break; }
+      }
+      if (!found) resolved /= part;
+   }
+   return (resolved / leaf).lexically_normal().generic_string();
+}
+
 static BOOL CopyFileFind(sUnixFileFind *native, sPlatformFileFind *find)
 {
    if (native->index >= native->matches.gl_pathc)
@@ -191,8 +219,9 @@ BOOL PlatformFindFirst(const char *pattern, sPlatformFileFind *find)
 {
    if (!pattern || !find)
       return FALSE;
+   std::string nativePattern = NativeSearchPattern(pattern);
    sUnixFileFind *native = new (std::nothrow) sUnixFileFind{};
-   if (!native || glob(pattern, 0, nullptr, &native->matches) != 0)
+   if (!native || glob(nativePattern.c_str(), 0, nullptr, &native->matches) != 0)
    {
       delete native;
       return FALSE;

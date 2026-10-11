@@ -31,8 +31,8 @@ public:
    virtual void Save(void) const;
    virtual void Load(void);
 
-   virtual eAIRangedModeID GetModeID(void) const = NULL;
-   virtual const char* GetName(void) const = NULL;
+   virtual eAIRangedModeID GetModeID(void) const = 0;
+   virtual const char* GetName(void) const = 0;
 
    virtual int SuggestApplicability(void);
    virtual int SuggestInterrupt(void);
@@ -45,7 +45,7 @@ public:
    virtual void OnLosingControl(void);
    virtual void OnGainingControl(void);
 
-   virtual cAIAction* SuggestAction(void) = NULL; 
+   virtual cAIAction* SuggestAction(void) = 0;
 
    BOOL TestFlags(eAIRangedModeFlags flags) const;
    void SetFlags(eAIRangedModeFlags flags);
@@ -91,7 +91,7 @@ protected:
  
 ///////////////////////////////////////////////////////////////////////////////
 
-inline cAIRangedMode::cAIRangedMode(cAINewRangedSubcombat* pOwner): m_pOwner(pOwner), m_flags(NULL) {m_pOwner->AddRef();}
+inline cAIRangedMode::cAIRangedMode(cAINewRangedSubcombat* pOwner): m_pOwner(pOwner), m_flags(0) {m_pOwner->AddRef();}
 inline cAIRangedMode::~cAIRangedMode(void) {SafeRelease(m_pOwner);}
 
 inline void cAIRangedMode::Reset(void) {};

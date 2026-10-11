@@ -9,7 +9,7 @@
 #include <linktype.h>
 #include <linkbase.h>
 #include <relation.h>
-#include <reldeleg.H>
+#include <reldeleg.h>
 
 #include <proplink.h>
 #include <linkprop.h>

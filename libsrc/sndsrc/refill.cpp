@@ -234,7 +234,7 @@ cSndSource::FillStream( uint32    nBytes )
 //
 // fill callback for sound sources
 //
-static void
+void
 fillSSData( ISndSample     * /*pSample*/,
             void           *pCBData,
             uint32         nBytes )

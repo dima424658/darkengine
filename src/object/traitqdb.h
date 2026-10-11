@@ -15,7 +15,7 @@
 
 #include <linktype.h>
 #include <linkqdb.h>
-#include <ObjArray.h>
+#include <objarray.h>
 
 //////////////////////////////////////////////////////////// 
 // CUSTOM LINK QUERY DATABASE FOR "METAPROP" LINKS

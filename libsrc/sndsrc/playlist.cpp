@@ -30,7 +30,7 @@
 //
 // size of a playlist element, indexed by opcode
 //
-static int playlistOpSizes[] = {
+int playlistOpSizes[] = {
    0,                               // there is no element for opcode plNone
    sizeof( SSPLEndList ),
    sizeof( SSPLSilence ),

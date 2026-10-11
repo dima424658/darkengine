@@ -23,6 +23,7 @@ typedef enum _LGadTextBoxEvent
    TEXTBOX_BUTTON = TEXTGADG_BUTTON,   // gadget was clicked on. 
 } LGadTextBoxEvent;
 
+struct _LGadTextBox;
 typedef bool (*LGadTextBoxCallback)(struct _LGadTextBox* tbox, LGadTextBoxEvent event, int eventdata, void* user_data); 
 
 

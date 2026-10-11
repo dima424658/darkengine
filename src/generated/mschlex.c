@@ -401,7 +401,7 @@ extern int	yt_getc YY_ARGS((void));
  * the following can be redefined by the user.
  */
 #define	ECHO		fputs(mschtext, mschout)
-#define	output(c)	putc((c), mschout) /* mschlex sink for unmatched chars */
+#define	output(c)	(mschout ? putc((c), mschout) : (int)(c)) /* mschlex sink for unmatched chars */
 #define	YY_FATAL(msg)	{ fprintf(stderr, "mschlex: %s\n", msg); exit(1); }
 #define	YY_INTERACTIVE	1		/* save micro-seconds if 0 */
 #define	YYLMAX		100		/* token and pushback buffer size */
@@ -439,6 +439,7 @@ extern	int	mschmapch	YY_ARGS((int delim, int escape));
 #include <drkcret.h> /* for actor types */
 #include <shkcret.h> /* for actor types */
 #include <dpccret.h> /* for Deep Cover actor types */
+#include <inctab.h>
 
 #ifdef DEBUG
 #include <memall.h>

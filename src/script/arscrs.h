@@ -39,7 +39,7 @@ DECLARE_SCRIPT_SERVICE(ActReact, 0xF4)
    // Reaction name accessors
    //
    STDMETHOD_(integer,GetReactionNamed)(const char* name) PURE; 
-   STDMETHOD_(string,GetReactionName)(long id) PURE;                  
+   STDMETHOD_(string,GetReactionName)(int32 id) PURE;
 
    //
    // Inform act/react that you are interested in stimulus messages

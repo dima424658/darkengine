@@ -180,7 +180,7 @@ void FXDiskDrawHeatDisksUnclipped(fix first_x, fix first_y, fix first_radius,
    fix x_source, y_source, x_destination, y_destination;
 
    fix fix_num_disks = fix_make(num_disks, 0);
-   fix fix_num_deltas = max(fix_num_disks - FIX_UNIT, FIX_UNIT);
+   fix fix_num_deltas = __max(fix_num_disks - FIX_UNIT, FIX_UNIT);
    fix delta_radius = fix_div(last_radius - first_radius, fix_num_deltas);
    fix delta_x_in_canvas = fix_div(last_x - first_x, fix_num_deltas);
    fix delta_y_in_canvas = fix_div(last_y - first_y, fix_num_deltas);
@@ -277,14 +277,14 @@ void FXDiskDrawHeatDisksInWorld(mxs_vector *center_1,
       goto finished;
 
    scaled_first_radius
-      = min(kMaxDiskRadius, 
-            max(kMinDiskRadius, 
+      = __min(kMaxDiskRadius,
+            __max(kMinDiskRadius,
                 first_radius * screen_points[0].grp.w * grd_canvas->bm.w));
    fix_first_radius = fix_from_float(scaled_first_radius);
 
    scaled_last_radius
-      = min(kMaxDiskRadius, 
-            max(kMinDiskRadius, 
+      = __min(kMaxDiskRadius,
+            __max(kMinDiskRadius,
                 last_radius * screen_points[1].grp.w * grd_canvas->bm.w));
    fix_last_radius = fix_from_float(scaled_last_radius);
 

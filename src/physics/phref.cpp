@@ -179,7 +179,7 @@ int PhysUpdateRefsCore(cPhysModel *pModel, ObjID objID)
    int num_bins = PhysBinComputeFunc(objID, &prism, bins);
    PhysBinUpdateFunc(objID, PhysRefSystemID, bins, num_bins);
 
-   delete bins;
+   delete[] static_cast<uchar *>(bins);
 
    return TRUE;
 }

@@ -207,7 +207,7 @@ void writeProfileRaw(FILE *f)
 {
    int i;
    fprintf(f, "S-Prof sample file, mode %d.\n", initialized);
-   fprintf(f, "Total ms: %d\n", RAW_TIME_VALUE - startTime);
+   fprintf(f, "Total ms: %ld\n", RAW_TIME_VALUE - startTime);
    for (i=0; i < site_count; ++i) {
       fprintf(f, "%d %d %s\n", i+1, site[i].line, site[i].filename);
    }
@@ -215,7 +215,7 @@ void writeProfileRaw(FILE *f)
       fprintf(f, "Child call data\n");
       for (i=0; i < MAX_CALL_SITES; ++i) {
          if (hashTable[i].child) {
-            fprintf(f, "%5d %5d: %14d %8d\n", (int) hashTable[i].child, (int) hashTable[i].parent,
+            fprintf(f, "%5d %5d: %14ld %8ld\n", (int) hashTable[i].child, (int) hashTable[i].parent,
                   hashTable[i].time, hashTable[i].count);
          }
       }

@@ -156,9 +156,9 @@ public:
 	// For setting and getting out current context. This should be a bitmask.
 	// Also, do we want to poll when changing to a different context?
 	//
-	STDMETHOD_(BOOL, SetContext) (THIS_ unsigned long iContext, BOOL bPoll);
+	STDMETHOD_(BOOL, SetContext) (THIS_ ulong iContext, BOOL bPoll);
 	// Stuffs it
-	STDMETHOD_(void, GetContext) (THIS_ unsigned long* pContext);
+	STDMETHOD_(void, GetContext) (THIS_ ulong* pContext);
 
 	//
 	// Set globally master agg callback.
@@ -440,7 +440,7 @@ STDMETHODIMP_(const char*) cInputBinder::VarUnsetAll()
 	return m_IB_variable_manager->VarUnsetAll();
 }
 
-STDMETHODIMP_(BOOL) cInputBinder::SetContext(unsigned long iContext, BOOL bPoll)
+STDMETHODIMP_(BOOL) cInputBinder::SetContext(ulong iContext, BOOL bPoll)
 {
 	if (m_IB_input_mappers[m_cur_context_idx]->m_context == iContext)
 		return TRUE;
@@ -471,7 +471,7 @@ STDMETHODIMP_(BOOL) cInputBinder::SetContext(unsigned long iContext, BOOL bPoll)
 	return TRUE;
 }
 
-STDMETHODIMP_(void) cInputBinder::GetContext(unsigned long* pContext)
+STDMETHODIMP_(void) cInputBinder::GetContext(ulong* pContext)
 {
 	*pContext = m_IB_input_mappers[m_cur_context_idx]->m_context;
 }

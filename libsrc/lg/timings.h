@@ -471,7 +471,6 @@ inline void cSimpleTimer::OutputResult()
 {
     if (m_TotalTime && !IsActive())
         SimpleTimerOutputResult(m_szName, m_TotalTime);
-        mprintf("Total time for %s: %lu ms\n", m_szName, m_TotalTime);
 }
 
 ///////////////////////////////////////

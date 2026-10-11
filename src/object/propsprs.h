@@ -31,7 +31,7 @@ struct sObjPropPair
    ObjID obj;
    PropertyID prop; 
 
-   sObjPropPair(ObjID o = NULL, PropertyID p = PROPID_NULL) :obj(o),prop(p) {}; 
+   sObjPropPair(ObjID o = OBJ_NULL, PropertyID p = PROPID_NULL) :obj(o),prop(p) {};
 }; 
 
 //

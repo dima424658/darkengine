@@ -189,7 +189,31 @@ typedef enum eNetMsgFlags {
 // parameters specified. (Optionally ending with the pClientData passed
 // in at startup.)
 //
-typedef void *tMsgHandlerFunc;
+class tMsgHandlerFunc
+{
+public:
+   typedef void (*tErasedHandler)();
+
+   tMsgHandlerFunc() : m_handler(NULL) {}
+   tMsgHandlerFunc(decltype(nullptr)) : m_handler(NULL) {}
+
+   template <class Return, class... Args>
+   tMsgHandlerFunc(Return (*handler)(Args...))
+      : m_handler(reinterpret_cast<tErasedHandler>(handler))
+   {
+   }
+
+   explicit operator bool() const { return m_handler != NULL; }
+
+   template <class Handler>
+   Handler As() const
+   {
+      return reinterpret_cast<Handler>(m_handler);
+   }
+
+private:
+   tErasedHandler m_handler;
+};
 
 //
 // The full descriptor of what this message looks like

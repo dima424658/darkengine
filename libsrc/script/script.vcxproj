@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

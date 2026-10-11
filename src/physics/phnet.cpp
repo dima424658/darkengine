@@ -45,9 +45,9 @@
 tNetMsgHandlerID gPhysNetID;
 
 // The Network Manager:
-INetManager *g_pNetMan;
+static INetManager *g_pNetMan;
 // Object Networking:
-IObjectNetworking *g_pObjNet;
+static IObjectNetworking *g_pObjNet;
 
 // The position property, so we don't have to keep fetching it:
 IPositionProperty *g_PosProp;

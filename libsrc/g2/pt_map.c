@@ -9,8 +9,8 @@
 #include <r3ds.h>
 #include <mprintf.h>
 
-#include <ptmap.h>
-#include <recip.h>
+#include "ptmap.h"
+#include "recip.h"
 #include <ptmapper.h>
 #include <profile.h>
 #include <scancvt.h>

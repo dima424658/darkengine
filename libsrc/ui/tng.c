@@ -288,7 +288,7 @@ bool tng_cb_keycooked(TNG *ptng, ushort key)
          newret = FALSE;
          if (key == tngcb->condition)
          {
-            ptng->cb_data = (void *)key;
+            ptng->cb_data = (void *)(uintptr_t)key;
             newret = tngcb->cb(ptng->ui_data, tngcb->user_data);
          }
          if (newret)
@@ -313,7 +313,7 @@ bool tng_cb_signal(TNG *ptng, ushort signal)
          newret = FALSE;
          if (signal & tngcb->condition)
          {
-            ptng->cb_data = (void *)signal;
+            ptng->cb_data = (void *)(uintptr_t)signal;
             newret = tngcb->cb(ptng->ui_data, tngcb->user_data);
          }
          if (newret)
@@ -338,7 +338,7 @@ bool tng_cb_keyscan(TNG *ptng, ushort scan)
          newret = FALSE;
          if (scan == tngcb->condition)
          {
-            ptng->cb_data = (void *)scan;
+            ptng->cb_data = (void *)(uintptr_t)scan;
             newret = tngcb->cb(ptng->ui_data, tngcb->user_data);
          }
          if (newret)

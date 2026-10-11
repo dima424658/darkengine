@@ -170,7 +170,7 @@ uchar base_flags[3][3]=
 #define set_flags(fx,which,app) \
     (fx->flags=base_flags[which][fx->type]|(app&SFXFLG_APP_MASK))
  
-BOOL _sfx_priority_callback( ISndMixer    *pMixer,
+static BOOL _sfx_priority_callback( ISndMixer    *pMixer,
                              ISndSample   *pSample,
                              void         *pCBData );
 
@@ -200,7 +200,7 @@ static int sfx_time_index=0;
 #define IDEAL_MIN_FRAME_RATE    (16)
 #define IDEAL_MIN_FRAME_MS    (1000/IDEAL_MIN_FRAME_RATE)
 #define DYNAMIC_MODIFIER(fr)    ((IDEAL_MIN_FRAME_RATE-fr)/4)  // 0 - 3 channels 
-#endif DYNAMIC_CHANNELS
+#endif // DYNAMIC_CHANNELS
 
 ///////////////////////////////////////
 // startup/shutdown
@@ -887,7 +887,7 @@ static bool _sfx_start_play(_sfx *fx, BOOL after_delay)
             if (sfx3DMethod == kSnd3DMethodSoftware ||
                 sfx3DMethod == kSnd3DMethodHardware)
             {
-               long HW3dcnt = 1;
+               int32 HW3dcnt = 1;
                if (sfx3DMethod == kSnd3DMethodHardware && sfxCheckChannels)
                   pSndMixer->FreeHWChannelCount(NULL, &HW3dcnt);
                if (HW3dcnt>0 &&

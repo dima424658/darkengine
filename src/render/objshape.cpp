@@ -436,7 +436,7 @@ static void GetMdObjOffsetVhot(ObjID objID, int idx, int vhot,mxs_vector *pos)
 
 // XXX THIS IS AN ETCS HACK
 // non-biped mesh objects have no way of getting accurate bboxes.
-extern void stupid_jointpos_callback(mms_model *m, int joint_id, mxs_trans *t);
+extern void stupid_jointpos_callback(const mms_model *m, int joint_id, mxs_trans *t);
 
 static void DippyMeshGetBBox(ObjID /*objID*/, int /*idx*/, mxs_vector *bmax, mxs_vector *bmin)
 {

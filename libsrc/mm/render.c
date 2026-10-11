@@ -207,17 +207,17 @@ bool mmd_rgb_lighting;
 // predeclarations are grouped by pipeline
 
 // polygon pipeline
-void _mm_poly_transform(mms_model *m, ulong flags);
-void _mm_poly_sort(mms_model *m, ulong flags);
-void _mm_poly_render(mms_model *m);
-int _mm_poly_buffsize(mms_model *m, mms_custom_data *d);
-void _mm_poly_set_buff(mms_model *m, mms_custom_data *d, void *buff);
+static void _mm_poly_transform(mms_model *m, ulong flags);
+static void _mm_poly_sort(mms_model *m, ulong flags);
+static void _mm_poly_render(mms_model *m);
+static int _mm_poly_buffsize(mms_model *m, mms_custom_data *d);
+static void _mm_poly_set_buff(mms_model *m, mms_custom_data *d, void *buff);
 
 // hardware pipeline (uses poly transform func)
-void _mm_hardware_sort(mms_model *m, ulong flags);
-void _mm_hardware_render(mms_model *m);
-int _mm_hardware_buffsize(mms_model *m, mms_custom_data *d);
-void _mm_hardware_set_buff(mms_model *m, mms_custom_data *d, void *buff);
+static void _mm_hardware_sort(mms_model *m, ulong flags);
+static void _mm_hardware_render(mms_model *m);
+static int _mm_hardware_buffsize(mms_model *m, mms_custom_data *d);
+static void _mm_hardware_set_buff(mms_model *m, mms_custom_data *d, void *buff);
 
 typedef void(*mmf_transform_func)(mms_model *m, ulong flags);
 typedef void(*mmf_sort_func)(mms_model *m, ulong flags);
@@ -337,18 +337,18 @@ BOOL mm_punt_xform;
 quat dum_quat;
 mxs_trans dum_trans;
 
-void dummy_stretchy_joint_cback(mms_model *m,int joint_id, mxs_trans *t,quat *q)
+void dummy_stretchy_joint_cback(const mms_model *m,int joint_id, mxs_trans *t,quat *q)
 {
    mx_identity_trans(t);
    quat_identity(q);
 }
 
-void dummy_joint_pos_cback(mms_model *m,int joint_id, mxs_trans *t)
+void dummy_joint_pos_cback(const mms_model *m,int joint_id, mxs_trans *t)
 {
    mx_identity_trans(t);
 }
 
-void dummy_light_cback(int num,void *tpts,mms_uvn *uvns,mxs_vector *pts)
+void dummy_light_cback(int num,float *tpts,mms_uvn *uvns,mxs_vector *pts)
 {
    float *pptr=tpts;
 
@@ -994,7 +994,7 @@ static bool test_ray_against_segment(mms_segment *segment,
 }
 
 
-static ray_sphere_test(mms_ray_hit_detect_info *detect_info)
+static int ray_sphere_test(mms_ray_hit_detect_info *detect_info)
 {
    float proj, center_to_ray_2;
    mxs_vector center_to_start;

@@ -14,6 +14,9 @@
 #include <setdrv.h>
 #include <g2makewr.h>
 
+extern int gd_init(void);
+extern int gd_close(void);
+
 void init_g2d_default_flat16_canvas_table(void);
 void init_flat16_lit_ulmap_setup_func(void);
 void init_flat16_ulmap_setup_func(void);

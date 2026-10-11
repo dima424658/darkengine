@@ -50,8 +50,8 @@ typedef struct
 BlockedBuffCtrl bbc;
 
 static void LzwBlockedBuffDestCtrl(tLzwLocation buff, LzwCtrl ctrl);
-void LzwBlockedBuffDestPut(uchar byte);
-void ResGrabInBlocks(int fd, void *buff, long blockSize, long totSize,
+static void LzwBlockedBuffDestPut(uchar byte);
+static void ResGrabInBlocks(int fd, void *buff, long blockSize, long totSize,
                       long (*f_ProcBlock) (void *buff, long blockSize, long iblock));
 //  ---------------------------------------------------------
 //

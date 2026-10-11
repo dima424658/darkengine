@@ -191,7 +191,7 @@ public:
 // sdesc info, horrible macro for basic array element
 //
 #define an_sMeshAttach_field_set(n,nstr) \
-   { "attached obj"nstr,  kFieldTypeInt,    FieldLocation(sMeshAttach, m_Attachment[n].m_Object) }, \
+   { "attached obj" nstr,  kFieldTypeInt,    FieldLocation(sMeshAttach, m_Attachment[n].m_Object) }, \
    { "joint of skeleton", kFieldTypeInt,    FieldLocation(sMeshAttach, m_Attachment[n].m_iJoint) }, \
    { "x angle (0-65535)", kFieldTypeShort,  FieldLocation(sMeshAttach, m_Attachment[n].m_Angles.tx) }, \
    { "y angle (0-65535)", kFieldTypeShort,  FieldLocation(sMeshAttach, m_Attachment[n].m_Angles.ty) }, \

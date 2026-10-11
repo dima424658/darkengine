@@ -86,11 +86,11 @@ IMAADPCM::Init(
 /*
  * get compressor state packed into a longword
  */
-unsigned long 
+uint32
 IMAADPCM::GetState( void )
 {
    unsigned short hiWord;
-   unsigned long val;
+   uint32 val;
 
    val = mPredictedSample & 0xFFFF;
    hiWord = (unsigned short) ((mIndex & 0xFF) | ((mSpareNybble & 0xF0) << 4)
@@ -103,7 +103,7 @@ IMAADPCM::GetState( void )
  * set compressor state from packed longword
  */
 void
-IMAADPCM::SetState( unsigned long state )
+IMAADPCM::SetState( uint32 state )
 {
    short val = (short) (state & 0xFFFF);
 
@@ -334,7 +334,7 @@ DecompressIMABlockPartial( char           *pInBuff,
                            short          *pOutBuff,
                            long           nSamples,
                            BOOL           getHeader,
-                           unsigned long  *pState )
+                           uint32         *pState )
 {
    IMAADPCM       decomp;
    IMAHeaderWord  *pIMAHdr;

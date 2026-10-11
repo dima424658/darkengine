@@ -28,8 +28,8 @@ static Command *command_list[MAX_COMMAND_SETS];
 static int command_count[MAX_COMMAND_SETS];
 static int command_list_size;
 
-unsigned long  command_context = 0xffffffff;
-unsigned long *command_context_ptr = &command_context;
+ulong  command_context = 0xffffffff;
+ulong *command_context_ptr = &command_context;
 
 void CommandRegister(Command *cmd_set, int count, ulong contexts)
 {

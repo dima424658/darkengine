@@ -91,7 +91,7 @@ sLaunchParams g_defaultLaunchParams =
 //
 // @TBD: does this work right if the projectile already exists?
 //
-ObjID GunFireProjectile(ObjID owner, ObjID archetype, int flags,
+static ObjID GunFireProjectile(ObjID owner, ObjID archetype, int flags,
                           float intensityMult, mxs_vector *pPos,
                           mxs_angvec *pAng, mxs_vector *pVel);
 

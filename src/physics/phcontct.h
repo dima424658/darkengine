@@ -38,11 +38,11 @@ class cPhysModel;
 class cPhysOBBModel;
 class cPhysSphereModel;
 
-static const long kFaceContactCode   = 1;
-static const long kEdgeContactCode   = 2;
-static const long kVertexContactCode = 3;
-static const long kObjectContactCode = 4;
-static const long kDoneContactCode   = 5;
+static const int32 kFaceContactCode   = 1;
+static const int32 kEdgeContactCode   = 2;
+static const int32 kVertexContactCode = 3;
+static const int32 kObjectContactCode = 4;
+static const int32 kDoneContactCode   = 5;
 
 ///////////////////////////////////////////////////////////////////////////////
 

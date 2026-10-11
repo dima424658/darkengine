@@ -97,7 +97,8 @@ BOOL cPhysTerrPolyList::GetNormal(mxs_vector & normal, const mxs_vector &sphere_
                if ((best_edge_dist < 0.0) || (edge_dist < best_edge_dist))
                {
                   best_edge_dist = edge_dist;
-                  mx_copy_vec(&normal, &edgeContact.GetNormal(sphere_loc));
+                  mxs_vector edgeNormal = edgeContact.GetNormal(sphere_loc);
+                  mx_copy_vec(&normal, &edgeNormal);
                }
             }
 

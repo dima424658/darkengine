@@ -513,10 +513,10 @@ cPhysModel::cPhysModel(PhysReadWrite func) :
    if (g_PhysVersion >= 31)
       func((void *)&m_referenceFrameObj, sizeof(ObjID), 1);
    else
-      m_referenceFrameObj = NULL;
+      m_referenceFrameObj = OBJ_NULL;
 
    if (g_PhysVersion >= 25)
-      func((void *)&m_lastSquishTime, sizeof(long), 1);
+      func((void *)&m_lastSquishTime, sizeof(m_lastSquishTime), 1);
    else
    m_lastSquishTime = -1;
 
@@ -831,7 +831,7 @@ void cPhysModel::Write(PhysReadWrite func) const
 
    func((void *)&m_referenceFrameObj, sizeof(ObjID), 1);
 
-   func((void *)&m_lastSquishTime, sizeof(long), 1);
+   func((void *)&m_lastSquishTime, sizeof(m_lastSquishTime), 1);
 
    // Write positions for each submodel
    for (i=0; i<m_nSubModels; ++i)

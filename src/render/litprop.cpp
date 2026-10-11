@@ -154,6 +154,11 @@ public:
 // Structure descriptor
 //
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#endif
+
 static sFieldDesc light_fields [] =
 {
    { "brightness",
@@ -308,6 +313,10 @@ static sFieldDesc anim_light_fields [] =
 
 static sStructDesc anim_light_struct
    = StructDescBuild(sAnimLightProp, kStructFlagNone, anim_light_fields);
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 // @TBD (justin 10-14-98): Currently, this property is being set locally
 // on each machine. This isn't ideal -- we would like at least major
 // changes to be reflected the same on all machines. However, this property

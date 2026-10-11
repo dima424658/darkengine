@@ -97,7 +97,7 @@ LightmapEntry rgb_sub_clamp(LightmapEntry cur, int add)
 // for each light we process, we write out the following tables
 // so we can compute things fast
 ulong pl_red_color[256], pl_green_color[256], pl_blue_color[256];
-ulong pl_red_mask, pl_green_mask, pl_blue_mask;
+extern ulong pl_red_mask, pl_green_mask, pl_blue_mask;
 LightmapEntry rgb_add_clamp(LightmapEntry cur, int add)
 {
    ulong r = pl_red_color[add] + (cur & pl_red_mask);

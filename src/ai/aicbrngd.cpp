@@ -454,7 +454,7 @@ cAIAction * cAIRangedSubcombat::CheckSuggestDamageAction(const cAIActions & prev
          g_pAIRangedAudioResponse->Get(GetID(),&audio);
 
          float dmg=m_fDamage, var;
-         var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1))*audio->el[2];
+         var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1.0f))*audio->el[2];
          dmg+=var;
          if (dmg>audio->el[0])
          {

@@ -1100,7 +1100,7 @@ IB_var g_gen_ib_vars[] = {
    {"rudder_sensitivity", "1.0", 0, DummyProc, NULL, NULL},
    {"rudder_deadzone", "0.05", 0, DummyProc, NULL, NULL},
 
-   NULL
+   {}
 };
 
 

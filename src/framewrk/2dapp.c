@@ -9,7 +9,7 @@
 #include <aggmemb.h>
 #include <appagg.h>
 #include <dispguid.h>
-#include <gshlguid.H>
+#include <gshlguid.h>
 #include <resguid.h>
 
 #include <2dapp.h>

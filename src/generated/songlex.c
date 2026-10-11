@@ -206,7 +206,7 @@ extern int	yt_getc YY_ARGS((void));
  * the following can be redefined by the user.
  */
 #define	ECHO		fputs(songyytext, songyyout)
-#define	output(c)	putc((c), songyyout) /* songyylex sink for unmatched chars */
+#define	output(c)	(songyyout ? putc((c), songyyout) : (int)(c)) /* songyylex sink for unmatched chars */
 #define	YY_FATAL(msg)	{ fprintf(stderr, "songyylex: %s\n", msg); exit(1); }
 #define	YY_INTERACTIVE	1		/* save micro-seconds if 0 */
 #define	YYLMAX		100		/* token and pushback buffer size */
@@ -231,7 +231,7 @@ YY_DECL	int	unput	YY_ARGS((int c));
 
 /* functions defined in libl.lib */
 extern	int	songyywrap	YY_ARGS((void));
-extern	void	songyyerror	YY_ARGS((char *fmt, ...));
+extern	void	songyyerror	YY_ARGS((char *errmsg));
 extern	void	songyycomment	YY_ARGS((char *term));
 extern	int	songyymapch	YY_ARGS((int delim, int escape));
 
@@ -708,7 +708,7 @@ BOOL SongYyParseFile(char *songFile)
 
    parseFailed = 0;
    if (!OpenSongYyin(songFile))
-      return;
+      return FALSE;
 
    while (
           (!feof(songyyin)) &&

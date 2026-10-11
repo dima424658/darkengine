@@ -105,8 +105,8 @@ void DarkInitLinks(void)
 #define TERR_REPL_PROP_DESC(str) \
    static sPropertyDesc str##PropDesc = { "TerrRep"#str, 0, NULL, 0, 0, { "Script", "TerrReplace"#str }}
 #define TERR_REPL_PROP_CREATE(str) \
-   IStringProperty *##str##Prop = CreateStringProperty(&##str##PropDesc,TERR_REPL_PROP_IMPL); \
-   SafeRelease(##str##Prop)
+   IStringProperty *str##Prop = CreateStringProperty(&str##PropDesc, TERR_REPL_PROP_IMPL); \
+   SafeRelease(str##Prop)
 
 TERR_REPL_PROP_DESC(Off);
 TERR_REPL_PROP_DESC(On);

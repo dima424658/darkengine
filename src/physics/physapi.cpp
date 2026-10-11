@@ -1973,7 +1973,8 @@ BOOL PhysObjOnGround(ObjID objID)
          pEdgeContact = pEdgeContactList->GetFirst();
          while (pEdgeContact != NULL)
          {
-            if (mx_dot_vec(&pEdgeContact->GetNormal(pModel->GetLocationVec(i)), &kGravityDir) < 0.0)
+            mxs_vector normal = pEdgeContact->GetNormal(pModel->GetLocationVec(i));
+            if (mx_dot_vec(&normal, &kGravityDir) < 0.0)
                return TRUE;
 
             pEdgeContact = pEdgeContact->GetNext();
@@ -1987,7 +1988,8 @@ BOOL PhysObjOnGround(ObjID objID)
          pVertexContact = pVertexContactList->GetFirst();
          while (pVertexContact != NULL)
          {
-            if (mx_dot_vec(&pVertexContact->GetNormal(pModel->GetLocationVec(i)), &kGravityDir) < 0.0)
+            mxs_vector normal = pVertexContact->GetNormal(pModel->GetLocationVec(i));
+            if (mx_dot_vec(&normal, &kGravityDir) < 0.0)
                return TRUE;
 
             pVertexContact = pVertexContact->GetNext();
@@ -2145,7 +2147,8 @@ BOOL PhysObjInWater(ObjID objID)
 
       Location cog_loc;
 
-      MakeHintedLocationFromVector(&cog_loc, &pModel->GetCOG(), &pModel->GetLocation(PLAYER_BODY));
+      mxs_vector cog = pModel->GetCOG();
+      MakeHintedLocationFromVector(&cog_loc, &cog, &pModel->GetLocation(PLAYER_BODY));
       if (CellFromLoc(&cog_loc) == CELL_INVALID)
          return FALSE;
 
@@ -2937,7 +2940,8 @@ BOOL PhysGetFriction(ObjID objID, mxs_real *friction)
          {
             mxs_real friction_pct;
 
-            friction_pct = -min(0, mx_dot_vec(&pEdgeContact->GetNormal(pModel->GetLocationVec(i)), &kGravityDir));
+            mxs_vector normal = pEdgeContact->GetNormal(pModel->GetLocationVec(i));
+            friction_pct = -__min(0, mx_dot_vec(&normal, &kGravityDir));
             *friction += kFrictionFactor * friction_pct * kGravityAmt;
 
             pEdgeContact = pEdgeContact->GetNext();
@@ -2953,7 +2957,8 @@ BOOL PhysGetFriction(ObjID objID, mxs_real *friction)
          {
             mxs_real friction_pct;
 
-            friction_pct = -min(0, mx_dot_vec(&pVertexContact->GetNormal(pModel->GetLocationVec(i)), &kGravityDir));
+            mxs_vector normal = pVertexContact->GetNormal(pModel->GetLocationVec(i));
+            friction_pct = -__min(0, mx_dot_vec(&normal, &kGravityDir));
             *friction += kFrictionFactor * friction_pct * kGravityAmt;
 
             pVertexContact = pVertexContact->GetNext();

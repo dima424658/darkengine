@@ -7,7 +7,7 @@
 #include "env.h"
 #else
 #include <stdlib.h>
-#include <sys\stat.h>
+#include <sys/stat.h>
 #endif
 #include "time.h"
 #include "array.h"

@@ -92,14 +92,14 @@ class cScriptServiceImplBase : public cCTUnaggregated<INTERFACE, pIID_INTERFACE,
 
 struct sScrSrvRegData;
 
-extern cDynArray<sScrSrvRegData *> g_ScrSrvRegData;
+cDynArray<sScrSrvRegData *> &ScrSrvRegData();
 
 struct sScrSrvRegData
 {
    sScrSrvRegData(IAutoScriptService * pService, const GUID * pGuid)
     : pService(pService), pGuid(pGuid)
    {
-      g_ScrSrvRegData.Append(this);
+      ScrSrvRegData().Append(this);
    }
 
    IAutoScriptService * pService;

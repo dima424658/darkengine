@@ -46,6 +46,8 @@
 // Hey, I copied this from lresname.c
 // It should undoubtedly be changed/centralised somewhere.
 #ifndef __WATCOMC__
+# undef NAME_MAX
+# undef PATH_MAX
 # if defined(__OS2__) || defined(__NT__)
 #   define NAME_MAX	255		/* maximum filename for HPFS or NTFS */
 #   define PATH_MAX	259 /* maximum length of full pathname excl. '\0' */

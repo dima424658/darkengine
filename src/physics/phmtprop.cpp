@@ -176,7 +176,7 @@ IMovingTerrainProperty *g_pMovingTerrainProperty = NULL;
 ////////////////////////////////////////
 
 void LGAPI MovingTerrainListener(sPropertyListenMsg * msg, PropListenerData data);
-void SetupMovingTerrainProperty(void);
+static void SetupMovingTerrainProperty(void);
 
 IMovingTerrainProperty *CreateMovingTerrainProperty(const sPropertyDesc *desc)
 {

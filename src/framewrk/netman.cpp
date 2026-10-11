@@ -2344,9 +2344,9 @@ private:
                     gm_TheNetManager->NumPlayers());
             Status(temp);
          } else {
-            char temp[128];
-            sprintf(temp,
-                    "Client to %s", gm_TheNetManager->m_HostAddr);
+            char temp[256];
+            snprintf(temp, sizeof(temp),
+                     "Client to %s", gm_TheNetManager->m_HostAddr);
             Status(temp);
          }
       } else {
@@ -2367,16 +2367,16 @@ private:
    static void CmdMyAddress()
    {
       const char *pAddr = gm_TheNetManager->GetPlayerAddress(OBJ_NULL);
-      char buf[128];
-      sprintf(buf, "My Address: %s", pAddr);
+      char buf[256];
+      snprintf(buf, sizeof(buf), "My Address: %s", pAddr ? pAddr : "(unknown)");
       Status(buf);
    }
 
    static void CmdPlayerName(int playerNum)
    {
       const char *pName = gm_TheNetManager->GetPlayerNameByNum(playerNum);
-      char buf[128];
-      sprintf(buf, "#%d is %s", playerNum, pName);
+      char buf[256];
+      snprintf(buf, sizeof(buf), "#%d is %s", playerNum, pName ? pName : "(unknown)");
       Status(buf);
    }
 #endif
@@ -2763,7 +2763,7 @@ protected:
                         failReason = kNetRejectMisc;
                      sNetMsg_Hi msg = { gm_NetManagerHandlerID, 
                                         kNetMsg_Hi,
-                                        -failReason };
+                                        (char)-failReason };
                      // @HACK: this is pretty horrid, but we can't
                      // allow Hi messages to fall on the floor...
                      BOOL saveNonNetworkLevel = m_bNonNetworkLevel;
@@ -3815,13 +3815,15 @@ public:
       }
 
       AssertMsg(pAddress, "No address given to join at!");
+      if (!pAddress)
+         return FALSE;
 
       if (gm_Net->Join((char *) pMedia, (char *) pSession, (char *) pAddress))
       {
          gm_PlayerTransportID = gm_Net->SimpleCreatePlayer(m_PlayerName);
          gm_bNetworkGame = TRUE;
-         char temp[128];
-         sprintf(temp, "Joined %s", pAddress);
+         char temp[256];
+         snprintf(temp, sizeof(temp), "Joined %s", pAddress);
          Status(temp);
          if (pAddress != m_HostAddr) {
             strcpy(m_HostAddr, pAddress);

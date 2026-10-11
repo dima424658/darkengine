@@ -858,23 +858,23 @@ static sFieldDesc pick_src_fields [] =
 static const char *pick_flag_names[] = { "Reset On Fail", "Randomize Time" };
 
 #define DEFINE_TUMBLER_FIELDS(tnumstr,field) \
-   { "LockBits "tnumstr,   kFieldTypeBits, FieldLocation(sPickCfg,field##.data_bits) }, \
-   { "Pins "tnumstr,       kFieldTypeInt,  FieldLocation(sPickCfg,field##.pins) }, \
-   { "TimePct "tnumstr,    kFieldTypeInt,  FieldLocation(sPickCfg,field##.time_pct) }, \
-   { "Flags "tnumstr,      kFieldTypeBits, FieldLocation(sPickCfg,field##.flags), FullFieldNames(pick_flag_names) }
+   { "LockBits " tnumstr,   kFieldTypeBits, FieldLocation(sPickCfg,field.data_bits) }, \
+   { "Pins " tnumstr,       kFieldTypeInt,  FieldLocation(sPickCfg,field.pins) }, \
+   { "TimePct " tnumstr,    kFieldTypeInt,  FieldLocation(sPickCfg,field.time_pct) }, \
+   { "Flags " tnumstr,      kFieldTypeBits, FieldLocation(sPickCfg,field.flags), FullFieldNames(pick_flag_names) }
 
 #define DEFINE_CFGSTATETRANS_FIELDS(snumstr,field) \
-   { "Next State Pick 1-"snumstr,   kFieldTypeInt, FieldLocation(sAdvPickTransCfg,field##.firstpickstate) }, \
-   { "Next State Pick 2-"snumstr,   kFieldTypeInt, FieldLocation(sAdvPickTransCfg,field##.secondpickstate) }, \
-   { "Next State Pick 3-"snumstr,   kFieldTypeInt, FieldLocation(sAdvPickTransCfg,field##.thirdpickstate) }
+   { "Next State Pick 1-" snumstr,   kFieldTypeInt, FieldLocation(sAdvPickTransCfg,field.firstpickstate) }, \
+   { "Next State Pick 2-" snumstr,   kFieldTypeInt, FieldLocation(sAdvPickTransCfg,field.secondpickstate) }, \
+   { "Next State Pick 3-" snumstr,   kFieldTypeInt, FieldLocation(sAdvPickTransCfg,field.thirdpickstate) }
 
 #define DEFINE_CFGSTATESTATE_FIELDS(snumstr,field) \
-   { "Time "snumstr,       kFieldTypeInt,  FieldLocation(sAdvPickStateCfg,field##.time) }
+   { "Time " snumstr,       kFieldTypeInt,  FieldLocation(sAdvPickStateCfg,field.time) }
 
 #define DEFINE_CFGSTATESND_FIELDS(snumstr,field) \
-   { "Sound Pick 1-"snumstr,    kFieldTypeString,  FieldLocation(sAdvPickSoundCfg,field##.firstpicksound) }, \
-   { "Sound Pick 2-"snumstr,    kFieldTypeString,  FieldLocation(sAdvPickSoundCfg,field##.secondpicksound) }, \
-   { "Sound Pick 3-"snumstr,    kFieldTypeString,  FieldLocation(sAdvPickSoundCfg,field##.thirdpicksound) }
+   { "Sound Pick 1-" snumstr,    kFieldTypeString,  FieldLocation(sAdvPickSoundCfg,field.firstpicksound) }, \
+   { "Sound Pick 2-" snumstr,    kFieldTypeString,  FieldLocation(sAdvPickSoundCfg,field.secondpicksound) }, \
+   { "Sound Pick 3-" snumstr,    kFieldTypeString,  FieldLocation(sAdvPickSoundCfg,field.thirdpicksound) }
 
 static sFieldDesc adv_pick_trans_cfg_fields [] =
 {

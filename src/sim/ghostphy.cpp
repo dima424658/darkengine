@@ -13,7 +13,6 @@
 #include <ghostapi.h> // for the extern of dereg
 #include <ghostwep.h> // so we can unequip on exit
 
-#include <minmax.h>   // duh
 
 #include <physapi.h>
 #include <phcore.h>
@@ -477,7 +476,7 @@ void _GhostBleedVelocity(ObjID obj, sGhostPos *pPred, int cfg_flags, int last_ti
    else
       return;
 
-   float bleed_amt = min(1.0f, bleed_factor * (dt / 2));
+   float bleed_amt = __min(1.0f, bleed_factor * (dt / 2));
 
    mx_scaleeq_vec(&pPred->pos.vel,1.0f-bleed_amt);
 }

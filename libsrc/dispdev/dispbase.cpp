@@ -6,7 +6,7 @@
 //
 
 #include <lg.h>
-#include <dispbase.h>
+#include "dispbase.h"
 #include <dev2d.h>
 
 #if defined(__WATCOMC__)

@@ -1338,7 +1338,7 @@ void PushToSaveGameLoadingMode(ITagFile* file)
 //
 
 
-void init_commands(); 
+static void init_commands();
 
 void DebriefInit()
 {

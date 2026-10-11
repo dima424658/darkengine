@@ -19,7 +19,7 @@
 #pragma once
 
 struct sAIDefendPoint;
-typedef long LinkID;
+typedef int32 LinkID;
 F_DECLARE_INTERFACE(IInternalAI);
 
 ///////////////////////////////////////////////////////////////////////////////

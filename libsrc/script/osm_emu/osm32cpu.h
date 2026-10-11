@@ -3,9 +3,11 @@
 #ifndef __OSM32CPU_H
 #define __OSM32CPU_H
 
+#pragma pack(push, 8)
 #include <stdint.h>
 #include <string>
 #include <vector>
+#pragma pack(pop)
 
 namespace osm32
 {

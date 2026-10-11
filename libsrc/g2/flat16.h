@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef __FLAT16_H
-#define __FLAT16_H
+#ifndef __G2_FLAT16_H
+#define __G2_FLAT16_H
 extern void flat16_uscale_expose();
 extern void flat16_uscale();
 extern void flat16_scale_expose();

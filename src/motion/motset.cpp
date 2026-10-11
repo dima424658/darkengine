@@ -814,8 +814,10 @@ static void MotCompXlatCallback(multiped *mp, mps_motion_info *mi,mps_comp_motio
 
 #ifdef E398_HACK
 
-EXTERN BOOL g_DoRootHack=FALSE;
-EXTERN int  g_HackButtJointID=0; 
+EXTERN BOOL g_DoRootHack;
+EXTERN int  g_HackButtJointID;
+BOOL g_DoRootHack=FALSE;
+int  g_HackButtJointID=0;
 
 #endif
 
@@ -825,7 +827,8 @@ EXTERN int  g_HackButtJointID=0;
 // which means solving the capture distortion problem for real.
 #define NECK 9
 
-EXTERN BOOL g_mot_quat_debug=FALSE;
+EXTERN BOOL g_mot_quat_debug;
+BOOL g_mot_quat_debug=FALSE;
 
 // @TODO: GET RID OF NECK HACK!
 void MotCompRotCallback(mps_motion_info *mi,mps_comp_motion *cm,float frame, quat *data)

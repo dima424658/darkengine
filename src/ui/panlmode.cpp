@@ -37,6 +37,7 @@ extern "C"
 #include <uiapp.h>
 #include <uiloop.h>
 #include <kbcook.h>
+#include <mouse.h>
 
 extern "C"
 {
@@ -62,7 +63,7 @@ extern "C"
 // Loop Client
 //
 
-GUImethods* panel_gui_methods(IPanelMode* pmode); 
+static GUImethods* panel_gui_methods(IPanelMode* pmode);
 
 class cPanelLoopClient : public cCTUnaggregated<ILoopClient, &IID_ILoopClient, kCTU_Default>
 {
@@ -197,6 +198,7 @@ STDMETHODIMP_(eLoopMessageResult) cPanelLoopClient::ReceiveMessage(eLoopMessage 
          // fall through
       case kMsgResumeMode:
       {
+         mouse_set_relative_mode(FALSE);
          gCanExit = TRUE; 
          mpOldGUImethods = TheGUImethods(); 
          SetTheGUImethods(panel_gui_methods(mpPanel)); 
@@ -380,7 +382,7 @@ static sScrnMode max_scrnmode =
    kScrnModeFlagsValid,
    0, 0, 
    0, 
-   ~0UL, // retain the active presentation backend; panels only draw 2D
+   ~(ulong)0, // retain the active presentation backend; panels only draw 2D
 };
 
 static ScrnManContext def_scrnparm = 

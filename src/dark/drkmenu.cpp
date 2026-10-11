@@ -588,7 +588,7 @@ const sLoopInstantiator* DescribeNewGameMode(void)
 //
 
 
-void init_commands(); 
+static void init_commands();
 
 EXTERN void OptionsMenuInit ();
 EXTERN void OptionsMenuTerm ();

@@ -40,7 +40,7 @@ sFileVarDesc gRenderParamsDesc =
    { 1, 0},             // last valid version 
 }; 
 
-void pal_set(void); 
+static void pal_set(void);
 
 // The actual global variable
 class cRenderParams : public cFileVar<sMissionRenderParams,&gRenderParamsDesc> 

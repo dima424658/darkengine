@@ -89,7 +89,8 @@ private:
 };
 
 cSingleManeuverFactory g_SingleManeuverFactory;
-EXTERN cManeuverFactory *g_pSingleManeuverFactory=&g_SingleManeuverFactory;
+EXTERN cManeuverFactory *g_pSingleManeuverFactory;
+cManeuverFactory *g_pSingleManeuverFactory=&g_SingleManeuverFactory;
 
 
 cMotionPlan *cSingleManeuverFactory::CreatePlan(const cMotionSchema *pSchema,const sMcMotorState& motState, \

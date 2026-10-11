@@ -523,7 +523,7 @@ static void _show_seen(int how_many)
 {
    int i;
    qsort(seen_lights,seen_index,sizeof(sObjLightSort),compare_seen);
-   for (i=0; i<min(how_many,seen_index); i++)
+   for (i=0; i<__min(how_many,seen_index); i++)
    {
       sObjLightSort *s=&seen_lights[i];
       char buf[256];

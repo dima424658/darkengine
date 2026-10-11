@@ -24,7 +24,7 @@
 #include <uiloop.h>
 #include <drkmislp.h>
 
-#include <dispapi.H>
+#include <dispapi.h>
 
 #include <drkuires.h>
 #include <imgsrc.h>
@@ -150,10 +150,10 @@ void cMetaGame::InitUI()
       IImageSource*& pDown = mDownButts[i]; 
 
       // fetch the image
-      char buf[16]; 
-      sprintf(buf,"demof%03d.pcx",i); 
+      char buf[32];
+      snprintf(buf,sizeof(buf),"demof%03d.pcx",i);
       pUp = FetchUIImage(buf); 
-      sprintf(buf,"demon%03d.pcx",i); 
+      snprintf(buf,sizeof(buf),"demon%03d.pcx",i);
       pDown = FetchUIImage(buf); 
 
       elem.draw_type = DRAWTYPE_BITMAP;
@@ -251,7 +251,7 @@ sLoopClientDesc cMetaGame::Descriptor =
    
 
    kLCF_None,
-   NULL,
+   nullptr,
    
    NO_LC_DATA,
 
@@ -288,7 +288,7 @@ static sPanelModeDesc metagame_desc =
 //
 
 cMetaGame::cMetaGame()
-   : mMission(-1), cModalButtonPanel(&metagame_desc, &Descriptor)
+   : mMission(-1), cModalButtonPanel(metagame_desc, &Descriptor)
 {
 }
 
@@ -334,7 +334,7 @@ const sLoopInstantiator* DescribeMetaGameMode(void)
 // INIT/TERM
 //
 
-void init_commands(); 
+static void init_commands();
 
 void MetaGameInit()
 {

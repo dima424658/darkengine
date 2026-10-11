@@ -1776,7 +1776,7 @@ static float jt_angle=0;
 
 static long g_iMeshAppData=0;
 
-void stupid_jointpos_callback(mms_model *m, int joint_id, mxs_trans *t)
+void stupid_jointpos_callback(const mms_model *m, int joint_id, mxs_trans *t)
 {
    ObjPos *pos = ObjPosGetUnsafe((ObjID)m->app_data);
 
@@ -1786,7 +1786,7 @@ void stupid_jointpos_callback(mms_model *m, int joint_id, mxs_trans *t)
    mx_copy_vec(&t->vec,&pos->loc.vec);
 }
 
-void stupid_stretchy_joint_callback(mms_model *m,int joint_id,mxs_trans *t,quat *rot)
+void stupid_stretchy_joint_callback(const mms_model *m,int joint_id,mxs_trans *t,quat *rot)
 {
    ObjPos *pos = ObjPosGetUnsafe((ObjID)m->app_data);
 

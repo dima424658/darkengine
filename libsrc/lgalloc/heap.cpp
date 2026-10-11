@@ -272,7 +272,7 @@ void cHeapBlock::RemoveFromFreeChain()
 
 cHeapBlock::eMergeResult cHeapBlock::MergeBackward()
 {
-    register cHeapBlock * p = pBack;
+    cHeapBlock * p = pBack;
     if (!p)
         return kAlreadyMerged;
 
@@ -518,10 +518,10 @@ void * cHeap::Alloc(SIZE_T size)
     // other weird stuff here is to assist the compilier
     // in producing well-paired, penalty-free code.  It
     // could probably be redone in assembler
-    register const size_t       fixedSize   = FixSize(size);
+    const size_t       fixedSize   = FixSize(size);
 
-    register cHeapBlock *       pBlock  = &m_Base;
-    register cHeapBlock *       pEnd    = &m_Base;
+    cHeapBlock *       pBlock  = &m_Base;
+    cHeapBlock *       pEnd    = &m_Base;
 
 #ifdef DEBUG_HEAP
     long nCycles = 0;
@@ -834,7 +834,7 @@ void cHeap::Free(void * pAlloc)
 BOOL cHeap::DoMinimize()
 {
     BOOL                        fResult = FALSE;
-    register cHeapBlock *       pBlock  = m_Base.pFreeNext;
+    cHeapBlock *       pBlock  = m_Base.pFreeNext;
     cHeapBlock *                pTemp;
     const cHeapBlock * const    pEnd    = &m_Base;
 
@@ -922,7 +922,7 @@ STDMETHODIMP cHeap::VerifyHeap()
     m_Base.pFreeNext->CheckGroup();
 
     long                        nCycles = 0;
-    register cHeapBlock *       p       = &m_Base;
+    cHeapBlock *       p       = &m_Base;
     const cHeapBlock * const    pEnd    = &m_Base;
 
     for (;;)

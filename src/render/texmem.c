@@ -573,6 +573,11 @@ BOOL texmem_interpret_new_res(IRes *pRes,
    return TRUE;
 }
 
+void texmem_store_callback(IRes *pRes, IStore *pStore, void *pClientData)
+{
+   texmem_interpret_new_res(pRes, pStore, pClientData);
+}
+
 //////////////////////////////////////
 // basic load/free API
 
@@ -862,7 +867,7 @@ int texmemLoadDir(char *dirname)
    ectsSecretLoadIdx=0;
 
    IResMan_BindAll(pResMan, "*.*", RESTYPE_IMAGE, NULL,
-                   texmem_interpret_new_res, NULL, dirname, 0);
+                   texmem_store_callback, NULL, dirname, 0);
 
    texmem_callback_idx=TEXMEM_NO_HND;
    texmem_callback_loadid=TEXMEM_LOADID_ANON;

@@ -124,7 +124,7 @@ ObjID g_SchemaID;
 static ObjID baseSchemaID;
 
 // schema parameters
-static schemaParamsSet;
+static BOOL schemaParamsSet;
 static sSchemaPlayParams schemaPlayParams;
 static ISchemaPlayParamsProperty *pPropSchemaPlayParams;
 
@@ -143,7 +143,7 @@ static ObjID archID;
 #define SAMPLE_NAME_LEN 20      // max sample file name length
 static char sampleNames[SCHEMA_SAMPLES_MAX][SAMPLE_NAME_LEN];
 static uchar sampleFreqs[SCHEMA_SAMPLES_MAX];
-static char *pSampleNames[SCHEMA_SAMPLES_MAX];
+static const char *pSampleNames[SCHEMA_SAMPLES_MAX];
 static uchar sampleFreq;
 static int samplesNum = 0;
 static BOOL freqSet;
@@ -823,7 +823,7 @@ void SchemaYaccParse(char *schemaFile)
    SafeRelease(pTraitMan);
 }
 
-yyparse()
+int yyparse(void)
 {
 	register short		yyi, *yyp;	/* for table lookup */
 	register short		*yyps;		/* top of state stack */

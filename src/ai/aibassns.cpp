@@ -910,7 +910,7 @@ STDMETHODIMP_(void) cAISenses::OnDamage(const sDamageMsg * pMsg, ObjID realCulpr
    else
    {
       pPlayerAwareness = NULL;
-      playerLinkID = NULL;
+      playerLinkID = LINKID_NULL;
    }
 #else
    playerLinkID = GetAwarenessLink(PlayerObject(), &pPlayerAwareness);
@@ -1096,7 +1096,7 @@ LinkID cAISenses::GetAwarenessLink(ObjID objId, sAIAwareness ** ppAwareness)
    // Grab any existing sense data, or use temporary
    //
    static sAIAwareness awarenessBuf;
-   LinkID              linkID       = (objId) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), objId) : NULL;
+   LinkID              linkID       = (objId) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), objId) : LINKID_NULL;
    int                 time         = AIGetTime();
 
    if (linkID)
@@ -1462,7 +1462,7 @@ int cAISenses::GetVisibility(const sVisionArgs & args, const sAIVisionCone * pCo
 
 STDMETHODIMP cAISenses::ClearSense(ObjID objId)
 {
-   LinkID linkId = (objId) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), objId) : NULL;
+   LinkID linkId = (objId) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), objId) : LINKID_NULL;
 
    if (linkId != LINKID_NULL)
       g_pAIAwarenessLinks->Remove(linkId);
@@ -1572,7 +1572,7 @@ STDMETHODIMP_(const sAIAwareness *) cAISenses::GetAwareness(ObjID target)
    if (!IsAPlayer(target) && target != GetID())
       Update(target);                            // players are automatically sensed at a regular interval, self is a secret token for heard object-less sounds
 
-   LinkID linkID = (target) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), target) : NULL;
+   LinkID linkID = (target) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), target) : LINKID_NULL;
    sAIAwareness * pResult = NULL;
 
    if (!linkID)

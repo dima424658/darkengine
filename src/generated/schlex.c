@@ -295,7 +295,7 @@ extern int	yt_getc YY_ARGS((void));
  * the following can be redefined by the user.
  */
 #define	ECHO		fputs(yytext, yyout)
-#define	output(c)	putc((c), yyout) /* yylex sink for unmatched chars */
+#define	output(c)	(yyout ? putc((c), yyout) : (int)(c)) /* yylex sink for unmatched chars */
 #define	YY_FATAL(msg)	{ fprintf(stderr, "yylex: %s\n", msg); exit(1); }
 #define	YY_INTERACTIVE	1		/* save micro-seconds if 0 */
 #define	YYLMAX		100		/* token and pushback buffer size */
@@ -329,6 +329,7 @@ extern	int	yymapch	YY_ARGS((int delim, int escape));
 #include <schtok.h>
 #include <dbg.h>
 #include <cfgdbg.h>
+#include <inctab.h>
 
 #ifdef DEBUG
 #include <memall.h>

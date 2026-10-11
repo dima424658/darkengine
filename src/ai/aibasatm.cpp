@@ -19,7 +19,5 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-#if defined(_MSC_VER)
-template cAIActorBase<IAIActor, &IID_IAIActor>;
-template cAIActorBase<IAIAbility, &IID_IAIAbility>;
-#endif
+template class cAIActorBase<IAIActor, &IID_IAIActor>;
+template class cAIActorBase<IAIAbility, &IID_IAIAbility>;

@@ -310,8 +310,8 @@ class cMissLoopState : public cFileVar<sMissLoopState,&gMissLoopStateDesc>
 
 
 void PushCutsceneMovieMode(int mission); 
-void backup_game(); 
-void restore_game(); 
+static void backup_game();
+static void restore_game();
 
 #define STATE(x) case x
 #define GOTO(x) if (1) { gMissLoop.next_state = x; break; } else 
@@ -588,7 +588,7 @@ ulong cMissionLoopClient::LoadNextMission(int mission)
 const char* cMissionLoopClient::LoadEndMovie(int mission)
 {
   char buf[64];
-  char endmovie[64];
+  static char endmovie[64];
   int  gotnewmovie = 0;
   sprintf(buf,"miss_%d_endmovie",mission);
   
@@ -596,7 +596,7 @@ const char* cMissionLoopClient::LoadEndMovie(int mission)
 
   // Look for end movie
   cStr nextstr = pGameStrings->FetchString("missflag",buf);
-  gotnewmovie = sscanf((const char*)nextstr,"%s",&endmovie);
+  gotnewmovie = sscanf((const char*)nextstr, "%63s", endmovie);
 
   return (gotnewmovie > 0) ? endmovie : "success";
 }
@@ -633,7 +633,7 @@ static void setup_loop_mode()
 ////////////////////////////////////////////////////////////
 // API
 //
-void setup_commands(); 
+static void setup_commands();
 
 void MissionLoopInit()
 {

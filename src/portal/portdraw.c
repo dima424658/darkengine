@@ -836,7 +836,7 @@ void draw_cell_wireframe(PortalCell *cell, uint color)
 
 ////  A hacked system for mapping distance in water to a clut id
 
-static water_clut[32] =
+static int water_clut[32] =
 {
    0,0,1,1, 2,2,3,3, 4,4,5,5, 5,6,6,6,
    7,7,7,8, 8,8,9,9, 9,10,10,10, 10,11,11,11

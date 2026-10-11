@@ -50,7 +50,7 @@ static void clear_stats(TraitDescriptions* Descriptions,
    Descriptions->SetSize(1);    // Set the Descriptions array size to one.
    // Clear the ID status array.
    sDonorCacheStats NullEntry;  // Create a dummy array entry into IDStats.
-   memset(&NullEntry,NULL,sizeof(sDonorCacheStats));  // Clear the dummy entry.
+   memset(&NullEntry,0,sizeof(sDonorCacheStats));  // Clear the dummy entry.
    IDStats->Append(NullEntry); // Append the cleared entry to the IDStats array.
    IDStats->SetSize(1);        // Set the array size to one.
 };

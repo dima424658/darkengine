@@ -1,8 +1,8 @@
 
 #include <dev2d.h>
 #include <icanvas2.h>
-#include <general.h>
-#include <flat16.h>
+#include "general.h"
+#include "flat16.h"
 
 void (*g2d_default_flat16_canvas_table[G2C_TYPES])() =
 { 0 };

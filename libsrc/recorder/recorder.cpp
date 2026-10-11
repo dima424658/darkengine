@@ -17,8 +17,8 @@
 #include <filepath.h>
 #include <fcntl.h>
 #include <platform_io.h>
-#include <sys\stat.h>
-#include <sys\types.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>    // time, localtime
 #include <string.h>  // strncat
 #include <stdlib.h>  // getenv

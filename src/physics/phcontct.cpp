@@ -617,7 +617,7 @@ cPhysObjContactLinks::~cPhysObjContactLinks(void)
 
 static void WriteFaceContact(PhysReadWrite func, ObjID objID, int i, cFaceContact *pFaceContact) 
 {
-   func((void *)&kFaceContactCode, sizeof(long), 1);
+   func((void *)&kFaceContactCode, sizeof(kFaceContactCode), 1);
    func(&objID, sizeof(ObjID), 1);
    func(&i, sizeof(int), 1);
 
@@ -648,7 +648,7 @@ static void WriteFaceContact(PhysReadWrite func, ObjID objID, int i, cFaceContac
 
 static void WriteEdgeContact(PhysReadWrite func, ObjID objID, int i, cEdgeContact *pEdgeContact) 
 {
-   func((void *)&kEdgeContactCode, sizeof(long), 1);
+   func((void *)&kEdgeContactCode, sizeof(kEdgeContactCode), 1);
    func(&objID, sizeof(ObjID), 1);
    func(&i, sizeof(int), 1);
 
@@ -658,7 +658,7 @@ static void WriteEdgeContact(PhysReadWrite func, ObjID objID, int i, cEdgeContac
 
 static void WriteVertexContact(PhysReadWrite func, ObjID objID, int i, cVertexContact *pVertexContact) 
 {
-   func((void *)&kVertexContactCode, sizeof(long), 1);
+   func((void *)&kVertexContactCode, sizeof(kVertexContactCode), 1);
    func(&objID, sizeof(ObjID), 1);
    func(&i, sizeof(int), 1);
 
@@ -667,7 +667,7 @@ static void WriteVertexContact(PhysReadWrite func, ObjID objID, int i, cVertexCo
 
 static void WriteObjectContact(PhysReadWrite func, ObjID objID, int i, cPhysSubModelInst *pObjContact)
 {
-   func((void *)&kObjectContactCode, sizeof(long), 1);
+   func((void *)&kObjectContactCode, sizeof(kObjectContactCode), 1);
    func(&objID, sizeof(ObjID), 1);
    func(&i, sizeof(int), 1);
 
@@ -1094,13 +1094,13 @@ void cPhysContactLinks::Read(PhysReadWrite func)
 {
    ObjID objID;
    int submod;
-   long code;
+   int32 code;
 
    AutoAppIPtr_(ObjectSystem, pObjSys);
 
    while (TRUE)
    {
-      func(&code, sizeof(long), 1);
+      func(&code, sizeof(code), 1);
 
       if (code == kDoneContactCode)
          return;
@@ -1288,7 +1288,7 @@ void cPhysContactLinks::Write(PhysReadWrite func) const
 void cPhysContactLinks::WriteDone(PhysReadWrite func) const
 {
    // we're done
-   func((void *)&kDoneContactCode, sizeof(long), 1);
+   func((void *)&kDoneContactCode, sizeof(kDoneContactCode), 1);
 }
 
 

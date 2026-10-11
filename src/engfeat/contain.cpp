@@ -281,7 +281,7 @@ public:
             query->Link(&link); 
             mprintf("removing obj %d from container %d\n",link.dest,link.source); 
          }
-#endif DBG_ON
+#endif // DBG_ON
          retval = S_OK; 
       }
       SafeRelease(query); 

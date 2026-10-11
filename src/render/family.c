@@ -195,7 +195,7 @@ BOOL familyDiskTexBlockLoad(void *mem)
       return FALSE;
 
    texmem_callback_idx=0;             texmem_find_align=TRUE;
-   rv = ParseResBlock(mem, handles, texmem_interpret_new_res, fam_name_cb);
+   rv = ParseResBlock(mem, handles, texmem_store_callback, fam_name_cb);
    texmem_callback_idx=TEXMEM_NO_HND; texmem_find_align=old_find_align;
 
    if (rv)

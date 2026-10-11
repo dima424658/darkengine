@@ -28,14 +28,12 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-#if defined(_MSC_VER)
-template cAIComponentBase<IAIActor, &IID_IAIActor>;
-template cAIComponentBase<IAIAbility, &IID_IAIAbility>;
-template cAIComponentBase<IAIComponent, &IID_IAIComponent>;
-template cAIComponentBase<IAIMoveEnactor, &IID_IAIMoveEnactor>;
-template cAIComponentBase<IAIMoveRegulator, &IID_IAIMoveRegulator>;
-template cAIComponentBase<IAISenses, &IID_IAISenses>;
-template cAIComponentBase<IAISoundEnactor, &IID_IAISoundEnactor>;
-template cAIComponentBase<IAIPathfinder, &IID_IAIPathfinder>;
+template class cAIComponentBase<IAIActor, &IID_IAIActor>;
+template class cAIComponentBase<IAIAbility, &IID_IAIAbility>;
+template class cAIComponentBase<IAIComponent, &IID_IAIComponent>;
+template class cAIComponentBase<IAIMoveEnactor, &IID_IAIMoveEnactor>;
+template class cAIComponentBase<IAIMoveRegulator, &IID_IAIMoveRegulator>;
+template class cAIComponentBase<IAISenses, &IID_IAISenses>;
+template class cAIComponentBase<IAISoundEnactor, &IID_IAISoundEnactor>;
+template class cAIComponentBase<IAIPathfinder, &IID_IAIPathfinder>;
 // template cAIComponentBase<IAISubability, &IID_IAISubability>;
-#endif

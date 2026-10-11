@@ -44,7 +44,7 @@ typedef enum eMotionStatus
 EXTERN BOOL MvrGetRawMovement(const IMotor *pMotor, const int motionNum, sMotionPhys &phys);
 
 EXTERN void MvrCalcSlidingCollisionResponse(const mxs_vector *pForces, const int nForces, 
-                                            const mxs_vector *ovel, mxs_vector *nvel, ulong flags=NULL);
+                                            const mxs_vector *ovel, mxs_vector *nvel, ulong flags = 0);
 #endif
 
 EXTERN void InitGroundHeightObjects();

@@ -26,7 +26,7 @@ void ResSetFreeCallback(tResFreeCallback *cb)
 }
 
 
-void *DoResLock(Id id);
+static void *DoResLock(Id id);
 
 //  ---------------------------------------------------------
 //

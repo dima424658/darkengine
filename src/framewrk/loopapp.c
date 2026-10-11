@@ -26,7 +26,7 @@
 #include <objloop.h>
 #include <brloop.h>
 #include <ailoop.h>
-#include <physloop.H>
+#include <physloop.h>
 #include <plyrloop.h>
 #include <simloop.h>
 #include <sndloop.h>
@@ -51,7 +51,7 @@
 // MASTER LOOP FACTORY FUNCTION LIST
 //
 
-static sLoopClientDesc* MasterClientsList[]=
+static const sLoopClientDesc* MasterClientsList[]=
 {
    &ScrnManClientDesc,
    &TestLoopClientDesc,
@@ -174,7 +174,7 @@ static void set_loopmode_noise(void)
       ILoop * pLoop = AppGetObj(ILoop);
 
       ILoop_GetDiagnostics(pLoop, &diags, &messes);
-      sscanf(buf,"%lx",&messes);
+      sscanf(buf, "%x", &messes);
       ILoop_SetDiagnostics(pLoop, diags|kLoopDiagTracking, messes);
       ILoop_Release(pLoop);
    }

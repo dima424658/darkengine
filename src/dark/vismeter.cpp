@@ -173,8 +173,13 @@ static void recompute()
 
    ConfigSpew("vis_meter_spew",("Player vis level at %d, using model %d on the way to %d\n",level,gState.last_val,i)); 
 
-   sInvRenderType type = { kInvRenderModel }; 
-   sprintf(type.resource.text,VISMETER_MODELNAME,NUM_MODELS-gState.last_val); 
+   sInvRenderType type = { kInvRenderModel };
+   int model = NUM_MODELS-gState.last_val;
+   if (model < 1)
+      model = 1;
+   else if (model > NUM_MODELS)
+      model = NUM_MODELS;
+   snprintf(type.resource.text,sizeof(type.resource.text),VISMETER_MODELNAME,model);
    invRendSetType(gState.rend,&type); 
 }
 

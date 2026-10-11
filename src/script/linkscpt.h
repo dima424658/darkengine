@@ -24,7 +24,7 @@
 
 class linkkind 
 {
-   long id;
+   int32 id;
 public:
    linkkind(const char* name);
    linkkind(int i) :id(i) {}; 
@@ -45,12 +45,12 @@ public:
 
 class link 
 {
-   long id; 
+   LinkID id;
 public:
-   link(long i = 0 ) :id(i) {};
+   link(LinkID i = 0 ) :id(i) {};
    link(const link& l) :id (l.id) {}; 
    ~link() {}; 
-   operator long() const { return id; }; 
+   operator LinkID() const { return id; };
    
    // End points
    object From() const;   
@@ -64,6 +64,9 @@ public:
    void SetData(const char* field, const cMultiParm& value);
    void SetData(const cMultiParm& value) { SetData(NULL,value); };
 };
+
+static_assert(sizeof(linkkind) == 4, "Script relation IDs require the 32-bit ABI");
+static_assert(sizeof(link) == 4, "Script link IDs require the 32-bit ABI");
 
 //
 // "Link Set" type for iterating across a query 
@@ -156,11 +159,11 @@ DECLARE_SCRIPT_SERVICE(Link, 0xee)
 
 DECLARE_SCRIPT_SERVICE(LinkTools, 0xef)
 {
-   STDMETHOD_(long,LinkKindNamed)(const char* name) PURE; 
-   STDMETHOD_(string,LinkKindName)(long id) PURE; 
-   STDMETHOD(LinkGet)(long id, sLink& l) PURE; 
-   STDMETHOD_(cMultiParm,LinkGetData)(long id, const char* field) PURE; 
-   STDMETHOD(LinkSetData)(long id, const char* field, const cMultiParm& val) PURE;
+   STDMETHOD_(int32,LinkKindNamed)(const char* name) PURE;
+   STDMETHOD_(string,LinkKindName)(int32 id) PURE;
+   STDMETHOD(LinkGet)(LinkID id, sLink& l) PURE;
+   STDMETHOD_(cMultiParm,LinkGetData)(LinkID id, const char* field) PURE;
+   STDMETHOD(LinkSetData)(LinkID id, const char* field, const cMultiParm& val) PURE;
 }; 
 
 #ifdef SCRIPT

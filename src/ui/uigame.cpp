@@ -48,7 +48,7 @@ static BOOL cfg_get_lang(const char* var, char* buf, int buflen)
    if (config_get_raw("language",lang,sizeof(lang)))
    {
       char langvar[256];
-      sprintf(langvar,"%s_%s",lang,var); 
+      snprintf(langvar,sizeof(langvar),"%s_%.190s",lang,var);
       if (config_get_raw(langvar,buf,buflen))
          return TRUE; 
    }

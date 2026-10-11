@@ -5,9 +5,11 @@
 
 #include <osm_emu/osm32cpu.h>
 
+#pragma pack(push, 8)
 #include <stdint.h>
 #include <string>
 #include <vector>
+#pragma pack(pop)
 
 namespace osm32
 {

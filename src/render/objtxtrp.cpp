@@ -48,8 +48,8 @@ static cObjTxtReplaceTable g_ObjTxtReplaceTable;
 // horrible hacks for the string class which i get RebuildConcrete and Notify for
 
 // Forward Declare these two, so i can use them in the class
-void _ClearPtxt(IRes **pTxt);
-void _GogetPtxt(IRes **pTxt, const char *txtName);
+static void _ClearPtxt(IRes **pTxt);
+static void _GogetPtxt(IRes **pTxt, const char *txtName);
 
 typedef cAutoIPtr<IPropertyStore> cPS;
 
@@ -150,9 +150,9 @@ private:
 #define OBJ_TXT_REPL_PROP_IMPL     kPropertyImplSparseHash
 #define OBJ_TXT_REPL_PROP_DECLARE(str) \
    static sPropertyDesc str##PropDesc = { "OTxtRep"#str, 0, NULL, 0, 0, { "Shape", "TxtRepl "#str }}; \
-   static IStringProperty *##str##Prop = NULL
+   static IStringProperty *str##Prop = NULL
 #define OBJ_TXT_REPL_PROP_CREATE(str,index) \
-   str##Prop = new cTextureReplStringProperty(&##str##PropDesc,OBJ_TXT_REPL_PROP_IMPL,index)
+   str##Prop = new cTextureReplStringProperty(&str##PropDesc,OBJ_TXT_REPL_PROP_IMPL,index)
 #define OBJ_TXT_REPL_PROP_RELEASE(str) \
    SafeRelease(str##Prop)
 

@@ -93,8 +93,8 @@ private:
 	ILoopDispatch* m_pNextDispatch;
 
 	uint m_fTempDiagnostics;
-	ulong m_tempDiagnosticSet;
+	tLoopMessageSet m_tempDiagnosticSet;
 
-	ulong m_TempProfileSet;
+	tLoopMessageSet m_TempProfileSet;
 	tLoopClientID* m_pTempProfileClientId;
 };

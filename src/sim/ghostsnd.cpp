@@ -302,8 +302,8 @@ static float _ComputeGhostDetail(sGhostLocal *pGL)
 #define kGhostDtzMinCap       (0x800)
 
 // use detail implicitly
-#define _fltEps(type) ((float)((kGhostEps##type##))*_ComputeGhostDetail(pGL))
-#define _intEps(type) ((int)((kGhostEps##type##)*_ComputeGhostDetail(pGL)))
+#define _fltEps(type) ((float)(kGhostEps##type)*_ComputeGhostDetail(pGL))
+#define _intEps(type) ((int)(kGhostEps##type*_ComputeGhostDetail(pGL)))
 
 ////////////////////////////////////////
 // do the wierd stuff we do for dtz computation

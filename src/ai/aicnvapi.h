@@ -46,7 +46,17 @@ DECLARE_INTERFACE_(IAIConverse, IUnknown)
 // Conversations - one for each active conversation
 //
 
-enum eAIConverseState;
+enum eAIConverseState
+{
+   kAIConvNotStarted,
+   kAIConvStarting,
+   kAIConvRequestedGoal,
+   kAIConvStarted,
+   kAIConvInProgress,
+   kAIConvWaitingForSpeech,
+   kAIConvFinishedAction,
+   kAIConvFinished
+};
 
 DECLARE_INTERFACE_(IAIConversation, IUnknown)
 {

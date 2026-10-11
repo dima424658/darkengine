@@ -579,7 +579,7 @@ BOOL buttonlist_mouse_handler(uiEvent* _ev, Region* reg, void* data)
 }
 
 
-bool buttonlist_draw_func(void* data, LGadBox* box)
+void buttonlist_draw_func(void* data, LGadBox* box)
 { 
    ButtonList* list = (ButtonList*)box;
    int i;
@@ -600,8 +600,6 @@ bool buttonlist_draw_func(void* data, LGadBox* box)
          ElementDraw(&list->dvec[i],state,
                      r.ul.x, r.ul.y, RectWidth(&r),RectHeight(&r));
    }
-   return TRUE;
-
 }
 
 
@@ -735,17 +733,17 @@ void BuildButtonRects(ButtonDisplay* dvec, int n, Rect bounds, Rect* rvec)
       short w,h;
 
       ButtonDisplayDims(&dvec[i],&dims);
-      h = 2*max(abs(dims.ul.y),abs(dims.lr.y));
-      w = 2*max(abs(dims.ul.x),abs(dims.lr.x));
+      h = 2*(abs(dims.ul.y) > abs(dims.lr.y) ? abs(dims.ul.y) : abs(dims.lr.y));
+      w = 2*__max(abs(dims.ul.x),abs(dims.lr.x));
 
       rvec[i].ul = MakePoint(w,h);  // stuff w,h into rvec for later
 
-      maxwid = max(maxwid,w);
-      size.y = max(colhgt,size.y);
+      maxwid = __max(maxwid,w);
+      size.y = __max(colhgt,size.y);
 
       if (colhgt*3 > RectHeight(&bounds)) // do we need to start a new column
       {
-         m_dims.y = max(m_dims.y,row);
+         m_dims.y = __max(m_dims.y,row);
 
          // Stuff colwid at the end of rvec: 
          rvec[m_dims.x-1].lr.x = colwid;
@@ -758,7 +756,7 @@ void BuildButtonRects(ButtonDisplay* dvec, int n, Rect bounds, Rect* rvec)
       }
       row++;
       colhgt += h;
-      colwid = max(colwid,w);
+      colwid = __max(colwid,w);
    }
 
 
@@ -781,17 +779,17 @@ void BuildButtonRects(ButtonDisplay* dvec, int n, Rect bounds, Rect* rvec)
    // devote half of the space between text to spacing
    // and the other half to ymargin
    rest = RectHeight(&bounds) - size.y;
-   margin.y = min(rest/(2*m_dims.y),2*size.y/m_dims.y);
+   margin.y = rest/(2*m_dims.y) < 2*size.y/m_dims.y ? rest/(2*m_dims.y) : 2*size.y/m_dims.y;
    if (m_dims.y > 1)
-      spacing.y = min((rest+1)/(2*(m_dims.y-1)),margin.y/2);
+      spacing.y = __min((rest+1)/(2*(m_dims.y-1)),margin.y/2);
    else
       spacing.y = 0;
 
    // Now do it in X, with a slightly differen mathematical esthetic
    rest = RectWidth(&bounds) - size.x;
-   margin.x = min(rest/(2*m_dims.x),size.x/m_dims.x);
+   margin.x = __min(rest/(2*m_dims.x),size.x/m_dims.x);
    if (m_dims.x > 1)
-      spacing.x = min((rest+1)/(2*(m_dims.x-1)),margin.x/4);
+      spacing.x = __min((rest+1)/(2*(m_dims.x-1)),margin.x/4);
    else
       spacing.x = 0;
 

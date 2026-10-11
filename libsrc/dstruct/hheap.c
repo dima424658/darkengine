@@ -74,7 +74,7 @@ void HheapInit(HheapHead *phh, ushort sizeItem, short numItemsPerChunk,
 
 //	Copy in params, clamping item size at minimum of 8 bytes
 
-	phh->sizeItem = max(sizeItem, sizeof(HheapFreeNode));
+	phh->sizeItem = sizeItem > sizeof(HheapFreeNode) ? sizeItem : sizeof(HheapFreeNode);
 	phh->numItemsPerChunk = numItemsPerChunk;
 	phh->shrink = shrink;
 

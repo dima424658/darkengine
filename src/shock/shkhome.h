@@ -49,4 +49,4 @@ EXTERN void Home(ObjID projID, ObjID targetID);
 EXTERN void ProjectileTargetInit(void);
 EXTERN void ProjectileTargetTerm(void);
 
-#endif __SHKHOME_H
+#endif // __SHKHOME_H

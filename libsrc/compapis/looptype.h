@@ -30,7 +30,7 @@ typedef uintptr_t tLoopClientCookie;
 // Type to represent or'd sets of loop messages
 //
 
-typedef unsigned long tLoopMessageSet;
+typedef uint32 tLoopMessageSet;
 #define kNumLoopMessages 32
 
 
@@ -249,7 +249,21 @@ typedef enum eLoopClientFactoryType eLoopClientFactoryType;
 
 F_DECLARE_INTERFACE(ILoopClient);
 F_DECLARE_INTERFACE(ILoopClientFactory);
-typedef ILoopClient * (LGAPI * tLoopClientFactoryFunc)(const sLoopClientDesc *, tLoopClientData data);
+typedef ILoopClient * (LGAPI * tLoopClientFactoryFunc)(sLoopClientDesc *, tLoopClientData data);
+
+typedef union sLoopClientFactory
+{
+   tLoopClientFactoryFunc pfnFactory;
+   ILoopClient *          pClient;
+   ILoopClientFactory *   pFactory;
+
+#ifdef __cplusplus
+   constexpr sLoopClientFactory(decltype(nullptr)) : pfnFactory(nullptr) {}
+   constexpr sLoopClientFactory(tLoopClientFactoryFunc value) : pfnFactory(value) {}
+   constexpr sLoopClientFactory(ILoopClient * value) : pClient(value) {}
+   constexpr sLoopClientFactory(ILoopClientFactory * value) : pFactory(value) {}
+#endif
+} sLoopClientFactory;
 
 ///////////////////////////////////////
 //
@@ -272,13 +286,7 @@ struct sLoopClientDesc
 
    // Creation pattern
    eLoopClientFactoryType      factoryType;
-   union 
-   {
-      void *                 p;
-      ILoopClient *          pClient;          // Singleton
-      tLoopClientFactoryFunc pfnFactory;       // Callback
-      ILoopClientFactory *   pFactory;         // Factory object
-   };
+   sLoopClientFactory factory;
 
    // Client data
    DWORD           clientData[4];

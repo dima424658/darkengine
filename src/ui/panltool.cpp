@@ -246,7 +246,7 @@ BOOL MoviePanel(const char* fn)
 //
 
 // Forward
-void setup_commands(); 
+static void setup_commands();
 
 
 void InitPanelTools()

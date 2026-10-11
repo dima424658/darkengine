@@ -474,7 +474,7 @@ static float BLOCK_CHECK_DISTANCE      = 5.0;
 float g_AIPlaneZNormAccept = 0.465f;
 float g_AIPlaneZNormPath   = 0.7f;
 
-#endif EDITOR
+#endif // EDITOR
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -824,7 +824,7 @@ static const mxs_vector & __fastcall ComputeCellCenter(const tAIPathCellID cell,
 {
    tAIPathVertexID id;
    tAIPathCell2VertexLinkID i;
-   register cMxsVector * pPoint;
+   cMxsVector * pPoint;
    const tAIPathCell2VertexLinkID lastVertex = g_AIPathDB.m_Cells[cell].firstVertex + g_AIPathDB.m_Cells[cell].vertexCount;
 
    ((cMxsVector *)pCenter)->Set(0, 0, 0);
@@ -3648,7 +3648,7 @@ static void AISegmentSplit(const mxs_vector & start, const mxs_vector & end)
 static BOOL InXYBox(const mxs_vector & p, const mxs_vector * box)
 {
    int i;
-   register const mxs_vector * p1;
+   const mxs_vector * p1;
    const mxs_vector * p2;
 
    float edge_vec_x, edge_vec_y;   // 2d vectors we dont have...
@@ -4366,7 +4366,7 @@ void SortLinksByDistance()
 
 }
 
-#endif EDITOR
+#endif // EDITOR
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -5524,7 +5524,7 @@ void AIPathFindRead(ITagFile * pTagFile)
          sZoneOkBitsMap *pMap;
          sZoneOkBitsMap  map;
 
-         pTagFile->Move((char *)&map.key, sizeof(long));
+         pTagFile->Move((char *)&map.key, sizeof(map.key));
          pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
 
          while (map.key != 0)
@@ -5536,7 +5536,7 @@ void AIPathFindRead(ITagFile * pTagFile)
 
             g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.Insert(pMap);
 
-            pTagFile->Move((char *)&map.key, sizeof(long));
+            pTagFile->Move((char *)&map.key, sizeof(map.key));
             pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
          }
       }
@@ -5714,7 +5714,7 @@ void AIPathFindWrite(ITagFile * pTagFile)
          pTagFile->Move((char *)&disk, sizeof(disk));
       }
 
-      long zero = 0;
+      int32 zero = 0;
 
       // New for 3.2, multiple pathfinding zones:
       for (i = 0; i < kAIZone_Num; i++)
@@ -5728,12 +5728,12 @@ void AIPathFindWrite(ITagFile * pTagFile)
          pMap = g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.GetFirst(handle);
          while (pMap != NULL)
          {
-            pTagFile->Move((char*)&pMap->key, sizeof(long));
+            pTagFile->Move((char*)&pMap->key, sizeof(pMap->key));
             pTagFile->Move((char*)&pMap->okBits, sizeof(tAIPathOkBits));
 
             pMap = g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.GetNext(handle);
          }
-         pTagFile->Move((char*)&zero, sizeof(long));
+         pTagFile->Move((char*)&zero, sizeof(zero));
          pTagFile->Move((char*)&zero, sizeof(tAIPathOkBits));
       }
 

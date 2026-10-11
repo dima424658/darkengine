@@ -12,11 +12,9 @@
 // Must be last header
 #include <dbmem.h>
 
-#ifdef __MSVC
-template cDList<cSimpleDListNode<LinkID>,1>;
-template cSimpleDList<LinkID>;
-template cSimpleListSet<LinkID>;
-#endif
+template class cDList<cSimpleDListNode<LinkID>,1>;
+template class cSimpleDList<LinkID>;
+template class cSimpleListSet<LinkID>;
 
 
 ////////////////////////////////////////////////////////////

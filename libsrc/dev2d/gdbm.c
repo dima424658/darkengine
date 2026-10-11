@@ -8,7 +8,7 @@
 
 #include <clip2d.h>
 #include <gdbm.h>
-extern void (*gen_bitmap_func[])();
+extern gdbm_func *gen_bitmap_func[];
 
 static int gdi_bitmap(grs_bitmap *bm, int x, int y, gdubm_func *ubm_func)
 {
@@ -25,7 +25,7 @@ static int gdi_bitmap(grs_bitmap *bm, int x, int y, gdubm_func *ubm_func)
       code |= CLIP_BOT;
 
    if (code != CLIP_NONE)
-      ((gdbm_func *)gen_bitmap_func[bm->type])(bm, x, y, code, ubm_func);
+      gen_bitmap_func[bm->type](bm, x, y, code, ubm_func);
    else
       ubm_func(bm, x, y);
 

@@ -1,7 +1,10 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 #include <types.h>
+
+#pragma pack(push, 1)
 
 typedef struct sPlatformDisplayMode
 {
@@ -102,3 +105,5 @@ EXTERN long PlatformAtomicAdd(volatile long *value, long amount);
 EXTERN long PlatformAtomicCompareExchange(volatile long *value,
                                           long replacement,
                                           long expected);
+
+#pragma pack(pop)

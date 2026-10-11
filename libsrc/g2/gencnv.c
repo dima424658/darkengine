@@ -1,6 +1,6 @@
 #include <dev2d.h>
 #include <icanvas2.h>
-#include <general.h>
+#include "general.h"
 
 void (*g2d_default_gen_canvas_table[G2C_TYPES])() =
 { 0 };

@@ -601,7 +601,7 @@ void cStandardRelation::SendLinkMsg(eRelationListenMsg ops,
 
    // Allocate a message with enough space for the link data, if necessary.
    ulong dataSize = (ops & kListenLinkModify) ? DataStore->DataSize() : 0;
-   ulong msgSize = dataSize + sizeof sLinkNetMsg;
+   ulong msgSize = dataSize + sizeof(sLinkNetMsg);
    sLinkNetMsg *netmsg = (sLinkNetMsg *)malloc(msgSize);
    // Subtract out the compile-time known size of linkData, which the
    // C compiler forced me to add in, since it wouldn't allow linkData

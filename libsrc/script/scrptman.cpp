@@ -75,8 +75,8 @@ void ScriptDebugLogDispatch(IScript* script, const sScrMsg* message)
    if (!g_ScriptDebugEnabled || !g_ScriptDebugFile || !script || !message)
       return;
 
-   fprintf(g_ScriptDebugFile, "%lu\t%d\t%d\t%s\t%s\n",
-           message->time, message->from, message->to,
+   fprintf(g_ScriptDebugFile, "%u\t%d\t%d\t%s\t%s\n",
+           (unsigned)message->time, message->from, message->to,
            script->GetClassName() ? script->GetClassName() : "(unknown)",
            message->message ? message->message : "(none)");
    fflush(g_ScriptDebugFile);
@@ -107,7 +107,13 @@ template cHashSet <sServiceTableEntry *, const GUID *, cHashFunctions>;
 // CLASS: cScrServiceTable
 //
 
-cDynArray<sScrSrvRegData *> g_ScrSrvRegData;
+cDynArray<sScrSrvRegData *> &ScrSrvRegData()
+{
+   // Script-service registrars live in many translation units.  A local
+   // static avoids losing registrations to cross-unit initialization order.
+   static cDynArray<sScrSrvRegData *> services;
+   return services;
+}
 
 cScrServiceTable::~cScrServiceTable()
 {
@@ -150,11 +156,19 @@ cScriptMan::~cScriptMan()
 
 STDMETHODIMP cScriptMan::GameInit()
 {
-   for (int i = 0; i < g_ScrSrvRegData.Size(); i++)
+   cDynArray<sScrSrvRegData *> &services = ScrSrvRegData();
+
+   // Make the complete service table visible before initializing any one
+   // service.  Service initialization can dispatch BeginScript recursively;
+   // interleaving registration and initialization made those early messages
+   // fail whenever they reached a service later in the registration array.
+   for (int i = 0; i < services.Size(); i++)
+      ExposeService(services[i]->pService, services[i]->pGuid);
+
+   for (int i = 0; i < services.Size(); i++)
    {
-      ExposeService(g_ScrSrvRegData[i]->pService, g_ScrSrvRegData[i]->pGuid);
-      g_ScrSrvRegData[i]->pService->Init();
-      g_ScrSrvRegData[i]->pService->Release();
+      services[i]->pService->Init();
+      services[i]->pService->Release();
    }
 
    // If the application has defined a networking interface, go get it:
@@ -167,10 +181,11 @@ STDMETHODIMP cScriptMan::GameInit()
 
 STDMETHODIMP cScriptMan::GameEnd()
 {
-   for (int i = 0; i < g_ScrSrvRegData.Size(); i++)
+   cDynArray<sScrSrvRegData *> &services = ScrSrvRegData();
+   for (int i = 0; i < services.Size(); i++)
    {
-      g_ScrSrvRegData[i]->pService->End();
-      g_ScrSrvRegData[i]->pService->Release();
+      services[i]->pService->End();
+      services[i]->pService->Release();
    }
 
    SafeRelease(m_pScriptNet);
@@ -570,14 +585,10 @@ STDMETHODIMP cScriptMan::ForgetAllObjs()
       return S_OK;
    }
 
-   tHashSetHandle iter;
-
-   cScrObj * pScrObj = m_ActiveObjs.GetFirst(iter);
-
-   while (pScrObj)
+   while (!m_ActiveObjs.IsEmpty())
    {
-      DoForgetObj(pScrObj);
-      pScrObj = m_ActiveObjs.GetNext(iter);
+      tHashSetHandle iter;
+      DoForgetObj(m_ActiveObjs.GetFirst(iter));
    }
 
    // recycle timer ids 
@@ -1031,12 +1042,13 @@ HRESULT cScriptMan::ClearScriptData(ObjID objId, const char * pszClass)
 
    while (pDatum)
    {
+      sScrDatum * pNext = m_ScriptsData.GetNext(iter);
       if (pDatum->objId == objId
        && (!pszClass || strcmp(pszClass, pDatum->pszClass) == 0))
       {
          delete m_ScriptsData.Remove(pDatum);
       }
-      pDatum = m_ScriptsData.GetNext(iter);
+      pDatum = pNext;
    }
    return S_OK;
 }

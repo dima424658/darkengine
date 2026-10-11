@@ -58,9 +58,7 @@ int gd_init(void)
 
    init_dispatch_tables();
 
-#ifdef _WIN32
    gd_use_com();
-#endif
 
    if (gdd_active != 0) {
       Warning (("gd_init(): dev2d already active.\n"));
@@ -94,9 +92,7 @@ int gd_close(void)
 
    temp_mem_uninit();
 
-#ifdef _WIN32
    gd_release_com();
-#endif
 
    return 0;
 }

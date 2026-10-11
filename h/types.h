@@ -19,6 +19,19 @@
 #include <limits.h>
 #include <stdint.h>
 
+/*
+ * glibc exposes a legacy LP64 "ulong" typedef from <sys/types.h> whenever
+ * GNU APIs are enabled.  Dark's ulong is intentionally a persisted 32-bit
+ * type, so let glibc declare its compatibility name under a private spelling
+ * before the engine typedef below.  The sys/types include guard prevents a
+ * later system header from reintroducing the conflicting name.
+ */
+#if defined(__linux__)
+#define ulong __dark_system_ulong
+#include <sys/types.h>
+#undef ulong
+#endif
+
 #ifndef EXTERN_C
 #ifdef __cplusplus
 #define EXTERN_C extern "C"
@@ -29,6 +42,26 @@
 
 #ifndef CDECL
 #define CDECL
+#endif
+
+#if !defined(_WIN32)
+#ifndef __cdecl
+#define __cdecl
+#endif
+#ifndef __stdcall
+#define __stdcall
+#endif
+#ifndef __fastcall
+#define __fastcall
+#endif
+#ifndef __declspec
+#define __declspec(attribute)
+#endif
+#ifndef interface
+#define interface struct
+#endif
+
+#include <legacy_compat.h>
 #endif
 
 #ifndef FAR
@@ -70,9 +103,14 @@ typedef unsigned long DWORD_PTR;
 // NULL
 //
 
-#ifndef NULL
+#if defined(__GNUC__) && defined(__cplusplus)
+    // GCC's __null extension diagnoses the engine's historical integer uses
+    // of NULL. Dark predates nullptr and consistently expects literal zero.
+    #undef NULL
     #define NULL 0
-#endif /* !NULL */
+#elif !defined(NULL)
+    #define NULL 0
+#endif
 
 
 //
@@ -89,6 +127,7 @@ typedef unsigned int    uint;
 typedef unsigned long   ulong;
 #else
 typedef uint32_t        ulong;
+#define DARK_UINT_ULONG_SAME_TYPE 1
 #endif
 
 typedef   signed char   schar;

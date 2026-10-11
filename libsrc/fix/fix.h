@@ -21,7 +21,7 @@
 extern "C"  {
 #endif  // cplusplus
 
-ushort long_sqrt (long x);
+ushort long_sqrt (sint32 x);
 #ifdef __WATCOMC__
 #pragma aux long_sqrt parm [eax] value [ax] modify [eax ebx ecx edx esi edi]
 #endif
@@ -31,8 +31,8 @@ ushort long_sqrt (long x);
 // fix.c
 //
 
-long long_fast_pyth_dist (long a, long b);
-long long_safe_pyth_dist (long a, long b);
+sint32 long_fast_pyth_dist (sint32 a, sint32 b);
+sint32 long_safe_pyth_dist (sint32 a, sint32 b);
 
 //////////////////////////////
 //
@@ -43,7 +43,7 @@ long long_safe_pyth_dist (long a, long b);
    bits of integer, and 16 bits of fraction.  thus, a rational number a is
    represented as a 32-bit number as a*2^16. */
 
-typedef long fix;
+typedef sint32 fix;
 typedef fix fix16;
 
 // define min and max
@@ -68,7 +68,7 @@ typedef fix fix16;
 typedef ushort fixang;
 
 /* makes a fixed point number with integral part a and fractional part b. */
-#define fix_make(a,b) ((fix) ((((long)(a))<<16)|(b)) )
+#define fix_make(a,b) ((fix) ((((sint32)(a))<<16)|(b)) )
 
 #define FIX_UNIT fix_make(1,0)
 
@@ -143,7 +143,7 @@ typedef ushort fixang;
 #define fixrad_to_fixang(fixradian) (fix_frac(fix_div((fixradian),fix_2pi)))
 #define fixang_to_fixrad(ang) fix_div(fix_mul(ang,fix_2pi),0x10000)
 #define degrees_to_fixang(d)    ((fixang)(((d)*FIXANG_PI)/180))
-#define fixang_to_degrees(ang)  (((long)(ang)*180)/FIXANG_PI)
+#define fixang_to_degrees(ang)  (((sint32)(ang)*180)/FIXANG_PI)
 
 // turns a fixed point into a float.
 #define fix_float(n) ( ((float)(n)) / ((float)(65536L)) )
@@ -311,9 +311,9 @@ fix fix_exp (fix x);
 //
 // fix24.c
 
-typedef long fix24;
+typedef sint32 fix24;
 
-#define fix24_make(a,b) ((fix24) ((((long)(a))<<8)|(b)))
+#define fix24_make(a,b) ((fix24) ((((sint32)(a))<<8)|(b)))
 #define fix24_trunc(n) ((fix24) ((n)&0xffffff00))
 #define fix24_round(n) ((fix24) (((n)+128)&0xffffff00))
 #define fix24_int(n) ((n)>>8)

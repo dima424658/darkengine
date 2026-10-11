@@ -398,7 +398,7 @@ HRESULT cStoredProperty::QI(IUnknown* me, REFIID id, void ** ppI)
 //
 
 
-IPropertyStore* InitBasePropertyStore(IPropertyStore* store, ulong flags);
+static IPropertyStore* InitBasePropertyStore(IPropertyStore* store, ulong flags);
 
 cPropertyBase::cPropertyBase(const sPropertyDesc* desc) :
    mDesc(*desc), 

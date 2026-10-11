@@ -42,7 +42,7 @@
 //
 
 // This is actually implemented at the bottom of this file:
-void doSetField(ObjID obj, 
+static void doSetField(ObjID obj,
                 const char *propname,
                 const char *field,
                 const cMultiParm &val,

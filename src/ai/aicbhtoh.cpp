@@ -112,11 +112,11 @@
 #define _HD                              "AIHTHWatch %d: "
 #define _HD_P                            GetID()
 #define _HTHWatchObj()                   (AIIsWatched(Cbt, GetID()))
-#define _HTHWatchPrint(str)              do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P); } while (0)
-#define _HTHWatchPrint1(str,v1)          do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P,v1); } while (0)
-#define _HTHWatchPrint2(str,v1,v2)       do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P,v1,v2); } while (0)
-#define _HTHWatchPrint3(str,v1,v2,v3)    do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P,v1,v2,v3); } while (0)
-#define _HTHWatchPrint4(str,v1,v2,v3,v4) do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P,v1,v2,v3,v4); } while (0)
+#define _HTHWatchPrint(str)              do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P); } while (0)
+#define _HTHWatchPrint1(str,v1)          do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P,v1); } while (0)
+#define _HTHWatchPrint2(str,v1,v2)       do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P,v1,v2); } while (0)
+#define _HTHWatchPrint3(str,v1,v2,v3)    do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P,v1,v2,v3); } while (0)
+#define _HTHWatchPrint4(str,v1,v2,v3,v4) do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P,v1,v2,v3,v4); } while (0)
 #define _HTHAddScreenString(str)         // AddScreenString(str)
 #define _HTHModeName(mode)               g_AIAtkModeNames[ModeGetBase(mode)]
 const char * g_AIAtkModeNames[] =
@@ -134,7 +134,7 @@ const char * g_AIAtkModeNames[] =
 #define _HTHModeName(mode)
 #endif
 
-#define _HTHWatchInterrupts(str)       _HTHWatchPrint("_intr_ "str)
+#define _HTHWatchInterrupts(str)       _HTHWatchPrint("_intr_ " str)
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -427,7 +427,7 @@ STDMETHODIMP_(void) cAIHtoHSubcombat::OnDamage(const sDamageMsg *pMsg, ObjID rea
 
    // add random
       float dmg=(float)ouch->amount, var;
-   var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1))*audio->el[2];
+   var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1.0f))*audio->el[2];
    dmg+=var;
    _HTHWatchPrint4("AudioResponse raw %g use %g parms %g %g\n",(float)ouch->amount,dmg,audio->el[0],audio->el[1]);
    if (dmg>audio->el[0])
@@ -443,7 +443,7 @@ STDMETHODIMP_(void) cAIHtoHSubcombat::OnDamage(const sDamageMsg *pMsg, ObjID rea
       }
    }
          dmg=(float)ouch->amount;
-   var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1))*motion->el[2];
+   var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1.0f))*motion->el[2];
    dmg+=var;
    _HTHWatchPrint4("MotionResponse raw %g use %g parms %g %g\n",(float)ouch->amount,dmg,motion->el[0],motion->el[1]);
    if (dmg>motion->el[0])

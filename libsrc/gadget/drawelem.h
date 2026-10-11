@@ -27,6 +27,7 @@ typedef enum _DrawElemState
 
 #define DRAWELEM_ALL_STATES 0xFFFF
 
+struct _DrawElement;
 typedef void (*DrawElemCallback)(struct _DrawElement* drawme, DrawElemState state);
 
 #define MAX_BTYPES   8

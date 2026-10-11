@@ -2,6 +2,7 @@
 #include <lgassert.h>
 
 #include <algorithm>
+#include <cstring>
 
 
 cLoopQueue::cLoopQueue()

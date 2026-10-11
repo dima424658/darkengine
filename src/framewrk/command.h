@@ -14,8 +14,8 @@
   // anybody who's adding commands needs to see this
 #include <contexts.h>
 
-EXTERN unsigned long  command_context;
-EXTERN unsigned long *command_context_ptr;
+EXTERN ulong  command_context;
+EXTERN ulong *command_context_ptr;
 
   // setup command system and add internal commands
 EXTERN void CommandInit(void);
@@ -50,11 +50,41 @@ enum CommandType
 
 // command definition structure
 
+#ifdef __cplusplus
+class cCommandValue
+{
+public:
+   typedef void (*tErasedFunction)();
+
+   cCommandValue(decltype(nullptr)) : m_data(NULL) {}
+   cCommandValue(void *data) : m_data(data) {}
+
+   template <class Return, class... Args>
+   cCommandValue(Return (*function)(Args...))
+      : m_function(reinterpret_cast<tErasedFunction>(function))
+   {
+   }
+
+   operator void *() const { return m_data; }
+
+private:
+   union
+   {
+      void *m_data;
+      tErasedFunction m_function;
+   };
+};
+#endif
+
 typedef struct
 {
    const char *name;
    enum CommandType type;
+#ifdef __cplusplus
+   cCommandValue val;
+#else
    void *val;
+#endif
    const char *comment;
    ulong contexts;
 } Command;

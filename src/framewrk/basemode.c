@@ -164,7 +164,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 //
 
 
-static ILoopClient* LGAPI _CreateClient(const sLoopClientDesc * pDesc, tLoopClientData data)
+static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
    // allocate space for our state, and fill out the fields

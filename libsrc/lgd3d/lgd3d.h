@@ -314,8 +314,6 @@ do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
 
     extern int lgd3d_trifan(int n, r3s_point** vpl);
     extern int lgd3d_lit_trifan(int n, r3s_point** vpl);
-    extern int lgd3d_poly(int n, r3s_point** vpl);
-    extern int lgd3d_spoly(int n, r3s_point** vpl);
     extern int lgd3d_g2upoly(int n, g2s_point** vpl);
     extern int lgd3d_g2poly(int n, g2s_point** vpl);
     extern int lgd3d_g2utrifan(int n, g2s_point** vpl);

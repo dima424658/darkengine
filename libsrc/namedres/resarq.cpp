@@ -97,7 +97,7 @@ private:
 
         sResRequest(cResControlTable& owningControlTable,
             cResourceTypeData* id, IRes* pRes, int priority,
-            sResRequest::eRequestKind kind, void* pBuf, int bufSize)
+            sResRequest::eRequestKind kind, void* pBuf, long bufSize)
             :
             pControl{ nullptr },
             id{ id },
@@ -592,12 +592,12 @@ int cResManARQ::IsFulfilled(IRes* pRes)
     return g_ResARQFulfiller.Preload(pRes);
 }
 
-long cResManARQ::Kill(IRes* pRes)
+HRESULT cResManARQ::Kill(IRes* pRes)
 {
     return g_ResARQFulfiller.Kill(pRes);
 }
 
-long cResManARQ::GetResult(IRes* pRes, void** ppResult)
+HRESULT cResManARQ::GetResult(IRes* pRes, void** ppResult)
 {
     return g_ResARQFulfiller.GetResult(pRes, ppResult);
 }

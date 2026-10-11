@@ -70,7 +70,7 @@ INetManager *cNetMsg::gm_pNetMan = NULL;
 IObjectNetworking *cNetMsg::gm_pObjNet = NULL;
 IObjectSystem *cNetMsg::gm_pObjSys = NULL;
 uchar *cNetMsg::gm_pMsgBuffer = NULL;
-BOOL cNetMsg::gm_bAssertArchetypes = NULL;
+BOOL cNetMsg::gm_bAssertArchetypes = FALSE;
 
 // Static constructor, for the whole system
 void cNetMsg::InitNetMsgs()
@@ -418,13 +418,13 @@ BOOL cNetMsg::MarshalArguments(va_list pArgs, ObjID *objPlayer, uint *size)
 
          case kNMPT_Short:
          case kNMPT_UShort:
-            *((ushort *) ptr) = va_arg(pArgs, ushort);
+            *((ushort *) ptr) = (ushort)va_arg(pArgs, int);
             ptr += sizeof(ushort);
             break;
 
          case kNMPT_Byte:
          case kNMPT_UByte:
-            *((uchar *) ptr) = va_arg(pArgs, uchar);
+            *((uchar *) ptr) = (uchar)va_arg(pArgs, int);
             ptr += sizeof(uchar);
             break;
 
@@ -930,7 +930,7 @@ BOOL cNetMsg::UnmarshalParams(uchar *ptr, ObjID fromPlayer, ObjID *pForwardTo)
          {
             if (*((uchar *) ptr) == NULL_STR_TOKEN) {
                // It was a null string
-               m_ppParams[i] = NULL;
+               m_ppParams[i] = 0;
                ptr += sizeof(uchar);
             } else {
                m_ppParams[i] = reinterpret_cast<uintptr_t>(ptr);
@@ -1058,33 +1058,33 @@ void cNetMsg::SendToHandler()
    if (m_pClientData) {
       switch(m_NumDispatchParams) {
          case 0:
-            ((tMsgFunc1) m_pDesc->msgHandler)(
+            (m_pDesc->msgHandler.As<tMsgFunc1>())(
                reinterpret_cast<uintptr_t>(m_pClientData));
             break;
          case 1:
-            ((tMsgFunc2) m_pDesc->msgHandler)(GetParam(0), 
+            (m_pDesc->msgHandler.As<tMsgFunc2>())(GetParam(0),
                                               reinterpret_cast<uintptr_t>(m_pClientData));
             break;
          case 2:
-            ((tMsgFunc3) m_pDesc->msgHandler)(GetParam(0), 
+            (m_pDesc->msgHandler.As<tMsgFunc3>())(GetParam(0),
                                               GetParam(1), 
                                               reinterpret_cast<uintptr_t>(m_pClientData));
             break;
          case 3:
-            ((tMsgFunc4) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc4>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               reinterpret_cast<uintptr_t>(m_pClientData));
             break;
          case 4:
-            ((tMsgFunc5) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc5>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
                                               reinterpret_cast<uintptr_t>(m_pClientData));
             break;
          case 5:
-            ((tMsgFunc6) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc6>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
@@ -1092,7 +1092,7 @@ void cNetMsg::SendToHandler()
                                               reinterpret_cast<uintptr_t>(m_pClientData));
             break;
          case 6:
-            ((tMsgFunc7) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc7>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
@@ -1101,7 +1101,7 @@ void cNetMsg::SendToHandler()
                                               reinterpret_cast<uintptr_t>(m_pClientData));
             break;
          case 7:
-            ((tMsgFunc8) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc8>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
@@ -1111,7 +1111,7 @@ void cNetMsg::SendToHandler()
                                               reinterpret_cast<uintptr_t>(m_pClientData));
             break;
          case 8:
-            ((tMsgFunc9) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc9>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
@@ -1127,34 +1127,34 @@ void cNetMsg::SendToHandler()
    } else {
       switch(m_NumDispatchParams) {
          case 0:
-            ((tMsgFunc0) m_pDesc->msgHandler)();
+            (m_pDesc->msgHandler.As<tMsgFunc0>())();
             break;
          case 1:
-            ((tMsgFunc1) m_pDesc->msgHandler)(GetParam(0));
+            (m_pDesc->msgHandler.As<tMsgFunc1>())(GetParam(0));
             break;
          case 2:
-            ((tMsgFunc2) m_pDesc->msgHandler)(GetParam(0), GetParam(1));
+            (m_pDesc->msgHandler.As<tMsgFunc2>())(GetParam(0), GetParam(1));
             break;
          case 3:
-            ((tMsgFunc3) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc3>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2));
             break;
          case 4:
-            ((tMsgFunc4) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc4>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3));
             break;
          case 5:
-            ((tMsgFunc5) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc5>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
                                               GetParam(4));
             break;
          case 6:
-            ((tMsgFunc6) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc6>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
@@ -1162,7 +1162,7 @@ void cNetMsg::SendToHandler()
                                               GetParam(5));
             break;
          case 7:
-            ((tMsgFunc7) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc7>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
@@ -1171,7 +1171,7 @@ void cNetMsg::SendToHandler()
                                               GetParam(6));
             break;
          case 8:
-            ((tMsgFunc8) m_pDesc->msgHandler)(GetParam(0),
+            (m_pDesc->msgHandler.As<tMsgFunc8>())(GetParam(0),
                                               GetParam(1),
                                               GetParam(2),
                                               GetParam(3),
@@ -1391,14 +1391,14 @@ void cNetMsg::SendSpew(va_list pArgs)
          case kNMPT_Short:
          case kNMPT_UShort:
          {
-            int n = va_arg(pArgs, ushort);
+            int n = va_arg(pArgs, int);
             mprintf("%d", n);
             break;
          }
          case kNMPT_Byte:
          case kNMPT_UByte:
          {
-            int n = va_arg(pArgs, uchar);
+            int n = va_arg(pArgs, int);
             mprintf("%d", n);
             break;
          }

@@ -33,7 +33,7 @@ class dbgostrstream : public std::ostrstream
 {
 public:
    dbgostrstream() {}
-   dbgostrstream( char *str, int len, std::ios::open_mode mode = std::ios::out ) :
+   dbgostrstream( char *str, int len, std::ios::openmode mode = std::ios::out ) :
       ostrstream(str,len,mode) {}
    void flush_to_dbg( int reportType, int errCode, int src );
    dbgostrstream &prefix( int reportType );

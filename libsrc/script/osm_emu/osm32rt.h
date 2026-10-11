@@ -6,9 +6,11 @@
 #include <osm_emu/osm32bridge.h>
 #include <osm_emu/osm32img.h>
 
+#pragma pack(push, 8)
 #include <stdint.h>
 #include <string>
 #include <vector>
+#pragma pack(pop)
 
 namespace osm32
 {

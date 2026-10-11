@@ -30,16 +30,10 @@ typedef struct texture_manager {
    void (*reload_texture)(grs_bitmap *bm);
 } texture_manager;
 
-/*
 typedef struct texture_driver texture_driver;
 
 extern texture_manager *get_block_texture_manager(texture_driver *driver);
 extern texture_manager *get_dopey_texture_manager(texture_driver *driver);
-//*/
-
-//zb
-extern texture_manager *get_block_texture_manager( void* driver );
-extern texture_manager *get_dopey_texture_manager( void* driver );
 
 
 extern texture_manager        *g_tmgr;       // this is kinda silly, but it'll do for now...

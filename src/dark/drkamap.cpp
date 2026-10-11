@@ -232,7 +232,7 @@ static sPropertyDesc AutomapProp_desc =
    { "Room", "Automap" },
 };
 
-void SetupAutomapProperty(void);
+static void SetupAutomapProperty(void);
 
 void AutomapPropInit(void)
 {
@@ -934,7 +934,7 @@ cAutomap::MapRegionEventHandler( uiEvent  *pEvent,
 {
    uiCookedKeyEvent *pKeyEvent;
    uiMouseEvent *pMouseEvent;
-   char c;
+   int c;
    bool retVal = FALSE;
    bool doRedraw = FALSE;
    int x, y, len, i;
@@ -1126,7 +1126,7 @@ static void create_panel_mode()
 
 
 
-void init_commands(void);
+static void init_commands(void);
 
 void DarkAutomapInit(void)
 {

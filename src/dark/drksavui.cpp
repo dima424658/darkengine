@@ -235,7 +235,7 @@ void cSavePanel::DoFileOp(int which)
       return;
    }
 
-   mkdir(SAVE_PATH); 
+   _mkdir(SAVE_PATH);
 
    ITagFile* file = TagFileOpen(fname,kTagOpenWrite); 
    HRESULT retval = E_FAIL; 
@@ -566,7 +566,7 @@ void cSaveBndPanel::DoFileOp(int which)
 {
    const char* fname = SlotFileName(which); 
 
-   mkdir(SAVE_PATH); 
+   _mkdir(SAVE_PATH);
    MessageNamed("saving"); 
 
    //get header
@@ -685,7 +685,7 @@ void SwitchToSaveBndMode(BOOL push)
 // Init/Term
 //
 
-void init_commands(); 
+static void init_commands();
 
 void DarkSaveInitUI()
 {

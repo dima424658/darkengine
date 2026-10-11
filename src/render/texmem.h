@@ -88,6 +88,8 @@ EXTERN void texmem_free_tmap(grs_bitmap *bm);
 EXTERN BOOL texmem_interpret_new_res(IRes *pRes, 
                                      IStore *pStore, 
                                      void *pClientData);
+EXTERN void texmem_store_callback(IRes *pRes, IStore *pStore,
+                                  void *pClientData);
 
 //////////////////////
 // api to load/save

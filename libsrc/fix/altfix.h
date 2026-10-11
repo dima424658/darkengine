@@ -35,12 +35,12 @@ static __inline fix altfix_div_shift_safe(fix a, fix b, unsigned shift)
    return (fix)result;
 }
 
-__inline fix fix_mul_8_16_16(fix a, fix b)
+static __inline fix fix_mul_8_16_16(fix a, fix b)
 {
    return altfix_mul_shift(a, b, 24);
 }
 
-__inline fix fix_mul_3_3_3(fix a, fix b)
+static __inline fix fix_mul_3_3_3(fix a, fix b)
 {
    return altfix_mul_shift(a, b, 29);
 }
@@ -48,47 +48,47 @@ __inline fix fix_mul_3_3_3(fix a, fix b)
 #define fix_mul_3_16_16 fix_mul_3_3_3
 #define fix_mul_3_8_8 fix_mul_3_3_3
 
-__inline fix fix_mul_3_32_16(fix a, fix b)
+static __inline fix fix_mul_3_32_16(fix a, fix b)
 {
    return altfix_mul_shift(a, b, 13);
 }
 
-__inline fix fix_mul_3_16_20(fix a, fix b)
+static __inline fix fix_mul_3_16_20(fix a, fix b)
 {
    return altfix_mul_shift(a, b, 33);
 }
 
-__inline fix fix_mul_16_32_20(fix a, fix b)
+static __inline fix fix_mul_16_32_20(fix a, fix b)
 {
    return altfix_mul_shift(a, b, 4);
 }
 
-__inline fix fix_div_16_16_3_fast(fix a, fix b)
+static __inline fix fix_div_16_16_3_fast(fix a, fix b)
 {
    return altfix_div_shift(a, b, 29);
 }
 
-__inline fix fix_div_16_16_3_safe(fix a, fix b)
+static __inline fix fix_div_16_16_3_safe(fix a, fix b)
 {
    return altfix_div_shift_safe(a, b, 29);
 }
 
-__inline fix fix_div_16_8_16_fast(fix a, fix b)
+static __inline fix fix_div_16_8_16_fast(fix a, fix b)
 {
    return altfix_div_shift(a, b, 24);
 }
 
-__inline fix fix_div_16_8_16_safe(fix a, fix b)
+static __inline fix fix_div_16_8_16_safe(fix a, fix b)
 {
    return altfix_div_shift_safe(a, b, 24);
 }
 
-__inline fix fix_div_16_3_32_fast(fix a, fix b)
+static __inline fix fix_div_16_3_32_fast(fix a, fix b)
 {
    return altfix_div_shift(a, b, 13);
 }
 
-__inline fix fix_div_16_3_32_safe(fix a, fix b)
+static __inline fix fix_div_16_3_32_safe(fix a, fix b)
 {
    return altfix_div_shift_safe(a, b, 13);
 }

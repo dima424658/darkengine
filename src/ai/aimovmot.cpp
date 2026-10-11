@@ -176,7 +176,7 @@ HRESULT cAIMoveEnactor::SetMotor(IMotor * pMotor)
    // one gets cast to the other.  Would have this in
    // constructor, but constructor is inline, and this
    // function doesn't get called very often.  KJ 5/20/98
-   AssertMsg(kAIME_Error==kMCoord_Error,"mcoord and ai status enums out of synch");
+   AssertMsg((int)kAIME_Error==(int)kMCoord_Error,"mcoord and ai status enums out of synch");
 
    if (!pMotor)
    {
@@ -254,7 +254,7 @@ HRESULT cAIMoveEnactor::MotNoAction(ulong deltaTime)
    // We only play "stand" motions if not efficient, and the coordinator
    // is idle, and we either didn't play one as our last act or the
    // AI is actually being rendered (toml 11-03-98)
-   newStandGoal = (status == kMCoord_Idle) && (!(m_flags&kLastWasNoAction) || (m_StandTimer.Expired() && rendobj_object_visible(GetID())));
+   newStandGoal = (status == (eAIMEStatus)kMCoord_Idle) && (!(m_flags&kLastWasNoAction) || (m_StandTimer.Expired() && rendobj_object_visible(GetID())));
    // If we're not ready to "re-stand" then check if we need to update our ballistic creature
    if (!newStandGoal)
       refreshBallistic = !CreatureSelfPropelled(GetID()) && (status == kAIME_ActiveInterrupt);

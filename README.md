@@ -37,10 +37,11 @@ not exist yet.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
 synchronization, and filesystem conveniences now cross `platform_services.h`
-and `platform_io.h`. Windows providers live under `winsrc`; the initial Unix
-providers and CMake portability target live under `unixsrc`. On Linux,
-`cmake -S . -B build-cmake && cmake --build build-cmake` validates that common
-boundary. The complete game target is still being migrated to CMake.
+and `platform_io.h`. Windows providers live under `winsrc`; Unix providers
+live under `unixsrc`. On Linux, CMake builds a native 64-bit `Thief2` executable
+with SDL2/OpenGL presentation and runtime-loaded OpenAL audio. The Linux target
+can load a retail mission and run gameplay, but remains an early port: movie
+playback, complete OSM service bridging, and DromEd are not yet implemented.
 
 Audio follows the same provider model. Windows uses DirectSound 3D by default,
 with native I3DL2 environmental reverb. An OpenAL provider supplies positional
@@ -69,6 +70,31 @@ The runner currently provides:
 
 ## Requirements
 
+### Linux / WSL2
+
+- A 64-bit Linux distribution with GCC, CMake, and Ninja
+- SDL2 and OpenGL development headers
+- A retail Thief 2 installation
+- OpenAL Soft at runtime for audio; the executable has no hard OpenAL link
+
+On Ubuntu under WSL2, the minimal build packages are:
+
+```sh
+sudo apt update
+sudo apt install build-essential cmake ninja-build libsdl2-dev libgl-dev
+```
+
+Gameplay uses SDL's native relative-pointer mode and consumes motion deltas;
+menus use absolute window coordinates. The provider prefers the compositor's
+native Wayland path when it is advertised. WSLg may not confine its Windows
+host cursor as reliably as a native Linux Wayland or X11 session.
+
+WSLg audio uses its PulseAudio socket. If WSLg stops accepting audio clients,
+close running WSL applications and run `wsl --shutdown` from PowerShell before
+starting the game again.
+
+### Windows
+
 - 64-bit Windows 10 or Windows 11
 - Visual Studio 2022 or Visual Studio 2022 Build Tools
 - The **Desktop development with C++** workload, including:
@@ -83,6 +109,32 @@ and Windows Media Foundation. No assembler is required by the active x86 or
 x64 build.
 
 ## Build instructions
+
+### Native Linux / WSL2
+
+Keep the source and build trees in the Linux filesystem for good build
+performance. From a WSL shell:
+
+```sh
+rsync -a --delete --exclude=.git --exclude=build --exclude=.codex-build \
+  /mnt/c/path/to/darkengine/ ~/darkengine-src/
+cmake -S ~/darkengine-src -B ~/darkengine-build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build ~/darkengine-build -j "$(nproc)"
+```
+
+The result is `~/darkengine-build/Thief2`, a native 64-bit ELF executable.
+Run it with the retail installation as the working directory because the
+engine resolves configuration and resource paths relative to that directory:
+
+```sh
+cd "/mnt/c/Games/Thief 2 - The Metal Age"
+~/darkengine-build/Thief2 quickstart=MISS1.MIS
+```
+
+For an unattended smoke test, add `auto_stop=60`. Paths on `/mnt/c` work but
+load more slowly than native Linux filesystems because Dark performs many
+small, case-insensitive resource lookups.
 
 ### Thief 2 in Visual Studio
 

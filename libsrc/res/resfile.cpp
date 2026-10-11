@@ -33,7 +33,7 @@
 */
 
 #include <fcntl.h>
-#include <sys\stat.h>
+#include <sys/stat.h>
 #include <platform_io.h>
 #include <string.h>
 

@@ -22,17 +22,15 @@
 
 #include <dbmem.h>
 
-#ifdef __MSVC
 //#pragma message("hah!")
-template cHashTable<sObjPropPair,sDatum,sObjPropHashFuncs>;
-template cHashTable<ObjID,sDatum,cHashFunctions>;
-template cSimpleDList<sObjDatumPair>;
-template cHashIter<sObjPropPair,sDatum,sObjPropHashFuncs>;
-template cHashIter<ObjID,sDatum,cHashFunctions>;
+template class cHashTable<sObjPropPair,sDatum,sObjPropHashFuncs>;
+template class cHashTable<ObjID,sDatum,cHashFunctions>;
+template class cSimpleDList<sObjDatumPair>;
+template class cHashIter<sObjPropPair,sDatum,sObjPropHashFuncs>;
+template class cHashIter<ObjID,sDatum,cHashFunctions>;
 
 //template void cDList<class cSimpleDListNode<struct sObjDatumPair>,1>::DestroyAll(void);
-template cDList<cSimpleDListNode<sObjDatumPair>,1>;
-#endif 
+template class cDList<cSimpleDListNode<sObjDatumPair>,1>;
 
 
 

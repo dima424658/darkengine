@@ -994,7 +994,7 @@ static void create_panel_modes()
 // INIT/TERM
 //
 
-void init_commands(); 
+static void init_commands();
 
 void LoadoutInit()
 {

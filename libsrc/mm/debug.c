@@ -36,16 +36,16 @@ static void draw_mark(mxs_trans *trans)
 
    ocol=(uchar)gr_get_fcolor();
    gr_set_fcolor(255);
-   v1.x=max(0,point.grp.sx-sw);
-   v1.y=max(0,point.grp.sy-sh);
-   v2.x=min(maxw,point.grp.sx+sw);
-   v2.y=min(maxh,point.grp.sy+sh);
+   v1.x=(point.grp.sx-sw > 0) ? point.grp.sx-sw : 0;
+   v1.y=(point.grp.sy-sh > 0) ? point.grp.sy-sh : 0;
+   v2.x=(point.grp.sx+sw < maxw) ? point.grp.sx+sw : maxw;
+   v2.y=(point.grp.sy+sh < maxh) ? point.grp.sy+sh : maxh;
    gr_line(&v1,&v2);
 
-   v1.x=max(0,point.grp.sx-sw);
-   v1.y=min(maxh,point.grp.sy+sh);
-   v2.x=min(maxw,point.grp.sx+sw);
-   v2.y=max(0,point.grp.sy-sh);
+   v1.x=(point.grp.sx-sw > 0) ? point.grp.sx-sw : 0;
+   v1.y=(point.grp.sy+sh < maxh) ? point.grp.sy+sh : maxh;
+   v2.x=(point.grp.sx+sw < maxw) ? point.grp.sx+sw : maxw;
+   v2.y=(point.grp.sy-sh > 0) ? point.grp.sy-sh : 0;
    gr_line(&v1,&v2);
 
    gr_set_fcolor(ocol);

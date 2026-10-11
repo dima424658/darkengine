@@ -14,7 +14,8 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-EXTERN const char * g_ppszAITeams[kAIT_NumTeams] = 
+EXTERN const char * g_ppszAITeams[kAIT_NumTeams];
+const char * g_ppszAITeams[kAIT_NumTeams] =
 {
    "Good",                                       // kAIT_Good
    "Neutral",                                    // kAIT_Neutral

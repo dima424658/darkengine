@@ -362,7 +362,7 @@ void BashPropsTerm()
 static IScriptMan * pScriptMan;
 static IContainSys* pContainSys;
 
-void init_sim_msg();
+static void init_sim_msg();
 
 void EngineFeaturesInit(void)
 {

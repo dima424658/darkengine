@@ -588,7 +588,7 @@ void MotSchemaYaccParse(char *schemaFile)
 
 
 
-mschparse()
+int mschparse(void)
 {
 	register short		mschi, *mschp;	/* for table lookup */
 	register short		*mschps;		/* top of state stack */

@@ -109,7 +109,8 @@ private:
 };
 
 cCombatManeuverFactory g_CombatManeuverFactory;
-EXTERN cManeuverFactory *g_pCombatManeuverFactory=&g_CombatManeuverFactory;
+EXTERN cManeuverFactory *g_pCombatManeuverFactory;
+cManeuverFactory *g_pCombatManeuverFactory=&g_CombatManeuverFactory;
 
 cMotionPlan *cCombatManeuverFactory::CreatePlan(const cMotionSchema *pSchema,const sMcMotorState& motState, \
       const sMcMoveState& moveState, const sMcMoveParams& params, IMotor *pMotor, cMotionCoordinator *pCoord)

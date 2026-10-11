@@ -33,8 +33,6 @@
 #elif defined (__SC__) || defined (_MSC_VER)
     #define snprintf    _snprintf
     #define vsnprintf   _vsnprintf
-#else
-#error ("Need size-limited printf functions");
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -354,8 +352,8 @@ int cAnsiStr::Find(char ch, int nFirst) const
     if (nFirst > m_nDataLength)
         return -1;
 
-    register char *pchData = m_pchData + nFirst;
-    register char *psz = (char *) strchr(pchData, ch);
+    char *pchData = m_pchData + nFirst;
+    char *psz = (char *) strchr(pchData, ch);
     return psz ? static_cast<int>(psz - m_pchData) : -1;
     }
 
@@ -364,7 +362,7 @@ int cAnsiStr::ReverseFind(char ch) const
     {
     // find a single character (start backwards, strrchr)
 
-    register char *psz;
+    char *psz;
     psz = (char *) strrchr(m_pchData, ch);
     return (psz == NULL) ? -1 : static_cast<int>(psz - m_pchData);
     }
@@ -379,8 +377,8 @@ int cAnsiStr::FindOneOf(const char *pszCharSet, int nFirst) const
     if (nFirst > m_nDataLength)
         return -1;
 
-    register char *pchData = m_pchData + nFirst;
-    register char *psz = (char *) strpbrk(pchData, pszCharSet);
+    char *pchData = m_pchData + nFirst;
+    char *psz = (char *) strpbrk(pchData, pszCharSet);
     return psz ? static_cast<int>(psz - pchData) : -1;
     }
 
@@ -393,8 +391,8 @@ int cAnsiStr::Find(const char *pszSub, int nFirst) const
     if (nFirst > m_nDataLength)
         return -1;
 
-    register char *pchData = m_pchData + nFirst;
-    register char *psz = (char *) strstr(pchData, pszSub);
+    char *pchData = m_pchData + nFirst;
+    char *psz = (char *) strstr(pchData, pszSub);
     return psz ? static_cast<int>(psz - m_pchData) : -1;
     }
 
@@ -770,7 +768,7 @@ void cAnsiStr::FmtStr(unsigned nBufSize, ushort nID,...)
         {
         const char *format = Str;
         va_list arg_ptr;
-        va_start(arg_ptr, format);
+        va_start(arg_ptr, nID);
         char *buffer = GetBufferSetLength(nBufSize);
         int n = vsnprintf(buffer, nBufSize - 1, format, arg_ptr);
         ReleaseBuffer(n);
@@ -788,7 +786,7 @@ void cAnsiStr::FmtStr(ushort nID,...)
         const int kFmtBufSize = 256;
 
         va_list arg_ptr;
-        va_start(arg_ptr, format);
+        va_start(arg_ptr, nID);
         char *buffer = GetBufferSetLength(kFmtBufSize);
         int n = vsnprintf(buffer, kFmtBufSize - 1, format, arg_ptr);
         ReleaseBuffer(n);

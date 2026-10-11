@@ -40,7 +40,8 @@ class cBugCreatureFactory : public cCreatureFactory
 };
 
 static cBugCreatureFactory g_BugCreatureFactory;
-EXTERN cCreatureFactory *g_pBugCreatureFactory=&g_BugCreatureFactory;
+EXTERN cCreatureFactory *g_pBugCreatureFactory;
+cCreatureFactory *g_pBugCreatureFactory=&g_BugCreatureFactory;
 
 #define LFINGER  16 // from crbugbst.c
 #define RFINGER  17

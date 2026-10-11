@@ -118,7 +118,8 @@ inline void cGroundLocoManeuver::NotifyAboutBeingStuck()
 }
 
 cGroundLocoManeuverFactory g_GroundLocoManeuverFactory;
-EXTERN cManeuverFactory *g_pGroundLocoManeuverFactory=&g_GroundLocoManeuverFactory;
+EXTERN cManeuverFactory *g_pGroundLocoManeuverFactory;
+cManeuverFactory *g_pGroundLocoManeuverFactory=&g_GroundLocoManeuverFactory;
 
 
 cMotionPlan *cGroundLocoManeuverFactory::CreatePlan(const cMotionSchema *pSchema,const sMcMotorState& motState, \

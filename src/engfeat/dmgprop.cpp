@@ -45,7 +45,7 @@ static sPropertyDesc SlayResultDesc =
 };
 
 static sPropertyTypeDesc SlayResultType = {   "eSlayResult", sizeof(int) }; 
-void init_slay_sdesc(); 
+static void init_slay_sdesc();
 
 static IIntProperty* WeapProp = NULL;
 static IIntProperty* WeapTypeProp = NULL;

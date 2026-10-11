@@ -2,7 +2,7 @@
 #include <genbm.h>
 #include <grnull.h>
 
-void (*gen_bitmap_func[BMT_TYPES])() =
+gdbm_func *gen_bitmap_func[BMT_TYPES] =
 { 0 };
 
 void init_gen_bitmap_func(void)

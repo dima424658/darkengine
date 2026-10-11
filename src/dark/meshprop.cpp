@@ -77,7 +77,7 @@ static sPropertyDesc BeltLinkPropDesc =
 
 static IBeltLinkProperty* gBeltLinkProp = NULL;
 
-void SetupBeltLinkProperty(void);
+static void SetupBeltLinkProperty(void);
 
 void BeltLinkInit(void)
 {
@@ -171,7 +171,7 @@ static sPropertyDesc AltLinkPropDesc =
 
 static IAltLinkProperty* gAltLinkProp = NULL;
 
-void SetupAltLinkProperty(void);
+static void SetupAltLinkProperty(void);
 
 void AltLinkInit(void)
 {

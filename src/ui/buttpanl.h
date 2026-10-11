@@ -74,7 +74,7 @@ public:
    // Constructor.  The descriptors specify *default* values.  
    // The button panel will override them when necessary 
    // 
-   cModalButtonPanel(sPanelModeDesc* pmdesc, sLoopClientDesc* lcdesc);
+   cModalButtonPanel(const sPanelModeDesc& mdesc, sLoopClientDesc* lcdesc);
    ~cModalButtonPanel(); 
 
    //
@@ -114,7 +114,7 @@ protected:
       static bool BListCB(ushort action, int button, void* data, LGadBox* blist); 
       void SetupUI(); 
       void CleanupUI();
-      static ILoopClient* LGAPI FactoryFunc(const sLoopClientDesc*, tLoopClientData); 
+      static ILoopClient* LGAPI FactoryFunc(sLoopClientDesc*, tLoopClientData);
 
       const sLoopClientDesc* mpDesc; 
       cModalButtonPanel* mpPanel; 

@@ -201,7 +201,8 @@ void cAICamera::BroadcastSwitches(void)
          pScriptMan->PostMessage2(m_pAIState->GetID(), slink.dest, pData->m_msg, 
             pData->m_data[0], pData->m_data[1], pData->m_data[2]);
       else
-         pScriptMan->PostMessage2(m_pAIState->GetID(), slink.dest, NULL, NULL, NULL, NULL);
+         pScriptMan->PostMessage2(m_pAIState->GetID(), slink.dest, NULL,
+                                  cMultiParm(), cMultiParm(), cMultiParm());
       query->Next();
    }
 }

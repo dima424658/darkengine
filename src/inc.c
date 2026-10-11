@@ -359,7 +359,7 @@ static char *	incgetState INC_ARGS((int));
 #endif
 
 
-incparse()
+int incparse(void)
 {
 	register short		inci, *incp;	/* for table lookup */
 	register short		*incps;		/* top of state stack */

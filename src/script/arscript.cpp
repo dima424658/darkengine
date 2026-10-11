@@ -148,7 +148,7 @@ public:
             return E_FAIL; 
 
          // Build the reaction event
-         sStimEventData evdata = { what, stim_intensity, 0.0, 0, 0, GetSimTime() }; 
+         sStimEventData evdata = { (StimID)(int32)what, stim_intensity, 0.0, 0, 0, GetSimTime() };
          sStimEvent stimevent(&evdata); 
          sStimTrigger trigger = { 0.0, 0.0, kStimTrigNoMin|kStimTrigNoMax }; 
          sReactionEvent event = { &stimevent, &trigger, target }; 
@@ -203,7 +203,7 @@ public:
          return pReactions->GetReactionNamed(name); 
       }
 
-   STDMETHOD_(string,GetReactionName)(long id) 
+   STDMETHOD_(string,GetReactionName)(int32 id)
       {
          return pReactions->DescribeReaction(id)->name; 
       }

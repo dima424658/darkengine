@@ -195,7 +195,7 @@ extern int	yt_getc YY_ARGS((void));
  * the following can be redefined by the user.
  */
 #define	ECHO		fputs(inctext, incout)
-#define	output(c)	putc((c), incout) /* inclex sink for unmatched chars */
+#define	output(c)	(incout ? putc((c), incout) : (int)(c)) /* inclex sink for unmatched chars */
 #define	YY_FATAL(msg)	{ fprintf(stderr, "inclex: %s\n", msg); exit(1); }
 #define	YY_INTERACTIVE	1		/* save micro-seconds if 0 */
 #define	YYLMAX		100		/* token and pushback buffer size */

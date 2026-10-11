@@ -8,7 +8,7 @@
 #ifndef __QUESFILE_H
 #define __QUESFILE_H
 
-#include <questapi.H>
+#include <questapi.h>
 ////////////////////////////////////////////////////////////
 // DUMB QUEST DATA FILE READ
 //

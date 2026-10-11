@@ -84,7 +84,8 @@ static sBowWeaponInfo gBowWeaponInfo = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE
 
 #define PLAYER_BOW_HACK
 
-EXTERN ObjID g_ArrowObj=OBJ_NULL; // gets accessed in drkgame.c
+EXTERN ObjID g_ArrowObj;
+ObjID g_ArrowObj=OBJ_NULL; // gets accessed in drkgame.c
 
 //#define BOW_DEBUG_HORROR
 #ifdef BOW_DEBUG_HORROR
@@ -327,7 +328,7 @@ void ForceFinishBowAttack(BOOL abort)
    g_WobbleAmount = 0.0;
    g_Straining = FALSE;
 
-   WeaponEvent(kEndAttack, PlayerObject(), NULL);
+   WeaponEvent(kEndAttack, PlayerObject(), OBJ_NULL);
 
    if (abort)
       PutTheBowAway(abort);
@@ -519,7 +520,7 @@ BOOL DoBowAttack()
       {
          gBowWeaponInfo.bKnocked = TRUE;
          PlayerStartAction();  // WHY doesnt this start RIGHT AWAY!!! HATE HATE HATE
-         WeaponEvent(kStartWindup, PlayerObject(), NULL);
+         WeaponEvent(kStartWindup, PlayerObject(), OBJ_NULL);
          g_ArrowTimePoweringUp = 0;
          g_WobbleAmount = 0.0;
          bow_mprintf(("Start attack\n"));

@@ -885,7 +885,8 @@ BOOL cAINewRangedSubcombat::ProjectileHittable(int targetMethod, ObjID projectil
             data.targetID = targetID;
             PhysRaycastSetCallback(m_physcastCallback, (void*)&data);
          }
-         BOOL raycastResult = (PhysRaycast((Location)sourceLoc, targetLoc, &hitLoc, &hitObjID, 0.0) == kCollideNone);
+         Location castSource(sourceLoc);
+         BOOL raycastResult = (PhysRaycast(castSource, targetLoc, &hitLoc, &hitObjID, 0.0) == kCollideNone);
          PhysRaycastClearCallback();
          return raycastResult;
       }
@@ -966,7 +967,8 @@ BOOL cAINewRangedSubcombat::ProjectileHittable(int targetMethod, ObjID projectil
             PhysRaycastSetCallback(m_physcastCallback, (void*)&data);
          }
 
-         if (PhysRaycast(midLoc, (Location)sourceLoc, &hitLoc, &hitObjID, 0.0) != kCollideNone)
+         Location castSource(sourceLoc);
+         if (PhysRaycast(midLoc, castSource, &hitLoc, &hitObjID, 0.0) != kCollideNone)
          {
             PhysRaycastClearCallback();
             return FALSE;

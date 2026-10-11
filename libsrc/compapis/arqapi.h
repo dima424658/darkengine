@@ -12,6 +12,10 @@
 #include <prikind.h>
 #include <arqguid.h>
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4103)
+#endif
 #include <pshpack4.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -434,5 +438,8 @@ DECLARE_INTERFACE_(IAsyncStreamer, IUnknown)
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <poppack.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif /* !__ARQAPI_H */

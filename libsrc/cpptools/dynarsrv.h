@@ -14,6 +14,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+#include <new>
+#endif
+
 #if defined(__WATCOMC__)
 #endif
 

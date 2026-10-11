@@ -5,7 +5,7 @@
 // $Revision: 1.2 $
 //
 
-#if defined(_WIN32) && !defined(SHIP)
+#if !defined(SHIP)
 
 #include <memtimer.h>
 #include <memcore.h>

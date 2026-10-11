@@ -47,7 +47,7 @@
 //  Internal prototypes
 
 bool ResEraseIfInFile(Id id);                    // erase item from file
-void ResCopyBytes(int fd, long writePos, long readPos, long size);
+static void ResCopyBytes(int fd, long writePos, long readPos, long size);
 #undef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 

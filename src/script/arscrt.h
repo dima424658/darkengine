@@ -17,15 +17,17 @@ typedef object stimulus_kind;
 //
 class reaction_kind 
 {
-   long id; 
+   int32 id;
 public:
-   reaction_kind(long i) : id(i) {};
+   reaction_kind(int32 i) : id(i) {};
    reaction_kind(const char* name); 
 
-   operator long() const { return id;}; 
+   operator int32() const { return id;};
    operator string() const;
 
-}; 
+};
+
+static_assert(sizeof(reaction_kind) == 4, "Script reaction IDs require the 32-bit ABI");
 
 
 

@@ -9,6 +9,8 @@
 #ifndef __OBJPOS_H
 #define __OBJPOS_H
 
+struct Location;
+
 #include <objtype.h>
 #include <matrixs.h>
 

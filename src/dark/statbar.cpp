@@ -66,11 +66,20 @@ BOOL cStatusBar::MakeDrawCanvas() { return TRUE;}
 
 void cStatusBar::Update(ulong time)
 {
-   BOOL expired = refresh >= 0 && time - mLastDrawTime > (ulong)refresh;
+   BOOL expired = mLastDrawTime == 0 ||
+      (refresh >= 0 && time - mLastDrawTime > (ulong)refresh);
 
    // HideAtMax logic
    if ((flags & kHideAtMax)  && expired && mVal[kCur] == mVal[kMax])
    {
+      // Hardware rendering treats zero-valued compatibility pixels as a
+      // transparent HUD.  Erase the last cached bar explicitly when it
+      // becomes hidden instead of depending on a later full-canvas redraw.
+      if (!RectCheckNull(&mScreenRect))
+      {
+         gr_set_fcolor(0);
+         gr_rect(RECT_UNWRAP(&mScreenRect));
+      }
       memcpy(&mLastVal,&mVal,sizeof(mLastVal));
       return ;
    }

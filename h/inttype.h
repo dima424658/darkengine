@@ -14,6 +14,8 @@
 #ifndef __INTTYPES_H
 #define __INTTYPES_H
 
+#include <stdint.h>
+
 ////////////////////////////////////////////////////////////////
 //
 //                                      debugging stuff
@@ -68,6 +70,7 @@
 // but since they're typedefs they'll be easy to change if
 //   there's some other platform they don't work for
                       
+#ifndef __TYPES_H
 typedef unsigned char uint8;
 typedef   signed char sint8;
 typedef   signed char  int8;
@@ -76,12 +79,13 @@ typedef unsigned short uint16;
 typedef   signed short sint16;
 typedef   signed short  int16;
 
-typedef unsigned long uint32;
-typedef   signed long sint32;
-typedef   signed long  int32;
+typedef uint32_t       uint32;
+typedef int32_t        sint32;
+typedef int32_t         int32;
 
 //typedef unsigned int    uint;
 typedef   signed int    sint;
+#endif
 
 // note the use of longs instead of ints for 32 bit numbers.
 // this keeps compatibility with 16-bit compilers.

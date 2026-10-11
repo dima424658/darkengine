@@ -10,7 +10,8 @@
 #include <lg.h>
 #include <dlist.h>
 
-extern const char * g_pszDlistInsertError = "List node improperly added to multiple lists";
+extern const char * g_pszDlistInsertError;
+const char * g_pszDlistInsertError = "List node improperly added to multiple lists";
 
 ///////////////////////////////////////////////////////////////////////////////
 //

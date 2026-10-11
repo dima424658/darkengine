@@ -63,8 +63,8 @@ public:
 	int STDMETHODCALLTYPE AsyncExtract(IRes* pRes, int nPriority, void* pBuf, long bufSize) override;
 	int STDMETHODCALLTYPE AsyncPreload(IRes* pRes) override;
 	int STDMETHODCALLTYPE IsAsyncFulfilled(IRes* pRes) override;
-	long STDMETHODCALLTYPE AsyncKill(IRes* pRes) override;
-	long STDMETHODCALLTYPE GetAsyncResult(IRes* pRes, void** ppResult) override;
+	HRESULT STDMETHODCALLTYPE AsyncKill(IRes* pRes) override;
+	HRESULT STDMETHODCALLTYPE GetAsyncResult(IRes* pRes, void** ppResult) override;
 
 	void InstallResourceType(const char* pExt, IResType* pType);
 	void RemoveResourceType(const char* pExt, IResType* pType);

@@ -25,12 +25,7 @@
 #include <objtype.h>
 #include <wrtype.h>
 #include <phlistyp.h>
-
-#ifdef __cplusplus
-enum eMediaState;
-#else
-typedef int eMediaState;
-#endif
+#include <objmedia.h>
 
 #define PHYSICS_HIGH_MODEL_PROP_NAME "PhysicsHighDetail"
 #define PHYSICS_LOW_MODEL_PROP_NAME  "PhysicsLowDetail"

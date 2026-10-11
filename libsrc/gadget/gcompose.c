@@ -91,10 +91,10 @@ void GUIdone(GUIcompose* c)
 // Default GUI methods
 //
 
-errtype default_gui_setup(GUIcompose* c, int ctype);
-void default_gui_clear(GUIcompose* c, Rect* r);
-void default_gui_done(GUIcompose* c);
-void default_gui_setpal(GUIcompose* c);
+static errtype default_gui_setup(GUIcompose* c, int ctype);
+static void default_gui_clear(GUIcompose* c, Rect* r);
+static void default_gui_done(GUIcompose* c);
+static void default_gui_setpal(GUIcompose* c);
 
 static errtype default_gui_setup(GUIcompose* c, int ctype)
 {

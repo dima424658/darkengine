@@ -33,9 +33,9 @@ char *fix_sprint (char *str, fix x)
 	tmp = x & 0xffff;	tmp *= 10000; tmp /= 0xffff;
 
 	if (!neg)
-		sprintf (str, "%d.%04lu", x >> 16, tmp);
+		sprintf (str, "%d.%04u", x >> 16, tmp);
 	else
-		sprintf (str, "-%d.%04lu", x >> 16, tmp);
+		sprintf (str, "-%d.%04u", x >> 16, tmp);
 
    return str;
 }
@@ -54,9 +54,9 @@ char *fix24_sprint (char *str, fix24 x)
 	tmp = x & 0xff; tmp *= 1000; tmp /= 0xff;
 
 	if (!neg)
-		sprintf (str, "%ld.%03lu", x >> 8, tmp);
+		sprintf (str, "%d.%03u", x >> 8, tmp);
 	else
-		sprintf (str, "-%ld.%03lu", x >> 8, tmp);
+		sprintf (str, "-%d.%03u", x >> 8, tmp);
 
    return str;
 }
@@ -68,8 +68,8 @@ char *fix_sprint_hex (char *str, fix x)
 {
 	bool neg = FALSE;
 	if (x < 0) { x = -x; neg = TRUE; }
-	if (!neg) sprintf (str, "%x.%04lx", x >> 16, x&0xffff);
-	else 		 sprintf (str, "-%x.%04lx", x >> 16, x&0xffff);
+	if (!neg) sprintf (str, "%x.%04x", x >> 16, x&0xffff);
+	else 		 sprintf (str, "-%x.%04x", x >> 16, x&0xffff);
    return str;
 }
 
@@ -77,7 +77,7 @@ char *fix24_sprint_hex (char *str, fix24 x)
 {
 	bool neg = FALSE;
 	if (x < 0) { x = -x; neg = TRUE;	}
-	if (!neg) sprintf (str, "%x.%02lx", x >> 8, x&0xff);
-	else      sprintf (str, "-%x.%02lx", x >> 8, x&0xff);
+	if (!neg) sprintf (str, "%x.%02x", x >> 8, x&0xff);
+	else      sprintf (str, "-%x.%02x", x >> 8, x&0xff);
    return str;
 }

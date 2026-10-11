@@ -41,10 +41,10 @@ short gif_free_code;
 short gif_line_offset;
 short gif_line_number;
 
-void flush(int fp,uchar n);
-void write_code(int fp,int code);
-void compressImage(int fp,uint min_code_size);
-int readpixel(void);
+static void flush(int fp,uchar n);
+static void write_code(int fp,int code);
+static void compressImage(int fp,uint min_code_size);
+static int readpixel(void);
 
 /* mem_block needs to be 26K, you should have the screen set
  * to the current canvas

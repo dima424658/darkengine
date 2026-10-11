@@ -5,8 +5,6 @@
 // $Revision: 1.3 $
 //
 
-#ifdef _WIN32
-
 #include <lg.h>
 #include <multpool.h>
 #include <string.h>
@@ -487,4 +485,3 @@ STDMETHODIMP cMultiPool::VerifyHeap()
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif

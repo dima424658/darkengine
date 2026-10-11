@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 
 #include <sdesc.h>
@@ -350,7 +351,7 @@ void unparse_double_vec(const sFieldDesc* desc, const void* rawVal, char* out)
 
 void parse_ang(const sFieldDesc* desc, void* val, const char* in)
 {
-	*reinterpret_cast<double*>(val) = floor(atof(in) * 32768.0 / 180.0 + 0.5);
+	*reinterpret_cast<double*>(val) = std::floor(atof(in) * 32768.0 / 180.0 + 0.5);
 }
 
 void unparse_ang(const sFieldDesc* desc, const void* val, char* out)
@@ -364,9 +365,9 @@ void parse_ang_vec(const sFieldDesc* desc, void* rawVal, const char* in)
 
 	float vec[3]{};
 	sscanf(in, "%f, %f %f", &vec[0], &vec[1], &vec[2]);
-	val->tz = (mxs_ang)floorf(vec[0] * 32768.0f / 180.0f + 0.5f);
-	val->ty = (mxs_ang)floorf(vec[1] * 32768.0f / 180.0f + 0.5f);
-	val->tx = (mxs_ang)floorf(vec[2] * 32768.0f / 180.0f + 0.5f);
+	val->tz = (mxs_ang)std::floor(vec[0] * 32768.0f / 180.0f + 0.5f);
+	val->ty = (mxs_ang)std::floor(vec[1] * 32768.0f / 180.0f + 0.5f);
+	val->tx = (mxs_ang)std::floor(vec[2] * 32768.0f / 180.0f + 0.5f);
 }
 
 void unparse_ang_vec(const sFieldDesc* desc, const void* rawVal, char* out)

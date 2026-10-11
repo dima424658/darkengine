@@ -2,8 +2,10 @@
 
 #include <osm_emu/osm32bridge.h>
 
+#pragma pack(push, 8)
 #include <algorithm>
 #include <vector>
+#pragma pack(pop)
 
 namespace
 {

@@ -39,7 +39,8 @@ class cCrayCreatureFactory : public cCreatureFactory
 };
 
 static cCrayCreatureFactory g_CrayCreatureFactory;
-EXTERN cCreatureFactory *g_pCrayCreatureFactory=&g_CrayCreatureFactory;
+EXTERN cCreatureFactory *g_pCrayCreatureFactory;
+cCreatureFactory *g_pCrayCreatureFactory=&g_CrayCreatureFactory;
 
 #define TPINCHER 14 // from crcraymn.c
 #define BPINCHER 20 // from crcraymn.c

@@ -600,6 +600,8 @@ void split_object(ObjID o)
 {
    int v,next;
    v = obj_fragment_list[o];
+   if (v < 0 || v >= MAX_VISIBLE_OBJECTS)
+      return;
 
    // for all fragments except the last in the chain, move them
    // to the appropriate cell and set their fragment # to the split
@@ -607,7 +609,7 @@ void split_object(ObjID o)
    // is already in the right cell, and just needs fragment #
 
    next = vis_objs[v].next_visobj;
-   while (next != VISOBJ_NULL && vis_objs[next].obj == o) {
+   while (next >= 0 && next < MAX_VISIBLE_OBJECTS && vis_objs[next].obj == o) {
 CELL(v);
       queue_object_fragment_in_cell(vis_objs[v].cell, v);
 hack_fragment[v] = TRUE;
@@ -1943,7 +1945,8 @@ int PortalRenderPick(Position *pos, int x, int y, float zoom)
 
 #ifndef RGB_888
 extern ulong pl_red_color[256], pl_green_color[256], pl_blue_color[256];
-extern ulong pl_blue_mask=0x7c00, pl_green_mask=0x03e0, pl_red_mask=0x001f;
+extern ulong pl_blue_mask, pl_green_mask, pl_red_mask;
+ulong pl_blue_mask=0x7c00, pl_green_mask=0x03e0, pl_red_mask=0x001f;
 #endif // ~RGB_888
 
 int hack_red, hack_green, hack_blue;

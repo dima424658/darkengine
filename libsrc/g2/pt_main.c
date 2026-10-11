@@ -12,7 +12,7 @@
 #include <fix.h>
 #include <dev2d.h>
 #include <tmapd.h>
-#include <ptmap.h>
+#include "ptmap.h"
 #include <pt.h>
 
 uchar *g2pt_tmap_ptr;

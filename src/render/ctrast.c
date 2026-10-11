@@ -223,7 +223,7 @@ void gamma_load(void)
 }
 
 // Set the contrast and refresh
-static void gamma(char* val)
+static void set_gamma_cmd(char* val)
 {
    if (!strcmp(val, "off"))
       g_gamma = 1.0;
@@ -288,7 +288,7 @@ gamma_down_cmd( int count )
 static Command commands[] = 
 {
    { "contrast",FUNC_STRING, contrast, "Set the contrast",HK_ALL },
-   { "gamma",FUNC_STRING, gamma, "Set the gamma",HK_ALL },
+   { "gamma",FUNC_STRING, set_gamma_cmd, "Set the gamma",HK_ALL },
    { "gamma_delta", FUNC_FLOAT, gamma_delta, "Add float to gamma",HK_ALL },
    { "gamma_up", FUNC_INT, gamma_up_cmd, "increase gamma", HK_ALL },
    { "gamma_down", FUNC_INT, gamma_down_cmd, "decrease gamma", HK_ALL },

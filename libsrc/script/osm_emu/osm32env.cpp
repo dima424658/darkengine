@@ -3,6 +3,7 @@
 #include <osm_emu/osm32env.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 namespace
@@ -264,7 +265,9 @@ bool cEnvironment::InvokeScriptService(unsigned slot, sCpuState *state,
 
 void cEnvironment::DebugOutput(const std::string &text)
 {
-   fputs(text.c_str(), stderr);
+   const char *enabled = getenv("DARK_SCRIPT_DEBUG");
+   if (enabled && *enabled)
+      fputs(text.c_str(), stderr);
 }
 
 bool cEnvironment::Invoke(uint32_t address, sCpuState *state, cMemory *memory,

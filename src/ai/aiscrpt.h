@@ -12,35 +12,8 @@
 #ifndef __AISCRPT_H
 #define __AISCRPT_H
 
-#include <scrptsrv.h>
-#include <scrptbas.h>
-
-#include <aiscrt.h>
+#include <aiscrptapi.h>
 #include <aiscrm.h>
-
-#include <objscrt.h>
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// AI Services
-//
-
-DECLARE_SCRIPT_SERVICE(AI, 0xe5)
-{
-   STDMETHOD_(boolean, MakeGotoObjLoc)(ObjID objIdAI, const object &objIdTarget, eAIScriptSpeed speed = kNormalSpeed, eAIActionPriority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM) PURE;
-#if 0
-   STDMETHOD_(boolean, MakeDoManeuver)(ObjID objIdAI, const string & Maneuver, eAIActionPriority = kNormalPriorityAction, const cMultiParm & dataToSendOnCompletion = NULL_PARM) PURE;
-#endif
-   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, eAIActionPriority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM) PURE;
-   STDMETHOD_(boolean, MakeFrobObj)(ObjID objIdAI, const object &objIdTarget, const object &objWith, eAIActionPriority = kNormalPriorityAction, const cMultiParm & dataToSendOnReach = NULL_PARM) PURE;
-   STDMETHOD_(eAIScriptAlertLevel, GetAlertLevel)(ObjID objIdAI) PURE;
-   STDMETHOD_(void, SetMinimumAlert)(ObjID objIdAI, eAIScriptAlertLevel level) PURE;
-   STDMETHOD_(void, ClearGoals)(ObjID objIdAI) PURE;
-   STDMETHOD_(void, SetScriptFlags)(ObjID objIdAI, int iFlags) PURE;
-   STDMETHOD_(void, ClearAlertness)(ObjID objIdAI) PURE;
-   STDMETHOD_(void, Signal)(ObjID objIdAI, const string & signal) PURE;
-   STDMETHOD_(boolean, StartConversation)(ObjID conversationID) PURE;
-};
 
 
 ///////////////////////////////////////////////////////////////////////////////

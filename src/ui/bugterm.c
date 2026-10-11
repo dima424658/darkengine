@@ -12,7 +12,7 @@
 #include <stdlib.h>     // _MAX_PATH
 #include <fcntl.h>
 #include <platform_io.h>
-#include <sys\stat.h>
+#include <sys/stat.h>
 #include <time.h>
 
 #include <kbcook.h>
@@ -186,11 +186,11 @@ static short speckeys[] =
 void ReportBug(char *buf)
 {
    FILE *fp;
-   char bugroot[255],bugdir[255];
+   char bugdir[255], bugroot[sizeof(bugdir) + sizeof("\\bugs.txt")];
 
    config_get_raw("bugrep_dir",bugdir,sizeof(bugdir));
    //sprintf(bugroot,"%s\\bug",bugdir);
-   sprintf(bugroot,"%s\\bugs.txt",bugdir);
+   snprintf(bugroot,sizeof(bugroot),"%s\\bugs.txt",bugdir);
    fp = fopen(bugroot,"at"); //FindFreeFile(NULL,bugroot,"txt");
    if (fp != NULL)
    {
@@ -206,7 +206,7 @@ bool bugterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
    if (event == TEXTBOX_SPECKEY)
    {
       char *tmp=NULL;
-      unsigned long context;
+      ulong context;
 
       switch(evdata)
       {
@@ -360,7 +360,7 @@ void bugterm_focus()
    char* buf = &bugterm.cmdbuf[0];
    int bufsiz = sizeof(bugterm.cmdbuf);
    int cursor_pos;
-   unsigned long context;
+   ulong context;
 
    if (!(bugterm.statebits & kStateInUse))
       return;

@@ -65,7 +65,7 @@ typedef struct {
 	HheapHead symHeap;						// symbol heap header
 	llist_head sortedList;					// sorted list header
 	ushort flags;								// SYMTABF_XXX
-	int (*f_cmp)(char *s1, char *s2);	// compare func
+	int (*f_cmp)(const char *s1, const char *s2);	// compare func
 	ushort (*f_hash)(char *s, short hashSize);	// hash func
 	void (*f_userSymDel)(Symbol *psym);	// user symbol delete func
 } Symtab;

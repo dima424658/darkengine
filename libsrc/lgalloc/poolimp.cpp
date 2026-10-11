@@ -11,8 +11,6 @@
 #include <pool.h>
 #include <poolimp.h>
 
-#include <stktrace.h>
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>

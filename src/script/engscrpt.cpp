@@ -17,6 +17,7 @@
 #include <scrptsrv.h>
 
 #include <command.h>
+#include <stdlib.h>
 
 #include <engscrpt.h>
 
@@ -52,15 +53,16 @@ public:
                       const string& s8)
    {
 #ifdef PLAYTEST
-      mprintf("%s%s%s%s%s%s%s%s\n",
-              (const char *)s1,
-              (const char *)s2,
-              (const char *)s3,
-              (const char *)s4,
-              (const char *)s5,
-              (const char *)s6,
-              (const char *)s7,
-              (const char *)s8);
+      if (getenv("DARK_SCRIPT_DEBUG"))
+         mprintf("%s%s%s%s%s%s%s%s\n",
+                 (const char *)s1,
+                 (const char *)s2,
+                 (const char *)s3,
+                 (const char *)s4,
+                 (const char *)s5,
+                 (const char *)s6,
+                 (const char *)s7,
+                 (const char *)s8);
 #endif
       return S_OK;
    }

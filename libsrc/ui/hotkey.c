@@ -47,14 +47,14 @@ errtype hotkey_add_help(short keycode, ulong contexts, hotkey_callback func, voi
    int i;
    hotkey_link *chain;
    e.key = keycode;
-   err = hash_lookup(&hotkey_table,&e,&ch);
+   err = hash_lookup(&hotkey_table,&e,(void **)&ch);
    if (err != OK) return err;
    if (ch == NULL)
    {
       Spew(DSRC_UI_Hotkey,("Creating new hotkey chain\n"));
       err = hash_insert(&hotkey_table,&e);
       if (err != OK) return err;
-      hash_lookup(&hotkey_table,&e,&ch);
+      hash_lookup(&hotkey_table,&e,(void **)&ch);
       array_init(&ch->keychain,sizeof(hotkey_link),CHAIN_LENGTH);
       ch->first = CHAIN_END;
    }
@@ -87,7 +87,7 @@ char *hotkey_help_text(short keycode, ulong contexts, hotkey_callback func)
    errtype err;
    int i;
    hotkey_link *chain;
-   err = hash_lookup(&hotkey_table,(hotkey_entry*)&keycode,&ch);
+   err = hash_lookup(&hotkey_table,(hotkey_entry*)&keycode,(void **)&ch);
    if (err != OK) return(NULL) ;
    if (ch == NULL) return(NULL);
    chain = (hotkey_link*)ch->keychain.vec;
@@ -121,7 +121,7 @@ errtype hotkey_remove(short keycode, ulong contexts, hotkey_callback func)
    errtype err;
    int i;
    hotkey_link *chain;
-   err = hash_lookup(&hotkey_table,(hotkey_entry*)&keycode,&ch);
+   err = hash_lookup(&hotkey_table,(hotkey_entry*)&keycode,(void **)&ch);
    if (err != OK) return err;
    err = ERR_NOEFFECT;
    if (ch == NULL) return err;
@@ -174,7 +174,7 @@ errtype hotkey_replace(short keycode,
    errtype err;
    int i;
    hotkey_link *chain;
-   err = hash_lookup(&hotkey_table,(hotkey_entry*)&keycode,&ch);
+   err = hash_lookup(&hotkey_table,(hotkey_entry*)&keycode,(void **)&ch);
    if (err != OK) return err;
    if (ch == NULL) return ERR_NOEFFECT;
    chain = (hotkey_link*)ch->keychain.vec;
@@ -199,7 +199,7 @@ errtype hotkey_dispatch(short keycode)
    errtype err;
    int i;
    hotkey_link *chain;
-   err = hash_lookup(&hotkey_table,(hotkey_entry*)&keycode,&ch);
+   err = hash_lookup(&hotkey_table,(hotkey_entry*)&keycode,(void **)&ch);
    if (err != OK) return err;
    if (ch == NULL) return ERR_NOEFFECT;
    chain = (hotkey_link*)ch->keychain.vec;

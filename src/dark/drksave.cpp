@@ -415,7 +415,7 @@ BOOL DarkGameIsMidMission(ITagFile* file)
 
 void DarkQuickSaveGame(void)
 {
-   mkdir(SAVE_PATH); 
+   _mkdir(SAVE_PATH);
    cStr desc = FetchUIString("gamesav","quick_save"); 
    BOOL success = SUCCEEDED(DarkSaveGameFile(desc,SAVE_PATH "\\" QUICK_SAVE)); 
    const char* msg = (success) ? "success" : "failure";

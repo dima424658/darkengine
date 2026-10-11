@@ -32,17 +32,22 @@ static mxs_vector g_EndPos;
 static mxs_angvec g_EndAng;
 
 static float g_Duration=0; // in seconds
-EXTERN float g_curFrame=0;
-EXTERN float g_ElapsedTime=0;
+EXTERN float g_curFrame;
+EXTERN float g_ElapsedTime;
+float g_curFrame=0;
+float g_ElapsedTime=0;
 
-EXTERN float g_ElapsedFlexTime=0;
-EXTERN float g_FlexDuration=0; // in seconds
+EXTERN float g_ElapsedFlexTime;
+EXTERN float g_FlexDuration;
+float g_ElapsedFlexTime=0;
+float g_FlexDuration=0; // in seconds
 
 
 // XXX jittery camera hack.
 EXTERN void PortalMovePointInsideCell(Location *loc); // from wrfunc.c in portal lib
 
-EXTERN BOOL g_PlayerArmAttached=TRUE; 
+EXTERN BOOL g_PlayerArmAttached;
+BOOL g_PlayerArmAttached=TRUE;
 
 // XXX these should get folded into maneuvers..
 // will leave here for now KJ 12/97
@@ -122,10 +127,14 @@ bool BaseMotion(multiped *mp, mps_motion_info *m, int frame, quat *rot, mxs_vect
 // this isn't what we really want it initialized to, but 
 // need to have it initialized here so that compiler knows where memory
 // should live, since EXTERNED (right?).  Watcom bug only lets me initialize to 0
-EXTERN quat g_FlexTopStartRot={0,0,0,0};  
-EXTERN quat g_FlexTopEndRot={0,0,0,0};
-EXTERN quat g_FlexBotStartRot={0,0,0,0};
-EXTERN quat g_FlexBotEndRot={0,0,0,0};
+EXTERN quat g_FlexTopStartRot;
+EXTERN quat g_FlexTopEndRot;
+EXTERN quat g_FlexBotStartRot;
+EXTERN quat g_FlexBotEndRot;
+quat g_FlexTopStartRot={0,0,0,0};
+quat g_FlexTopEndRot={0,0,0,0};
+quat g_FlexBotStartRot={0,0,0,0};
+quat g_FlexBotEndRot={0,0,0,0};
 
 // full "body" virtual motion that includes flexing
 bool FlexBowMotion(multiped *mp, mps_motion_info *m, int frame, quat *rot, mxs_vector *trans)

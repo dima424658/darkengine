@@ -482,8 +482,10 @@ void AIDrawOneCellsLinks(tAIPathCellID cell, BOOL proxCull)
 
 
 // make extern so accessible from rendobj.c
-extern "C" BOOL g_AIPathDBDrawCellIds = FALSE;
-extern "C" BOOL g_AIPathDBDrawCells = FALSE;
+extern "C" BOOL g_AIPathDBDrawCellIds;
+extern "C" BOOL g_AIPathDBDrawCells;
+BOOL g_AIPathDBDrawCellIds = FALSE;
+BOOL g_AIPathDBDrawCells = FALSE;
 
 static BOOL g_AIPathDBDrawLinks;
 int  g_AIPathDBDrawZone = 0;

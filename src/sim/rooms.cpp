@@ -55,10 +55,8 @@ BOOL g_RoomsOK = FALSE;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef _MSC_VER
-template cPortalCallbackTable;
-template cRoomTable;
-#endif
+template class cHashTable<uint32, tPortalCallback, tPortalCallbackHashFunctions>;
+template class cHashTable<ObjID, cRoom *, ObjIDHashFunctions>;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -476,13 +474,13 @@ void cRooms::UpdateObjRoom(ObjID objID, cRoom *pRoomFrom, cRoom *pRoomTo)
       for (i=0; i<m_TransitionCallbackList.Size(); i++)
          m_TransitionCallbackList[i](objID, pRoomTo, pRoomFrom);
 
-      if (m_PortalCallbackTable.Lookup((((long)exit_room_obj) << 16) | enter_room_obj, (void **)(&callback)))
+      if (m_PortalCallbackTable.Lookup((uint32(exit_room_obj) << 16) | uint16(enter_room_obj), &callback))
          callback(objID, pRoomFrom, pRoomTo);
       
-      if (m_EnterCallbackTable.Lookup(enter_room_obj, (void **)(&callback)))
+      if (m_EnterCallbackTable.Lookup(uint32(enter_room_obj), &callback))
          callback(objID, pRoomFrom, pRoomTo);
 
-      if (m_ExitCallbackTable.Lookup(exit_room_obj, (void **)(&callback)))
+      if (m_ExitCallbackTable.Lookup(uint32(exit_room_obj), &callback))
          callback(objID, pRoomFrom, pRoomTo);
       
       SendRoomMessages(exit_room_obj, enter_room_obj, objID);

@@ -640,8 +640,8 @@ static int lzwReadBuffIndex;
 static unsigned int LzwInputCodeFileToMemory()
 {
    unsigned int return_value;
-   register ulong c;
-   register ulong temp;
+   ulong c;
+   ulong temp;
    while (lzwe.lzwInputBitCount <= 24)
    {
       if (lzwReadBuffIndex != LZW_FD_TO_MEM_READ_BUFF_SIZE)
@@ -655,7 +655,8 @@ static unsigned int LzwInputCodeFileToMemory()
       else
       {
          //LZWTimerStop(0);
-         read(lzwFdSrc, lzwFdReadBuff, LZW_FD_TO_MEM_READ_BUFF_SIZE);
+         Verify(read(lzwFdSrc, lzwFdReadBuff, LZW_FD_TO_MEM_READ_BUFF_SIZE)
+                == LZW_FD_TO_MEM_READ_BUFF_SIZE);
          //LZWTimerStart();
          lzwReadBuffIndex = 0;
       }
@@ -1040,7 +1041,8 @@ uchar LzwFdSrcGet()
     if (lzwReadBuffIndex == LZW_FD_READ_BUFF_SIZE)
     {
         //LZWTimerStop(0);
-        read(lzwFdSrc, lzwFdReadBuff, LZW_FD_READ_BUFF_SIZE);
+        Verify(read(lzwFdSrc, lzwFdReadBuff, LZW_FD_READ_BUFF_SIZE)
+               == LZW_FD_READ_BUFF_SIZE);
         //LZWTimerStart();
         lzwReadBuffIndex = 0;
     }
@@ -1110,7 +1112,8 @@ void LzwFdDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl)
     else if (ctrl == END)
     {
         if (lzwWriteBuffIndex)
-            write(lzwFdDest, lzwFdWriteBuff, lzwWriteBuffIndex);
+            Verify(write(lzwFdDest, lzwFdWriteBuff, lzwWriteBuffIndex)
+                   == lzwWriteBuffIndex);
     }
 }
 
@@ -1119,7 +1122,8 @@ void LzwFdDestPut(uchar b)
     lzwFdWriteBuff[lzwWriteBuffIndex++] = b;
     if (lzwWriteBuffIndex == LZW_FD_WRITE_BUFF_SIZE)
     {
-        write(lzwFdDest, lzwFdWriteBuff, LZW_FD_WRITE_BUFF_SIZE);
+        Verify(write(lzwFdDest, lzwFdWriteBuff, LZW_FD_WRITE_BUFF_SIZE)
+               == LZW_FD_WRITE_BUFF_SIZE);
         lzwWriteBuffIndex = 0;
     }
 }

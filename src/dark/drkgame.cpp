@@ -400,7 +400,7 @@ static void fixup_player(void)
    pObjSys->EndCreate(start);
    mprintf("Player Starting Point Created"); 
 }
-#endif SHIP
+#endif /* SHIP */
 
 static void do_version()
 {

@@ -495,7 +495,7 @@ void cZipSubstorage::RegisterSubstorage(IStore* pSubstore, const char* pName)
 	m_pSubstorageTable->Insert(pStoreEntry);
 
 	IStoreHierarchy* pSubstoreHier = nullptr;
-	if (SUCCEEDED(pSubstore->QueryInterface(IID_IStoreHierarchy, reinterpret_cast<void**>(pSubstoreHier))))
+	if (SUCCEEDED(pSubstore->QueryInterface(IID_IStoreHierarchy, reinterpret_cast<void**>(&pSubstoreHier))))
 	{
 		pSubstoreHier->SetParent(this);
 		pSubstoreHier->Release();

@@ -76,6 +76,11 @@ static void AllocMemBuf(ulong n)
    MemBuf.buf = NULL;
    MemBuf.size = 0;
 #else
+#if UINTPTR_MAX > UINT32_MAX
+   // The stored size describes the original 32-bit in-memory records.  Native
+   // 64-bit pointers make the reconstructed world representation larger.
+   n += n / 2;
+#endif
    MemBuf.buf = new uchar[n]; 
    MemBuf.size = n; 
 #endif
@@ -115,9 +120,6 @@ static void wrAllocPrintOverflow(void)
    if (MemBuf.overflow != 0) {
       mprintf("WARNING: %d bytes of worldrep not allocated from main block\n",
            MemBuf.overflow);
-   } else if (MemBuf.next != MemBuf.buf + MemBuf.size) {
-      mprintf("WARNING: %d bytes of worldrep alloc unused.\n",
-           (MemBuf.next - MemBuf.buf) + MemBuf.size);
    }
 }
 #endif

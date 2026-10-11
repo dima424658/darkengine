@@ -547,7 +547,7 @@ protected:
       //load miscellaneous strings
       char buf[16];
       for (long i = 0; i < kNumMiscStrs; i++) {
-         sprintf (buf, "misc_%d", i);
+         snprintf (buf, sizeof(buf), "misc_%ld", i);
          mMiscStrs[i] = FetchUIString (panel_name, buf, mResPath);
       }
 
@@ -988,10 +988,10 @@ protected:
 
       //load bind cmds
       cStr bind_cmd;
-      char buf[16];
+      char buf[32];
       mNumBindable = 0;
       while (1) {
-         sprintf (buf, "bindcmd_%d", mNumBindable);
+         snprintf (buf, sizeof(buf), "bindcmd_%d", mNumBindable);
          bind_cmd = FetchUIString ("bindcmds", buf, mResPath);
    
          if (bind_cmd == "" || mNumBindable >= MAX_NUM_BINDABLE)
@@ -1088,7 +1088,7 @@ protected:
       int i, j, len;
 
       char buf[128];
-      sprintf (buf, "bindname_%d", bind_num);
+      snprintf (buf, sizeof(buf), "bindname_%ld", bind_num);
 
 #ifdef THIEF2_GAME
       if (mBindCmd[bind_num] == kConsoleBindCommand)

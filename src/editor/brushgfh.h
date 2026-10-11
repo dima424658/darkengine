@@ -8,6 +8,8 @@
 
 #ifndef __BRUSHGFH_H
 #define __BRUSHGFH_H
+
+struct _editBrush;
 #include <lg.h>
 #include <rect.h>
 

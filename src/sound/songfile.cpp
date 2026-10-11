@@ -146,7 +146,7 @@ void SongSave (ISong* pSong, char* filename)
    sSongSampleInfo sampleInfo;
    sSongGotoInfo gotoInfo;
 
-   long fileVersion;
+   int32 fileVersion;
 
    unsigned count1, count2, count3, i, j, k;
 
@@ -261,7 +261,7 @@ ISong* SongLoad (char* filename)
    sSongSampleInfo sampleInfo;
    sSongGotoInfo gotoInfo;
 
-   long fileVersion;
+   int32 fileVersion;
 
    unsigned count1, count2, count3, i, j, k;
 
@@ -290,7 +290,7 @@ ISong* SongLoad (char* filename)
    if (fileVersion != SONG_FILEVERSION)
    {
       Warning (("Loading song \"%s\", file version is %d, expecting %d.\n",
-                filename, fileVersion, (long) SONG_FILEVERSION));
+                filename, fileVersion, SONG_FILEVERSION));
    }
 
    // Read song.

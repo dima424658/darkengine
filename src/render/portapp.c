@@ -112,7 +112,7 @@ Command portal_commands[] =
    { "cell_teleport", FUNC_INT, teleport_to_cell, "move editor cam to given cell" },
 #endif
 };
-#endif PLAYTEST
+#endif // PLAYTEST
 
 ////////////////////////////////////////////////////////////
 // INIT FUNC

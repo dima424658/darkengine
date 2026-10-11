@@ -124,13 +124,13 @@ STDMETHODIMP_(void) cAICombatDummy::OnBeginFrame(void)
 
 STDMETHODIMP_(BOOL) cAICombatDummy::DummyTagsAvailable(void)
 {
-   if (g_pDownWithOBB->IsRelevant(GetID()))
+   if (g_pDownWithOBB && g_pDownWithOBB->IsRelevant(GetID()))
       return TRUE;
-   if (g_pPropCDummyTagA->IsRelevant(GetID()))
+   if (g_pPropCDummyTagA && g_pPropCDummyTagA->IsRelevant(GetID()))
       return TRUE;
-   if (g_pPropCDummyTagB->IsRelevant(GetID()))
+   if (g_pPropCDummyTagB && g_pPropCDummyTagB->IsRelevant(GetID()))
       return TRUE;
-   if (g_pPropCDummyTagC->IsRelevant(GetID()))
+   if (g_pPropCDummyTagC && g_pPropCDummyTagC->IsRelevant(GetID()))
       return TRUE;
    return FALSE;
 }
@@ -160,7 +160,7 @@ STDMETHODIMP cAICombatDummy::SuggestActions(cAIGoal * pGoal, const cAIActions & 
    Label *tag_str;
    cAIMotionAction * pAction = CreateMotionAction();
 
-   if (g_pDownWithOBB->IsRelevant(GetID()))
+   if (g_pDownWithOBB && g_pDownWithOBB->IsRelevant(GetID()))
    {  // lets do our secret blocking wackiness!!!
       if (m_IHateEveryone)
       {
@@ -223,14 +223,15 @@ STDMETHODIMP cAICombatDummy::SuggestActions(cAIGoal * pGoal, const cAIActions & 
    }
    // otherwise run normal combat dummy
    pAction->AddTags(cTag("MeleeCombat",kMTV_set));
-   if (g_pPropCDummyTagA->Get(GetID(),&tag_str))
+   if (g_pPropCDummyTagA && g_pPropCDummyTagA->Get(GetID(),&tag_str))
       pAction->AddTags(cTag(tag_str->text,kMTV_set));
-   if (g_pPropCDummyTagB->Get(GetID(),&tag_str))
+   if (g_pPropCDummyTagB && g_pPropCDummyTagB->Get(GetID(),&tag_str))
       pAction->AddTags(cTag(tag_str->text,kMTV_set));
-   if (g_pPropCDummyTagC->Get(GetID(),&tag_str))
+   if (g_pPropCDummyTagC && g_pPropCDummyTagC->Get(GetID(),&tag_str))
    {
       int val=kMTV_set;
-      g_pPropCDummyTagCValue->Get(GetID(),&val);
+      if (g_pPropCDummyTagCValue)
+         g_pPropCDummyTagCValue->Get(GetID(),&val);
       pAction->AddTags(cTag(tag_str->text,val));
    }
    pNew->Append(pAction);

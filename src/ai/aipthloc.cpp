@@ -88,7 +88,7 @@ float AIGetZAtXYOnCell(const mxs_vector & pt, tAIPathCellID cellID)
 BOOL IsPtInCellXYPlane(const mxs_vector &p, const sAIPathCell * pCell)
 {
    int i;
-   register const cMxsVector * p1;
+   const cMxsVector * p1;
    const cMxsVector * p2;
 
    float edge_vec_x, edge_vec_y;   // 2d vectors we dont have...

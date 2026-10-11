@@ -557,7 +557,7 @@ BOOL ScrnInit3d(void)
    return TRUE;
 }
 
-#else # !USE_HARDWARE3D
+#else // !USE_HARDWARE3D
 BOOL ScrnInit3d(void)
 {
    if (g_lgd3d)
@@ -797,11 +797,13 @@ void ScrnClearHardwareOverlay(void)
 {
    // Called only by lgd3d_start_frame().  Menus use ScrnStartFrame too, but
    // repaint incrementally and must retain their canvas between ticks.
-   if (_off_screen != NULL && !RenderBackendPreserveCanvas())
+   if (_draw_canv != NULL && !RenderBackendPreserveCanvas())
    {
-      gr_push_canvas(_off_screen);
+      ScrnLockDrawCanvas();
+      gr_push_canvas(_draw_canv);
       gr_clear(0);
       gr_pop_canvas();
+      ScrnUnlockDrawCanvas();
    }
 }
 

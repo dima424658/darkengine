@@ -420,7 +420,7 @@ void cSimpleDamageModel::PropagateCulpability(ObjID from, ObjID to, ulong flags)
    {
       // is anyone culpable for me?
       LinkID culplink = mpCulpableFor->GetSingleLink(LINKOBJ_WILDCARD,from); 
-      if (culplink != NULL)
+      if (culplink != 0)
       {
          sLink link; 
          mpCulpableFor->Get(culplink,&link); 

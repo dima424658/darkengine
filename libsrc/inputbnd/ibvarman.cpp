@@ -2,6 +2,7 @@
 #include <ibmapper.h>
 
 #include <memory>
+#include <cmath>
 
 extern cIBInputMapper* g_IB_input_mapper;
 extern cIBVariableManager* g_IB_variable_manager;
@@ -481,7 +482,7 @@ const char* cIBVariableManager::ProcessCommand(
 		if (active_toggle)
 			strcpy(val, tokens[0][0] == '+' ? "1.0" : "0.0");
 		else
-			sprintf(val, "%8.8f", 1.0 - floor(atof(val) + 0.5));
+			sprintf(val, "%8.8f", 1.0 - std::floor(atof(val) + 0.5));
 	}
 	else if (!strcmp(tokens[1], "delta"))
 	{
@@ -493,7 +494,7 @@ const char* cIBVariableManager::ProcessCommand(
 		if (num_tokens == 3)
 			strcpy(val, atof(val) == 0.0 ? tokens[2] : "0");
 		else
-			sprintf(val, "%8.8f", 1.0 - floor(atof(val) + 0.5));
+			sprintf(val, "%8.8f", 1.0 - std::floor(atof(val) + 0.5));
 	}
 	else
 	{

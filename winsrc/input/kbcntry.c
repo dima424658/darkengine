@@ -251,7 +251,7 @@ ushort kbd_sp_tab[][4] = {
    { 0x02, ASCII('1'),  ASCII('!'), ASCII('!') },
    { 0x03, ASCII('2'),  ASCII('"'), ASCII('@') },
    { 0x04, ASCII('3'),  ASCII(0xF9), ASCII('#') },
-   { 0x07, ASCII('6'),  ASCII('&'), ASCII('0xAA') },
+   { 0x07, ASCII('6'),  ASCII('&'), ASCII(0xAA) },
    { 0x08, ASCII('7'),  ASCII('/'), 0 },
    { 0x09, ASCII('8'),  ASCII('('), 0 },
    { 0x0A, ASCII('9'),  ASCII(')'), 0 },

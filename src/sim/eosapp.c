@@ -172,6 +172,11 @@ void EOSBoundingPrism (ObjID obj, void *pos_, BoundingPrism *bound)
 int mCellRefSys;
 #define MAX_REF_OBJECTS 4096
 
+static void *EOSObjPos(ObjID obj)
+{
+   return ObjPosGetUnsafe(obj);
+}
+
 void EOSInit (void)
 {
    extern void init_object_rendering();
@@ -182,7 +187,7 @@ void EOSInit (void)
    config_get_int("max_refs",&max_refs);
    
    //@TODO: make ref system resizable
-   ObjRefSystemInit (HACK_MAX_OBJ, max_refs, 2, EOSBoundingPrism, ObjPosGetUnsafe);
+   ObjRefSystemInit (HACK_MAX_OBJ, max_refs, 2, EOSBoundingPrism, EOSObjPos);
    mCellRefSys = CellRefRegister();
 
    ObjsInitRefs(); 

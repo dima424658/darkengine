@@ -27,11 +27,11 @@
 #include <pjstypes.h>
 #include <pjfli.h>
 
-bool CelReadFrame(GfileInfo *pgfi, FILE *fp);
-void CelGetPall(GfileInfo *pgfi, uchar *buff, int shifter);
-void CelExpandBrun(GfileInfo *pgfi, uchar *ps);
-void CelExpandByteDelta(GfileInfo *pgfi, uchar *ps);
-void CelExpandWordDelta(GfileInfo *pgfi, uchar *ps);
+static bool CelReadFrame(GfileInfo *pgfi, FILE *fp);
+static void CelGetPall(GfileInfo *pgfi, uchar *buff, int shifter);
+static void CelExpandBrun(GfileInfo *pgfi, uchar *ps);
+static void CelExpandByteDelta(GfileInfo *pgfi, uchar *ps);
+static void CelExpandWordDelta(GfileInfo *pgfi, uchar *ps);
 
 //	------------------------------------------------------
 //
@@ -115,7 +115,7 @@ READFRAME:
 	if (buff == NULL)
 		{
 		fullLen = (long) pgfi->bm.row * (long) pgfi->bm.h;
-		buff = Malloc(max(fullLen, frameInfo.size));
+		buff = Malloc(fullLen > frameInfo.size ? fullLen : frameInfo.size);
 		if (buff == NULL)
 			return FALSE;
 		}

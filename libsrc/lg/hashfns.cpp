@@ -123,8 +123,8 @@ unsigned LGAPI HashStringCaseless(const char * pszKey)
 
 unsigned LGAPI HashGUID(const GUID * pID)
 {
-    register const DWORD *  p = (const DWORD *) pID;
-    register unsigned       even,
+    const DWORD *  p = (const DWORD *) pID;
+    unsigned       even,
                             odd,
                             n;
     n = *p;

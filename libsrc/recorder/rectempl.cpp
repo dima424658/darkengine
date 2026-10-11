@@ -11,7 +11,5 @@
 #include <recorder.h>
 #include <hshsttem.h>
 
-#ifdef _MSC_VER
-template cStrHashSet<sRecDataType *>;
-#endif
+template class cStrHashSet<sRecDataType *>;
 

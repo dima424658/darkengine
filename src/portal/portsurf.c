@@ -566,7 +566,7 @@ void add_to_temp_lightmap(LightmapEntry *source, uchar intensity)
          }
 
          dest[j] = sum;
-#endif RGB_888
+#endif // RGB_888
       }
       source += _portal_lightmap_row;
       dest += _portal_lightmap_row;

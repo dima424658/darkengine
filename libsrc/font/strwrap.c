@@ -106,7 +106,7 @@ int gr_font_string_wrap (grs_font *pfont, char *ps, short width)
 #else
       if (pmark)     // && (pmark != (p - 1)))
 		{           // maybe && (*pmark-1!=CHAR_SOFTCR?)
-         if ((pmark==(p-1))&&((*p)==0))   
+         if ((pmark==(char *)(p-1))&&((*p)==0))
          {           // softspot is last char, and we are at EOS
             ps=p-1;  // so back up to it 
             *(ps)=CHAR_SOFTSP; // and toast it (then fall through and exit while)

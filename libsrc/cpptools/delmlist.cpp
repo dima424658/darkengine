@@ -93,7 +93,7 @@ unsigned long cDelimList::ValidateText(BOOL fSave, const char *pList, const char
         return 0;
 
     unsigned long i = 0;
-    register const char *p = pList;
+    const char *p = pList;
     for (;; p++)
         {
         // Skip the leading spaces

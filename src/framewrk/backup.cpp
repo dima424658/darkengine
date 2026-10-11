@@ -15,7 +15,7 @@
 #include <texsave.h>
 
 #include <tagfile.h>
-#include <tFileFac.h>
+#include <tfilefac.h>
 #include <memtfile.h>
 
 #include <dbmem.h>

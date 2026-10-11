@@ -41,15 +41,23 @@
 BOOL g_TagDebug = FALSE;
 #endif // ~SHIP
 
-// static members of cTag
-cDynArray<cTagRecord *> cTag::gm_RecordList;
-cTagRecordHash cTag::gm_RecordHash;
+cDynArray<cTagRecord *> &cTag::RecordList()
+{
+   static cDynArray<cTagRecord *> records;
+   return records;
+}
+
+cTagRecordHash &cTag::RecordHash()
+{
+   static cTagRecordHash records;
+   return records;
+}
 
 
 void cTag::ToString(cStr *pDest) const
 {
    pDest->Empty();
-   cTagRecord *pRecord = gm_RecordList[m_iTypeToken];
+   cTagRecord *pRecord = RecordList()[m_iTypeToken];
 
    if (GetFlags() & kTagFlagInt) 
       pDest->FmtStr("%s%c%d", pRecord->m_TypeName.BufIn(), 
@@ -141,7 +149,7 @@ const char *cTag::GetEnumValue() const
 {
    Assert_(GetFlags() & kTagFlagEnum);
 
-   cTagRecord *pRecord = gm_RecordList[m_iTypeToken];
+   cTagRecord *pRecord = RecordList()[m_iTypeToken];
    int iEnumSize = pRecord->m_EnumValues.Size();
    Assert_(m_iValue >= 0 && m_iValue < iEnumSize);
 
@@ -151,7 +159,7 @@ const char *cTag::GetEnumValue() const
 
 const char *cTag::GetType() const
 {
-   cTagRecord *pRecord = gm_RecordList[m_iTypeToken];
+   cTagRecord *pRecord = RecordList()[m_iTypeToken];
    return (const char *) pRecord->m_TypeName;
 }
 
@@ -164,7 +172,7 @@ const char *cTag::GetType() const
 cTagRecord *cTag::GetOrMakeRecord(const char *pszTypeName, int iFlags)
 {
    LGALLOC_PUSH_CREDIT();
-   cTagRecord *pRecord = gm_RecordHash.Search(pszTypeName);
+   cTagRecord *pRecord = RecordHash().Search(pszTypeName);
 
    if (pRecord) {
 
@@ -177,10 +185,10 @@ cTagRecord *cTag::GetOrMakeRecord(const char *pszTypeName, int iFlags)
 #endif // ~SHIP
 
    } else {
-      pRecord = new cTagRecord(pszTypeName, gm_RecordList.Size(), iFlags);
+      pRecord = new cTagRecord(pszTypeName, RecordList().Size(), iFlags);
       Assert_(pRecord);
-      gm_RecordList.Append(pRecord);
-      gm_RecordHash.Insert(pRecord);
+      RecordList().Append(pRecord);
+      RecordHash().Insert(pRecord);
       // Tell any other players about this record
       BroadcastTagRecord(pRecord);
 

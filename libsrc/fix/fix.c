@@ -36,7 +36,7 @@ fix fix_fast_pyth_dist (fix a, fix b)
 // We can use the fix function because the difference in scale doesn't matter.
 //
 
-long long_fast_pyth_dist (long a, long b)
+sint32 long_fast_pyth_dist (sint32 a, sint32 b)
 {
    return (fix_fast_pyth_dist (a, b));
 }
@@ -105,7 +105,7 @@ fix fix_sqrt(fix x)
 // We can use the fix function because the difference in scale doesn't matter.
 //
 
-long long_safe_pyth_dist (long a, long b)
+sint32 long_safe_pyth_dist (sint32 a, sint32 b)
 {
    return (fix_safe_pyth_dist (a, b));
 }

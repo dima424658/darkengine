@@ -47,4 +47,4 @@ EXTERN void Home(ObjID projID, ObjID targetID);
 EXTERN void ProjectileTargetInit(void);
 EXTERN void ProjectileTargetTerm(void);
 
-#endif __DPCHOME_H
+#endif // __DPCHOME_H

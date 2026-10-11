@@ -190,7 +190,7 @@ static void SendDatabaseMessageToType(ulong msg, ITagFile* file, eWhichVarFile w
    
 }
 
-void setup_campaign(); 
+static void setup_campaign();
 
 STDMETHODIMP_(eLoopMessageResult) cFileVarClient::ReceiveMessage(eLoopMessage msg, tLoopMessageData hData)
 {

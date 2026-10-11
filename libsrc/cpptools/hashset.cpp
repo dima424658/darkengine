@@ -85,7 +85,7 @@ cHashSetBase::~cHashSetBase()
 {
     if (m_nItems)
     {
-        for (register unsigned i = 0; i < m_nPts; i++)
+        for (unsigned i = 0; i < m_nPts; i++)
         {
             sHashSetChunk *pNext;
             for (sHashSetChunk * p = m_Table[i]; p; p = pNext)
@@ -109,7 +109,7 @@ void cHashSetBase::SetEmpty()
     if (!m_nItems)
         return;
 
-    for (register unsigned i = 0; i < m_nPts; i++)
+    for (unsigned i = 0; i < m_nPts; i++)
     {
         sHashSetChunk *pNext;
         for (sHashSetChunk * p = m_Table[i]; p; p = pNext)
@@ -171,7 +171,7 @@ BOOL cHashSetBase::ToStream(cOStore & OStore) const
     if (!OStore.WriteHeader("HASHSET"))
         return FALSE;
 
-    for (register unsigned i = 0; i < m_nPts; i++)
+    for (unsigned i = 0; i < m_nPts; i++)
     {
         for (sHashSetChunk * p = m_Table[i]; p; p = p->pNext)
         {
@@ -254,7 +254,7 @@ void cHashSetBase::CopyOld(const cHashSetBase & s)
 // Allocate proper space for new tables
     m_Table = new sHashSetChunk *[m_nPts];
 
-    for (register unsigned i = 0; i < m_nPts; i++)
+    for (unsigned i = 0; i < m_nPts; i++)
     {
         m_Table[i] = 0;
         for (sHashSetChunk * p = s.m_Table[i]; p; p = p->pNext)
@@ -381,7 +381,7 @@ void cHashSetBase::Rehash(tHashSetHandle OldHandle, tHashSetNode a)
 //
 BOOL cHashSetBase::operator <= (const cHashSetBase & h) const
 {
-    for (register unsigned i = 0; i < m_nPts; i++)
+    for (unsigned i = 0; i < m_nPts; i++)
     {
         for (sHashSetChunk * p = m_Table[i]; p; p = p->pNext)
         {
@@ -461,7 +461,7 @@ void cHashSetBase::Resize(unsigned NewSize)
 
     memset(m_Table, 0, m_nPts * kSlotSize);
 
-    for (register unsigned i = 0; i < OldSize; i++)
+    for (unsigned i = 0; i < OldSize; i++)
     {
         sHashSetChunk *pNext;
         for (sHashSetChunk * pChunk = OldTable[i]; pChunk; pChunk = pNext)

@@ -6,6 +6,9 @@
 #include <unistd.h>
 
 #ifndef _MAX_PATH
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 #define _MAX_PATH PATH_MAX
 #endif
 #ifndef O_BINARY

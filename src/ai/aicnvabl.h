@@ -34,10 +34,6 @@ BOOL AITermConverseAbility();
 // CLASS: cAIConverse
 //
 
-// state of a conversor
-enum eAIConverseState {kAIConvNotStarted, kAIConvStarting, kAIConvRequestedGoal, kAIConvStarted, 
-   kAIConvInProgress, kAIConvWaitingForSpeech, kAIConvFinishedAction, kAIConvFinished};
-
 class cAIConverse : public cAIAbility, public IAIConverse
 {
 public:

@@ -17,7 +17,7 @@
 #include <loopmsg.h>
 #include <panlguid.h>
 
-#include <dispapi.H>
+#include <dispapi.h>
 
 #include <drkuires.h>
 #include <imgsrc.h>
@@ -266,7 +266,7 @@ sLoopClientDesc cDarkPanel::Descriptor =
    kMsgEnd | kMsgsMode | kMsgsFrame,
 
    kLCF_None,
-   NULL,
+   nullptr,
    
    NO_LC_DATA,
 
@@ -328,7 +328,7 @@ IDataSource* cDarkPanel::CursorPalette()
 //
 
 cDarkPanel::cDarkPanel(const sDarkPanelDesc* desc, const char* respath)
-   : cModalButtonPanel(&sTempDesc(desc), &Descriptor), 
+   : cModalButtonPanel(sTempDesc(desc), &Descriptor),
      mpFontRes(NULL),
      sDarkPanelDesc(*desc)
 {

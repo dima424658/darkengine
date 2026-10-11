@@ -17,7 +17,7 @@
 #include <rendprop.h>
 #include <config.h>
 #include <texmem.h>
-#include <scrnman.H>
+#include <scrnman.h>
 #include <math.h>
 #include <mipmap.h>
 #include <palmgr.h>
@@ -75,7 +75,7 @@ void SetZNearFar(double z_near, double z_far)
 }
 
 r3s_texture texture_lookup(int n);
-void init_color_tables(void);
+static void init_color_tables(void);
 
 static bool new_gamma = FALSE;
 static float gamma_level = 1.0;
@@ -234,7 +234,7 @@ static Command all_keys[]=
 };
 #endif
 
-void register_sky_mode();
+static void register_sky_mode();
 
 void RendererInit()
 {
@@ -415,8 +415,10 @@ uchar compute_color_mix(int a, int r, int g, int b, fix weight)
 #define MAX_B      (NUM_B-1)
 #define MAX_SHADES (NUM_SHADES-1)
 
-EXTERN uchar light_pal[768] = { 0 };
-EXTERN uchar light_ipal[32768] = { 0 };
+EXTERN uchar light_pal[768];
+EXTERN uchar light_ipal[32768];
+uchar light_pal[768] = { 0 };
+uchar light_ipal[32768] = { 0 };
 
 EXTERN void calc_ipal(uchar *pal_data, uchar *ipal);
 void init_lighting_palette(void)

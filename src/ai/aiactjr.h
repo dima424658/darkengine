@@ -28,6 +28,8 @@
 // Rotate a joint (don't move the object)
 //
 
+static void SchemaEndCallback(int hSchema, ObjID schemaID, void *pData);
+
 class cAIJointRotateAction : public cAIAction
 {
 public:
@@ -80,11 +82,9 @@ inline cAIJointRotateAction::cAIJointRotateAction(IAIActor * pOwner, DWORD data)
  : cAIAction(kAIAT_JointRotate, pOwner, data),
    m_targetID(OBJ_NULL),
    m_schemaHandle(SCH_HANDLE_NULL),
-   m_listener(NULL)
+   m_listener(0)
 {
 }
-
-static void SchemaEndCallback(int hSchema, ObjID schemaID, void *pData);
 
 #pragma pack()
 

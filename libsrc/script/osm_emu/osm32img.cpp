@@ -2,11 +2,13 @@
 
 #include <osm_emu/osm32img.h>
 
+#pragma pack(push, 8)
 #include <algorithm>
 #include <fstream>
 #include <limits>
 #include <sstream>
 #include <string.h>
+#pragma pack(pop)
 
 namespace
 {

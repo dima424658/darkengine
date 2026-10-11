@@ -8,7 +8,7 @@
 #ifndef __MEMTFILE_H
 #define __MEMTFILE_H
 
-#include <tFileFac.h>
+#include <tfilefac.h>
 
 //
 // A "memory tag file" factory. 

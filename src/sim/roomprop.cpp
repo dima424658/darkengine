@@ -80,7 +80,7 @@ static sPropertyDesc AcousticsProp_desc =
    { "Room", "Acoustics" },
 };
 
-void SetupAcousticsProperty(void);
+static void SetupAcousticsProperty(void);
 
 ///////////////////
 // we also want a mission and campaign variable for us
@@ -284,7 +284,7 @@ static sPropertyDesc AmbientProp_desc =
    { "Room", "Ambient" },
 };
 
-void SetupAmbientProperty(void);
+static void SetupAmbientProperty(void);
 
 IAmbientProperty *CreateAmbientProperty(const sPropertyDesc *desc, ePropertyImpl impl)
 {

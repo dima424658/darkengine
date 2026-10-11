@@ -28,7 +28,7 @@ F_DECLARE_INTERFACE(IDonorQuery);
 // Hierarchy types
 //
 
-typedef long tMetaPropertyPriority;
+typedef int32 tMetaPropertyPriority;
 
 //
 // Trait/query types

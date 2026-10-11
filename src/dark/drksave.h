@@ -46,11 +46,11 @@ enum eSaveResults
 }; 
 
 // Save the game
-EXTERN long DarkSaveGame(const char* description, ITagFile* file); 
+EXTERN HRESULT DarkSaveGame(const char* description, ITagFile* file);
 EXTERN long DarkSaveGameFile(const char* desc, const char* fname); 
  
 // Load the game, client should unwind to mission loop afterwards
-EXTERN long DarkLoadGame(ITagFile* file); 
+EXTERN HRESULT DarkLoadGame(ITagFile* file);
 EXTERN long DarkLoadGameFile(const char* fname); 
 
 // Saves the "checkpoint" file at start of mission

@@ -15,14 +15,19 @@
 #ifdef _WIN32
 #include <initguid.h>
 #else
-#include <nt\initguid.h>
+#undef DEFINE_GUID
+#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
+   EXTERN_C const GUID CDECL name; \
+   const GUID CDECL name = \
+      { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 #endif
 
 #ifndef _WIN32
 #define DEFINE_OLEGUID(name, l, w1, w2) \
     DEFINE_GUID(name, l, w1, w2, 0xC0,0,0,0,0,0,0,0x46)
 
-EXTERN const GUID __cdecl GUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
+EXTERN const GUID __cdecl GUID_NULL;
+const GUID __cdecl GUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
 
 DEFINE_OLEGUID(IID_IUnknown,            0x00000000L, 0, 0);
 DEFINE_OLEGUID(IID_IClassFactory,       0x00000001L, 0, 0);
@@ -78,7 +83,6 @@ DEFINE_OLEGUID(IID_IExternalConnection, 0x00000019L, 0, 0);
 #include <dispguid.h>
 #include <indvguid.h>
 #include <gshlguid.h>
-#include <wappguid.h>
 #include <loopguid.h>
 #include <moviguid.h>
 #include <recguid.h>
@@ -86,9 +90,13 @@ DEFINE_OLEGUID(IID_IExternalConnection, 0x00000019L, 0, 0);
 #include <thrmguid.h>
 #include <cachguid.h>
 
-// winshell:
+#ifdef _WIN32
+// Windows providers:
+#include <wappguid.h>
 #include <wnshguid.h>
 #include <wdspguid.h>
+#include <inpguid.h>
+#endif
 
 // sdesc:
 #include <sdesguid.h>
@@ -104,6 +112,3 @@ DEFINE_OLEGUID(IID_IExternalConnection, 0x00000019L, 0, 0);
 
 // net:
 #include <netguid.h>
-
-// input:
-#include <inpguid.h>

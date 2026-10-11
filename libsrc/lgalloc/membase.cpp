@@ -5,7 +5,6 @@
 // $Revision: 1.6 $
 //
 
-#ifdef _WIN32
 #include <membase.h>
 
 #pragma code_seg("lgalloc")
@@ -33,7 +32,6 @@ STDMETHODIMP cMallocBase::QueryInterface(REFIID id, void ** ppI)
         AddRef();
         return 0;
     }
-#endif
 
     *ppI = NULL;
     return E_NOINTERFACE;

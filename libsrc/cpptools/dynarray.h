@@ -101,14 +101,18 @@ public:
    T & operator[] (long);
    T & operator[] (ushort);
    T & operator[] (uint);
+#ifndef DARK_UINT_ULONG_SAME_TYPE
    T & operator[] (ulong);
+#endif
 
    const T & operator[] (short) const;
    const T & operator[] (int) const;
    const T & operator[] (long) const;
    const T & operator[] (ushort) const;
    const T & operator[] (uint) const;
+#ifndef DARK_UINT_ULONG_SAME_TYPE
    const T & operator[] (ulong) const;
+#endif
 
    ///////////////////////////////////
    //
@@ -399,12 +403,14 @@ inline T & DYNARRAY_BASE::operator[](uint index)
     return m_pItems[index];
 }
 
+#ifndef DARK_UINT_ULONG_SAME_TYPE
 DYNARRAY_BASE_TEMPLATE
 inline T & DYNARRAY_BASE::operator[](ulong index)
 {
     DynArrayAssertIndex(index);
     return m_pItems[index];
 }
+#endif
 
 ///////////////////////////////////////
 //
@@ -445,12 +451,14 @@ inline const T & DYNARRAY_BASE::operator[](uint index) const
     return m_pItems[index];
 }
 
+#ifndef DARK_UINT_ULONG_SAME_TYPE
 DYNARRAY_BASE_TEMPLATE
 inline const T & DYNARRAY_BASE::operator[](ulong index) const
 {
     DynArrayAssertIndex(index);
     return m_pItems[index];
 }
+#endif
 
 ///////////////////////////////////////
 //

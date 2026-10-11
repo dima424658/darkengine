@@ -49,7 +49,7 @@
 
 static eWhichInvObj type_to_slot[] = { kCurrentItem, kCurrentItem, kCurrentWeapon };
 
-void setup_contains_sdesc();
+static void setup_contains_sdesc();
 ////////////////////////////////////////////////////////////
 // PLAYER INVENTORY AGGREGATE MEMBER
 //

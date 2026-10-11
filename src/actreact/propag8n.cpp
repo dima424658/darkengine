@@ -10,7 +10,7 @@
 
 #include <stimtype.h>
 #include <stimbase.h>
-#include <stimuli.H>
+#include <stimuli.h>
 
 #include <ssrctype.h>
 #include <ssrcbase.h>

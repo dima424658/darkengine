@@ -26,8 +26,8 @@
 
 /////////////////
 
-typedef cHashTableFunctions<long> longHashFunctions;
-typedef cHashTable<long, /*tPCallback*/ void *, longHashFunctions> cPortalCallbackTable;
+typedef cHashTableFunctions<uint32> tPortalCallbackHashFunctions;
+typedef cHashTable<uint32, tPortalCallback, tPortalCallbackHashFunctions> cPortalCallbackTable;
 
 typedef cHashTableFunctions<ObjID> ObjIDHashFunctions;
 typedef cHashTable<ObjID, cRoom *, ObjIDHashFunctions> cRoomTable;
@@ -230,21 +230,21 @@ inline cRoom *cRooms::GetObjRoom(ObjID objID) const
 
 inline void cRooms::AddPortalCallback(ObjID roomFrom, ObjID roomTo, tPortalCallback callback)
 {
-   m_PortalCallbackTable.Insert((((long)roomFrom) << 16) | roomTo, callback);
+   m_PortalCallbackTable.Insert((uint32(roomFrom) << 16) | uint16(roomTo), callback);
 }
 
 ////////////////////////////////////////
 
 inline void cRooms::AddEnterCallback(ObjID enterRoom, tPortalCallback callback)
 {
-   m_EnterCallbackTable.Insert((long)enterRoom, callback);
+   m_EnterCallbackTable.Insert(uint32(enterRoom), callback);
 }
 
 ////////////////////////////////////////
 
 inline void cRooms::AddExitCallback(ObjID exitRoom, tPortalCallback callback)
 {
-   m_ExitCallbackTable.Insert((long)exitRoom, callback);
+   m_ExitCallbackTable.Insert(uint32(exitRoom), callback);
 }
 
 ////////////////////////////////////////
@@ -263,7 +263,7 @@ inline void cRooms::AddTransitionCallback(tPortalCallback callback)
 
 inline void cRooms::RemovePortalCallback(ObjID roomFrom, ObjID roomTo)
 {
-   m_PortalCallbackTable.Delete((((long)roomFrom) << 16) | roomTo);
+   m_PortalCallbackTable.Delete((uint32(roomFrom) << 16) | uint16(roomTo));
 }
 
 ////////////////////////////////////////

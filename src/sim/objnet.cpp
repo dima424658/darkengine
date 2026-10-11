@@ -231,7 +231,7 @@ void cObjectNetworking::RebuildProxyTable()
 
 F_DECLARE_INTERFACE(IObjectNetworking);
 
-cObjectNetworking *g_pObjNet;
+static cObjectNetworking *g_pObjNet;
 
 //------------------------------------------------------------
 // Construction/Deconstruction 

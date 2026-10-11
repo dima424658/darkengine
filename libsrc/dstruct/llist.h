@@ -64,7 +64,7 @@ extern "C"  {
 //	--------------------------------------------------------------
 
 //	List node (data must follow)
-#if !defined(__SC__) && !defined(__cplusplus)
+#if defined(_MSC_VER) && !defined(__cplusplus)
 
 typedef struct _llist {
 	struct _llist *pnext;	// ptr to next node or NULL if at tail
@@ -88,7 +88,7 @@ typedef struct __llist {
 #endif
 
 //	Queue node (sorted list, 1st item is short priority)
-#if !defined(__SC__) && !defined(__cplusplus)
+#if defined(_MSC_VER) && !defined(__cplusplus)
 
 typedef struct _queue {
 	struct _queue *pnext;	// ptr to next node or NULL if at tail
@@ -119,7 +119,7 @@ typedef struct __queue {
 #endif
 
 //	List header
-#if !defined(__SC__) && !defined(__cplusplus)
+#if defined(_MSC_VER) && !defined(__cplusplus)
 
 typedef struct _llist_head {
 	llist head;					// head list item (not really in list)

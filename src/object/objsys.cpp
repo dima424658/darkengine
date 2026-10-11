@@ -27,7 +27,7 @@
 #include <traitprp.h>
 #include <donorq.h>
 
-#include <objquer_.H>
+#include <objquer_.h>
 
 #include <tagfile.h>
 #include <vernum.h>
@@ -1445,14 +1445,17 @@ tResult cObjectSystem::ResizeObjIDSpace(const sObjBounds& bounds)
    //
    // We can only shrink if there are no active objects the lost space
    //
-   int i; 
-   for (i = bounds.max; i < gMaxObjID; i++)
-      if (ObjExists(i))
-         return E_FAIL; 
+   int i;
+   if (BaseActiveArray)
+   {
+      for (i = bounds.max; i < gMaxObjID; i++)
+         if (ObjExists(i))
+            return E_FAIL;
 
-   for (i = gMinObjID; i < bounds.min; i++)
-      if (ObjExists(i))
-         return E_FAIL; 
+      for (i = gMinObjID; i < bounds.min; i++)
+         if (ObjExists(i))
+            return E_FAIL;
+   }
 
    if (bounds.min == gMinObjID && bounds.max == gMaxObjID)
       return S_FALSE; 

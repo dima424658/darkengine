@@ -55,14 +55,14 @@ HRESULT cLoopClientFactory::GetClient(tLoopClientID* pID, tLoopClientData data, 
 		case kLCF_None:
 			return ppResult != nullptr ? S_OK : E_FAIL;
 		case kLCF_Singleton:
-			*ppResult = pClientDesc->pClient;
+			*ppResult = pClientDesc->factory.pClient;
 			(*ppResult)->AddRef();
 			break;
 		case kLCF_Callback:
-			*ppResult = pClientDesc->pfnFactory(pClientDesc, data);
+			*ppResult = pClientDesc->factory.pfnFactory(const_cast<sLoopClientDesc *>(pClientDesc), data);
 			break;
 		case kLCF_FactObj:
-			pClientDesc->pFactory->GetClient(pID, data, ppResult);
+			pClientDesc->factory.pFactory->GetClient(pID, data, ppResult);
 			break;
 		default:
 			CriticalMsg("Invalid factory type");
@@ -123,9 +123,9 @@ HRESULT cLoopClientFactory::AddClient(const sLoopClientDesc* pClientDesc)
 
 	auto factoryType = pClientDesc->factoryType;
 	if (factoryType == kLCF_Singleton)
-		pClientDesc->pClient->AddRef();
+		pClientDesc->factory.pClient->AddRef();
 	else if (factoryType == kLCF_FactObj)
-		pClientDesc->pFactory->AddRef();
+		pClientDesc->factory.pFactory->AddRef();
 
 	return S_OK;
 }
@@ -136,9 +136,9 @@ HRESULT cLoopClientFactory::RemoveClient(tLoopClientCookie cookie)
 	if (!pClientDesc)
 		CriticalMsg("Client to remove from simple factory is not present");
 	else if (pClientDesc->factoryType == kLCF_Singleton)
-		pClientDesc->pClient->Release();
+		pClientDesc->factory.pClient->Release();
 	else if (pClientDesc->factoryType == kLCF_FactObj)
-		pClientDesc->pFactory->Release();
+		pClientDesc->factory.pFactory->Release();
 
 	return pClientDesc != nullptr ? S_OK : E_FAIL;
 }

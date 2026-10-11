@@ -14,7 +14,7 @@
 #include <lststtem.h>
 #include <hshpptem.h>
 
-#include <allocapi.H>
+#include <allocapi.h>
 
 
 // Must be last header
@@ -27,10 +27,8 @@
 // TEMPLATE: cBothObjTable, instantiation
 //
 
-#ifdef _MSC_VER
-template cHashTable<sTwoObjKey,cLinkSet*,sTwoObjKey>;
-template cHashIter<sTwoObjKey,cLinkSet*,sTwoObjKey>;
-#endif
+template class cHashTable<sTwoObjKey,cLinkSet*,sTwoObjKey>;
+template class cHashIter<sTwoObjKey,cLinkSet*,sTwoObjKey>;
 
 ////////////////////////////////////////////////////////////
 //

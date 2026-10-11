@@ -51,8 +51,8 @@
 #include <faceg.h>
 
 
-void SpeechStartCB(ObjID speakerID, int hSchema, ObjID schemaID);
-void SpeechEndCB(ObjID speakerID, int hSchema, ObjID schemaID);
+static void SpeechStartCB(ObjID speakerID, int hSchema, ObjID schemaID);
+static void SpeechEndCB(ObjID speakerID, int hSchema, ObjID schemaID);
 extern ISearchPath *pSoundPath; // from appsfx
 
 

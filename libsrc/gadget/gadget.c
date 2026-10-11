@@ -7,11 +7,9 @@
 
 // library includes
 #include <lg.h>
-#ifdef _WIN32
 #include <comtools.h>
 #include <appagg.h>
 #include <dispapi.h>
-#endif
 
 #undef BTYPE
 
@@ -447,7 +445,7 @@ OverlayStatus LGadOverlayFunc(void *arg)
 
    // find which box_overlay corresponds to this particular thing
    for (i=0; i < num_box_overlays; i++)
-      if (box_overlays[i].id == (ushort)arg)
+      if (box_overlays[i].id == (ushort)(uintptr_t)arg)
       {
          oip = &box_overlays[i];
          break; // we've found it, no sense in continuing
@@ -544,7 +542,7 @@ int LGadAddOverlay(LGadBox *vb)
          Warning(("LGadAddOverlay: lgad_overlay_add is NULL!\n"));
       else
          lgad_overlay_add(nr.ul.x,nr.ul.y,&box_overlays[num_box_overlays].bm,LGadOverlayFunc,
-            (void *)box_overlays[num_box_overlays].id,
+            (void *)(uintptr_t)box_overlays[num_box_overlays].id,
             (lgad_use_pal16 && lgad_pal_id != 0) ? UtilGetPalConv(MKREF(lgad_pal_id,vb->paltype)) : NULL );  // pass in NULL as the 16-bit conversion if it is irrelevant
 
       // some bookkeeping
@@ -736,9 +734,10 @@ int LGadDrawCallback(DrawCallback dcb, LGadBox *vb, void *data, Rect *r)
    gr_init_sub_canvas(can, &sub, r->ul.x, r->ul.y, RectWidth(r), RectHeight(r));
    gr_push_canvas(&sub);
    // deal with the sub canvas being larger than the canvas
-   gr_safe_set_cliprect(max(-r->ul.x,0),max(-r->ul.y,0),
-                   min(can->bm.w - r->ul.x,sub.bm.w),
-                   min(can->bm.h - r->ul.y,sub.bm.h));
+   gr_safe_set_cliprect(-r->ul.x > 0 ? -r->ul.x : 0,
+                   -r->ul.y > 0 ? -r->ul.y : 0,
+                   can->bm.w - r->ul.x < sub.bm.w ? can->bm.w - r->ul.x : sub.bm.w,
+                   can->bm.h - r->ul.y < sub.bm.h ? can->bm.h - r->ul.y : sub.bm.h);
    dcb(data,vb);
 
    // draw to both video pages, if requested
@@ -842,6 +841,7 @@ int LGadDrawBoxInternal(LGadBox *vb, void *data,Rect* drawrect)
       {
          ulong pal = lgad_lookup_pal16(vb->paltype);
 
+         if (vb->box_flags & BOXFLAG_CLEAR) flags |= ComposeFlagClear;
          if (pal != 0) flags |= ComposeFlagClear;
 
          GUIsetup(&compose,&r,flags,GUI_CANV_ANY);

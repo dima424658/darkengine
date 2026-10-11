@@ -20,7 +20,7 @@ void mm_debug_toggle();
 ////// set callbacks
 //
 
-typedef void (*mmf_joint_pos_cback)(mms_model *m,int joint_id,
+typedef void (*mmf_joint_pos_cback)(const mms_model *m,int joint_id,
                                     mxs_trans *trans);
 
 // set the joint position callback function.  Should provide the joint position
@@ -28,7 +28,7 @@ typedef void (*mmf_joint_pos_cback)(mms_model *m,int joint_id,
 // function returns previous joint pos callback
 EXTERN mmf_joint_pos_cback mm_set_joint_pos_cback(mmf_joint_pos_cback func);
 
-typedef void (*mmf_stretchy_joint_cback)(mms_model *m, int joint_id,
+typedef void (*mmf_stretchy_joint_cback)(const mms_model *m, int joint_id,
                                          mxs_trans *trans, quat *joint);
 
 // set the stretchy joint callback function.  

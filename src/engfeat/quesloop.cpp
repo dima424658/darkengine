@@ -163,7 +163,7 @@ static void db_message(DispatchData* msg)
 // Here's where we do the dirty work.
 //
 
-void setup_campaign(); 
+static void setup_campaign();
  
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {

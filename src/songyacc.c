@@ -534,7 +534,7 @@ BOOL SongYaccParse (char* songFile, ISong **ppSong)
    return parseOK;
 }
 
-songyyparse()
+int songyyparse(void)
 {
 	register short		songyyi, *songyyp;	/* for table lookup */
 	register short		*songyyps;		/* top of state stack */

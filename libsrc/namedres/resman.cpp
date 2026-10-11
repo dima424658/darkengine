@@ -770,14 +770,14 @@ int cResMan::IsAsyncFulfilled(IRes* pResource)
 
 ///////////////////////////////////////
 
-long cResMan::AsyncKill(IRes* pResource)
+HRESULT cResMan::AsyncKill(IRes* pResource)
 {
 	return m_ResManARQ.Kill(pResource);
 }
 
 ///////////////////////////////////////
 
-long cResMan::GetAsyncResult(IRes* pResource, void** ppResult)
+HRESULT cResMan::GetAsyncResult(IRes* pResource, void** ppResult)
 {
 	return m_ResManARQ.GetResult(pResource, ppResult);
 }
@@ -1255,9 +1255,9 @@ void cResMan::DoDumpSnapshot(FILE* fp)
 				pResEntry->m_pRes->Release();
 
 				if (fp)
-					fprintf(fp, "%s%s\t%ld\t%d\t%d\t%d\n", padded_name, pResEntry->m_pType->GetName(), pResEntry->m_nSize, pResEntry->m_nUserLockCount, pResEntry->m_nInternalLockCount, refcnt);
+					fprintf(fp, "%s%s\t%u\t%d\t%d\t%d\n", padded_name, pResEntry->m_pType->GetName(), pResEntry->m_nSize, pResEntry->m_nUserLockCount, pResEntry->m_nInternalLockCount, refcnt);
 				else
-					mprintf("%s%s\t%ld\t%d\t%d\t%d\n", padded_name, pResEntry->m_pType->GetName(), pResEntry->m_nSize, pResEntry->m_nUserLockCount, pResEntry->m_nInternalLockCount, refcnt);
+					mprintf("%s%s\t%u\t%d\t%d\t%d\n", padded_name, pResEntry->m_pType->GetName(), pResEntry->m_nSize, pResEntry->m_nUserLockCount, pResEntry->m_nInternalLockCount, refcnt);
 
 				Free(pCanonPathName);
 			}

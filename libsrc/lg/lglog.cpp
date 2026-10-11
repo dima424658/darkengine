@@ -240,7 +240,7 @@ void LGAPI _LogDefaultLogger(const char *pszMessage, const char *pszFile, unsign
                 }
             setbuf(hLogFile, NULL);
             }
-        fprintf(hLogFile, szBuf);
+        fprintf(hLogFile, "%s", szBuf);
         fflush(hLogFile);
         }
 

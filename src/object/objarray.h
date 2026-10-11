@@ -7,8 +7,8 @@
 // $Header: r:/t2repos/thief2/src/object/objarray.h,v 1.3 2000/03/07 19:58:26 toml Exp $
 //
 
-#include <ObjType.h>
-#include <ObjSpace.h>
+#include <objtype.h>
+#include <objspace.h>
 #include <string.h>
 
 #include <appagg.h>

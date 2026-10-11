@@ -54,7 +54,8 @@ static sBowWeaponInfo BowWeaponInfo = {FALSE, FALSE};
 
 
 
-EXTERN ObjID g_ArrowObj=OBJ_NULL; // gets accessed in drkgame.c
+EXTERN ObjID g_ArrowObj;
+ObjID g_ArrowObj=OBJ_NULL; // gets accessed in drkgame.c
 
 ////////
 //

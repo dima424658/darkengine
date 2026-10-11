@@ -56,9 +56,9 @@ static BOOL (*next_block_call)(ObjID o1, ObjID o2);
 static void (*next_overlay_call)(void);
 
 // this is at end of file
-void dark_render_object(ObjID o, uchar *clut, ulong fragment);
+static void dark_render_object(ObjID o, uchar *clut, ulong fragment);
 BOOL dark_object_blocks(ObjID blocker, ObjID blockee);
-void dark_render_overlays(void);
+static void dark_render_overlays(void);
 
 // set up our function pointers for the portal render object stuff
 void dark_init_object_rend(void)

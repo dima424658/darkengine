@@ -43,7 +43,7 @@ public:
 
 struct sZoneOkBitsMap
 {
-   long key;
+   int32 key;
    tAIPathOkBits okBits;
    char pad[2];
 

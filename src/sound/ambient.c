@@ -223,7 +223,7 @@ static void _AmbSchemaKillCallback(int hSchema, ObjID schemaID, void *pData)
 // default callback
 static sSchemaCallParams schemaCallData={0,0,OBJ_NULL,NULL,0,_AmbSchemaKillCallback,0,NULL};
 
-int _AmbientRestore();
+static int _AmbientRestore(void);
 
 // for now, we boneheadly scan the whole area every frame
 // really, we should cache for each object how far away it was

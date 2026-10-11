@@ -23,11 +23,11 @@ static int gstride, rstride;
 static long x, xsqr, colormax;
 static int cindex;
 
-void inv_cmap_2(int colors, uchar *colormap[3],int bits,ulong *dist_buf, uchar *rgbmap );
-int _redloop();
-int _greenloop(int restart);
-int _blueloop(int restart);
-void _maxfill(ulong *buffer);
+static void inv_cmap_2(int colors, uchar *colormap[3],int bits,ulong *dist_buf, uchar *rgbmap );
+static int _redloop();
+static int _greenloop(int restart);
+static int _blueloop(int restart);
+static void _maxfill(ulong *buffer);
 
 /* The routines in this file operate on grs_rgb color values.  The color
    values are encoded so that each r,g, and b has 8 bits of integer, 2

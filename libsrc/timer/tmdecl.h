@@ -37,6 +37,7 @@ extern volatile fix tm_fix;
 
 #ifndef _WIN32
 #define tm_get_millisec() (tm_millisec)
+#define tm_get_millisec_unrecorded() (tm_millisec)
 #define tm_get_fix() (tm_fix)
 #else
 EXTERN long LGAPI tm_get_millisec(void);

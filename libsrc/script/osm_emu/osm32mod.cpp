@@ -24,11 +24,16 @@
 #include <simscrm.h>
 #include <sndscrpt.h>
 
+#pragma pack(push, 8)
 #include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <vector>
+#pragma pack(pop)
+
+#include <aiscrptapi.h>
+#include <drkuiscrapi.h>
 
 namespace
 {
@@ -1200,10 +1205,10 @@ private:
           !StringArgument(*state, memory, 2, &property, error))
          return false;
       const object target(static_cast<int32_t>(objectId));
-      // Retail OSMs use the released SDK interface, which has only the
-      // four-argument Set method.  The restored native header also exposes
-      // a three-argument overload, shifting its later native vtable slots.
-      if (slot == 6 || slot == 7)
+      // The 32-bit script SDK puts the field-taking Set overload first.  The
+      // restored native header reverses the two overloads, so its method
+      // declarations cannot be used as guest vtable numbering.
+      if (slot == 6 || slot == 8)
       {
          uint32_t fieldAddress;
          if (!Argument(*state, *memory, 3, &fieldAddress, error) ||
@@ -1232,20 +1237,28 @@ private:
                               fieldAddress ? field.c_str() : 0, parm);
          return Return(state, memory, 20, result, error);
       }
+      if (slot == 7)
+      {
+         if (!Argument(*state, *memory, 3, &third, error)) return false;
+         cMultiParm parm;
+         if (!ReadGuestParm(memory, third, &parm, error)) return false;
+         return Return(state, memory, 16,
+                       service->Set(target, property.c_str(), parm), error);
+      }
       switch (slot)
       {
-         case 8:
-            return Return(state, memory, 12,
-                          service->Add(target, property.c_str()), error);
          case 9:
             return Return(state, memory, 12,
-                          service->Remove(target, property.c_str()), error);
+                          service->Add(target, property.c_str()), error);
          case 10:
+            return Return(state, memory, 12,
+                          service->Remove(target, property.c_str()), error);
+         case 11:
             if (!Argument(*state, *memory, 3, &third, error)) return false;
             return Return(state, memory, 16,
                           service->CopyFrom(target, property.c_str(),
                              object(static_cast<int32_t>(third))), error);
-         case 11: case 12:
+         case 12:
             return Return(state, memory, 12,
                           service->Possessed(target, property.c_str()), error);
       }
@@ -1433,8 +1446,8 @@ private:
          const object to(static_cast<int32_t>(third));
          const link result = slot == 5 ? service->Create(kind, from, to) :
                                          service->GetOne(kind, from, to);
-         return memory->Write32(resultAddress,
-                                static_cast<uint32_t>(static_cast<long>(result)),
+          return memory->Write32(resultAddress,
+                                 static_cast<uint32_t>(static_cast<LinkID>(result)),
                                 error) &&
                 Return(state, memory, 20, resultAddress, error);
       }
@@ -1743,7 +1756,7 @@ private:
                         osm32::sCpuState *state, osm32::cMemory *memory,
                         std::string *error)
    {
-      void **vtable = *reinterpret_cast<void ***>(service);
+      IAIScriptService *ai = reinterpret_cast<IAIScriptService *>(service);
       uint32_t args[7] = {};
       if (slot >= 5 && slot <= 7)
       {
@@ -1759,31 +1772,25 @@ private:
          if (slot == 5)
          {
             if (!ReadGuestParm(memory, args[5], &data, error)) return false;
-            typedef boolean *(LGAPI *tMethod)(void *, boolean *, ObjID,
-               const object *, uint32_t, uint32_t, const cMultiParm *);
-            reinterpret_cast<tMethod>(vtable[slot])(
-               service, &result, static_cast<ObjID>(args[1]), &target,
-               args[3], args[4], &data);
+            result = ai->MakeGotoObjLoc(
+               static_cast<ObjID>(args[1]), target,
+               static_cast<eAIScriptSpeed>(args[3]),
+               static_cast<eAIActionPriority>(args[4]), data);
          }
          else if (slot == 6)
          {
             if (!ReadGuestParm(memory, args[4], &data, error)) return false;
-            typedef boolean *(LGAPI *tMethod)(void *, boolean *, ObjID,
-               const object *, uint32_t, const cMultiParm *);
-            reinterpret_cast<tMethod>(vtable[slot])(
-               service, &result, static_cast<ObjID>(args[1]), &target,
-               args[3], &data);
+            result = ai->MakeFrobObj(
+               static_cast<ObjID>(args[1]), target,
+               static_cast<eAIActionPriority>(args[3]), data);
          }
          else
          {
             if (!ReadGuestObjectReference(memory, args[3], &with, error) ||
                 !ReadGuestParm(memory, args[5], &data, error)) return false;
-            typedef boolean *(LGAPI *tMethod)(void *, boolean *, ObjID,
-               const object *, const object *, uint32_t,
-               const cMultiParm *);
-            reinterpret_cast<tMethod>(vtable[slot])(
-               service, &result, static_cast<ObjID>(args[1]), &target, &with,
-               args[4], &data);
+            result = ai->MakeFrobObj(
+               static_cast<ObjID>(args[1]), target, with,
+               static_cast<eAIActionPriority>(args[4]), data);
          }
          return ReturnBoolean(state, memory, args[0], 4 + count * 4,
                               result, error);
@@ -1793,9 +1800,7 @@ private:
          if (!Argument(*state, *memory, 1, &args[0], error) ||
              !Argument(*state, *memory, 2, &args[1], error)) return false;
          boolean result;
-         reinterpret_cast<boolean *(LGAPI *)(void *, boolean *, ObjID)>(
-            vtable[slot])(
-               service, &result, static_cast<ObjID>(args[1]));
+         result = ai->StartConversation(static_cast<ObjID>(args[1]));
          return ReturnBoolean(state, memory, args[0], 12, result, error);
       }
       if (!Argument(*state, *memory, 1, &args[0], error)) return false;
@@ -1803,27 +1808,23 @@ private:
       {
          case 8:
             return Return(state, memory, 8,
-                          reinterpret_cast<uint32_t (LGAPI *)(void *, ObjID)>(
-                             vtable[slot])(
-                                service, static_cast<ObjID>(args[0])), error);
+                          ai->GetAlertLevel(static_cast<ObjID>(args[0])),
+                          error);
          case 9:
             if (!Argument(*state, *memory, 2, &args[1], error)) return false;
-            reinterpret_cast<void (LGAPI *)(void *, ObjID, uint32_t)>(
-               vtable[slot])(service, static_cast<ObjID>(args[0]), args[1]);
+            ai->SetMinimumAlert(static_cast<ObjID>(args[0]),
+                                static_cast<eAIScriptAlertLevel>(args[1]));
             return Return(state, memory, 12, 0, error);
          case 10:
-            reinterpret_cast<void (LGAPI *)(void *, ObjID)>(vtable[slot])(
-               service, static_cast<ObjID>(args[0]));
+            ai->ClearGoals(static_cast<ObjID>(args[0]));
             return Return(state, memory, 8, 0, error);
          case 11:
             if (!Argument(*state, *memory, 2, &args[1], error)) return false;
-            reinterpret_cast<void (LGAPI *)(void *, ObjID, int)>(
-               vtable[slot])(service, static_cast<ObjID>(args[0]),
-                             static_cast<int32_t>(args[1]));
+            ai->SetScriptFlags(static_cast<ObjID>(args[0]),
+                               static_cast<int32_t>(args[1]));
             return Return(state, memory, 12, 0, error);
          case 12:
-            reinterpret_cast<void (LGAPI *)(void *, ObjID)>(vtable[slot])(
-               service, static_cast<ObjID>(args[0]));
+            ai->ClearAlertness(static_cast<ObjID>(args[0]));
             return Return(state, memory, 8, 0, error);
          case 13:
          {
@@ -1831,9 +1832,7 @@ private:
             if (!ScriptStringArgument(*state, memory, 2, &signal, error))
                return false;
             const cScrStr nativeSignal(signal.c_str());
-            reinterpret_cast<void (LGAPI *)(void *, ObjID,
-                                             const cScrStr *)>(vtable[slot])(
-               service, static_cast<ObjID>(args[0]), &nativeSignal);
+            ai->Signal(static_cast<ObjID>(args[0]), nativeSignal);
             return Return(state, memory, 12, 0, error);
          }
       }
@@ -2412,12 +2411,13 @@ private:
       return false;
    }
 
-   bool InvokeDarkUIService(IUnknown *service, unsigned slot,
+   bool InvokeDarkUIService(IUnknown *unknown, unsigned slot,
                             osm32::sCpuState *state,
                             osm32::cMemory *memory,
                             std::string *error)
    {
-      void **vtable = *reinterpret_cast<void ***>(service);
+      IDarkUIScriptService *service =
+         reinterpret_cast<IDarkUIScriptService *>(unknown);
       uint32_t first, second, third;
       std::string text, other;
       if (slot == 5)
@@ -2426,27 +2426,22 @@ private:
              !Argument(*state, *memory, 2, &second, error) ||
              !Argument(*state, *memory, 3, &third, error)) return false;
          return Return(state, memory, 16,
-                       reinterpret_cast<HRESULT (LGAPI *)(
-                          void *, const char *, int, int)>(vtable[slot])(
-                             service, text.c_str(),
-                             static_cast<int32_t>(second),
-                             static_cast<int32_t>(third)), error);
+                       service->TextMessage(text.c_str(),
+                          static_cast<int32_t>(second),
+                          static_cast<int32_t>(third)), error);
       }
       if (slot == 6)
       {
          if (!StringArgument(*state, memory, 1, &text, error) ||
              !StringArgument(*state, memory, 2, &other, error)) return false;
          return Return(state, memory, 12,
-                       reinterpret_cast<HRESULT (LGAPI *)(
-                          void *, const char *, const char *)>(vtable[slot])(
-                             service, text.c_str(), other.c_str()), error);
+                       service->ReadBook(text.c_str(), other.c_str()), error);
       }
       if (slot == 7 || slot == 8)
       {
          if (!Argument(*state, *memory, 1, &first, error)) return false;
-         object result;
-         typedef object *(LGAPI *tMethod)(void *, object *);
-         reinterpret_cast<tMethod>(vtable[slot])(service, &result);
+         const object result = slot == 7 ? service->InvItem() :
+                                           service->InvWeapon();
          return ReturnObject(state, memory, first, 8,
                              result, error);
       }
@@ -2454,9 +2449,8 @@ private:
       {
          if (!Argument(*state, *memory, 1, &first, error)) return false;
          return Return(state, memory, 8,
-                       reinterpret_cast<HRESULT (LGAPI *)(void *, object)>(
-                          vtable[slot])(
-                             service, object(static_cast<int32_t>(first))),
+                       service->InvSelect(
+                          object(static_cast<int32_t>(first))),
                        error);
       }
       if (slot == 10 || slot == 11)
@@ -2467,16 +2461,10 @@ private:
          const cScrStr command(text.c_str());
          if (slot == 10)
          {
-            boolean result;
-            reinterpret_cast<boolean *(LGAPI *)(
-               void *, boolean *, const cScrStr *)>(vtable[slot])(
-                  service, &result, &command);
+            const boolean result = service->IsCommandBound(command);
             return ReturnBoolean(state, memory, first, 12, result, error);
          }
-         cScrStr result;
-         reinterpret_cast<cScrStr *(LGAPI *)(
-            void *, cScrStr *, const cScrStr *)>(vtable[slot])(
-               service, &result, &command);
+         const cScrStr result = service->DescribeKeyBinding(command);
          return WriteGuestStringObject(memory, first, result, error) &&
                 Return(state, memory, 12, first, error);
       }

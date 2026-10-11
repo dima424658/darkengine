@@ -123,7 +123,7 @@ typedef struct _StateRecord
 #ifdef PLAYTEST
 #ifdef NEW_NETWORK_ENABLED
 INetStats *g_pNetStats = NULL;
-INetManager *g_pNetMan = NULL;
+static INetManager *g_pNetMan = NULL;
 #endif
 
 bool show_stats      = FALSE;
@@ -186,7 +186,7 @@ static void superimpose_stats (int dt, int overhead, int blit_overhead)
    {
       ulong f_sent, f_rcv, t_sent, t_rcv, m_sent=0, m_rcv=0;
       float seconds;
-      char *f_culprit, *t_culprit;
+      const char *f_culprit, *t_culprit;
       INetStats_FrameStats(g_pNetStats, &f_sent, &f_rcv, &f_culprit);
       INetStats_BandwidthStats(g_pNetStats, &seconds, &t_sent, &t_rcv, &t_culprit);
       INetStats_MaxStats(g_pNetStats, &m_sent, &m_rcv);

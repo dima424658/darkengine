@@ -290,7 +290,7 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLinkSrv, Link)
             sScrMsg * pMsg = new sScrMsg(self, 
                                          slink.dest, 
                                          Message,
-                                         NULL);
+                                         cMultiParm());
             pMsg->flags |= kSMF_MsgPostToOwner;
             pScriptMan->PostMessage(pMsg);
             pMsg->Release();
@@ -379,30 +379,30 @@ IMPLEMENT_SCRIPT_SERVICE_IMPL(cLinkSrv, Link);
 
 DECLARE_SCRIPT_SERVICE_IMPL(cLinkToolsSrv, LinkTools)
 {
-   STDMETHOD_(long, LinkKindNamed)(const char* name)
+   STDMETHOD_(int32, LinkKindNamed)(const char* name)
    {
       return linkkind(name); 
    }
 
-   STDMETHOD_(string, LinkKindName)(long id)
+   STDMETHOD_(string, LinkKindName)(int32 id)
    {
       cAutoIPtr<IRelation> rel (LinkMan()->GetRelation((RelationID)id) );
       AssertMsg1(rel != 0,"A script referenced non-existent link kind %d",id); 
       return rel->Describe()->name; 
    }
 
-   STDMETHOD(LinkGet)(long id, sLink& link)
+   STDMETHOD(LinkGet)(LinkID id, sLink& link)
    {
       VerifyMsg1(LinkMan()->Get(id,&link),"A script tried to access non-existent link %d",id); 
       return S_OK;
    }
 
-   STDMETHOD_(cMultiParm,LinkGetData)(long id, const char* field)
+   STDMETHOD_(cMultiParm,LinkGetData)(LinkID id, const char* field)
    {
       return link(id).GetData(field); 
    }
 
-   STDMETHOD(LinkSetData)(long id, const char* field, const cMultiParm& val)
+   STDMETHOD(LinkSetData)(LinkID id, const char* field, const cMultiParm& val)
    {
       link(id).SetData(field,val); 
       return S_OK;

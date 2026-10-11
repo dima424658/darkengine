@@ -766,7 +766,7 @@ private:
    int              m_ropeSegment;
    mxs_real         m_ropePct;
 
-   long             m_lastSquishTime;
+   int32            m_lastSquishTime;
 
    ePhysModelType * m_pType;
 

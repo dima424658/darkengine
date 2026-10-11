@@ -73,7 +73,7 @@ cAIJointRotateAction::cAIJointRotateAction(IAI *pAI, void *pMsg):
       sObjListenerDesc desc = {AIJointRotateObjListener, (void*)this};
       m_listener = pObjectSystem->Listen(&desc);
    } else {
-      m_listener = NULL;
+      m_listener = 0;
    }
 
    // Since it has no pOwner ability, the cAIAction constructor didn't init m_pAI.

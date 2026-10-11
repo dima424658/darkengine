@@ -568,7 +568,7 @@ STDMETHODIMP_(long) BufTagFileWrite::Write(const char* buf, int buflen)
 
 ////////////////////////////////////////
 
-STDMETHODIMP BufTagFileWrite::Move(char* buf , int len)
+STDMETHODIMP_(long) BufTagFileWrite::Move(char* buf, int len)
 {
    return Write(buf,len);
 }
@@ -738,7 +738,7 @@ STDMETHODIMP_(long) BufTagFileRead::Write(const char* , int )
 
 ////////////////////////////////////////
 
-STDMETHODIMP BufTagFileRead::Move(char* buf, int buflen)
+STDMETHODIMP_(long) BufTagFileRead::Move(char* buf, int buflen)
 {
    return Read(buf,buflen);
 }
