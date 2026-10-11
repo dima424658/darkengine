@@ -96,7 +96,7 @@ bool CopyOpenFile(const char *name, int src_hnd)
    int len, dst_hnd;
 
    if (!buf) return FALSE;
-   dst_hnd = open(name, O_WRONLY|O_BINARY|O_CREAT|O_TRUNC, S_IWRITE);
+   dst_hnd = open(name, O_WRONLY|O_BINARY|O_CREAT|O_TRUNC, S_IREAD|S_IWRITE);
    if (dst_hnd!=-1)
    {
       do {

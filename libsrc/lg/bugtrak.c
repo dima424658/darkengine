@@ -148,7 +148,7 @@ errtype bugtrak_begin_session(char *bt_session_file)
    char oput[50];
    time_t t;
 
-   if ((bt_session_handle=open(bt_session_file,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE))==-1) {
+   if ((bt_session_handle=open(bt_session_file,O_CREAT|O_WRONLY|O_TRUNC, S_IREAD|S_IWRITE))==-1) {
       Warning(("ARGH!!  OPEN FAILURE!!! %s %d\n",bt_session_file,bt_session_handle));
       return(ERR_NODEV);
    }
