@@ -2,6 +2,8 @@
 
 #include "squirrelhost.h"
 
+#ifdef DARK_ENABLE_SQUIRREL
+
 #include <appagg.h>
 #include <scrptsrv.h>
 #include "../../../src/framewrk/contentctx.h"
@@ -3512,3 +3514,19 @@ void SquirrelRenderOverlays(void)
 {
    if (gSquirrelModule) gSquirrelModule->RenderOverlays();
 }
+
+#else
+
+BOOL CreateSquirrelScriptModule(const char*, IScriptMan*, tScriptPrintFunc,
+                                IScriptModule** module)
+{
+   if (module)
+      *module = NULL;
+   return FALSE;
+}
+
+void SquirrelRenderOverlays(void)
+{
+}
+
+#endif

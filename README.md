@@ -20,7 +20,7 @@ Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
 | Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft |
 | Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | Not implemented |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
-| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Not implemented |
+| Squirrel scripts | Optional native Squirrel 3.2 provider | Optional native Squirrel 3.2 provider | Not implemented |
 | Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja |
 
 The Windows Release targets build with the Visual Studio 2022 v143 toolset.
@@ -50,12 +50,12 @@ the compatibility headers isolate Windows and LP64 ABI differences.
 
 Native 64-bit builds include a compatibility runtime for legacy 32-bit `.osm`
 script modules. It reads PE32 modules, interprets IA-32 code, and bridges the
-supported script-manager and engine-service calls into the host process. The
-Windows builds also provide an in-process Squirrel 3.2 script module for
-NewDark-style `sq_scripts/*.nut` sources; it uses the normal Dark script
-manager and service interfaces rather than loading the game-specific NewDark
-`squirrel.osm` binary. Both bridges are still being expanded and validated
-against third-party scripts.
+supported script-manager and engine-service calls into the host process.
+Windows builds made with `EnableSquirrel=true` also provide an in-process
+Squirrel 3.2 script module for NewDark-style `sq_scripts/*.nut` sources; it
+uses the normal Dark script manager and service interfaces rather than loading
+the game-specific NewDark `squirrel.osm` binary. Both bridges are still being
+expanded and validated against third-party scripts.
 
 Audio follows the same provider model. Windows uses DirectSound 3D by default,
 with native I3DL2 environmental reverb. An OpenAL provider supplies positional
@@ -128,13 +128,18 @@ x64 build.
 
 ## Build instructions
 
-Squirrel 3.2 is an external Windows build dependency. Clone it into the
-ignored `3rdparty/squirrel` directory before the first Windows build:
+Squirrel 3.2 is an optional external Windows build dependency. Normal builds
+do not require it. To enable Squirrel scripts, clone it into the ignored
+`3rdparty/squirrel` directory:
 
 ```sh
 git clone --branch v3.2 --depth 1 \
   https://github.com/albertodemichelis/squirrel.git 3rdparty/squirrel
 ```
+
+Then add `/p:EnableSquirrel=true` to the MSBuild command. The checkout can live
+elsewhere by also passing `/p:SquirrelSourceDir=C:\path\to\squirrel`. The
+default is `EnableSquirrel=false`.
 
 ### Linux / WSL2
 
@@ -546,12 +551,12 @@ repository.
   I3DL2 or OpenAL EFX. DirectSound provides room reverb while the optional
   OpenAL provider also supplies per-source low-pass occlusion; both paths need
   broader in-mission acoustic comparison against the original game.
-- The Windows builds load NewDark-style loose `sq_scripts/*.nut` sources with
-  the native Squirrel 3.2 provider. Core object, property, link, physics,
-  Act/React, door, lock, damage, containment, quest, data, and light calls are
-  bridged, but the complete NewDark service surface, overlay callbacks, and
-  packaged Squirrel-source archives still need broader implementation and
-  mission coverage.
+- Windows builds made with `EnableSquirrel=true` load NewDark-style loose
+  `sq_scripts/*.nut` sources with the native Squirrel 3.2 provider. Core
+  object, property, link, physics, Act/React, door, lock, damage, containment,
+  quest, data, and light calls are bridged, but the complete NewDark service
+  surface, overlay callbacks, and packaged Squirrel-source archives still need
+  broader implementation and mission coverage.
 - Broader NewDark mod compatibility remains to be implemented and tested,
   including replacement models and less common resource formats.
 - There is no installer or redistributable package. The executable is run

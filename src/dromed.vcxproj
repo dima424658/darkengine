@@ -2629,7 +2629,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\libsrc\squirrel\squirrel.vcxproj">
+    <ProjectReference Include="..\libsrc\squirrel\squirrel.vcxproj" Condition="'$(EnableSquirrel)' == 'true'">
       <Project>{4AB7A069-9AAF-4B26-A81E-F31B408441AD}</Project>
     </ProjectReference>
   </ItemGroup>

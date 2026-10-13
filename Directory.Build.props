@@ -6,6 +6,13 @@
          the shared executable project is built directly. -->
     <SolutionDir Condition="'$(SolutionDir)' == '' Or '$(SolutionDir)' == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>
     <BuildThief2 Condition="'$(BuildThief2)' == ''">true</BuildThief2>
+    <!-- Squirrel support is opt-in so the normal build has no external source
+         dependency. Set EnableSquirrel=true after cloning Squirrel 3.2, or
+         override SquirrelSourceDir to use a checkout elsewhere. -->
+    <EnableSquirrel Condition="'$(EnableSquirrel)' == ''">false</EnableSquirrel>
+    <SquirrelSourceDir Condition="'$(SquirrelSourceDir)' == ''">$(MSBuildThisFileDirectory)3rdparty\squirrel\</SquirrelSourceDir>
+    <SquirrelSourceRoot>$([MSBuild]::EnsureTrailingSlash('$(SquirrelSourceDir)'))</SquirrelSourceRoot>
+    <SquirrelIncludePath Condition="'$(EnableSquirrel)' == 'true'">$(SquirrelSourceRoot)include;</SquirrelIncludePath>
     <!-- Keep all generated files under build, grouped first by configuration
          and then by the MSBuild platform name (Win32 or x64). -->
     <DarkBuildRoot>$(MSBuildThisFileDirectory)build\</DarkBuildRoot>
@@ -22,6 +29,7 @@
       <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)winsrc;$(MSBuildThisFileDirectory)winsrc\appcore;$(MSBuildThisFileDirectory)winsrc\editor;$(MSBuildThisFileDirectory)winsrc\lg;$(MSBuildThisFileDirectory)winsrc\lgalloc;$(MSBuildThisFileDirectory)winsrc\platform;$(MSBuildThisFileDirectory)winsrc\sound;$(MSBuildThisFileDirectory)3rdparty\blast;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StructMemberAlignment>1Byte</StructMemberAlignment>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(EnableSquirrel)' == 'true'">DARK_ENABLE_SQUIRREL=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <!-- The renderer uses C99 array designators for sparse dispatch tables.
            MSVC's legacy C mode accepts the syntax but initializes entries
            sequentially, producing corrupt function-pointer tables. -->

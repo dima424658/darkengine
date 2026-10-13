@@ -41,6 +41,7 @@ BOOL cScriptMan::LoadModule(const cFileSpec & fsModule, sScrModuleInfo * pInfo)
       _stricmp(fsModule.GetFileName(), "squirrel.osm") == 0;
    if (modernProvider)
    {
+#ifdef DARK_ENABLE_SQUIRREL
       // Squirrel is an engine-owned, native provider.  It deliberately does
       // not load NewDark's PE32 squirrel.osm: that module selects retail
       // Thief 1/2 service vtables and is not ABI-safe in this shared host.
@@ -49,6 +50,10 @@ BOOL cScriptMan::LoadModule(const cFileSpec & fsModule, sScrModuleInfo * pInfo)
          return TRUE;
       mprintf("Built-in Squirrel 3.2 provider failed to initialize\n");
       return FALSE;
+#else
+      mprintf("Squirrel script module requested, but this build has Squirrel support disabled\n");
+      return FALSE;
+#endif
    }
 
    const char *modulePath = fsModule.GetName();

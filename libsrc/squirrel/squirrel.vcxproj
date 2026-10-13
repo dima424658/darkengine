@@ -46,9 +46,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(EnableSquirrel)' == 'true'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)3rdparty\squirrel\include;$(SolutionDir)3rdparty\squirrel\squirrel;$(SolutionDir)3rdparty\squirrel\sqstdlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SquirrelSourceRoot)include;$(SquirrelSourceRoot)squirrel;$(SquirrelSourceRoot)sqstdlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4244;4267;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ForcedIncludeFiles></ForcedIncludeFiles>
@@ -73,28 +73,31 @@
       <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
     </Lib>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqapi.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqbaselib.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqclass.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqcompiler.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqdebug.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqfuncstate.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqlexer.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqmem.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqobject.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqstate.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqtable.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\squirrel\sqvm.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\sqstdlib\sqstdaux.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\sqstdlib\sqstdblob.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\sqstdlib\sqstdio.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\sqstdlib\sqstdmath.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\sqstdlib\sqstdrex.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\sqstdlib\sqstdstream.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\sqstdlib\sqstdstring.cpp" />
-    <ClCompile Include="..\..\3rdparty\squirrel\sqstdlib\sqstdsystem.cpp" />
+  <ItemGroup Condition="'$(EnableSquirrel)' == 'true'">
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqapi.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqbaselib.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqclass.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqcompiler.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqdebug.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqfuncstate.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqlexer.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqmem.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqobject.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqstate.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqtable.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqvm.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdaux.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdblob.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdio.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdmath.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdrex.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdstream.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdstring.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdsystem.cpp" />
   </ItemGroup>
+  <Target Name="ValidateSquirrelDependency" BeforeTargets="PrepareForBuild" Condition="'$(EnableSquirrel)' == 'true'">
+    <Error Condition="!Exists('$(SquirrelSourceRoot)include\squirrel.h')" Text="EnableSquirrel=true requires a Squirrel 3.2 checkout. Clone it into 3rdparty\squirrel or set SquirrelSourceDir." />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
