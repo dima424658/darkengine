@@ -41,6 +41,10 @@ void RenderBackendSetInteractiveResize(int resizing);
 void RenderBackendSetPreserveCanvas(int enabled);
 int RenderBackendPreserveCanvas(void);
 void RenderBackendSetWindowedClientSizeHint(int width, int height);
+// Returns the drawable client size in physical pixels. While an interactive
+// resize is in progress the size is intentionally withheld so callers can
+// rebuild expensive engine-owned canvases once, when the drag finishes.
+int RenderBackendGetSettledClientSize(int *width, int *height);
 int RenderBackendClientToLogicalPoint(int *x, int *y);
 int RenderBackendLogicalToClientPoint(int *x, int *y);
 int RenderBackendBeginFrame(void);

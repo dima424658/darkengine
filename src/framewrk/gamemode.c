@@ -368,6 +368,13 @@ static ScrnManContext scrndata =
    NULL, 
 };
 
+// Fit mode owns a runtime screen description whose dimensions follow the
+// drawable window client. Keep it separate from gGameScrnMode so resizing a
+// window does not overwrite the fixed resolution the user selected for when
+// Fit is disabled.
+static sScrnMode gFitScreenMode;
+static BOOL gFitResizeRestart = FALSE;
+
 static uiLoopContext _uidata =
 {
    NULL, 
@@ -394,6 +401,33 @@ static sLoopInstantiator _instantiator =
    _InitContext,
 };
 
+static BOOL build_fit_screen_mode(sScrnMode* mode)
+{
+   const sScrnMode* selected = GetGameScreenMode();
+   int fit = 0;
+   int width;
+   int height;
+   int registered;
+
+   if (!config_get_int("game_screen_fit", &fit) || !fit ||
+       !(selected->flags & kScrnModeWindowed) ||
+       !RenderBackendGetSettledClientSize(&width, &height) ||
+       width < 400 || height < 300 || width > 8191 || height > 8191)
+      return FALSE;
+
+   registered = gr_register_mode(width, height, 16);
+   if (registered < 0)
+      return FALSE;
+   grd_mode_info[registered].flags |= GRM_CAN_WINDOW;
+
+   *mode = *selected;
+   mode->valid_fields |= kScrnModeDimsValid | kScrnModeBitDepthValid;
+   mode->w = width;
+   mode->h = height;
+   mode->bitdepth = 16;
+   return TRUE;
+}
+
 sLoopInstantiator* DescribeGameMode(GameMinorMode minorMode, GameModeDesc* desc)
 {
    if (minorMode != mmGameNoChange)
@@ -406,9 +440,38 @@ sLoopInstantiator* DescribeGameMode(GameMinorMode minorMode, GameModeDesc* desc)
          SetGameScreenMode(desc->scrnmode); 
    }
 
-   scrndata.mode_params.preferred = (sScrnMode*)GetGameScreenMode(); 
+   if (build_fit_screen_mode(&gFitScreenMode))
+      scrndata.mode_params.preferred = &gFitScreenMode;
+   else
+      scrndata.mode_params.preferred = (sScrnMode*)GetGameScreenMode();
 
    return &_instantiator;
+}
+
+static BOOL resize_fit_canvas_to_client(void)
+{
+   sScrnMode current;
+   sLoopInstantiator* loop;
+   ILoop* looper;
+
+   if (!build_fit_screen_mode(&gFitScreenMode))
+      return FALSE;
+
+   ScrnModeGet(&current);
+   if ((current.valid_fields & kScrnModeDimsValid) &&
+       current.w == gFitScreenMode.w && current.h == gFitScreenMode.h)
+      return FALSE;
+   scrndata.mode_params.preferred = &gFitScreenMode;
+
+   RenderBackendTrace("fit-canvas source=%dx%d client=%dx%d",
+                      current.w, current.h,
+                      gFitScreenMode.w, gFitScreenMode.h);
+   gFitResizeRestart = TRUE;
+   looper = AppGetObj(ILoop);
+   loop = &_instantiator;
+   ILoop_ChangeMode(looper, kLoopModeSwitch, loop);
+   SafeRelease(looper);
+   return TRUE;
 }
 
 ////////////////////////////////////////
@@ -547,9 +610,9 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
       {
          int fit = 0;
          config_get_int("game_screen_fit", &fit);
-         // DromEd and the retail game share this loop client.  Once either
-         // enters gameplay, its fixed logical canvas must be aspect-fitted to
-         // the host window and its CPU canvas is only a HUD overlay.
+         // DromEd and the retail game share this loop client. Fixed modes are
+         // aspect-fitted to the host; Fit mode replaces the logical canvas
+         // with the settled client size so its CPU HUD overlay stays 1:1.
          RenderBackendSetScaleToWindow(TRUE);
          RenderBackendSetFitToViewport(fit != 0);
          RenderBackendSetPreserveCanvas(FALSE);
@@ -673,12 +736,19 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          break;
       case kMsgNormalFrame:
          // @OPTIMIZE: maybe test a boolean
+         if (resize_fit_canvas_to_client())
+            break;
          if (state->first_frame)
          {
             if (!once)
+            {
                process_config_scripts("game_script");
-            once = TRUE;
-            process_config_scripts("game_always_script");
+               once = TRUE;
+               process_config_scripts("game_always_script");
+            }
+            else if (!gFitResizeRestart)
+               process_config_scripts("game_always_script");
+            gFitResizeRestart = FALSE;
             state->first_frame = FALSE;
          }
 #ifdef HISTO

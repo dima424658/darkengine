@@ -804,6 +804,17 @@ BOOL cD3D11Presenter::SetGamma(double g) {
   return TRUE;
 }
 
+BOOL cD3D11Presenter::GetClientSize(int *width, int *height) const {
+  RECT client;
+
+  if (!m_pImpl || !m_pImpl->hwnd || !width || !height ||
+      !GetClientRect(m_pImpl->hwnd, &client))
+    return FALSE;
+  *width = client.right - client.left;
+  *height = client.bottom - client.top;
+  return *width > 0 && *height > 0;
+}
+
 BOOL cD3D11Presenter::ClientToLogicalPoint(int *x, int *y) const {
   RECT client, viewport;
   int width, height, localX, localY;
@@ -1312,8 +1323,7 @@ BOOL cD3D11Presenter::Present(IDirectDrawSurface *surface, int x0, int y0,
   m_pImpl->context->PSSetShaderResources(0, 2, views);
   m_pImpl->context->PSSetSamplers(0, 1, &m_pImpl->compositeSampler);
   m_pImpl->context->Draw(3, 0);
-  if (m_pImpl->sceneActive && !g_D3D11CaptureComplete &&
-      g_D3D11CapturePath[0] &&
+  if (!g_D3D11CaptureComplete && g_D3D11CapturePath[0] &&
       ++g_D3D11HardwareFrameCount >= g_D3D11CaptureFrame) {
     ID3D11Texture2D *backBuffer = NULL;
     if (SUCCEEDED(m_pImpl->swapChain->GetBuffer(
@@ -1356,6 +1366,10 @@ extern "C" void RenderBackendSetPreserveCanvas(int enabled) {
 }
 extern "C" int RenderBackendPreserveCanvas(void) {
   return g_D3D11PreserveLegacyCanvas;
+}
+extern "C" int RenderBackendGetSettledClientSize(int *width, int *height) {
+  return !g_D3D11InteractiveResize && g_pPresenter &&
+         g_pPresenter->GetClientSize(width, height);
 }
 extern "C" int RenderBackendClientToLogicalPoint(int *x, int *y) {
   return g_pPresenter && g_pPresenter->ClientToLogicalPoint(x, y);
