@@ -1972,7 +1972,14 @@ BOOL cCreature::MoveButt(const mxs_vector *pButtPos, const mxs_angvec *pAngles, 
       if (CreatureFromObj(m_ObjID) != NULL)
       {
          int head_joint = GetCreatureJointID(m_ObjID, kCJ_Neck);
-         mx_copy_mat(&m_headOrient, &m_pOrients[head_joint]);
+         // Some valid creature rigs (and several NewDark FM variants) do not
+         // define a neck joint.  The mapping reports -1 for those rigs; the
+         // legacy code indexed m_pOrients[-1] while position properties were
+         // being applied during mission load, producing an intermittent AV.
+         if (head_joint >= 0 && head_joint < m_nJoints)
+            mx_copy_mat(&m_headOrient, &m_pOrients[head_joint]);
+         else
+            mx_copy_mat(&m_headOrient, &m_sMultiped.global_orient);
       }
       else
          mx_copy_mat(&m_headOrient, &m_sMultiped.global_orient);

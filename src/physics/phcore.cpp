@@ -5483,6 +5483,16 @@ static BOOL CheckStep(cPhysClsn * pClsn, ObjID coll_OBB)
          if (pModel->GetType(i) != kPMT_Sphere)
             continue;
 
+         // Spring-controlled submodels (notably the player's head) retain
+         // their current endpoint during a step.  A zero-length spherecast
+         // can rediscover a nearby static contact and falsely reject the
+         // step even though this submodel has not moved.
+         mxs_vector submod_movement;
+         mx_sub_vec(&submod_movement, &pModel->GetEndLocationVec(i),
+                    &pModel->GetLocationVec(i));
+         if (mx_mag2_vec(&submod_movement) < 0.000001f)
+            continue;
+
          if (((cPhysSphereModel *)pModel)->CheckTerrainCollision(i, 0, 1, &pDummyClsn))
          {
             #ifndef SHIP
@@ -6630,6 +6640,16 @@ static void ValidatePositions()
          // check each submodel
          cPhysModel *pModel = g_PhysModels.Get(pCreature->GetObjID());
          if (!pModel)
+            continue;
+
+         // Gold can attach creature handles to objects whose physics model is
+         // not sphere-backed.  ValidatePositions historically assumed every
+         // creature used cPhysSphereModel and read its radius array through an
+         // invalid downcast.
+         const ePhysModelType modelType = pModel->GetType(0);
+         if ((modelType != kPMT_Sphere) &&
+             (modelType != kPMT_SphereHat) &&
+             (modelType != kPMT_Point))
             continue;
 
          for (int j=0; j<pModel->NumSubModels(); j++)

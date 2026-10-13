@@ -32,6 +32,7 @@ mxs_vector  *mmd_vert_vecs;   // vertex list
 mms_pgon    *mmd_pgons;       // pgon list
 mxs_vector  *mmd_norms;       // pgon normal list
 mms_weight  *mmd_weights;     // weight list
+static ulong mmd_model_version = MM_CUR_VER;
 
 // something like the above pointers, only passed in from the app rather
 // than coming from the model
@@ -322,8 +323,8 @@ BOOL mm_punt_xform;
 #ifndef SHIP
    #define TEST_VERSION(fname,model)   \
    do { \
-      if (model->version!=MM_CUR_VER) { \
-         CriticalMsg2("%s: model is old version %d",fname,model->version); \
+      if (model->version < MM_ACCLD_VER || model->version > MM_CUR_VER) { \
+         CriticalMsg2("%s: unsupported model version %d",fname,model->version); \
          return; \
       } \
    } while(0)
@@ -449,6 +450,7 @@ void mm_debug_toggle()
 static void _mm_set_globals(mms_model *m, mms_custom_data *d)
 {
    mmd_model=m;
+   mmd_model_version=m->version;
    mmd_smatrs=mm_smatr_list(m);
    mmd_segs=mm_segment_list(m);
    mmd_smatsegs=mm_smatseg_list(m);
@@ -736,12 +738,31 @@ static void _mm_hardware_set_buff(mms_model *m, mms_custom_data *d,
 // currently assumes always gouraud shaded.
 static void mm_setup_material(int index)
 {
-   mms_smatr *r=&mmd_smatrs[index];
+   ulong handle;
+   mme_mat type;
    int gouraud = mmd_rgb_lighting ? R3_PL_RGB_GOURAUD : R3_PL_GOURAUD;
 
-   if(r->type==MM_MAT_TMAP)
+   // Gold's stock creature meshes use the version-1 material record.  The
+   // rest of the mesh layout is shared with version 2, but the v2 material
+   // inserts alpha/self-illumination fields before the texture handle.  Read
+   // the record with the layout declared by the model instead of indexing it
+   // as the larger v2 structure.
+   if (mmd_model_version == MM_ACCLD_VER)
    {
-      r3s_texture texture = mm_resolve_texture(r->handle);
+      mms_ssmatr *r = &((mms_ssmatr *)mmd_smatrs)[index];
+      handle = r->handle;
+      type = r->type;
+   }
+   else
+   {
+      mms_smatr *r = &mmd_smatrs[index];
+      handle = r->handle;
+      type = r->type;
+   }
+
+   if(type==MM_MAT_TMAP)
+   {
+      r3s_texture texture = mm_resolve_texture(handle);
       r3_set_polygon_context(gouraud | R3_PL_POLYGON | mmd_tmap_mode);
       r3_set_texture(texture);
    } else
