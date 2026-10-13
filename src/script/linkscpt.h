@@ -80,7 +80,12 @@ class linkset
 
 public:
    linkset(ILinkQuery* q) :query(q) { query->AddRef(); }; 
-   linkset(const linkset& s) :query(s.query) { };
+   // A linkset owns a reference to its query.  Returning linksets through the
+   // script-service ABI is allowed to invoke this copy constructor, so a
+   // shallow copy leaves the destination pointing at a query released with
+   // the temporary.  Modern Squirrel scripts exercise that path heavily via
+   // Link.GetAll().
+   linkset(const linkset& s) :query(s.query) { if (query) query->AddRef(); };
    ~linkset() { SafeRelease(query); }; 
 
    boolean AnyLinksLeft()  // Are there any links left? 

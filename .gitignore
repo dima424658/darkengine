@@ -54,6 +54,10 @@ ReleaseGame/
 .codex-build/
 build/
 
+# External build dependency. Clone Squirrel 3.2 here; do not vendor or
+# register it as a submodule.
+/3rdparty/squirrel/
+
 # Local game state and diagnostics. Retail Thief 2 data is never part of this
 # repository.
 cam.cfg

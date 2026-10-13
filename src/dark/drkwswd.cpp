@@ -475,6 +475,9 @@ BOOL WeaponFrameCallback(ulong dt, void *data)
 
 BOOL  EquipWeapon(ObjID owner, ObjID weapon, int type)
 {
+   if (getenv("DARK_PLAYER_TRACE"))
+      fprintf(stderr, "Player weapon equip owner=%d weapon=%d type=%d mode=%d next=%d\n",
+              owner, weapon, type, PlayerGetMode(), PlayerGetNextMode());
    // Set as the active weapon
    SetWeapon(owner, weapon, kWeaponModeMelee);
 
@@ -502,6 +505,9 @@ BOOL  EquipWeapon(ObjID owner, ObjID weapon, int type)
 
    // Tell the cerebellum to switch modes
    PlayerSwitchMode(kPlayerModeSword);
+   if (getenv("DARK_PLAYER_TRACE"))
+      fprintf(stderr, "Player weapon switch requested mode=%d next=%d limb=%s\n",
+              PlayerGetMode(), PlayerGetNextMode(), pName ? pName->text : "<default>");
 
    gWeaponInfo.swing_to_overhead_ms = 1200;
    gWeaponInfo.swing_force_finish_ms = 8000;

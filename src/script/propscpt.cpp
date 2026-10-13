@@ -27,6 +27,7 @@
 #include <sdesparm.h>
 
 #include <propface.h>
+#include <iobjsys.h>
 
 #include <netmsg.h>
 
@@ -294,6 +295,13 @@ public:
 
    void SetField(ObjID obj, const char *propname, const char *field, const cMultiParm &val)
    {
+      // Gold mission scripts can retain references to objects destroyed by
+      // an earlier startup script.  Property creation assumes a live object
+      // and otherwise walks the trait cache with an invalid object ID.
+      AutoAppIPtr(ObjectSystem);
+      if (!pObjectSystem->Exists(obj))
+         return;
+
       IProperty* prop = PropMan()->GetPropertyNamed(propname);
 
       if (prop->GetID() == PROPID_NULL)

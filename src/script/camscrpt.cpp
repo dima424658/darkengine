@@ -17,6 +17,9 @@
 #include <rendprop.h> //to unrender playerarm
 #include <plycbllm.h> //to get playerarm
 #include <command.h> //to execute clear_weapon command
+#include <matrix.h>
+
+#define CAMERA_ANG_TO_DEGREES(x) (((mxs_real)(x) * 180) / MX_ANG_PI)
 
 // must be last header
 #include <dbmem.h>
@@ -79,6 +82,63 @@ public:
      {
        Camera *playercam = PlayerCamera();
        CameraAttach(playercam,PlayerObject());
+       return S_OK;
+     }
+
+   STDMETHOD_(object, GetCameraParent)()
+     {
+       return object(CameraGetObjID(PlayerCamera()));
+     }
+
+   STDMETHOD_(BOOL, IsRemote)()
+     {
+       return CameraGetObjID(PlayerCamera()) != PlayerObject();
+     }
+
+   STDMETHOD_(vector, GetPosition)()
+     {
+       mxs_vector position;
+       CameraGetLocation(PlayerCamera(), &position, NULL);
+       return vector(position);
+     }
+
+   STDMETHOD_(vector, GetFacing)()
+     {
+       mxs_angvec facing;
+       CameraGetLocation(PlayerCamera(), NULL, &facing);
+       return vector(CAMERA_ANG_TO_DEGREES(facing.tx),
+                     CAMERA_ANG_TO_DEGREES(facing.ty),
+                     CAMERA_ANG_TO_DEGREES(facing.tz));
+     }
+
+   STDMETHOD_(vector, CameraToWorld)(const vector &local_pos)
+     {
+       mxs_vector position, transformed;
+       mxs_angvec facing;
+       mxs_matrix rotation;
+       CameraGetLocation(PlayerCamera(), &position, &facing);
+       mx_ang2mat(&rotation, &facing);
+       mx_mat_mul_vec(&transformed, &rotation, &local_pos);
+       mx_addeq_vec(&transformed, &position);
+       return vector(transformed);
+     }
+
+   STDMETHOD_(vector, WorldToCamera)(const vector &world_pos)
+     {
+       mxs_vector position, relative, transformed;
+       mxs_angvec facing;
+       mxs_matrix rotation;
+       CameraGetLocation(PlayerCamera(), &position, &facing);
+       mx_sub_vec(&relative, &world_pos, &position);
+       mx_ang2mat(&rotation, &facing);
+       mx_mat_tmul_vec(&transformed, &rotation, &relative);
+       return vector(transformed);
+     }
+
+   STDMETHOD(LockMovement)(BOOL)
+     {
+       // The original engine has no separate camera-input lock.  Preserve the
+       // call ABI; callers can still attach the camera to obtain a fixed view.
        return S_OK;
      }
 

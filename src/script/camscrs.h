@@ -34,6 +34,16 @@ DECLARE_SCRIPT_SERVICE(Camera,0x140)
 
    STDMETHOD(ForceCameraReturn)() PURE;
 
+   // NewDark-compatible camera queries and coordinate transforms.  These are
+   // appended so the original four-entry service ABI remains intact.
+   STDMETHOD_(object, GetCameraParent)() PURE;
+   STDMETHOD_(BOOL, IsRemote)() PURE;
+   STDMETHOD_(vector, GetPosition)() PURE;
+   STDMETHOD_(vector, GetFacing)() PURE;
+   STDMETHOD_(vector, CameraToWorld)(const vector &local_pos) PURE;
+   STDMETHOD_(vector, WorldToCamera)(const vector &world_pos) PURE;
+   STDMETHOD(LockMovement)(BOOL move_allowed) PURE;
+
 };
 
 

@@ -4,8 +4,12 @@
 
 #include <osm_emu/osm32env.h>
 #include <appagg.h>
+#include <bintrait.h>
 #include <linkman.h>
 #include <mprintf.h>
+#include <property.h>
+#include <propman.h>
+#include <relation.h>
 #include <scrptsrv.h>
 #include <arscrs.h>
 #include <arscrm.h>
@@ -518,6 +522,9 @@ protected:
       if (slot == 26 || slot == 27)
       {
          const bool hasResult = slot == 26;
+         const char *profile = getenv("DARK_GAME_PROFILE");
+         const bool thief1 = profile &&
+            (!_stricmp(profile, "gold") || !_stricmp(profile, "tdp"));
          const unsigned offset = hasResult ? 1 : 0;
          uint32_t resultAddress = 0, from, to, parmAddresses[3], flags = 0;
          std::string message;
@@ -543,11 +550,16 @@ protected:
             return WriteGuestParm(memory, resultAddress, result, error) &&
                    Return(state, memory, 32, resultAddress, error);
          }
-         if (!Argument(*state, *memory, 7, &flags, error)) return false;
+         // Stock Thief 1 modules use the pre-flags PostMessage2 ABI.  Its
+         // call has six explicit parameters; treating the next stack local
+         // as flags and popping it shifts ESP, corrupting every destructor
+         // that follows the post.
+         if (!thief1 && !Argument(*state, *memory, 7, &flags, error))
+            return false;
          m_scriptManager->PostMessage2(
             static_cast<ObjID>(from), static_cast<ObjID>(to), message.c_str(),
             parms[0], parms[1], parms[2], static_cast<ulong>(flags));
-         return Return(state, memory, 32, 0, error);
+         return Return(state, memory, thief1 ? 28 : 32, 0, error);
       }
       if (slot == 28)
       {
@@ -708,6 +720,8 @@ protected:
       else if (serviceId == 0x016a)
          invoked = InvokeAnimTextureService(service, slot, state, memory,
                                             error);
+      else if (serviceId == 0x0228)
+         invoked = InvokeVersionService(service, slot, state, memory, error);
       else if (serviceId == 0x0226)
          invoked = InvokeCDService(service, slot, state, memory, error);
       else if (serviceId == 0x010d)
@@ -1183,6 +1197,9 @@ private:
    {
       uint32_t objectId, third, fourth;
       std::string property, field;
+      const char *profile = getenv("DARK_GAME_PROFILE");
+      const bool thief1 = profile &&
+         (!_stricmp(profile, "gold") || !_stricmp(profile, "tdp"));
       if (slot == 5)
       {
          uint32_t resultAddress, fieldAddress;
@@ -1191,6 +1208,20 @@ private:
              !StringArgument(*state, memory, 3, &property, error) ||
              !Argument(*state, *memory, 4, &fieldAddress, error))
             return false;
+         if (getenv("DARK_OSM32_TRACE"))
+         {
+            uint32_t args[7] = { 0 };
+            for (unsigned i = 0; i < 7; ++i)
+               Argument(*state, *memory, i, &args[i], 0);
+            fprintf(stderr,
+                    "OSM32 Property Get result=%08x target=%d "
+                    "property='%s' field=%08x "
+                    "args=%08x,%08x,%08x,%08x,%08x,%08x,%08x\n",
+                    resultAddress, static_cast<int32_t>(objectId),
+                    property.c_str(), fieldAddress, args[0], args[1],
+                    args[2], args[3], args[4], args[5], args[6]);
+            fflush(stderr);
+         }
          if (fieldAddress &&
              !ReadGuestString(memory, fieldAddress, &field, error))
             return false;
@@ -1205,10 +1236,14 @@ private:
           !StringArgument(*state, memory, 2, &property, error))
          return false;
       const object target(static_cast<int32_t>(objectId));
-      // The 32-bit script SDK puts the field-taking Set overload first.  The
-      // restored native header reverses the two overloads, so its method
-      // declarations cannot be used as guest vtable numbering.
-      if (slot == 6 || slot == 8)
+
+      // The VC guest vtable emits the field-taking Set overload before the
+      // simple overload.  Thief 1 then omits SetLocal from this point in the
+      // vtable and appends it after Possessed instead, shifting slots 8
+      // through 12 relative to Thief 2.  The native engine service retains
+      // the Thief 2 layout, so dispatch guest slots by the selected content
+      // profile rather than forwarding their numbers directly.
+      if (slot == 6 || (!thief1 && slot == 8) || (thief1 && slot == 12))
       {
          uint32_t fieldAddress;
          if (!Argument(*state, *memory, 3, &fieldAddress, error) ||
@@ -1216,6 +1251,26 @@ private:
               !ReadGuestString(memory, fieldAddress, &field, error)) ||
              !Argument(*state, *memory, 4, &fourth, error))
             return false;
+         if (getenv("DARK_OSM32_TRACE") && thief1 && slot == 12)
+         {
+            uint32_t args[7] = { 0 };
+            uint32_t returnAddress = 0;
+            for (unsigned i = 0; i < 7; ++i)
+               Argument(*state, *memory, i, &args[i], 0);
+            memory->Read32(state->reg[osm32::kEsp], &returnAddress, 0);
+            uint32_t parmData = 0, parmType = 0;
+            memory->Read32(fourth, &parmData, 0);
+            memory->Read32(fourth + 4, &parmType, 0);
+            fprintf(stderr,
+                    "OSM32 Gold Property SetLocal target=%d property='%s' "
+                    "field='%s' parm=%08x[%08x,%08x] "
+                    "return=%08x args=%08x,%08x,%08x,%08x,%08x,%08x,%08x\n",
+                    static_cast<int32_t>(objectId), property.c_str(),
+                    fieldAddress ? field.c_str() : "", fourth, parmData,
+                    parmType, returnAddress, args[0], args[1], args[2],
+                    args[3], args[4], args[5], args[6]);
+            fflush(stderr);
+         }
          cMultiParm parm;
          if (!ReadGuestParm(memory, fourth, &parm, error))
          {
@@ -1245,22 +1300,39 @@ private:
          return Return(state, memory, 16,
                        service->Set(target, property.c_str(), parm), error);
       }
-      switch (slot)
+      if (slot == (thief1 ? 8u : 9u))
+         return Return(state, memory, 12,
+                       service->Add(target, property.c_str()), error);
+      if (slot == (thief1 ? 9u : 10u))
+         return Return(state, memory, 12,
+                       service->Remove(target, property.c_str()), error);
+      if (slot == (thief1 ? 10u : 11u))
       {
-         case 9:
-            return Return(state, memory, 12,
-                          service->Add(target, property.c_str()), error);
-         case 10:
-            return Return(state, memory, 12,
-                          service->Remove(target, property.c_str()), error);
-         case 11:
-            if (!Argument(*state, *memory, 3, &third, error)) return false;
-            return Return(state, memory, 16,
-                          service->CopyFrom(target, property.c_str(),
-                             object(static_cast<int32_t>(third))), error);
-         case 12:
-            return Return(state, memory, 12,
-                          service->Possessed(target, property.c_str()), error);
+         if (!Argument(*state, *memory, 3, &third, error)) return false;
+         return Return(state, memory, 16,
+                       service->CopyFrom(target, property.c_str(),
+                          object(static_cast<int32_t>(third))), error);
+      }
+      if (slot == (thief1 ? 11u : 12u))
+         return Return(state, memory, 12,
+                       service->Possessed(target, property.c_str()), error);
+      if (slot == 13)
+      {
+         IPropertyManager *manager = AppGetObj(IPropertyManager);
+         if (!manager)
+         {
+            if (error) *error = "native property manager is unavailable";
+            return false;
+         }
+         IProperty *nativeProperty = manager->GetPropertyNamed(
+            property.c_str());
+         manager->Release();
+         const BOOL possessed = nativeProperty ?
+            nativeProperty->IsSimplyRelevant(static_cast<ObjID>(objectId)) :
+            FALSE;
+         if (nativeProperty)
+            nativeProperty->Release();
+         return Return(state, memory, 12, possessed, error);
       }
       if (error)
       {
@@ -1489,13 +1561,28 @@ private:
          const linkkind kind(static_cast<int32_t>(first));
          const object from(static_cast<int32_t>(second));
          const object to(static_cast<int32_t>(third));
-         linkset result = slot == 14 ?
-            service->GetAllInherited(kind, from, to) :
-            service->GetAllInheritedSingle(kind, from, to);
-         ILinkQuery *nativeQuery = 0;
-         memcpy(&nativeQuery, &result, sizeof(nativeQuery));
+         ILinkManager *manager = AppGetObj(ILinkManager);
+         if (!manager)
+         {
+            if (error) *error = "native link manager is unavailable";
+            return false;
+         }
+         IRelation *relation = manager->GetRelation(
+            static_cast<RelationID>(static_cast<int32_t>(kind)));
+         manager->Release();
+         if (!relation)
+         {
+            if (error) *error = "native inherited-link relation is unavailable";
+            return false;
+         }
+         ILinkQuery *nativeQuery = slot == 14 ?
+            QueryInheritedLinksUncached(relation, from, to) :
+            QueryInheritedLinksSingleUncached(relation, from, to);
+         relation->Release();
          const uint32_t guestQuery = CreateLinkQuery(nativeQuery, memory,
                                                       error);
+         if (nativeQuery)
+            nativeQuery->Release();
          return guestQuery &&
                 memory->Write32(resultAddress, guestQuery, error) &&
                 Return(state, memory, 20, resultAddress, error);
@@ -1527,7 +1614,9 @@ private:
          const object self(static_cast<int32_t>(selfId));
          const linkkind recipients(static_cast<int32_t>(third));
          HRESULT result;
-         if (slot == 10)
+         // MSVC emits the overload without link data first in the guest
+         // vtable despite the source declaration order.
+         if (slot == 11)
          {
             if (!Argument(*state, *memory, 4, &fourth, error)) return false;
             cMultiParm data;
@@ -1538,7 +1627,7 @@ private:
          else
             result = service->BroadcastOnAllLinks(self, message.c_str(),
                                                   recipients);
-         return Return(state, memory, slot == 10 ? 20 : 16, result, error);
+         return Return(state, memory, slot == 11 ? 20 : 16, result, error);
       }
       if (slot == 12 || slot == 13)
       {
@@ -1990,19 +2079,99 @@ private:
          return false;
       }
       uint32_t objectId;
+      uint32_t addresses[4];
       std::string names[4];
       if (!Argument(*state, *memory, 1, &objectId, error)) return false;
       for (unsigned i = 0; i < 4; ++i)
-         if (!StringArgument(*state, memory, i + 2, &names[i], error))
+         if (!Argument(*state, *memory, i + 2, &addresses[i], error) ||
+             (addresses[i] &&
+              !ReadGuestString(memory, addresses[i], &names[i], error)))
             return false;
+      if (!addresses[1] || !addresses[3])
+      {
+         if (error) *error = "AnimTexture texture name is null";
+         return false;
+      }
       void **vtable = *reinterpret_cast<void ***>(service);
       typedef HRESULT (LGAPI *tMethod)(void *, object, const char *,
          const char *, const char *, const char *);
       return Return(state, memory, 24,
          reinterpret_cast<tMethod>(vtable[slot])(
             service, object(static_cast<int32_t>(objectId)),
-            names[0].c_str(), names[1].c_str(), names[2].c_str(),
+            addresses[0] ? names[0].c_str() : 0, names[1].c_str(),
+            addresses[2] ? names[2].c_str() : 0,
             names[3].c_str()), error);
+   }
+
+   bool InvokeVersionService(IUnknown *unknown, unsigned slot,
+                             osm32::sCpuState *state,
+                             osm32::cMemory *memory,
+                             std::string *error)
+   {
+      void **vtable = *reinterpret_cast<void ***>(unknown);
+      uint32_t first, second;
+      cScrStr result;
+      if (slot == 5)
+      {
+         if (!Argument(*state, *memory, 1, &first, error) ||
+             !Argument(*state, *memory, 2, &second, error)) return false;
+         reinterpret_cast<void (LGAPI *)(void *, BOOL, cScrStr *)>(
+            vtable[slot])(unknown, first != 0, &result);
+         return WriteGuestStringObject(memory, second, result, error) &&
+                Return(state, memory, 12, 0, error);
+      }
+      if (slot == 6)
+      {
+         uint32_t majorAddress, minorAddress;
+         int major = 0, minor = 0;
+         if (!Argument(*state, *memory, 1, &majorAddress, error) ||
+             !Argument(*state, *memory, 2, &minorAddress, error)) return false;
+         reinterpret_cast<void (LGAPI *)(void *, int *, int *)>(
+            vtable[slot])(unknown, &major, &minor);
+         return memory->Write32(majorAddress, static_cast<uint32_t>(major), error) &&
+                memory->Write32(minorAddress, static_cast<uint32_t>(minor), error) &&
+                Return(state, memory, 12, 0, error);
+      }
+      if (slot == 7)
+         return Return(state, memory, 4,
+            reinterpret_cast<int (LGAPI *)(void *)>(vtable[slot])(unknown),
+            error);
+      if (slot >= 8 && slot <= 12)
+      {
+         if (!Argument(*state, *memory, 1, &first, error)) return false;
+         HRESULT status = S_OK;
+         if (slot <= 10)
+            reinterpret_cast<void (LGAPI *)(void *, cScrStr *)>(
+               vtable[slot])(unknown, &result);
+         else
+            status = reinterpret_cast<HRESULT (LGAPI *)(void *, cScrStr *)>(
+               vtable[slot])(unknown, &result);
+         return WriteGuestStringObject(memory, first, result, error) &&
+                Return(state, memory, 8,
+                       slot >= 11 ? static_cast<uint32_t>(status) : 0, error);
+      }
+      if (slot == 13 || slot == 14)
+      {
+         std::string path;
+         if (!StringArgument(*state, memory, 1, &path, error) ||
+             !Argument(*state, *memory, 2, &first, error)) return false;
+         reinterpret_cast<void (LGAPI *)(void *, const char *, cScrStr *)>(
+            vtable[slot])(unknown, path.c_str(), &result);
+         return WriteGuestStringObject(memory, first, result, error) &&
+                Return(state, memory, 12, 0, error);
+      }
+      if (slot == 15)
+      {
+         if (!Argument(*state, *memory, 1, &first, error) ||
+             !Argument(*state, *memory, 2, &second, error)) return false;
+         const HRESULT status = reinterpret_cast<HRESULT (LGAPI *)(
+            void *, cScrStr *, int)>(vtable[slot])(
+               unknown, &result, static_cast<int32_t>(second));
+         return WriteGuestStringObject(memory, first, result, error) &&
+                Return(state, memory, 12, status, error);
+      }
+      if (error) *error = "unsupported guest Version service method";
+      return false;
    }
 
    static bool InvokeCDService(IUnknown *service, unsigned slot,
@@ -2736,11 +2905,15 @@ private:
    {
       ISoundScriptService *service =
          reinterpret_cast<ISoundScriptService *>(unknown);
+      const char *profile = getenv("DARK_GAME_PROFILE");
+      const bool thief1 = profile &&
+         (!_stricmp(profile, "gold") || !_stricmp(profile, "tdp"));
       uint32_t args[8] = {};
       std::string text;
       if (slot >= 5 && slot <= 8)
       {
-         const unsigned count = (slot == 6 || slot == 7) ? 6 : 5;
+         const unsigned count = (slot == 6 || slot == 7) ?
+            (thief1 ? 5 : 6) : (thief1 ? 4 : 5);
          for (unsigned i = 0; i < count; ++i)
             if (!Argument(*state, *memory, i + 1, &args[i], error))
                return false;
@@ -2752,12 +2925,14 @@ private:
          if (slot == 5)
             result = service->Play(callback, name,
                static_cast<eSoundSpecial>(args[3]),
-               static_cast<eSoundNetwork>(args[4]));
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[4]));
          else if (slot == 6)
             result = service->Play(callback, name,
                object(static_cast<int32_t>(args[3])),
                static_cast<eSoundSpecial>(args[4]),
-               static_cast<eSoundNetwork>(args[5]));
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[5]));
          else if (slot == 7)
          {
             mxs_vector position;
@@ -2766,18 +2941,21 @@ private:
             cScrVec nativePosition(position);
             result = service->Play(callback, name, nativePosition,
                static_cast<eSoundSpecial>(args[4]),
-               static_cast<eSoundNetwork>(args[5]));
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[5]));
          }
          else
             result = service->PlayAmbient(callback, name,
                static_cast<eSoundSpecial>(args[3]),
-               static_cast<eSoundNetwork>(args[4]));
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[4]));
          return ReturnBoolean(state, memory, args[0], 4 + count * 4,
                               result, error);
       }
       if (slot >= 9 && slot <= 12)
       {
-         const unsigned count = (slot == 10 || slot == 11) ? 5 : 4;
+         const unsigned count = (slot == 10 || slot == 11) ?
+            (thief1 ? 4 : 5) : (thief1 ? 3 : 4);
          for (unsigned i = 0; i < count; ++i)
             if (!Argument(*state, *memory, i + 1, &args[i], error))
                return false;
@@ -2786,11 +2964,14 @@ private:
          boolean result;
          if (slot == 9)
             result = service->PlaySchema(
-               callback, schema, static_cast<eSoundNetwork>(args[3]));
+               callback, schema,
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[3]));
          else if (slot == 10)
             result = service->PlaySchema(
                callback, schema, object(static_cast<int32_t>(args[3])),
-               static_cast<eSoundNetwork>(args[4]));
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[4]));
          else if (slot == 11)
          {
             mxs_vector position;
@@ -2799,29 +2980,34 @@ private:
             cScrVec nativePosition(position);
             result = service->PlaySchema(
                callback, schema, nativePosition,
-               static_cast<eSoundNetwork>(args[4]));
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[4]));
          }
          else
             result = service->PlaySchemaAmbient(
-               callback, schema, static_cast<eSoundNetwork>(args[3]));
+               callback, schema,
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[3]));
          return ReturnBoolean(state, memory, args[0], 4 + count * 4,
                               result, error);
       }
       if (slot == 13)
       {
-         for (unsigned i = 0; i < 7; ++i)
+         const unsigned count = thief1 ? 6 : 7;
+         for (unsigned i = 0; i < count; ++i)
             if (!Argument(*state, *memory, i + 1, &args[i], error))
                return false;
          if (!ScriptStringArgument(*state, memory, 3, &text, error))
             return false;
-         return ReturnBoolean(state, memory, args[0], 32,
+         return ReturnBoolean(state, memory, args[0], 4 + count * 4,
             service->PlayEnvSchema(
                object(static_cast<int32_t>(args[1])),
                cScrStr(text.c_str()),
                object(static_cast<int32_t>(args[3])),
                object(static_cast<int32_t>(args[4])),
                static_cast<eEnvSoundLoc>(args[5]),
-               static_cast<eSoundNetwork>(args[6])), error);
+               thief1 ? kSoundNetDefault :
+                        static_cast<eSoundNetwork>(args[6])), error);
       }
       if (slot == 14)
       {
@@ -3044,7 +3230,22 @@ public:
       }
       if (!m_runtime.CreateScript(m_runtime.Classes()[index], objectId,
                                   &guest, &error))
+      {
+         mprintf("OSM32 '%s' could not create '%s' on object %d: %s\n",
+                 m_runtime.Name().c_str(), className ? className : "",
+                 objectId, error.empty() ? "unknown guest failure" :
+                                           error.c_str());
+         if (getenv("DARK_OSM32_TRACE"))
+         {
+            fprintf(stderr,
+                    "OSM32 '%s' could not create '%s' on object %d: %s\n",
+                    m_runtime.Name().c_str(), className ? className : "",
+                    objectId, error.empty() ? "unknown guest failure" :
+                                              error.c_str());
+            fflush(stderr);
+         }
          return 0;
+      }
       return new cOsm32Script(this, guest, className);
    }
 

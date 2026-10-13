@@ -248,6 +248,17 @@ public:
    {
       return PhysObjValidPos(ObjID(obj), NULL);
    }
+
+   STDMETHOD_(BOOL, IsRope)(const object obj)
+   {
+      return PhysObjIsRope(ObjID(obj));
+   }
+
+   STDMETHOD_(void, GetClimbingObject)(const object climber,
+                                       object &climbobj)
+   {
+      climbobj.Set(PhysGetClimbingObj(ObjID(climber)));
+   }
 };
 
 IMPLEMENT_SCRIPT_SERVICE_IMPL(cPhysSrv, Physics);

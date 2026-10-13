@@ -1329,6 +1329,72 @@ bool cCpu::Step(std::string *error)
          return true;
       }
 
+      case 0x64:
+      {
+         // VC9's DLL startup reads the thread environment block through an
+         // FS-segment MOV (notably fs:[18h], the TEB self pointer).  The
+         // emulator exposes the small TEB image in its proxy page.
+         const uint32_t kGuestThreadEnvironmentBlock = 0x60000a00;
+         uint8_t nestedOpcode;
+         if (!Fetch8(&nestedOpcode, error))
+            return false;
+         if (nestedOpcode == 0x8b)
+         {
+            uint8_t modrm;
+            sDecodedRM operand;
+            unsigned regField;
+            uint32_t value;
+            if (!Fetch8(&modrm, error) ||
+                !DecodeRM(modrm, &operand, &regField, error))
+               return false;
+            if (!operand.isRegister)
+               operand.address += kGuestThreadEnvironmentBlock;
+            if (!ReadRM32(operand, &value, error))
+               return false;
+            m_state.reg[regField] = value;
+            return true;
+         }
+         if (nestedOpcode == 0x89)
+         {
+            uint8_t modrm;
+            sDecodedRM operand;
+            unsigned regField;
+            if (!Fetch8(&modrm, error) ||
+                !DecodeRM(modrm, &operand, &regField, error))
+               return false;
+            if (!operand.isRegister)
+               operand.address += kGuestThreadEnvironmentBlock;
+            return WriteRM32(operand, m_state.reg[regField], error);
+         }
+         if (nestedOpcode == 0xff)
+         {
+            uint8_t modrm;
+            sDecodedRM operand;
+            unsigned operation;
+            uint32_t value;
+            if (!Fetch8(&modrm, error) ||
+                !DecodeRM(modrm, &operand, &operation, error))
+               return false;
+            if (operation != 6)
+               return Fail(error, "unsupported IA-32 FS FF operation");
+            if (!operand.isRegister)
+               operand.address += kGuestThreadEnvironmentBlock;
+            return ReadRM32(operand, &value, error) && Push32(value, error);
+         }
+         if (nestedOpcode == 0xa1 || nestedOpcode == 0xa3)
+         {
+            uint32_t offset;
+            if (!Fetch32(&offset, error))
+               return false;
+            const uint32_t address = kGuestThreadEnvironmentBlock + offset;
+            if (nestedOpcode == 0xa1)
+               return m_memory.Read32(address, &m_state.reg[kEax], error);
+            return m_memory.Write32(address, m_state.reg[kEax], error);
+         }
+         return FailOpcode(error, "unsupported IA-32 FS opcode",
+                           instructionAddress, nestedOpcode);
+      }
+
       case 0x68:
       {
          uint32_t value;
@@ -1549,6 +1615,15 @@ bool cCpu::Step(std::string *error)
          return true;
 
       case 0x9b: // WAIT/FWAIT; floating-point execution is synchronous here.
+         return true;
+
+      case 0x9c: // PUSHFD
+         return Push32(m_state.eflags, error);
+
+      case 0x9d: // POPFD
+         if (!Pop32(&m_state.eflags, error))
+            return false;
+         m_state.eflags |= 0x00000002u;
          return true;
 
       case 0xa9:
@@ -2150,7 +2225,24 @@ bool cCpu::Step(std::string *error)
              !DecodeRM(modrm, &operand, &operation, error))
             return false;
          if (operand.isRegister)
-            return Fail(error, "unsupported x87 register operation");
+         {
+            const unsigned index = modrm & 7;
+            if (index >= m_state.x87Depth)
+               return Fail(error, "x87 stack register is empty");
+            const double top = m_state.x87[0];
+            switch (operation)
+            {
+               case 0: m_state.x87[index] += top; break;
+               case 1: m_state.x87[index] *= top; break;
+               case 4: m_state.x87[index] = top - m_state.x87[index]; break;
+               case 5: m_state.x87[index] -= top; break;
+               case 6: m_state.x87[index] = top / m_state.x87[index]; break;
+               case 7: m_state.x87[index] /= top; break;
+               default:
+                  return Fail(error, "unsupported x87 register comparison");
+            }
+            return true;
+         }
          if (!m_state.x87Depth)
             return Fail(error, "x87 stack underflow");
          if (!m_memory.Read64(operand.address, &bits, error))
@@ -2523,6 +2615,34 @@ bool cCpu::Step(std::string *error)
          m_state.eflags |= kFlagDirection;
          return true;
 
+      case 0xfe:
+      {
+         uint8_t modrm;
+         sDecodedRM operand;
+         unsigned operation;
+         uint8_t value;
+         if (!Fetch8(&modrm, error) ||
+             !DecodeRM(modrm, &operand, &operation, error) ||
+             !ReadRM8(operand, &value, error))
+            return false;
+         const uint32_t carry = m_state.eflags & kFlagCarry;
+         if (operation == 0)
+         {
+            const uint8_t result = static_cast<uint8_t>(value + 1);
+            SetAddFlags8(value, 1, result);
+            m_state.eflags = (m_state.eflags & ~kFlagCarry) | carry;
+            return WriteRM8(operand, result, error);
+         }
+         if (operation == 1)
+         {
+            const uint8_t result = static_cast<uint8_t>(value - 1);
+            SetSubFlags8(value, 1, result);
+            m_state.eflags = (m_state.eflags & ~kFlagCarry) | carry;
+            return WriteRM8(operand, result, error);
+         }
+         return Fail(error, "unsupported IA-32 FE operation");
+      }
+
       case 0xff:
       {
          uint8_t modrm;
@@ -2565,6 +2685,29 @@ bool cCpu::Step(std::string *error)
          uint8_t second;
          if (!Fetch8(&second, error))
             return false;
+         if (second == 0xa2) // CPUID
+         {
+            if (m_state.reg[kEax] == 0)
+            {
+               m_state.reg[kEax] = 1;
+               m_state.reg[kEbx] = 0x756e6547u; // "Genu"
+               m_state.reg[kEdx] = 0x49656e69u; // "ineI"
+               m_state.reg[kEcx] = 0x6c65746eu; // "ntel"
+            }
+            else if (m_state.reg[kEax] == 1)
+            {
+               // Report an i686 baseline without optional SIMD extensions;
+               // the interpreter implements the scalar CRT path.
+               m_state.reg[kEax] = 0x00000600u;
+               m_state.reg[kEbx] = 0;
+               m_state.reg[kEcx] = 0;
+               m_state.reg[kEdx] = 0;
+            }
+            else
+               m_state.reg[kEax] = m_state.reg[kEbx] =
+                  m_state.reg[kEcx] = m_state.reg[kEdx] = 0;
+            return true;
+         }
          if (second >= 0x80 && second <= 0x8f)
          {
             uint32_t displacement;

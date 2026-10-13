@@ -146,6 +146,7 @@
 #include <propbase.h>
 #include <plycbllm.h>
 #include <anim_txt.h>
+#include "../../libsrc/script/squirrel/squirrelhost.h"
 
 #ifdef NEW_NETWORK_ENABLED
 #include <netman.h>
@@ -207,6 +208,12 @@ static IImageSource* greek_letter = NULL;
 //
 void dark_rend_update_frame(void)
 {
+   // NewDark Squirrel overlays draw into the same retained software canvas as
+   // the stock HUD, before the presenter uploads it for this hardware frame.
+   ScrnLockDrawCanvas();
+   SquirrelRenderOverlays();
+   ScrnUnlockDrawCanvas();
+
    // display the greek letter
 #ifdef PLAYTEST
    if (greek_letter)

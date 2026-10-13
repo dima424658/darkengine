@@ -17,6 +17,7 @@
 #include <drscrpt.h>
 
 #include <doorphys.h>
+#include <doorprop.h>
 
 // must be last header
 #include <dbmem.h>
@@ -33,37 +34,35 @@ public:
    {      
       ObjID obj = ScriptObjID(door_obj);
 
-      if (!IsDoor(obj))
+      if (!IsDoor(obj) || GetDoorProperty(obj) == NULL)
          return FALSE;
 
       if ((GetDoorStatus(obj) == kDoorClosed) ||
           (GetDoorStatus(obj) == kDoorClosing))
          return FALSE;
 
-      DoorPhysActivate(obj, DOORPHYS_CLOSE);
-      return TRUE;
+      return DoorPhysActivate(obj, DOORPHYS_CLOSE);
    }
 
    STDMETHOD_(BOOL, OpenDoor)(object door_obj)
    {
       ObjID obj = ScriptObjID(door_obj);
 
-      if (!IsDoor(obj))
+      if (!IsDoor(obj) || GetDoorProperty(obj) == NULL)
          return FALSE;
 
       if ((GetDoorStatus(obj) == kDoorOpen) ||
           (GetDoorStatus(obj) == kDoorOpening))
          return FALSE;
 
-      DoorPhysActivate(obj, DOORPHYS_OPEN);
-      return FALSE;
+      return DoorPhysActivate(obj, DOORPHYS_OPEN);
    }
 
    STDMETHOD_(int, GetDoorState)(object door_obj)
    {
       ObjID obj = ScriptObjID(door_obj);
 
-      if (!IsDoor(obj))
+      if (!IsDoor(obj) || GetDoorProperty(obj) == NULL)
          return kDoorNoDoor;
 
       return GetDoorStatus(obj);
@@ -73,7 +72,7 @@ public:
    {
       ObjID obj = ScriptObjID(door_obj);
 
-      if (!IsDoor(obj))
+      if (!IsDoor(obj) || GetDoorProperty(obj) == NULL)
          return FALSE;
 
       return DoorPhysActivate(obj, DOORPHYS_TOGGLE);
@@ -83,7 +82,7 @@ public:
    {
       ObjID obj = ScriptObjID(door_obj);
 
-      if (!IsDoor(obj))
+      if (!IsDoor(obj) || GetDoorProperty(obj) == NULL)
          return FALSE;
 
       if (state)
@@ -98,7 +97,7 @@ public:
    {
       ObjID obj = ScriptObjID(door_obj);
 
-      if (!IsDoor(obj))
+      if (!IsDoor(obj) || GetDoorProperty(obj) == NULL)
          return FALSE;
 
       return GetDoorSoundBlocking(obj);

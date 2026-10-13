@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)3rdparty/squirrel/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)3rdparty/squirrel/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)3rdparty/squirrel/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SolutionDir)3rdparty/squirrel/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -162,6 +162,9 @@
     <ClCompile Include="persist.cpp" />
     <ClCompile Include="scrobj.cpp" />
     <ClCompile Include="scrptman.cpp" />
+    <ClCompile Include="squirrel\squirrelhost.cpp">
+      <AdditionalIncludeDirectories>$(SolutionDir)src\physics;$(SolutionDir)src\engfeat;$(SolutionDir)src\sim;$(SolutionDir)src\render;$(SolutionDir)src\ai;$(SolutionDir)src\framewrk;$(SolutionDir)src\portal;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\namedres;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\..\winsrc\script\scrptmod.cpp" />
     <ClCompile Include="scrptmsg.cpp" />
     <ClCompile Include="smodinfo.cpp" />
@@ -187,9 +190,16 @@
     <ClInclude Include="scrptmsg.h" />
     <ClInclude Include="scrptnet.h" />
     <ClInclude Include="scrptobj.h" />
+    <ClInclude Include="squirrel\squirrelhost.h" />
     <ClInclude Include="scrptsrv.h" />
     <ClInclude Include="scrpttyp.h" />
     <ClInclude Include="smodinfo.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\squirrel\squirrel.vcxproj">
+      <Project>{4AB7A069-9AAF-4B26-A81E-F31B408441AD}</Project>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

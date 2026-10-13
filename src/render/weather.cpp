@@ -502,7 +502,7 @@ static inline BOOL TouchedTheSky()
    int iPoly = PortalRaycastFindPolygon();
    int iTex = (WR_CELL(PortalRaycastCell)->render_list + iPoly)->texture_id;
 
-   return iTex >= BACKHACK_IDX;
+   return iTex >= BACKHACK_IDX && iTex < TEXMEM_RESERVED_LIMIT;
 }
 
 
@@ -1081,6 +1081,56 @@ EXTERN void WeatherSetAllowed(BOOL allow)
        g_bRenderWeather=FALSE;
        config_set_int("render_weather",0);
      }
+}
+
+EXTERN void WeatherGetScriptParams(sWeatherScriptParams *params)
+{
+   if (!params)
+      return;
+
+   params->precipType = (int)g_Weather.m_Precip;
+   params->precipFrequency = g_Weather.m_fPrecipFreq;
+   params->precipSpeed = g_Weather.m_fPrecipFallSpeed;
+   params->visibleDistance = g_Weather.m_fVisibleDist;
+   params->renderRadius = g_Weather.m_fRenderRadius;
+   params->alpha = g_Weather.m_fAlpha;
+   params->brightness = g_Weather.m_fBrightness;
+   params->snowJitter = g_Weather.m_fSnowJitter;
+   params->rainLength = g_Weather.m_fRainLength;
+   params->splashFrequency = g_Weather.m_fSplashFreq;
+   params->splashRadius = g_Weather.m_fSplashRadius;
+   params->splashHeight = g_Weather.m_fSplashHeight;
+   params->splashDuration = g_Weather.m_fSplashDuration;
+   strncpy(params->texture, g_Weather.m_aszTexture,
+           sizeof(params->texture) - 1);
+   params->texture[sizeof(params->texture) - 1] = '\0';
+   params->wind = g_Weather.m_Wind;
+}
+
+EXTERN void WeatherSetScriptParams(const sWeatherScriptParams *params)
+{
+   if (!params)
+      return;
+
+   g_Weather.m_Precip = params->precipType == kWeatherRain ?
+                        kWeatherRain : kWeatherSnow;
+   g_Weather.m_fPrecipFreq = params->precipFrequency;
+   g_Weather.m_fPrecipFallSpeed = params->precipSpeed;
+   g_Weather.m_fVisibleDist = params->visibleDistance;
+   g_Weather.m_fRenderRadius = params->renderRadius;
+   g_Weather.m_fAlpha = params->alpha;
+   g_Weather.m_fBrightness = params->brightness;
+   g_Weather.m_fSnowJitter = params->snowJitter;
+   g_Weather.m_fRainLength = params->rainLength;
+   g_Weather.m_fSplashFreq = params->splashFrequency;
+   g_Weather.m_fSplashRadius = params->splashRadius;
+   g_Weather.m_fSplashHeight = params->splashHeight;
+   g_Weather.m_fSplashDuration = params->splashDuration;
+   strncpy(g_Weather.m_aszTexture, params->texture,
+           sizeof(g_Weather.m_aszTexture) - 1);
+   g_Weather.m_aszTexture[sizeof(g_Weather.m_aszTexture) - 1] = '\0';
+   g_Weather.m_Wind = params->wind;
+   g_Weather.Update();
 }
 
 EXTERN void WeatherSave(ITagFile *pFile)

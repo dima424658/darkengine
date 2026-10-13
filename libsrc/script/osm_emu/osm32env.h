@@ -51,8 +51,19 @@ private:
       uint32_t references;
    };
 
+   struct sInitializerContext
+   {
+      uint32_t current;
+      uint32_t end;
+      bool stopOnError;
+   };
+
    bool InvokeAllocator(unsigned slot, sCpuState *state, cMemory *memory,
                         std::string *error);
+   bool BeginInitializers(bool stopOnError, sCpuState *state,
+                          cMemory *memory, std::string *error);
+   bool ContinueInitializers(sCpuState *state, cMemory *memory,
+                             std::string *error);
    bool InvokeImport(const sImport &item, sCpuState *state, cMemory *memory,
                      std::string *error);
 
@@ -63,6 +74,7 @@ private:
    std::vector<bool> m_tlsUsed;
    std::vector<uint32_t> m_tlsValues;
    std::vector<sServiceProxy> m_services;
+   std::vector<sInitializerContext> m_initializers;
 };
 
 } // namespace osm32

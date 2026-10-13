@@ -2,6 +2,7 @@
 
 #include <osm_emu/osm32env.h>
 
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,7 @@ const uint32_t kScriptManTrap = 0xf1000000;
 const uint32_t kAllocatorTrap = 0xf1001000;
 const uint32_t kServiceTrap = 0xf1002000;
 const uint32_t kPrintTrap = 0xf2000000;
+const uint32_t kInitializerTrap = 0xf2000010;
 const uint32_t kTrapStride = 16;
 const uint32_t kProxyBase = 0x60000000;
 const uint32_t kScriptMan = kProxyBase + 0x100;
@@ -22,6 +24,8 @@ const uint32_t kAllocator = kProxyBase + 0x300;
 const uint32_t kAllocatorVtable = kProxyBase + 0x400;
 const uint32_t kCommandLine = kProxyBase + 0x800;
 const uint32_t kEnvironment = kProxyBase + 0x840;
+const uint32_t kImportDataBase = kProxyBase + 0x900;
+const uint32_t kThreadEnvironmentBlock = kProxyBase + 0xa00;
 const uint32_t kHeapBase = 0x40000000;
 const uint32_t kHeapSize = 0x02000000;
 
@@ -40,10 +44,46 @@ bool Fail(std::string *error, const std::string &message)
    return false;
 }
 
+bool ReadCString(const osm32::cMemory &memory, uint32_t address,
+                 std::string *value, std::string *error)
+{
+   value->clear();
+   if (!address)
+      return Fail(error, "null guest string");
+   for (uint32_t i = 0; i < 0x00100000; ++i)
+   {
+      uint8_t character;
+      if (!memory.Read8(address + i, &character, error))
+         return false;
+      if (!character)
+         return true;
+      value->push_back(static_cast<char>(character));
+   }
+   return Fail(error, "unterminated guest string");
+}
+
+uint8_t AsciiLower(uint8_t character)
+{
+   return character >= 'A' && character <= 'Z' ?
+      static_cast<uint8_t>(character + ('a' - 'A')) : character;
+}
+
 bool IsKernelImport(const osm32::sImport &item, const char *name)
 {
    return !item.byOrdinal && item.module == "KERNEL32.dll" &&
           item.name == name;
+}
+
+bool IsCrtImport(const osm32::sImport &item, const char *name)
+{
+   return !item.byOrdinal && item.module == "MSVCR90.dll" &&
+          item.name == name;
+}
+
+bool IsCrtDataImport(const osm32::sImport &item)
+{
+   return !item.byOrdinal &&
+          (item.name == "_encoded_null" || item.name == "_adjust_fdiv");
 }
 
 } // namespace
@@ -79,12 +119,20 @@ bool cEnvironment::Prepare(cImage *image, cMemory *memory,
    m_moduleHandle = image->LoadedBase();
    for (size_t i = 0; i < m_imports->size(); ++i)
       Write32(image->Data() + (*m_imports)[i].iatRva,
-              kImportTrap + static_cast<uint32_t>(i) * kTrapStride);
+              IsCrtDataImport((*m_imports)[i]) ?
+                 kImportDataBase + static_cast<uint32_t>(i) * 4 :
+                 kImportTrap + static_cast<uint32_t>(i) * kTrapStride);
 
-   uint8_t proxies[0x900] = {};
+   uint8_t proxies[0x1000] = {};
    const char commandLine[] = "darkengine";
    memcpy(proxies + (kCommandLine - kProxyBase), commandLine,
           sizeof(commandLine));
+   // The VC9 DLL startup lock reads fs:[0x18] for the TEB and then uses the
+   // stack-base field at TEB+4 as a stable per-thread identity.
+   Write32(proxies + (kThreadEnvironmentBlock - kProxyBase) + 0x18,
+           kThreadEnvironmentBlock);
+   Write32(proxies + (kThreadEnvironmentBlock - kProxyBase) + 4,
+           0x70100000);
    Write32(proxies + (kScriptMan - kProxyBase), kScriptManVtable);
    Write32(proxies + (kAllocator - kProxyBase), kAllocatorVtable);
    for (unsigned i = 0; i < 64; ++i)
@@ -94,6 +142,7 @@ bool cEnvironment::Prepare(cImage *image, cMemory *memory,
       Write32(proxies + (kAllocatorVtable - kProxyBase) + i * 4,
               kAllocatorTrap + i * kTrapStride);
    m_services.clear();
+   m_initializers.clear();
 
    return memory->Map(kProxyBase, sizeof(proxies), kMemRead | kMemWrite,
                       error) &&
@@ -103,7 +152,7 @@ bool cEnvironment::Prepare(cImage *image, cMemory *memory,
 
 bool cEnvironment::Handles(uint32_t address) const
 {
-   if (address == kPrintTrap)
+   if (address == kPrintTrap || address == kInitializerTrap)
       return true;
    if (address >= kScriptManTrap && address < kScriptManTrap + 0x3000)
       return (address - kScriptManTrap) % kTrapStride == 0;
@@ -141,6 +190,15 @@ bool cEnvironment::InvokeAllocator(unsigned slot, sCpuState *state,
       case 3:
          if (!ReadStackArgument(*state, *memory, 1, &value, error)) return false;
          value2 = m_heap.Alloc(value, error);
+         if (getenv("DARK_OSM32_TRACE"))
+         {
+            uint32_t returnAddress = 0;
+            memory->Read32(state->reg[kEsp], &returnAddress, 0);
+            fprintf(stderr,
+                    "OSM32 allocator Alloc size=%u result=%08x caller=%08x\n",
+                    value, value2, returnAddress);
+            fflush(stderr);
+         }
          return (!value2 && value) ? false :
                 ReturnStdcall(state, memory, 8, value2, error);
       case 4:
@@ -150,8 +208,21 @@ bool cEnvironment::InvokeAllocator(unsigned slot, sCpuState *state,
          return (!value && value2) ? false :
                 ReturnStdcall(state, memory, 12, value, error);
       case 5:
-         if (!ReadStackArgument(*state, *memory, 1, &value, error) ||
-             !m_heap.Free(value, error)) return false;
+         if (!ReadStackArgument(*state, *memory, 1, &value, error))
+            return false;
+         if (!m_heap.Free(value, error))
+         {
+            uint32_t returnAddress = 0;
+            memory->Read32(state->reg[kEsp], &returnAddress, 0);
+            if (error)
+            {
+               char context[64];
+               snprintf(context, sizeof(context), " (caller 0x%08x)",
+                        returnAddress);
+               *error += context;
+            }
+            return false;
+         }
          return ReturnStdcall(state, memory, 8, 0, error);
       case 6:
          if (!ReadStackArgument(*state, *memory, 1, &value, error)) return false;
@@ -273,6 +344,8 @@ void cEnvironment::DebugOutput(const std::string &text)
 bool cEnvironment::Invoke(uint32_t address, sCpuState *state, cMemory *memory,
                           std::string *error)
 {
+   if (address == kInitializerTrap)
+      return ContinueInitializers(state, memory, error);
    if (address == kPrintTrap)
       return Fail(error, "guest variadic print call requires marshalling");
    if (address >= kScriptManTrap && address < kAllocatorTrap)
@@ -290,9 +363,258 @@ bool cEnvironment::Invoke(uint32_t address, sCpuState *state, cMemory *memory,
                        state, memory, error);
 }
 
+bool cEnvironment::BeginInitializers(bool stopOnError, sCpuState *state,
+                                     cMemory *memory, std::string *error)
+{
+   uint32_t begin, end;
+   if (!ReadStackArgument(*state, *memory, 0, &begin, error) ||
+       !ReadStackArgument(*state, *memory, 1, &end, error))
+      return false;
+   if (end < begin || ((end - begin) & 3) != 0 || end - begin > 0x00100000)
+      return Fail(error, "invalid guest CRT initializer range");
+   sInitializerContext context;
+   context.current = begin;
+   context.end = end;
+   context.stopOnError = stopOnError;
+   m_initializers.push_back(context);
+   return ContinueInitializers(state, memory, error);
+}
+
+bool cEnvironment::ContinueInitializers(sCpuState *state, cMemory *memory,
+                                        std::string *error)
+{
+   if (m_initializers.empty())
+      return Fail(error, "unexpected guest CRT initializer return");
+
+   sInitializerContext &context = m_initializers.back();
+   if (state->eip == kInitializerTrap && context.stopOnError &&
+       state->reg[kEax] != 0)
+   {
+      const uint32_t result = state->reg[kEax];
+      m_initializers.pop_back();
+      return ReturnStdcall(state, memory, 0, result, error);
+   }
+
+   while (context.current < context.end)
+   {
+      uint32_t function;
+      if (!memory->Read32(context.current, &function, error))
+         return false;
+      context.current += 4;
+      if (!function)
+         continue;
+      if (state->reg[kEsp] < 4)
+         return Fail(error, "guest CRT initializer stack underflow");
+      state->reg[kEsp] -= 4;
+      if (!memory->Write32(state->reg[kEsp], kInitializerTrap, error))
+         return false;
+      state->eip = function;
+      return true;
+   }
+
+   m_initializers.pop_back();
+   return ReturnStdcall(state, memory, 0, 0, error);
+}
+
 bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
                                 cMemory *memory, std::string *error)
 {
+   if (IsCrtImport(item, "toupper") || IsCrtImport(item, "isspace"))
+   {
+      uint32_t character;
+      if (!ReadStackArgument(*state, *memory, 0, &character, error))
+         return false;
+      uint32_t result = 0;
+      if (item.name == "toupper")
+         result = character >= 'a' && character <= 'z' ?
+            character - ('a' - 'A') : character;
+      else
+         result = character == ' ' || character == '\t' ||
+                  character == '\n' || character == '\r' ||
+                  character == '\f' || character == '\v';
+      // CRT functions use cdecl; the guest caller removes their arguments.
+      return ReturnStdcall(state, memory, 0, result, error);
+   }
+   if (IsCrtImport(item, "_stricmp"))
+   {
+      uint32_t leftAddress, rightAddress;
+      std::string left, right;
+      if (!ReadStackArgument(*state, *memory, 0, &leftAddress, error) ||
+          !ReadStackArgument(*state, *memory, 1, &rightAddress, error) ||
+          !ReadCString(*memory, leftAddress, &left, error) ||
+          !ReadCString(*memory, rightAddress, &right, error))
+         return false;
+      size_t i = 0;
+      while (i < left.size() && i < right.size() &&
+             AsciiLower(static_cast<uint8_t>(left[i])) ==
+                AsciiLower(static_cast<uint8_t>(right[i])))
+         ++i;
+      const int result =
+         static_cast<int>(AsciiLower(i < left.size() ?
+            static_cast<uint8_t>(left[i]) : 0)) -
+         static_cast<int>(AsciiLower(i < right.size() ?
+            static_cast<uint8_t>(right[i]) : 0));
+      return ReturnStdcall(state, memory, 0,
+                           static_cast<uint32_t>(result), error);
+   }
+   if (IsCrtImport(item, "_itoa"))
+   {
+      uint32_t rawValue, destination, radix;
+      if (!ReadStackArgument(*state, *memory, 0, &rawValue, error) ||
+          !ReadStackArgument(*state, *memory, 1, &destination, error) ||
+          !ReadStackArgument(*state, *memory, 2, &radix, error))
+         return false;
+      if (!destination || radix < 2 || radix > 36)
+         return Fail(error, "invalid guest _itoa argument");
+
+      char converted[40];
+      size_t length = 0;
+      uint32_t magnitude = rawValue;
+      const bool negative = radix == 10 &&
+                            static_cast<int32_t>(rawValue) < 0;
+      if (negative)
+         magnitude = 0u - rawValue;
+      do
+      {
+         const uint32_t digit = magnitude % radix;
+         converted[length++] = static_cast<char>(
+            digit < 10 ? '0' + digit : 'a' + digit - 10);
+         magnitude /= radix;
+      } while (magnitude && length < sizeof(converted) - 1);
+      if (negative)
+         converted[length++] = '-';
+      for (size_t i = 0; i < length; ++i)
+         if (!memory->Write8(destination + static_cast<uint32_t>(i),
+                             static_cast<uint8_t>(converted[length - i - 1]),
+                             error))
+            return false;
+      if (!memory->Write8(destination + static_cast<uint32_t>(length), 0,
+                          error))
+         return false;
+      return ReturnStdcall(state, memory, 0, destination, error);
+   }
+   if (IsCrtImport(item, "_CIsqrt") || IsCrtImport(item, "_CIsin") ||
+       IsCrtImport(item, "_CIcos"))
+   {
+      if (!state->x87Depth)
+         return Fail(error, "guest CRT intrinsic x87 stack underflow");
+      if (item.name == "_CIsqrt")
+         state->x87[0] = std::sqrt(state->x87[0]);
+      else if (item.name == "_CIsin")
+         state->x87[0] = std::sin(state->x87[0]);
+      else
+         state->x87[0] = std::cos(state->x87[0]);
+      return ReturnStdcall(state, memory, 0, state->reg[kEax], error);
+   }
+   if (IsCrtImport(item, "_initterm_e"))
+      return BeginInitializers(true, state, memory, error);
+   if (IsCrtImport(item, "_initterm"))
+      return BeginInitializers(false, state, memory, error);
+   if (IsCrtImport(item, "_encode_pointer") ||
+       IsCrtImport(item, "_decode_pointer"))
+   {
+      uint32_t pointer;
+      if (!ReadStackArgument(*state, *memory, 0, &pointer, error))
+         return false;
+      return ReturnStdcall(state, memory, 0, pointer, error);
+   }
+   if (IsCrtImport(item, "_lock") || IsCrtImport(item, "_unlock") ||
+       IsCrtImport(item, "_crt_debugger_hook"))
+      return ReturnStdcall(state, memory, 0, 0, error);
+   if (IsCrtImport(item, "__dllonexit") || IsCrtImport(item, "_onexit"))
+   {
+      uint32_t function;
+      if (!ReadStackArgument(*state, *memory, 0, &function, error))
+         return false;
+      // Destructors are process-lifetime cleanup for these modules.  The
+      // guest image is discarded as a unit, so retaining the registration is
+      // unnecessary, but registration must report success to the CRT.
+      return ReturnStdcall(state, memory, 0, function, error);
+   }
+   if (IsCrtImport(item, "malloc") || IsCrtImport(item, "_malloc_crt"))
+   {
+      uint32_t size;
+      if (!ReadStackArgument(*state, *memory, 0, &size, error))
+         return false;
+      const uint32_t allocation = m_heap.Alloc(size, error);
+      if (!allocation && size)
+         return false;
+      return ReturnStdcall(state, memory, 0, allocation, error);
+   }
+   if (IsCrtImport(item, "realloc"))
+   {
+      uint32_t allocation, size;
+      if (!ReadStackArgument(*state, *memory, 0, &allocation, error) ||
+          !ReadStackArgument(*state, *memory, 1, &size, error))
+         return false;
+      const uint32_t resized = m_heap.Realloc(allocation, size, error);
+      if (!resized && size)
+         return false;
+      return ReturnStdcall(state, memory, 0, resized, error);
+   }
+   if (IsCrtImport(item, "free"))
+   {
+      uint32_t allocation;
+      if (!ReadStackArgument(*state, *memory, 0, &allocation, error))
+         return false;
+      if (allocation && !m_heap.Free(allocation, error))
+         return false;
+      return ReturnStdcall(state, memory, 0, 0, error);
+   }
+   if (IsCrtImport(item, "memset"))
+   {
+      uint32_t destination, value, count;
+      if (!ReadStackArgument(*state, *memory, 0, &destination, error) ||
+          !ReadStackArgument(*state, *memory, 1, &value, error) ||
+          !ReadStackArgument(*state, *memory, 2, &count, error))
+         return false;
+      if (count > 0x02000000)
+         return Fail(error, "guest memset is too large");
+      for (uint32_t i = 0; i < count; ++i)
+         if (!memory->Write8(destination + i, static_cast<uint8_t>(value),
+                             error))
+            return false;
+      return ReturnStdcall(state, memory, 0, destination, error);
+   }
+   if (IsCrtImport(item, "memcpy") || IsCrtImport(item, "memmove"))
+   {
+      uint32_t destination, source, count;
+      if (!ReadStackArgument(*state, *memory, 0, &destination, error) ||
+          !ReadStackArgument(*state, *memory, 1, &source, error) ||
+          !ReadStackArgument(*state, *memory, 2, &count, error))
+         return false;
+      if (count > 0x02000000)
+         return Fail(error, "guest memory copy is too large");
+      std::vector<uint8_t> bytes(count);
+      for (uint32_t i = 0; i < count; ++i)
+         if (!memory->Read8(source + i, &bytes[i], error))
+            return false;
+      for (uint32_t i = 0; i < count; ++i)
+         if (!memory->Write8(destination + i, bytes[i], error))
+            return false;
+      return ReturnStdcall(state, memory, 0, destination, error);
+   }
+   if (IsCrtImport(item, "strncpy"))
+   {
+      uint32_t destination, source, count;
+      if (!ReadStackArgument(*state, *memory, 0, &destination, error) ||
+          !ReadStackArgument(*state, *memory, 1, &source, error) ||
+          !ReadStackArgument(*state, *memory, 2, &count, error))
+         return false;
+      bool terminated = false;
+      for (uint32_t i = 0; i < count; ++i)
+      {
+         uint8_t value = 0;
+         if (!terminated && !memory->Read8(source + i, &value, error))
+            return false;
+         if (!value)
+            terminated = true;
+         if (!memory->Write8(destination + i, value, error))
+            return false;
+      }
+      return ReturnStdcall(state, memory, 0, destination, error);
+   }
+
    if (IsKernelImport(item, "GetVersion"))
       return ReturnStdcall(state, memory, 0, 5, error);
    if (IsKernelImport(item, "GetModuleHandleA"))
@@ -306,6 +628,29 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
        IsKernelImport(item, "EnterCriticalSection") ||
        IsKernelImport(item, "LeaveCriticalSection"))
       return ReturnStdcall(state, memory, 4, 0, error);
+   if (IsKernelImport(item, "InterlockedCompareExchange"))
+   {
+      uint32_t destination, exchange, comparand, previous;
+      if (!ReadStackArgument(*state, *memory, 0, &destination, error) ||
+          !ReadStackArgument(*state, *memory, 1, &exchange, error) ||
+          !ReadStackArgument(*state, *memory, 2, &comparand, error) ||
+          !memory->Read32(destination, &previous, error))
+         return false;
+      if (previous == comparand &&
+          !memory->Write32(destination, exchange, error))
+         return false;
+      return ReturnStdcall(state, memory, 12, previous, error);
+   }
+   if (IsKernelImport(item, "InterlockedExchange"))
+   {
+      uint32_t destination, exchange, previous;
+      if (!ReadStackArgument(*state, *memory, 0, &destination, error) ||
+          !ReadStackArgument(*state, *memory, 1, &exchange, error) ||
+          !memory->Read32(destination, &previous, error) ||
+          !memory->Write32(destination, exchange, error))
+         return false;
+      return ReturnStdcall(state, memory, 8, previous, error);
+   }
    if (IsKernelImport(item, "TlsAlloc"))
    {
       for (size_t i = 0; i < m_tlsUsed.size(); ++i)

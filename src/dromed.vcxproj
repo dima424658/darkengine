@@ -2628,6 +2628,11 @@
       <AdditionalManifestFiles>$(ProjectDir)dromed.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
     </Manifest>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libsrc\squirrel\squirrel.vcxproj">
+      <Project>{4AB7A069-9AAF-4B26-A81E-F31B408441AD}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

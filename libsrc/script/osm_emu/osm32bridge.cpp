@@ -4,6 +4,7 @@
 
 #pragma pack(push, 8)
 #include <algorithm>
+#include <stdio.h>
 #include <vector>
 #pragma pack(pop)
 
@@ -184,7 +185,16 @@ bool cGuestHeap::Free(uint32_t address, std::string *error)
       return true;
    sBlock *block = Find(address);
    if (!block || block->free)
-      return Fail(error, "guest free received an invalid pointer");
+   {
+      if (error)
+      {
+         char detail[128];
+         snprintf(detail, sizeof(detail),
+                  "guest free received invalid pointer 0x%08x", address);
+         *error = detail;
+      }
+      return false;
+   }
    block->free = true;
    if (error) error->clear();
    return true;

@@ -134,4 +134,8 @@ DECLARE_SCRIPT_SERVICE_IMPL(cNullScrSrv, Null)
 
 IMPLEMENT_SCRIPT_SERVICE_IMPL(cNullScrSrv, Null);
 
+void NullScriptServiceForceLink(void)
+{
+}
+
 ///////////////////////////////////////////////////////////////////////////////

@@ -140,7 +140,7 @@ int PhysRaycast(Location &start, Location &end, Location *hit, ObjID *hit_obj, m
 
          if (PortalRaycastCell != -1)
          {
-            ubyte texture = WR_CELL(PortalRaycastCell)->render_list[PortalRaycastFindPolygon()].texture_id;
+            int texture = WR_CELL(PortalRaycastCell)->render_list[PortalRaycastFindPolygon()].texture_id;
             min_hit_obj = GetTextureObj(texture);
           
             used_end = l_hit;

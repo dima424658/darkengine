@@ -12,6 +12,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <filespec.h>
 #include <scrptman.h>
 #include <scrptsrv.h>
@@ -72,7 +73,18 @@ BOOL ScriptDebugIsEnabled(void)
 
 void ScriptDebugLogDispatch(IScript* script, const sScrMsg* message)
 {
-   if (!g_ScriptDebugEnabled || !g_ScriptDebugFile || !script || !message)
+   if (!script || !message)
+      return;
+
+   if (getenv("DARK_OSM32_TRACE"))
+   {
+      fprintf(stderr, "Script dispatch %s.%s object=%d\n",
+              script->GetClassName() ? script->GetClassName() : "(unknown)",
+              message->message ? message->message : "(none)", message->to);
+      fflush(stderr);
+   }
+
+   if (!g_ScriptDebugEnabled || !g_ScriptDebugFile)
       return;
 
    fprintf(g_ScriptDebugFile, "%u\t%d\t%d\t%s\t%s\n",
@@ -156,6 +168,7 @@ cScriptMan::~cScriptMan()
 
 STDMETHODIMP cScriptMan::GameInit()
 {
+   NullScriptServiceForceLink();
    cDynArray<sScrSrvRegData *> &services = ScrSrvRegData();
 
    // Make the complete service table visible before initializing any one
@@ -213,17 +226,26 @@ void cScriptMan::LoadClasses()
 {
    tScrIter              iter;
    const sScrClassDesc * pDesc;
+   const BOOL traceModules = getenv("DARK_OSM32_TRACE") != NULL;
 
    for (int i = 0; i < m_Modules.Size(); i++)
    {
       IScriptModule * pModule = m_Modules[i].pModule;
+      int classCount = 0;
 
       pDesc = pModule->GetFirstClass(&iter);
       while (pDesc)
       {
          m_ClassDescs.RemoveByKey(pDesc->pszClass);
          m_ClassDescs.Insert(pDesc);
+         ++classCount;
          pDesc = pModule->GetNextClass(&iter);
+      }
+      if (traceModules)
+      {
+         fprintf(stderr, "Script module '%s' registered %d classes\n",
+                 pModule->GetName(), classCount);
+         fflush(stderr);
       }
    }
 }
@@ -354,6 +376,15 @@ STDMETHODIMP cScriptMan::ExposeService(IUnknown * pService, const GUID * pGuid)
 STDMETHODIMP_(IUnknown *) cScriptMan::GetService(const GUID * pGuid)
 {
    sServiceTableEntry * pEntry = m_Services.Search(pGuid);
+
+   if (getenv("DARK_OSM32_TRACE"))
+   {
+      fprintf(stderr,
+              "Script service request %08lx-%04x-%04x: %s\n",
+              (unsigned long)pGuid->Data1, pGuid->Data2, pGuid->Data3,
+              pEntry ? "available" : "null fallback");
+      fflush(stderr);
+   }
 
    if (pEntry)
    {
