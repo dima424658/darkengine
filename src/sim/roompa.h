@@ -13,6 +13,8 @@
 #ifndef __ROOMPA_H
 #define __ROOMPA_H
 
+#include <darklimit.h>
+
 #include <matrixs.h>
 #include <hashpp.h>
 #include <dlist.h>
@@ -66,7 +68,7 @@ public:
 ////////////////////////////////////////
 
 // 1024 * 16 = 16k
-#define MAX_BF_ROOMS 1024
+#define MAX_BF_ROOMS DARK_LIMIT_RUNTIME_ROOMS
 
 // array elements for A* search
 class cBFRoomInfo

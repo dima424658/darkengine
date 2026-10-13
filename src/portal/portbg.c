@@ -169,7 +169,7 @@ void render_background_hack(void)
    r3_end_block();
    if (!background_setup)
       setup_background_hack();
-   wr_cell[MAX_REGIONS - 1] = &background_cube;
+   wr_cell[MAX_REGIONS] = &background_cube;
 
    // For the background hack we fudge the amount of fog so it we
    // can see the sky when the fog is minimal.
@@ -177,14 +177,14 @@ void render_background_hack(void)
       //lgd3d_set_fog_density(fog_dist_modifier * .1 / portal_fog_dist);
       lgd3d_set_linear_fog_distance( portal_fog_dist );
 
-   draw_region(MAX_REGIONS - 1);
+   draw_region(MAX_REGIONS);
 
    if (g_lgd3d && portal_fog_dist)
       //lgd3d_set_fog_density(fog_dist_modifier / portal_fog_dist);
       lgd3d_set_linear_fog_distance( portal_fog_dist );
 
 
-   wr_cell[MAX_REGIONS - 1] = NULL;
+   wr_cell[MAX_REGIONS] = NULL;
    r3_start_block();
 }
 

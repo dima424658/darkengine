@@ -23,6 +23,7 @@
 #include <lgsprntf.h>
 #include <gcompose.h>
 #include <guistyle.h>
+#include <darklimit.h>
 
 #include <uiapp.h>
 #include <brushgfh.h>
@@ -241,8 +242,8 @@ void create_coord_cycler(LGadRoot* root, Rect* bounds, CycleGadg* gadg, int axis
    else
    {
       fdesc.delta =  COORD_DELTA;
-      fdesc.min   = -1000.00;
-      fdesc.max   = +1000.00;
+      fdesc.min   = -DARK_LIMIT_RUNTIME_WORLD_EXTENT;
+      fdesc.max   = +DARK_LIMIT_RUNTIME_WORLD_EXTENT;
       fdesc.wrap  =  FALSE;
    }
    CreatefloatCycleGadg(gadg,root,&desc,&fdesc);

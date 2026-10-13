@@ -235,7 +235,7 @@ struct
    ushort w, h;
    ushort mip_level;
    uchar active;
-   uchar texture_id;
+   ushort texture_id;
 } surf_cache[SURFACE_CACHE_ENTRIES];
 
 static int surf_first_free = 0;
@@ -289,7 +289,7 @@ void clear_surface_cache(void)
 
 // When we animate textures, we want to invalidate all surface cache
 // entries which have a particular texture id.
-void clear_surfaces_for_texture(uchar texture_id)
+void clear_surfaces_for_texture(ushort texture_id)
 {
    int i;
 
@@ -348,7 +348,7 @@ void free_slot_in_cache(void)
 }
 
 int cache_mem_this_frame;
-static int alloc_surface_cache(int x, int y, short *ptr, uchar texture_id)
+static int alloc_surface_cache(int x, int y, short *ptr, ushort texture_id)
 {
    int i, n, sz, w_bytes;
    uchar *bits;

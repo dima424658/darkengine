@@ -18,6 +18,8 @@
 #ifndef __RESDATA_H
 #define __RESDATA_H
 
+#include <darklimit.h>
+
 //////////
 //
 // Internal definitions
@@ -38,7 +40,7 @@ typedef struct _appdataelem {
 // The maximum number of resources that can have application data associated
 // with them. This number is arbitrary, and should be tuned.
 
-#define MAX_APP_RESOURCES 2048
+#define MAX_APP_RESOURCES DARK_LIMIT_RUNTIME_APP_RESOURCES
 
 
 EXTERN appdataelem appdata[MAX_APP_RESOURCES];

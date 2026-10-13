@@ -166,7 +166,7 @@ extern void (*lightmap_callback)(PortalLightMap *lightmap);
 extern void clear_surface_cache(void);
 
   // clear all texture cache entries for a given texture id
-extern void clear_surfaces_for_texture(uchar texture_id);
+extern void clear_surfaces_for_texture(ushort texture_id);
 
   // This oversamples static lighting.  Dynamic lighting is not affected.
 extern bool portal_quadruple_lighting;

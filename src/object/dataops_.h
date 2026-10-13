@@ -216,6 +216,7 @@ public:
    STDMETHOD(Copy)(sDatum* targ, sDatum src) { Assert_(mpOps); return mpOps->Copy(targ,src); };
    STDMETHOD_(long, BlockSize)(sDatum val) { Assert_(mpOps); return mpOps->BlockSize(val); };
    STDMETHOD_(int,Version)() { Assert_(mpOps); return mpOps->Version(); };
+   STDMETHOD_(int,ReadVersion)() { Assert_(mpOps); return mpOps->ReadVersion(); };
    STDMETHOD(Read)(sDatum* dat, IDataOpsFile* file, int version) { Assert_(mpOps); return mpOps->Read(dat,file,version); };
    STDMETHOD(Write)(sDatum dat, IDataOpsFile* file) { Assert_(mpOps); return mpOps->Write(dat,file); };
 

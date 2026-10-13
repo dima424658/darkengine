@@ -106,11 +106,12 @@ protected:
    FILE* file;                            // file 
    TagTableEntry* block;                  // current block
    ulong blockptr;                        // file ptr within block
+   TagVersion blockVersion;               // version of the open read block
 
 public:
-   TagFileBase(FILE* f = NULL) :file(f),block(NULL) {} ;
+   TagFileBase(FILE* f = NULL) :file(f),block(NULL),blockVersion{0,0} {} ;
    TagFileBase(const char* fname, const char* mode)
-      : file(fopen(fname,mode)),block(NULL) {} ; 
+      : file(fopen(fname,mode)),block(NULL),blockVersion{0,0} {} ;
    virtual ~TagFileBase();
 
    static ITagFile* Open(const char* filename, TagFileOpenMode mode);

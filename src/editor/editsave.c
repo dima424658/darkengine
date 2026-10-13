@@ -135,6 +135,15 @@ static bool _loadSingleBrush(editBrush *newbr)
    {
       if (brushGetType(newbr)==brType_TERRAIN)
       {
+         if (newbr->num_faces > EDITBR_MAX_FACES)
+         {
+            Warning(("BRLIST brush %d has %u faces; this build supports at most %u\n",
+                     newbr->br_id,(uint)newbr->num_faces,(uint)EDITBR_MAX_FACES));
+            dbCompatibilityMarkTag(&BrushTag,kDBCompatRawPreserved,
+                                   "brush face count exceeds supported limit");
+            dbCompatibilityRetainRawTag(&BrushTag,NULL);
+            return FALSE;
+         }
          int xtra_sz=sizeof(TexInfo)*newbr->num_faces;
          if (ITagFile_Read(_brTagFile,(char *)&newbr->txs,xtra_sz)!=xtra_sz)
             return FALSE;

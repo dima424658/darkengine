@@ -18,6 +18,7 @@
 #include <tagfile.h>
 #include <vernum.h>
 #include <dbasemsg.h>
+#include <dbfile.h>
 
 #include <objremap.h>
 #include <osysbase.h>
@@ -111,8 +112,12 @@ static BOOL setup_file(IRelation* rel, ITagFile* file, const char* prefix, TagVe
 
    const sRelationDesc* reldesc = rel->Describe();
    
-   // stuff relation version into minor
-   ver->minor = reldesc->version; 
+   // The relation descriptor owns distinct read and write versions.  Existing
+   // descriptors default read_version to zero, meaning their write version.
+   const tRelationVersion writeVersion = reldesc->version;
+   const tRelationVersion readVersion = reldesc->read_version
+      ? reldesc->read_version : writeVersion;
+   ver->minor = file->OpenMode() == kTagOpenRead ? readVersion : writeVersion;
    TagVersion relver = *ver;
    
    // I am so lazy 
@@ -125,10 +130,31 @@ static BOOL setup_file(IRelation* rel, ITagFile* file, const char* prefix, TagVe
    strncat(tag.label,reldesc->name,sizeof(tag.label)-strlen(prefix)-1);
    tag.label[sizeof(tag.label)-1] = '\0';
 
+   if (file->OpenMode() == kTagOpenWrite && dbCompatibilityUseRawTag(&tag))
+      return FALSE;
+
    // Set up the tag block
    HRESULT err = file->OpenBlock(&tag,&v);
    if (err != S_OK)
       return FALSE;
+
+   if (file->OpenMode() == kTagOpenRead &&
+       (v.major > relver.major ||
+        (v.major >= kRelationVersioning && v.minor > readVersion)))
+   {
+      Warning(("Unsupported link tag version %u.%u for %s (max %u.%u)\n",
+               v.major,v.minor,tag.label,relver.major,readVersion));
+      file->CloseBlock();
+      return FALSE;
+   }
+
+   if (file->OpenMode() == kTagOpenRead &&
+       v.major >= kRelationVersioning && v.minor > writeVersion)
+   {
+      dbCompatibilityMarkTag(&tag,kDBCompatPrefixDecoded,
+         "newer relation decoded; original retained for legacy writer");
+      dbCompatibilityRetainRawTag(&tag,NULL);
+   }
 
    if (!VersionNumsEqual(&v,&relver))
    {
@@ -381,9 +407,26 @@ STDMETHODIMP cBaseLinkDataStore::Load(RelationID id , IUnknown* fileunk, int fil
       // Read in data version;
       ulong version;
       file->Read((char*)&version,sizeof(version));
-      Assert(version == ops->Version(), 
-             ("Reading in different version data for type %s (old:%d new:%d)\n",
-              desc->type,version,ops->Version()));
+      if (version > (ulong)ops->ReadVersion())
+      {
+         Warning(("Unsupported relation-data version for %s (file:%u max:%d)\n",
+                  desc->type,version,ops->ReadVersion()));
+         SafeRelease(ops);
+         cleanup_file(file);
+         SafeRelease(file);
+         SafeRelease(rel);
+         return E_FAIL;
+      }
+      if (version > (ulong)ops->Version())
+      {
+         TagFileTag tag = { DATA_TAG_PREFIX };
+         const sRelationDesc* relDesc = rel->Describe();
+         strncat(tag.label,relDesc->name,sizeof(tag.label)-strlen(tag.label)-1);
+         tag.label[sizeof(tag.label)-1] = '\0';
+         dbCompatibilityMarkTag(&tag,kDBCompatPrefixDecoded,
+            "newer relation data decoded; original retained for legacy writer");
+         dbCompatibilityRetainRawTag(&tag,NULL);
+      }
 
       // wrap a DataOpsFile around the tagfile
       IDataOpsFile* opfile = new cDataOpsTagFile(file); 

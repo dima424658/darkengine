@@ -18,9 +18,10 @@
 #define _BSPSPHR_H_
 
 #include <lg.h>
+#include <darklimit.h>
 
 // Clients will want to use this limit in sizing their output arrays.
-#define BSPSPHR_OUTPUT_LIMIT 512
+#define BSPSPHR_OUTPUT_LIMIT DARK_LIMIT_RUNTIME_SPHERE_QUERY_CELLS
 
 EXTERN int portal_cells_intersecting_sphere(Location *loc, float radius, 
                                             int *output_list);

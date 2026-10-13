@@ -25,6 +25,7 @@
 #include <lg.h>
 #include <mprintf.h>
 #include <portclip.h>
+#include <darklimit.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -305,7 +306,7 @@ ClipData *PortalClipRectangle(int l, int t, int r, int b)
    return d;
 }
 
-#define MAX_CLIP_REGIONS     2048
+#define MAX_CLIP_REGIONS     DARK_LIMIT_RUNTIME_PORTAL_CLIP_REGIONS
 
 ClipData clip_raw[MAX_CLIP_REGIONS]; // 32K
 int clip_first_free=-1, clip_init=0;

@@ -13,9 +13,10 @@
 #include <hep.h>
 #include <string.h>
 #include <csgbrush.h>
+#include <darklimit.h>
 
 #define MAX_FACE_BRUSHES  MAX_CSG_BRUSHES
-#define MAX_FACES         16
+#define MAX_FACES         DARK_LIMIT_RUNTIME_CSG_FACE_SLOTS
 
 #define VEC_DOT_ONE .99999
 #define PLANE_CONST_EPSILON .0005

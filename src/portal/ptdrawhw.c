@@ -102,6 +102,8 @@ extern bool show_lightmap;
 extern bool portal_clip_poly;
 extern int portal_clip_num;
 extern PortalCell *cur_cell;
+extern float *portal_current_wrext_u_base;
+extern float *portal_current_wrext_v_base;
 
 extern int portbg_clip_sky(int, r3s_phandle *, r3s_phandle **);
 extern void draw_polygon_wireframe(r3s_phandle *points, int num_points, uint color);
@@ -115,6 +117,20 @@ extern mxs_vector *get_cached_vector(mxs_vector *where, mxs_vector *v);
 typedef struct scale_info {
    double u0, v0, scale_u, scale_v;
 } scale_info;
+
+static mxs_real portal_texture_base_u(PortalPolygonRenderInfo *render)
+{
+   if (portal_current_wrext_u_base)
+      return portal_current_wrext_u_base[render - cur_cell->render_list];
+   return render->u_base / 4096.0f;
+}
+
+static mxs_real portal_texture_base_v(PortalPolygonRenderInfo *render)
+{
+   if (portal_current_wrext_v_base)
+      return portal_current_wrext_v_base[render - cur_cell->render_list];
+   return render->v_base / 4096.0f;
+}
 
 
 
@@ -482,14 +498,16 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
 
       u_scale = two_to_n(6 - hw.tex->wlog);
       v_scale = two_to_n(6 - hw.tex->hlog);
+      u_scale /= portal_worldrep_texture_scale;
+      v_scale /= portal_worldrep_texture_scale;
 
       p_uvec = &render->tex_u;
       p_vvec = &render->tex_v;
       anchor = &(cur_pool[r_vertex_list[voff + render->texture_anchor]]);
       uv = mx_dot_vec(p_uvec, p_vvec);
 
-      u_base = render->u_base * u_scale / (16.0f*256.0f); // u translation
-      v_base = render->v_base * v_scale / (16.0f*256.0f); // v translation
+      u_base = portal_texture_base_u(render) * u_scale; // u translation
+      v_base = portal_texture_base_v(render) * v_scale; // v translation
 
       u2 = mx_mag2_vec(p_uvec);
       v2 = mx_mag2_vec(p_vvec);
@@ -630,8 +648,8 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
          g2pt_calc_uvw_deltas(&pt, &u_vec, &v_vec);
       } else {
          mxs_real usc, vsc;
-         usc = ((float) render->u_base) * 1.0f / (16.0f*256.0f); // u translation
-         vsc = ((float) render->v_base) * 1.0f / (16.0f*256.0f); // v translation
+         usc = (mxs_real)portal_texture_base_u(render); // u translation
+         vsc = (mxs_real)portal_texture_base_v(render); // v translation
 
          get_cached_vector(&u_vec, &render->tex_u);
          get_cached_vector(&v_vec, &render->tex_v);
@@ -655,6 +673,8 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
          info.scale_v = two_to_n(mip_log - hw.tex->hlog);
          info.u0 = info.v0 = 0.0;
       }
+      info.scale_u /= portal_worldrep_texture_scale;
+      info.scale_v /= portal_worldrep_texture_scale;
       ptlgd3d_calc_uv(n, final, &info);
    }
 
@@ -674,6 +694,9 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
       info.scale_u = two_to_n(log_scale_u - hw.lm->wlog);
 #endif
       info.scale_v = two_to_n(log_scale_v - hw.lm->hlog);
+      // WREXT's serialized projection and lightmap dimensions already use
+      // its higher-resolution coordinate space.  Only the base-texture pass
+      // above removes that scale; the lightmap transform remains unchanged.
       info.u0 = (hw.lm_u0 - lt->base_u) * two_to_n(-log_scale_u);
       info.v0 = (hw.lm_v0 - lt->base_v) * two_to_n(-log_scale_v);
 #ifndef SHIP
@@ -822,14 +845,16 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
 
       u_scale = two_to_n(6 - hw.tex->wlog);
       v_scale = two_to_n(6 - hw.tex->hlog);
+      u_scale /= portal_worldrep_texture_scale;
+      v_scale /= portal_worldrep_texture_scale;
 
       p_uvec = &render->tex_u;
       p_vvec = &render->tex_v;
       anchor = &(cur_pool[r_vertex_list[voff + render->texture_anchor]]);
       uv = mx_dot_vec(p_uvec, p_vvec);
 
-      u_base = render->u_base * u_scale / (16.0f*256.0f); // u translation
-      v_base = render->v_base * v_scale / (16.0f*256.0f); // v translation
+      u_base = portal_texture_base_u(render) * u_scale; // u translation
+      v_base = portal_texture_base_v(render) * v_scale; // v translation
 
       u2 = mx_mag2_vec(p_uvec);
       v2 = mx_mag2_vec(p_vvec);
@@ -969,8 +994,8 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
          g2pt_calc_uvw_deltas(&pt, &u_vec, &v_vec);
       } else {
          mxs_real usc, vsc;
-         usc = ((float) render->u_base) * 1.0f / (16.0f*256.0f); // u translation
-         vsc = ((float) render->v_base) * 1.0f / (16.0f*256.0f); // v translation
+         usc = (mxs_real)portal_texture_base_u(render); // u translation
+         vsc = (mxs_real)portal_texture_base_v(render); // v translation
 
          get_cached_vector(&u_vec, &render->tex_u);
          get_cached_vector(&v_vec, &render->tex_v);
@@ -994,6 +1019,8 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
          info.scale_v = two_to_n(mip_log - hw.tex->hlog);
          info.u0 = info.v0 = 0.0;
       }
+      info.scale_u /= portal_worldrep_texture_scale;
+      info.scale_v /= portal_worldrep_texture_scale;
       ptlgd3d_calc_uv(n, final, &info);
    }
 
@@ -1013,8 +1040,15 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
       info.scale_u = two_to_n(log_scale_u - hw.lm->wlog);
 #endif
       info.scale_v = two_to_n(log_scale_v - hw.lm->hlog);
-      info.u0 = (hw.lm_u0 - lt->base_u) * two_to_n(-log_scale_u);
-      info.v0 = (hw.lm_v0 - lt->base_v) * two_to_n(-log_scale_v);
+      // The multitexture path derives the second-stage UVs from the corrected
+      // base-texture UVs.  Restore WREXT's serialized coordinate scale while
+      // keeping the atlas offset in lightmap space.
+      info.scale_u *= portal_worldrep_texture_scale;
+      info.scale_v *= portal_worldrep_texture_scale;
+      info.u0 = (hw.lm_u0 - lt->base_u) * two_to_n(-log_scale_u)
+              / portal_worldrep_texture_scale;
+      info.v0 = (hw.lm_v0 - lt->base_v) * two_to_n(-log_scale_v)
+              / portal_worldrep_texture_scale;
       {
          LGD3D_tex_coord *uv2 = temp_malloc(n*sizeof(*uv2));
          LGD3D_tex_coord **puv2 = temp_malloc(n*sizeof(*puv2));
@@ -1116,14 +1150,16 @@ void draw_surface_texture_only(PortalPolygonCore *poly, PortalPolygonRenderInfo 
 
       u_scale = two_to_n(6 - hw.tex->wlog);
       v_scale = two_to_n(6 - hw.tex->hlog);
+      u_scale /= portal_worldrep_texture_scale;
+      v_scale /= portal_worldrep_texture_scale;
 
       p_uvec = &render->tex_u;
       p_vvec = &render->tex_v;
       anchor = &(cur_pool[r_vertex_list[voff + render->texture_anchor]]);
       uv = mx_dot_vec(p_uvec, p_vvec);
 
-      u_base = render->u_base * u_scale / (16.0f*256.0f); // u translation
-      v_base = render->v_base * v_scale / (16.0f*256.0f); // v translation
+      u_base = portal_texture_base_u(render) * u_scale; // u translation
+      v_base = portal_texture_base_v(render) * v_scale; // v translation
 
       u2 = mx_mag2_vec(p_uvec);
       v2 = mx_mag2_vec(p_vvec);
@@ -1254,8 +1290,8 @@ void draw_surface_texture_only(PortalPolygonCore *poly, PortalPolygonRenderInfo 
          g2pt_calc_uvw_deltas(&pt, &u_vec, &v_vec);
       } else {
          mxs_real usc, vsc;
-         usc = ((float) render->u_base) * 1.0f / (16.0f*256.0f); // u translation
-         vsc = ((float) render->v_base) * 1.0f / (16.0f*256.0f); // v translation
+         usc = (mxs_real)portal_texture_base_u(render); // u translation
+         vsc = (mxs_real)portal_texture_base_v(render); // v translation
 
          get_cached_vector(&u_vec, &render->tex_u);
          get_cached_vector(&v_vec, &render->tex_v);
@@ -1279,6 +1315,8 @@ void draw_surface_texture_only(PortalPolygonCore *poly, PortalPolygonRenderInfo 
          info.scale_v = two_to_n(mip_log - hw.tex->hlog);
          info.u0 = info.v0 = 0.0;
       }
+      info.scale_u /= portal_worldrep_texture_scale;
+      info.scale_v /= portal_worldrep_texture_scale;
       ptlgd3d_calc_uv(n, final, &info);
    }
 
@@ -1376,8 +1414,8 @@ void draw_surface_lightmap_only(PortalPolygonCore *poly, PortalPolygonRenderInfo
 
       v_scale = two_to_n(2-hw.lm->hlog);
 
-      u_base = u_scale * (render->u_base/(16.0f*256.0f) + (hw.lm_u0 - lt->base_u)/4.0f); // u translation
-      v_base = v_scale * (render->v_base/(16.0f*256.0f) + (hw.lm_v0 - lt->base_v)/4.0f); // v translation
+      u_base = u_scale * (portal_texture_base_u(render) + (hw.lm_u0 - lt->base_u)/4.0f); // u translation
+      v_base = v_scale * (portal_texture_base_v(render) + (hw.lm_v0 - lt->base_v)/4.0f); // v translation
 
       u2 = mx_mag2_vec(p_uvec);
       v2 = mx_mag2_vec(p_vvec);

@@ -15,6 +15,7 @@
 #include <linkdb_.h>
 #include <linkid.h>
 #include <lnkremap.h>
+#include <relation.h>
 
 #include <tagfile.h>
 #include <objnotif.h>
@@ -624,6 +625,44 @@ STDMETHODIMP_(LinkID) cLinkManager::RemapOnLoad(LinkID id)
 static const TagFileTag relation_tag = { "Relations"}; 
 static const TagVersion relation_ver = { 1, 0 };
 
+struct sCompatibilityRelationCodec
+{
+   const char* name;
+   sRelationDataDesc data;
+   RelationQueryCaseSet queryCases;
+};
+
+// NewDark permits missions to carry relations supplied by extensions.  They
+// still have to exist before the L$/LD$ blocks are dispatched or the relation
+// ID map silently drops them.  Keep their runtime schema declarations here,
+// next to the relation-inventory codec, rather than teaching script callers
+// about individual mission relation names.
+static const sCompatibilityRelationCodec compatibility_relation_codecs[] =
+{
+   { "DetailAttachement", LINK_NO_DATA, kQCaseSetAll },
+};
+
+static IRelation* create_compatibility_relation(const char* name)
+{
+   for (int i = 0;
+        i < sizeof(compatibility_relation_codecs) / sizeof(compatibility_relation_codecs[0]);
+        ++i)
+   {
+      const sCompatibilityRelationCodec& codec = compatibility_relation_codecs[i];
+      if (strcmp(codec.name,name) == 0)
+      {
+         sRelationDesc desc = { "" };
+         strncpy(desc.name,codec.name,sizeof(desc.name)-1);
+         desc.name[sizeof(desc.name)-1] = '\0';
+         IRelation* relation = CreateStandardRelation(&desc,&codec.data,codec.queryCases);
+         if (relation)
+            mprintf("Registered compatibility relation %s\n",codec.name);
+         return relation;
+      }
+   }
+   return NULL;
+}
+
 void cLinkManager::save_relation_ids(ITagFile* file, ulong filetype)
 {
    TagVersion v = relation_ver;
@@ -649,8 +688,16 @@ void cLinkManager::load_relation_ids(ITagFile* file, ulong filetype)
       {
          sRelationDesc desc;
          Verify(file->Read(desc.name,sizeof(desc.name)) == sizeof(desc.name)); 
+         desc.name[sizeof(desc.name)-1] = '\0';
 
          IRelation* rel = byName.Search(desc.name); 
+         IRelation* compatibilityRel = NULL;
+
+         if (rel == NULL || rel == NullRel)
+         {
+            compatibilityRel = create_compatibility_relation(desc.name);
+            rel = compatibilityRel;
+         }
 
          if (rel != NULL && rel != NullRel)
          {
@@ -667,6 +714,8 @@ void cLinkManager::load_relation_ids(ITagFile* file, ulong filetype)
                   map[i] = newid; 
                }
          }
+
+         SafeRelease(compatibilityRel);
 
       }
       file->CloseBlock(); 

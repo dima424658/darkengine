@@ -52,7 +52,7 @@
 float REAL_EPSILON = 0.0001f;
 
 // storage for the world rep?  What's this doing here?
-PortalCell *wr_cell[MAX_REGIONS];
+PortalCell *wr_cell[MAX_REGIONS + 1]; // final slot is the transient sky cell
 int wr_num_cells;
 
 // for each cell, we have a list of which
@@ -515,6 +515,18 @@ static void port_status(char *s, int pass)
 
 int bsp_num_planes=3;   // 3 axis aligned start planes
 
+static Real g_csg_world_size = DARK_LIMIT_LEGACY_WORLD_EXTENT;
+
+void csg_set_world_size(float world_size)
+{
+   if (world_size < 1.0f)
+      world_size = 1.0f;
+   if (world_size > DARK_LIMIT_RUNTIME_WORLD_EXTENT)
+      world_size = DARK_LIMIT_RUNTIME_WORLD_EXTENT;
+   g_csg_world_size = world_size;
+   mprintf("World extent set to +/-%g\n", g_csg_world_size);
+}
+
 static void PortalizeTree(void *tree, Real world_size)
 {
    int pass;
@@ -550,6 +562,7 @@ static void PortalizeTree(void *tree, Real world_size)
       }
    }
 }
+
 #endif
 
    //clear_dummy_nodes();
@@ -747,6 +760,32 @@ void load_csg_internal_database(CSGReadWriteFunc func)
          ref_locs[i] = Malloc(sizeof(SurfaceRef) * ref_count[i]);
          (*func)(ref_locs[i], sizeof(SurfaceRef), ref_count[i]);
       }
+}
+
+// NewDark's WREXT block ends after the animated-light reverse map and does
+// not carry the legacy editor-only CSG tail.  DromEd still expects one brush
+// face entry for every rendered polygon when it renders or picks the compiled
+// world, so provide a safe "not associated with a brush" map.  Portalizing
+// after an edit will replace these entries with real brush/face references.
+void initialize_csg_internal_database_from_world(void)
+{
+   int cell;
+
+   ClearRegisteredTextures();
+   csg_num_brushes = 0;
+   memset(num_brush_faces, 0, sizeof(num_brush_faces));
+
+   for (cell = 0; cell < wr_num_cells; ++cell)
+   {
+      size_t bytes = sizeof(int) * wr_cell[cell]->num_render_polys;
+      if (bytes != 0)
+      {
+         wr_brfaces[cell] = Malloc(bytes);
+         memset(wr_brfaces[cell], 0xff, bytes);
+      }
+      else
+         wr_brfaces[cell] = NULL;
+   }
 }
 
 // WARNING: i trash int *map!!!!
@@ -1072,7 +1111,7 @@ void portalize_csg_internal_database(void)
    }
 
      // now portalize it
-   PortalizeTree(tree, 1000.0);
+   PortalizeTree(tree, g_csg_world_size);
 
    // And free it because it is no longer needed
    BspFreeTree(tree);

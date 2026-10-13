@@ -79,6 +79,7 @@ struct sRelationDesc
    tRelationVersion version;  // current version
    tRelationVersion oldest;   // oldest acceptable version (older ones will be purged)
                               // (oldest == 0 means oldest = version)
+   tRelationVersion read_version; // newest readable version; zero means version
 }; 
 
 //

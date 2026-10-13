@@ -9,6 +9,33 @@
 #ifndef __DBFILE_H
 #define __DBFILE_H
 #include <dbtype.h>
+#include <tagfile.h>
+
+typedef enum eDBCompatibilityStatus
+{
+   kDBCompatDecoded,
+   kDBCompatPrefixDecoded,
+   kDBCompatRawPreserved,
+   kDBCompatUnsupported,
+} eDBCompatibilityStatus;
+
+// Codec-facing compatibility hooks.  The database layer owns inventory,
+// reporting, and DromEd raw preservation; codecs own version acceptance.
+EXTERN void dbCompatibilityMarkTag(const TagFileTag* tag,
+                                   eDBCompatibilityStatus status,
+                                   const char* detail);
+EXTERN void dbCompatibilityRetainRawTag(const TagFileTag* tag,
+                                        const char* detail);
+EXTERN BOOL dbCompatibilityUseRawTag(const TagFileTag* tag);
+EXTERN void dbCompatibilityPreserveRecordTail(const TagFileTag* tag,
+                                              int object,
+                                              const void* bytes,
+                                              ulong size,
+                                              ulong recordSize);
+EXTERN const void* dbCompatibilityGetRecordTail(const TagFileTag* tag,
+                                                int object,
+                                                ulong* size,
+                                                ulong* recordSize);
 
 //
 // Functions for saving and loading

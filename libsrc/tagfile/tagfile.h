@@ -38,6 +38,24 @@ typedef struct _TagFileTag
 
 typedef struct VersionNum TagVersion;
 
+// Optional database compatibility observer. Readers expose the stored block
+// version and leave acceptance to the codec that owns the data.
+typedef void (LGAPI *TagFileBlockObserver)(ITagFile* file,
+                                           const TagFileTag* tag,
+                                           const TagVersion* version,
+                                           ulong size,
+                                           ulong consumed,
+                                           BOOL closing,
+                                           void* context);
+
+EXTERN void TagFileSetBlockObserver(TagFileBlockObserver observer, void* context);
+EXTERN void TagFileNotifyBlockObserver(ITagFile* file,
+                                       const TagFileTag* tag,
+                                       const TagVersion* version,
+                                       ulong size,
+                                       ulong consumed,
+                                       BOOL closing);
+
 //------------------------------------------------------------
 // Open modes 
 //

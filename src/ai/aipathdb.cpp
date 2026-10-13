@@ -29,6 +29,7 @@
 #include <objedit.h>
 #include <tagfile.h>
 #include <vernum.h>
+#include <darklimit.h>
 
 #include <appagg.h>
 #include <gshelapi.h>
@@ -79,6 +80,7 @@
 #include <aiflee.h>
 
 #include <filevar.h>
+#include <dbfile.h>
 #include <sdesbase.h>
 #include <sdesc.h>
 
@@ -329,17 +331,21 @@ int g_AIQualityWatch = 0;
 //
 
 #define MAX_LINKS_FROM_CELL      24
-#define MAX_VERTICES             0xfffe          // in g_AIPathDB.m_Vertices array
+#define LEGACY_AIPATH_INDEX_LIMIT DARK_LIMIT_AIPATH_33_INDEX
+#define MAX_AI_PATH_VERTICES     DARK_LIMIT_RUNTIME_AIPATH_INDEX
+#define MAX_VERTICES             (MAX_AI_PATH_VERTICES + 1)
 
 // How many we can actually store:
-#define MAX_CELL2CELL_LINKS      0xfffe          // in g_AIPathCell2Cell array
+#define MAX_AI_PATH_CELL_LINKS   DARK_LIMIT_RUNTIME_AIPATH_INDEX
+#define MAX_CELL2CELL_LINKS      (MAX_AI_PATH_CELL_LINKS + 1)
 
 // How many we can process. We want to allow a little play, since we links get postprocessed and
 // whittled down to below MAX_CELL2CELL_LINKS:
-#define MAX_PROCESSED_CELL2CELL_LINKS 0x0001fffe
+#define MAX_PROCESSED_CELL2CELL_LINKS DARK_LIMIT_RUNTIME_AIPATH_PROCESSED_LINKS
 
 
-#define MAX_CELL2VERTEX_LINKS    0xfffe          // in g_AIPathDB.m_nVertices array
+#define MAX_AI_PATH_VERTEX_LINKS DARK_LIMIT_RUNTIME_AIPATH_INDEX
+#define MAX_CELL2VERTEX_LINKS    (MAX_AI_PATH_VERTEX_LINKS + 1)
 
 #ifdef EDITOR
 const int PATH_PT_OPEN = 0;   // cell vertex is in the open
@@ -1966,7 +1972,7 @@ inline void ComputeCellLightLevels()
 #define kSteepSlopeMultiplier 5.0
 
 inline void ComputeCell2CellCost(const tAIPathCellID cell_1,
-                                 const tAIPathCellID cell_2, uchar *cost)
+                                 const tAIPathCellID cell_2, ushort *cost)
 {
    mxs_vector center_1, center_2;
    float      dist;
@@ -1984,7 +1990,7 @@ inline void ComputeCell2CellCost(const tAIPathCellID cell_1,
    if (dist > 254.0)
       dist = 254.0;
 
-   *cost = (uchar)((int)dist);
+   *cost = (ushort)((int)dist);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2208,7 +2214,7 @@ static void PostProcessModifiedOkBits()
    {
       iFirstCell1 = g_AIPathDB.m_Cells[cell1].firstCell;
       if (g_AIPathDB.m_Cells[cell1].wrapFlags & IDWRAP_Cell2Cell)
-         iFirstCell1 += MAX_CELL2CELL_LINKS;
+         iFirstCell1 += LEGACY_AIPATH_INDEX_LIMIT;
 
       iCellLimit1 = iFirstCell1 + g_AIPathDB.m_Cells[cell1].cellCount;
       pCell1To2Link = 0;
@@ -2677,7 +2683,7 @@ static BOOL __fastcall AddSplitCell(tAIPathCellID origCell, sAIPathCell2VertexLi
 
    g_AIPathDB.m_nCells++;
 
-   g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].firstVertex   = (tAIPathVertexIDPacked) (g_AIPathDB.m_nCellVertices+1);
+   g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].firstVertex = g_AIPathDB.m_nCellVertices+1;
    g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].vertexCount   = (uchar) nVerts;
    g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].plane         = g_AIPathDB.m_Cells[origCell].plane;
    g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].pathFlags     = 0;
@@ -2965,7 +2971,7 @@ BOOL cAIPathDB::AddOBBCell(sAIExternCell * pCell, tAIPathCellID cell, BOOL movab
       {
          if (!AICreateOrFindPathVertex(pCell->vertices[i], &idPt))
             return FALSE;
-         m_CellVertices[newCell.firstVertex + i].id = (tAIPathVertexIDPacked) idPt;
+         m_CellVertices[newCell.firstVertex + i].id = idPt;
       }
 
       m_Cells.InsertAtIndex(newCell, cell);
@@ -2974,7 +2980,7 @@ BOOL cAIPathDB::AddOBBCell(sAIExternCell * pCell, tAIPathCellID cell, BOOL movab
    else
    {
       m_nCells++;
-      m_Cells[m_nCells].firstVertex = (tAIPathVertexIDPacked) (m_nCellVertices + 1);
+      m_Cells[m_nCells].firstVertex = m_nCellVertices + 1;
       m_Cells[m_nCells].vertexCount = pCell->nVertices;
       m_Cells[m_nCells].plane;
       m_Cells[m_nCells].pathFlags = 0;
@@ -2990,7 +2996,7 @@ BOOL cAIPathDB::AddOBBCell(sAIExternCell * pCell, tAIPathCellID cell, BOOL movab
             return FALSE;
 
          m_nCellVertices++;
-         m_CellVertices[m_nCellVertices].id = (tAIPathVertexIDPacked) idPt;
+         m_CellVertices[m_nCellVertices].id = idPt;
       }
    }
    return TRUE;
@@ -3117,7 +3123,7 @@ static eQualityResult __fastcall QualitySplit(tAIPathCellID cell, int iVert1, fl
             return kQualityAbort;
 
          g_AIPathDB.m_CellVertices[g_AIPathDB.m_Cells[cell].firstVertex + 1].id = idPt;
-         cellVertLinks[0].id = (tAIPathVertexIDPacked) idPt;
+         cellVertLinks[0].id = idPt;
 
          if (!AddSplitCell(cell, cellVertLinks, 3))
             return kQualityAbort;
@@ -4200,7 +4206,7 @@ void PostProcessNarrow()
       i = g_AIPathDB.m_Cells[cell].firstCell;
 
       if (g_AIPathDB.m_Cells[cell].wrapFlags & IDWRAP_Cell2Cell)
-         i += MAX_CELL2CELL_LINKS;
+         i += LEGACY_AIPATH_INDEX_LIMIT;
 
       int                iLimit = i + g_AIPathDB.m_Cells[cell].cellCount;
       sAIPathCellLink *  pLink;
@@ -4640,7 +4646,7 @@ static void ShrinkLinks()
             if (g_AIPathDB.m_Cells[pci_1].wrapFlags & IDWRAP_Cell2Cell)
             {
                bDidWrappedLink = TRUE;
-               nLinkIx += MAX_CELL2CELL_LINKS;
+               nLinkIx += LEGACY_AIPATH_INDEX_LIMIT;
             }
 
             if ((i >= nLinkIx) && (i < (nLinkIx+g_AIPathDB.m_Cells[pci_1].cellCount))) // deleted link is within range.
@@ -4648,11 +4654,11 @@ static void ShrinkLinks()
             else if (i < nLinkIx) // deleted link is before this one, so just decrement firstCell
             {
                g_AIPathDB.m_Cells[pci_1].firstCell--;
-               if (g_AIPathDB.m_Cells[pci_1].firstCell >= MAX_CELL2CELL_LINKS)
+               if (g_AIPathDB.m_Cells[pci_1].firstCell >= LEGACY_AIPATH_INDEX_LIMIT)
                {
                   g_AIPathDB.m_Cells[pci_1].wrapFlags |= IDWRAP_Cell2Cell; // Redundant, yes.
                   mprintf("Resetting wrapped link @%d\n", pci_1);
-                  g_AIPathDB.m_Cells[pci_1].firstCell -= MAX_CELL2CELL_LINKS;
+                  g_AIPathDB.m_Cells[pci_1].firstCell -= LEGACY_AIPATH_INDEX_LIMIT;
                }
             }
          }
@@ -4788,7 +4794,7 @@ BOOL AIPathFindDBBuild()
             // wsf added:
             memset(&g_AIPathDB.m_Cells[g_AIPathDB.m_nCells], 0, sizeof(sAIPathCell));
 
-            g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].firstVertex = (tAIPathVertexIDPacked) (g_AIPathDB.m_nCellVertices+1);
+            g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].firstVertex = g_AIPathDB.m_nCellVertices+1;
             g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].vertexCount = wr_cell[ci]->poly_list[pi].num_vertices;
 
             g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].plane = AICreateOrFindPlane(wr_cell[ci]->plane_list[current_planeid].normal, wr_cell[ci]->plane_list[current_planeid].plane_constant);
@@ -4820,7 +4826,7 @@ BOOL AIPathFindDBBuild()
 
                   return FALSE;
                }
-               g_AIPathDB.m_CellVertices[g_AIPathDB.m_nCellVertices].id = (tAIPathVertexIDPacked) newVertexID;
+               g_AIPathDB.m_CellVertices[g_AIPathDB.m_nCellVertices].id = newVertexID;
             }
 
             if (!ValidateCell(g_AIPathDB.m_nCells, FALSE))
@@ -5098,8 +5104,6 @@ BOOL AIPathFindDBBuild()
 
          // if we have links, set firstCell to next available spot in
          // cell2cell link array.
-         // wsf: now we can process more than is actually stored, so we temporarily store
-         // 'wrap' bit if necessary.
          if ((g_AIPathDB.m_nLinks + 1) >= MAX_PROCESSED_CELL2CELL_LINKS)
          {
             mprintf("ERROR: too many cell->cell links\n");
@@ -5108,18 +5112,10 @@ BOOL AIPathFindDBBuild()
             TIMER_Clear(PathLinks);
             goto done_links_error;
          }
-         else if ((g_AIPathDB.m_nLinks + 1) >= MAX_CELL2CELL_LINKS)
-         {
-            g_AIPathDB.m_Cells[pci_1].firstCell
-               = (tAIPathCell2CellLinkIDPacked)((g_AIPathDB.m_nLinks + 1)-MAX_CELL2CELL_LINKS);
-            g_AIPathDB.m_Cells[pci_1].wrapFlags |= IDWRAP_Cell2Cell;
-            mprintf("Setting wrapped link! Cell=%d\n", pci_1);
-         }
          else
          {
             g_AIPathDB.m_Cells[pci_1].wrapFlags &= ~IDWRAP_Cell2Cell;
-            g_AIPathDB.m_Cells[pci_1].firstCell
-               = (tAIPathCell2CellLinkIDPacked)(g_AIPathDB.m_nLinks + 1);
+            g_AIPathDB.m_Cells[pci_1].firstCell = g_AIPathDB.m_nLinks + 1;
          }
 
          nUsedLinks = 0;
@@ -5158,31 +5154,31 @@ BOOL AIPathFindDBBuild()
                {
                   case kCell1EdgeContained:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1a;
+                        = pConnectionData->vertex1a;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1b;
+                        = pConnectionData->vertex1b;
                      break;
 
                   case kPerfect:
                   case kCell2EdgeContained:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2b;
+                        = pConnectionData->vertex2b;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2a;
+                        = pConnectionData->vertex2a;
                      break;
 
                   case kCell2SkewedLeft:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1a;
+                        = pConnectionData->vertex1a;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2a;
+                        = pConnectionData->vertex2a;
                      break;
 
                   case kCell2SkewedRight:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2b;
+                        = pConnectionData->vertex2b;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1b;
+                        = pConnectionData->vertex1b;
                      break;
                }
             }
@@ -5195,30 +5191,30 @@ BOOL AIPathFindDBBuild()
                   case kPerfect:
                   case kCell1EdgeContained:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1b;
+                        = pConnectionData->vertex1b;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1a;
+                        = pConnectionData->vertex1a;
                      break;
 
                   case kCell2EdgeContained:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2a;
+                        = pConnectionData->vertex2a;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2b;
+                        = pConnectionData->vertex2b;
                      break;
 
                   case kCell2SkewedLeft:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2a;
+                        = pConnectionData->vertex2a;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1a;
+                        = pConnectionData->vertex1a;
                      break;
 
                   case kCell2SkewedRight:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1b;
+                        = pConnectionData->vertex1b;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2b;
+                        = pConnectionData->vertex2b;
                      break;
                }
             }
@@ -5404,30 +5400,189 @@ done:
 static TagFileTag g_AIPathTag        = { "AIPATH" };
 static TagVersion g_AIPathTagVersion = { 3, 3 };
 
-static BOOL OpenPathTagFile(ITagFile* pTagFile)
+static BOOL OpenPathTagFile(ITagFile* pTagFile, TagVersion *pLoadedVersion = NULL)
 {
+   if (pTagFile->OpenMode() == kTagOpenWrite &&
+       dbCompatibilityUseRawTag(&g_AIPathTag))
+      return FALSE;
    HRESULT result;
-   TagVersion v = g_AIPathTagVersion;
+   TagVersion v = pLoadedVersion ? TagVersion{3, 4} : g_AIPathTagVersion;
 
    result = pTagFile->OpenBlock(&g_AIPathTag, &v);
 
    if (result == S_OK)
    {
-      if (v.major != g_AIPathTagVersion.major || v.minor != g_AIPathTagVersion.minor)
+      const BOOL current = v.major == g_AIPathTagVersion.major &&
+                           v.minor == g_AIPathTagVersion.minor;
+      const BOOL gold = pLoadedVersion && v.major == 2 && v.minor == 8;
+      const BOOL newDark = pLoadedVersion && v.major == 3 && v.minor == 4;
+      if (!current && !gold && !newDark)
       {
          pTagFile->CloseBlock();
          Warning (("File contains old AI path data, data not loaded.\n"));
       }
+      else if (pLoadedVersion)
+         *pLoadedVersion = v;
+
+      return current || gold || newDark;
    }
 
-   return ((result == S_OK)  &&
-           (v.major == g_AIPathTagVersion.major) &&
-           (v.minor == g_AIPathTagVersion.minor));
+   return FALSE;
 }
 
 ///////////////////////////////////////
 
 #define ArrToMoveParm(arr) ((char *)((arr).AsPointer()))
+
+struct sAIPathCellDisk33
+{
+   ushort firstVertex, firstCell, plane, next, bestNeighbor, linkFromNeighbor;
+   uchar vertexCount, pathFlags, cellCount, wrapFlags;
+   cMxsVector center;
+   uchar info[4];
+};
+
+struct sAIPathCellDisk34
+{
+   uint firstVertex, firstCell, plane, next, bestNeighbor, linkFromNeighbor;
+   ushort vertexCount;
+   uchar pathFlags, cellCount;
+   cMxsVector center;
+   uchar info[4];
+};
+
+struct sAIPathCellLinkDisk33
+{
+   ushort dest, vertex1, vertex2;
+   uchar okBits, cost;
+};
+
+struct sAIPathCellLinkDisk34
+{
+   uint dest, vertex1, vertex2;
+   ushort okBits, cost;
+};
+
+static_assert(sizeof(sAIPathCellDisk33) == 32, "AIPATH 3.3 cell disk size");
+static_assert(sizeof(sAIPathCellDisk34) == 44, "AIPATH 3.4 cell disk size");
+static_assert(sizeof(sAIPathCellLinkDisk33) == 8, "AIPATH 3.3 link disk size");
+static_assert(sizeof(sAIPathCellLinkDisk34) == 16, "AIPATH 3.4 link disk size");
+
+static BOOL AIPathCountIsValid(const char *name, unsigned count, unsigned limit)
+{
+   if (count <= limit)
+      return TRUE;
+   Warning(("AIPATH %s count %u exceeds codec limit %u\n", name, count, limit));
+   return FALSE;
+}
+
+static void ReadPathCells(ITagFile* file, BOOL wide, sAIPathCell* cells, int count)
+{
+   for (int i = 0; i < count; ++i)
+   {
+      sAIPathCell& cell = cells[i];
+      memset(&cell, 0, sizeof(cell));
+      if (wide)
+      {
+         sAIPathCellDisk34 disk;
+         file->Move((char*)&disk, sizeof(disk));
+         cell.firstVertex = disk.firstVertex;
+         cell.firstCell = disk.firstCell;
+         cell.plane = disk.plane;
+         cell.next = disk.next;
+         cell.bestNeighbor = disk.bestNeighbor;
+         cell.linkFromNeighbor = disk.linkFromNeighbor;
+         cell.vertexCount = disk.vertexCount;
+         cell.pathFlags = disk.pathFlags;
+         cell.cellCount = disk.cellCount;
+         cell.center = disk.center;
+         memcpy(AIAddrCellInfo(&cell), disk.info, sizeof(disk.info));
+      }
+      else
+      {
+         sAIPathCellDisk33 disk;
+         file->Move((char*)&disk, sizeof(disk));
+         cell.firstVertex = disk.firstVertex;
+         cell.firstCell = disk.firstCell;
+         cell.plane = disk.plane;
+         cell.next = disk.next;
+         cell.bestNeighbor = disk.bestNeighbor;
+         cell.linkFromNeighbor = disk.linkFromNeighbor;
+         cell.vertexCount = disk.vertexCount;
+         cell.pathFlags = disk.pathFlags;
+         cell.cellCount = disk.cellCount;
+         cell.wrapFlags = disk.wrapFlags;
+         cell.center = disk.center;
+         memcpy(AIAddrCellInfo(&cell), disk.info, sizeof(disk.info));
+      }
+   }
+}
+
+static void ReadPathLinks(ITagFile* file, BOOL wide, sAIPathCellLink* links, int count)
+{
+   for (int i = 0; i < count; ++i)
+   {
+      if (wide)
+      {
+         sAIPathCellLinkDisk34 disk;
+         file->Move((char*)&disk, sizeof(disk));
+         links[i].dest = disk.dest;
+         links[i].vertex_1 = disk.vertex1;
+         links[i].vertex_2 = disk.vertex2;
+         links[i].okBits = (tAIPathOkBits)disk.okBits;
+         links[i].runtimePad = 0;
+         links[i].cost = disk.cost;
+      }
+      else
+      {
+         sAIPathCellLinkDisk33 disk;
+         file->Move((char*)&disk, sizeof(disk));
+         links[i].dest = disk.dest;
+         links[i].vertex_1 = disk.vertex1;
+         links[i].vertex_2 = disk.vertex2;
+         links[i].okBits = disk.okBits;
+         links[i].runtimePad = 0;
+         links[i].cost = disk.cost;
+      }
+   }
+}
+
+static void WritePathCells33(ITagFile* file, const sAIPathCell* cells, int count)
+{
+   for (int i = 0; i < count; ++i)
+   {
+      const sAIPathCell& cell = cells[i];
+      sAIPathCellDisk33 disk = {};
+      disk.firstVertex = (ushort)cell.firstVertex;
+      disk.firstCell = (ushort)cell.firstCell;
+      disk.plane = (ushort)cell.plane;
+      disk.next = (ushort)cell.next;
+      disk.bestNeighbor = (ushort)cell.bestNeighbor;
+      disk.linkFromNeighbor = (ushort)cell.linkFromNeighbor;
+      disk.vertexCount = (uchar)cell.vertexCount;
+      disk.pathFlags = cell.pathFlags;
+      disk.cellCount = cell.cellCount;
+      disk.wrapFlags = cell.wrapFlags;
+      disk.center = cell.center;
+      memcpy(disk.info, AIAddrCellInfo(&cell), sizeof(disk.info));
+      file->Move((char*)&disk, sizeof(disk));
+   }
+}
+
+static void WritePathLinks33(ITagFile* file, const sAIPathCellLink* links, int count)
+{
+   for (int i = 0; i < count; ++i)
+   {
+      sAIPathCellLinkDisk33 disk = {
+         (ushort)links[i].dest,
+         (ushort)links[i].vertex_1,
+         (ushort)links[i].vertex_2,
+         (uchar)links[i].okBits,
+         (uchar)links[i].cost,
+      };
+      file->Move((char*)&disk, sizeof(disk));
+   }
+}
 
 // AIPATH 3.3 is an x86-era on-disk format.  The final field was declared as
 // void * but actually stores a 32-bit waypoint ObjID.  Serializing the native
@@ -5450,9 +5605,19 @@ void AIPathFindRead(ITagFile * pTagFile)
    g_AIPathDB.Term();
 
    BOOL rehint = FALSE;
+   TagVersion loadedVersion = g_AIPathTagVersion;
    
-   if (!OpenPathTagFile(pTagFile))
+   if (!OpenPathTagFile(pTagFile, &loadedVersion))
       return;
+
+   const BOOL goldFormat = loadedVersion.major == 2 && loadedVersion.minor == 8;
+   const BOOL wideFormat = loadedVersion.major == 3 && loadedVersion.minor == 4;
+   if (wideFormat)
+   {
+      dbCompatibilityMarkTag(&g_AIPathTag,kDBCompatPrefixDecoded,
+                             "3.4 runtime decode; original retained for legacy writer");
+      dbCompatibilityRetainRawTag(&g_AIPathTag,NULL);
+   }
 
    pTagFile->Move((char*)&g_fAIPathFindInited, sizeof(int));
 
@@ -5467,22 +5632,63 @@ void AIPathFindRead(ITagFile * pTagFile)
       pTagFile->Move((char*)&obsolete, sizeof(int));
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCells, sizeof(tAIPathCellID));
+      const unsigned codecLimit = wideFormat
+         ? DARK_LIMIT_AIPATH_34_INDEX
+         : (goldFormat ? DARK_LIMIT_AIPATH_28_INDEX
+                       : DARK_LIMIT_AIPATH_33_INDEX);
+      if (!AIPathCountIsValid("cell", g_AIPathDB.m_nCells, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_Cells.SetSize(g_AIPathDB.m_nCells+1);
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Cells), sizeof(sAIPathCell) * (g_AIPathDB.m_nCells+1));
+      ReadPathCells(pTagFile, wideFormat, g_AIPathDB.m_Cells.AsPointer(),
+                    g_AIPathDB.m_nCells + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nPlanes, sizeof(tAIPathCellID));
+      if (!AIPathCountIsValid("plane", g_AIPathDB.m_nPlanes, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_Planes.SetSize(g_AIPathDB.m_nPlanes+1);
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Planes), sizeof(sAIPathCellPlane) * (g_AIPathDB.m_nPlanes+1));
 
       pTagFile->Move((char*)&g_AIPathDB.m_nVertices, sizeof(tAIPathVertexID));
+      if (!AIPathCountIsValid("vertex", g_AIPathDB.m_nVertices, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_Vertices.SetSize(g_AIPathDB.m_nVertices+1);
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Vertices), sizeof(sAIPathVertex) * (g_AIPathDB.m_nVertices+1));
 
       pTagFile->Move((char*)&g_AIPathDB.m_nLinks, sizeof(tAIPathCell2CellLinkID));
+      if (!AIPathCountIsValid("cell link", g_AIPathDB.m_nLinks, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_Links.SetSize(g_AIPathDB.m_nLinks+1);
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Links), sizeof(sAIPathCellLink) * (g_AIPathDB.m_nLinks+1));
+      ReadPathLinks(pTagFile, wideFormat, g_AIPathDB.m_Links.AsPointer(),
+                    g_AIPathDB.m_nLinks + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCellVertices, sizeof(tAIPathCell2VertexLinkID));
+      if (!AIPathCountIsValid("cell vertex link", g_AIPathDB.m_nCellVertices, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_CellVertices.SetSize(g_AIPathDB.m_nCellVertices+1);
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellVertices), sizeof(sAIPathCell2VertexLink) * (g_AIPathDB.m_nCellVertices+1));
 
@@ -5514,114 +5720,139 @@ void AIPathFindRead(ITagFile * pTagFile)
          map.data = (void *)(uintptr_t)disk.data;
       }
 
-      // New for 3.2, multiple pathfinding zones:
-      for (i = 0; i < kAIZone_Num; i++)
+      if (wideFormat)
       {
-         g_AIPathDB.m_ZoneDatabases[i].m_CellZones.SetSize(g_AIPathDB.m_nCells+1);
-         pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_ZoneDatabases[i].m_CellZones), sizeof(tAIPathZone) * (g_AIPathDB.m_nCells+1));
-         pTagFile->Move((char *)&g_AIPathDB.m_ZoneDatabases[i].m_nZones, sizeof(int));
-
-         sZoneOkBitsMap *pMap;
-         sZoneOkBitsMap  map;
-
-         pTagFile->Move((char *)&map.key, sizeof(map.key));
-         pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
-
-         while (map.key != 0)
+         // The verified 3.4 prefix ends after the cell-object map.  NewDark
+         // changed the private acceleration data which follows it; parsing
+         // that tail as 3.3 produces plausible counts until it eventually
+         // resizes a runtime array with corrupt input (and is pointer-width
+         // dependent).  Rebuild the derived zone tables from the decoded
+         // cell/link graph and leave the remainder unread for raw retention.
+         ResetPathfindZones();
+         DeterminePathfindZones();
+         LinkPathfindZones();
+         g_AIPathDB.m_nNumFleeRegions = 0;
+      }
+      else
+      {
+         // Gold 2.8 stores one zone database.  T2 3.2 introduced the four
+         // movement-capability variants; duplicate the Gold topology so every
+         // modern query sees the legacy connectivity and permission bits.
+         const int zoneDatabaseCount = goldFormat ? 1 : kAIZone_Num;
+         for (i = 0; i < zoneDatabaseCount; i++)
          {
-            pMap = new sZoneOkBitsMap;
+            g_AIPathDB.m_ZoneDatabases[i].m_CellZones.SetSize(g_AIPathDB.m_nCells+1);
+            pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_ZoneDatabases[i].m_CellZones), sizeof(tAIPathZone) * (g_AIPathDB.m_nCells+1));
+            pTagFile->Move((char *)&g_AIPathDB.m_ZoneDatabases[i].m_nZones, sizeof(int));
 
-            pMap->key = map.key;
-            pMap->okBits = map.okBits;
-
-            g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.Insert(pMap);
+            sZoneOkBitsMap *pMap;
+            sZoneOkBitsMap  map;
 
             pTagFile->Move((char *)&map.key, sizeof(map.key));
             pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
+
+            while (map.key != 0)
+            {
+               pMap = new sZoneOkBitsMap;
+
+               pMap->key = map.key;
+               pMap->okBits = map.okBits;
+
+               g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.Insert(pMap);
+
+               pTagFile->Move((char *)&map.key, sizeof(map.key));
+               pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
+            }
          }
-      }
+
+         if (goldFormat)
+         {
+            for (i = 1; i < kAIZone_Num; ++i)
+            {
+               sZoneDatabase &source = g_AIPathDB.m_ZoneDatabases[0];
+               sZoneDatabase &destination = g_AIPathDB.m_ZoneDatabases[i];
+               destination.m_CellZones.SetSize(g_AIPathDB.m_nCells + 1);
+               destination.m_CellZones.MemCpy(source.m_CellZones,
+                                              g_AIPathDB.m_nCells + 1);
+               destination.m_nZones = source.m_nZones;
+
+               tHashSetHandle handle;
+               sZoneOkBitsMap *sourceMap = source.m_ZonePairTable.GetFirst(handle);
+               while (sourceMap)
+               {
+                  sZoneOkBitsMap *copy = new sZoneOkBitsMap;
+                  copy->key = sourceMap->key;
+                  copy->okBits = sourceMap->okBits;
+                  destination.m_ZonePairTable.Insert(copy);
+                  sourceMap = source.m_ZonePairTable.GetNext(handle);
+               }
+            }
+         }
 
 #ifndef NO_CELLDOOR_SAVELOAD
-      size = 0;
-      pTagFile->Move((char*)&size, sizeof(int));
-      g_AIPathDB.m_CellDoors.SetSize(size);
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellDoors), sizeof(sAICellDoor) * size);
+         size = 0;
+         pTagFile->Move((char*)&size, sizeof(int));
+         g_AIPathDB.m_CellDoors.SetSize(size);
+         pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellDoors), sizeof(sAICellDoor) * size);
 
-      for (i = 0; i < size; i++)
-         g_AIPathDB.m_CellToDoorsTable.Insert(&g_AIPathDB.m_CellDoors[i]);
+         for (i = 0; i < size; i++)
+            g_AIPathDB.m_CellToDoorsTable.Insert(&g_AIPathDB.m_CellDoors[i]);
 #endif
 
-      pTagFile->Move((char *)&size, sizeof(int));
-      g_AIPathDB.m_MovableCells.SetSize(size);
-
-      for (i=0; i<size; i++)
-      {
-         pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].movingObj, sizeof(ObjID));
-         pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].cellID, sizeof(tAIPathCellID));
-         pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].objVec, sizeof(cMxsVector));
-
-         int waypoint_size;
-         pTagFile->Move((char *)&waypoint_size, sizeof(int));
-         g_AIPathDB.m_MovableCells[i].waypointLinkList.SetSize(waypoint_size);
-
-         for (j=0; j<waypoint_size; j++)
+         if (!goldFormat)
          {
-            sAIWaypointLinks *pWaypointLinks = &g_AIPathDB.m_MovableCells[i].waypointLinkList[j];
+            pTagFile->Move((char *)&size, sizeof(int));
+            g_AIPathDB.m_MovableCells.SetSize(size);
 
-            pTagFile->Move((char *)&pWaypointLinks->waypointObj, sizeof(ObjID));
+            for (i=0; i<size; i++)
+            {
+               pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].movingObj, sizeof(ObjID));
+               pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].cellID, sizeof(tAIPathCellID));
+               pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].objVec, sizeof(cMxsVector));
 
-            int link_size;
-            pTagFile->Move((char *)&link_size, sizeof(int));
-            pWaypointLinks->linkList.SetSize(link_size);
-            pTagFile->Move(ArrToMoveParm(pWaypointLinks->linkList), sizeof(sAILinkData) * link_size);
+               int waypoint_size;
+               pTagFile->Move((char *)&waypoint_size, sizeof(int));
+               g_AIPathDB.m_MovableCells[i].waypointLinkList.SetSize(waypoint_size);
+
+               for (j=0; j<waypoint_size; j++)
+               {
+                  sAIWaypointLinks *pWaypointLinks = &g_AIPathDB.m_MovableCells[i].waypointLinkList[j];
+
+                  pTagFile->Move((char *)&pWaypointLinks->waypointObj, sizeof(ObjID));
+
+                  int link_size;
+                  pTagFile->Move((char *)&link_size, sizeof(int));
+                  pWaypointLinks->linkList.SetSize(link_size);
+                  pTagFile->Move(ArrToMoveParm(pWaypointLinks->linkList), sizeof(sAILinkData) * link_size);
+               }
+            }
          }
-      }
-
-      if (g_AIPathDB.m_nCells >= MAX_CELLS)
-      {
-         Warning (("g_AIPathDB.m_nCells is really large! Setting to 0\n"));
-         g_AIPathDB.m_nCells = 0;
-      }
-
-      if (g_AIPathDB.m_nVertices >= MAX_VERTICES)
-      {
-         Warning (("g_AIPathDB.m_nVertices is really large! Setting to 0\n"));
-         g_AIPathDB.m_nVertices = 0;
-      }
-
-      if (g_AIPathDB.m_nLinks >= MAX_CELL2CELL_LINKS)
-      {
-         Warning (("g_AIPathDB.m_nLinks is really large! Setting to 0\n"));
-         g_AIPathDB.m_nLinks = 0;
-      }
-
-      if (g_AIPathDB.m_nCellVertices >= MAX_CELL2VERTEX_LINKS)
-      {
-         Warning (("g_AIPathDB.m_nCellVertices is really large! Setting to 0\n"));
-         g_AIPathDB.m_nCellVertices = 0;
       }
 
       g_AIPathDB.m_Marks.SetSize(g_AIPathDB.m_nCells + 1);
       memset(g_AIPathDB.m_Marks, 0, (g_AIPathDB.m_nCells + 1) * sizeof(sbool));
       g_AIPathDB.m_BestCostToReach.SetSize(g_AIPathDB.m_nCells + 1);
 
-      // New for version 3.0: Store Flee Point Region Info
-      pTagFile->Move((char *)&g_AIPathDB.m_nNumFleeRegions, sizeof(int));
-      int nNum;
-      pTagFile->Move((char *)&nNum, sizeof(int));
-      for (i = 0; i < nNum; i++)
+      if (!goldFormat && !wideFormat)
       {
-         sFleeRegionData *pData;
-         pData = new sFleeRegionData;
-         pTagFile->Move((char *)pData, sizeof(sFleeRegionData));
-         g_AIPathDB.m_FleeRegions.Insert(pData);
+         // New for version 3.0: Store Flee Point Region Info
+         pTagFile->Move((char *)&g_AIPathDB.m_nNumFleeRegions, sizeof(int));
+         int nNum;
+         pTagFile->Move((char *)&nNum, sizeof(int));
+         for (i = 0; i < nNum; i++)
+         {
+            sFleeRegionData *pData;
+            pData = new sFleeRegionData;
+            pTagFile->Move((char *)pData, sizeof(sFleeRegionData));
+            g_AIPathDB.m_FleeRegions.Insert(pData);
+         }
+
+         // New for 3.1, store Large Door Size.
+         float ignored;
+         pTagFile->Move((char *)&ignored, sizeof(float));
       }
 
       LGALLOC_POP_CREDIT();
-
-      // New for 3.1, store Large Door Size.
-      float ignored;
-      pTagFile->Move((char *)&ignored, sizeof(float));
    }
 #ifndef SHIP
    else
@@ -5649,6 +5880,19 @@ void AIPathFindWrite(ITagFile * pTagFile)
       return;
 #endif
 
+   // The current writer deliberately remains AIPATH 3.3.  Never truncate a
+   // widened runtime database into that format; a retained 3.4 source block
+   // is replayed by the database compatibility layer instead.
+   if (g_AIPathDB.m_nCells > LEGACY_AIPATH_INDEX_LIMIT ||
+       g_AIPathDB.m_nPlanes > LEGACY_AIPATH_INDEX_LIMIT ||
+       g_AIPathDB.m_nVertices > LEGACY_AIPATH_INDEX_LIMIT ||
+       g_AIPathDB.m_nLinks > LEGACY_AIPATH_INDEX_LIMIT ||
+       g_AIPathDB.m_nCellVertices > LEGACY_AIPATH_INDEX_LIMIT)
+   {
+      Warning(("AIPATH 3.3 writer refused a database requiring 32-bit indices\n"));
+      return;
+   }
+
    if (!OpenPathTagFile(pTagFile))
       return;
 
@@ -5659,32 +5903,9 @@ void AIPathFindWrite(ITagFile * pTagFile)
       int obsolete;
       pTagFile->Move((char*)&obsolete, sizeof(int));
 
-      if (g_AIPathDB.m_nCells >= MAX_CELLS)
-      {
-         Warning (("g_AIPathDB.m_nCells is really large! Setting to 0\n"));
-         g_AIPathDB.m_nCells = 0;
-      }
-
-      if (g_AIPathDB.m_nVertices >= MAX_VERTICES)
-      {
-         Warning (("g_AIPathDB.m_nVertices is really large! Setting to 0\n"));
-         g_AIPathDB.m_nVertices = 0;
-      }
-
-      if (g_AIPathDB.m_nLinks >= MAX_CELL2CELL_LINKS)
-      {
-         Warning (("g_AIPathDB.m_nLinks is really large! Setting to 0\n"));
-         g_AIPathDB.m_nLinks = 0;
-      }
-
-      if (g_AIPathDB.m_nCellVertices >= MAX_CELL2VERTEX_LINKS)
-      {
-         Warning (("g_AIPathDB.m_nCellVertices is really large! Setting to 0\n"));
-         g_AIPathDB.m_nCellVertices = 0;
-      }
-
       pTagFile->Move((char*)&g_AIPathDB.m_nCells, sizeof(tAIPathCellID));
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Cells), sizeof(sAIPathCell) * (g_AIPathDB.m_nCells+1));
+      WritePathCells33(pTagFile, g_AIPathDB.m_Cells.AsPointer(),
+                       g_AIPathDB.m_nCells + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nPlanes, sizeof(tAIPathCellID));
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Planes), sizeof(sAIPathCellPlane) * (g_AIPathDB.m_nPlanes+1));
@@ -5693,7 +5914,8 @@ void AIPathFindWrite(ITagFile * pTagFile)
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Vertices), sizeof(sAIPathVertex) * (g_AIPathDB.m_nVertices+1));
 
       pTagFile->Move((char*)&g_AIPathDB.m_nLinks, sizeof(tAIPathCell2CellLinkID));
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Links), sizeof(sAIPathCellLink) * (g_AIPathDB.m_nLinks+1));
+      WritePathLinks33(pTagFile, g_AIPathDB.m_Links.AsPointer(),
+                       g_AIPathDB.m_nLinks + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCellVertices, sizeof(tAIPathCell2VertexLinkID));
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellVertices), sizeof(sAIPathCell2VertexLink) * (g_AIPathDB.m_nCellVertices+1));

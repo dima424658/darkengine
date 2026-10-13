@@ -22,6 +22,7 @@
 
 #include <objlight.h>
 #include <animlgts.h>
+#include <darklimit.h>
 
 // clear our array positions
 EXTERN void AnimLightClear(void);
@@ -57,7 +58,7 @@ EXTERN BOOL AnimLightUpdateTimer(sAnimLight *light, long time_change);
 // I had to double this data structure so that in non-optimized
 // levels (where cell counts are pretty high) things would still
 // come out right
-#define MAX_ANIM_LIGHT_TO_CELLS 16384
+#define MAX_ANIM_LIGHT_TO_CELLS DARK_LIMIT_RUNTIME_ANIM_LIGHT_CELL_PAIRS
 
 EXTERN int g_iCurAnimLightToCell;
 EXTERN sAnimLightToCell g_aAnimLightToCell[MAX_ANIM_LIGHT_TO_CELLS];

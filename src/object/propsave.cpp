@@ -14,11 +14,13 @@
 #include <config.h>
 #include <cfgdbg.h>
 #include <objdb.h>
+#include <dbfile.h>
 
 #include <lazyagg.h>
 
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 #include <mprintf.h>
 
 // Must be last header 
@@ -56,20 +58,38 @@ struct ObjHeader
 #define MINOR_2_VFUNC(minor)     ((minor) & 0xFFFF)
 #define MINOR_2_PROP(minor)      ((minor) >> 16)
 
+static TagFileTag property_tag(const sPropertyDesc* desc)
+{
+   TagFileTag tag = { PROPERTY_TAG_PREFIX };
+   strncat(tag.label,desc->name,sizeof(tag.label)-strlen(tag.label)-1);
+   tag.label[sizeof(tag.label)-1] = '\0';
+   return tag;
+}
+
 static BOOL setup_file(const sPropertyDesc* desc, ITagFile* file, uint& version)
 {
-   TagFileTag tag = { PROPERTY_TAG_PREFIX } ;
-   
-   // build the tag
-   strncat(tag.label,desc->name,sizeof(tag.label)-strlen(tag.label)-1);
-   
-   tag.label[sizeof(tag.label)-1] = '\0';
+   TagFileTag tag = property_tag(desc);
 
+   if (file->OpenMode() == kTagOpenWrite && dbCompatibilityUseRawTag(&tag))
+      return FALSE;
+
+   const uint maxValueVersion = version;
    TagVersion v = { PROPERTY_MAJOR_VERSION, MAKE_MINOR_VERSION(desc->version,version)};
    TagVersion thisver = v;
    BOOL retval = file->OpenBlock(&tag,&v) == S_OK;
 
    version = MINOR_2_VFUNC(v.minor);
+
+   // OpenBlock deliberately exposes newer input.  This property codec now
+   // makes the acceptance decision using its own declared read ceiling.
+   if (retval && file->OpenMode() == kTagOpenRead &&
+       version > maxValueVersion)
+   {
+      ConfigSpew("prop_save_spew",("Unsupported value version %u for %s (max %u)\n",
+                                   version,desc->name,maxValueVersion));
+      file->CloseBlock();
+      return FALSE;
+   }
 
    if (!VersionNumsEqual(&v,&thisver))
    {
@@ -93,6 +113,16 @@ static BOOL setup_file(const sPropertyDesc* desc, ITagFile* file, uint& version)
 static void cleanup_file(ITagFile* file)
 {
    file->CloseBlock();
+}
+
+static uint store_read_version(IPropertyStore* store)
+{
+   IDataOps* ops = store->GetOps();
+   if (!ops)
+      return store->WriteVersion();
+   const uint version = ops->ReadVersion();
+   ops->Release();
+   return version;
 }
 
 #define WRITE(obj)  Write((char*)&obj,sizeof(obj))
@@ -129,6 +159,19 @@ void cStoredProperty::write_obj(ObjID obj, IDataOpsFile* file, eObjPartition )
    ulong start = file->Tell(); 
    // write the value
    mpStore->WriteObj(obj,file); 
+   TagFileTag tag = property_tag(&mDesc);
+   ulong tailSize = 0;
+   ulong originalSize = 0;
+   const char* tail = (const char*)dbCompatibilityGetRecordTail(
+      &tag,obj,&tailSize,&originalSize);
+   const ulong written = file->Tell() - start;
+   if (tail && tailSize && written < originalSize)
+   {
+      ulong missing = originalSize - written;
+      if (missing > tailSize)
+         missing = tailSize;
+      file->Write(tail + tailSize - missing,(int)missing);
+   }
    ulong end = file->Tell();
 
    // back patch header 
@@ -153,7 +196,8 @@ void cStoredProperty::Save(ITagFile* file, eObjPartition partition)
       return;
 
    uint version = mpStore->WriteVersion();
-   setup_file(&mDesc,file,version);
+   if (!setup_file(&mDesc,file,version))
+      return;
 
    cDataOpsTagFile opfile(file); 
 
@@ -200,17 +244,33 @@ void cStoredProperty::read_obj(IDataOpsFile* file, eObjPartition partition, uint
    file->READ(header);
    ulong target = file->Tell() + header.len;
 
+   BOOL decoded = FALSE;
+   ObjID loadedObj = header.obj;
    if (gpObjSys->IsObjLoadPartition(header.obj,partition))
    {
       header.obj = gpObjSys->RemapOnLoad(header.obj); 
+      loadedObj = header.obj;
       if (gpObjSys->Exists(header.obj))
       {
          ConfigSpew("prop_save_spew",("Loading %s property for object %d\n",mDesc.name,header.obj));
-         mpStore->ReadObj(header.obj,file,version); 
+         decoded = SUCCEEDED(mpStore->ReadObj(header.obj,file,version));
       }
       else 
       {
          Warning(("Trying to load property %s for nonexistent object %d\n",mDesc.name,header.obj));
+      }
+   }
+
+   const ulong current = file->Tell();
+   if (decoded && current < target)
+   {
+      const ulong tailSize = target - current;
+      std::vector<char> tail(tailSize);
+      if (file->Read(tail.data(),(int)tailSize) == (long)tailSize)
+      {
+         TagFileTag tag = property_tag(&mDesc);
+         dbCompatibilityPreserveRecordTail(&tag,loadedObj,
+                                           tail.data(),tailSize,header.len);
       }
    }
 
@@ -224,9 +284,17 @@ void cStoredProperty::Load(ITagFile* file, eObjPartition partition)
    if (mDesc.flags & kPropertyTransient)
       return;
 
-   uint version = mpStore->WriteVersion(); 
+   uint version = store_read_version(mpStore);
    if (!setup_file(&mDesc,file,version))
       return;
+
+   if (version > (uint)mpStore->WriteVersion())
+   {
+      TagFileTag tag = property_tag(&mDesc);
+      dbCompatibilityMarkTag(&tag,kDBCompatPrefixDecoded,
+         "newer records decoded; original chunk retained for legacy writer");
+      dbCompatibilityRetainRawTag(&tag,NULL);
+   }
 
    cDataOpsTagFile opfile(file); 
 

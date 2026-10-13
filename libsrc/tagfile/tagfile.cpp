@@ -21,6 +21,23 @@ static constexpr TagVersion MyVersion = { 0, 1 };
 
 static constexpr uchar Deadbeef[] = { 0xDE, 0xAD, 0xBE, 0xEF };
 
+static TagFileBlockObserver gBlockObserver = nullptr;
+static void* gBlockObserverContext = nullptr;
+
+void TagFileSetBlockObserver(TagFileBlockObserver observer, void* context)
+{
+	gBlockObserver = observer;
+	gBlockObserverContext = context;
+}
+
+void TagFileNotifyBlockObserver(ITagFile* file, const TagFileTag* tag,
+	const TagVersion* version, ulong size, ulong consumed, BOOL closing)
+{
+	if (gBlockObserver != nullptr)
+		gBlockObserver(file, tag, version, size, consumed, closing,
+			gBlockObserverContext);
+}
+
 //
 // Table
 //
@@ -421,14 +438,8 @@ TagFileRead::TagFileRead(const char* fn)
 		strcpy(buf, VersionNum2String(&MyVersion));
 		Warning(("Tag file %s is not current version.\nOld: %s, New: %s\n", fn, VersionNum2String(&header.version), buf));
 #endif 
-		// if it's NEWER, then discard
-		if (delta < 0)
-		{
-			Warning(("Version in file is new.  Discarding tag\n"));
-			fclose(file);
-			file = nullptr;
-			return;
-		}
+		// Do not discard a newer container. Individual block codecs decide
+		// compatibility after the complete directory has been inventoried.
 	}
 
 	// read in tag table
@@ -468,7 +479,8 @@ STDMETHODIMP_(HRESULT) TagFileRead::OpenBlock(const TagFileTag* tag, TagVersion*
 		return E_FAIL;
 	}
 
-	// compare versons
+	// The caller supplies its read ceiling in *version.  Inventory callers use
+	// UINT_MAX.UINT_MAX, while real codecs pass the newest version they own.
 	auto delta = VersionNumsCompare(version, &header.version);
 	if (delta != 0)
 	{
@@ -478,18 +490,19 @@ STDMETHODIMP_(HRESULT) TagFileRead::OpenBlock(const TagFileTag* tag, TagVersion*
 		ConfigSpew("tagfile_spew", ("Tag data %s is not current version.\nOld: %s, New: %s\n",
 			tag->label, VersionNum2String(&header.version), buf));
 #endif 
-
-		// if it's NEWER, then discard
 		if (delta < 0)
 		{
-			ConfigSpew("tagfile_spew", ("Version in file is newer.  Discarding tag\n"));
+			ConfigSpew("tagfile_spew", ("Version in file is newer than the codec read ceiling.\n"));
 			SetCurBlock(nullptr);
 			return E_FAIL;
 		}
 	}
 
 	*version = header.version;
+	blockVersion = header.version;
 	blockptr = 0;
+	TagFileNotifyBlockObserver(this, &block->key, &blockVersion,
+		static_cast<ulong>(block->size), 0, FALSE);
 
 	return S_OK;
 }
@@ -502,6 +515,8 @@ STDMETHODIMP_(HRESULT) TagFileRead::CloseBlock()
 		return E_FAIL;
 	}
 
+	TagFileNotifyBlockObserver(this, &block->key, &blockVersion,
+		static_cast<ulong>(block->size), blockptr, TRUE);
 	SetCurBlock(nullptr);
 	return S_OK;
 }

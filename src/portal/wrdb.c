@@ -19,7 +19,7 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-PortalCell *wr_cell[MAX_REGIONS];
+PortalCell *wr_cell[MAX_REGIONS + 1]; // final slot is the transient sky cell
 int wr_num_cells;
 
 //#define HACK_PORTAL

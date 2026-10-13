@@ -116,6 +116,7 @@ class cParticleGroupOps : public cClassDataOps<sOpsParticleGroup>
 { 
 public:
    STDMETHOD_(int, Version)() { return 1006; };
+   STDMETHOD_(int, ReadVersion)() { return 1008; };
 };
 
 class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
@@ -241,6 +242,14 @@ class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
       pg->pl.time_info = NULL;
       pg->pl.cell = NULL;
       pg->pl.render_data = NULL;
+      if (version >= 1008)
+      {
+         // NewDark 1.28's 1008 record inserts two serialized runtime-list
+         // words here.  They are rebuilt below, but still have to be consumed
+         // before reading the authored group velocity and every later field.
+         ulong newDarkRuntimeLists[2];
+         file->Read(newDarkRuntimeLists, sizeof(newDarkRuntimeLists));
+      }
       file->Read(&pg->velocity, sizeof(mxs_vector));
       file->Read(&pg->gravity, sizeof(mxs_vector));
 

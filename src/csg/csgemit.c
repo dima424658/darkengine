@@ -1189,8 +1189,8 @@ Warning(("Split large cell: %d polys, %d vertices\n", cur_poly, num_vertices));
 #define TJOINT_NORMAL_EPS   0.001
 #define TJOINT_PROJECT_EPS  0.001
 
-#define MAX_TJOINT_EDGES   65536     // jeez, have 1.5M of overhead
-#define MAX_TJOINT_DIRS    16384
+#define MAX_TJOINT_EDGES   DARK_LIMIT_RUNTIME_TJOINT_EDGES
+#define MAX_TJOINT_DIRS    DARK_LIMIT_RUNTIME_TJOINT_DIRS
 
 // direction an edge is pointing (normalized)
 static mxs_vector dirs[MAX_TJOINT_DIRS];

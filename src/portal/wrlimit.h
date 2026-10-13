@@ -7,7 +7,9 @@
 #ifndef __WRLIMIT_H
 #define __WRLIMIT_H
 
-#define MAX_REGIONS   28672
-#define MAX_ACTIVE_REGIONS  768
+#include <darklimit.h>
+
+#define MAX_REGIONS          DARK_LIMIT_RUNTIME_WR_CELLS
+#define MAX_ACTIVE_REGIONS   DARK_LIMIT_RUNTIME_ACTIVE_WR_CELLS
 
 #endif

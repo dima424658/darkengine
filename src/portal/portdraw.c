@@ -19,6 +19,7 @@
 #include <mprintf.h>
 #include <lgd3d.h>
 #include <tmpalloc.h>
+#include <darklimit.h>
 
 #include <portwatr.h>
 #include <portal_.h>
@@ -90,6 +91,8 @@ float dot_clamp=0.6f;
 r3s_point   *cur_ph;    // list of pointers to r3s_points for current pool
 Vector      *cur_pool;  // list of untransformed vectors
 PortalCell  *cur_cell;
+float *portal_current_wrext_u_base;
+float *portal_current_wrext_v_base;
 ushort      *cur_anim_light_index_list;
 extern int   cur_cell_num;
 
@@ -176,7 +179,7 @@ float light_mapping[256];
 float light_mapping_dithered[256];
 #endif
 extern int dither;
-int max_draw_polys = 1024;
+int max_draw_polys = DARK_LIMIT_RUNTIME_DRAWN_TERRAIN_POLYS;
 
 extern grs_bitmap *get_cached_surface(PortalPolygonRenderInfo *render,
                                       PortalLightMap *lt, grs_bitmap *texture,
@@ -894,6 +897,8 @@ void portal_preload_lightmaps(int cell)
    cur_ph = POINTS(r);
    cur_pool = r->vpool;
    cur_cell = r;
+   portal_current_wrext_u_base = portal_wrext_u_base[cell];
+   portal_current_wrext_v_base = portal_wrext_v_base[cell];
    cur_anim_light_index_list = r->anim_light_index_list;
    r_vertex_list = r->vertex_list;
    light_bitmask = r->changed_anim_light_bitmask;
@@ -971,6 +976,8 @@ void draw_region(int cell)
    cur_ph = POINTS(r);
    cur_pool = r->vpool;
    cur_cell = r;
+   portal_current_wrext_u_base = portal_wrext_u_base[cell];
+   portal_current_wrext_v_base = portal_wrext_v_base[cell];
    cur_anim_light_index_list = r->anim_light_index_list;
    r_vertex_list = r->vertex_list;
 
@@ -1178,6 +1185,8 @@ void draw_region_lgd3d(int cell)
    cur_ph = POINTS(r);
    cur_pool = r->vpool;
    cur_cell = r;
+   portal_current_wrext_u_base = portal_wrext_u_base[cell];
+   portal_current_wrext_v_base = portal_wrext_v_base[cell];
    r_vertex_list = r->vertex_list;
 
    r_clip = CLIP_DATA(r);
@@ -1361,6 +1370,8 @@ void draw_region_lightmap_only(int cell)
    cur_ph = POINTS(r);
    cur_pool = r->vpool;
    cur_cell = r;
+   portal_current_wrext_u_base = portal_wrext_u_base[cell];
+   portal_current_wrext_v_base = portal_wrext_v_base[cell];
    cur_anim_light_index_list = r->anim_light_index_list;
    r_vertex_list = r->vertex_list;
 

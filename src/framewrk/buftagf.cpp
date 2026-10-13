@@ -264,7 +264,7 @@ IMPLEMENT_UNAGGREGATABLE_SELF_DELETE(BufTagFileBase,ITagFile);
 
 
 BufTagFileBase::BufTagFileBase(const char* fname, const char* mode)
- : file(vfopen(fname,mode)),block(NULL) {} ; 
+ : file(vfopen(fname,mode)),block(NULL),blockVersion{0,0} {} ;
 
 ////////////////////////////////////////
 
@@ -616,14 +616,8 @@ BufTagFileRead::BufTagFileRead(const char* filename)
       Warning(("Tag file %s is not current version.\nOld: %s, New: %s\n",
                filename,VersionNum2String(&header.version),buf));
 #endif 
-      // if it's NEWER, then discard
-      if (delta < 0)
-      {
-         Warning(("Version in file is new.  Discarding tag\n"));
-         vfclose (file);
-         file = NULL;
-         return; 
-      }
+      // Do not discard a newer container. Individual block codecs decide
+      // compatibility after the complete directory has been inventoried.
    }
 
 
@@ -665,7 +659,8 @@ STDMETHODIMP BufTagFileRead::OpenBlock(const TagFileTag* tag, TagVersion* versio
       return E_FAIL;
    }
    
-   // compare versons
+   // The caller supplies its read ceiling.  A wildcard ceiling is used only
+   // by inventory code; normal codecs remain fail-closed for newer blocks.
    int delta = VersionNumsCompare(version,&header.version);
    if (delta != 0)
    {
@@ -675,18 +670,19 @@ STDMETHODIMP BufTagFileRead::OpenBlock(const TagFileTag* tag, TagVersion* versio
       ConfigSpew("tagfile_spew",("Tag data %s is not current version.\nOld: %s, New: %s\n",
                tag->label,VersionNum2String(&header.version),buf));
 #endif 
-
-      // if it's NEWER, then discard
       if (delta < 0)
       {
-         ConfigSpew("tagfile_spew",("Version in file is newer.  Discarding tag\n"));
+         ConfigSpew("tagfile_spew",("Version in file is newer than the codec read ceiling.\n"));
          SetCurBlock(NULL);
          return E_FAIL;
       }
    }
    
    *version = header.version;
+   blockVersion = header.version;
    blockptr = 0;
+   TagFileNotifyBlockObserver(this, &block->key, &blockVersion,
+                              block->size, 0, FALSE);
 
    return S_OK;
 }
@@ -700,6 +696,8 @@ STDMETHODIMP BufTagFileRead::CloseBlock()
       Warning(("BufTagFileRead::CloseBlock() No Block to Close\n"));
       return E_FAIL;
    }
+   TagFileNotifyBlockObserver(this, &block->key, &blockVersion,
+                              block->size, blockptr, TRUE);
    SetCurBlock(NULL);
    return S_OK;
 }

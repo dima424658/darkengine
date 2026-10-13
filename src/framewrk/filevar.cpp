@@ -14,6 +14,7 @@
 #include <loopapi.h>
 #include <dispbase.h>
 #include <dbasemsg.h>
+#include <dbfile.h>
 #include <loopmsg.h>
 #include <dispbase.h>
 #include <comtools.h>
@@ -50,6 +51,8 @@ static inline cFileVarList& VarList()
 
 cFileVarBase::cFileVarBase()
 {
+   mLoadedVersion.major = 0;
+   mLoadedVersion.minor = 0;
    VarList().Append(this); 
 }
 
@@ -87,9 +90,32 @@ BOOL cFileVarBase::SetupFile(ITagFile* file)
          return FALSE;
    }
 
-   TagVersion v = mDesc->version; 
+   if (file->OpenMode() == kTagOpenWrite &&
+       dbCompatibilityUseRawTag(&mDesc->tag))
+      return FALSE;
+
+   const TagVersion maxRead = ReadVersion();
+   TagVersion v = file->OpenMode() == kTagOpenRead ? maxRead : mDesc->version;
    if (!SUCCEEDED(file->OpenBlock(&mDesc->tag,&v)))
       return FALSE; 
+
+   if (file->OpenMode() == kTagOpenRead &&
+       VersionNumsCompare(&v,&maxRead) > 0)
+   {
+      Warning(("Unsupported file-variable version %u.%u for %s (max %u.%u)\n",
+               v.major,v.minor,mDesc->tag.label,maxRead.major,maxRead.minor));
+      file->CloseBlock();
+      return FALSE;
+   }
+   mLoadedVersion = v;
+
+   if (file->OpenMode() == kTagOpenRead &&
+       VersionNumsCompare(&v,&mDesc->version) > 0)
+   {
+      dbCompatibilityMarkTag(&mDesc->tag,kDBCompatPrefixDecoded,
+         "newer block decoded; original retained for legacy writer");
+      dbCompatibilityRetainRawTag(&mDesc->tag,NULL);
+   }
 
    if (VersionNumsCompare(&v,&mDesc->last_good_version) < 0)
    {
@@ -117,7 +143,7 @@ void cFileVarBase::DatabaseMsg(ulong msg, ITagFile* file)
          if (SetupFile(file))
          {
             ConfigSpew("filevar_spew",("Saving %s\n",mDesc->friendly_name)); 
-            file->Write((char*)mBlock,mSize); 
+            WriteBlock(file);
             CleanupFile(file); 
          }
          break; 
@@ -126,7 +152,7 @@ void cFileVarBase::DatabaseMsg(ulong msg, ITagFile* file)
          if (SetupFile(file))
          {
             ConfigSpew("filevar_spew",("Loading %s\n",mDesc->friendly_name)); 
-            file->Read((char*)mBlock,mSize); 
+            ReadBlock(file,mLoadedVersion);
             CleanupFile(file); 
          }
          break; 

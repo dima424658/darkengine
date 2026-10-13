@@ -54,6 +54,7 @@
 #include <sdesbase.h>
 #include <sdesedit.h>
 #include <sdesc.h>
+#include <darklimit.h>
 
 #include <litprop.h> //zb
 #include <litdbg.h>
@@ -71,7 +72,7 @@ EXTERN mls_multi_light light_this[];
 
 // These are in Portal.c.  It's a little bit curious that we're
 // duplicating the constant.
-#define MAX_LIT_CELLS 512
+#define MAX_LIT_CELLS DARK_LIMIT_RUNTIME_LIGHT_CELLS
 EXTERN int lit_cell[MAX_LIT_CELLS];
 EXTERN int num_lit;
 EXTERN int num_culled;

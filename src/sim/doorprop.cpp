@@ -170,6 +170,7 @@ class cRotDoorOps : public cClassDataOps<sRotDoorProp>
 {
 public:
    STDMETHOD_(int,Version)();
+   STDMETHOD_(int,ReadVersion)() { return 1003; };
    STDMETHOD(Read)(sDatum* dat, IDataOpsFile* file, int version);
 };
 
@@ -213,6 +214,14 @@ STDMETHODIMP cRotDoorOps::Read(sDatum* pdat, IDataOpsFile* file, int v)
    file->Read(&pRotDoorProp->base_closed_location, sizeof(mxs_vector));
    file->Read(&pRotDoorProp->base_open_location, sizeof(mxs_vector));
    file->Read(&pRotDoorProp->base_location, sizeof(mxs_vector));
+   if (v >= 1003)
+   {
+      // NewDark inserts three additional floats before the legacy door
+      // orientation fields.  Thief 2 does not use them, but it must consume
+      // them so every field that follows retains its original meaning.
+      mxs_vector newDarkExtension;
+      file->Read(&newDarkExtension, sizeof(newDarkExtension));
+   }
    file->Read(&pRotDoorProp->base_angle, sizeof(mxs_angvec));
    file->Read(&pRotDoorProp->base, sizeof(mxs_real));
    file->Read(&pRotDoorProp->room1, sizeof(int));
@@ -446,6 +455,7 @@ class cTransDoorOps : public cClassDataOps<sTransDoorProp>
 {
 public:
    STDMETHOD_(int,Version)();
+   STDMETHOD_(int,ReadVersion)() { return 1002; };
    STDMETHOD(Read)(sDatum* dat, IDataOpsFile* file, int version);
 };
 
@@ -489,6 +499,13 @@ STDMETHODIMP cTransDoorOps::Read(sDatum* pdat, IDataOpsFile* file, int v)
    file->Read(&pTransDoorProp->base_closed_location, sizeof(mxs_vector));
    file->Read(&pTransDoorProp->base_open_location, sizeof(mxs_vector));
    file->Read(&pTransDoorProp->base_location, sizeof(mxs_vector));
+   if (v >= 1002)
+   {
+      // See cRotDoorOps::Read.  NewDark made the same insertion in the
+      // translating-door record one format version earlier.
+      mxs_vector newDarkExtension;
+      file->Read(&newDarkExtension, sizeof(newDarkExtension));
+   }
    file->Read(&pTransDoorProp->base_angle, sizeof(mxs_angvec));
    file->Read(&pTransDoorProp->base, sizeof(mxs_real));
    file->Read(&pTransDoorProp->room1, sizeof(int));

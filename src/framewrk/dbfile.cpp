@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <vector>
 
 #include <config.h>
 
@@ -53,6 +54,317 @@ static char gCurrGameFile[256] = "";
 static char gCurrMapFile[256] = "";
 
 static char gCurrFilename[256]; // so people who want to query can find out
+
+struct sCompatibilityChunk
+{
+   ITagFile* source;
+   TagFileTag tag;
+   TagVersion version;
+   ulong filetype;
+   ulong size;
+   ulong tailOffset;
+   eDBCompatibilityStatus status;
+   BOOL retainRaw;
+   BOOL hasRecordTails;
+   char detail[80];
+   std::vector<char> bytes;
+};
+
+static std::vector<sCompatibilityChunk> gCompatibilityChunks;
+static std::vector<ITagFile*> gCompatibilitySources;
+static ITagFile* gCompatibilitySource = NULL;
+static ulong gCompatibilityFiletype = 0;
+static ulong gCompatibilitySaveMask = 0;
+
+struct sCompatibilityRecordTail
+{
+   ITagFile* source;
+   TagFileTag tag;
+   ulong filetype;
+   int object;
+   ulong recordSize;
+   std::vector<char> bytes;
+};
+
+static std::vector<sCompatibilityRecordTail> gCompatibilityRecordTails;
+
+static void clear_compatibility_state()
+{
+   for (size_t i = 0; i < gCompatibilitySources.size(); ++i)
+      gCompatibilitySources[i]->Release();
+   gCompatibilitySources.clear();
+   gCompatibilityChunks.clear();
+   gCompatibilityRecordTails.clear();
+}
+
+static const char* compatibility_status_name(eDBCompatibilityStatus status)
+{
+   switch (status)
+   {
+      case kDBCompatDecoded:       return "decoded";
+      case kDBCompatPrefixDecoded: return "prefix-decoded";
+      case kDBCompatRawPreserved:  return "raw-preserved";
+      default:                     return "unsupported";
+   }
+}
+
+static sCompatibilityChunk* find_compatibility_chunk(const TagFileTag* tag)
+{
+   for (int i = (int)gCompatibilityChunks.size() - 1; i >= 0; --i)
+   {
+      sCompatibilityChunk& chunk = gCompatibilityChunks[i];
+      if (!strcmp(chunk.tag.label,tag->label) &&
+          ((!gCompatibilitySaveMask && chunk.source == gCompatibilitySource &&
+            (chunk.filetype & gCompatibilityFiletype)) ||
+           (gCompatibilitySaveMask && (chunk.filetype & gCompatibilitySaveMask))))
+         return &chunk;
+   }
+   return NULL;
+}
+
+void dbCompatibilityMarkTag(const TagFileTag* tag,
+                            eDBCompatibilityStatus status,
+                            const char* detail)
+{
+   sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
+   if (!chunk)
+      return;
+   chunk->status = status;
+   if (detail)
+   {
+      strncpy(chunk->detail,detail,sizeof(chunk->detail));
+      chunk->detail[sizeof(chunk->detail)-1] = '\0';
+   }
+}
+
+void dbCompatibilityRetainRawTag(const TagFileTag* tag, const char* detail)
+{
+   sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
+   if (!chunk)
+      return;
+   chunk->retainRaw = TRUE;
+   if (detail)
+   {
+      strncpy(chunk->detail,detail,sizeof(chunk->detail));
+      chunk->detail[sizeof(chunk->detail)-1] = '\0';
+   }
+}
+
+BOOL dbCompatibilityUseRawTag(const TagFileTag* tag)
+{
+   sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
+   return chunk && (chunk->retainRaw ||
+                    chunk->status == kDBCompatRawPreserved ||
+                    (chunk->status == kDBCompatPrefixDecoded &&
+                     !chunk->hasRecordTails)) &&
+          !chunk->bytes.empty();
+}
+
+void dbCompatibilityPreserveRecordTail(const TagFileTag* tag, int object,
+                                       const void* bytes, ulong size,
+                                       ulong recordSize)
+{
+#ifdef EDITOR
+   if (!size || !gCompatibilitySource)
+      return;
+   sCompatibilityRecordTail tail = {};
+   tail.source = gCompatibilitySource;
+   tail.tag = *tag;
+   tail.filetype = gCompatibilityFiletype;
+   tail.object = object;
+   tail.recordSize = recordSize;
+   tail.bytes.resize(size);
+   memcpy(tail.bytes.data(),bytes,size);
+   gCompatibilityRecordTails.push_back(tail);
+   sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
+   if (chunk)
+      chunk->hasRecordTails = TRUE;
+   dbCompatibilityMarkTag(tag,kDBCompatPrefixDecoded,
+                          "record extensions retained for round-trip");
+#endif
+}
+
+const void* dbCompatibilityGetRecordTail(const TagFileTag* tag, int object,
+                                         ulong* size, ulong* recordSize)
+{
+   if (size)
+      *size = 0;
+   if (recordSize)
+      *recordSize = 0;
+#ifdef EDITOR
+   for (int i = (int)gCompatibilityRecordTails.size() - 1; i >= 0; --i)
+   {
+      const sCompatibilityRecordTail& tail = gCompatibilityRecordTails[i];
+      if (tail.object == object && !strcmp(tail.tag.label,tag->label) &&
+          (tail.filetype & gCompatibilitySaveMask))
+      {
+         if (size)
+            *size = (ulong)tail.bytes.size();
+         if (recordSize)
+            *recordSize = tail.recordSize;
+         return tail.bytes.data();
+      }
+   }
+#endif
+   return NULL;
+}
+
+static void LGAPI compatibility_block_observer(ITagFile* file,
+                                                const TagFileTag* tag,
+                                                const TagVersion*,
+                                                ulong size,
+                                                ulong consumed,
+                                                BOOL closing,
+                                                void*)
+{
+   sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
+   if (!chunk)
+      return;
+
+   if (file->OpenMode() == kTagOpenWrite)
+   {
+      // Read-only prefixes use the retained block; property records with
+      // preserved suffixes are allowed to use their normal writer.
+      return;
+   }
+
+   if (!closing)
+   {
+      chunk->status = kDBCompatDecoded;
+      chunk->tailOffset = size;
+   }
+   else if (chunk->status == kDBCompatRawPreserved ||
+            chunk->status == kDBCompatUnsupported)
+   {
+      // A codec made an explicit classification.  Do not downgrade it merely
+      // because it inspected a prefix before deciding the block was unsafe.
+   }
+   else if (consumed == 0 && size != 0)
+   {
+#ifdef EDITOR
+      chunk->status = kDBCompatRawPreserved;
+#else
+      chunk->status = kDBCompatUnsupported;
+#endif
+      chunk->tailOffset = 0;
+   }
+   else if (consumed < size)
+   {
+      chunk->status = kDBCompatPrefixDecoded;
+      chunk->tailOffset = consumed;
+   }
+}
+
+static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
+{
+   cAutoIPtr<ITagFileIter> iter = file->Iterate();
+   if (!iter)
+      return;
+
+   BOOL retained = FALSE;
+   for (size_t i = 0; i < gCompatibilitySources.size(); ++i)
+      if (gCompatibilitySources[i] == file)
+         retained = TRUE;
+   if (!retained)
+   {
+      file->AddRef();
+      gCompatibilitySources.push_back(file);
+   }
+
+   TagFileSetBlockObserver(NULL,NULL);
+   for (iter->Start(); !iter->Done(); iter->Next())
+   {
+      const TagFileTag* tag = iter->Tag();
+      BOOL merged = FALSE;
+      for (size_t i = 0; i < gCompatibilityChunks.size(); ++i)
+      {
+         if (gCompatibilityChunks[i].source == file &&
+             !strcmp(gCompatibilityChunks[i].tag.label,tag->label))
+         {
+            gCompatibilityChunks[i].filetype |= filetype;
+            merged = TRUE;
+            break;
+         }
+      }
+      if (merged)
+         continue;
+
+      sCompatibilityChunk chunk = {};
+      chunk.source = file;
+      chunk.tag = *tag;
+      chunk.filetype = filetype;
+      chunk.size = file->BlockSize(tag);
+#ifdef EDITOR
+      chunk.status = kDBCompatRawPreserved;
+      chunk.bytes.resize(chunk.size);
+#else
+      chunk.status = kDBCompatUnsupported;
+#endif
+      // VersionNumsCompare is a historical subtract-based comparator; using
+      // UINT_MAX would wrap its result back to -1.  INT_MAX is still an
+      // effective wildcard for persisted versions and remains ordered.
+      TagVersion version = { 0x7fffffff, 0x7fffffff };
+      if (SUCCEEDED(file->OpenBlock(tag,&version)))
+      {
+         chunk.version = version;
+#ifdef EDITOR
+         if (chunk.size)
+            file->Read(chunk.bytes.data(),chunk.size);
+#endif
+         file->CloseBlock();
+      }
+      gCompatibilityChunks.push_back(chunk);
+   }
+}
+
+static void report_compatibility_chunks(const char* phase)
+{
+   FILE* report = fopen("mission_compatibility.log","a");
+   if (report)
+      fprintf(report,"Compatibility report: %s\n",phase);
+   mprintf("Compatibility report: %s\n",phase);
+   for (size_t i = 0; i < gCompatibilityChunks.size(); ++i)
+   {
+      const sCompatibilityChunk& chunk = gCompatibilityChunks[i];
+      if (chunk.source != gCompatibilitySource ||
+          !(chunk.filetype & gCompatibilityFiletype))
+         continue;
+      mprintf("  %-12s %u.%u %-14s %lu bytes%s%s\n",
+              chunk.tag.label,chunk.version.major,chunk.version.minor,
+              compatibility_status_name(chunk.status),chunk.size,
+              chunk.detail[0] ? " - " : "",chunk.detail);
+      if (report)
+         fprintf(report,"  %-12s %u.%u %-14s %lu bytes%s%s\n",
+                 chunk.tag.label,chunk.version.major,chunk.version.minor,
+                 compatibility_status_name(chunk.status),chunk.size,
+                 chunk.detail[0] ? " - " : "",chunk.detail);
+   }
+   if (report)
+   {
+      fputc('\n',report);
+      fclose(report);
+   }
+}
+
+static void replay_compatibility_chunks(ITagFile* file, ulong filetype)
+{
+#ifdef EDITOR
+   for (int i = (int)gCompatibilityChunks.size() - 1; i >= 0; --i)
+   {
+      const sCompatibilityChunk& chunk = gCompatibilityChunks[i];
+      if (!(chunk.filetype & filetype) || chunk.bytes.empty() ||
+          file->BlockSize(&chunk.tag) != kTagNoSuchBlock)
+         continue;
+      TagVersion version = chunk.version;
+      if (SUCCEEDED(file->OpenBlock(&chunk.tag,&version)))
+      {
+         if (!chunk.bytes.empty())
+            file->Write(chunk.bytes.data(),(int)chunk.bytes.size());
+         file->CloseBlock();
+      }
+   }
+#endif
+}
 
 // We count the files that get loaded, from the reset on up. This is mainly
 // needed for networking, to have an easy way to synchronize which objects
@@ -112,10 +424,24 @@ static void munge_path(char* fullname, char* filename)
 
 static BOOL find_for_load(char* fullname, char* filename)
 {
-   if (find_file_in_config_path(fullname,filename,DB_FILE_DIR_VAR))
+   // Preserve explicit absolute paths without allowing the implicit working
+   // directory probe used by the legacy helper for ordinary relative names.
+   if (is_full_path(filename))
+   {
+      return find_file_in_config_path(fullname,filename,DB_FILE_DIR_VAR);
+   }
+
+   if (find_file_in_config_path_only(fullname,filename,DB_FILE_DIR_VAR))
+   {
       return TRUE;
-   if (find_file_in_config_path(fullname,filename,LOAD_PATH_VAR))
+   }
+   // load_path is the resolved content-priority list (uber mod, FM, normal
+   // mods, retail).  Do not let the process working directory jump ahead of
+   // it: that would make a retail Miss1.mis mask a configured replacement.
+   if (find_file_in_config_path_only(fullname,filename,LOAD_PATH_VAR))
+   {
       return TRUE;
+   }
    return FALSE;
 }
 
@@ -408,8 +734,13 @@ edbFiletype dbSaveTagFile(ITagFile* file, edbFiletype filetype)
    if (!(filetype & kFiletypeMAP))
       write_file_ref_tag(file,kFiletypeMAP,strip_pathname(gCurrMapFile));
 
+   gCompatibilitySaveMask = filetype;
+   TagFileSetBlockObserver(compatibility_block_observer,NULL);
    DispatchData msg = { filetype | kDatabaseSave, file };
    DispatchMsg(kMsgDatabase,&msg);
+   TagFileSetBlockObserver(NULL,NULL);
+   replay_compatibility_chunks(file,filetype);
+   gCompatibilitySaveMask = 0;
    
    return filetype;
 }
@@ -482,6 +813,8 @@ edbFiletype dbLoadTagFile(ITagFile* file, edbFiletype loadtype)
 {
    // We are starting from the ground up:
    gCurrFilenum = 0;
+   TagFileSetBlockObserver(NULL,NULL);
+   clear_compatibility_state();
 
    // Send a reset message
    DispatchData msg = { kDatabaseReset, NULL } ;
@@ -625,8 +958,17 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
       }
 
       // now use_file is valid.  Load the our piece from it
+      inventory_compatibility_chunks(use_file,piece);
+      gCompatibilitySource = use_file;
+      gCompatibilityFiletype = piece;
+      dbCompatibilityMarkTag(&dbTypeTag,kDBCompatDecoded,"database header");
+      TagFileSetBlockObserver(compatibility_block_observer,NULL);
       DispatchData msg = { (uint)(kDatabaseLoad | piece), use_file};
       DispatchMsg(kMsgDatabase,&msg);
+      TagFileSetBlockObserver(NULL,NULL);
+      report_compatibility_chunks(phase_names[i]);
+      gCompatibilitySource = NULL;
+      gCompatibilityFiletype = 0;
 
       SafeRelease(use_file);
 
@@ -654,6 +996,8 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
 void dbReset(void)
 {
    gCurrFilenum = 0;
+   TagFileSetBlockObserver(NULL,NULL);
+   clear_compatibility_state();
 
    DispatchData msg = { kDatabaseReset, NULL};
    DispatchMsg(kMsgDatabase,&msg);

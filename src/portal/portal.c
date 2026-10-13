@@ -37,6 +37,7 @@
 #include <bspsphr.h>
 #include <osysbase.h>
 #include <wrlimit.h>
+#include <darklimit.h>
 
 #include <refsys.h>
 
@@ -72,7 +73,7 @@ static FILE *trav_file;
 // allocates one visibility record for every visible cell reference to it.
 // A wide editor viewport can therefore exhaust the original 4096 records
 // even though there are far fewer than 4096 distinct objects in the mission.
-#define MAX_VISIBLE_OBJECTS 16384
+#define MAX_VISIBLE_OBJECTS DARK_LIMIT_RUNTIME_VISIBLE_OBJECTS
 
   // does lighting compute light maps or at vertices?
   // We probably don't really support vertex lighting anymore
@@ -1398,7 +1399,9 @@ void portal_traverse_scene(int cell)
    {
       pCell = WR_CELL(active_regions[i]);
       for (j = 0; (j < pCell->num_render_polys) && !bRenderSky; j++)
-         if ((!pCell->render_list[j].texture_id) || (pCell->render_list[j].texture_id >= BACKHACK_IDX))
+         if ((!pCell->render_list[j].texture_id) ||
+             ((pCell->render_list[j].texture_id >= BACKHACK_IDX) &&
+              (pCell->render_list[j].texture_id < TEXMEM_RESERVED_LIMIT)))
             bRenderSky = TRUE;
    }
 
@@ -2117,7 +2120,7 @@ void portal_render_light(Position *pos, float zoom, float br,
    gr_pop_canvas();
 }
 
-#define MAX_LIT_CELLS 512
+#define MAX_LIT_CELLS DARK_LIMIT_RUNTIME_LIGHT_CELLS
 int lit_cell[MAX_LIT_CELLS], num_lit, num_culled;
 
 // store indexes of all cells reached in a given direction in lit_cell[]

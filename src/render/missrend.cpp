@@ -50,6 +50,18 @@ public:
    // Silly assignment operator 
    cRenderParams& operator =(const sMissionRenderParams& v) { *(sMissionRenderParams*)this = v; return *this; }; 
 
+protected:
+   // NewDark 2.0 retains the complete 1.0 prefix and appends renderer and
+   // motion-database fields.  Decode the engine-owned prefix while keeping
+   // the writer at 1.0; the compatibility layer preserves the tail.
+   virtual TagVersion ReadVersion() const
+   {
+      TagVersion version = { 2, 0 };
+      return version;
+   }
+
+public:
+
 
    void Update()
    {

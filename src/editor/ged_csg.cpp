@@ -728,6 +728,7 @@ Command gedcsg_keys[] =
 
    { "optimize", FUNC_VOID, optimize_level, "build optimized portalization" },
    { "portalize", FUNC_VOID, build_level, "recompute world terrain" },
+   { "world_size", FUNC_FLOAT, csg_set_world_size, "set world extent (1 through 2000)" },
    { "relight_level", FUNC_VOID, gedcsg_relight_level, "relight the level" },
    { "save_wr", FUNC_STRING, gedcsg_save_world_rep,"save world rep to file"},
    { "compress_br_ids", FUNC_VOID, ged_remap_brushes, "compact brush ids" },

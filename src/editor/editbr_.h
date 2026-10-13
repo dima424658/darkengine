@@ -15,6 +15,7 @@
 #include <editbrs.h>
 #include <gridsnap.h>
 #include <fix.h>
+#include <darklimit.h>
 
 // _editbr.h
 //  internals for edit brush
@@ -47,7 +48,11 @@ enum eEditBrushFlags
    kEBF_BeingDeleted  = 0x01,
 };
 
-#define EDITBR_MAX_FACES 12
+// NewDark widened the on-disk brush record without changing the BRLIST 1.0
+// envelope.  Keep this capacity in the codec/runtime structure: the fixed
+// record prefix is unchanged because txs is the trailing variable-length
+// member, while NewDark missions may legally contain up to 28 face records.
+#define EDITBR_MAX_FACES DARK_LIMIT_RUNTIME_BRUSH_FACES
 
 struct _editBrush
 {

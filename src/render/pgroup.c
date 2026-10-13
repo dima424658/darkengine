@@ -1979,6 +1979,12 @@ EXTERN void ObjRel2WorldBBox(ObjID obj,mxs_vector *bmin,mxs_vector *bmax);
 float GetParticleRadius(ObjID objID, int idx)
 {
    ParticleGroup *pg = ObjGetParticleGroup(objID);
+   // A mission can retain a particle model number while its ParticleGroup
+   // property is absent (notably while DromEd is rebuilding NewDark/FM
+   // properties).  The bbox accessors below already treat that as having no
+   // particle shape; make the radius query follow the same rule.
+   if (pg == NULL)
+      return 0.0f;
    if (USE_SCALE(pg))
       return pg->radius * pg->cur_scale;
    else

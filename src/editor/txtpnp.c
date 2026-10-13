@@ -239,11 +239,13 @@ static void txtPnP_TxtFrob(PnP_SliderOp op,Rect *where, int val, intptr_t data)
    {
       if ((val==-1)&&(face==0))
          texture=0;          // cant set to default if you are whole brush
-      if (val>=texmemGetMax())
+      if (TEXMEM_IS_RESERVED(val) && val != BACKHACK_IDX)
+         texture=BACKHACK_IDX;
+      else if (val>=texmemGetMax() && val>=TEXMEM_RESERVED_LIMIT)
       {
-         int mid=texmemGetMax()+((BACKHACK_IDX-texmemGetMax())/2);
-         if ((texture<mid)||(texture>=BACKHACK_IDX)) texture=BACKHACK_IDX;
-         else texture=texmemGetMax()-1;
+         texture=texmemGetMax()-1;
+         while (texture>0 && TEXMEM_IS_RESERVED(texture))
+            --texture;
       }
       txtPnP_setvars(txtPnP_br,TRUE);
    }
@@ -369,13 +371,13 @@ void Create_txtPnP(LGadRoot *root, Rect *bounds, editBrush *br)
    if (!config_is_defined("txt_click"))
    {
       pnpOwners[FROBS_TEXTURE]=
-         PnP_SliderInt(getRect(7),"Texture",-1,BACKHACK_IDX,1,&texture,txtPnP_TxtFrob,
+         PnP_SliderInt(getRect(7),"Texture",-1,TEXMEM_MAX-1,1,&texture,txtPnP_TxtFrob,
                        FROBS_TEXTURE,PNP_SLIDER_VSLIDE); // |PNP_SLIDER_CLICKS);
    }
    else
    {
       pnpOwners[FROBS_TEXTURE]=
-         PnP_SliderInt(getRect(7),"Texture",-1,BACKHACK_IDX,1,&texture,txtPnP_TxtFrob,
+         PnP_SliderInt(getRect(7),"Texture",-1,TEXMEM_MAX-1,1,&texture,txtPnP_TxtFrob,
                        FROBS_TEXTURE,PNP_SLIDER_VSLIDE|PNP_SLIDER_CLICKS);
    }
 }

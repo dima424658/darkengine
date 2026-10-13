@@ -114,9 +114,10 @@ protected:
    BufTagTableEntry* block;                  // current block
    VFILE * file;
    ulong blockptr;                        // file ptr within block
+   TagVersion blockVersion;               // version of the open read block
 
 public:
-   BufTagFileBase() :file(NULL),block(NULL) {} ;
+   BufTagFileBase() :file(NULL),block(NULL),blockVersion{0,0} {} ;
    BufTagFileBase(const char* fname, const char* mode);
    virtual ~BufTagFileBase();
 

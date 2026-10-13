@@ -24,6 +24,7 @@
 #include <matrix.h>
 #include <math.h>
 #include <wr.h>
+#include <darklimit.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -49,9 +50,9 @@ bool debug;
 
 //////////////////    STATIC LIMITS    //////////////////////
 
-#define MAX_GLOBAL_POINTS     (65536*2)  // 64*2*16K == 2^(6+1+4+10) = 2^21
-#define MAX_GLOBAL_PLANES     16384
-#define MAX_GLOBAL_RENDER     8000
+#define MAX_GLOBAL_POINTS     DARK_LIMIT_RUNTIME_GLOBAL_POINTS
+#define MAX_GLOBAL_PLANES     DARK_LIMIT_RUNTIME_GLOBAL_PLANES
+#define MAX_GLOBAL_RENDER     DARK_LIMIT_RUNTIME_GLOBAL_RENDER
 #define POINT_HASH            16
 
 //////////////////    BEHINDEDNESS     //////////////////////
@@ -666,7 +667,7 @@ PtrArray *freezePtrArray(TempPtrArray *t)
 typedef struct {
    mxs_vector u,v;           // 24
    mxs_real u_base, v_base;  // u&v values at projection of origin on plane
-   uchar texture_id;
+   ushort texture_id;
 } RenderData;
 
 RenderData render[MAX_GLOBAL_RENDER];
@@ -688,7 +689,7 @@ void emit_render_aspects(void)
 #define UV_EPSILON 0.05
 #define UV_ROUND   (UV_EPSILON/2)
 
-int FindRenderCore(uchar tex, mxs_vector *u, mxs_vector *v,
+int FindRenderCore(ushort tex, mxs_vector *u, mxs_vector *v,
                  mxs_real u_base, mxs_real v_base)
 {
    int i;
@@ -723,7 +724,7 @@ int FindRenderCore(uchar tex, mxs_vector *u, mxs_vector *v,
 // Convert u_base & v_base from the meaning in the
 // worldrep to the meaning above
 
-int FindRender(uchar tex, mxs_vector *u, mxs_vector *v,
+int FindRender(ushort tex, mxs_vector *u, mxs_vector *v,
                  Plane p, ushort u_base, ushort v_base, mxs_vector *anchor)
 {
    // project origin onto plane
