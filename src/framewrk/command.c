@@ -361,11 +361,162 @@ static bool help_text_contains(const char *text, const char *query,
    return FALSE;
 }
 
+enum eHelpGroupMask
+{
+   kHelpMission     = 1 << 0,
+   kHelpPlayer      = 1 << 1,
+   kHelpRender      = 1 << 2,
+   kHelpAI          = 1 << 3,
+   kHelpObjects     = 1 << 4,
+   kHelpPhysics     = 1 << 5,
+   kHelpScripts     = 1 << 6,
+   kHelpAudio       = 1 << 7,
+   kHelpSimulation  = 1 << 8,
+   kHelpNetwork     = 1 << 9,
+   kHelpDiagnostics = 1 << 10,
+   kHelpSystem      = 1 << 11
+};
+
+typedef struct sHelpGroup
+{
+   const char *name;
+   const char *description;
+   uint mask;
+} sHelpGroup;
+
+static const sHelpGroup help_groups[] =
+{
+   { "mission", "mission selection, loading, saving, and objectives", kHelpMission },
+   { "player", "player state, movement, inventory, weapons, and HUD", kHelpPlayer },
+   { "render", "rendering, lighting, textures, portals, sky, and display", kHelpRender },
+   { "ai", "AI state, senses, pathfinding, and behavior", kHelpAI },
+   { "objects", "objects, properties, links, traits, and containment", kHelpObjects },
+   { "physics", "physics, gravity, velocity, and collision", kHelpPhysics },
+   { "scripts", "scripts, messages, OSMs, and Squirrel", kHelpScripts },
+   { "audio", "sounds, schemas, music, and ambient audio", kHelpAudio },
+   { "simulation", "simulation, time, difficulty, and quest state", kHelpSimulation },
+   { "network", "networking and ghost state", kHelpNetwork },
+   { "debug", "diagnostics, reports, dumps, tests, and visualization", kHelpDiagnostics },
+   { "system", "console, bindings, configuration, history, and process control", kHelpSystem },
+   { "other", "uncategorized legacy commands", 0 }
+};
+
+static bool help_query_is(const char *query, int query_len, const char *text)
+{
+   int text_len = (int)strlen(text);
+   return query_len == text_len && !strnicmp(query, text, query_len);
+}
+
+static bool help_name_contains(const Command *cmd, const char *text)
+{
+   return help_text_contains(cmd->name, text, (int)strlen(text));
+}
+
+static uint help_command_group_mask(const Command *cmd)
+{
+   uint mask = 0;
+
+   if (help_name_contains(cmd, "mission") || help_name_contains(cmd, "miss_") ||
+       help_name_contains(cmd, "objective") || help_name_contains(cmd, "campaign") ||
+       help_name_contains(cmd, "save_game") || help_name_contains(cmd, "load_game"))
+      mask |= kHelpMission;
+   if (help_name_contains(cmd, "player") || help_name_contains(cmd, "plyr") ||
+       help_name_contains(cmd, "immunity") || help_name_contains(cmd, "flying") ||
+       help_name_contains(cmd, "invisible") || help_name_contains(cmd, "weapon") ||
+       help_name_contains(cmd, "inventory") || help_name_contains(cmd, "hud") ||
+       help_name_contains(cmd, "reticle") || help_name_contains(cmd, "frob"))
+      mask |= kHelpPlayer;
+   if (help_name_contains(cmd, "render") || help_name_contains(cmd, "rend_") ||
+       help_name_contains(cmd, "draw") || help_name_contains(cmd, "fog_") ||
+       help_name_contains(cmd, "light_") || help_name_contains(cmd, "texture") ||
+       help_name_contains(cmd, "tex_") || help_name_contains(cmd, "portal") ||
+       help_name_contains(cmd, "cell") || help_name_contains(cmd, "poly") ||
+       help_name_contains(cmd, "mip") || help_name_contains(cmd, "sky") ||
+       help_name_contains(cmd, "gamma") || help_name_contains(cmd, "screen"))
+      mask |= kHelpRender;
+   if (!strnicmp(cmd->name, "ai", 2) || help_name_contains(cmd, "_ai") ||
+       help_name_contains(cmd, "pathfind"))
+      mask |= kHelpAI;
+   if (help_name_contains(cmd, "obj") || help_name_contains(cmd, "prop") ||
+       help_name_contains(cmd, "link") || help_name_contains(cmd, "trait") ||
+       help_name_contains(cmd, "archetype") || help_name_contains(cmd, "metaprop") ||
+       help_name_contains(cmd, "contain"))
+      mask |= kHelpObjects;
+   if (help_name_contains(cmd, "phys") || help_name_contains(cmd, "gravity") ||
+       help_name_contains(cmd, "velocity") || help_name_contains(cmd, "collision"))
+      mask |= kHelpPhysics;
+   if (help_name_contains(cmd, "script") || help_name_contains(cmd, "scr_") ||
+       help_name_contains(cmd, "osm") || help_name_contains(cmd, "squirrel"))
+      mask |= kHelpScripts;
+   if (help_name_contains(cmd, "sound") || help_name_contains(cmd, "snd_") ||
+       help_name_contains(cmd, "schema") || help_name_contains(cmd, "music") ||
+       help_name_contains(cmd, "ambient"))
+      mask |= kHelpAudio;
+   if (help_name_contains(cmd, "sim_") || help_name_contains(cmd, "time") ||
+       help_name_contains(cmd, "clock") || help_name_contains(cmd, "difficulty") ||
+       help_name_contains(cmd, "quest"))
+      mask |= kHelpSimulation;
+   if (help_name_contains(cmd, "net_") || help_name_contains(cmd, "network") ||
+       help_name_contains(cmd, "ghost"))
+      mask |= kHelpNetwork;
+   if (help_name_contains(cmd, "debug") || help_name_contains(cmd, "dump") ||
+       help_name_contains(cmd, "spew") || help_name_contains(cmd, "stats") ||
+       help_name_contains(cmd, "report") || help_name_contains(cmd, "watch") ||
+       help_name_contains(cmd, "test") || help_name_contains(cmd, "show_"))
+      mask |= kHelpDiagnostics;
+   if (help_name_contains(cmd, "console") || help_name_contains(cmd, "help") ||
+       help_name_contains(cmd, "bind") || help_name_contains(cmd, "config") ||
+       help_name_contains(cmd, "history") || help_name_contains(cmd, "gamepad") ||
+       help_query_is(cmd->name, (int)strlen(cmd->name), "run") ||
+       help_query_is(cmd->name, (int)strlen(cmd->name), "quit") ||
+       help_query_is(cmd->name, (int)strlen(cmd->name), "exit"))
+      mask |= kHelpSystem;
+
+   return mask;
+}
+
+static const sHelpGroup *help_find_group(const char *query, int query_len)
+{
+   int i;
+   for (i = 0; i < (int)(sizeof(help_groups) / sizeof(help_groups[0])); ++i)
+      if (help_query_is(query, query_len, help_groups[i].name))
+         return &help_groups[i];
+
+   if (help_query_is(query, query_len, "rendering"))
+      return &help_groups[2];
+   if (help_query_is(query, query_len, "object"))
+      return &help_groups[4];
+   if (help_query_is(query, query_len, "script"))
+      return &help_groups[6];
+   if (help_query_is(query, query_len, "sound"))
+      return &help_groups[7];
+   if (help_query_is(query, query_len, "sim"))
+      return &help_groups[8];
+   return NULL;
+}
+
+static const char *help_command_type(const Command *cmd)
+{
+   return (cmd->type >= FUNC_VOID && cmd->type <= TOGGLE_INT)
+        ? type_name[cmd->type] : "unknown";
+}
+
+static void help_print_command(const Command *cmd)
+{
+   const char *type = help_command_type(cmd);
+   if (cmd->comment)
+      mprintf("%s (%s): %s\n", cmd->name, type, cmd->comment);
+   else
+      mprintf("%s (%s)\n", cmd->name, type);
+}
+
 static void help_commands(const char *s)
 {
    int matches = 0;
+   int j;
    const char *query = s;
    const char *query_end;
+   const sHelpGroup *group;
    int query_len;
 
    while (query && *query && isspace((unsigned char)*query))
@@ -391,26 +542,51 @@ static void help_commands(const char *s)
    }
 #endif
 
-#ifdef THIEF2_GAME
-   // Thief's PLAYTEST build exposes a large legacy registry. Lead with the
-   // useful families and keep the full context-filtered registry searchable.
    if (!query_len)
    {
-      mprintf("Gameplay console command families:\n");
-      mprintf("  Mission:  open_mission, list_missions\n");
-      mprintf("  Player:   immunity, flying, player_physics, invisible\n");
-      mprintf("  Inspect:  reticle, reticle_info (ret_info)\n");
-      mprintf("  Scripts:  list_scripts, debug_scripts\n");
-      mprintf("Legacy PLAYTEST commands are also active in this mode.\n");
-      mprintf("Use help <keyword> to search active names and descriptions.\n");
+      int i;
+      mprintf("Command groups:\n");
+      for (i = 0; i < (int)(sizeof(help_groups) / sizeof(help_groups[0])); ++i)
+         mprintf("  %-12s %s\n", help_groups[i].name,
+                 help_groups[i].description);
+      mprintf("Use help <group> to list that group.\n");
+      mprintf("Use help <keyword> to search names and descriptions.\n");
+      mprintf("Use help all only when you want the complete registry.\n");
       return;
    }
-#endif
+
+   group = help_find_group(query, query_len);
+   if (group || help_query_is(query, query_len, "all"))
+   {
+      bool all = help_query_is(query, query_len, "all");
+      if (all)
+         mprintf("All commands available in this mode:\n");
+      else
+         mprintf("%s commands:\n", group->name);
+
+      for (j = 0; j < command_list_size; ++j)
+      {
+         int i;
+         for (i = 0; i < command_count[j]; ++i)
+         {
+            Command *cmd = &command_list[j][i];
+            uint mask;
+            if (!(cmd->contexts & *command_context_ptr))
+               continue;
+            mask = help_command_group_mask(cmd);
+            if (!all && ((group->mask && !(mask & group->mask)) ||
+                         (!group->mask && mask)))
+               continue;
+            ++matches;
+            help_print_command(cmd);
+         }
+      }
+      mprintf("%d matching commands.\n", matches);
+      return;
+   }
 
    if (query_len)
    {
-      int j;
-
       for (j=0; j < command_list_size; ++j) 
       {
          Command* set = command_list[j];
@@ -420,49 +596,18 @@ static void help_commands(const char *s)
          for (i=0; i < count; ++i)
          {
             Command *cmd = &set[i];
-            const char *type = (cmd->type >= FUNC_VOID &&
-                                cmd->type <= TOGGLE_INT)
-                             ? type_name[cmd->type] : "unknown";
             if (!(set[i].contexts & *command_context_ptr))
                continue;
             if (!help_text_contains(cmd->name, query, query_len) &&
                 !help_text_contains(cmd->comment, query, query_len) &&
-                !help_text_contains(type, query, query_len))
+                !help_text_contains(help_command_type(cmd), query, query_len))
                continue;
 
             ++matches;
-            mprintf("%s ",cmd->name);
-            if (cmd->comment)
-               mprintf("(%s): %s\n", type, cmd->comment);
-            else
-               mprintf("(%s)\n", type);
+            help_print_command(cmd);
          }
 
       }
-   }  
-   else 
-   {
-      int j,i,cnt=0;
-      char holding_pen[21];
-      mprintf("Commands available in this mode:\n");
-      holding_pen[19]='\0';
-      holding_pen[20]='\0';
-      for (j=0; j < command_list_size; ++j)
-         for (i=0; i < command_count[j]; ++i)
-         {
-            if (!(command_list[j][i].contexts & *command_context_ptr))
-               continue;
-            strncpy(holding_pen,command_list[j][i].name,19);
-            ++matches;
-            if ((++cnt)&3)  // ie line 0,1,2...
-               mprintf("%020s", holding_pen);
-            else
-            {
-               holding_pen[18]='\0';  // replace final char with a \n for monolog
-               mprintf("%019s\n", holding_pen);
-            }
-         }
-      if (cnt&3) mprintf("\n"); // clean up with a return
    }
 
    if (!matches)
