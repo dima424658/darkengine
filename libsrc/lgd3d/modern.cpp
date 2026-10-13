@@ -24,7 +24,12 @@ void SynchD3D(void) {}
 static uchar g_palettes[MODERN_MAX_PALETTES][768];
 static uchar *g_textureClut = NULL;
 static ushort *g_alphaPalette = NULL;
-static BOOL g_wrap[2] = {FALSE, FALSE};
+// Dark's portal and model UVs routinely extend beyond the base texture and
+// rely on the primary texture stage repeating.  Starting stage zero clamped
+// turns every out-of-range surface into a stretched edge row/column until a
+// later effect happens to enable wrapping.  Lightmaps occupy an atlas, so the
+// secondary stage must remain clamped.
+static BOOL g_wrap[2] = {TRUE, FALSE};
 static BOOL g_smooth[2] = {TRUE, TRUE};
 static BOOL g_dither = FALSE, g_antialias = FALSE, g_shading = TRUE;
 static int g_chromaR = 255, g_chromaG = 0, g_chromaB = 255;

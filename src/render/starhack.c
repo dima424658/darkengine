@@ -161,8 +161,19 @@ void starfield_endframe(Position *campos, float zoom)
 {
    if (g_lgd3d && g_d3d_stars && g_zbuffer)
    {
+      // The z-buffered star pass runs after terrain and queued objects.  The
+      // object renderer leaves depth writes enabled, but its compare state is
+      // not part of this pass's contract.  Drawing with comparison disabled
+      // paints far-plane stars over walls, terrain, and opaque objects.
+      BOOL restore_zwrite = lgd3d_is_zwrite_on();
+      BOOL restore_zcompare = lgd3d_is_zcompare_on();
+
+      lgd3d_set_zwrite(FALSE);
+      lgd3d_set_zcompare(TRUE);
       StarSetPixFunc(lgd3d_pixfunc);
       starfield_renderframe(campos, zoom);
+      lgd3d_set_zcompare(restore_zcompare);
+      lgd3d_set_zwrite(restore_zwrite);
    }
    if ((!g_lgd3d) && (!g_span_sky))
    {
