@@ -22,6 +22,7 @@
 #include <keydefs.h>
 #include <metasnd.h>
 #include <diskfree.h>
+#include <contentctx.h>
 #include <drkdebrf.h>
 #include <mprintf.h>
 
@@ -58,10 +59,15 @@ public:
 
 const char* cDarkFilePanel::SlotFileName(int which)
 {
+   static char buf[DARK_CONTENT_MAX_PATH];
    if (which == kQuickSlot)
-      return SAVE_PATH "\\" QUICK_SAVE; 
-   static char buf[64]; 
-   sprintf(buf,"%s\\game%04d.sav",SAVE_PATH,which); 
+      DarkContentMakeSavePath(buf, sizeof(buf), QUICK_SAVE);
+   else
+   {
+      char name[32];
+      sprintf(name,"game%04d.sav",which);
+      DarkContentMakeSavePath(buf, sizeof(buf), name);
+   }
    return buf; 
 }
 
@@ -235,8 +241,6 @@ void cSavePanel::DoFileOp(int which)
       return;
    }
 
-   _mkdir(SAVE_PATH);
-
    ITagFile* file = TagFileOpen(fname,kTagOpenWrite); 
    HRESULT retval = E_FAIL; 
    if (file)
@@ -407,8 +411,10 @@ protected:
 
 const char* cLoadBndPanel::SlotFileName(int which)
 {
-   static char buf[64]; 
-   sprintf(buf,"%s\\cfg%04d.bnd",SAVE_PATH,which); 
+   static char buf[DARK_CONTENT_MAX_PATH];
+   char name[32];
+   sprintf(name,"cfg%04d.bnd",which);
+   DarkContentMakeSavePath(buf, sizeof(buf), name);
    return buf; 
 }
 
@@ -529,8 +535,10 @@ protected:
 
 const char* cSaveBndPanel::SlotFileName(int which)
 {
-   static char buf[64]; 
-   sprintf(buf,"%s\\cfg%04d.bnd",SAVE_PATH,which); 
+   static char buf[DARK_CONTENT_MAX_PATH];
+   char name[32];
+   sprintf(name,"cfg%04d.bnd",which);
+   DarkContentMakeSavePath(buf, sizeof(buf), name);
    return buf; 
 }
 
@@ -566,7 +574,6 @@ void cSaveBndPanel::DoFileOp(int which)
 {
    const char* fname = SlotFileName(which); 
 
-   _mkdir(SAVE_PATH);
    MessageNamed("saving"); 
 
    //get header

@@ -80,6 +80,7 @@
 #include <dyntex.h>
 #include <scrptne_.h>
 #include <random.h>
+#include <contentctx.h>
 
 #include <md.h>
 
@@ -368,8 +369,22 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    // config sys initializes NOW so that it can be used to create objects
    //
    config_init();
+
+   // NewDark treats cam_ext.cfg as installation-wide engine defaults and
+   // reads it before cam.cfg.  Use an ordinary low-priority file read here:
+   // config_load() is intentionally high priority and would incorrectly stop
+   // the user's cam.cfg values from overriding these defaults.
+   config_read_file("cam_ext.cfg", NULL);
    config_read_file(CONFIG_FILE,app_read_cfg);
 
+   // cam_mod.ini supplies NewDark-style FM and mod roots.  Parse the command
+   // line now as profile/FM selection must precede game.cfg and include lookup.
+   config_load("cam_mod.ini");
+   config_parse_commandline(g_argc,g_argv,NULL);
+
+   // The selected game profile must be visible while pick_game constructs
+   // aggregate members (notably the networking client).
+   DarkContentConfigureProfile();
    pick_game();
 
    // must come after pick_game
@@ -388,10 +403,17 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    }
 #endif 
 
+   // FM-local configuration supplies UI rectangle maps, object limits, and
+   // renderer options.  It must override the retail game configuration.
+   DarkContentLoadFMConfig(g_argc, g_argv);
+
+   // install.cfg and user/editor includes define the base resource paths.
+   // Apply FM/mod precedence only after those inputs are available.
+   DarkContentConfigure(g_argc,g_argv);
+
    // Keep runner-specific video preferences outside the retail data folder.
    // Command-line values are parsed afterward and therefore still win.
    LoadUserVideoSettings();
-
    config_parse_commandline(g_argc,g_argv,NULL);
 
    AtExit(AppShutdownConfig);

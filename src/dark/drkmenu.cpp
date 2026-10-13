@@ -27,6 +27,7 @@
 #include <campaign.h>
 #include <metasnd.h>
 #include <gamemode.h>
+#include <contentctx.h>
 
 #include <command.h>
 #include <uiamov.h>
@@ -345,31 +346,25 @@ const sLoopInstantiator* DescribeSimMenuMode(void)
 class cNewGame: public cDarkPanel
 {
    static sDarkPanelDesc gDesc; 
+   static sDarkPanelDesc gThief1Desc;
 
 public:
    cNewGame() 
-      : cDarkPanel(&gDesc)
+      : cDarkPanel(IsThief1() ? &gThief1Desc : &gDesc),
+        mHasTrainingButton(IsThief1())
    {
    };
 
-   enum eRects
+   static BOOL IsThief1()
    {
-      kSkipTraining,
-      kOptions,
-      kCancel, 
-      kNumButts, 
+      return _stricmp(DarkContentProfile(), "gold") == 0 ||
+             _stricmp(DarkContentProfile(), "tdp") == 0;
+   }
 
-      kDifficulty = kNumButts, 
-      kDiff0,
-      kDiff1,
-      kDiff2,
-
-      kNumRects,
-
-      kNumDiffs = kNumRects - kDiff0,
-   };
+   enum { kNumDiffs = 3 };
 
 protected:
+   BOOL mHasTrainingButton;
    guiStyle mDiffStyle; 
    LGadButtonList mDiffButtons; 
    DrawElement mDiffElems[kNumDiffs];
@@ -407,7 +402,7 @@ protected:
       LGadButtonListDesc desc = 
       { 
          kNumDiffs,
-         &mRects[(int)kDiff0], 
+         &mRects[num_butts + 1],
          mDiffElems,
          DiffCB,
          0,
@@ -443,7 +438,7 @@ protected:
       cStr str = FetchUIString(panel_name,"difficulty",mResPath);  // copy the string 
       char* s = (char*)(const char*)str;  // get a mutable pointer
 
-      Rect& r = mRects[(int)kDifficulty]; 
+      Rect& r = mRects[num_butts];
 
       GUIcompose c; 
       GUIsetup(&c,&r,GUIcomposeFlags(ComposeFlagClear|ComposeFlagRead),GUI_CANV_ANY); 
@@ -470,7 +465,7 @@ protected:
       
    }
 
-   void StartGame()
+   void StartGame(BOOL training = FALSE)
    {
       // Reset the campaign
       AutoAppIPtr(Campaign); 
@@ -481,10 +476,14 @@ protected:
       AutoAppIPtr(QuestData); 
       pQuestData->Create (DIFF_QVAR, g_diff, kQuestDataCampaign);
 
-      // skip Nexit missions...
-      int mission = GetNextMission(); 
+      // Campaign::New resets the mission loop to mission 1.  In Thief 1 that
+      // is the training mission, so the second button must explicitly advance
+      // to Lord Bafford (mission 2).  An FM-provided starting_mission below
+      // still takes precedence over this stock default.
+      int mission = mHasTrainingButton ? (training ? 1 : 2) : GetNextMission();
+      const int defaultMission = mission;
       
-      if (config_get_int("starting_mission",&mission))
+      if (!training && config_get_int("starting_mission",&mission))
       {
          static int mission_map[32] = { 1,2,4,5,6,7,9,8,10,11,14,15,12,13,16 }; 
          int cnt = sizeof(mission_map)/sizeof(mission_map[0]); 
@@ -497,7 +496,7 @@ protected:
             mission = mission_map[mission-1]; //lose the zero index
          }
          else
-            mission = GetNextMission(); 
+            mission = defaultMission;
       }
       
       SetNextMission(mission); 
@@ -512,25 +511,34 @@ protected:
       if (!(action & BUTTONGADG_LCLICK))
          return ;
 
-      switch (button)
+      if (mHasTrainingButton)
       {
-
-         case kSkipTraining:
+         switch (button)
          {
-            StartGame(); 
+            case 0: StartGame(TRUE); break;
+            case 1: StartGame(FALSE); break;
+            case 2: SwitchToOptionsMode(TRUE); break;
+            case 3:
+            {
+               cAutoIPtr<IPanelMode> mode = GetPanelMode();
+               mode->Exit();
+            }
+            break;
          }
-         break; 
-
-         case kOptions:
-            SwitchToOptionsMode(TRUE);
-            break; 
-
-         case kCancel:
+      }
+      else
+      {
+         switch (button)
          {
-            cAutoIPtr<IPanelMode> mode = GetPanelMode(); 
-            mode->Exit(); 
+            case 0: StartGame(FALSE); break;
+            case 1: SwitchToOptionsMode(TRUE); break;
+            case 2:
+            {
+               cAutoIPtr<IPanelMode> mode = GetPanelMode();
+               mode->Exit();
+            }
+            break;
          }
-         break; 
       }
    }
 }; 
@@ -546,17 +554,37 @@ static const char* newgame_button_names[] =
    "cancel"
 }; 
 
+static const char* thief1_newgame_button_names[] =
+{
+   "start_training",
+   "skip_training",
+   "options",
+   "cancel"
+};
+
 sDarkPanelDesc cNewGame::gDesc = 
 {
    "newgame",
-   cNewGame::kNumButts,
-   cNewGame::kNumRects,
-   cNewGame::kNumButts,
+   3,
+   7,
+   3,
    newgame_button_names,
    NULL,
    0,
    kMetaSndPanelMain,
 }; 
+
+sDarkPanelDesc cNewGame::gThief1Desc =
+{
+   "newgame",
+   4,
+   8,
+   4,
+   thief1_newgame_button_names,
+   NULL,
+   0,
+   kMetaSndPanelMain,
+};
 
 
 static cNewGame* gpNewGame = NULL; 

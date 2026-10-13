@@ -124,7 +124,7 @@ FILE *DatapathOpen(Datapath *pdp, const char *fname, const char *mode)
 {
 	FILE *fp;
 	int i;
-	char buff[128];
+	char buff[1024];
 
 //	0 means either current directory or file not found
 
@@ -183,7 +183,7 @@ int DatapathFDOpen(Datapath *pdp, const char *fname, int access, ... )
 	int fd;
 	int i;
 	int permis;
-	char buff[128];
+	char buff[1024];
 	va_list curr_arg;
 
 //	If creating, set permissions
@@ -308,7 +308,7 @@ bool DatapathAdd(Datapath *pdp, const char *path)
 	bool any;
 	const char *p;
 	const char *psemi;
-	char buff[128];
+	char buff[1024];
 
 //	If path NULL, can't add
 

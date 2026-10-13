@@ -12,6 +12,7 @@
 #include <lgsprntf.h>
 #include <cfgdbg.h>
 #include <mprintf.h>
+#include <darklimit.h>
 
 #include <sys/stat.h>	// added by cnn - 8/29/96
 #include <recapi.h>	// added by njt - 8/28/97
@@ -31,7 +32,7 @@
 
 
 #define INITIAL_TBLSIZE 10
-#define LINE_BUFSIZE 256
+#define LINE_BUFSIZE DARK_LIMIT_RUNTIME_CONFIG_LINE_CHARS
 #define FN_BUFSIZE 15
 #define DELIM_CHAR ' '
 #define COMMENT_CHAR ';'
@@ -51,7 +52,7 @@ typedef struct _filename_rec
 typedef struct _config_elem
 {
    char var[VARNAME_LEN+1];
-   char val[80];
+   char val[DARK_LIMIT_RUNTIME_CONFIG_LINE_CHARS];
    uint priority;
    filename_rec* origin;
 } config_elem;

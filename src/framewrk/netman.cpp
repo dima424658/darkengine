@@ -21,6 +21,7 @@
 #include <lg.h>
 #include <mprintf.h>
 #include <config.h>
+#include <contentctx.h>
 #include <lgassert.h>
 #include <cfgdbg.h>   // for ConfigSpew
 #include <timer.h>    // for tm_get_millisec
@@ -163,6 +164,12 @@ struct sNetMsg_Quit {
 //
 
 class cNetManager;
+
+static BOOL NetworkingDisabledForContent(void)
+{
+   return config_is_defined("no_network") ||
+          _stricmp(DarkContentProfile(), "thief2") != 0;
+}
 
 //////////
 //
@@ -2453,7 +2460,7 @@ protected:
                                                      kNetSubparse,
                                                      (void *)this);
 
-      if (config_is_defined("no_network")) {
+      if (NetworkingDisabledForContent()) {
          // The user has specifically said to cut off all networking.
          return S_OK;
       }
@@ -2484,6 +2491,14 @@ protected:
 
       // Get the underlying network 
       gm_Net = AppGetObj(INet);
+      if (!gm_Net)
+      {
+         // Thief 1 data sets do not necessarily create the DirectPlay
+         // aggregate member.  Treat that the same as no_network instead of
+         // dereferencing the absent service below.
+         Warning(("Network service is unavailable; networking disabled\n"));
+         return S_OK;
+      }
 
       if (config_is_defined("net_host")) {
          // We've been told to pro-actively host a new session:
@@ -3536,7 +3551,7 @@ public:
       MI_INIT_AGGREGATION_1(pOuter, INetManager, kPriorityNormal, NetManConstraints);
 #endif      
 
-      if (config_is_defined("no_network"))
+      if (NetworkingDisabledForContent())
       {
          // The config file has specified that we are going to do
          // absolutely *no* networking, even initializing DirectPlay.

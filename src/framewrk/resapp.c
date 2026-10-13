@@ -71,17 +71,16 @@ void InitAppData();
 
 static STDMETHODIMP InitFunc(IUnknown* goof)
 {
-   char path[256]; 
+   char path[1024];
+   char dataPath[1024] = "";
    int mem;
    IResMan *pResMan;
 
    // Prep the original resource system:
    ResAddPath(".\\data");
    
-   if (config_get_raw("data_path",path,sizeof(path)))
-      ResAddPath(path);
-   else
-      path[0] = '\0';
+   if (config_get_raw("data_path",dataPath,sizeof(dataPath)))
+      ResAddPath(dataPath);
 
    if (config_get_int("mem_cap",&mem))
       ResMemSetCap(mem*1024*1024); // units of megs
@@ -107,6 +106,13 @@ static STDMETHODIMP InitFunc(IUnknown* goof)
 
    gContextPath = IResMan_NewSearchPath(pResMan, "");
 
+   // DarkContentConfigure has already expanded this into priority order:
+   // uber mods, the active FM, normal mods, then base resources.  Keep the
+   // complete configured path ahead of legacy current-directory fallbacks.
+   // Otherwise loose retail/patch assets can mask an active mod.
+   if (config_get_raw("resname_base", path, sizeof(path)))
+      ISearchPath_AddPath(gContextPath, path);
+
    // PATCH, add a patch path
    {
       char install[80] = "."; 
@@ -117,13 +123,8 @@ static STDMETHODIMP InitFunc(IUnknown* goof)
 
    ISearchPath_AddPath(gContextPath,"."); 
 
-   if (path[0])
-      ISearchPath_AddPath(gContextPath, path);
-
-   // This is picked up from the ResName system; 
-   // we might consider changing the name:
-   if (config_get_raw("resname_base", path, sizeof(path)))
-      ISearchPath_AddPath(gContextPath, path);
+   if (dataPath[0])
+      ISearchPath_AddPath(gContextPath, dataPath);
 
    // With this in place, you generally shouldn't need to get at
    // gContextPath directly, unless you're doing something really fancy...

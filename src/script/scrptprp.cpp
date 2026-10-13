@@ -43,6 +43,7 @@
 // For script datapath
 #include <datapath.h>
 #include <config.h>
+#include <contentctx.h>
 
 // Command stuff
 #include <ctype.h>
@@ -436,9 +437,12 @@ void CreateScriptProp(void)
    InitScriptReactions(); 
 
    // Set up the load path
-   char pathbuf[256] = "";
-   config_get_raw("script_module_path", pathbuf,sizeof(pathbuf));
-   DatapathAdd(&script_path,pathbuf);
+   DatapathAdd(&script_path, DarkContentSearchPath(kDarkContentScripts));
+   // The installation directory is already the final entry in the resolved
+   // content path.  Letting DatapathFind probe the current directory first
+   // bypasses the active FM (and both mod layers), so a base convict.osm wins
+   // even when the FM supplies its own replacement.
+   DatapathNoCurrent(&script_path);
 
    AutoAppIPtr(ScriptMan);
    pScriptMan->SetModuleDatapath(&script_path);

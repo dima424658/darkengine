@@ -42,6 +42,7 @@
 
 #include <command.h>
 #include <config.h>
+#include <contentctx.h>
 
 #include <mprintf.h>
 
@@ -140,7 +141,9 @@ HRESULT DarkSaveGame(const char* descstr, ITagFile* file)
    if (FAILED(result))
       return result; 
 
-   const char* fname = CHECKPOINT_SAVE; 
+   char checkpoint[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeSavePath(checkpoint, sizeof(checkpoint), CHECKPOINT_SAVE);
+   const char* fname = checkpoint;
    // pack the checkpoint into the saved game
    FILE* cp = fopen(fname,"rb"); 
    if (!cp)
@@ -304,7 +307,9 @@ HRESULT DarkLoadGame(ITagFile* file)
    if (SUCCEEDED(file->OpenBlock(&checkpoint_tag,&v)))
    {
       // unpack the checkpoint from the saved game
-      FILE* cp = fopen(CHECKPOINT_SAVE,"wb"); 
+      char checkpoint[DARK_CONTENT_MAX_PATH];
+      DarkContentMakeSavePath(checkpoint, sizeof(checkpoint), CHECKPOINT_SAVE);
+      FILE* cp = fopen(checkpoint,"wb");
       if (!cp)
          return kDarkSaveBlockOpen; 
    
@@ -415,16 +420,19 @@ BOOL DarkGameIsMidMission(ITagFile* file)
 
 void DarkQuickSaveGame(void)
 {
-   _mkdir(SAVE_PATH);
+   char path[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeSavePath(path, sizeof(path), QUICK_SAVE);
    cStr desc = FetchUIString("gamesav","quick_save"); 
-   BOOL success = SUCCEEDED(DarkSaveGameFile(desc,SAVE_PATH "\\" QUICK_SAVE)); 
+   BOOL success = SUCCEEDED(DarkSaveGameFile(desc,path));
    const char* msg = (success) ? "success" : "failure";
    DarkMessage(FetchUIString("gamesav",msg)); 
 }
 
 void DarkQuickLoadGame(void)
 {
-   long success =   DarkQuickLoadGameFile(SAVE_PATH "\\" QUICK_SAVE); 
+   char path[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeSavePath(path, sizeof(path), QUICK_SAVE);
+   long success = DarkQuickLoadGameFile(path);
 
    switch(success)
    {
@@ -476,14 +484,18 @@ long DarkQuickLoadGameFile(const char* filename)
 
 EXTERN void DarkSaveCheckpoint(void)
 {
-   ITagFile* file = TagFileOpen(CHECKPOINT_SAVE,kTagOpenWrite); 
+   char path[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeSavePath(path, sizeof(path), CHECKPOINT_SAVE);
+   ITagFile* file = TagFileOpen(path,kTagOpenWrite);
    long retval = DarkSaveGameInternal("Mission Start",file); 
    SafeRelease(file); 
 }
 
 EXTERN void DarkRestoreCheckpoint(void)
 {
-   ITagFile* file = BufTagFileOpen(CHECKPOINT_SAVE,kTagOpenRead); 
+   char path[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeSavePath(path, sizeof(path), CHECKPOINT_SAVE);
+   ITagFile* file = BufTagFileOpen(path,kTagOpenRead);
    long retval = DarkLoadGameInternal(file); 
    SafeRelease(file); 
 }

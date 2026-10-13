@@ -1891,6 +1891,7 @@
     <ClCompile Include="framewrk\Cfgtool.c" />
     <ClCompile Include="framewrk\Chainevt.cpp" />
     <ClCompile Include="framewrk\Command.c" />
+    <ClCompile Include="framewrk\contentctx.cpp" />
     <ClCompile Include="framewrk\Ctag.cpp" />
     <ClCompile Include="framewrk\Ctagnet.cpp" />
     <ClCompile Include="framewrk\Ctagset.cpp" />

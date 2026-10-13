@@ -11,15 +11,16 @@
 #ifdef _WIN32
 
 #include <win32_platform.h>
-#include <shlobj.h>
 #include <dbghelp.h>
+#include <shlobj.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <lg.h>
 
+#include "launchmenu.h"
+
 #pragma comment(lib, "dbghelp.lib")
-#pragma comment(lib, "ole32.lib")
-#pragma comment(lib, "shell32.lib")
 
 EXTERN int LGAPI _AppMain(int argc, const char* argv[]);
 EXTERN int LGAPI HeapInit();
@@ -30,7 +31,7 @@ extern "C"
 	int _g_referenceEntryPoint = 0;
 }
 
-static BOOL UsesThief2Data(const char* executable)
+static BOOL UsesDarkData(const char* executable)
 {
     const char* name = executable;
     const char* slash;
@@ -64,100 +65,206 @@ static BOOL FileExistsInDirectory(const char* directory, const char* name)
            !(attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-static BOOL IsThief2DataDirectory(const char* directory)
+static const char* DetectGameProfile(const char* directory)
 {
-    return FileExistsInDirectory(directory, "cam.cfg") &&
-           (FileExistsInDirectory(directory, "DARK.GAM") ||
-            FileExistsInDirectory(directory, "MISS1.MIS"));
+    if (!FileExistsInDirectory(directory, "cam.cfg") ||
+        (!FileExistsInDirectory(directory, "DARK.GAM") &&
+         !FileExistsInDirectory(directory, "MISS1.MIS")))
+        return NULL;
+
+    // Gold adds mission 18.  Thief II has mission 8, while the original
+    // Dark Project does not.  These loose mission files are present in the
+    // supported retail installs and avoid depending on localized config text.
+    if (FileExistsInDirectory(directory, "MISS18.MIS"))
+        return "gold";
+    if (FileExistsInDirectory(directory, "MISS8.MIS"))
+        return "thief2";
+    return "tdp";
 }
 
-static BOOL LoadThief2DataDirectory(char* directory, DWORD directorySize)
+static int CALLBACK SelectFolderCallback(HWND window, UINT message,
+                                         LPARAM, LPARAM initialDirectory)
 {
-    HKEY key;
-    DWORD type = REG_SZ;
-    DWORD size = directorySize;
-    LONG result;
-
-    result = RegOpenKeyExA(HKEY_CURRENT_USER,
-                           "Software\\OpenDarkEngine\\Thief2", 0,
-                           KEY_QUERY_VALUE, &key);
-    if (result != ERROR_SUCCESS)
-        return FALSE;
-
-    result = RegQueryValueExA(key, "GameDataPath", NULL, &type,
-                              (BYTE*)directory, &size);
-    RegCloseKey(key);
-    directory[directorySize - 1] = '\0';
-    return result == ERROR_SUCCESS && type == REG_SZ &&
-           IsThief2DataDirectory(directory);
+    if (message == BFFM_INITIALIZED && initialDirectory)
+        SendMessageA(window, BFFM_SETSELECTIONA, TRUE, initialDirectory);
+    return 0;
 }
 
-static void SaveThief2DataDirectory(const char* directory)
+static BOOL PromptForDirectory(char* directory, DWORD size, const char* title)
 {
-    HKEY key;
-    DWORD disposition;
-
-    if (RegCreateKeyExA(HKEY_CURRENT_USER,
-                        "Software\\OpenDarkEngine\\Thief2", 0, NULL, 0,
-                        KEY_SET_VALUE, NULL, &key, &disposition) == ERROR_SUCCESS)
-    {
-        RegSetValueExA(key, "GameDataPath", 0, REG_SZ,
-                       (const BYTE*)directory, (DWORD)strlen(directory) + 1);
-        RegCloseKey(key);
-    }
-}
-
-static BOOL BrowseForThief2DataDirectory(char* directory, DWORD directorySize)
-{
-    BROWSEINFOA browse = { 0 };
-    LPITEMIDLIST item;
-    HRESULT comResult = CoInitialize(NULL);
-
-    browse.hwndOwner = GetConsoleWindow();
-    browse.lpszTitle = "Select your Thief 2 installation folder (the folder containing cam.cfg).";
+    const HRESULT comResult = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    BROWSEINFOA browse = {};
+    char displayName[MAX_PATH] = {};
+    browse.hwndOwner = GetActiveWindow();
+    browse.pszDisplayName = displayName;
+    browse.lpszTitle = title;
     browse.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+    browse.lpfn = SelectFolderCallback;
+    browse.lParam = (LPARAM)directory;
 
-    item = SHBrowseForFolderA(&browse);
-    if (!item)
+    LPITEMIDLIST selected = SHBrowseForFolderA(&browse);
+    if (!selected)
     {
         if (SUCCEEDED(comResult))
             CoUninitialize();
         return FALSE;
     }
-
-    directory[0] = '\0';
-    SHGetPathFromIDListA(item, directory);
-    CoTaskMemFree(item);
+    const BOOL result = SHGetPathFromIDListA(selected, directory);
+    CoTaskMemFree(selected);
     if (SUCCEEDED(comResult))
         CoUninitialize();
-
-    directory[directorySize - 1] = '\0';
-    return IsThief2DataDirectory(directory);
+    if (result)
+        directory[size - 1] = '\0';
+    return result;
 }
 
-static BOOL PrepareThief2DataDirectory(void)
+static const char* const kLauncherRegistryKey =
+    "Software\\OpenDarkEngine\\Launcher";
+static const char* const kLastGameFolderValue = "LastGameFolder";
+
+static BOOL LoadLastGameFolder(char* directory, DWORD size)
+{
+    HKEY key = NULL;
+    DWORD type = 0;
+    DWORD bytes = size;
+    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER, kLauncherRegistryKey, 0,
+                                KEY_QUERY_VALUE, &key);
+    if (result != ERROR_SUCCESS)
+        return FALSE;
+
+    result = RegQueryValueExA(key, kLastGameFolderValue, NULL, &type,
+                              reinterpret_cast<BYTE*>(directory), &bytes);
+    RegCloseKey(key);
+    if (result != ERROR_SUCCESS || (type != REG_SZ && type != REG_EXPAND_SZ) ||
+        !bytes)
+        return FALSE;
+
+    directory[size - 1] = '\0';
+    const DWORD attributes = GetFileAttributesA(directory);
+    return attributes != INVALID_FILE_ATTRIBUTES &&
+           (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+
+static void SaveLastGameFolder(const char* directory)
+{
+    HKEY key = NULL;
+    DWORD disposition = 0;
+    if (RegCreateKeyExA(HKEY_CURRENT_USER, kLauncherRegistryKey, 0, NULL, 0,
+                        KEY_SET_VALUE, NULL, &key, &disposition) == ERROR_SUCCESS)
+    {
+        RegSetValueExA(key, kLastGameFolderValue, 0, REG_SZ,
+                       reinterpret_cast<const BYTE*>(directory),
+                       static_cast<DWORD>(strlen(directory) + 1));
+        RegCloseKey(key);
+    }
+}
+
+static BOOL HasArgument(int argc, const char* argv[], const char* name)
+{
+    const size_t nameLength = strlen(name);
+    for (int i = 1; i < argc; ++i)
+        if (_strnicmp(argv[i], name, nameLength) == 0 &&
+            (argv[i][nameLength] == '=' || argv[i][nameLength] == '\0'))
+            return TRUE;
+    return FALSE;
+}
+
+static int SelectContent(const char* directory, const char* profile,
+                         const char* executable)
+{
+    char fmName[MAX_PATH] = "";
+    const int choice = DarkShowLaunchMenu(directory, profile, executable,
+                                           fmName, sizeof(fmName));
+    if (choice == kDarkLaunchConfigured || choice == kDarkLaunchVanilla)
+    {
+        const char* mode = choice == kDarkLaunchConfigured ?
+                           "configured" : "vanilla";
+        SetEnvironmentVariableA("DARK_CONTENT_MODE", mode);
+        SetEnvironmentVariableA("DARK_FM_NAME", NULL);
+        _putenv_s("DARK_CONTENT_MODE", mode);
+        _putenv_s("DARK_FM_NAME", "");
+        return choice;
+    }
+    if (choice == kDarkLaunchFanMission)
+    {
+        SetEnvironmentVariableA("DARK_CONTENT_MODE", "configured");
+        SetEnvironmentVariableA("DARK_FM_NAME", fmName);
+        _putenv_s("DARK_CONTENT_MODE", "configured");
+        _putenv_s("DARK_FM_NAME", fmName);
+    }
+    return choice;
+}
+
+static BOOL PrepareDarkDataDirectory(int argc, const char* argv[])
 {
     char directory[MAX_PATH];
+    const char* profile = NULL;
+    const BOOL interactive = argc == 1 &&
+        !HasArgument(argc, argv, "content") &&
+        !HasArgument(argc, argv, "fm");
 
-    if (GetCurrentDirectoryA(sizeof(directory), directory) &&
-        IsThief2DataDirectory(directory))
+    if (!GetCurrentDirectoryA(sizeof(directory), directory))
+        return FALSE;
+    profile = DetectGameProfile(directory);
+    if (!profile)
+        LoadLastGameFolder(directory, sizeof(directory));
+    while (!profile)
     {
-        SaveThief2DataDirectory(directory);
-        return TRUE;
+        if (!PromptForDirectory(directory, sizeof(directory),
+                "Select a Thief: The Dark Project, Thief Gold, or Thief II folder"))
+            return FALSE;
+        profile = DetectGameProfile(directory);
+        if (!profile)
+            MessageBoxA(NULL,
+                        "That folder is not a recognizable Thief installation. Select a folder containing cam.cfg and the retail mission data.",
+                        "Thief game data required", MB_OK | MB_ICONERROR);
     }
 
-    if (LoadThief2DataDirectory(directory, sizeof(directory)) ||
-        BrowseForThief2DataDirectory(directory, sizeof(directory)))
+    for (;;)
     {
-        SaveThief2DataDirectory(directory);
-        if (SetCurrentDirectoryA(directory))
+        SaveLastGameFolder(directory);
+        if (!SetCurrentDirectoryA(directory))
+            return FALSE;
+        SetEnvironmentVariableA("DARK_GAME_PROFILE", profile);
+        SetEnvironmentVariableA("DARK_GAME_PATH", directory);
+        // The legacy runtime uses getenv(), whose MSVC environment snapshot is
+        // not refreshed by SetEnvironmentVariableA.
+        _putenv_s("DARK_GAME_PROFILE", profile);
+        _putenv_s("DARK_GAME_PATH", directory);
+
+        // Explicit command lines remain non-interactive for shortcuts and
+        // unattended tests. Plain launches get the pre-engine content menu.
+        if (!interactive)
             return TRUE;
-    }
 
-    MessageBoxA(NULL,
-                "That folder does not contain Thief 2 game data. The folder must contain cam.cfg and DARK.GAM or MISS1.MIS.",
-                "Thief 2 game data required", MB_OK | MB_ICONERROR);
-    return FALSE;
+        const int choice = SelectContent(directory, profile,
+                                         argc > 0 ? argv[0] : NULL);
+        if (choice == kDarkLaunchCancel)
+            return FALSE;
+        if (choice != kDarkLaunchChooseGame)
+            return TRUE;
+
+        char selected[MAX_PATH];
+        strncpy(selected, directory, sizeof(selected));
+        selected[sizeof(selected) - 1] = '\0';
+        for (;;)
+        {
+            if (!PromptForDirectory(selected, sizeof(selected),
+                    "Select a Thief: The Dark Project, Thief Gold, or Thief II folder"))
+                break;
+            const char* selectedProfile = DetectGameProfile(selected);
+            if (selectedProfile)
+            {
+                strncpy(directory, selected, sizeof(directory));
+                directory[sizeof(directory) - 1] = '\0';
+                profile = selectedProfile;
+                break;
+            }
+            MessageBoxA(NULL,
+                        "That folder is not a recognizable Thief installation. Select a folder containing cam.cfg and the retail mission data.",
+                        "Thief game data required", MB_OK | MB_ICONERROR);
+        }
+    }
 }
 
 static void WriteCrashLine(HANDLE output, const char* text)
@@ -213,6 +320,30 @@ static LONG WINAPI DarkUnhandledExceptionFilter(EXCEPTION_POINTERS* exceptionInf
 #endif
         WriteCrashLine(output, line);
         WriteCrashLine(log, line);
+    }
+
+    // Record the simple frame-pointer chain before asking DbgHelp to walk it.
+    // This remains useful when an exception occurs in a system DLL or when
+    // StackWalk64 cannot recover an optimized frame.
+#if defined(_M_X64)
+    ULONG_PTR rawFrame = (ULONG_PTR)exceptionInfo->ContextRecord->Rbp;
+#else
+    ULONG_PTR rawFrame = (ULONG_PTR)exceptionInfo->ContextRecord->Ebp;
+#endif
+    for (int depth = 0; depth < 32 && rawFrame; ++depth)
+    {
+        ULONG_PTR frameWords[2] = {};
+        SIZE_T bytesRead = 0;
+        if (!ReadProcessMemory(process, (const void*)rawFrame, frameWords,
+                               sizeof(frameWords), &bytesRead) ||
+            bytesRead != sizeof(frameWords) || !frameWords[1])
+            break;
+        wsprintfA(line, "  #F%02d %p\r\n", depth, (void*)frameWords[1]);
+        WriteCrashLine(output, line);
+        WriteCrashLine(log, line);
+        if (frameWords[0] <= rawFrame || frameWords[0] - rawFrame > 0x100000)
+            break;
+        rawFrame = frameWords[0];
     }
 
     SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
@@ -282,8 +413,8 @@ int main(int argc, const char* argv[])
     if (!g_pMalloc && !HeapInit())
         return 1;
 
-    if (UsesThief2Data(argc > 0 ? argv[0] : NULL) &&
-        !PrepareThief2DataDirectory())
+    if (UsesDarkData(argc > 0 ? argv[0] : NULL) &&
+        !PrepareDarkDataDirectory(argc, argv))
         return 0;
 
 	return _AppMain(argc, argv);
