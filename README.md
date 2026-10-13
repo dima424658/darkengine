@@ -6,9 +6,9 @@ preliminary Windows DromEd mission viewer. The engine core is shared across
 platforms; operating-system, rendering, input, audio, movie, and filesystem
 services are supplied by platform backends.
 
-The repository does not include Thief 2 missions, movies, sounds, scripts, or
-other retail assets. A legally obtained installation of *Thief II: The Metal
-Age* is required to run the game.
+The repository does not include retail missions, movies, sounds, scripts, or
+other game assets. A legally obtained installation of *Thief: The Dark
+Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
 
 ## Platform status
 
@@ -20,6 +20,7 @@ Age* is required to run the game.
 | Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft |
 | Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | Not implemented |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
+| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Not implemented |
 | Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja |
 
 The Windows Release targets build with the Visual Studio 2022 v143 toolset.
@@ -49,9 +50,12 @@ the compatibility headers isolate Windows and LP64 ABI differences.
 
 Native 64-bit builds include a compatibility runtime for legacy 32-bit `.osm`
 script modules. It reads PE32 modules, interprets IA-32 code, and bridges the
-supported script-manager and engine-service calls into the host process. This
-is separate from NewDark's Squirrel support and is still being expanded and
-validated against third-party OSMs.
+supported script-manager and engine-service calls into the host process. The
+Windows builds also provide an in-process Squirrel 3.2 script module for
+NewDark-style `sq_scripts/*.nut` sources; it uses the normal Dark script
+manager and service interfaces rather than loading the game-specific NewDark
+`squirrel.osm` binary. Both bridges are still being expanded and validated
+against third-party scripts.
 
 Audio follows the same provider model. Windows uses DirectSound 3D by default,
 with native I3DL2 environmental reverb. An OpenAL provider supplies positional
@@ -73,8 +77,8 @@ use the engine's existing LZW codec. No external compression DLL is required.
 
 The runner currently provides:
 
-- use of an external retail Thief 2 installation without copying its data;
-- first-run data-directory selection and reuse on Windows;
+- use of an external retail Thief installation without copying its data;
+- automatic TDP, Gold, or Thief II detection from the working directory;
 - native display-resolution defaults when the user has not configured a
   resolution;
 - borderless fullscreen and resizable windowed presentation;
@@ -114,8 +118,8 @@ starting the game again.
 - The **Desktop development with C++** workload, including:
   - MSVC v143 x86/x64 build tools
   - a Windows 10 or Windows 11 SDK
-- A retail Thief 2 installation containing `cam.cfg` and either `DARK.GAM` or
-  `MISS1.MIS`
+- A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
+  the stock mission data
 
 The Windows SDK supplies the DirectX declarations used by the Windows input,
 audio, and rendering providers. Current Windows output uses a D3D11 swap chain
@@ -123,6 +127,14 @@ and Windows Media Foundation. No assembler is required by the active x86 or
 x64 build.
 
 ## Build instructions
+
+Squirrel 3.2 is an external Windows build dependency. Clone it into the
+ignored `3rdparty/squirrel` directory before the first Windows build:
+
+```sh
+git clone --branch v3.2 --depth 1 \
+  https://github.com/albertodemichelis/squirrel.git 3rdparty/squirrel
+```
 
 ### Linux / WSL2
 
@@ -213,38 +225,78 @@ because Dark performs many small, case-insensitive resource lookups.
 
 ### Windows
 
-1. Start `build\Release\Win32\Thief2\Thief2.exe`.
-2. On the first launch, select the root of the Thief 2 installation. This is
-   the directory containing `cam.cfg` and `DARK.GAM` or `MISS1.MIS`.
-3. The runner changes the working directory to the selected installation and
-   starts the engine. Retail data is read in place and is not copied into this
-   repository.
-4. The normal startup flow continues through the splash/startup screen, intro
-   movie, and main menu.
+Set the working directory to the retail installation, then run the executable
+by absolute path (or from a script/shortcut whose **Start in** directory is the
+installation):
 
-The selected directory is stored for the current Windows user at:
-
-```text
-HKCU\Software\OpenDarkEngine\Thief2\GameDataPath
+```powershell
+Set-Location 'C:\Games\Thief Gold'
+& 'C:\src\darkengine\build\Release\Win32\Thief2\Thief2.exe'
 ```
 
-If the stored directory no longer contains valid game data, the runner asks
-for a new directory. To choose a different directory while the old one is
-still valid, remove the `GameDataPath` value with Registry Editor and launch
-the executable again.
+The runner identifies TDP, Gold, or Thief II from the installed stock mission
+set. If the initial working directory is not a recognizable installation, it
+prompts for one and uses the selected folder as the working directory for that
+run. The picker starts at the last successfully selected game directory, stored
+under `HKCU\Software\OpenDarkEngine\Launcher`; that value is only a picker hint
+and is never used to choose or launch a game silently. Retail data is read in
+place and is not copied.
+
+A launch with no arguments opens the integrated content menu. It lists the
+two original-campaign modes followed by every recognized immediate child of
+the installation's `FMs` directory. Display names and descriptions come from
+each FM's `fm.ini` when present. For example, select **Thief: The Black Parade
+v1.0** and press **Launch** to play the installed Black Parade campaign.
+
+The available content modes are:
+
+- **Configured originals** honors `uber_mod_path`, `mod_path`, and the full
+  paths in the installation configuration. Installation-wide `cam_ext.cfg`
+  defaults are read before `cam.cfg`, and `cam_mod.ini` supplies NewDark-style
+  mod/FM settings. This is the normal choice for a patched installation, but
+  it can expose NewDark features that this engine does not support yet.
+- **Vanilla originals** suppresses both mod layers and uses the last existing
+  entry in each base path, normally `RES` for resources and the installation
+  root for missions.
+- **Fan mission** selects one immediate child directory of the installation's
+  `FMs` folder. Its files are inserted between `uber_mod_path` and `mod_path`,
+  matching NewDark path precedence. An FM's `DARK.CFG`, `fm.cfg`, and
+  `cam_ext.cfg` are then loaded before resources and UI are constructed.
+
+PNG replacement images are supported and take precedence over the original
+TGA, GIF, PCX, CEL, and BMP resources. Image content is signature-sniffed
+because NewDark FMs sometimes retain a `.gif` name for PCX, TIFF, or PSD data.
+Indexed animations retain their own palettes and arbitrary GIF transparency
+indices are normalized to Dark's index-zero convention. RGBA animation frames
+are alpha-composited into the engine's 16-bit UI canvas.
+
+Set `DARK_RESOURCE_TRACE=1` to include each resolved resource name, type, and
+source path in `monolog`; this is useful for distinguishing a decoder problem
+from an FM/mod/base path-precedence problem.
+
+For shortcuts, scripts, and tests, bypass the chooser with explicit Dark-style
+assignments (there are no GNU `--` prefixes):
+
+```powershell
+& $thief content=configured
+& $thief content=vanilla
+& $thief fm='TheDarkMansion'
+```
+
+The detected game, original-content mode, and each FM have separate save
+directories under `%LOCALAPPDATA%\OpenDarkEngine\Profiles`. The content menu
+remembers the last valid selection separately for each installation and has a
+**Change Game Folder** command, so adding another game does not require editing
+the registry or changing a shortcut.
 
 ### DromEd on Windows
 
-DromEd uses the same Thief 2 data-directory selection as the game runner. Start
-it directly from the build output:
+DromEd uses the same working-directory detection as the game runner:
 
 ```bat
-build\Release\Win32\DromEd\DromEd.exe
+cd /d "C:\Games\Thief Gold"
+"C:\src\darkengine\build\Release\Win32\DromEd\DromEd.exe"
 ```
-
-The viewer reuses the `GameDataPath` registry value shown above. If no valid
-directory has been selected yet, it prompts for the root of a legally installed
-Thief 2 data directory before loading its configuration and mission resources.
 
 The DromEd viewer uses the same D3D11 scene renderer and swap-chain presenter
 as the game. Its legacy editor canvas remains 16-bit internally, while the D3D11
@@ -271,8 +323,31 @@ in gameplay and play preview.
 
 The historical editing commands are present, but this build is not yet a
 dependable mission-authoring environment. Work from backups and do not rely on
-it as the only editor or copy of a mission. In particular, it cannot load or
-save NewDark-specific mission and data formats.
+it as the only editor or copy of a mission. DromEd can read the supported
+NewDark format prefixes and retains newer or unknown chunks when saving, but
+this is not yet comprehensive NewDark authoring support. In particular,
+WREXT 0.30 and AIPATH 3.4 are currently read-only codecs: their original
+chunks are retained instead of being rewritten by the legacy serializers.
+RENDPARAMS 2.0 is prefix-decoded and retained, while CELL_MOTION 0.2 is fully
+decoded (including its global water-projection threshold) and retained because
+the legacy writer remains at 0.1. NewDark's 28-face brush records and 16,384
+brush limit are accepted by the editor without changing the BRLIST 1.0 writer.
+
+Serializer read ceilings are independent from writer versions. Unknown chunks,
+newer read-only chunks, and unowned record suffixes are carried through an
+editor save; this does not imply that their fields are editable.
+
+Engine and file-format capacities are inventoried in `h/darklimit.h`. It keeps
+the retail and NewDark values distinct from the runtime capacity: runtime code
+uses the broadest supported representation, while WR, WREXT, AIPATH, automap,
+and other codecs validate against their explicit on-disk limits. Subsystem
+headers may retain historical names as aliases, but do not own the values.
+
+Every mission and gamesys load appends a chunk-by-chunk report to
+`mission_compatibility.log` in the selected game directory. Each entry is
+classified as `decoded`, `prefix-decoded`, `raw-preserved`, or `unsupported`.
+The report records the stored version and size so unsupported FM data can be
+identified without raising the writer version or silently discarding it.
 
 If `screen_size` or `game_screen_size` is already defined in `cam.cfg`, that
 size is retained when the display driver supports it. Otherwise, the game
@@ -295,12 +370,14 @@ changes are applied when **Done** is selected. In Windowed mode, the selected
 resolution is the fixed internal render size, not a maximum window size.
 Entering Windowed mode opens the client area at that size (clamped to the
 monitor work area); resizing the window afterward only resizes the swap-chain
-output and scales that fixed render canvas. Select **Fit** instead of a fixed
-resolution to render the 3D scene directly across the full client area in
-Windowed mode or across the display's native pixel area in Fullscreen mode.
-During an interactive window resize, the last completed scene is scaled; the
-single scene/depth pair is resized once the drag ends. The settings can also
-be changed in `cam.cfg` with `game_full_screen 1` or `game_full_screen 0` and
+output and scales that fixed render canvas. Select **Fit** to make the engine's
+3D scene and software overlay canvas follow the window's actual client-pixel
+size. This keeps HUD, tutorial, and console text pixel-aligned instead of
+resampling them from the selected fixed resolution. During an interactive
+window resize, the last completed frame is scaled; the scene, depth buffer,
+and software canvas are rebuilt once when the drag ends. The selected fixed
+resolution is retained for when Fit is disabled. The settings can also be
+changed in `cam.cfg` with `game_full_screen 1` or `game_full_screen 0` and
 `game_screen_fit 1` or `game_screen_fit 0`.
 
 On a multi-monitor system, the display containing the game window determines
@@ -379,8 +456,10 @@ copies all retained output. Press **Escape** to close the console and resume
 play.
 
 `help <keyword>` searches the names, descriptions, and argument types of the
-commands available in the current mode. Plain `help` opens DromEd's searchable
-command-reference window; in gameplay it prints the available command names.
+commands available in the current mode. In gameplay, plain `help` prints a
+short index of command groups; `help <group>` drills into one group, and
+`help all` explicitly prints the complete active registry. Plain `help` in
+DromEd opens its searchable command-reference window.
 
 Available commands:
 
@@ -451,11 +530,13 @@ repository.
   completed.
 - The first-run picker and startup path need clean-machine testing against the
   common CD, GOG, and Steam directory layouts.
-- NewDark data formats are not supported. This affects both the runner's mod
-  compatibility and the DromEd viewer's ability to open or preserve
-  NewDark-specific mission data.
-- Thief Gold and System Shock 2 game targets are not yet supported or
-  validated by this runner and modern presentation path.
+- Most NewDark mission extensions are not supported. PNG replacement art and
+  FM-local configuration are supported, but extended world/AI/property data
+  still affects the runner's mod compatibility and DromEd's ability to open or
+  preserve NewDark-specific missions.
+- Stock Thief Gold mission/world and AI-path formats pass initial runner and
+  DromEd smoke tests. TDP and broader Gold campaign/UI behavior still need
+  validation; System Shock 2 is not a supported game target.
 - DromEd is currently a viewer and playtest tool, not a reliable editor. It
   builds with the shared D3D11 renderer in a resizable window, but stability,
   editing and save integrity, and complete mission-authoring workflows still
@@ -465,11 +546,14 @@ repository.
   I3DL2 or OpenAL EFX. DirectSound provides room reverb while the optional
   OpenAL provider also supplies per-source low-pass occlusion; both paths need
   broader in-mission acoustic comparison against the original game.
-- Squirrel scripting support required by NewDark-era fan missions and mods,
-  including *The Black Parade*, is not implemented. The x64 legacy-OSM
-  compatibility runtime does not provide Squirrel support.
+- The Windows builds load NewDark-style loose `sq_scripts/*.nut` sources with
+  the native Squirrel 3.2 provider. Core object, property, link, physics,
+  Act/React, door, lock, damage, containment, quest, data, and light calls are
+  bridged, but the complete NewDark service surface, overlay callbacks, and
+  packaged Squirrel-source archives still need broader implementation and
+  mission coverage.
 - Broader NewDark mod compatibility remains to be implemented and tested,
-  including replacement models, textures, and other art assets.
+  including replacement models and less common resource formats.
 - There is no installer or redistributable package. The executable is run
   directly from the build output and uses separately installed retail data.
 - Console scrollback retains the latest 4,096 output lines; command recall is
