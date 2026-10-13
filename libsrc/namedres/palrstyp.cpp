@@ -20,10 +20,11 @@ struct sExtMap
 
 static sExtMap extMaps[] =
 {
-  { ".pcx", ePalKind::kPalPCX },
+  { ".png", ePalKind::kPalPNG },
   { ".tga", ePalKind::kPalTGA },
-  { ".cel", ePalKind::kPalCEL },
   { ".gif", ePalKind::kPalGIF },
+  { ".pcx", ePalKind::kPalPCX },
+  { ".cel", ePalKind::kPalCEL },
   { ".bmp", ePalKind::kPalBMP }
 }; 
 

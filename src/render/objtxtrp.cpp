@@ -13,6 +13,9 @@
 #include <storeapi.h>
 #include <resapi.h>
 #include <imgrstyp.h>
+#include <palrstyp.h>
+#include <bitmap.h>
+#include <palmgr.h>
 
 #include <config.h>
 #include <cfgdbg.h>
@@ -171,6 +174,14 @@ static void _ClearPtxt(IRes **pTxt)
       ConfigSpew("TxtReplaceSpew",("ObjTxtReplace being asked to ClearPtxt NULL\n"));
       return;
    }
+   {
+      grs_bitmap *bitmap = (grs_bitmap *)(*pTxt)->DataPeek();
+      if (bitmap && bitmap->type == BMT_FLAT8 && bitmap->align != 0)
+      {
+         palmgr_release_slot(bitmap->align);
+         bitmap->align = 0;
+      }
+   }
    (*pTxt)->Unlock();
    SafeRelease((*pTxt));
    *pTxt=NULL;
@@ -187,7 +198,26 @@ static void _GogetPtxt(IRes **pTxt, const char *txtName)
    // should really investigate txtName, check for txt16 and so on, expose from objmodel
    IRes *pRes = pResMan->Bind(txtName, RESTYPE_IMAGE, NULL);
    if (pRes)
+   {
       pRes->Lock();
+      grs_bitmap *bitmap = (grs_bitmap *)pRes->DataPeek();
+      if (bitmap && bitmap->type == BMT_FLAT8)
+      {
+         IRes *palette = pResMan->Retype(pRes, RESTYPE_PALETTE, 0);
+         if (palette)
+         {
+            uchar *data = (uchar *)palette->Lock();
+            if (data)
+            {
+               bitmap->align = (uchar)palmgr_alloc_pal(data);
+               palette->Unlock();
+            }
+            // The palette manager retains its own copy.
+            palette->Drop();
+            palette->Release();
+         }
+      }
+   }
    else
       Warning(("ObjTxtReplace can't seem to load %s as typed\n",txtName));
    *pTxt=pRes;

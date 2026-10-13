@@ -32,6 +32,8 @@ public:
 	void STDMETHODCALLTYPE SetContext(ISearchPath* pContext) override;
 	void STDMETHODCALLTYPE SetVariants(ISearchPath* pVariants) override;
 	IStore* STDMETHODCALLTYPE Find(const char* pName, uint fFlags, IStore** ppCanonStore, const char* pRelPath) override;
+	IStore* FindAny(const char* const* ppNames, int nNames, uint fFlags,
+		IStore** ppCanonStore, const char* pRelPath, int* pFoundIndex);
 	void* STDMETHODCALLTYPE BeginContents(const char* pPattern, uint fFlags, const char* pRelPath) override;
 	BOOL STDMETHODCALLTYPE Next(void* pCookie, IStore** pFoundStore, char* pFoundName, IStore** ppFoundCanonStore) override;
 	void STDMETHODCALLTYPE EndContents(void* pCookie) override;

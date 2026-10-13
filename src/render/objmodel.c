@@ -202,7 +202,28 @@ static void _objm_pal_callback(uchar *pal, uchar *bitmap)
 static IRes * _do_raw_load(ISearchPath *pPath, char *pName)
 {
    IResMan *pResMan = AppGetObj(IResMan);
-   IRes *pRes = IResMan_Bind(pResMan, pName, RESTYPE_IMAGE, pPath, NULL, 0);
+   char logicalName[64];
+   char *pExtension;
+   char *pSlash;
+   IRes *pRes;
+
+   // A model material names a logical texture, not a required image codec.
+   // NewDark-era assets commonly retain an old .gif/.pcx/.png spelling in
+   // the BIN while a higher-priority FM supplies the same texture in another
+   // supported format.  An explicit extension makes the resource manager
+   // search only that format, which either selects lower-priority retail art
+   // or produces the checkerboard fallback.  Bind extensionlessly so content
+   // root precedence is applied before the image type's extension preference.
+   strncpy(logicalName, pName, sizeof(logicalName) - 1);
+   logicalName[sizeof(logicalName) - 1] = '\0';
+   pExtension = strrchr(logicalName, '.');
+   pSlash = strrchr(logicalName, '\\');
+   if (!pSlash)
+      pSlash = strrchr(logicalName, '/');
+   if (pExtension && (!pSlash || pExtension > pSlash) && pExtension != logicalName)
+      *pExtension = '\0';
+
+   pRes = IResMan_Bind(pResMan, logicalName, RESTYPE_IMAGE, pPath, NULL, 0);
    SafeRelease(pResMan);
    if (pRes)
       IRes_Lock(pRes);
@@ -862,7 +883,12 @@ void objmodelInit(void)
 {
    int i;
 
-   allow_16bit_obj_textures=config_is_defined("ObjTextures16");
+   // NewDark uses MeshTextures16 for high-colour mesh texture variants;
+   // older configurations use ObjTextures16 for the same shared object-model
+   // search path.  Accept either spelling so FM mesh/txt16 assets are not
+   // silently replaced by lower-priority mesh/txt fallbacks.
+   allow_16bit_obj_textures=config_is_defined("ObjTextures16") ||
+                            config_is_defined("MeshTextures16");
 
    objmodelSetupRes();
    config_get_int("character_detail",&g_highpoly_characters);
@@ -1293,7 +1319,7 @@ void objmodelSetupMeshTextures(ObjID obj, void *model, int idx)
 
    version = m->version;
    mats    = mm_smatr_list(m);
-   
+
    if( version == MM_CUR_VER )//zb
    {
        for (i = 0, j = 0; i < m->smatrs; ++i)   // get the textures in the table

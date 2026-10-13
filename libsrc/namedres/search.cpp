@@ -277,6 +277,70 @@ IStore* cSearchPath::Find(const char* pName, uint fFlags, IStore** ppCanonStore,
 
 ///////////////////////////////////////
 
+IStore* cSearchPath::FindAny(const char* const* ppNames, int nNames, uint fFlags,
+	IStore** ppCanonStore, const char* pRawRelPath, int* pFoundIndex)
+{
+	if (!ppNames || nNames <= 0)
+		return nullptr;
+
+	if (!m_bPathParsed)
+		SetupStorages();
+
+	char* pRelPath = nullptr;
+	if (pRawRelPath)
+		GetNormalizedPath(pRawRelPath, &pRelPath);
+
+	IStore* found = nullptr;
+	for (auto pNode = m_pPathStorages; !found && pNode; pNode = pNode->pNext)
+	{
+		IStore* pStore;
+		if (pRelPath)
+			pStore = pNode->pStore->GetSubstorage(pRelPath, FALSE);
+		else
+		{
+			pStore = pNode->pStore;
+			pStore->AddRef();
+		}
+
+		if (!pStore)
+			continue;
+
+		for (int i = 0; !found && i < nNames; ++i)
+		{
+			FindInfo info{};
+			info.pName = ppNames[i];
+			info.pStore = pStore;
+			info.fFlags = fFlags;
+
+			if (m_pVariants)
+				m_pVariants->Iterate(FindInStorage, FALSE, &info);
+			else
+				FindInStorage(nullptr, nullptr, 0, &info);
+
+			found = info.pFound;
+			if (found)
+			{
+				if (ppCanonStore)
+				{
+					*ppCanonStore = pStore;
+					pStore->AddRef();
+				}
+				if (pFoundIndex)
+					*pFoundIndex = i;
+			}
+		}
+
+		pStore->Release();
+	}
+
+	if (pRelPath)
+		Free(pRelPath);
+
+	return found;
+}
+
+///////////////////////////////////////
+
 struct SearchCookie
 {
 	PathStorageNode* pNode;

@@ -19,6 +19,8 @@
 #include <resapi.h>
 #include <respaths.h>
 #include <fonrstyp.h>
+#include <palrstyp.h>
+#include <palmgr.h>
 
 #include <string.h>
 #include <str.h>
@@ -825,7 +827,12 @@ public:
         mState(kWaitForLoad),
         mStateLocked(FALSE)
    {
-      
+      for (int i = 0; i < kNumDials; ++i)
+         for (int j = 0; j < kNumDialImages; ++j)
+         {
+            mpDialImages[i][j] = NULL;
+            mDialPaletteSlots[i][j] = -1;
+         }
    }
 
    enum eRects
@@ -991,6 +998,7 @@ public:
 protected:
    ITagFile* mpMissionFile; 
    IDataSource* mpDialImages[kNumDials][kNumDialImages]; 
+   int mDialPaletteSlots[kNumDials][kNumDialImages];
 
    int mState; 
    int mFileTotal;
@@ -1003,6 +1011,7 @@ protected:
    void InitUI()
    {
       cObjectivesBase::InitUI(); 
+      AutoAppIPtr(ResMan);
 
        for (int i = 0; i < kNumDials; i++)
          for(int j = 0; j < kNumDialImages; j++)
@@ -1011,6 +1020,41 @@ protected:
             sprintf(buf,"load%c_%d",'A'+i,j+1);
             ConfigSpew("dial_spew",("Binding %s\n",buf)); 
             mpDialImages[i][j] = FetchUIImage(buf,mResPath+"\\Dials"); 
+            mDialPaletteSlots[i][j] = -1;
+
+            // The background and the dial frames need not share a palette.
+            // In particular, NewDark FMs can replace LOADING.PCX with a
+            // true-colour PNG while retaining the stock indexed LoadA/LoadB
+            // frames.  Drawing those frames through the panel's synthetic
+            // PNG palette produces the characteristic neon/rainbow dials.
+            // Give each indexed frame its authored palette instead.
+            IRes* imageRes = NULL;
+            if (mpDialImages[i][j] &&
+                SUCCEEDED(mpDialImages[i][j]->QueryInterface(
+                   IID_IRes,(void**)&imageRes)))
+            {
+               grs_bitmap* bm = (grs_bitmap*)imageRes->Lock();
+               if (bm && bm->type == BMT_FLAT8)
+               {
+                  IRes* palRes = pResMan->Retype(imageRes,
+                                                 RESTYPE_PALETTE,0);
+                  if (palRes)
+                  {
+                     uchar* pal = (uchar*)palRes->Lock();
+                     if (pal)
+                     {
+                        int slot = palmgr_alloc_pal(pal);
+                        bm->align = (uchar)slot;
+                        mDialPaletteSlots[i][j] = slot;
+                        palRes->Unlock();
+                     }
+                     palRes->Release();
+                  }
+               }
+               if (bm)
+                  imageRes->Unlock();
+               imageRes->Release();
+            }
          }
        if (mFileTotal <= 0)
           mFileTotal = 1;  // make sure this is not zero 
@@ -1025,6 +1069,9 @@ protected:
          for(int j = 0; j < kNumDialImages; j++)
          {
             SafeRelease(mpDialImages[i][j]); 
+            if (mDialPaletteSlots[i][j] > 0)
+               palmgr_release_slot(mDialPaletteSlots[i][j]);
+            mDialPaletteSlots[i][j] = -1;
          }
 
        cObjectivesBase::TermUI(); 

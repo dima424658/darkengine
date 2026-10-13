@@ -33,12 +33,14 @@ bool mipmap_enable = TRUE;
 
 void mm_copy_bitmap_to_texture(uchar *dest, grs_bitmap *src)
 {
-   int i,drow;
+   int i,drow,bytes_per_pixel;
 
-   drow = src->w;
+   bytes_per_pixel = src->type == BMT_FLAT16 ? 2 :
+                     (src->type == BMT_FLAT24 ? 3 : 1);
+   drow = src->w * bytes_per_pixel;
 
    for (i=0; i < src->h; ++i)
-      memcpy(dest + i * drow, src->bits + i * src->row, src->w);
+      memcpy(dest + i * drow, src->bits + i * src->row, drow);
 }
 
 void mm_init_bitmap(grs_bitmap *dest, grs_bitmap *src, int w, int h)
@@ -192,10 +194,14 @@ r3s_texture create_mipmapped_texture(grs_bitmap *src_orig)
    r3s_texture tmap;
    int n, mn;
    int w,h,total,i;
+   int bytes_per_pixel;
    uchar *bits;
    grs_bitmap temp, *src = &temp;
 
    *src = *src_orig;
+
+   bytes_per_pixel = src->type == BMT_FLAT16 ? 2 :
+                     (src->type == BMT_FLAT24 ? 3 : 1);
 
    n = 0;
 
@@ -204,7 +210,11 @@ r3s_texture create_mipmapped_texture(grs_bitmap *src_orig)
    tmap_pal  = palmgr_get_pal(src->align);
    tmap_ipal = palmgr_get_ipal(src->align);
 
-   if (mipmap_enable && tmap_ipal && !(src->flags & BMF_TRANS)) {
+   // The legacy downsampler is palette based. True-colour replacement art
+   // still needs a correctly sized base texture, but cannot use that indexed
+   // mip generator.
+   if (src->type == BMT_FLAT8 && mipmap_enable && tmap_ipal &&
+       !(src->flags & BMF_TRANS)) {
 #ifdef LIGHT_MAP
       while (src->w > (4 << n) && src->h > (4 << n))
 #else
@@ -227,7 +237,7 @@ r3s_texture create_mipmapped_texture(grs_bitmap *src_orig)
    w = src->w;
    h = src->h;
    for (i=0; i < n; ++i) {
-      total += w*h;
+      total += w*h*bytes_per_pixel;
       w >>= 1;
       h >>= 1;
    }
@@ -240,7 +250,7 @@ r3s_texture create_mipmapped_texture(grs_bitmap *src_orig)
    h = src->h;
    for (i=0; i < n; ++i) {
       tmap[i].bits = bits;
-      bits += w*h;
+      bits += w*h*bytes_per_pixel;
       w >>= 1;
       h >>= 1;
    }

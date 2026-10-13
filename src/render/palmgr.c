@@ -385,7 +385,12 @@ int palmgr_alloc_pal(uchar *pal)
    if (pal_list==NULL)
       palmgr_init();
 
-   for (i=0; i<256; i++) {
+   // Slot zero is the mutable game/UI palette.  A resource palette may match
+   // it at load time and diverge as soon as a menu, editor pane, or mission
+   // transition installs another global palette.  Keep authored resource
+   // palettes in stable nonzero slots; subsequent allocations still
+   // deduplicate against those slots.
+   for (i=1; i<256; i++) {
       info = &pal_list[i];
 
       if ((info->pal_data != NULL) &&
@@ -405,7 +410,14 @@ int palmgr_alloc_pal(uchar *pal)
          break;
    }
 
-   AssertMsg(i<256, "palmgr_alloc_pal(): no free palette slot!");
+   if (i >= 256)
+   {
+      // align is an 8-bit field, so the legacy palette table cannot be
+      // widened independently. Falling back to the game palette is preferable
+      // to indexing one element past pal_list and corrupting the heap.
+      Warning(("palmgr_alloc_pal(): no free palette slot; using slot 0\n"));
+      return 0;
+   }
    ConfigSpew("palmgr_spew",("alloc_pal() returning new slot %d\n",i));
 
    // Free ipal if it exists, since we don't necessarily need one.

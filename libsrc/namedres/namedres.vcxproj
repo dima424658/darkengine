@@ -161,6 +161,7 @@
     <ClInclude Include="filestrm.h" />
     <ClInclude Include="fonrstyp.h" />
     <ClInclude Include="gif.h" />
+    <ClInclude Include="imagefmt.h" />
     <ClInclude Include="imgrstyp.h" />
     <ClInclude Include="mdlrstyp.h" />
     <ClInclude Include="miprstyp.h" />
@@ -168,6 +169,8 @@
     <ClInclude Include="pathutil.h" />
     <ClInclude Include="portableinflate.h" />
     <ClInclude Include="pcx.h" />
+    <ClInclude Include="png.h" />
+    <ClInclude Include="psd.h" />
     <ClInclude Include="resapi.h" />
     <ClInclude Include="resarq.h" />
     <ClInclude Include="resbase.h" />
@@ -210,6 +213,8 @@
     <ClCompile Include="pathutil.cpp" />
     <ClCompile Include="portableinflate.cpp" />
     <ClCompile Include="pcx.cpp" />
+    <ClCompile Include="png.cpp" />
+    <ClCompile Include="psd.cpp" />
     <ClCompile Include="resarq.cpp" />
     <ClCompile Include="resimage.cpp" />
     <ClCompile Include="resman.cpp" />

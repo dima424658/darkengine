@@ -12,8 +12,9 @@
 
 #include <g2.h>
 #include <resapi.h>
+#include <darklimit.h>
 
-#define TEXMEM_MAX           256    // actual maximum number of entries
+#define TEXMEM_MAX          DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES
 #define TEXMEM_NO_HND         -1    // no texture handle available
 #define TEXMEM_NO_ALIGN       -1    // align field not set...
 
@@ -40,9 +41,11 @@ EXTERN BOOL        texmem_find_align;
 
 //////////////////////////
 // special texture IDX's
-#define WATERIN_IDX  247
-#define WATEROUT_IDX 248
-#define BACKHACK_IDX 249
+#define WATERIN_IDX  DARK_LIMIT_TERRAIN_WATER_IN_ID
+#define WATEROUT_IDX DARK_LIMIT_TERRAIN_WATER_OUT_ID
+#define BACKHACK_IDX DARK_LIMIT_TERRAIN_SKY_FIRST_ID
+#define TEXMEM_RESERVED_LIMIT DARK_LIMIT_TERRAIN_LEGACY_ID_SLOTS
+#define TEXMEM_IS_RESERVED(idx) ((idx) >= WATERIN_IDX && (idx) < TEXMEM_RESERVED_LIMIT)
 
 // and callback info
 // set these "global" callback idxs when you need to get data in to RN callbacks 'n such

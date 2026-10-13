@@ -405,12 +405,18 @@ void WaterColorSetupTextures()
    BOOL opaque = GetGameScreenMode()->flags & kScrnMode3dDriver; 
    pt_default_water_texture_flags = opaque ? 0:BMF_TRANS;
    
-   for (int i = 0; i < BACKHACK_IDX; i++)
+   for (int i = 0; i < texmemGetMax() || i <= WATEROUT_IDX; i++)
    {
       // skip forward to WATERIN_IDX
 
-      if (i == texmemGetMax())
+      if (i == texmemGetMax() && texmemGetMax() < WATERIN_IDX)
          i = WATERIN_IDX; 
+
+      if (i >= BACKHACK_IDX && i < TEXMEM_RESERVED_LIMIT)
+      {
+         i = TEXMEM_RESERVED_LIMIT - 1;
+         continue;
+      }
 
       if (!family_texture_is_water(i))
          continue; 

@@ -7,7 +7,10 @@
 #include <bmp.h>
 #include <cel.h>
 #include <gif.h>
+#include <imagefmt.h>
+#include <png.h>
 #include <pcx.h>
+#include <psd.h>
 #include <tga.h>
 #include <bitmap.h>
 
@@ -37,8 +40,34 @@ void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride*
 	}
 
 	grs_bitmap* bm = nullptr;
-	switch (m_Kind)
+	const eImageContent content = DetectImageContent(pStream);
+	switch (content)
 	{
+	case eImageContent::kGIF:
+		bm = ResGifReadImage(pStream, pResMem);
+		break;
+	case eImageContent::kPCX:
+		bm = ResPcxReadImage(pStream, pResMem);
+		break;
+	case eImageContent::kPNG:
+	case eImageContent::kTIFF:
+		// WIC selects its decoder from the stream signature, so TIFF assets
+		// work even when a NewDark FM gives them a historical .gif name.
+		bm = ResPngReadImage(pStream, pResMem);
+		break;
+	case eImageContent::kPSD:
+		bm = ResPsdReadImage(pStream, pResMem);
+		break;
+	default:
+		break;
+	}
+
+	// CEL, BMP, and TGA do not have signatures covered above.  Retain the
+	// resource type selected from their extension as the fallback.
+	if (!bm)
+	{
+		switch (m_Kind)
+		{
 	case eImgKind::kImgBMP:
 		bm = ResBmpReadImage(pStream, pResMem);
 		break;
@@ -48,6 +77,9 @@ void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride*
 	case eImgKind::kImgGIF:
 		bm = ResGifReadImage(pStream, pResMem);
 		break;
+	case eImgKind::kImgPNG:
+		bm = ResPngReadImage(pStream, pResMem);
+		break;
 	case eImgKind::kImgPCX:
 		bm = ResPcxReadImage(pStream, pResMem);
 		break;
@@ -56,6 +88,7 @@ void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride*
 		break;
 	default:
 		break;
+		}
 	}
 
 	if (pTimestamp)
@@ -66,8 +99,25 @@ void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride*
 	if (!bm)
 		return nullptr;
 
-	ImageHackRemap16Bit(bm, 0);
-	ImageHackAutoSetTransparency(bm, 0);
+	if ((content == eImageContent::kPNG || content == eImageContent::kTIFF ||
+	     content == eImageContent::kPSD) && bm->type == BMT_FLAT16)
+	{
+		// The true-colour codecs emit explicitly tagged RGB565, ARGB1555, or
+		// ARGB4444 pixels.  ImageHackRemap16Bit is a legacy heuristic for
+		// untagged 15/16-bit art; applying it to ARGB1555 interprets the alpha
+		// bit as colour data and changes the format tag.  BP's Dial/Window
+		// animation frames take that path, producing the conspicuous false
+		// colours.  The flat16 and hardware blitters understand these explicit
+		// formats directly.
+		const ulong format = bm->flags & 0x700;
+		if (format == BMF_RGB_1555 || format == BMF_RGB_4444)
+			bm->flags |= BMF_TRANS;
+	}
+	else
+	{
+		ImageHackRemap16Bit(bm, 0);
+		ImageHackAutoSetTransparency(bm, 0);
+	}
 	if (pSize)
 		*pSize = pResMem->GetSize(bm);
 

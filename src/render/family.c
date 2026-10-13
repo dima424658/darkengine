@@ -73,18 +73,18 @@ static char *_fam_dir_names[2][2]=
 // utility functions
 
 // remap a single cell texture through the swap table
-static BOOL cell_tx_id_remap(uchar *cur_val, int *tex_swap, int cnt)
+static BOOL cell_tx_id_remap(ushort *cur_val, int *tex_swap, int cnt)
 {
    int val=(int)*cur_val;
    int newval=0;
    if ((val>=0)&&(val<cnt))                 // protect against mahks broken cosmic ray level
       newval=tex_swap[val];
-   else if ((val>=WATERIN_IDX)&&(val<=255)) // hateful initial check to save sky_tex
+   else if (TEXMEM_IS_RESERVED(val))        // preserve water and legacy sky slots
       return FALSE;                         // "special"'s just stay themselves
    if (newval==-1) newval=0;
    if (newval!=val)
    {
-      *cur_val=(uchar)newval;
+      *cur_val=(ushort)newval;
       return TRUE;
    }
    return FALSE;
@@ -188,7 +188,7 @@ BOOL familyDiskTexBlockLoad(void *mem)
    IRes *handles[TEXMEM_MAX];
    BOOL rv, old_find_align=texmem_find_align;
 
-   if (TEXMEM_MAX<=ResBlockHndCnt(mem))
+   if (ResBlockHndCnt(mem) > TEXMEM_MAX)
       return FALSE;
 
    if (no_remap_on_load)
@@ -493,7 +493,7 @@ static void reload_single_water(int i)
       }
 
       // reload the texture
-      if (i>BACKHACK_IDX)      // try to get the sky correct, hate hate
+      if (i>BACKHACK_IDX && i<TEXMEM_RESERVED_LIMIT) // legacy six-face sky slots
          _get_sky_palette(path,_fam_sky_name);
       else
          texmemSetPalette(path,"full");
@@ -518,7 +518,8 @@ void family_reload_water(void)
    cur_render_type = new_type;
 
    for (i = 0; i < texmemGetMax(); i++)
-      reload_single_water(i);
+      if (!TEXMEM_IS_RESERVED(i))
+         reload_single_water(i);
 
    reload_single_water(WATERIN_IDX);
    reload_single_water(WATEROUT_IDX);
@@ -653,7 +654,7 @@ static void _fam_texture_zap(short oval, short nval)
    int i, mapping[TEXMEM_MAX];
 
    for (i=0; i<TEXMEM_MAX; i++)    // @TODO: get rid of this waterin_idx hack
-      if ((i<WATERIN_IDX)&&
+      if (!TEXMEM_IS_RESERVED(i) &&
           ((oval==i)||(oval==TZAP_ALL)||((oval==TZAP_INVALID)&&(i>=texmemGetMax()))))
          mapping[i]=nval;
       else

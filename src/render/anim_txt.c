@@ -231,7 +231,8 @@ void  ectsAnimTxtCheckLoad(IRes *me, BOOL portal_tmap, char *path, int txt_id)
          animData->flags = 0; 
          animData->frame_hnd[0]=me;
          animData->frame_hnd[frame_idx++]=nxt_frame;
-         while ((nxt_frame=ectsAnimSearchForFrame(name,frame_idx,path,portal_tmap))!=NULL)
+         while (frame_idx < MAX_FRAMES &&
+                (nxt_frame=ectsAnimSearchForFrame(name,frame_idx,path,portal_tmap))!=NULL)
          {
             animData->frame_hnd[frame_idx++]=nxt_frame;
             if (!portal_tmap)

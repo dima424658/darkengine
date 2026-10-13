@@ -7,6 +7,8 @@
 #include <bmp.h>
 #include <cel.h>
 #include <gif.h>
+#include <imagefmt.h>
+#include <png.h>
 #include <pcx.h>
 #include <tga.h>
 #include <bitmap.h>
@@ -29,8 +31,27 @@ void* cPaletteResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverrid
 	}
 
 	void* pData = nullptr;
-	switch (m_Kind)
+	const eImageContent content = DetectImageContent(pStream);
+	switch (content)
 	{
+	case eImageContent::kGIF:
+		pData = ResGifReadPalette(pStream, pResMem);
+		break;
+	case eImageContent::kPCX:
+		pData = ResPcxReadPalette(pStream, pResMem);
+		break;
+	case eImageContent::kPNG:
+	case eImageContent::kPSD:
+	case eImageContent::kTIFF:
+		pData = ResPngReadPalette(pStream, pResMem);
+		break;
+	default:
+		break;
+	}
+	if (!pData)
+	{
+		switch (m_Kind)
+		{
 	case ePalKind::kPalBMP:
 		pData = ResBmpReadPalette(pStream, pResMem);
 		break;
@@ -40,6 +61,9 @@ void* cPaletteResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverrid
 	case ePalKind::kPalGIF:
 		pData = ResGifReadPalette(pStream, pResMem);
 		break;
+	case ePalKind::kPalPNG:
+		pData = ResPngReadPalette(pStream, pResMem);
+		break;
 	case ePalKind::kPalPCX:
 		pData = ResPcxReadPalette(pStream, pResMem);
 		break;
@@ -48,6 +72,7 @@ void* cPaletteResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverrid
 		break;
 	default:
 		break;
+		}
 	}
 
 	if (pTimestamp)

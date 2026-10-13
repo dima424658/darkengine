@@ -94,19 +94,18 @@ static BOOL CmdTermModelLockInitialized = FALSE;
 static volatile long CmdTermPendingFontDelta = 0;
 static volatile long CmdTermFontChangeDeferred = FALSE;
 
-// Keep both profiles on the non-antialiased bitmap fonts. The AA resources
-// render through Dark's legacy lighting table and acquire scaling artifacts
-// when the gameplay overlay is composed into a fitted output viewport.
-// Ctrl+wheel changes the preference for the active profile independently.
+// Use the stock antialiased interface faces now that their 16-bit blitter can
+// blend coverage without depending on renderer-owned lighting-table state.
+// Ctrl+wheel retains smaller bitmap faces and offers larger high-DPI faces.
 static const char* CmdTermEditorFontNames[] =
 {
-   "smalfont", "textfont"
+   "smalfont", "textfont", "fontaa20", "fontaa29", "fontaa36"
 };
 static const char* CmdTermPopupFontNames[] =
 {
-   "smalfont", "textfont"
+   "smalfont", "textfont", "fontaa20", "fontaa29", "fontaa36"
 };
-static int CmdTermFontIndices[2] = { 0, 1 };
+static int CmdTermFontIndices[2] = { 0, 2 };
 
 #define CMDTERM_EDITOR_FONT_COUNT \
    (sizeof(CmdTermEditorFontNames) / sizeof(CmdTermEditorFontNames[0]))
@@ -1418,6 +1417,13 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
    // available space. Each keeps its own runtime-adjustable font preference.
    if (GetCurrentStyle())
       memcpy(&CmdTerm.style, GetCurrentStyle(), sizeof(CmdTerm.style));
+   // The scrollable console targets Dark's 16-bit compatibility canvas even
+   // when it is constructed while the startup screen still reports an 8-bit
+   // mode. Store an RGB16 value directly so white cannot be mistaken for a
+   // palette index and rendered cyan later. The AA blender masks the spare
+   // high bit when the destination is RGB555.
+   CmdTerm.style.colors[StyleColorFG] = 0xffff;
+   CmdTerm.style.colors[StyleColorText] = 0xffff;
    font_profile = (flags & kCmdTermHideUnfocused) ? 1 : 0;
    font_name = font_profile
       ? CmdTermPopupFontNames[CmdTermFontIndices[font_profile]]

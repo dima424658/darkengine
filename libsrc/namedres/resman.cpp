@@ -16,6 +16,8 @@ BOOL g_fResPrintDrops;
 #include <binrstyp.h>
 #include <zipstfct.h>
 #include <pathutil.h>
+#include <search.h>
+#include <cstdlib>
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -815,10 +817,15 @@ void cResMan::CleanResources()
 
 struct sFoundTypedStream
 {
+	enum { kMaxCandidates = 16 };
+
 	const char* pName;
 	const char* pRelPath;
 	ISearchPath* pPath;
 	char pFoundName[32];
+	char candidateNames[kMaxCandidates][32];
+	const char* candidatePtrs[kMaxCandidates];
+	int candidateCount;
 	IStore* pFoundCanonStore;
 	IStore* pStore;
 };
@@ -829,19 +836,17 @@ void TryNameWithExt(const char* pExt, IResType*, void* pClientData)
 {
 	auto* foundTyped = reinterpret_cast<sFoundTypedStream*>(pClientData);
 
-	// EnumerateExts calls us once for every legal type extension.  The old
-	// callback filled pFoundName before checking whether the first candidate
-	// existed, which prevented all later extensions from ever being tried.
-	// That made extensionless names such as Moon07a stop at Moon07a.pcx and
-	// never discover the shipped Moon07a.tga.
-	if (!foundTyped->pStore)
-	{
-		strcpy(foundTyped->pFoundName, foundTyped->pName);
-		strcat(foundTyped->pFoundName, pExt);
+	if (foundTyped->candidateCount >= sFoundTypedStream::kMaxCandidates)
+		return;
 
-		foundTyped->pStore = foundTyped->pPath->Find(foundTyped->pFoundName, 0, &foundTyped->pFoundCanonStore, foundTyped->pRelPath);
-		if (!foundTyped->pStore)
-			foundTyped->pFoundName[0] = '\0';
+	auto* pCandidate = foundTyped->candidateNames[foundTyped->candidateCount];
+	const int candidateLength = snprintf(pCandidate,
+		sizeof(foundTyped->candidateNames[0]), "%s%s", foundTyped->pName, pExt);
+	if (candidateLength >= 0 &&
+		candidateLength < static_cast<int>(sizeof(foundTyped->candidateNames[0])))
+	{
+		foundTyped->candidatePtrs[foundTyped->candidateCount] = pCandidate;
+		++foundTyped->candidateCount;
 	}
 }
 
@@ -895,6 +900,32 @@ IRes* cResMan::DoBind(const char* pName, const char* pTypeName, ISearchPath* pPa
 		results.pStore = nullptr;
 
 		pType->EnumerateExts(TryNameWithExt, &results);
+
+		// Resource roots are ordered by content priority.  Search all legal
+		// extensions inside one root before moving to the next root, so a
+		// lower-priority PNG/TGA cannot override an FM or mod PCX merely due
+		// to the global extension preference.
+		int foundIndex = -1;
+		if (auto* pConcretePath = dynamic_cast<cSearchPath*>(pPath))
+		{
+			results.pStore = pConcretePath->FindAny(results.candidatePtrs,
+				results.candidateCount, 0, &results.pFoundCanonStore,
+				results.pRelPath, &foundIndex);
+		}
+		else
+		{
+			for (int i = 0; !results.pStore && i < results.candidateCount; ++i)
+			{
+				results.pStore = pPath->Find(results.candidatePtrs[i], 0,
+					&results.pFoundCanonStore, results.pRelPath);
+				if (results.pStore)
+					foundIndex = i;
+			}
+		}
+
+		if (foundIndex >= 0)
+			strcpy(results.pFoundName, results.candidatePtrs[foundIndex]);
+
 		pStore = results.pStore;
 		if (results.pStore)
 		{
@@ -918,6 +949,13 @@ IRes* cResMan::DoBind(const char* pName, const char* pTypeName, ISearchPath* pPa
 		return nullptr;
 
 	auto* pRes = BindSpecific(pFullname, pTypeName, pStore, pCanonStore, fBindFlags);
+	const char* pStorePath = pStore->GetFullPathName();
+	if (!pStorePath)
+		pStorePath = "";
+	const char* pTrace = std::getenv("DARK_RESOURCE_TRACE");
+	if (pTrace && pTrace[0] && pTrace[0] != '0')
+		mprintf("resource bind: %s [%s] -> %s%s%s\n", pName, pTypeName,
+			pStorePath, pStorePath[0] ? "\\" : "", pFullname);
 
 	if (pCanonStore)
 		pCanonStore->Release();

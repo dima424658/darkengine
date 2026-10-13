@@ -3,6 +3,8 @@
 #ifndef __TEXTURE_H
 #define __TEXTURE_H
 
-#define LGD3D_MAX_TEXTURES 1024
+#include <darklimit.h>
+
+#define LGD3D_MAX_TEXTURES DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES
 
 #endif

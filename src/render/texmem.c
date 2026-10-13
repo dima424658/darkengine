@@ -128,8 +128,6 @@ BOOL        texmem_out_of_space=FALSE;
 int texmem_callback_idx=TEXMEM_NO_HND;
 int texmem_callback_loadid=TEXMEM_LOADID_ANON;
 
-#define TEXMEM_FIRST_RESERVED WATERIN_IDX
-
 #define TEXMEM_NUM_DEFAULT_MAPS 2
 static grs_bitmap *texmem_default_maps[TEXMEM_NUM_DEFAULT_MAPS]={NULL,NULL};
 
@@ -251,16 +249,18 @@ int _texmem_get_and_use_free_handle(void)
    int i=0;
 
    for (i=0; i<texmem_cur_max; i++)
-      if (texmem_loadid[i]==TEXMEM_LOADID_NULL)
+      if (!TEXMEM_IS_RESERVED(i) && texmem_loadid[i]==TEXMEM_LOADID_NULL)
          break;
-   if (i>=TEXMEM_FIRST_RESERVED)
+   if (TEXMEM_IS_RESERVED(i))
+      i = TEXMEM_RESERVED_LIMIT;
+   if (i>=TEXMEM_MAX)
    {
       texmem_out_of_space=TRUE;
       Warning(("texmem_get_handle: failed to find new handle\n"));
       return TEXMEM_NO_HND;
    }
-   if (i==texmem_cur_max)
-      texmem_cur_max++;   // adding to end of list, so move said end back
+   if (i>=texmem_cur_max)
+      texmem_cur_max=i+1; // adding to end of list, so move said end back
    return i;
 }
 
@@ -299,6 +299,12 @@ static BOOL texmem_core_free_idx(int idx)
    if (texmem_loadid[idx]<=TEXMEM_LOADID_NULL)
       return FALSE;   //
    ectsAnimTxtCheckFree(texmem_hnd[idx]);
+   // Object texture replacements can share this resource and inspect its
+   // bitmap while dropping their retained lock.  Release those references
+   // before freeing the mipmapped bitmap stored in the resource; doing it
+   // afterwards leaves DataPeek() pointing at freed texture memory.
+   if (texmem_hnd[idx] != NULL)
+      ObjTxtReplaceDropIRes(texmem_hnd[idx]);
    if (texmem_tm[idx]!=NULL)
    {
       texmem_free_tmap(texmem_tm[idx]);
@@ -307,7 +313,6 @@ static BOOL texmem_core_free_idx(int idx)
    if (texmem_hnd[idx] != NULL)
    {
       IResHack *pResHack;
-      ObjTxtReplaceDropIRes(texmem_hnd[idx]);
       FreeAppRes(texmem_hnd[idx]);
       IRes_Unlock(texmem_hnd[idx]);
       if (SUCCEEDED(COMQueryInterface(texmem_hnd[idx],
@@ -348,7 +353,7 @@ static BOOL texmem_free_idx(int idx)
 ///////////////////////////////////////
 // resname callbacks
 
-#define MAX_POWER 11
+#define MAX_POWER DARK_LIMIT_RUNTIME_TEXTURE_POWER
 static BOOL _texmem_check_size(int w, int h)
 {
    BOOL rv=TRUE;
@@ -413,7 +418,7 @@ static int _texmem_get_align(IRes *pRes)
 }
 
 int ectsSecretLoadIdx=0;
-int ectsSecretLoadCopy[256];
+int ectsSecretLoadCopy[TEXMEM_MAX];
 
 //
 // This replaces the old _texmem_load. Instead of being called *during*
@@ -491,7 +496,8 @@ BOOL texmem_interpret_new_res(IRes *pRes,
       }
       if (use_idx != TEXMEM_NO_HND)
       {
-         ectsSecretLoadCopy[ectsSecretLoadIdx++] = use_idx;
+         if (ectsSecretLoadIdx < TEXMEM_MAX)
+            ectsSecretLoadCopy[ectsSecretLoadIdx++] = use_idx;
          texmem_align_set[use_idx] = use_align;
       }
       SafeRelease(pResHack);
@@ -567,7 +573,8 @@ BOOL texmem_interpret_new_res(IRes *pRes,
    {
       texmem_loadid[use_idx] = texmem_callback_loadid;
       texmem_align_set[use_idx] = use_align;
-      ectsSecretLoadCopy[ectsSecretLoadIdx++] = use_idx;
+      if (ectsSecretLoadIdx < TEXMEM_MAX)
+         ectsSecretLoadCopy[ectsSecretLoadIdx++] = use_idx;
    }
 
    return TRUE;
@@ -792,8 +799,8 @@ int texmemLoadSingleAtIdx(char *dirname, char *fname, int idx)
       return TEXMEM_NO_HND;
    }
    texmem_core_free_idx(idx);  // dont want to be warned if its unused
-   if (idx == texmem_cur_max)
-      texmem_cur_max++;
+   if (!TEXMEM_IS_RESERVED(idx) && idx >= texmem_cur_max)
+      texmem_cur_max=idx+1;
    texmem_callback_idx=idx;
    ectsSecretLoadIdx=0;
 
@@ -898,7 +905,7 @@ int texmemFreeSinglebyName(char *dirname, char *fname)
    SafeRelease(pResMan);
    if (pRes)
    {
-      uchar texhnd = GetResTexIdx(pRes);
+      int texhnd = GetResTexIdx(pRes);
       SafeRelease(pRes);
       return texmem_free_idx(texhnd)?1:0;
    }
@@ -915,7 +922,7 @@ int texmemGetSinglebyName(char *dirname, char *fname)
    SafeRelease(pResMan);
    if (pRes)
    {
-      uchar texhnd = GetResTexIdx(pRes);
+      int texhnd = GetResTexIdx(pRes);
       SafeRelease(pRes);
       return (int)texhnd;
    }
@@ -994,9 +1001,18 @@ void texmemGetHandlesFromRes(IRes **res_list, int *hnd_list, int cnt)
 void texmemCompressHandles(int *hnd_list)
 {
    int i, j;
-   for (i=0, j=0; i<WATERIN_IDX; i++)
+   for (i=0, j=0; i<TEXMEM_MAX; i++)
+   {
+      if (TEXMEM_IS_RESERVED(i))
+      {
+         hnd_list[i]=i;
+         continue;
+      }
+
       if (texmem_loadid[i]!=TEXMEM_LOADID_NULL)
       {
+         if (TEXMEM_IS_RESERVED(j))
+            j=TEXMEM_RESERVED_LIMIT;
          hnd_list[i]=j;
          if (i!=j)
          {
@@ -1014,9 +1030,8 @@ void texmemCompressHandles(int *hnd_list)
       }
       else
          hnd_list[i]=-1;
-   for (i=WATERIN_IDX; i<TEXMEM_MAX; i++)
-      hnd_list[i]=i;
+   }
    texmem_cur_max=j;
-   ectsAnimTxtRemapAll(hnd_list,i);
+   ectsAnimTxtRemapAll(hnd_list,TEXMEM_MAX);
 }
 

@@ -52,8 +52,9 @@ bool SkipBytes(IStoreStream* pStream, long size)
 	return true;
 }
 
-bool SkipSubBlocks(IStoreStream* pStream)
+bool ReadExtension(IStoreStream* pStream, int label, int* pTransparentIndex)
 {
+	bool firstBlock = true;
 	while (true)
 	{
 		const auto size = pStream->Getc();
@@ -61,8 +62,14 @@ bool SkipSubBlocks(IStoreStream* pStream)
 			return false;
 		if (size == 0)
 			return true;
-		if (!SkipBytes(pStream, size))
+
+		uint8 block[255];
+		if (!ReadExact(pStream, block, size))
 			return false;
+		if (firstBlock && label == 0xf9 && size >= 4 &&
+			(block[0] & 1) != 0 && pTransparentIndex)
+			*pTransparentIndex = block[3];
+		firstBlock = false;
 	}
 }
 
@@ -291,6 +298,7 @@ grs_bitmap* ResGifReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 		return nullptr;
 
 	GifImageBlock image{};
+	int transparentIndex = -1;
 	while (true)
 	{
 		const auto marker = pStream->Getc();
@@ -302,7 +310,8 @@ grs_bitmap* ResGifReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 		}
 		if (marker == 0x21)
 		{
-			if (pStream->Getc() < 0 || !SkipSubBlocks(pStream))
+			const int label = pStream->Getc();
+			if (label < 0 || !ReadExtension(pStream, label, &transparentIndex))
 				return nullptr;
 			continue;
 		}
@@ -335,6 +344,20 @@ grs_bitmap* ResGifReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 		return nullptr;
 	}
 
+	// Dark's indexed transparency convention reserves palette index zero.
+	// GIF permits any palette entry to be transparent, so exchange the two
+	// indices while retaining all opaque index-zero pixels at their old colour.
+	if (transparentIndex > 0 && transparentIndex < 256)
+	{
+		for (unsigned long i = 0; i < pixelCount; ++i)
+		{
+			if (pBits[i] == 0)
+				pBits[i] = static_cast<uint8>(transparentIndex);
+			else if (pBits[i] == transparentIndex)
+				pBits[i] = 0;
+		}
+	}
+
 	gr_init_bitmap(pBitmap, pBits, BMT_FLAT8, 0, image.width, image.height);
 	return pBitmap;
 }
@@ -342,7 +365,42 @@ grs_bitmap* ResGifReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 uint8* ResGifReadPalette(IStoreStream* pStream, IResMemOverride* pResMem)
 {
 	GifHeader header{};
-	if (!ReadHeader(pStream, &header) || (header.flags & 0x80) == 0)
+	if (!ReadHeader(pStream, &header))
+		return nullptr;
+
+	uint8 globalPalette[3 * 256]{};
+	const int globalEntries = (header.flags & 0x80) != 0 ?
+		PaletteEntries(header.flags) : 0;
+	if (globalEntries != 0 &&
+		!ReadExact(pStream, globalPalette, 3 * globalEntries))
+		return nullptr;
+
+	GifImageBlock image{};
+	int transparentIndex = -1;
+	while (true)
+	{
+		const auto marker = pStream->Getc();
+		if (marker == 0x2c)
+		{
+			if (!ReadExact(pStream, &image, sizeof(image)))
+				return nullptr;
+			break;
+		}
+		if (marker == 0x21)
+		{
+			const int label = pStream->Getc();
+			if (label < 0 || !ReadExtension(pStream, label, &transparentIndex))
+				return nullptr;
+			continue;
+		}
+		if (marker == 0)
+			continue;
+		return nullptr;
+	}
+
+	const int localEntries = (image.flags & 0x80) != 0 ?
+		PaletteEntries(image.flags) : 0;
+	if (localEntries == 0 && globalEntries == 0)
 		return nullptr;
 
 	LGALLOC_PUSH_CREDIT();
@@ -352,10 +410,29 @@ uint8* ResGifReadPalette(IStoreStream* pStream, IResMemOverride* pResMem)
 		return nullptr;
 
 	std::memset(pPalette, 0, 3 * 256);
-	if (!ReadExact(pStream, pPalette, 3 * PaletteEntries(header.flags)))
+	if (localEntries != 0)
 	{
-		pResMem->ResFree(pPalette);
-		return nullptr;
+		// Pixel indices in an image with a local colour table refer to that
+		// table, even when the file also supplies a global one.  Returning the
+		// global table here produces the characteristic rainbow colours seen
+		// when such replacement textures are decoded with the wrong palette.
+		if (!ReadExact(pStream, pPalette, 3 * localEntries))
+		{
+			pResMem->ResFree(pPalette);
+			return nullptr;
+		}
+	}
+	else
+		std::memcpy(pPalette, globalPalette, 3 * globalEntries);
+
+	if (transparentIndex > 0 && transparentIndex < 256)
+	{
+		for (int channel = 0; channel < 3; ++channel)
+		{
+			const uint8 value = pPalette[channel];
+			pPalette[channel] = pPalette[transparentIndex * 3 + channel];
+			pPalette[transparentIndex * 3 + channel] = value;
+		}
 	}
 
 	return pPalette;

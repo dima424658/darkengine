@@ -130,8 +130,18 @@ eLoopMessageResult LGAPI ScrnManLoopFunc(void* context, eLoopMessage msg, tLoopM
                                       NULL, NULL, 0);
             if (pRes)
             {
-               ScrnNewPalette(IRes_Lock(pRes),0,256); 
-               IRes_Unlock(pRes); 
+               void *palette = IRes_Lock(pRes);
+               if (palette)
+               {
+                  ScrnNewPalette(palette,0,256);
+                  IRes_Unlock(pRes);
+               }
+               else
+               {
+#ifndef SHIP
+                  mprintf("Failed to lock palette %s\n", data->pal_res);
+#endif
+               }
                SafeRelease(pRes);
             }
             else

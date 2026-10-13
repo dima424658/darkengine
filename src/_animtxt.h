@@ -12,7 +12,10 @@
 #ifndef ___ANIMTXT_H
 #define ___ANIMTXT_H
 
-#define MAX_FRAMES 20
+#include <darklimit.h>
+
+// Frame zero is the base image; NewDark accepts numbered frames through 99.
+#define MAX_FRAMES DARK_LIMIT_RUNTIME_TEXTURE_ANIMATION_SLOTS
 
 typedef struct {
    void  *animsys;
