@@ -5,7 +5,9 @@
 
 #include <algsndi.h>
 #include <comtools.h>
+#include <lg.h>
 #include <mixerlck.h>
+#include <mprintf.h>
 
 #define IS_STREAM  (mStateFlags & kSndFlagStream)
 #define IS_LOOP    (mStateFlags & kSndFlagLooped)
@@ -83,18 +85,28 @@ STDMETHODIMP_(eSndError) cALSndMixer::Init(sSndSetup *, uint32 channels,
    if (mDevice != NULL)
       return kSndDeviceAlready;
    if (!OpenALLoad(&mAL))
+   {
+      mprintf("OpenAL: unable to load the OpenAL runtime; audio is disabled\n");
       return kSndCantCreateDevice;
+   }
 
    mDevice = mAL.alcOpenDevice(NULL);
    if (mDevice == NULL)
+   {
+      mprintf("OpenAL: no default playback device (check the PulseAudio, "
+              "PipeWire, or ALSA service); audio is disabled\n");
       return kSndCantCreateDevice;
+   }
 
    const ALCint effectAttributes[] = { ALC_MAX_AUXILIARY_SENDS, 1, 0 };
    mContext = mAL.alcCreateContext(mDevice, effectAttributes);
    if (mContext == NULL)
       mContext = mAL.alcCreateContext(mDevice, NULL);
    if (mContext == NULL || !MakeCurrent())
+   {
+      mprintf("OpenAL: unable to create a playback context; audio is disabled\n");
       return kSndCantSetupDevice;
+   }
 
    mNumMixerChans = static_cast<int32>(channels);
    mNumFreeMixerChans = static_cast<int32>(channels);

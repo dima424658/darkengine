@@ -1,4 +1,6 @@
+#ifdef _WIN32
 #include <win32_platform.h>
+#endif
 
 #include "squirrelhost.h"
 

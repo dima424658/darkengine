@@ -143,10 +143,15 @@ int GamepadInit(void)
    backend_name[sizeof(backend_name) - 1] = '\0';
    if (!g_enabled || StrEqualNoCase(backend_name, "off") || StrEqualNoCase(backend_name, "legacy"))
       return 0;
+#ifdef _WIN32
    if (!StrEqualNoCase(backend_name, "auto") && !StrEqualNoCase(backend_name, "xinput"))
       return 0;
-
    g_backend = GamepadXInputBackend();
+#else
+   if (!StrEqualNoCase(backend_name, "auto") && !StrEqualNoCase(backend_name, "sdl"))
+      return 0;
+   g_backend = GamepadSDLBackend();
+#endif
    if (!g_backend || !g_backend->init())
    {
       g_backend = 0;

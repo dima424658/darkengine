@@ -475,7 +475,7 @@ void CameraSave(Camera *cam, char *str)
    else
    {
       // add .cam?
-      fh=open(str,O_BINARY|O_WRONLY|O_CREAT,S_IREAD|S_IWRITE);
+      fh=_open(str,O_BINARY|O_WRONLY|O_CREAT,S_IREAD|S_IWRITE);
    }
    if (fh==-1)
       Status("Couldnt Open File");
@@ -501,7 +501,7 @@ void CameraLoad(Camera *cam, char *str)
    int fh;
 
    // add .cam?   
-   fh=open(str,O_BINARY|O_RDONLY);
+   fh=_open(str,O_BINARY|O_RDONLY);
    if (fh==-1)
       Status("Cant open file");
    else

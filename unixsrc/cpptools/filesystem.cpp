@@ -1,18 +1,17 @@
 #include <filepath.h>
 #include <filespec.h>
 #include <fnamutil.h>
+#include <platform_services.h>
 #include <str.h>
 
 #pragma pack(push, 8)
 #include <algorithm>
 #include <chrono>
-#include <cctype>
 #include <filesystem>
 #include <fnmatch.h>
-#include <mutex>
+#include <limits.h>
 #include <stdlib.h>
 #include <string>
-#include <unordered_map>
 #include <vector>
 #pragma pack(pop)
 
@@ -26,77 +25,22 @@ struct FindState
     size_t next = 0;
 };
 
-std::mutex g_nativePathMutex;
-std::unordered_map<std::string, std::string> g_nativePathCache;
+std::string FoldAscii(std::string text)
+{
+    std::transform(text.begin(), text.end(), text.begin(),
+                   [](unsigned char character)
+                   {
+                       return static_cast<char>(character >= 'A' && character <= 'Z'
+                           ? character + ('a' - 'A') : character);
+                   });
+    return text;
+}
 
 std::string NativePath(const char *path)
 {
-    std::string result = path ? path : "";
-    std::replace(result.begin(), result.end(), '\\', '/');
-    if (result.empty())
-        return result;
-
-    {
-        std::lock_guard<std::mutex> lock(g_nativePathMutex);
-        const auto found = g_nativePathCache.find(result);
-        if (found != g_nativePathCache.end())
-            return found->second;
-    }
-
-    std::error_code error;
-    if (fs::exists(fs::path(result), error))
-    {
-        std::lock_guard<std::mutex> lock(g_nativePathMutex);
-        g_nativePathCache.emplace(result, result);
-        return result;
-    }
-
-    fs::path input(result);
-    fs::path resolved = input.is_absolute() ? input.root_path() : fs::path(".");
-    for (const fs::path &part : input.relative_path())
-    {
-        if (part == ".")
-            continue;
-        if (part == "..")
-        {
-            resolved /= part;
-            continue;
-        }
-        fs::path exact = resolved / part;
-        if (fs::exists(exact, error))
-        {
-            resolved = exact;
-            continue;
-        }
-
-        std::string wanted = part.string();
-        std::transform(wanted.begin(), wanted.end(), wanted.begin(),
-                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-        bool found = false;
-        for (fs::directory_iterator it(resolved, error), end; !error && it != end; it.increment(error))
-        {
-            std::string candidate = it->path().filename().string();
-            std::transform(candidate.begin(), candidate.end(), candidate.begin(),
-                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-            if (candidate == wanted)
-            {
-                resolved /= it->path().filename();
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-            resolved /= part;
-    }
-    std::string native = resolved.lexically_normal().generic_string();
-    if (!input.is_absolute() && native.rfind("./", 0) == 0)
-        native.erase(0, 2);
-
-    {
-        std::lock_guard<std::mutex> lock(g_nativePathMutex);
-        g_nativePathCache.emplace(result, native);
-    }
-    return native;
+    char resolved[PATH_MAX];
+    PlatformResolvePath(path, resolved, sizeof(resolved));
+    return resolved;
 }
 
 std::string DirectoryText(const fs::path &path)
@@ -286,7 +230,9 @@ BOOL sFindContext::DoFindFirst(tFindState what, const cStr &spec, cStr &result)
         if ((what == kFindingPaths) != isDirectory)
             continue;
         const std::string name = it->path().filename().string();
-        if (fnmatch(pattern.c_str(), name.c_str(), 0) == 0)
+        const std::string foldedPattern = FoldAscii(pattern);
+        const std::string foldedName = FoldAscii(name);
+        if (fnmatch(foldedPattern.c_str(), foldedName.c_str(), 0) == 0)
             state->entries.push_back(it->path().filename());
     }
     if (error || state->entries.empty())
@@ -557,4 +503,11 @@ void cFileSpec::GetNameString(cStr &result, int desiredLength) const
 
 BOOL cFileSpec::IsValidFileSpec() const { return Kind == kSpecKindFile && ::IsValidFileSpec(pName); }
 BOOL cFileSpec::IsValidFileSpec(const char *path) { return ::IsValidFileSpec(path); }
-BOOL cFileSpec::NameMatches(const char *pattern) { return pName && pattern && fnmatch(pattern, GetFileName(), 0) == 0; }
+BOOL cFileSpec::NameMatches(const char *pattern)
+{
+    if (!pName || !pattern)
+        return FALSE;
+    const std::string foldedPattern = FoldAscii(pattern);
+    const std::string foldedName = FoldAscii(GetFileName());
+    return fnmatch(foldedPattern.c_str(), foldedName.c_str(), 0) == 0;
+}

@@ -381,6 +381,19 @@ BOOL PlatformGetCurrentDirectory(char *path, int capacity)
    return length > 0 && length < (DWORD)capacity;
 }
 
+BOOL PlatformResolvePath(const char *path, char *resolved, int capacity)
+{
+   if (!path || !resolved || capacity <= 0 ||
+       strlen(path) >= (size_t)capacity)
+   {
+      if (resolved && capacity > 0)
+         resolved[0] = '\0';
+      return FALSE;
+   }
+   strcpy(resolved, path);
+   return GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES;
+}
+
 BOOL PlatformCopyFiles(const char *pattern, const char *source_dir,
                        const char *destination_dir)
 {

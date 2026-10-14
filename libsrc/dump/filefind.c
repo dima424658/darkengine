@@ -37,7 +37,7 @@ int dmp_find_free_file(char *buff,char *prefix,char *suffix)
    strcat(fname,suffix);
    
    /* Look for files like uwpic000.gif */
-   while ( (fp = open(fname,O_BINARY|O_RDONLY)) != -1)
+   while ( (fp = _open(fname,O_BINARY|O_RDONLY)) != -1)
    {  /* Check next slot */
       close(fp);                       // good idea to, like, close the opened file
       ++num;
@@ -46,7 +46,7 @@ int dmp_find_free_file(char *buff,char *prefix,char *suffix)
       fname[ps] = '0'+((num/100)%10);
    }
    
-   if ((fp = open(fname,O_CREAT|O_BINARY|O_WRONLY,S_IREAD|S_IWRITE))==-1)
+   if ((fp = _open(fname,O_CREAT|O_BINARY|O_WRONLY,S_IREAD|S_IWRITE))==-1)
       return -1;
    if (buff != NULL)
       strcpy(buff,fname);

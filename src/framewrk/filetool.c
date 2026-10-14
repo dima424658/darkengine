@@ -12,6 +12,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <platform_io.h>
+#include <platform_services.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -29,7 +30,15 @@ bool dir_exists(char *path)
    endslash=path[strlen(path)-1];
    if (is_slash(endslash))
       path[strlen(path)-1]='\0';
+#ifndef _WIN32
+   {
+      char resolved[_MAX_PATH];
+      PlatformResolvePath(path, resolved, sizeof(resolved));
+      strv=stat(resolved,&st);
+   }
+#else
    strv=stat(path,&st);
+#endif
    if (is_slash(endslash))
       path[strlen(path)-1]=endslash;
    if (strv==-1)
@@ -96,7 +105,7 @@ bool CopyOpenFile(const char *name, int src_hnd)
    int len, dst_hnd;
 
    if (!buf) return FALSE;
-   dst_hnd = open(name, O_WRONLY|O_BINARY|O_CREAT|O_TRUNC, S_IWRITE);
+   dst_hnd = _open(name, O_WRONLY|O_BINARY|O_CREAT|O_TRUNC, S_IWRITE);
    if (dst_hnd!=-1)
    {
       do {
@@ -116,7 +125,7 @@ bool CopyFileNamed(const char *targ, const char *src)
    int src_hnd;
    bool rv;
 
-   src_hnd=open(src,O_RDONLY|O_BINARY);
+   src_hnd=_open(src,O_RDONLY|O_BINARY);
    if (src_hnd==-1)
       return FALSE;
    rv=CopyOpenFile(targ,src_hnd);

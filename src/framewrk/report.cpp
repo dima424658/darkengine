@@ -307,7 +307,7 @@ static void _buffer_output(sReportConfig *report)
       if (use_fname)
       {
          int fd;
-         fd=open(use_fname,O_BINARY|O_WRONLY|O_CREAT|O_TRUNC,S_IREAD|S_IWRITE);
+         fd=_open(use_fname,O_BINARY|O_WRONLY|O_CREAT|O_TRUNC,S_IREAD|S_IWRITE);
          if (fd==-1)
             Warning(("Couldnt Open %s to write\n",use_fname));
          else

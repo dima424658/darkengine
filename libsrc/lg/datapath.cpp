@@ -204,9 +204,9 @@ int DatapathFDOpen(Datapath *pdp, const char *fname, int access, ... )
 	if (!pdp->noCurrent)
 		{
 		if (access & O_CREAT)
-		   fd = open(fname, access, permis);
+		   fd = _open(fname, access, permis);
 		else
-		   fd = open(fname, access);
+		   fd = _open(fname, access);
 
 		if (fd != -1)
 			return(fd);
@@ -220,9 +220,9 @@ int DatapathFDOpen(Datapath *pdp, const char *fname, int access, ... )
 		strcat(buff, fname);
 
 		if (access & O_CREAT)
-			fd = open(buff, access, permis);
+			fd = _open(buff, access, permis);
 		else
-		   fd = open(buff, access);
+		   fd = _open(buff, access);
 
 		if (fd != -1)
 			{

@@ -963,7 +963,7 @@ HRESULT DoDPCSaveGame(int slot, char *savedesc)
       DPCGetSaveDir(slot, savedir);
       //sprintf(savedir,"%s%d",SAVEROOT,slot);
    //   if (_chdir(savedir))
-      if (chdir(savedir))
+      if (_chdir(savedir))
       {
          // dir does not exist, create it
          if (mkdir(savedir) != 0)
@@ -971,7 +971,7 @@ HRESULT DoDPCSaveGame(int slot, char *savedesc)
             Warning(("DPCSaveGame: Could not create directory %d!\n",savedir));
          }
       }
-      chdir(curdir);
+      _chdir(curdir);
    }
 
    // Save out the current state of the game to the current directory

@@ -22,7 +22,13 @@ public:
    {
       for (int i = 0; i < 256; ++i) m_palette[i*3] = m_palette[i*3+1] = m_palette[i*3+2] = static_cast<unsigned char>(i);
    }
-   ~cUnixDisplayDevice() override { Close(); DarkRenderClose(); }
+   ~cUnixDisplayDevice() override
+   {
+      // Display-device objects are transient across Dark's logical canvas
+      // changes.  The SDL window and GL context are process-owned and must
+      // survive those changes; the OS releases them at process shutdown.
+      Close();
+   }
 
    eDisplayDeviceKind GetKind() override { return m_kind; }
    void SetKind(eDisplayDeviceKind kind, int flags) override { m_kind = kind; m_options = flags; }

@@ -34,6 +34,7 @@ extern "C" {
 #endif
 
 const sGamepadBackendOps *GamepadXInputBackend(void);
+const sGamepadBackendOps *GamepadSDLBackend(void);
 
 #ifdef __cplusplus
 }

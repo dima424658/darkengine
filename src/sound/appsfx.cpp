@@ -532,7 +532,7 @@ BOOL SFXInit(void)
    }
    SafeRelease(pSndMixer);
    SFXClose();
-   Warning(("Sound failed to correctly init\n"));
+   mprintf("Sound initialization failed; continuing with audio disabled\n");
    return FALSE;
 }
 

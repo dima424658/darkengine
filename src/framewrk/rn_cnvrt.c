@@ -177,7 +177,7 @@ void *_RN_ConvertRaw(char *name)
 {
    uchar *data;
    int hnd, len;
-   if ((hnd=open(name,O_RDONLY|O_BINARY))==-1)
+   if ((hnd=_open(name,O_RDONLY|O_BINARY))==-1)
       return NULL;
    len=lseek(hnd,0,SEEK_END);
    lseek(hnd,0,SEEK_SET);

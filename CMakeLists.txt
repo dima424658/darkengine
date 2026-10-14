@@ -2,8 +2,20 @@ cmake_minimum_required(VERSION 3.20)
 project(DarkEnginePortability LANGUAGES C CXX)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  find_package(OpenGL REQUIRED)
+  option(DARK_OPENGL_ES "Use the OpenGL ES 3 renderer instead of desktop OpenGL" OFF)
+  if(DARK_OPENGL_ES)
+    find_path(DARK_GLES3_INCLUDE_DIR GLES3/gl3.h REQUIRED)
+    find_library(DARK_GLES3_LIBRARY NAMES GLESv2 GLESv3 REQUIRED)
+  else()
+    find_package(OpenGL REQUIRED)
+  endif()
+  find_package(PNG REQUIRED)
   find_package(SDL2 REQUIRED)
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(FFMPEG QUIET IMPORTED_TARGET
+      libavformat libavcodec libavutil libswscale libswresample)
+  endif()
 endif()
 
 set(CMAKE_C_STANDARD 17)
@@ -154,7 +166,7 @@ if(DARK_BUILD_ENGINE)
     target_compile_options(dark_engine_config INTERFACE /FItypes.h)
   else()
     target_compile_options(dark_engine_config INTERFACE
-      -include types.h
+      "SHELL:-include types.h -include platform_io.h"
       # Keep diagnostics useful around deliberate legacy idioms: reflected
       # inherited records, integer NULL values, the old strstream wrapper,
       # and void I/O adapters whose callers have no error-return channel.
@@ -222,6 +234,9 @@ if(DARK_BUILD_ENGINE)
     )
   endif()
   target_link_libraries(dark_namedres PUBLIC dark_compression)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(dark_namedres PUBLIC PNG::PNG)
+  endif()
   target_link_libraries(dark_res PUBLIC dark_compression)
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -245,7 +260,20 @@ if(DARK_BUILD_ENGINE)
       winsrc/input/kbcntry.c
     )
     target_link_libraries(dark_unix_providers PUBLIC dark_engine_packed)
-    target_link_libraries(dark_unix_providers PUBLIC SDL2::SDL2 OpenGL::GL)
+    target_link_libraries(dark_unix_providers PUBLIC SDL2::SDL2)
+    if(FFMPEG_FOUND)
+      target_compile_definitions(dark_unix_providers PRIVATE DARK_HAVE_FFMPEG=1)
+      target_link_libraries(dark_unix_providers PUBLIC PkgConfig::FFMPEG)
+    else()
+      message(WARNING "FFmpeg development libraries were not found; Linux movie playback will be disabled")
+    endif()
+    if(DARK_OPENGL_ES)
+      target_compile_definitions(dark_unix_providers PRIVATE DARK_OPENGL_ES=1)
+      target_include_directories(dark_unix_providers PRIVATE "${DARK_GLES3_INCLUDE_DIR}")
+      target_link_libraries(dark_unix_providers PUBLIC "${DARK_GLES3_LIBRARY}")
+    else()
+      target_link_libraries(dark_unix_providers PUBLIC OpenGL::GL)
+    endif()
 
     option(DARK_BUILD_THIEF2 "Compile the native Linux Thief 2 game sources" ON)
     if(DARK_BUILD_THIEF2)

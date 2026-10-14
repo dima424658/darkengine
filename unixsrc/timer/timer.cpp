@@ -1,5 +1,6 @@
 #include <tmdecl.h>
 #include <tmftab.h>
+#include <platform_services.h>
 
 #pragma pack(push, 8)
 #include <array>
@@ -91,6 +92,21 @@ pfv g_timerFunctions[TMC_TIMER_FNS] = {
     reinterpret_cast<pfv>(SetDenominator), reinterpret_cast<pfv>(SetFrequency),
     reinterpret_cast<pfv>(SetPeriod)
 };
+}
+
+extern "C" long tm_get_millisec_unrecorded()
+{
+    return static_cast<long>(PlatformMilliseconds());
+}
+
+extern "C" long tm_get_millisec()
+{
+    return tm_get_millisec_unrecorded();
+}
+
+extern "C" fix tm_get_fix()
+{
+    return fix_make(tm_get_millisec(), 0);
 }
 
 extern "C" int tm_init_libt()

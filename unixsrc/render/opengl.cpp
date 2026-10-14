@@ -1,10 +1,15 @@
 #define GL_GLEXT_PROTOTYPES
 #pragma pack(push, 8)
 #include <SDL2/SDL.h>
+#ifdef DARK_OPENGL_ES
+#include <GLES3/gl3.h>
+#else
 #include <GL/gl.h>
 #include <GL/glext.h>
+#endif
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -47,8 +52,153 @@ unsigned g_sceneGeneration, g_presentedGeneration, g_hardwareFrameCount;
 Uint64 g_lastPresentTicks;
 bool g_captureComplete;
 bool g_relativeMouse, g_relativeActive, g_focused;
+bool g_wslPointerWorkaround;
+bool g_pointerWarpWarningPrinted;
+int g_swapInterval = -1;
+unsigned g_unsupportedSwapIntervals;
 bool g_samplerWrap[2];
 bool g_samplerSmooth[2] = {true, true};
+GLuint g_sceneProgram, g_sceneBuffer, g_sceneVertexArray;
+GLint g_viewportUniform, g_useTexture1Uniform, g_fogEnabledUniform;
+GLint g_fogColorUniform, g_alphaTestUniform;
+
+#ifdef DARK_OPENGL_ES
+const char kShaderPreamble[] =
+   "#version 300 es\n"
+   "precision highp float;\n";
+#else
+const char kShaderPreamble[] = "#version 330 core\n";
+#endif
+
+const char kSceneVertexShader[] =
+   "layout(location=0) in vec4 position;\n"
+   "layout(location=1) in vec4 color;\n"
+   "layout(location=2) in float fog;\n"
+   "layout(location=3) in vec2 texcoord0;\n"
+   "layout(location=4) in vec2 texcoord1;\n"
+   "uniform vec2 viewportSize;\n"
+   "out vec4 linearColor;\n"
+   "out float linearFog;\n"
+   "out float linearWeight;\n"
+   "out vec2 uv0;\n"
+   "out vec2 uv1;\n"
+   "void main(){\n"
+   " float q=1.0/max(position.w,0.000001);\n"
+   " gl_Position=vec4((position.x/viewportSize.x*2.0-1.0)*q,"
+      "(1.0-position.y/viewportSize.y*2.0)*q,"
+      "(position.z*2.0-1.0)*q,q);\n"
+   " linearColor=color*q;linearFog=fog*q;linearWeight=q;\n"
+   " uv0=texcoord0;uv1=texcoord1;gl_PointSize=1.0;\n"
+   "}\n";
+
+const char kSceneFragmentShader[] =
+   "in vec4 linearColor;\n"
+   "in float linearFog;\n"
+   "in float linearWeight;\n"
+   "in vec2 uv0;\n"
+   "in vec2 uv1;\n"
+   "uniform sampler2D texture0;\n"
+   "uniform sampler2D texture1;\n"
+   "uniform float useTexture1;\n"
+   "uniform float fogEnabled;\n"
+   "uniform vec3 fogColor;\n"
+   "uniform float alphaTest;\n"
+   "out vec4 fragmentColor;\n"
+   "void main(){\n"
+   " float weight=max(linearWeight,0.000001);\n"
+   " vec4 color=(linearColor/weight)*texture(texture0,uv0);\n"
+   " if(useTexture1>0.5)color*=texture(texture1,uv1);\n"
+   " if(alphaTest>0.5&&color.a<0.5)discard;\n"
+   " if(fogEnabled>0.5)color.rgb=mix(fogColor,color.rgb,"
+      "clamp(linearFog/weight,0.0,1.0));\n"
+   " fragmentColor=color;\n"
+   "}\n";
+
+GLuint compile_shader(GLenum type, const char *source)
+{
+   GLuint shader = glCreateShader(type);
+   const GLchar *parts[] = {kShaderPreamble, source};
+   glShaderSource(shader, 2, parts, nullptr);
+   glCompileShader(shader);
+   GLint compiled = GL_FALSE;
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+   if (compiled == GL_TRUE)
+      return shader;
+   GLint length = 0;
+   glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+   std::vector<GLchar> log(static_cast<size_t>(std::max(length, 1)));
+   glGetShaderInfoLog(shader, static_cast<GLsizei>(log.size()), nullptr,
+      log.data());
+   fprintf(stderr, "OpenGL shader compilation failed: %s\n", log.data());
+   glDeleteShader(shader);
+   return 0;
+}
+
+bool create_scene_pipeline()
+{
+   while (glGetError() != GL_NO_ERROR) {}
+   GLuint vertexShader = compile_shader(GL_VERTEX_SHADER, kSceneVertexShader);
+   GLuint fragmentShader = compile_shader(GL_FRAGMENT_SHADER, kSceneFragmentShader);
+   if (!vertexShader || !fragmentShader) {
+      if (vertexShader) glDeleteShader(vertexShader);
+      if (fragmentShader) glDeleteShader(fragmentShader);
+      return false;
+   }
+   g_sceneProgram = glCreateProgram();
+   glAttachShader(g_sceneProgram, vertexShader);
+   glAttachShader(g_sceneProgram, fragmentShader);
+   glLinkProgram(g_sceneProgram);
+   glDeleteShader(vertexShader);
+   glDeleteShader(fragmentShader);
+   GLint linked = GL_FALSE;
+   glGetProgramiv(g_sceneProgram, GL_LINK_STATUS, &linked);
+   if (linked != GL_TRUE) {
+      GLint length = 0;
+      glGetProgramiv(g_sceneProgram, GL_INFO_LOG_LENGTH, &length);
+      std::vector<GLchar> log(static_cast<size_t>(std::max(length, 1)));
+      glGetProgramInfoLog(g_sceneProgram, static_cast<GLsizei>(log.size()),
+         nullptr, log.data());
+      fprintf(stderr, "OpenGL shader link failed: %s\n", log.data());
+      glDeleteProgram(g_sceneProgram);
+      g_sceneProgram = 0;
+      return false;
+   }
+
+   glUseProgram(g_sceneProgram);
+   glUniform1i(glGetUniformLocation(g_sceneProgram, "texture0"), 0);
+   glUniform1i(glGetUniformLocation(g_sceneProgram, "texture1"), 1);
+   g_viewportUniform = glGetUniformLocation(g_sceneProgram, "viewportSize");
+   g_useTexture1Uniform = glGetUniformLocation(g_sceneProgram, "useTexture1");
+   g_fogEnabledUniform = glGetUniformLocation(g_sceneProgram, "fogEnabled");
+   g_fogColorUniform = glGetUniformLocation(g_sceneProgram, "fogColor");
+   g_alphaTestUniform = glGetUniformLocation(g_sceneProgram, "alphaTest");
+
+   glGenVertexArrays(1, &g_sceneVertexArray);
+   glBindVertexArray(g_sceneVertexArray);
+   glGenBuffers(1, &g_sceneBuffer);
+   glBindBuffer(GL_ARRAY_BUFFER, g_sceneBuffer);
+   const GLsizei stride = sizeof(sRenderBackendVertex);
+   const size_t offsets[] = {
+      offsetof(sRenderBackendVertex, x), offsetof(sRenderBackendVertex, r),
+      offsetof(sRenderBackendVertex, fog), offsetof(sRenderBackendVertex, u0),
+      offsetof(sRenderBackendVertex, u1)};
+   const GLint sizes[] = {4, 4, 1, 2, 2};
+   for (GLuint i = 0; i < 5; ++i) {
+      glEnableVertexAttribArray(i);
+      glVertexAttribPointer(i, sizes[i], GL_FLOAT, GL_FALSE, stride,
+         reinterpret_cast<const void *>(offsets[i]));
+   }
+   return g_sceneProgram && g_sceneBuffer && g_sceneVertexArray &&
+      glGetError() == GL_NO_ERROR;
+}
+
+void destroy_scene_pipeline()
+{
+   if (g_sceneBuffer) glDeleteBuffers(1, &g_sceneBuffer);
+   if (g_sceneVertexArray) glDeleteVertexArrays(1, &g_sceneVertexArray);
+   if (g_sceneProgram) glDeleteProgram(g_sceneProgram);
+   g_sceneBuffer = g_sceneVertexArray = g_sceneProgram = 0;
+}
 
 void viewport(int &x, int &y, int &w, int &h)
 {
@@ -103,27 +253,72 @@ void logical_point(int &x, int &y)
    y = std::clamp(y, 0, std::max(g_height - 1, 0));
 }
 
+void set_swap_interval(int interval)
+{
+   if (!g_context || g_swapInterval == interval)
+      return;
+   // Remember the request even when the compositor cannot provide it.  Some
+   // WSLg/X11 configurations reject vsync, and retrying once per rendered
+   // frame only floods stderr without changing the result.
+   g_swapInterval = interval;
+   const unsigned unsupportedBit = interval == 0 ? 1u : interval == 1 ? 2u : 4u;
+   if (g_unsupportedSwapIntervals & unsupportedBit)
+      return;
+   if (SDL_GL_SetSwapInterval(interval) != 0) {
+      g_unsupportedSwapIntervals |= unsupportedBit;
+      fprintf(stderr, "SDL swap interval %d unavailable: %s\n", interval,
+         SDL_GetError());
+      return;
+   }
+}
+
 void update_relative_mouse()
 {
-   g_focused = g_window &&
-      (SDL_GetWindowFlags(g_window) & SDL_WINDOW_INPUT_FOCUS) != 0;
    const bool active = g_relativeMouse && g_focused;
    g_relativeActive = SDL_GetRelativeMouseMode() == SDL_TRUE;
-   if (active == g_relativeActive) return;
-   SDL_SetWindowGrab(g_window, active ? SDL_TRUE : SDL_FALSE);
-   if (SDL_SetRelativeMouseMode(active ? SDL_TRUE : SDL_FALSE) != 0) {
-      SDL_SetWindowGrab(g_window, SDL_FALSE);
-      fprintf(stderr, "SDL relative pointer lock failed: %s\n", SDL_GetError());
-      return;
+   if (active != g_relativeActive) {
+      if (SDL_SetRelativeMouseMode(active ? SDL_TRUE : SDL_FALSE) != 0) {
+         SDL_SetWindowMouseGrab(g_window, SDL_FALSE);
+         fprintf(stderr, "SDL relative pointer lock failed: %s\n", SDL_GetError());
+         return;
+      }
    }
    g_relativeActive = SDL_GetRelativeMouseMode() == SDL_TRUE;
    if (g_relativeActive != active) {
       fprintf(stderr, "SDL relative pointer lock did not enter the requested state\n");
       return;
    }
+
+   // Relative mode supplies the motion deltas, but WSLg/XWayland can leave
+   // its host cursor visible and able to cross the client edge unless the
+   // mouse grab and confinement rectangle are also asserted explicitly.
+   // Reassert these even when relative mode itself stayed active: focus and
+   // compositor transitions can independently drop the grab or cursor state.
+   if (SDL_GetWindowMouseGrab(g_window) != (active ? SDL_TRUE : SDL_FALSE))
+      SDL_SetWindowMouseGrab(g_window, active ? SDL_TRUE : SDL_FALSE);
+   // SDL's ordinary window grab is not consistently honoured by WSLg's
+   // XWayland bridge. Capture keeps delivering motion if the host cursor
+   // crosses the client edge while the compositor still displays it.
+   SDL_CaptureMouse(active ? SDL_TRUE : SDL_FALSE);
+   if (active) {
+      SDL_Rect client = {0, 0, std::max(g_clientWidth, 1),
+                         std::max(g_clientHeight, 1)};
+      const SDL_Rect *current = SDL_GetWindowMouseRect(g_window);
+      if (!current || current->x != client.x || current->y != client.y ||
+          current->w != client.w || current->h != client.h)
+         SDL_SetWindowMouseRect(g_window, &client);
+   } else {
+      if (SDL_GetWindowMouseRect(g_window))
+         SDL_SetWindowMouseRect(g_window, nullptr);
+   }
+   if (g_invisibleCursor && SDL_GetCursor() != g_invisibleCursor)
+      SDL_SetCursor(g_invisibleCursor);
+   if (SDL_ShowCursor(SDL_QUERY) == SDL_ENABLE)
+      SDL_ShowCursor(SDL_DISABLE);
+
    RenderBackendTrace("mouse-lock requested=%d active=%d focused=%d grabbed=%d",
       g_relativeMouse, g_relativeActive, g_focused,
-      SDL_GetWindowGrab(g_window) == SDL_TRUE);
+      SDL_GetWindowMouseGrab(g_window) == SDL_TRUE);
    // Discard any delta accumulated while the compositor was changing pointer
    // mode. Gameplay consumes motion accumulated after the lock transition.
    int ignoredX, ignoredY;
@@ -134,7 +329,6 @@ void bind_texture(int level, Texture *texture)
 {
    glActiveTexture(GL_TEXTURE0 + level);
    if (texture) {
-      glEnable(GL_TEXTURE_2D);
       glBindTexture(GL_TEXTURE_2D, texture->name);
       if (texture->wrap != g_samplerWrap[level]) {
          texture->wrap = g_samplerWrap[level];
@@ -151,7 +345,7 @@ void bind_texture(int level, Texture *texture)
             texture->smooth ? GL_LINEAR : GL_NEAREST);
       }
    }
-   else glDisable(GL_TEXTURE_2D);
+   else glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void apply_depth_state()
@@ -174,23 +368,51 @@ void apply_blend_state()
       glDisable(GL_BLEND);
    } else {
       glEnable(GL_BLEND);
-      if (g_blendMode == kRenderBackendBlendMultiply) glBlendFunc(GL_DST_COLOR, GL_ZERO);
-      else if (g_blendMode == kRenderBackendBlendAdd) glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-      else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      if (g_blendMode == kRenderBackendBlendMultiply)
+         glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_ONE, GL_ZERO);
+      else if (g_blendMode == kRenderBackendBlendAdd)
+         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE);
+      else
+         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
+            GL_ONE_MINUS_SRC_ALPHA);
    }
 }
 
-void apply_fog_state()
+const void *tight_texture_pixels(int width, int height, const void *pixels,
+   int rowBytes, std::vector<uint8_t> &storage)
 {
-   if (!g_fog) {
-      glDisable(GL_FOG);
-      return;
-   }
-   const GLfloat color[] = {((g_fogColor >> 16) & 255) / 255.0f,
-      ((g_fogColor >> 8) & 255) / 255.0f, (g_fogColor & 255) / 255.0f, 1.0f};
-   glEnable(GL_FOG); glFogi(GL_FOG_MODE, GL_LINEAR);
-   glFogi(GL_FOG_COORDINATE_SOURCE, GL_FOG_COORDINATE);
-   glFogf(GL_FOG_START, 0.0f); glFogf(GL_FOG_END, 1.0f); glFogfv(GL_FOG_COLOR, color);
+   const int tightRowBytes = width * 4;
+   if (rowBytes == tightRowBytes)
+      return pixels;
+   storage.resize(static_cast<size_t>(tightRowBytes) * height);
+   for (int y = 0; y < height; ++y)
+      memcpy(storage.data() + static_cast<size_t>(y) * tightRowBytes,
+         static_cast<const uint8_t *>(pixels) + static_cast<size_t>(y) * rowBytes,
+         tightRowBytes);
+   return storage.data();
+}
+
+bool draw_vertices(GLenum primitive, const sRenderBackendVertex *vertices,
+   int count, bool second, int width, int height, bool fog, uint32_t fogColor,
+   bool alphaTest)
+{
+   if (!g_sceneProgram || !vertices || count <= 0 || width <= 0 || height <= 0)
+      return false;
+   glUseProgram(g_sceneProgram);
+   glUniform2f(g_viewportUniform, static_cast<float>(width),
+      static_cast<float>(height));
+   glUniform1f(g_useTexture1Uniform, second ? 1.0f : 0.0f);
+   glUniform1f(g_fogEnabledUniform, fog ? 1.0f : 0.0f);
+   glUniform3f(g_fogColorUniform, ((fogColor >> 16) & 255) / 255.0f,
+      ((fogColor >> 8) & 255) / 255.0f, (fogColor & 255) / 255.0f);
+   glUniform1f(g_alphaTestUniform, alphaTest ? 1.0f : 0.0f);
+   glBindVertexArray(g_sceneVertexArray);
+   glBindBuffer(GL_ARRAY_BUFFER, g_sceneBuffer);
+   glBufferData(GL_ARRAY_BUFFER,
+      static_cast<GLsizeiptr>(static_cast<size_t>(count) * sizeof(*vertices)),
+      vertices, GL_STREAM_DRAW);
+   glDrawArrays(primitive, 0, count);
+   return true;
 }
 
 void clear_depth()
@@ -243,6 +465,8 @@ bool DarkRenderOpen(int width, int height, const char *title)
    if (g_context) {
       g_width = width; g_height = height;
       DarkRenderSetTitle(title);
+      SDL_GetWindowSize(g_window, &g_clientWidth, &g_clientHeight);
+      update_relative_mouse();
       return true;
    }
    // WSLg exposes OpenGL through Mesa's D3D12 Gallium driver.  Its automatic
@@ -256,13 +480,35 @@ bool DarkRenderOpen(int width, int height, const char *title)
    // a different desktop space under WSLg and some scaled desktops.
    if (getenv("WAYLAND_DISPLAY") && !getenv("SDL_VIDEODRIVER"))
       SDL_setenv("SDL_VIDEODRIVER", "wayland", 0);
+   // WSLg's XWayland relative-pointer implementation can continue to draw
+   // and move the host pointer even after accepting SDL relative mode. Force
+   // SDL's warp implementation there, and explicitly forbid the relative
+   // cursor on every backend.
+   SDL_SetHint("SDL_MOUSE_RELATIVE_CURSOR_VISIBLE", "0");
+   SDL_SetHint("SDL_MOUSE_RELATIVE_SCALING", "0");
+   g_wslPointerWorkaround = getenv("WSL_DISTRO_NAME") || getenv("WSL_INTEROP");
+   if (g_wslPointerWorkaround) {
+      SDL_SetHint("SDL_MOUSE_RELATIVE_MODE_WARP", "1");
+      // X11 cursor deltas passing through WSLg are substantially smaller
+      // than raw device counts. Preserve the normal in-game sensitivity
+      // range by compensating at SDL's relative-input boundary. An explicit
+      // SDL hint supplied by the user still wins.
+      if (!SDL_GetHint("SDL_MOUSE_RELATIVE_SPEED_SCALE"))
+         SDL_SetHint("SDL_MOUSE_RELATIVE_SPEED_SCALE", "2.0");
+   }
    if (SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
       fprintf(stderr, "SDL video initialization failed: %s\n", SDL_GetError());
       return false;
    }
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+#ifdef DARK_OPENGL_ES
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#else
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#endif
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
    g_window = SDL_CreateWindow(title ? title : "Dark Engine",
@@ -271,8 +517,10 @@ bool DarkRenderOpen(int width, int height, const char *title)
    if (g_window) g_context = SDL_GL_CreateContext(g_window);
    if (!g_window || !g_context) { DarkRenderClose(); return false; }
    SDL_GL_MakeCurrent(g_window, g_context);
-   if (SDL_GL_SetSwapInterval(1) != 0)
-      fprintf(stderr, "SDL vertical synchronization unavailable: %s\n", SDL_GetError());
+   // Loading panels force a present for small progress-dial updates.  Do not
+   // serialize hundreds of those updates to WSLg's compositor refresh.  The
+   // hardware scene enables vsync when gameplay begins.
+   set_swap_interval(0);
    const Uint8 blankCursor[8] = {};
    g_invisibleCursor = SDL_CreateCursor(blankCursor, blankCursor, 8, 8, 0, 0);
    if (g_invisibleCursor)
@@ -282,8 +530,9 @@ bool DarkRenderOpen(int width, int height, const char *title)
    g_width = g_clientWidth = width; g_height = g_clientHeight = height;
    g_quit = false; g_focused = (SDL_GetWindowFlags(g_window) & SDL_WINDOW_INPUT_FOCUS) != 0;
    update_relative_mouse();
+   if (!create_scene_pipeline()) { DarkRenderClose(); return false; }
    glGenTextures(1, &g_overlayTexture);
-   glDisable(GL_CULL_FACE); glEnable(GL_TEXTURE_2D);
+   glDisable(GL_CULL_FACE);
    const char *tracePath = getenv("DARK_RENDER_TRACE");
    if (!g_trace && tracePath && *tracePath) g_trace = fopen(tracePath, "w");
    return true;
@@ -291,7 +540,11 @@ bool DarkRenderOpen(int width, int height, const char *title)
 
 void DarkRenderClose(void)
 {
-   if (g_context) { SDL_GL_MakeCurrent(g_window, g_context); if (g_overlayTexture) glDeleteTextures(1, &g_overlayTexture); }
+   if (g_context) {
+      SDL_GL_MakeCurrent(g_window, g_context);
+      if (g_overlayTexture) glDeleteTextures(1, &g_overlayTexture);
+      destroy_scene_pipeline();
+   }
    if (g_context) SDL_GL_DeleteContext(g_context);
    if (g_window) SDL_DestroyWindow(g_window);
    if (g_invisibleCursor) {
@@ -302,6 +555,10 @@ void DarkRenderClose(void)
    g_invisibleCursor = nullptr;
    g_overlayWidth = g_overlayHeight = 0;
    g_relativeActive = false;
+   g_wslPointerWorkaround = false;
+   g_pointerWarpWarningPrinted = false;
+   g_swapInterval = -1;
+   g_unsupportedSwapIntervals = 0;
    SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
    if (g_trace) { fclose(g_trace); g_trace = nullptr; }
 }
@@ -330,6 +587,7 @@ bool DarkRenderPumpEvents(void)
    SDL_Event event;
    bool haveMotion = false;
    int motionX = 0, motionY = 0;
+   int relativeX = 0, relativeY = 0;
    const auto flushMotion = [&]() {
       if (!haveMotion)
          return;
@@ -341,7 +599,10 @@ bool DarkRenderPumpEvents(void)
    };
    while (SDL_PollEvent(&event)) {
       if (event.type == SDL_MOUSEMOTION) {
-         if (!g_relativeActive) {
+         if (g_relativeActive) {
+            relativeX += event.motion.xrel;
+            relativeY += event.motion.yrel;
+         } else {
             haveMotion = true;
             motionX = event.motion.x;
             motionY = event.motion.y;
@@ -390,16 +651,62 @@ bool DarkRenderPumpEvents(void)
       }
    }
    flushMotion();
-   if (g_relativeActive) {
-      int relativeX, relativeY;
-      SDL_GetRelativeMouseState(&relativeX, &relativeY);
+   if (g_relativeActive && (relativeX || relativeY)) {
       DarkInputMouseRelative(relativeX, relativeY, g_buttons);
    }
    // Compositors may revoke relative mode while a menu or focus transition is
    // in progress. Reconcile the requested gameplay mode with SDL's actual
    // state after all pending window events have been handled.
    update_relative_mouse();
+   if (g_relativeActive && g_wslPointerWorkaround) {
+      int mouseX, mouseY, windowX, windowY;
+      SDL_GetGlobalMouseState(&mouseX, &mouseY);
+      SDL_GetWindowPosition(g_window, &windowX, &windowY);
+      const int edge = 8;
+      if (mouseX <= windowX + edge || mouseY <= windowY + edge ||
+          mouseX >= windowX + g_clientWidth - edge ||
+          mouseY >= windowY + g_clientHeight - edge) {
+         if (SDL_WarpMouseGlobal(windowX + g_clientWidth / 2,
+                                 windowY + g_clientHeight / 2) != 0 &&
+             !g_pointerWarpWarningPrinted) {
+            fprintf(stderr, "SDL WSL pointer recenter unavailable: %s\n",
+               SDL_GetError());
+            g_pointerWarpWarningPrinted = true;
+         }
+      }
+   }
    return g_quit;
+}
+
+bool DarkRenderPumpMovieEvents(void)
+{
+   if (!g_window)
+      return true;
+   SDL_Event event;
+   bool stop = false;
+   while (SDL_PollEvent(&event)) {
+      if (event.type == SDL_QUIT) {
+         g_quit = true;
+         stop = true;
+      } else if (event.type == SDL_KEYDOWN ||
+                 event.type == SDL_MOUSEBUTTONDOWN ||
+                 event.type == SDL_CONTROLLERBUTTONDOWN) {
+         stop = true;
+      } else if (event.type == SDL_WINDOWEVENT) {
+         if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+            g_quit = true;
+            stop = true;
+         } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+            g_clientWidth = event.window.data1;
+            g_clientHeight = event.window.data2;
+         } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+            g_focused = true;
+         } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+            g_focused = false;
+         }
+      }
+   }
+   return stop;
 }
 
 void DarkRenderSetTitle(const char *title) { if (g_window) SDL_SetWindowTitle(g_window, title ? title : "Dark Engine"); }
@@ -423,7 +730,6 @@ void DarkRenderSetRelativeMouse(bool enabled)
 void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, int depth, const uint8_t *palette)
 {
    if (!g_context || !pixels) return; SDL_GL_MakeCurrent(g_window, g_context);
-   if (g_scene && g_presentedGeneration == g_sceneGeneration) return;
    g_overlay.resize(static_cast<size_t>(width) * height);
    for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
       uint8_t r, g, b; uint32_t raw;
@@ -434,8 +740,9 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, 
       uint8_t a = g_scene && raw == 0 ? 0 : 255; g_overlay[static_cast<size_t>(y)*width+x] = r | (g<<8) | (b<<16) | (a<<24);
    }
    int vx, vy, vw, vh; viewport(vx, vy, vw, vh); glViewport(vx, vy, vw, vh);
-   glActiveTexture(GL_TEXTURE0); glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, g_overlayTexture);
-   glActiveTexture(GL_TEXTURE1); glDisable(GL_TEXTURE_2D); glActiveTexture(GL_TEXTURE0);
+   glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, g_overlayTexture);
+   glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, 0);
+   glActiveTexture(GL_TEXTURE0);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    if (width != g_overlayWidth || height != g_overlayHeight) {
@@ -446,11 +753,20 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, 
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
          GL_RGBA, GL_UNSIGNED_BYTE, g_overlay.data());
    }
-   glDisable(GL_DEPTH_TEST); glDepthMask(GL_FALSE); glDisable(GL_FOG); glDisable(GL_ALPHA_TEST);
-   glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-   glMatrixMode(GL_PROJECTION); glLoadIdentity(); glOrtho(0, width, height, 0, -1, 1); glMatrixMode(GL_MODELVIEW); glLoadIdentity();
-   glColor4f(1,1,1,1); glBegin(GL_QUADS); glTexCoord2f(0,0); glVertex2f(0,0); glTexCoord2f(1,0); glVertex2f(width,0);
-   glTexCoord2f(1,1); glVertex2f(width,height); glTexCoord2f(0,1); glVertex2f(0,height); glEnd();
+   glDisable(GL_DEPTH_TEST); glDepthMask(GL_FALSE);
+   glEnable(GL_BLEND);
+   glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE,
+      GL_ONE_MINUS_SRC_ALPHA);
+   const float w = static_cast<float>(width), h = static_cast<float>(height);
+   const sRenderBackendVertex quad[] = {
+      {0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0},
+      {w, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0},
+      {w, h, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0},
+      {w, h, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, h, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0}};
+   draw_vertices(GL_TRIANGLES, quad, 6, false, width, height, false, 0,
+      false);
    if (g_scene && g_presentedGeneration != g_sceneGeneration) {
       g_presentedGeneration = g_sceneGeneration; ++g_hardwareFrameCount;
       const char *path = getenv("DARK_RENDER_CAPTURE");
@@ -466,6 +782,80 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, 
    g_lastPresentTicks = SDL_GetTicks64();
 }
 
+bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
+                                 int rowBytes)
+{
+   if (!g_context || !rgba || width <= 0 || height <= 0 ||
+       rowBytes < width * 4)
+      return false;
+   SDL_GL_MakeCurrent(g_window, g_context);
+   set_swap_interval(1);
+   g_scene = false;
+
+   int viewportWidth = g_clientWidth;
+   int viewportHeight = g_clientHeight;
+   const double sourceAspect = (double)width / height;
+   const double targetAspect = viewportHeight > 0
+      ? (double)viewportWidth / viewportHeight : sourceAspect;
+   int viewportX = 0;
+   int viewportY = 0;
+   if (targetAspect > sourceAspect) {
+      viewportWidth = (int)(viewportHeight * sourceAspect + 0.5);
+      viewportX = (g_clientWidth - viewportWidth) / 2;
+   } else {
+      viewportHeight = (int)(viewportWidth / sourceAspect + 0.5);
+      viewportY = (g_clientHeight - viewportHeight) / 2;
+   }
+
+   glViewport(0, 0, g_clientWidth, g_clientHeight);
+   glClearColor(0, 0, 0, 1);
+   glClear(GL_COLOR_BUFFER_BIT);
+   glViewport(viewportX, viewportY, viewportWidth, viewportHeight);
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, g_overlayTexture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+   const void *pixels = rgba;
+   if (rowBytes != width * 4) {
+      g_overlay.resize((size_t)width * height);
+      for (int y = 0; y < height; ++y)
+         memcpy(g_overlay.data() + (size_t)y * width,
+                (const uint8_t *)rgba + (size_t)y * rowBytes,
+                (size_t)width * 4);
+      pixels = g_overlay.data();
+   }
+   if (width != g_overlayWidth || height != g_overlayHeight) {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+                   GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+      g_overlayWidth = width;
+      g_overlayHeight = height;
+   } else {
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
+                      GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+   }
+
+   glDisable(GL_DEPTH_TEST);
+   glDepthMask(GL_FALSE);
+   glDisable(GL_BLEND);
+   const float w = (float)width;
+   const float h = (float)height;
+   const sRenderBackendVertex quad[] = {
+      {0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0},
+      {w, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0},
+      {w, h, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0},
+      {w, h, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, h, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0}
+   };
+   draw_vertices(GL_TRIANGLES, quad, 6, false, width, height, false, 0,
+                 false);
+   SDL_GL_SwapWindow(g_window);
+   return true;
+}
+
 extern "C" {
 int RenderBackendAvailable(void) { return g_context != nullptr; }
 void RenderBackendSetScaleToWindow(int enabled) { g_scale = enabled != 0; }
@@ -474,19 +864,28 @@ void RenderBackendSetInteractiveResize(int) {}
 void RenderBackendSetPreserveCanvas(int enabled) { g_preserve = enabled != 0; }
 int RenderBackendPreserveCanvas(void) { return g_preserve; }
 void RenderBackendSetWindowedClientSizeHint(int, int) {}
+int RenderBackendGetSettledClientSize(int *width, int *height)
+{
+   if (!width || !height || !g_context ||
+       g_clientWidth <= 0 || g_clientHeight <= 0)
+      return 0;
+   *width = g_clientWidth;
+   *height = g_clientHeight;
+   return 1;
+}
 int RenderBackendClientToLogicalPoint(int *x, int *y) { if (!x || !y || !g_context) return 0; logical_point(*x, *y); return 1; }
 int RenderBackendLogicalToClientPoint(int *x, int *y) { int vx,vy,vw,vh; if (!x || !y || !g_context) return 0; viewport(vx,vy,vw,vh); *x=vx+*x*vw/g_width; *y=vy+*y*vh/g_height; return 1; }
 int RenderBackendBeginFrame(void)
 {
    if (!g_context) return 0; SDL_GL_MakeCurrent(g_window, g_context);
+   set_swap_interval(1);
    int x,y,w,h; viewport(x,y,w,h); glViewport(x,y,w,h); glClearColor(0,0,0,1);
    glDepthMask(GL_TRUE); glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-   apply_depth_state(); apply_blend_state(); apply_fog_state();
-   if(g_alphaTest){glEnable(GL_ALPHA_TEST);glAlphaFunc(GL_GEQUAL,.5f);}else glDisable(GL_ALPHA_TEST);
-   glMatrixMode(GL_PROJECTION); glLoadIdentity(); glOrtho(0,g_width,g_height,0,-1,1); glMatrixMode(GL_MODELVIEW); glLoadIdentity(); g_scene=true;++g_sceneGeneration;return 1;
+   apply_depth_state(); apply_blend_state();
+   g_scene=true;++g_sceneGeneration;return 1;
 }
 void RenderBackendEndFrame(void) { glFlush(); }
-void RenderBackendDeactivateScene(void) { g_scene=false; }
+void RenderBackendDeactivateScene(void) { g_scene=false;set_swap_interval(0); }
 void RenderBackendClearDepth(void)
 {
    if (g_context) clear_depth();
@@ -496,36 +895,36 @@ void RenderBackendSetBlend(int mode)
 {
    g_blendMode=mode;apply_blend_state();
 }
-void RenderBackendSetAlphaTest(int enabled) { g_alphaTest=enabled; if(enabled){glEnable(GL_ALPHA_TEST);glAlphaFunc(GL_GEQUAL,.5f);}else glDisable(GL_ALPHA_TEST); }
+void RenderBackendSetAlphaTest(int enabled) { g_alphaTest=enabled; }
 void RenderBackendSetSampler(int level, int wrap, int smooth)
 {
    if (level < 0 || level >= 2) return;
    g_samplerWrap[level]=wrap!=0;g_samplerSmooth[level]=smooth!=0;
    Texture *texture=static_cast<Texture*>(g_textures[level]);if(texture)bind_texture(level,texture);
 }
-void RenderBackendSetFog(int enabled, uint32_t rgb) { g_fog=enabled;g_fogColor=rgb;apply_fog_state(); }
+void RenderBackendSetFog(int enabled, uint32_t rgb) { g_fog=enabled;g_fogColor=rgb; }
 void *RenderBackendCreateTexture(int width,int height,const void *rgba,int rowBytes)
 {
+   if(width<=0||height<=0||!rgba||rowBytes<width*4)return nullptr;
+   std::vector<uint8_t> storage;
+   const void *pixels=tight_texture_pixels(width,height,rgba,rowBytes,storage);
    Texture *t=new Texture; glGenTextures(1,&t->name); t->width=width;t->height=height; glBindTexture(GL_TEXTURE_2D,t->name);
    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH,rowBytes/4);
-   glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,rgba); glPixelStorei(GL_UNPACK_ROW_LENGTH,0);return t;
+   glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);return t;
 }
 int RenderBackendUpdateTexture(void *handle,int width,int height,const void *rgba,int rowBytes)
-{ Texture*t=static_cast<Texture*>(handle);if(!t)return 0;glBindTexture(GL_TEXTURE_2D,t->name);glPixelStorei(GL_UNPACK_ROW_LENGTH,rowBytes/4);if(t->width==width&&t->height==height)glTexSubImage2D(GL_TEXTURE_2D,0,0,0,width,height,GL_RGBA,GL_UNSIGNED_BYTE,rgba);else glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,rgba);glPixelStorei(GL_UNPACK_ROW_LENGTH,0);t->width=width;t->height=height;return 1; }
+{ Texture*t=static_cast<Texture*>(handle);if(!t||width<=0||height<=0||!rgba||rowBytes<width*4)return 0;std::vector<uint8_t>storage;const void*pixels=tight_texture_pixels(width,height,rgba,rowBytes,storage);glBindTexture(GL_TEXTURE_2D,t->name);if(t->width==width&&t->height==height)glTexSubImage2D(GL_TEXTURE_2D,0,0,0,width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);else glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);t->width=width;t->height=height;return 1; }
 void RenderBackendDestroyTexture(void *handle) { Texture*t=static_cast<Texture*>(handle);if(!t)return;for(void*&bound:g_textures)if(bound==t)bound=nullptr;glDeleteTextures(1,&t->name);delete t; }
 void RenderBackendBindTexture(int level,void *texture) { if(level>=0&&level<2){g_textures[level]=texture;bind_texture(level,static_cast<Texture*>(texture));} }
 int RenderBackendDraw(int primitive,const sRenderBackendVertex *vertices,int count,int second)
 {
    if(!g_context||!vertices||count<=0)return 0; bind_texture(0,static_cast<Texture*>(g_textures[0]));
-   if(second)bind_texture(1,static_cast<Texture*>(g_textures[1]));else{glActiveTexture(GL_TEXTURE1);glDisable(GL_TEXTURE_2D);glActiveTexture(GL_TEXTURE0);}
-   GLenum p=primitive==kRenderBackendLines?GL_LINES:primitive==kRenderBackendPoints?GL_POINTS:GL_TRIANGLES; glBegin(p);
-   for(int i=0;i<count;++i){const auto&v=vertices[i];const float q=1.0f/std::max(v.rhw,0.000001f);
-      glColor4f(v.r,v.g,v.b,v.a);if(g_fog)glFogCoordf(1.0f-std::clamp(v.fog,0.0f,1.0f));
-      glMultiTexCoord2f(GL_TEXTURE0,v.u0,v.v0);if(second)glMultiTexCoord2f(GL_TEXTURE1,v.u1,v.v1);
-      glVertex4f(v.x*q,v.y*q,(1.0f-v.z*2.0f)*q,q);}
-   glEnd(); if(second){glActiveTexture(GL_TEXTURE1);glDisable(GL_TEXTURE_2D);glActiveTexture(GL_TEXTURE0);} return 1;
+   bind_texture(1,second?static_cast<Texture*>(g_textures[1]):nullptr);
+   glActiveTexture(GL_TEXTURE0);
+   GLenum p=primitive==kRenderBackendLines?GL_LINES:primitive==kRenderBackendPoints?GL_POINTS:GL_TRIANGLES;
+   return draw_vertices(p,vertices,count,second!=0,g_width,g_height,g_fog,
+      g_fogColor,g_alphaTest);
 }
 void RenderBackendTraceReset(void) { if(g_trace){fclose(g_trace);g_trace=nullptr;} const char*p=getenv("DARK_RENDER_TRACE");if(p&&*p)g_trace=fopen(p,"w"); }
 void RenderBackendTrace(const char *format,...) { if(!g_trace)return;va_list args;va_start(args,format);vfprintf(g_trace,format,args);va_end(args);fputc('\n',g_trace);fflush(g_trace); }

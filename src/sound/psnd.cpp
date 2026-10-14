@@ -223,7 +223,11 @@ int cPropSnd::GenerateSoundHandle(int handle, ObjID objID, ObjID schemaID, const
    m_PropAgent.SetFunctions(m_SoundInstance);
    m_PropAgent.PropagateBF(ObjPosGet(objID)->loc.vec, g_pRooms->GetObjRoom(objID));
 
-   if ((flags & kGSF_WantHandle) && !m_NoSound)
+   // A configured no-sound run and a mixer whose platform backend failed to
+   // initialize are both intentional silent modes.  Do not propagate every
+   // schema down to SFX in the latter case: SFX has no mixer and would turn a
+   // single device error into an unbounded stream of per-sample failures.
+   if ((flags & kGSF_WantHandle) && !m_NoSound && SFXActive())
    {
       cPlayerSoundList* pPlayerList = GeneratePlayerSoundList(handle);
       if (pPlayerList == NULL)
@@ -409,7 +413,7 @@ int cPropSnd::GenerateSoundHandle(int handle, mxs_vector &vec, ObjID src_obj, Ob
    m_PropAgent.SetFunctions(m_SoundInstance);
    m_PropAgent.PropagateBF(vec, start_room);
 
-   if ((flags & kGSF_WantHandle) && !m_NoSound)
+   if ((flags & kGSF_WantHandle) && !m_NoSound && SFXActive())
    {
       cPlayerSoundList* pPlayerList = GeneratePlayerSoundList(handle);
       if (pPlayerList == NULL)
@@ -515,6 +519,9 @@ int cPropSnd::GenerateSound(const char *sampleName, sfx_parm *parms)
 {
    AUTO_TIMER(GenSnd);
    AUTO_TIMER(GenSndStatic);
+
+   if (m_NoSound || !SFXActive())
+      return kPSndFail;
 
    cPlayerSoundList *pPlayerList;
    cSoundInfo       *pSoundInfo;

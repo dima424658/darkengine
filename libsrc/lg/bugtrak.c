@@ -53,7 +53,7 @@ errtype bugtrak_init(int bt_max_systems, char *fname, BugFunc bug_report_callbac
       numlen++;
    }
 //   mprintf ("After while: fname = %s subname = %s numlen = %d\n",fname,subname,numlen);
-	while ( (fp = open(fname,O_BINARY|O_RDONLY)) != -1) {
+	while ( (fp = _open(fname,O_BINARY|O_RDONLY)) != -1) {
 		/* Check next slot */
       close(fp);                       /* good idea to, like, close the opened file */
  		++num;
@@ -148,7 +148,7 @@ errtype bugtrak_begin_session(char *bt_session_file)
    char oput[50];
    time_t t;
 
-   if ((bt_session_handle=open(bt_session_file,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE))==-1) {
+   if ((bt_session_handle=_open(bt_session_file,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE))==-1) {
       Warning(("ARGH!!  OPEN FAILURE!!! %s %d\n",bt_session_file,bt_session_handle));
       return(ERR_NODEV);
    }

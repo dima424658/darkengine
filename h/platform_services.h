@@ -88,6 +88,11 @@ EXTERN void PlatformExitProcess(int status);
 EXTERN BOOL PlatformSetClipboardText(const char *text);
 EXTERN int PlatformGetClipboardText(char *text, int capacity);
 EXTERN BOOL PlatformGetCurrentDirectory(char *path, int capacity);
+// Converts Windows separators and resolves an existing path component by
+// component. Exact spelling always wins; on case-sensitive hosts, a unique
+// ASCII case-insensitive match is used only when the exact component is
+// absent. The normalized candidate is returned even when it does not exist.
+EXTERN BOOL PlatformResolvePath(const char *path, char *resolved, int capacity);
 EXTERN BOOL PlatformCopyFiles(const char *pattern, const char *source_dir,
                               const char *destination_dir);
 EXTERN BOOL PlatformFindFirst(const char *pattern, sPlatformFileFind *find);

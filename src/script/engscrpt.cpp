@@ -116,6 +116,15 @@ IMPLEMENT_SCRIPT_SERVICE_IMPL(cDebugScrSrv, Debug);
 namespace
 {
 
+char *NextToken(char *text, const char *delimiters, char **context)
+{
+#ifdef _WIN32
+   return strtok_s(text, delimiters, context);
+#else
+   return strtok_r(text, delimiters, context);
+#endif
+}
+
 BOOL IsAbsoluteContentPath(const char *path)
 {
    return path && (path[0] == '\\' || path[0] == '/' ||
@@ -126,9 +135,14 @@ void JoinContentPath(char *output, size_t size, const char *root,
                      const char *leaf)
 {
    const size_t rootLength = root ? strlen(root) : 0;
+#ifdef _WIN32
+   const char *separator = "\\";
+#else
+   const char *separator = "/";
+#endif
    _snprintf(output, size - 1, "%s%s%s", root ? root : "",
              rootLength && root[rootLength - 1] != '\\' &&
-             root[rootLength - 1] != '/' ? "\\" : "",
+             root[rootLength - 1] != '/' ? separator : "",
              leaf ? leaf : "");
    output[size - 1] = '\0';
 }
@@ -268,8 +282,8 @@ public:
       int index = 0;
       strncpy(copy, paths ? paths : "", sizeof(copy));
       copy[sizeof(copy) - 1] = '\0';
-      for (entry = strtok_s(copy, "+;", &context); entry;
-           entry = strtok_s(NULL, "+;", &context), ++index)
+      for (entry = NextToken(copy, "+;", &context); entry;
+           entry = NextToken(NULL, "+;", &context), ++index)
          if (index == which)
          {
             result = entry;
@@ -469,7 +483,10 @@ public:
       MakeLocationFromVector(&start, &from);
       MakeLocationFromVector(&end, &to);
       const BOOL clear = ::PortalRaycast(&start, &end, &result, FALSE);
-      hit = clear ? to : result.vec;
+      if (clear)
+         hit = to;
+      else
+         hit = result.vec;
       return !clear;
    }
 
@@ -496,7 +513,10 @@ public:
          cast = ::PortalRaycast(&start, &end, &result, (flags & 1) != 0) ?
                 kObjCastNone : kObjCastTerrain;
       }
-      hit = cast == kObjCastNone ? to : result.vec;
+      if (cast == kObjCastNone)
+         hit = to;
+      else
+         hit = result.vec;
       hitObject.Set(cast == kObjCastMD || cast == kObjCastMesh ?
                     g_ObjCastObjID : OBJ_NULL);
       return cast;

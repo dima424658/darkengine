@@ -2,18 +2,21 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cctype>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <filesystem>
-#include <glob.h>
+#include <fnmatch.h>
 #include <functional>
+#include <fcntl.h>
 #include <mutex>
 #include <new>
 #include <string>
 #include <thread>
+#include <unordered_map>
+#include <vector>
 #include <unistd.h>
 
 #if defined(__linux__)
@@ -138,69 +141,345 @@ BOOL PlatformGetCurrentDirectory(char *path, int capacity)
    return path && capacity > 0 && getcwd(path, (size_t)capacity) != nullptr;
 }
 
+namespace
+{
+std::mutex g_resolvedPathMutex;
+
+struct sDirectoryCaseIndex
+{
+   std::unordered_map<std::string, std::vector<std::string>> names;
+};
+
+struct sResolvedPath
+{
+   std::string native;
+   bool exists;
+};
+
+std::unordered_map<std::string, sDirectoryCaseIndex> g_directoryCaseCache;
+std::unordered_map<std::string, sResolvedPath> g_resolvedPathCache;
+
+std::string FoldPathComponent(std::string text)
+{
+   std::transform(text.begin(), text.end(), text.begin(),
+      [](unsigned char character)
+      {
+         return (char)(character >= 'A' && character <= 'Z'
+            ? character + ('a' - 'A') : character);
+      });
+   return text;
+}
+
+bool HasWildcard(const std::string &pattern)
+{
+   return pattern.find_first_of("*?[") != std::string::npos;
+}
+
+std::string PathCacheKey(const std::filesystem::path &path)
+{
+   // Relative keys are valid until PlatformChangeDirectory(), which clears
+   // both caches. Avoid std::filesystem::absolute() here: it issues getcwd()
+   // for every failed resource candidate and is particularly costly on WSL.
+   return path.lexically_normal().generic_string();
+}
+
+bool FindPathComponent(const std::filesystem::path &directory,
+                       const std::string &wanted,
+                       std::filesystem::path *match)
+{
+   const std::string key = PathCacheKey(directory);
+   const std::string folded = FoldPathComponent(wanted);
+
+   {
+      std::lock_guard<std::mutex> lock(g_resolvedPathMutex);
+      const auto cached = g_directoryCaseCache.find(key);
+      if (cached != g_directoryCaseCache.end())
+      {
+         const auto names = cached->second.names.find(folded);
+         if (names != cached->second.names.end())
+         {
+            for (const std::string &name : names->second)
+            {
+               if (name == wanted)
+               {
+                  *match = name;
+                  return true;
+               }
+            }
+            if (names->second.size() == 1)
+            {
+               *match = names->second[0];
+               return true;
+            }
+         }
+         return false;
+      }
+   }
+
+   sDirectoryCaseIndex index;
+   std::error_code error;
+   for (std::filesystem::directory_iterator it(directory, error), end;
+        !error && it != end; it.increment(error))
+   {
+      const std::string name = it->path().filename().string();
+      index.names[FoldPathComponent(name)].push_back(name);
+   }
+   if (error)
+      return false;
+
+   const auto names = index.names.find(folded);
+   bool found = false;
+   if (names != index.names.end())
+   {
+      for (const std::string &name : names->second)
+      {
+         if (name == wanted)
+         {
+            *match = name;
+            found = true;
+            break;
+         }
+      }
+      if (!found && names->second.size() == 1)
+      {
+         *match = names->second[0];
+         found = true;
+      }
+   }
+   {
+      std::lock_guard<std::mutex> lock(g_resolvedPathMutex);
+      g_directoryCaseCache[key] = std::move(index);
+   }
+   return found;
+}
+
+std::string ResolveNativePath(const char *path, bool *exists)
+{
+   std::string text = path ? path : "";
+   std::replace(text.begin(), text.end(), '\\', '/');
+   if (exists)
+      *exists = false;
+   if (text.empty())
+      return text;
+
+   const std::filesystem::path input(text);
+
+   std::filesystem::path resolved = input.is_absolute()
+      ? input.root_path() : std::filesystem::path(".");
+   bool allComponentsExist = true;
+   for (const auto &part : input.relative_path())
+   {
+      if (part == ".")
+         continue;
+      if (part == "..")
+      {
+         resolved /= part;
+         continue;
+      }
+
+      std::filesystem::path match;
+      // Each directory index preserves all original spellings. An exact
+      // component wins; only a unique folded match is accepted as fallback.
+      // This avoids a stat for every extension candidate during resource
+      // search while retaining exact-name-first behavior.
+      // Two differently cased names can coexist on a POSIX filesystem. Do
+      // not choose one arbitrarily: callers will receive their stated path
+      // and the normal operation will fail visibly instead.
+      if (FindPathComponent(resolved, part.string(), &match))
+         resolved /= match;
+      else
+      {
+         resolved /= part;
+         allComponentsExist = false;
+      }
+   }
+
+   std::string native = resolved.lexically_normal().generic_string();
+   if (!input.is_absolute() && native.rfind("./", 0) == 0)
+      native.erase(0, 2);
+
+   const bool found = allComponentsExist;
+   if (exists)
+      *exists = found;
+   return native;
+}
+
+std::string ResolveCachedPath(const char *path, bool *exists)
+{
+   std::string text = path ? path : "";
+   std::replace(text.begin(), text.end(), '\\', '/');
+   const std::string key = PathCacheKey(std::filesystem::path(text));
+   {
+      std::lock_guard<std::mutex> lock(g_resolvedPathMutex);
+      const auto cached = g_resolvedPathCache.find(key);
+      if (cached != g_resolvedPathCache.end())
+      {
+         if (exists)
+            *exists = cached->second.exists;
+         return cached->second.native;
+      }
+   }
+
+   bool found = false;
+   std::string native = ResolveNativePath(text.c_str(), &found);
+   {
+      std::lock_guard<std::mutex> lock(g_resolvedPathMutex);
+      g_resolvedPathCache[key] = {native, found};
+   }
+   if (exists)
+      *exists = found;
+   return native;
+}
+
+void ClearPathCaches()
+{
+   std::lock_guard<std::mutex> lock(g_resolvedPathMutex);
+   g_resolvedPathCache.clear();
+   g_directoryCaseCache.clear();
+}
+
+bool CopyResolvedPath(const std::string &path, char *resolved, int capacity)
+{
+   if (!resolved || capacity <= 0)
+      return false;
+   if (path.size() >= (size_t)capacity)
+   {
+      resolved[0] = '\0';
+      return false;
+   }
+   std::memcpy(resolved, path.c_str(), path.size() + 1);
+   return true;
+}
+}
+
+BOOL PlatformResolvePath(const char *path, char *resolved, int capacity)
+{
+   bool exists = false;
+   const std::string native = ResolveCachedPath(path, &exists);
+   return CopyResolvedPath(native, resolved, capacity) && exists;
+}
+
+EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
+{
+   const std::string native = ResolveNativePath(path, nullptr);
+   FILE *file = std::fopen(native.c_str(), mode);
+   if (file && mode && std::strpbrk(mode, "wax"))
+      ClearPathCaches();
+   return file;
+}
+
+EXTERN_C int PlatformOpen(const char *path, int flags, ...)
+{
+   const std::string native = ResolveNativePath(path, nullptr);
+   if ((flags & O_CREAT) == 0)
+      return open(native.c_str(), flags);
+   va_list arguments;
+   va_start(arguments, flags);
+   const mode_t mode = (mode_t)va_arg(arguments, int);
+   va_end(arguments);
+   const int descriptor = open(native.c_str(), flags, mode);
+   if (descriptor >= 0)
+      ClearPathCaches();
+   return descriptor;
+}
+
+EXTERN_C int PlatformAccess(const char *path, int mode)
+{
+   const std::string native = ResolveNativePath(path, nullptr);
+   return access(native.c_str(), mode);
+}
+
+EXTERN_C int PlatformChangeDirectory(const char *path)
+{
+   const std::string native = ResolveNativePath(path, nullptr);
+   const int result = chdir(native.c_str());
+   if (result == 0)
+      ClearPathCaches();
+   return result;
+}
+
+EXTERN_C int PlatformRemoveDirectory(const char *path)
+{
+   const std::string native = ResolveNativePath(path, nullptr);
+   const int result = rmdir(native.c_str());
+   if (result == 0)
+      ClearPathCaches();
+   return result;
+}
+
+EXTERN_C int PlatformUnlink(const char *path)
+{
+   const std::string native = ResolveNativePath(path, nullptr);
+   const int result = unlink(native.c_str());
+   if (result == 0)
+      ClearPathCaches();
+   return result;
+}
+
 BOOL PlatformCopyFiles(const char *pattern, const char *source_dir,
                        const char *destination_dir)
 {
    if (!pattern || !source_dir || !destination_dir)
       return FALSE;
-   std::string search = std::string(source_dir) + "/" + pattern;
-   glob_t matches{};
-   if (glob(search.c_str(), 0, nullptr, &matches) != 0)
-      return FALSE;
-   bool result = true;
-   for (size_t i = 0; i < matches.gl_pathc; ++i)
+   const std::filesystem::path sourceDirectory = ResolveNativePath(source_dir, nullptr);
+   const std::filesystem::path destinationDirectory = ResolveNativePath(destination_dir, nullptr);
+   const std::string foldedPattern = FoldPathComponent(pattern);
+   if (!HasWildcard(pattern))
    {
-      std::filesystem::path source(matches.gl_pathv[i]);
-      if (!std::filesystem::is_regular_file(source))
-         continue;
-      std::error_code error;
+      bool exists = false;
+      const std::filesystem::path source = ResolveNativePath(
+         (sourceDirectory / pattern).string().c_str(), &exists);
+      std::error_code copyError;
+      if (!exists || !std::filesystem::is_regular_file(source, copyError))
+         return FALSE;
       std::filesystem::copy_file(
-         source, std::filesystem::path(destination_dir) / source.filename(),
+         source, destinationDirectory / source.filename(),
+         std::filesystem::copy_options::overwrite_existing, copyError);
+      if (!copyError)
+         ClearPathCaches();
+      return !copyError;
+   }
+   std::error_code error;
+   std::filesystem::directory_iterator it(sourceDirectory, error), end;
+   if (error)
+      return FALSE;
+   bool matched = false;
+   bool result = true;
+   for (; !error && it != end; it.increment(error))
+   {
+      const std::filesystem::path source = it->path();
+      if (fnmatch(foldedPattern.c_str(),
+                  FoldPathComponent(source.filename().string()).c_str(), 0) != 0 ||
+          !std::filesystem::is_regular_file(source, error))
+         continue;
+      matched = true;
+      error.clear();
+      std::filesystem::copy_file(
+         source, destinationDirectory / source.filename(),
          std::filesystem::copy_options::overwrite_existing, error);
       if (error)
+      {
          result = false;
+         error.clear();
+      }
    }
-   globfree(&matches);
-   return result;
+   const bool copied = matched && result && !error;
+   if (copied)
+      ClearPathCaches();
+   return copied;
 }
 
 struct sUnixFileFind
 {
-   glob_t matches;
+   std::vector<std::filesystem::path> matches;
    size_t index;
 };
 
-static std::string NativeSearchPattern(const char *pattern)
-{
-   std::string text(pattern ? pattern : "");
-   std::replace(text.begin(), text.end(), '\\', '/');
-   std::filesystem::path input(text), leaf = input.filename();
-   std::filesystem::path parent = input.parent_path();
-   std::filesystem::path resolved = parent.is_absolute() ? parent.root_path() : std::filesystem::path(".");
-   for (const auto &part : parent.relative_path())
-   {
-      std::filesystem::path exact = resolved / part;
-      std::error_code error;
-      if (std::filesystem::exists(exact, error)) { resolved = exact; continue; }
-      std::string wanted = part.string();
-      std::transform(wanted.begin(), wanted.end(), wanted.begin(), [](unsigned char c){ return (char)std::tolower(c); });
-      bool found = false;
-      for (std::filesystem::directory_iterator it(resolved, error), end; !error && it != end; it.increment(error))
-      {
-         std::string candidate = it->path().filename().string();
-         std::transform(candidate.begin(), candidate.end(), candidate.begin(), [](unsigned char c){ return (char)std::tolower(c); });
-         if (candidate == wanted) { resolved /= it->path().filename(); found = true; break; }
-      }
-      if (!found) resolved /= part;
-   }
-   return (resolved / leaf).lexically_normal().generic_string();
-}
-
 static BOOL CopyFileFind(sUnixFileFind *native, sPlatformFileFind *find)
 {
-   if (native->index >= native->matches.gl_pathc)
+   if (native->index >= native->matches.size())
       return FALSE;
-   std::filesystem::path path(native->matches.gl_pathv[native->index]);
+   const std::filesystem::path &path = native->matches[native->index];
    std::string name = path.filename().string();
    std::error_code error;
    find->attributes = 0;
@@ -219,13 +498,43 @@ BOOL PlatformFindFirst(const char *pattern, sPlatformFileFind *find)
 {
    if (!pattern || !find)
       return FALSE;
-   std::string nativePattern = NativeSearchPattern(pattern);
+   std::string text(pattern);
+   std::replace(text.begin(), text.end(), '\\', '/');
+   const std::filesystem::path input(text);
+   if (!HasWildcard(input.filename().string()))
+   {
+      bool exists = false;
+      const std::filesystem::path resolved = ResolveNativePath(text.c_str(), &exists);
+      if (!exists)
+         return FALSE;
+      sUnixFileFind *native = new (std::nothrow) sUnixFileFind{};
+      if (!native)
+         return FALSE;
+      native->matches.push_back(resolved);
+      find->implementation = native;
+      return CopyFileFind(native, find);
+   }
+   const std::string parent = input.parent_path().empty()
+      ? "." : input.parent_path().string();
+   const std::filesystem::path directory = ResolveNativePath(parent.c_str(), nullptr);
+   const std::string foldedPattern = FoldPathComponent(input.filename().string());
    sUnixFileFind *native = new (std::nothrow) sUnixFileFind{};
-   if (!native || glob(nativePattern.c_str(), 0, nullptr, &native->matches) != 0)
+   if (!native)
+      return FALSE;
+   std::error_code error;
+   for (std::filesystem::directory_iterator it(directory, error), end;
+        !error && it != end; it.increment(error))
+   {
+      if (fnmatch(foldedPattern.c_str(),
+                  FoldPathComponent(it->path().filename().string()).c_str(), 0) == 0)
+         native->matches.push_back(it->path());
+   }
+   if (error || native->matches.empty())
    {
       delete native;
       return FALSE;
    }
+   std::sort(native->matches.begin(), native->matches.end());
    find->implementation = native;
    return CopyFileFind(native, find);
 }
@@ -246,7 +555,6 @@ void PlatformFindClose(sPlatformFileFind *find)
       ? static_cast<sUnixFileFind *>(find->implementation) : nullptr;
    if (native)
    {
-      globfree(&native->matches);
       delete native;
       find->implementation = nullptr;
    }

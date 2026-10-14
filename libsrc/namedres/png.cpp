@@ -4,19 +4,28 @@
 #include <bitmap.h>
 #include <resbastm.h>
 
+#ifdef _WIN32
 #pragma pack(push, 8)
 #include <objbase.h>
 #include <wincodec.h>
 #pragma pack(pop)
+#else
+#pragma pack(push, 8)
+#include <libpng16/png.h>
+#pragma pack(pop)
+#endif
 
 #include <cstdlib>
 #include <limits>
 
+#ifdef _WIN32
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "windowscodecs.lib")
+#endif
 
 namespace
 {
+#ifdef _WIN32
 template <class T>
 void ReleaseInterface(T*& value)
 {
@@ -26,6 +35,7 @@ void ReleaseInterface(T*& value)
       value = nullptr;
    }
 }
+#endif
 
 uint16 Pack565(const uint8* pixel)
 {
@@ -65,6 +75,7 @@ grs_bitmap* ResPngReadImage(IStoreStream* pStream,
    if (streamSize <= 0)
       return nullptr;
 
+#ifdef _WIN32
    const HRESULT comResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
    const bool uninitialize = comResult == S_OK || comResult == S_FALSE;
    if (FAILED(comResult) && comResult != RPC_E_CHANGED_MODE)
@@ -185,6 +196,111 @@ cleanup:
    if (uninitialize)
       CoUninitialize();
    return bitmap;
+#else
+   auto* encoded = static_cast<uint8*>(std::malloc(static_cast<size_t>(streamSize)));
+   if (!encoded)
+      return nullptr;
+
+   pStream->SetPos(0);
+   if (pStream->Read(streamSize, reinterpret_cast<char*>(encoded)) != streamSize)
+   {
+      std::free(encoded);
+      return nullptr;
+   }
+
+   png_image image{};
+   image.version = PNG_IMAGE_VERSION;
+   if (!png_image_begin_read_from_memory(&image, encoded,
+                                         static_cast<size_t>(streamSize)))
+   {
+      std::free(encoded);
+      return nullptr;
+   }
+
+   image.format = PNG_FORMAT_RGBA;
+   const size_t width = image.width;
+   const size_t height = image.height;
+   if (!width || !height ||
+       width > static_cast<size_t>(std::numeric_limits<int>::max()) ||
+       height > static_cast<size_t>(std::numeric_limits<int>::max()) ||
+       width > std::numeric_limits<size_t>::max() / height ||
+       width * height > std::numeric_limits<size_t>::max() / 4)
+   {
+      png_image_free(&image);
+      std::free(encoded);
+      return nullptr;
+   }
+
+   const size_t pixelCount = width * height;
+   auto* rgba = static_cast<uint8*>(std::malloc(pixelCount * 4));
+   const bool decoded = rgba && png_image_finish_read(&image, nullptr, rgba,
+                                                       0, nullptr) != 0;
+   png_image_free(&image);
+   std::free(encoded);
+   if (!decoded)
+   {
+      std::free(rgba);
+      return nullptr;
+   }
+
+   bool hasAlpha = false;
+   size_t opaquePixels = 0;
+   size_t partialAlphaPixels = 0;
+   for (size_t i = 0; i < pixelCount; ++i)
+   {
+      const uint8 alpha = rgba[i * 4 + 3];
+      if (alpha == 255)
+         ++opaquePixels;
+      else
+      {
+         hasAlpha = true;
+         if (alpha != 0)
+            ++partialAlphaPixels;
+      }
+   }
+
+   const bool useBinaryAlpha = hasAlpha &&
+      opaquePixels * 5 >= pixelCount * 4 &&
+      partialAlphaPixels * 10 <= pixelCount;
+   if (pixelCount >
+       (std::numeric_limits<size_t>::max() - sizeof(grs_bitmap)) /
+          sizeof(uint16))
+   {
+      std::free(rgba);
+      return nullptr;
+   }
+
+   const size_t allocationSize = sizeof(grs_bitmap) +
+                                 pixelCount * sizeof(uint16);
+   if (allocationSize > std::numeric_limits<ulong>::max())
+   {
+      std::free(rgba);
+      return nullptr;
+   }
+
+   LGALLOC_PUSH_CREDIT();
+   auto* bitmap = reinterpret_cast<grs_bitmap*>(
+      pResMem->ResMalloc(static_cast<ulong>(allocationSize)));
+   LGALLOC_POP_CREDIT();
+   if (!bitmap)
+   {
+      std::free(rgba);
+      return nullptr;
+   }
+
+   auto* output = reinterpret_cast<uint16*>(&bitmap[1]);
+   for (size_t i = 0; i < pixelCount; ++i)
+      output[i] = useBinaryAlpha ? Pack1555(&rgba[i * 4]) :
+                  hasAlpha ? Pack4444(&rgba[i * 4]) :
+                             Pack565(&rgba[i * 4]);
+   std::free(rgba);
+
+   gr_init_bitmap(bitmap, reinterpret_cast<uint8*>(output), BMT_FLAT16,
+                  useBinaryAlpha ? BMF_RGB_1555 :
+                  hasAlpha ? BMF_RGB_4444 : BMF_RGB_565,
+                  static_cast<int>(width), static_cast<int>(height));
+   return bitmap;
+#endif
 }
 
 uint8* ResPngReadPalette(IStoreStream*, IResMemOverride* pResMem)

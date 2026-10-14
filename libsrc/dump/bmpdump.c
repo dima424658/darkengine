@@ -17,7 +17,7 @@
 
 int dmp_bmp_dump_file(const char *filename)
 {
-   int fd = open(filename, O_BINARY | O_WRONLY | O_CREAT | O_TRUNC,
+   int fd = _open(filename, O_BINARY | O_WRONLY | O_CREAT | O_TRUNC,
 #ifdef _WIN32
                  S_IREAD | S_IWRITE);
 #else

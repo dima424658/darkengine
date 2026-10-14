@@ -129,7 +129,7 @@ cRecorder::cRecorder(IUnknown * pOuterUnknown, eRecMode mode,
     else
         access |= _O_RDWR | _O_CREAT | _O_TRUNC;
 
-    m_RecFile = open(m_RecFileSpec.GetName(), access, S_IREAD | S_IWRITE);
+    m_RecFile = _open(m_RecFileSpec.GetName(), access, S_IREAD | S_IWRITE);
 
     if (m_RecFile == -1)
     {

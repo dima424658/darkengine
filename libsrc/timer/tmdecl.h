@@ -35,7 +35,7 @@ typedef void (*pfv)();
 extern volatile long tm_millisec;
 extern volatile fix tm_fix;
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__linux__)
 #define tm_get_millisec() (tm_millisec)
 #define tm_get_millisec_unrecorded() (tm_millisec)
 #define tm_get_fix() (tm_fix)
