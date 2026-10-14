@@ -17,12 +17,18 @@ class cUnixGameShell : public IGameShell
 public:
    cUnixGameShell(IUnknown *outer, int flags) : m_flags(flags), m_epoch(clock::now())
    { INIT_AGGREGATION_1(outer, IID_IGameShell, this, kPriorityLibrary, nullptr); }
-   void BeginFrame() override { PumpEvents(kPumpAll); if(m_flags&kLockFrame)DisplayLock(); }
+   void BeginFrame() override
+   {
+      DarkRenderBeginApplicationFrame();
+      PumpEvents(kPumpAll);
+      if(m_flags&kLockFrame)DisplayLock();
+   }
    void EndFrame() override
    {
       if(m_flags&kLockFrame)DisplayUnlock();
       if(m_flags&kFlipOnEndFrame){auto*d=AppGetObj(IDisplayDevice);if(d){d->PageFlip();d->Release();}}
       else if(m_flags&kFlushOnEndFrame)DisplayFlush();
+      DarkRenderEndApplicationFrame();
    }
    HRESULT BringToFront() override { return S_OK; }
    HRESULT Obsolete1() override { return S_OK; }

@@ -43,7 +43,7 @@ public:
          sGrModeInfo mode = grd_mode_info[i];
          if (mode.bitDepth != 8 && mode.bitDepth != 15 && mode.bitDepth != 16) continue;
          mode.flags |= GRM_IS_SUPPORTED | GRM_IS_LINEAR | GRM_IS_NATIVE | GRM_CAN_WINDOW | GRM_CAN_FULLSCREEN;
-         grd_mode_info[i].flags = mode.flags; info->modes[n] = static_cast<short>(i); if (modes) modes[n] = mode; ++n;
+         grd_mode_info[i].flags = mode.flags; info->modes[n] = static_cast<short>(i); if (modes) modes[i] = mode; ++n;
       }
       info->modes[n] = -1;
    }

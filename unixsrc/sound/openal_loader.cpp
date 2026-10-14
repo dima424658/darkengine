@@ -45,7 +45,8 @@ bool OpenALLoad(sOpenALApi *api)
 
 void OpenALUnload()
 {
-    if (g_openal)
-        dlclose(g_openal);
-    g_openal = nullptr;
+    //Causes crash because audio threads still active so we leave open for process lifetime
+    // if (g_openal)
+    //     dlclose(g_openal);
+    // g_openal = nullptr;
 }

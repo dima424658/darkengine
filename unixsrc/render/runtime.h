@@ -9,6 +9,8 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes,
                        int bitDepth, const uint8_t *palette);
 bool DarkRenderPumpEvents(void);
 bool DarkRenderPumpMovieEvents(void);
+void DarkRenderBeginApplicationFrame(void);
+void DarkRenderEndApplicationFrame(void);
 bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
                                  int rowBytes);
 void DarkRenderSetTitle(const char *title);

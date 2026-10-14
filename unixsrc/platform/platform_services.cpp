@@ -20,16 +20,85 @@
 #include <unistd.h>
 
 #if defined(__linux__)
+#include <SDL2/SDL.h>
 #include <malloc.h>
 #include <sys/sysinfo.h>
 #endif
 
-int PlatformGetDisplayModes(ePlatformDisplayScope, sPlatformDisplayMode *, int,
+int PlatformGetDisplayModes(ePlatformDisplayScope scope,
+                            sPlatformDisplayMode *modes, int capacity,
                             int *native_width, int *native_height)
 {
    if (native_width) *native_width = 0;
    if (native_height) *native_height = 0;
+#if defined(__linux__)
+   if (!modes || capacity < 0)
+      capacity = 0;
+
+   const bool initialized = (SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) != 0;
+   if (!initialized)
+   {
+      // Pick the compositor-native provider before the first SDL video call.
+      // This startup query runs before the renderer creates its window.
+      if (std::getenv("WAYLAND_DISPLAY") && !std::getenv("SDL_VIDEODRIVER"))
+         SDL_setenv("SDL_VIDEODRIVER", "wayland", 0);
+      if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
+         return 0;
+   }
+
+   int firstDisplay = 0;
+   int displayCount = SDL_GetNumVideoDisplays();
+   if (scope == kPlatformCurrentDisplay && displayCount > 0)
+   {
+      SDL_Window *window = SDL_GetKeyboardFocus();
+      int display = window ? SDL_GetWindowDisplayIndex(window) : 0;
+      if (display < 0 || display >= displayCount)
+         display = 0;
+      firstDisplay = display;
+      displayCount = 1;
+   }
+
+   int count = 0;
+   for (int displayOffset = 0; displayOffset < displayCount; ++displayOffset)
+   {
+      const int display = firstDisplay + displayOffset;
+      SDL_DisplayMode current{};
+      if (SDL_GetCurrentDisplayMode(display, &current) == 0 &&
+          scope == kPlatformCurrentDisplay)
+      {
+         if (native_width) *native_width = current.w;
+         if (native_height) *native_height = current.h;
+      }
+
+      const int modeCount = SDL_GetNumDisplayModes(display);
+      for (int modeIndex = 0; modeIndex < modeCount && count < capacity;
+           ++modeIndex)
+      {
+         SDL_DisplayMode mode{};
+         if (SDL_GetDisplayMode(display, modeIndex, &mode) != 0)
+            continue;
+         const int depth = SDL_BITSPERPIXEL(mode.format);
+         int duplicate = 0;
+         for (; duplicate < count; ++duplicate)
+            if (modes[duplicate].width == mode.w &&
+                modes[duplicate].height == mode.h &&
+                modes[duplicate].bit_depth == depth)
+               break;
+         if (duplicate != count)
+            continue;
+         modes[count++] = {mode.w, mode.h, depth};
+      }
+   }
+
+   if (!initialized)
+      SDL_QuitSubSystem(SDL_INIT_VIDEO);
+   return count;
+#else
+   (void)scope;
+   (void)modes;
+   (void)capacity;
    return 0;
+#endif
 }
 
 BOOL PlatformGetMemoryStatus(sPlatformMemoryStatus *status)
@@ -269,7 +338,8 @@ std::string ResolveNativePath(const char *path, bool *exists)
    bool allComponentsExist = true;
    for (const auto &part : input.relative_path())
    {
-      if (part == ".")
+      //Trailing separator produces an empty part
+      if (part.empty() || part == ".")
          continue;
       if (part == "..")
       {

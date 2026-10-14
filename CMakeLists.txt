@@ -42,6 +42,9 @@ target_include_directories(dark_platform PUBLIC
 )
 if(NOT WIN32)
   target_link_libraries(dark_platform PUBLIC ${CMAKE_DL_LIBS})
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(dark_platform PUBLIC SDL2::SDL2)
+  endif()
 endif()
 
 add_library(dark_compression STATIC 3rdparty/blast/blast.c)

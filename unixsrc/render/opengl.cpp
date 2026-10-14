@@ -55,7 +55,10 @@ bool g_relativeMouse, g_relativeActive, g_focused;
 bool g_wslPointerWorkaround;
 bool g_pointerWarpWarningPrinted;
 int g_swapInterval = -1;
+bool g_swapIntervalApplied;
 unsigned g_unsupportedSwapIntervals;
+unsigned g_applicationFrameDepth;
+bool g_presentPending;
 bool g_samplerWrap[2];
 bool g_samplerSmooth[2] = {true, true};
 GLuint g_sceneProgram, g_sceneBuffer, g_sceneVertexArray;
@@ -203,7 +206,15 @@ void destroy_scene_pipeline()
 void viewport(int &x, int &y, int &w, int &h)
 {
    x = y = 0; w = g_clientWidth; h = g_clientHeight;
-   if (g_fit && g_width > 0 && g_height > 0 && w * g_height != h * g_width) {
+   if (!g_scale) {
+      w = std::min(w, g_width);
+      h = std::min(h, g_height);
+      return;
+   }
+   // Fit gameplay owns the settled client-sized canvas and fills the output.
+   // Fixed gameplay and 2D panels retain their logical aspect ratio.
+   if (!(g_fit && g_scene) && g_width > 0 && g_height > 0 &&
+       w * g_height != h * g_width) {
       if (w * g_height > h * g_width) { int nw = h * g_width / g_height; x = (w - nw) / 2; w = nw; }
       else { int nh = w * g_height / g_width; y = (h - nh) / 2; h = nh; }
    }
@@ -262,21 +273,26 @@ void set_swap_interval(int interval)
    // frame only floods stderr without changing the result.
    g_swapInterval = interval;
    const unsigned unsupportedBit = interval == 0 ? 1u : interval == 1 ? 2u : 4u;
-   if (g_unsupportedSwapIntervals & unsupportedBit)
+   if (g_unsupportedSwapIntervals & unsupportedBit) {
+      g_swapIntervalApplied = false;
       return;
+   }
    if (SDL_GL_SetSwapInterval(interval) != 0) {
       g_unsupportedSwapIntervals |= unsupportedBit;
+      g_swapIntervalApplied = false;
       fprintf(stderr, "SDL swap interval %d unavailable: %s\n", interval,
          SDL_GetError());
       return;
    }
+   g_swapIntervalApplied = true;
 }
 
 void update_relative_mouse()
 {
    const bool active = g_relativeMouse && g_focused;
    g_relativeActive = SDL_GetRelativeMouseMode() == SDL_TRUE;
-   if (active != g_relativeActive) {
+   const bool changed = active != g_relativeActive;
+   if (changed) {
       if (SDL_SetRelativeMouseMode(active ? SDL_TRUE : SDL_FALSE) != 0) {
          SDL_SetWindowMouseGrab(g_window, SDL_FALSE);
          fprintf(stderr, "SDL relative pointer lock failed: %s\n", SDL_GetError());
@@ -296,20 +312,22 @@ void update_relative_mouse()
    // compositor transitions can independently drop the grab or cursor state.
    if (SDL_GetWindowMouseGrab(g_window) != (active ? SDL_TRUE : SDL_FALSE))
       SDL_SetWindowMouseGrab(g_window, active ? SDL_TRUE : SDL_FALSE);
-   // SDL's ordinary window grab is not consistently honoured by WSLg's
-   // XWayland bridge. Capture keeps delivering motion if the host cursor
-   // crosses the client edge while the compositor still displays it.
-   SDL_CaptureMouse(active ? SDL_TRUE : SDL_FALSE);
-   if (active) {
-      SDL_Rect client = {0, 0, std::max(g_clientWidth, 1),
-                         std::max(g_clientHeight, 1)};
-      const SDL_Rect *current = SDL_GetWindowMouseRect(g_window);
-      if (!current || current->x != client.x || current->y != client.y ||
-          current->w != client.w || current->h != client.h)
-         SDL_SetWindowMouseRect(g_window, &client);
-   } else {
-      if (SDL_GetWindowMouseRect(g_window))
+   // SDL relative mode owns confinement on native Wayland/X11. Capture and
+   // an explicit confinement rectangle are only needed for WSLg's XWayland
+   // bridge; applying them on native compositors can suppress relative motion
+   // after a menu-to-game transition even though the pointer remains locked.
+   if (g_wslPointerWorkaround) {
+      SDL_CaptureMouse(active ? SDL_TRUE : SDL_FALSE);
+      if (active) {
+         SDL_Rect client = {0, 0, std::max(g_clientWidth, 1),
+                            std::max(g_clientHeight, 1)};
+         const SDL_Rect *current = SDL_GetWindowMouseRect(g_window);
+         if (!current || current->x != client.x || current->y != client.y ||
+             current->w != client.w || current->h != client.h)
+            SDL_SetWindowMouseRect(g_window, &client);
+      } else if (SDL_GetWindowMouseRect(g_window)) {
          SDL_SetWindowMouseRect(g_window, nullptr);
+      }
    }
    if (g_invisibleCursor && SDL_GetCursor() != g_invisibleCursor)
       SDL_SetCursor(g_invisibleCursor);
@@ -321,8 +339,30 @@ void update_relative_mouse()
       SDL_GetWindowMouseGrab(g_window) == SDL_TRUE);
    // Discard any delta accumulated while the compositor was changing pointer
    // mode. Gameplay consumes motion accumulated after the lock transition.
-   int ignoredX, ignoredY;
-   SDL_GetRelativeMouseState(&ignoredX, &ignoredY);
+   if (changed) {
+      int ignoredX, ignoredY;
+      SDL_GetRelativeMouseState(&ignoredX, &ignoredY);
+   }
+}
+
+void swap_presented_frame()
+{
+   if (!g_context || !g_presentPending)
+      return;
+   SDL_GL_SwapWindow(g_window);
+
+   // A working swap interval already paces gameplay. The old unconditional
+   // post-swap delay occasionally added an extra millisecond (or a full
+   // refresh on some compositors), producing visibly uneven camera motion.
+   if (g_swapInterval != 1 || !g_swapIntervalApplied) {
+      const Uint64 now = SDL_GetTicks64();
+      if (g_lastPresentTicks && now - g_lastPresentTicks < 16)
+         SDL_Delay(static_cast<Uint32>(16 - (now - g_lastPresentTicks)));
+      g_lastPresentTicks = SDL_GetTicks64();
+   } else {
+      g_lastPresentTicks = 0;
+   }
+   g_presentPending = false;
 }
 
 void bind_texture(int level, Texture *texture)
@@ -558,7 +598,10 @@ void DarkRenderClose(void)
    g_wslPointerWorkaround = false;
    g_pointerWarpWarningPrinted = false;
    g_swapInterval = -1;
+   g_swapIntervalApplied = false;
    g_unsupportedSwapIntervals = 0;
+   g_applicationFrameDepth = 0;
+   g_presentPending = false;
    SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
    if (g_trace) { fclose(g_trace); g_trace = nullptr; }
 }
@@ -709,6 +752,24 @@ bool DarkRenderPumpMovieEvents(void)
    return stop;
 }
 
+void DarkRenderBeginApplicationFrame(void)
+{
+   // Cursor save-under drawing can request several legacy FlushRect calls
+   // while input is being pumped. Keep those updates in the back buffer and
+   // expose only the completed engine frame.
+   if (g_applicationFrameDepth == 0 && g_presentPending)
+      swap_presented_frame();
+   ++g_applicationFrameDepth;
+}
+
+void DarkRenderEndApplicationFrame(void)
+{
+   if (g_applicationFrameDepth > 0)
+      --g_applicationFrameDepth;
+   if (g_applicationFrameDepth == 0)
+      swap_presented_frame();
+}
+
 void DarkRenderSetTitle(const char *title) { if (g_window) SDL_SetWindowTitle(g_window, title ? title : "Dark Engine"); }
 void DarkRenderShowCursor(bool) { SDL_ShowCursor(SDL_DISABLE); }
 
@@ -739,7 +800,16 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, 
          else { r = ((raw >> 11) & 31) * 255 / 31; g = ((raw >> 5) & 63) * 255 / 63; b = (raw & 31) * 255 / 31; } }
       uint8_t a = g_scene && raw == 0 ? 0 : 255; g_overlay[static_cast<size_t>(y)*width+x] = r | (g<<8) | (b<<16) | (a<<24);
    }
-   int vx, vy, vw, vh; viewport(vx, vy, vw, vh); glViewport(vx, vy, vw, vh);
+   int vx, vy, vw, vh; viewport(vx, vy, vw, vh);
+   if (!g_scene) {
+      // Logical mode changes may alter the aspect-fitted viewport. Clear the
+      // whole output so the previously presented menu cannot remain visible
+      // in newly exposed bars around the rebuilt canvas.
+      glViewport(0, 0, g_clientWidth, g_clientHeight);
+      glClearColor(0, 0, 0, 1);
+      glClear(GL_COLOR_BUFFER_BIT);
+   }
+   glViewport(vx, vy, vw, vh);
    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, g_overlayTexture);
    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, 0);
    glActiveTexture(GL_TEXTURE0);
@@ -775,11 +845,9 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, 
       if (!g_captureComplete && path && *path && g_hardwareFrameCount >= static_cast<unsigned>(frame))
          g_captureComplete = capture_frame(path);
    }
-   SDL_GL_SwapWindow(g_window);
-   const Uint64 now = SDL_GetTicks64();
-   if (g_lastPresentTicks && now - g_lastPresentTicks < 16)
-      SDL_Delay(static_cast<Uint32>(16 - (now - g_lastPresentTicks)));
-   g_lastPresentTicks = SDL_GetTicks64();
+   g_presentPending = true;
+   if (g_applicationFrameDepth == 0)
+      swap_presented_frame();
 }
 
 bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
