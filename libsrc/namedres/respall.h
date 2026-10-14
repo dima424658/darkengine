@@ -10,6 +10,7 @@ enum class ePalKind
 	kPalPNG = 0x3,
 	kPalPCX = 0x4,
 	kPalTGA = 0x5,
+	kPalDDS = 0x6,
 };
 
 class cPaletteResource : public cResourceBase<IRes, &IID_IRes>

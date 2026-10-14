@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include <lg.h>
+#include <platform_services.h>
 #include <sndsrc.h>
 #include <playlist.h>
 
@@ -25,7 +26,244 @@ typedef struct _fakeSplicerThingy {
    SndEndCallback    userCB;
    void              *pUserCBData;
    uint32            *pPlaylist;
+   void              *pOwnedData;
 } fakeSplicerThingy;
+
+namespace
+{
+typedef int64_t sf_count_t;
+struct SNDFILE_tag;
+typedef SNDFILE_tag SNDFILE;
+
+struct SF_INFO
+{
+   sf_count_t frames;
+   int samplerate;
+   int channels;
+   int format;
+   int sections;
+   int seekable;
+};
+
+struct SF_VIRTUAL_IO
+{
+   sf_count_t (*get_filelen)(void *);
+   sf_count_t (*seek)(sf_count_t, int, void *);
+   sf_count_t (*read)(void *, sf_count_t, void *);
+   sf_count_t (*write)(const void *, sf_count_t, void *);
+   sf_count_t (*tell)(void *);
+};
+
+struct sSndFileApi
+{
+   void *library;
+   SNDFILE *(*open_virtual)(SF_VIRTUAL_IO *, int, SF_INFO *, void *);
+   sf_count_t (*readf_short)(SNDFILE *, short *, sf_count_t);
+   int (*close)(SNDFILE *);
+};
+
+struct sMemorySound
+{
+   const uint8 *data;
+   sf_count_t size;
+   sf_count_t position;
+};
+
+sf_count_t MemoryLength(void *context)
+{
+   return static_cast<sMemorySound *>(context)->size;
+}
+
+sf_count_t MemorySeek(sf_count_t offset, int whence, void *context)
+{
+   sMemorySound *memory = static_cast<sMemorySound *>(context);
+   sf_count_t base;
+   if (whence == SEEK_SET)
+      base = 0;
+   else if (whence == SEEK_CUR)
+      base = memory->position;
+   else if (whence == SEEK_END)
+      base = memory->size;
+   else
+      return -1;
+
+   if (offset < -base || offset > memory->size - base)
+      return -1;
+   memory->position = base + offset;
+   return memory->position;
+}
+
+sf_count_t MemoryRead(void *destination, sf_count_t count, void *context)
+{
+   sMemorySound *memory = static_cast<sMemorySound *>(context);
+   if (count < 0)
+      return 0;
+   if (count > memory->size - memory->position)
+      count = memory->size - memory->position;
+   memcpy(destination, memory->data + memory->position,
+          static_cast<size_t>(count));
+   memory->position += count;
+   return count;
+}
+
+sf_count_t MemoryWrite(const void *, sf_count_t, void *) { return 0; }
+
+sf_count_t MemoryTell(void *context)
+{
+   return static_cast<sMemorySound *>(context)->position;
+}
+
+bool LoadSndFile(sSndFileApi *api)
+{
+   static bool attempted;
+   static sSndFileApi loaded;
+   if (!attempted)
+   {
+      const char *names[] = {
+#ifdef _WIN32
+         "libsndfile-1.dll", "sndfile.dll"
+#else
+         "libsndfile.so.1", "libsndfile.so"
+#endif
+      };
+      attempted = true;
+      for (unsigned i = 0; i < sizeof(names) / sizeof(names[0]); ++i)
+      {
+         loaded.library = PlatformLoadLibrary(names[i]);
+         if (loaded.library)
+            break;
+      }
+      if (loaded.library)
+      {
+         loaded.open_virtual = reinterpret_cast<SNDFILE *(*)(
+            SF_VIRTUAL_IO *, int, SF_INFO *, void *)>(
+               PlatformFindSymbol(loaded.library, "sf_open_virtual"));
+         loaded.readf_short = reinterpret_cast<sf_count_t (*)(
+            SNDFILE *, short *, sf_count_t)>(
+               PlatformFindSymbol(loaded.library, "sf_readf_short"));
+         loaded.close = reinterpret_cast<int (*)(SNDFILE *)>(
+            PlatformFindSymbol(loaded.library, "sf_close"));
+         if (!loaded.open_virtual || !loaded.readf_short || !loaded.close)
+         {
+            PlatformUnloadLibrary(loaded.library);
+            memset(&loaded, 0, sizeof(loaded));
+         }
+      }
+   }
+   *api = loaded;
+   return api->library != NULL;
+}
+
+void WriteU16(uint8 *destination, uint16 value)
+{
+   destination[0] = static_cast<uint8>(value);
+   destination[1] = static_cast<uint8>(value >> 8);
+}
+
+void WriteU32(uint8 *destination, uint32 value)
+{
+   destination[0] = static_cast<uint8>(value);
+   destination[1] = static_cast<uint8>(value >> 8);
+   destination[2] = static_cast<uint8>(value >> 16);
+   destination[3] = static_cast<uint8>(value >> 24);
+}
+
+void *DecodeOggToWave(const void *source, uint32 sourceLen,
+                      uint32 *waveLen)
+{
+   static bool warnedMissingDecoder;
+   if (sourceLen < 4 || memcmp(source, "OggS", 4) != 0)
+      return NULL;
+
+   sSndFileApi api;
+   if (!LoadSndFile(&api))
+   {
+      if (!warnedMissingDecoder)
+      {
+         Warning(("Ogg Vorbis audio requires the libsndfile runtime\n"));
+         warnedMissingDecoder = true;
+      }
+      return NULL;
+   }
+
+   SF_VIRTUAL_IO io = { MemoryLength, MemorySeek, MemoryRead,
+                        MemoryWrite, MemoryTell };
+   sMemorySound memory = { static_cast<const uint8 *>(source),
+                           sourceLen, 0 };
+   SF_INFO info = {};
+   SNDFILE *file = api.open_virtual(&io, 0x10, &info, &memory);
+   if (!file || info.frames <= 0 || info.samplerate <= 0 ||
+       (info.channels != 1 && info.channels != 2) ||
+       static_cast<uint64_t>(info.frames) >
+          (UINT32_MAX - 44u) / (static_cast<uint32>(info.channels) * 2u))
+   {
+      if (file)
+         api.close(file);
+      Warning(("Unable to decode Ogg Vorbis sound resource\n"));
+      return NULL;
+   }
+
+   const uint32 frameBytes = static_cast<uint32>(info.channels) * 2u;
+   const uint32 capacity = static_cast<uint32>(info.frames) * frameBytes;
+   uint8 *wave = static_cast<uint8 *>(Malloc(44u + capacity));
+   if (!wave)
+   {
+      api.close(file);
+      return NULL;
+   }
+
+   sf_count_t framesRead = 0;
+   while (framesRead < info.frames)
+   {
+      sf_count_t count = api.readf_short(
+         file, reinterpret_cast<short *>(wave + 44) +
+            framesRead * info.channels,
+         info.frames - framesRead);
+      if (count <= 0)
+         break;
+      framesRead += count;
+   }
+   api.close(file);
+   if (framesRead <= 0)
+   {
+      Free(wave);
+      Warning(("Unable to decode Ogg Vorbis sound resource\n"));
+      return NULL;
+   }
+
+   const uint32 dataBytes = static_cast<uint32>(framesRead) * frameBytes;
+   memcpy(wave, "RIFF", 4);
+   WriteU32(wave + 4, 36u + dataBytes);
+   memcpy(wave + 8, "WAVEfmt ", 8);
+   WriteU32(wave + 16, 16);
+   WriteU16(wave + 20, 1);
+   WriteU16(wave + 22, static_cast<uint16>(info.channels));
+   WriteU32(wave + 24, static_cast<uint32>(info.samplerate));
+   WriteU32(wave + 28,
+            static_cast<uint32>(info.samplerate) * frameBytes);
+   WriteU16(wave + 32, static_cast<uint16>(frameBytes));
+   WriteU16(wave + 34, 16);
+   memcpy(wave + 36, "data", 4);
+   WriteU32(wave + 40, dataBytes);
+   *waveLen = 44u + dataBytes;
+   return wave;
+}
+
+bool PrepareSoundBuffer(void *source, uint32 sourceLen, void **prepared,
+                        uint32 *preparedLen, void **owned)
+{
+   *prepared = source;
+   *preparedLen = sourceLen;
+   *owned = NULL;
+   if (sourceLen < 4 || memcmp(source, "OggS", 4) != 0)
+      return true;
+   *owned = DecodeOggToWave(source, sourceLen, preparedLen);
+   if (!*owned)
+      return false;
+   *prepared = *owned;
+   return true;
+}
+}
 
 //
 // endFakeSplicer - free stuff this stream was using
@@ -43,6 +281,9 @@ endFakeSplicer( ISndSample    *pSample,
    pFakeSplicer->pSource->Release();
 
    Free( pFakeSplicer->pPlaylist );
+   if ( pFakeSplicer->pOwnedData != NULL ) {
+      Free( pFakeSplicer->pOwnedData );
+   }
    Free( pFakeSplicer );
 }
 
@@ -67,8 +308,10 @@ CreateMemSoundSource( ISndMixer        *pMixer,          // your mixer
    ISndSource           *pSndSrc;
    uint32               *pPlaylistBase;
    void                 *pRawData;
+   void                 *pPreparedBuffer;
+   void                 *pOwnedData;
    char                 *pListTmp;
-   uint32               rawDataLen, nSamples, finalDataLen;
+   uint32               preparedLen, rawDataLen, nSamples, finalDataLen;
    fakeSplicerThingy    *pFakeSplicer;
    SSPLMemSingle        *pMemSingle;
    SSPLEndList          *pEndList;
@@ -77,12 +320,18 @@ CreateMemSoundSource( ISndMixer        *pMixer,          // your mixer
       return NULL;
    }
 
+   if ( !PrepareSoundBuffer( pBuffer, bufferLen, &pPreparedBuffer,
+                             &preparedLen, &pOwnedData ) ) {
+      return NULL;
+   }
+
    //
    // get the attribs for source from 1st resource
    //
-   if ( SndCrackRezHeader( pBuffer, bufferLen, &pRawData, &rawDataLen,
+   if ( SndCrackRezHeader( pPreparedBuffer, preparedLen, &pRawData, &rawDataLen,
                            &nSamples, &attribs )  ) {
       Warning(("error cracking header\n"));
+      if ( pOwnedData != NULL ) Free( pOwnedData );
       return NULL;
    } else {
       //
@@ -113,7 +362,7 @@ CreateMemSoundSource( ISndMixer        *pMixer,          // your mixer
    pMemSingle = (SSPLMemSingle *) pListTmp;
    pMemSingle->op = plMemSingle;
    pMemSingle->nSamples = attribs.numSamples;
-   pMemSingle->pData = pBuffer;
+   pMemSingle->pData = pPreparedBuffer;
    pListTmp += sizeof( SSPLMemSingle );
 
    pEndList = (SSPLEndList *) pListTmp;
@@ -139,6 +388,7 @@ CreateMemSoundSource( ISndMixer        *pMixer,          // your mixer
 
       pSndSrc->Release();
       Free( pPlaylistBase );
+      if ( pOwnedData != NULL ) Free( pOwnedData );
       pSndSrc = NULL;
 
    } else {
@@ -149,6 +399,7 @@ CreateMemSoundSource( ISndMixer        *pMixer,          // your mixer
       pFakeSplicer->pUserCBData = pEndCBData;
       pFakeSplicer->pSource = pSndSrc;
       pFakeSplicer->pPlaylist = pPlaylistBase;
+      pFakeSplicer->pOwnedData = pOwnedData;
 
       pSample->RegisterEndCallback( endFakeSplicer, pFakeSplicer );
       pSample->SetData((intptr_t)pFakeSplicer);
@@ -195,8 +446,10 @@ CreateMemSoundSourceLooped( ISndMixer           *pMixer,          // your mixer
    ISndSource           *pSndSrc;
    uint32               *pPlaylistBase;
    void                 *pRawData;
+   void                 *pPreparedBuffer;
+   void                 *pOwnedData;
    char                 *pListTmp;
-   uint32               rawDataLen, nSamples, finalDataLen;
+   uint32               preparedLen, rawDataLen, nSamples, finalDataLen;
    fakeSplicerThingy    *pFakeSplicer;
    SSPLMemSingle        *pMemSingle;
    SSPLEndList          *pEndList;
@@ -214,12 +467,18 @@ CreateMemSoundSourceLooped( ISndMixer           *pMixer,          // your mixer
       return NULL;
    }
 
+   if ( !PrepareSoundBuffer( pBuffer, bufferLen, &pPreparedBuffer,
+                             &preparedLen, &pOwnedData ) ) {
+      return NULL;
+   }
+
    //
    // get the attribs for source from 1st resource
    //
-   if ( SndCrackRezHeader( pBuffer, bufferLen, &pRawData, &rawDataLen,
+   if ( SndCrackRezHeader( pPreparedBuffer, preparedLen, &pRawData, &rawDataLen,
                            &nSamples, &attribs )  ) {
       Warning(("error cracking header\n"));
+      if ( pOwnedData != NULL ) Free( pOwnedData );
       return NULL;
    } else {
       //
@@ -272,7 +531,7 @@ CreateMemSoundSourceLooped( ISndMixer           *pMixer,          // your mixer
    pMemSingle = (SSPLMemSingle *) pListTmp;
    pMemSingle->op = plMemSingle;
    pMemSingle->nSamples = attribs.numSamples;
-   pMemSingle->pData = pBuffer;
+   pMemSingle->pData = pPreparedBuffer;
    pListTmp += sizeof( SSPLMemSingle );
 
    pCallback = (SSPLCallback *) pListTmp;
@@ -319,6 +578,7 @@ CreateMemSoundSourceLooped( ISndMixer           *pMixer,          // your mixer
 
       pSndSrc->Release();
       Free( pPlaylistBase );
+      if ( pOwnedData != NULL ) Free( pOwnedData );
       pSndSrc = NULL;
 
    } else {
@@ -329,6 +589,7 @@ CreateMemSoundSourceLooped( ISndMixer           *pMixer,          // your mixer
       pFakeSplicer->pUserCBData = pEndCBData;
       pFakeSplicer->pSource = pSndSrc;
       pFakeSplicer->pPlaylist = pPlaylistBase;
+      pFakeSplicer->pOwnedData = pOwnedData;
 
       pSample->RegisterEndCallback( endFakeSplicer, pFakeSplicer );
       pSample->SetData((intptr_t)pFakeSplicer);
@@ -493,6 +754,7 @@ CreateNRezStreamedSoundSource( ISndMixer           *pMixer,          // your mix
       pFakeSplicer->pUserCBData = pEndCBData;
       pFakeSplicer->pSource = pSndSrc;
       pFakeSplicer->pPlaylist = pPlaylistBase;
+      pFakeSplicer->pOwnedData = NULL;
 
       pSample->RegisterEndCallback( endFakeSplicer, pFakeSplicer );
       pSample->SetData((intptr_t)pFakeSplicer);
@@ -685,6 +947,7 @@ CreateSongSoundSource ( ISndMixer           *pMixer,
       pFakeSplicer->pUserCBData = pEndCBData;
       pFakeSplicer->pSource = pSndSrc;
       pFakeSplicer->pPlaylist = pPlaylistBase;
+      pFakeSplicer->pOwnedData = NULL;
 
       pSample->RegisterEndCallback( endFakeSplicer, pFakeSplicer );
       pSample->SetData((intptr_t)pFakeSplicer);

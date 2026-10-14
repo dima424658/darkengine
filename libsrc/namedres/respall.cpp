@@ -6,6 +6,7 @@
 
 #include <bmp.h>
 #include <cel.h>
+#include <dds.h>
 #include <gif.h>
 #include <imagefmt.h>
 #include <png.h>
@@ -34,6 +35,9 @@ void* cPaletteResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverrid
 	const eImageContent content = DetectImageContent(pStream);
 	switch (content)
 	{
+	case eImageContent::kDDS:
+		pData = ResDdsReadPalette(pStream, pResMem);
+		break;
 	case eImageContent::kGIF:
 		pData = ResGifReadPalette(pStream, pResMem);
 		break;
@@ -57,6 +61,9 @@ void* cPaletteResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverrid
 		break;
 	case ePalKind::kPalCEL:
 		pData = ResCelReadPalette(pStream, pResMem);
+		break;
+	case ePalKind::kPalDDS:
+		pData = ResDdsReadPalette(pStream, pResMem);
 		break;
 	case ePalKind::kPalGIF:
 		pData = ResGifReadPalette(pStream, pResMem);

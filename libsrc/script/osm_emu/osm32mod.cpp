@@ -72,6 +72,22 @@ struct sNativeTweqMessage : public sScrMsg
    int direction;
 };
 
+struct sNativePhysMessage : public sScrMsg
+{
+   int Submod;
+   int collType;
+   ObjID collObj;
+   int collSubmod;
+   float collMomentum;
+   mxs_vector collNormal;
+   mxs_vector collPt;
+   int contactType;
+   ObjID contactObj;
+   int contactSubmod;
+   ObjID transObj;
+   int transSubmod;
+};
+
 bool ToGuestValue(const sMultiParm &source, osm32::sValue *destination)
 {
    destination->type = static_cast<osm32::eValueType>(source.type);
@@ -313,6 +329,35 @@ void MarshalMessageExtension(const sScrMsg *message,
       AppendString(&guest->extension, &guest->extensionStrings,
                    body->MotionName);
       Append32(&guest->extension, static_cast<uint32_t>(body->FlagValue));
+   }
+   else if (!strcmp(name, "PhysCollision") ||
+            !strcmp(name, "PhysContactCreate") ||
+            !strcmp(name, "PhysContactDestroy") ||
+            !strcmp(name, "PhysEnter") || !strcmp(name, "PhysExit"))
+   {
+      // A guest sPhysMsg inherits sPhysMsgBase after the 56-byte x86
+      // sScrMsg base.  Omitting this extension made collision scripts read
+      // whichever guest allocation followed the message as collObj/transObj.
+      const sNativePhysMessage *physics =
+         reinterpret_cast<const sNativePhysMessage *>(message);
+      Append32(&guest->extension, static_cast<uint32_t>(physics->Submod));
+      Append32(&guest->extension, static_cast<uint32_t>(physics->collType));
+      Append32(&guest->extension, static_cast<uint32_t>(physics->collObj));
+      Append32(&guest->extension, static_cast<uint32_t>(physics->collSubmod));
+      AppendFloat(&guest->extension, physics->collMomentum);
+      AppendFloat(&guest->extension, physics->collNormal.x);
+      AppendFloat(&guest->extension, physics->collNormal.y);
+      AppendFloat(&guest->extension, physics->collNormal.z);
+      AppendFloat(&guest->extension, physics->collPt.x);
+      AppendFloat(&guest->extension, physics->collPt.y);
+      AppendFloat(&guest->extension, physics->collPt.z);
+      Append32(&guest->extension, static_cast<uint32_t>(physics->contactType));
+      Append32(&guest->extension, static_cast<uint32_t>(physics->contactObj));
+      Append32(&guest->extension,
+               static_cast<uint32_t>(physics->contactSubmod));
+      Append32(&guest->extension, static_cast<uint32_t>(physics->transObj));
+      Append32(&guest->extension,
+               static_cast<uint32_t>(physics->transSubmod));
    }
    else if (!strcmp(name, "StartWindup") ||
             !strcmp(name, "StartAttack") || !strcmp(name, "EndAttack"))

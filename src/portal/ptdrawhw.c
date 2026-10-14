@@ -20,6 +20,7 @@
 #include <portclip.h>
 #include <porthw.h>
 #include <portsky.h>
+#include <texmem.h>
 #include <wrdbrend.h>
 
 #include <profile.h>
@@ -463,6 +464,17 @@ void portal_render_water_polys(int n)
 
 extern BOOL bRenderNewSky;
 
+static bool is_new_sky_surface(ushort texture_id)
+{
+   // Portal traversal treats both texture zero and the reserved legacy-sky
+   // range as openings through which the enhanced sky is visible.  Texture
+   // zero normally resolves to the missing-texture checkerboard, so testing
+   // only for a NULL bitmap paints that fallback over NewDark missions whose
+   // sky portals use zero (including The Black Parade).
+   return texture_id == 0 ||
+      (texture_id >= BACKHACK_IDX && texture_id < TEXMEM_RESERVED_LIMIT);
+}
+
 
 void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render,
                         PortalLightMap *lt, int voff, void *clip)
@@ -480,7 +492,7 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
    hw.tex = portal_get_texture(render->texture_id);
    hw.lm = NULL;
 
-   if (!hw.tex && bRenderNewSky)
+   if (bRenderNewSky && (!hw.tex || is_new_sky_surface(render->texture_id)))
    {
       END_PROF;
       return;
@@ -827,7 +839,7 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
    hw.tex = portal_get_texture(render->texture_id);
    hw.lm = NULL;
 
-   if (!hw.tex && bRenderNewSky)
+   if (bRenderNewSky && (!hw.tex || is_new_sky_surface(render->texture_id)))
    {
       END_PROF;
       return;
@@ -1132,7 +1144,7 @@ void draw_surface_texture_only(PortalPolygonCore *poly, PortalPolygonRenderInfo 
    hw.tex = portal_get_texture(render->texture_id);
    hw.lm = NULL;
 
-   if (!hw.tex && bRenderNewSky)
+   if (bRenderNewSky && (!hw.tex || is_new_sky_surface(render->texture_id)))
    {
       END_PROF;
       return;

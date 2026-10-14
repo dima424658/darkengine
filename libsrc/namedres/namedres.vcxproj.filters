@@ -159,6 +159,9 @@
     <ClInclude Include="png.h">
       <Filter>Header Files\Resource Readers</Filter>
     </ClInclude>
+    <ClInclude Include="dds.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
     <ClInclude Include="psd.h">
       <Filter>Header Files\Resource Readers</Filter>
     </ClInclude>
@@ -264,6 +267,9 @@
       <Filter>Source Files\Resource Readers</Filter>
     </ClCompile>
     <ClCompile Include="png.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
+    </ClCompile>
+    <ClCompile Include="dds.cpp">
       <Filter>Source Files\Resource Readers</Filter>
     </ClCompile>
     <ClCompile Include="psd.cpp">

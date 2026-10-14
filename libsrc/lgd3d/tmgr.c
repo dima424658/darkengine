@@ -95,6 +95,7 @@ typedef struct tmap_chain {
 static tmgr_texture_info *texinfo = NULL;
 static tmap_chain *chain_list = NULL;
 static int num_texture_sizes = 0;
+static int chain_capacity = 0;
 
 static uchar *texture_clut;
 static r3s_texture default_bm;
@@ -305,11 +306,25 @@ static tmap_size_entry alpha_size_table[MAX_SIZE*MAX_SIZE];
 static tmap_size_entry norm8_size_table[MAX_SIZE*MAX_SIZE];
 static tmap_size_entry norm16_size_table[MAX_SIZE*MAX_SIZE];
 
+static tmap_chain *find_or_create_chain(int size)
+{
+   int i;
+   for (i = 0; i < num_texture_sizes; ++i)
+      if (chain_list[i].size == size)
+         return &chain_list[i];
+
+   if (num_texture_sizes >= chain_capacity)
+      return NULL;
+   chain_list[num_texture_sizes].head = -1;
+   chain_list[num_texture_sizes].size = size;
+   return &chain_list[num_texture_sizes++];
+}
+
 static tmap_chain *calc_size(tdrv_texture_info *info)
 {
    int i,j,w,h;
    tmap_size_entry *size_table;
-   tmap_chain *chain;
+   tmap_chain *chain = NULL;
    grs_bitmap *bm = info->bm;
 
    set_flags(info);
@@ -330,8 +345,18 @@ static tmap_chain *calc_size(tdrv_texture_info *info)
       if (h==bm->h) break;
 
    if ((i>=MAX_SIZE)||(j>=MAX_SIZE)) {
-      mono_printf(("Unsupported texture size: w=%i h=%i\n", bm->w, bm->h));
-      bm->flags|=BMF_HACK;
+      // The original hardware manager enumerated only power-of-two textures
+      // through 256x256.  Modern D3D/OpenGL backends accept larger and NPOT
+      // resources, including NewDark's 2048x512 distant-sky panoramas.  Ask
+      // the driver for the actual storage size and give that size its normal
+      // swap chain instead of substituting the checkerboard default.
+      info->w = bm->w;
+      info->h = bm->h;
+      g_driver->cook_info(info);
+      chain = find_or_create_chain(info->size);
+      if (!chain)
+         bm->flags|=BMF_HACK;
+      return chain;
    }
 
    else while ((chain = size_table[i*MAX_SIZE+j].chain)==NULL)
@@ -440,7 +465,12 @@ static void munge_size_tables(void)
    num_sizes = get_num_sizes(size_list, num_sizes, norm8_size_table);
    num_sizes = get_num_sizes(size_list, num_sizes, norm16_size_table);
    Free(size_list);
-   chain_list = (tmap_chain *)Malloc(num_sizes * sizeof(tmap_chain));
+   // Leave room for dimensions not represented by the legacy 1..256
+   // power-of-two table.  At most one new size class can be introduced per
+   // simultaneously managed texture handle, and this fixed allocation keeps
+   // the pointers stored by the size tables stable.
+   chain_capacity = num_sizes + max_textures;
+   chain_list = (tmap_chain *)Malloc(chain_capacity * sizeof(tmap_chain));
    num_texture_sizes = munge_table(0, alpha_size_table);
    num_texture_sizes = munge_table(num_texture_sizes, norm8_size_table);
    num_texture_sizes = munge_table(num_texture_sizes, norm16_size_table);
@@ -737,6 +767,7 @@ static void tmgr_shutdown(void)
       Free(chain_list);
       chain_list = NULL;
    }
+   chain_capacity = 0;
 
    put_mono('.');
 }

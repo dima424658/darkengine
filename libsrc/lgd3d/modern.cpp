@@ -133,9 +133,14 @@ static void CookInfo(tdrv_texture_info *info) {
   // bits pointer. In particular, loaded bitmaps temporarily store a texture
   // ID in bm->bits; replacing info->bits here corrupts animated reloads.
   info->size = info->w * info->h * 4;
-  info->cookie =
-      (ulong)(info->bm->type & 0xff) | ((ulong)(info->flags & 0xff) << 8) |
-      ((ulong)(info->w & 0xff) << 16) | ((ulong)(info->h & 0xff) << 24);
+  // Size chains can contain different dimensions with the same byte count
+  // (2048x512 and 1024x1024, for example).  Hash complete dimensions rather
+  // than truncating both to eight bits, or a swapped-out large texture can be
+  // incorrectly treated as an exact reload candidate.
+  info->cookie = (ulong)(info->bm->type & 0xff) |
+      ((ulong)(info->flags & 0xff) << 8);
+  info->cookie ^= (ulong)info->w * 0x9e3779b1u;
+  info->cookie ^= (ulong)info->h * 0x85ebca6bu;
 }
 static int LoadTexture(tdrv_texture_info *info) {
   uchar *pixels;

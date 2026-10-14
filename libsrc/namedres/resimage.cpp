@@ -6,6 +6,7 @@
 
 #include <bmp.h>
 #include <cel.h>
+#include <dds.h>
 #include <gif.h>
 #include <imagefmt.h>
 #include <png.h>
@@ -43,6 +44,9 @@ void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride*
 	const eImageContent content = DetectImageContent(pStream);
 	switch (content)
 	{
+	case eImageContent::kDDS:
+		bm = ResDdsReadImage(pStream, pResMem);
+		break;
 	case eImageContent::kGIF:
 		bm = ResGifReadImage(pStream, pResMem);
 		break;
@@ -74,6 +78,9 @@ void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride*
 	case eImgKind::kImgCEL:
 		bm = ResCelReadImage(pStream, pResMem);
 		break;
+	case eImgKind::kImgDDS:
+		bm = ResDdsReadImage(pStream, pResMem);
+		break;
 	case eImgKind::kImgGIF:
 		bm = ResGifReadImage(pStream, pResMem);
 		break;
@@ -99,7 +106,8 @@ void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride*
 	if (!bm)
 		return nullptr;
 
-	if ((content == eImageContent::kPNG || content == eImageContent::kTIFF ||
+	if ((content == eImageContent::kDDS || content == eImageContent::kPNG ||
+	     content == eImageContent::kTIFF ||
 	     content == eImageContent::kPSD) && bm->type == BMT_FLAT16)
 	{
 		// The true-colour codecs emit explicitly tagged RGB565, ARGB1555, or

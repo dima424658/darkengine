@@ -6,6 +6,7 @@ enum class eImageContent
 {
    kUnknown,
    kGIF,
+   kDDS,
    kPCX,
    kPNG,
    kPSD,
@@ -30,6 +31,9 @@ inline eImageContent DetectImageContent(IStoreStream* pStream)
    if (count >= 6 && signature[0] == 'G' && signature[1] == 'I' &&
        signature[2] == 'F' && signature[3] == '8')
       return eImageContent::kGIF;
+   if (count >= 4 && signature[0] == 'D' && signature[1] == 'D' &&
+       signature[2] == 'S' && signature[3] == ' ')
+      return eImageContent::kDDS;
    if (count >= 4 && signature[0] == 0x0a && signature[2] == 1 &&
        signature[3] > 0 && signature[3] <= 8)
       return eImageContent::kPCX;

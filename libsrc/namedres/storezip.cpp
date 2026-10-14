@@ -702,16 +702,33 @@ cZipStorage::cZipStorage(IStore* pParent, IStoreStream* pZipStream, const char* 
 
 		m_pZipStream->SetPos(dirRecord.CommentLen + dirRecord.ExtraLen + m_pZipStream->GetPos());
 
+		// FM archives commonly retain their install-relative top directory:
+		// snd.zip contains snd/special/foo.ogg, for example.  The archive is
+		// already mounted as the "snd" substorage, so keeping that component
+		// would make the resource visible only as snd/snd/special/foo.ogg.
+		// CRFs traditionally omit the redundant component and are unchanged.
+		const char* pEntryName = pFilename;
+		const size_t rootLen = strlen(pName);
+		if (dirRecord.FilenameLen > rootLen &&
+			_strnicmp(pEntryName, pName, rootLen) == 0 &&
+			(pEntryName[rootLen] == '/' || pEntryName[rootLen] == '\\'))
+			pEntryName += rootLen + 1;
+		if (!*pEntryName)
+		{
+			Free(pFilename);
+			continue;
+		}
+
 		if (dirRecord.ExternalAttributes & 0x10)
 		{
-			auto* pSubstore = MakeSubstorage(pFilename);
+			auto* pSubstore = MakeSubstorage(pEntryName);
 			pSubstore->Release();
 		}
 		else
 		{
 			char pPath[512]{};
 			char pFileRoot[32]{};
-			if (PathAndName(pFilename, pPath, pFileRoot))
+			if (PathAndName(pEntryName, pPath, pFileRoot))
 			{
 				auto* pSubstore = MakeSubstorage(pPath);
 				if (!pSubstore)
