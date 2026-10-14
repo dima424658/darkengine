@@ -18,7 +18,7 @@ Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
 | DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Not implemented |
 | Graphics | D3D11 | D3D11 | SDL2/OpenGL |
 | Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft |
-| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | Not implemented |
+| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
 | Squirrel scripts | Optional native Squirrel 3.2 provider | Optional native Squirrel 3.2 provider | Not implemented |
 | Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja |
@@ -66,8 +66,8 @@ cannot initialize, so the standard executable has no OpenAL dependency.
 
 Movie playback is exposed through the platform-neutral engine movie API. The
 Windows Media Foundation, DirectShow, and legacy DirectDraw implementation is
-isolated under `winsrc/movie`; the Linux backend currently reports movies as
-unavailable without coupling that limitation to the engine core.
+isolated under `winsrc/movie`; Linux uses FFmpeg for video/audio decoding and
+the existing SDL/OpenGL presentation surface.
 
 Legacy PKWARE DCL-compressed resources are decoded in-process with Mark
 Adler's small `blast` decoder under `3rdparty/blast`; newly written resources
@@ -91,15 +91,23 @@ The runner currently provides:
 ### Linux / WSL2
 
 - A 64-bit Linux distribution with GCC, CMake, and Ninja
-- SDL2 and OpenGL development headers
+- SDL2, OpenGL, and libpng development headers
+- OpenGL ES 3 development headers when building the optional ES renderer
 - A retail Thief 2 installation
 - OpenAL Soft at runtime for audio; the executable has no hard OpenAL link
+- libsndfile at runtime for Ogg Vorbis sounds used by fan missions; it is
+  loaded dynamically and is not a build dependency
+- FFmpeg development libraries (`libavformat`, `libavcodec`, `libavutil`,
+  `libswscale`, and `libswresample`) for movie playback. The build remains
+  usable without them, but reports movies as unavailable.
 
 On Ubuntu under WSL2, the minimal build packages are:
 
 ```sh
 sudo apt update
-sudo apt install build-essential cmake ninja-build libsdl2-dev libgl-dev
+sudo apt install build-essential cmake ninja-build libsdl2-dev libgl-dev \
+  libpng-dev libsndfile1 libavformat-dev libavcodec-dev libavutil-dev \
+  libswscale-dev libswresample-dev
 ```
 
 Gameplay uses SDL's native relative-pointer mode and consumes motion deltas;
@@ -154,7 +162,20 @@ cmake -S ~/darkengine-src -B ~/darkengine-build -G Ninja \
 cmake --build ~/darkengine-build -j "$(nproc)"
 ```
 
+The Linux renderer uses an OpenGL 3.3 core context by default. To build the
+same shader path against OpenGL ES 3 instead, install the GLES development
+headers (`libgles-dev` on Ubuntu) and configure with
+`-DDARK_OPENGL_ES=ON`.
+
 The result is `~/darkengine-build/Thief2`, a native 64-bit ELF executable.
+
+To exercise FFmpeg decoding, SDL audio, event handling, and OpenGL movie
+presentation without entering the game, pass one absolute or working-directory
+relative movie path:
+
+```sh
+~/darkengine-build/Thief2 movie_test=MOVIES/INTRO.AVI
+```
 
 ### Windows with Visual Studio
 
@@ -215,18 +236,32 @@ repository.
 
 ### Linux
 
-Run the native executable with the retail installation as the working
-directory because Dark resolves configuration and resources relative to that
-directory:
+The native launcher accepts a retail installation from the working directory,
+`DARK_GAME_PATH`, or `game_path=<directory>`. If an interactive launch starts
+elsewhere, it asks for the installation folder before initializing the engine;
+an invalid folder never enters the legacy assertion path. Dark then uses the
+selected installation as its working directory because configuration and
+resources resolve relative to it:
 
 ```sh
 cd "/mnt/c/Games/Thief 2 - The Metal Age"
 ~/darkengine-build/Thief2 quickstart=MISS1.MIS
 ```
 
+For a shortcut, script, or unattended launch from another directory:
+
+```sh
+~/darkengine-build/Thief2 game_path="/mnt/c/Games/Thief 2 - The Metal Age"
+```
+
 For an unattended smoke test, add `auto_stop=60`. Retail data on `/mnt/c`
 works under WSL2 but loads more slowly than data in the Linux filesystem
 because Dark performs many small, case-insensitive resource lookups.
+
+A launch with no arguments opens the same engine-owned content menu used on
+Windows. It uses the retail load-game artwork and controls; selecting content
+restarts once with explicit `content=` and (for an FM) `fm=` assignments so
+the chosen configuration is applied before resources are initialized.
 
 ### Windows
 
@@ -247,11 +282,12 @@ under `HKCU\Software\OpenDarkEngine\Launcher`; that value is only a picker hint
 and is never used to choose or launch a game silently. Retail data is read in
 place and is not copied.
 
-A launch with no arguments opens the integrated content menu. It lists the
+A launch with no arguments opens the shared engine-owned content menu. It lists the
 two original-campaign modes followed by every recognized immediate child of
-the installation's `FMs` directory. Display names and descriptions come from
+the installation's configured `fm_path` directory (`FMs` by default). Display
+names and descriptions come from
 each FM's `fm.ini` when present. For example, select **Thief: The Black Parade
-v1.0** and press **Launch** to play the installed Black Parade campaign.
+v1.0** and press **Play** to play the installed Black Parade campaign.
 
 The available content modes are:
 
@@ -266,7 +302,9 @@ The available content modes are:
 - **Fan mission** selects one immediate child directory of the installation's
   `FMs` folder. Its files are inserted between `uber_mod_path` and `mod_path`,
   matching NewDark path precedence. An FM's `DARK.CFG`, `fm.cfg`, and
-  `cam_ext.cfg` are then loaded before resources and UI are constructed.
+  `cam_ext.cfg` are loaded when Play is chosen. The resource and script search
+  roots are refreshed in place before the main menu or mission content is
+  entered, so the picker and game keep the same window and fullscreen state.
 
 PNG replacement images are supported and take precedence over the original
 TGA, GIF, PCX, CEL, and BMP resources. Image content is signature-sniffed
@@ -401,19 +439,19 @@ codec used by the original AVI.
 ## Xbox controller support
 
 Thief2 supports one active Xbox-style controller through a platform-neutral
-gamepad layer and a runtime-loaded XInput backend. Controllers can be connected,
-disconnected, and reconnected while the game is running. Keyboard and mouse
-remain active, and an XInput controller is not also polled through the legacy
-DirectInput joystick path.
+gamepad layer, using runtime-loaded XInput on Windows and SDL GameController on
+Linux. Controllers can be connected, disconnected, and reconnected while the
+game is running. Keyboard and mouse remain active, and a modern controller is
+not also polled through the legacy joystick path.
 
 The default layout follows a NewDark-compatible Thief control scheme: left
 stick moves and strafes, right stick looks, A jumps, B crouches, X/Y use or
-frob, the triggers block and attack, the shoulders and D-pad cycle inventory or
-weapons, View opens the automap, and Menu opens the pause menu. Stick clicks run
-and recenter the view. Menus accept D-pad navigation, A to accept, and B or Menu
-to go back. These controls use semantic names such as `pad_a`, `pad_rt`, and
-`pad_right_x` in `user.bnd`; existing `joy1` and `joy_axis*` bindings remain
-valid as fallbacks.
+frob, the triggers block and attack, the shoulders lean, and the D-pad cycles
+inventory or weapons. View opens the automap and Menu opens the pause menu.
+Stick clicks run and recenter the view. Menus accept D-pad navigation, A to
+accept, and B or Menu to go back. These controls use semantic names such as
+`pad_a`, `pad_rt`, and `pad_right_x` in `user.bnd`; existing `joy1` and
+`joy_axis*` bindings remain valid as fallbacks.
 
 Gamepad behavior can be adjusted in `cam.cfg`:
 
@@ -432,10 +470,21 @@ gamepad_look_invert_y 0
 gamepad_rumble 1
 ```
 
-`gamepad_backend` accepts `auto`, `xinput`, `legacy`, or `off`. The
+`gamepad_backend` accepts `auto`, `xinput`, `legacy`, or `off` on Windows and
+`auto`, `sdl`, `legacy`, or `off` on Linux. One configured controller owns
+gameplay input at a time; `gamepad_index` selects it, with automatic failover
+to another connected controller if it disconnects. The
 `gamepad_status` console command prints the selected backend and normalized
 state. DromEd editor input remains unchanged; gamepad input is currently enabled
 only in the Thief2 target.
+
+On Linux, saves normally remain in the retail installation's `saves`
+directory for compatibility with existing installs. If it cannot be created
+or written, the game falls back to
+`$XDG_DATA_HOME/OpenDarkEngine/Profiles/<game>/<content>/saves` (normally
+`~/.local/share/OpenDarkEngine/...`). With no explicit override, loading checks
+both locations. Set `DARK_SAVE_PATH` or pass `save_path=<directory>` to use one
+specific directory for both saving and loading.
 
 ## Command console
 
