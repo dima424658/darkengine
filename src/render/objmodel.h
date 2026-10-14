@@ -11,6 +11,7 @@
 #define __OBJMODEL_H
 
 #include <darklimit.h>
+#include <stdio.h>
 
 #include <r3ds.h>
 #include <objtype.h> // sadly, i have failed in keeping Obj's out of this, i suck - dc
@@ -53,6 +54,11 @@ EXTERN char *objmodelGetName(int idx);
 
 // get maximum model index
 EXTERN int   objmodelMaxModel(void);
+
+// Write a deterministic inventory of every currently loaded model texture.
+// Returns the number of unresolved material resources.
+EXTERN int   objmodelAuditTextures(FILE *log);
+EXTERN int   objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx);
 
 // returns a pointer to the model.  user needs to know how to cast it
 EXTERN void *objmodelGetModel(int idx);

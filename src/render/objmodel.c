@@ -264,7 +264,7 @@ static void common_texture_load(ModelHandle *mh, ISearchPath *pPath,
 #endif      
       return;
    }
-   
+
    // Preserve the palette authored with every palettized object texture.
    // The old hardware path only did this for txt16 and assumed ordinary txt
    // assets always matched mutable global palette slot zero.  Expanding those
@@ -1216,6 +1216,194 @@ char *objmodelGetName(int idx)
    }
 
    return name;
+}
+
+static void audit_texture(FILE *log, int model_idx, const char *model_name,
+                          int slot, const char *material, IRes *resource,
+                          BOOL used, int *missing)
+{
+   char *canonical = NULL;
+   grs_bitmap *bitmap = NULL;
+   grs_bitmap *frame = NULL;
+   BOOL placeholder = material && !strnicmp(material, "replace", 7);
+
+   if (resource)
+   {
+      IRes_GetCanonPathName(resource, &canonical);
+      bitmap = (grs_bitmap *)IRes_DataPeek(resource);
+      frame = (grs_bitmap *)ectsAnimTxtGetFrame(resource);
+   }
+   else if (used && !placeholder)
+      ++*missing;
+
+   fprintf(log,
+           "OBJECT_TEXTURE model_handle=%d model=\"%s\" slot=%d "
+           "material=\"%s\" used=%d status=%s resource=\"%s\" "
+           "width=%d height=%d row=%u type=%u flags=0x%04x palette=%u "
+           "renderable=%d dummy=%d\n",
+           model_idx, model_name ? model_name : "(unnamed)", slot,
+           material ? material : "(unknown)", used,
+           resource ? "ok" : !used ? "unused" :
+              placeholder ? "replacement-placeholder" : "MISSING",
+           canonical ? canonical : "", bitmap ? bitmap->w : 0,
+           bitmap ? bitmap->h : 0, bitmap ? bitmap->row : 0,
+           bitmap ? bitmap->type : 0, bitmap ? bitmap->flags : 0,
+           bitmap ? bitmap->align : 0, frame != NULL,
+           frame == g_pDummyObjTmap);
+   if (canonical)
+      Free(canonical);
+}
+
+int objmodelAuditTextures(FILE *log)
+{
+   int idx;
+   int missing = 0;
+
+   if (!log)
+      return 0;
+
+   for (idx = 0; idx < MAX_OBJMODELS; ++idx)
+   {
+      ModelHandle *mh = &g_aModelHandles[idx];
+      const char *model_name;
+      int texture_slot = 0;
+      int i;
+
+      if (!mh->used)
+         continue;
+      model_name = objmodelGetName(idx);
+      fprintf(log, "OBJECT_MODEL handle=%d model=\"%s\" type=%d textures=%u\n",
+              idx, model_name ? model_name : "(unnamed)", mh->type,
+              (unsigned)mh->numtex);
+
+      if (mh->type == OM_TYPE_MD && mh->mhandle)
+      {
+         mds_model *model = (mds_model *)IRes_DataPeek(mh->mhandle);
+         mds_mat *materials = md_mat_list(model);
+         BOOL used_material[256] = { FALSE };
+         mds_pgon *polygon = (mds_pgon *)((uchar *)model + model->pgon_off);
+         for (i = 0; i < model->pgons; ++i)
+         {
+            int primitive = polygon->type & MD_PGON_PRIM_MASK;
+            int words = polygon->num * (primitive == MD_PGON_PRIM_TMAP ? 3 : 2);
+            if (primitive == MD_PGON_PRIM_TMAP && polygon->data < 256)
+               used_material[polygon->data] = TRUE;
+            polygon = (mds_pgon *)((uchar *)polygon + sizeof(*polygon) +
+               words * sizeof(ushort) +
+               (model->ver > 3 ? sizeof(mds_pgon_aux) : 0));
+         }
+         for (i = 0; i < model->mats; ++i)
+            if (materials[i].type == MD_MAT_TMAP)
+            {
+               IRes *resource = texture_slot < mh->numtex && mh->texptr ?
+                                mh->texptr[texture_slot] : NULL;
+               audit_texture(log, idx, model_name, texture_slot,
+                             materials[i].name, resource,
+                             used_material[materials[i].num],
+                             &missing);
+               ++texture_slot;
+            }
+      }
+      else if (mh->type == OM_TYPE_MESH && mh->mhandle)
+      {
+         mms_model *model = (mms_model *)IRes_DataPeek(mh->mhandle);
+         if (model->version == MM_CUR_VER)
+         {
+            mms_smatr *materials = mm_smatr_list(model);
+            BOOL used_material[256] = { FALSE };
+            mms_pgon *polygons = mm_pgon_list(model);
+            for (i = 0; i < model->pgons; ++i)
+               if (polygons[i].smatr_id < 256)
+                  used_material[polygons[i].smatr_id] = TRUE;
+            for (i = 0; i < model->smatrs; ++i)
+               if (materials[i].type == MM_MAT_TMAP)
+               {
+                  IRes *resource = texture_slot < mh->numtex && mh->texptr ?
+                                   mh->texptr[texture_slot] : NULL;
+                  audit_texture(log, idx, model_name, texture_slot,
+                                materials[i].name, resource, used_material[i],
+                                &missing);
+                  ++texture_slot;
+               }
+         }
+         else if (model->version == MM_ACCLD_VER)
+         {
+            mms_ssmatr *materials = (mms_ssmatr *)mm_smatr_list(model);
+            BOOL used_material[256] = { FALSE };
+            mms_pgon *polygons = mm_pgon_list(model);
+            for (i = 0; i < model->pgons; ++i)
+               if (polygons[i].smatr_id < 256)
+                  used_material[polygons[i].smatr_id] = TRUE;
+            for (i = 0; i < model->smatrs; ++i)
+               if (materials[i].type == MM_MAT_TMAP)
+               {
+                  IRes *resource = texture_slot < mh->numtex && mh->texptr ?
+                                   mh->texptr[texture_slot] : NULL;
+                  audit_texture(log, idx, model_name, texture_slot,
+                                materials[i].name, resource, used_material[i],
+                                &missing);
+                  ++texture_slot;
+               }
+         }
+      }
+      else
+      {
+         for (i = 0; i < mh->numtex; ++i)
+            audit_texture(log, idx, model_name, i, "(frame)",
+                          mh->texptr ? mh->texptr[i] : NULL, TRUE, &missing);
+      }
+   }
+   return missing;
+}
+
+int objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx)
+{
+   ModelHandle *mh;
+   IRes **replacements;
+   int replacement;
+   int missing = 0;
+
+   if (!log || !IS_VALID_MH_INDEX(idx) || !g_aModelHandles[idx].used)
+      return 0;
+   mh = &g_aModelHandles[idx];
+   if (!mh->replace_idx)
+      return 0;
+
+   replacements = ObjTxtReplaceForObj(obj);
+   for (replacement = 0; replacement < MAX_REPL_TXT; ++replacement)
+   {
+      IRes *resource;
+      IRes *fallback;
+      int texture_slot;
+      char *canonical = NULL;
+      grs_bitmap *bitmap = NULL;
+      texture_slot = g_aReplaceList[mh->replace_idx][replacement];
+      if (texture_slot == REPL_LIST_UNUSED)
+         continue;
+      resource = replacements ? replacements[replacement] : NULL;
+      fallback = texture_slot >= 0 && texture_slot < mh->numtex && mh->texptr ?
+                 mh->texptr[texture_slot] : NULL;
+      if (!resource)
+         resource = fallback;
+      if (resource)
+      {
+         IRes_GetCanonPathName(resource, &canonical);
+         bitmap = (grs_bitmap *)IRes_DataPeek(resource);
+      }
+      else
+         ++missing;
+      fprintf(log,
+              "OBJECT_REPLACEMENT object=%d model_handle=%d replace=%d "
+              "status=%s resource=\"%s\" width=%d height=%d\n",
+              obj, idx, replacement,
+              resource ? (resource == fallback ? "base-fallback" : "override") :
+                 "MISSING",
+              canonical ? canonical : "", bitmap ? bitmap->w : 0,
+              bitmap ? bitmap->h : 0);
+      if (canonical)
+         Free(canonical);
+   }
+   return missing;
 }
 
 

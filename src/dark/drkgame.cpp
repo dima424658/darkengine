@@ -53,6 +53,8 @@
 #include <scrnovls.h>
 #include <partprop.h>
 #include <objshape.h>
+#include <objmodel.h>
+#include <texmem.h>
 #include <gen_bind.h>
 
 #include <drkcret.h>
@@ -65,6 +67,7 @@
 #include <rendprop.h>
 #include <physapi.h>
 #include <mnamprop.h>
+#include <mnumprop.h>
 #include <darkai.h>
 #include <drkbook.h>
 #include <pgrpprop.h>
@@ -177,6 +180,13 @@
 
 static void DarkScriptChangeMode(boolean resuming, boolean suspending);
 
+#ifdef THIEF2_GAME
+static BOOL gConsoleRetinfoHUD = FALSE;
+static BOOL gTextureAuditDone = FALSE;
+static void console_format_retinfo(char* message, int size);
+static void console_texture_audit(char* value);
+#endif
+
 ////////////////////////////////////////////////////////////
 // PER-FRAME GAME EXECUTION
 //
@@ -247,7 +257,35 @@ void dark_rend_update_frame(void)
    }
 #endif
 
-   DarkMessageUpdateFrame(); 
+#ifdef THIEF2_GAME
+   if (!gTextureAuditDone)
+   {
+      char auditPath[260] = "";
+      if (wr_num_cells > 0 &&
+          config_get_raw("texture_audit", auditPath, sizeof(auditPath)))
+      {
+         gTextureAuditDone = TRUE;
+         console_texture_audit(auditPath);
+      }
+   }
+
+   if (gConsoleRetinfoHUD)
+   {
+      char message[256];
+      console_format_retinfo(message, sizeof(message));
+      DarkMessageParams(message, 100, kDefaultMsgColor);
+   }
+#endif
+
+   DarkMessageUpdateFrame();
+
+#ifdef THIEF2_GAME
+   // Gameplay clears and rebuilds its software overlay every hardware frame.
+   // A focused terminal therefore has to participate in that frame pass;
+   // event-only redraws disappear behind the following 3D frame and flicker
+   // back only while the user is typing.
+   cmdterm_redraw();
+#endif
 }
 
 
@@ -467,7 +505,6 @@ static void console_message(const char* format, ...)
    va_end(args);
    message[sizeof(message) - 1] = '\0';
 
-   DarkMessage(message);
    mprintf("%s\n", message);
 }
 
@@ -657,7 +694,7 @@ static void console_reticle(char* value)
    console_message("Reticle %s.", state ? "on" : "off");
 }
 
-static void console_retinfo(void)
+static void console_format_retinfo(char* message, int size)
 {
    const float rayDistance = 1000.0f;
    mxs_vector cameraPosition;
@@ -689,30 +726,205 @@ static void console_retinfo(void)
       int texture = -1;
       if (PortalRaycastCell != CELL_INVALID && polygon != POLY_INVALID)
          texture = WR_CELL(PortalRaycastCell)->render_list[polygon].texture_id;
-      console_message("Terrain: cell %d, polygon %d, texture %d",
-                      PortalRaycastCell, polygon, texture);
+      _snprintf(message, size - 1,
+                "Terrain: cell %d, polygon %d, texture %d",
+                PortalRaycastCell, polygon, texture);
+      message[size - 1] = '\0';
       return;
    }
 
    if (hitType != kObjCastMD && hitType != kObjCastMesh)
    {
-      console_message("Reticle target: none within %.0f units", rayDistance);
+      _snprintf(message, size - 1,
+                "Reticle target: none within %.0f units", rayDistance);
+      message[size - 1] = '\0';
       return;
    }
 
    target = g_ObjCastObjID;
    if (target == OBJ_NULL)
    {
-      console_message("Reticle target: raycast returned no object");
+      _snprintf(message, size - 1,
+                "Reticle target: raycast returned no object");
+      message[size - 1] = '\0';
       return;
    }
 
    AutoAppIPtr_(ObjectSystem, pObjectSystem);
    name = pObjectSystem->GetName(target);
    ObjGetModelName(target, model);
-   console_message("%s object %d: %s, model %s",
-                   hitType == kObjCastMesh ? "Mesh" : "MD",
-                   target, name && *name ? name : "(unnamed)", model);
+   _snprintf(message, size - 1, "%s object %d: %s, model %s",
+             hitType == kObjCastMesh ? "Mesh" : "MD",
+             target, name && *name ? name : "(unnamed)", model);
+   message[size - 1] = '\0';
+}
+
+static void console_retinfo(char* value)
+{
+   while (value && isspace((unsigned char)*value))
+      ++value;
+
+   if (value && *value)
+   {
+      int state = console_on_off(value, gConsoleRetinfoHUD);
+      if (state < 0)
+      {
+         console_message("Usage: retinfo [on/off]");
+         return;
+      }
+      gConsoleRetinfoHUD = state;
+      console_message("Reticle info HUD %s.", state ? "on" : "off");
+      return;
+   }
+
+   char message[256];
+   console_format_retinfo(message, sizeof(message));
+   console_message("%s", message);
+}
+
+static const char* audit_texture_status(int texture, IRes** resource)
+{
+   *resource = NULL;
+   if (texture == 0)
+      return "default-or-sky";
+   if (texture < 0 || texture >= TEXMEM_MAX)
+      return "INVALID";
+   *resource = texmemGetHandle(texture);
+   if (*resource)
+      return "ok";
+   if (TEXMEM_IS_RESERVED(texture))
+      return "reserved";
+   return "MISSING";
+}
+
+static void console_texture_audit(char* value)
+{
+   char path[260] = "texture-audit.log";
+   int* terrainCounts;
+   int terrainSurfaces = 0;
+   int terrainMissing = 0;
+   int objectCount = 0;
+   int objectMissing;
+   int objectReplacementsMissing = 0;
+   int cellIndex;
+   FILE* log;
+
+   while (value && isspace((unsigned char)*value))
+      ++value;
+   if (value && *value)
+   {
+      strncpy(path, value, sizeof(path));
+      path[sizeof(path) - 1] = '\0';
+   }
+
+   log = fopen(path, "w");
+   if (!log)
+   {
+      console_message("Could not create texture audit: %s", path);
+      return;
+   }
+
+   terrainCounts = (int*)calloc(TEXMEM_MAX, sizeof(*terrainCounts));
+   if (!terrainCounts)
+   {
+      fclose(log);
+      console_message("Could not allocate texture audit inventory.");
+      return;
+   }
+
+   fprintf(log, "TEXTURE_AUDIT version=1 cells=%d loaded_terrain_slots=%d\n",
+           wr_num_cells, texmemGetMax());
+   for (cellIndex = 0; cellIndex < wr_num_cells; ++cellIndex)
+   {
+      PortalCell* cell = WR_CELL(cellIndex);
+      int polygon;
+      if (!cell || !cell->render_list)
+         continue;
+      for (polygon = 0; polygon < cell->num_render_polys; ++polygon)
+      {
+         int texture = cell->render_list[polygon].texture_id;
+         IRes* resource;
+         const char* status = audit_texture_status(texture, &resource);
+         ++terrainSurfaces;
+         if (texture >= 0 && texture < TEXMEM_MAX)
+            ++terrainCounts[texture];
+         if (!strcmp(status, "MISSING") || !strcmp(status, "INVALID"))
+         {
+            ++terrainMissing;
+            fprintf(log,
+                    "TERRAIN_SURFACE cell=%d polygon=%d texture=%d status=%s\n",
+                    cellIndex, polygon, texture, status);
+         }
+      }
+   }
+
+   for (int texture = 0; texture < TEXMEM_MAX; ++texture)
+   {
+      IRes* resource;
+      char* canonical = NULL;
+      grs_bitmap* bitmap = NULL;
+      const char* status;
+      if (!terrainCounts[texture])
+         continue;
+      status = audit_texture_status(texture, &resource);
+      if (resource)
+      {
+         IRes_GetCanonPathName(resource, &canonical);
+         bitmap = (grs_bitmap*)IRes_DataPeek(resource);
+      }
+      fprintf(log,
+              "TERRAIN_TEXTURE id=%d surfaces=%d status=%s resource=\"%s\" "
+              "width=%d height=%d\n",
+              texture, terrainCounts[texture], status,
+              canonical ? canonical : "", bitmap ? bitmap->w : 0,
+              bitmap ? bitmap->h : 0);
+      if (canonical)
+         free(canonical);
+   }
+   free(terrainCounts);
+
+   {
+      AutoAppIPtr_(ObjectSystem, pObjectSystem);
+      IObjectQuery* objects = pObjectSystem->Iter(kObjectConcrete);
+      for (; !objects->Done(); objects->Next())
+      {
+         ObjID object = objects->Object();
+         char model[64] = "";
+         int handle = MIDX_INVALID;
+         const char* name;
+         mxs_vector* position;
+         if (!ObjGetModelName(object, model) || !model[0])
+            continue;
+         ObjGetModelNumber(object, &handle);
+         name = pObjectSystem->GetName(object);
+         position = ObjPosGetLocVector(object);
+         fprintf(log,
+                 "OBJECT_INSTANCE object=%d name=\"%s\" model=\"%s\" "
+                 "model_handle=%d status=%s position=%.3f,%.3f,%.3f\n",
+                 object, name && *name ? name : "(unnamed)", model, handle,
+                 handle == MIDX_INVALID ? "MISSING" : "ok",
+                 position ? position->x : 0.0f,
+                 position ? position->y : 0.0f,
+                 position ? position->z : 0.0f);
+         if (handle != MIDX_INVALID)
+            objectReplacementsMissing +=
+               objmodelAuditObjectTextures(log, object, handle);
+         ++objectCount;
+      }
+      objects->Release();
+   }
+
+   objectMissing = objmodelAuditTextures(log);
+   fprintf(log,
+           "SUMMARY terrain_surfaces=%d terrain_missing=%d "
+           "object_instances=%d object_textures_missing=%d "
+           "object_replacements_missing=%d\n",
+           terrainSurfaces, terrainMissing, objectCount, objectMissing,
+           objectReplacementsMissing);
+   fclose(log);
+   console_message("Texture audit wrote %s: terrain missing %d, object textures missing %d, replacements missing %d.",
+                   path, terrainMissing, objectMissing,
+                   objectReplacementsMissing);
 }
 
 static void console_list_scripts(void)
@@ -766,14 +978,15 @@ static Command thief_console_commands[] =
    { "player_physics", FUNC_STRING, console_player_physics, "player_physics [on/off]" },
    { "invisible",    FUNC_STRING, console_invisible,     "invisible [on/off]" },
    { "reticle",      FUNC_STRING, console_reticle,       "reticle [on/off]" },
-   { "reticle_info", FUNC_VOID,   console_retinfo,       "describe the object under the reticle" },
+   { "reticle_info", FUNC_STRING, console_retinfo,       "reticle_info [on/off], or report once" },
+   { "audit_textures", FUNC_STRING, console_texture_audit, "audit_textures [output file]" },
    { "list_scripts", FUNC_VOID,   console_list_scripts,  "list loaded script classes" },
    { "debug_scripts", FUNC_STRING, console_debug_scripts, "debug_scripts [on/off]" },
    { "openmission",  FUNC_STRING, console_open_mission,  "compatibility alias for open_mission" },
    { "listmissions", FUNC_VOID,   console_list_missions, "compatibility alias for list_missions" },
    { "playerphysics", FUNC_STRING, console_player_physics, "compatibility alias for player_physics" },
-   { "retinfo",      FUNC_VOID,   console_retinfo,       "compatibility alias for reticle_info" },
-   { "ret_info",     FUNC_VOID,   console_retinfo,       "compatibility alias for reticle_info" },
+   { "retinfo",      FUNC_STRING, console_retinfo,       "compatibility alias for reticle_info" },
+   { "ret_info",     FUNC_STRING, console_retinfo,       "compatibility alias for reticle_info" },
    { "listscripts",  FUNC_VOID,   console_list_scripts,  "compatibility alias for list_scripts" },
    { "debugscripts", FUNC_STRING, console_debug_scripts, "compatibility alias for debug_scripts" },
 };
