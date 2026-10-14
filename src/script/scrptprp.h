@@ -9,5 +9,6 @@
 #define __SCRPTPRP_H
 
 EXTERN void CreateScriptProp(void); 
+EXTERN void RefreshScriptModulePath(void);
 
 #endif // __SCRPTPRP_H

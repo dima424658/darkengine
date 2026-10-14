@@ -69,6 +69,50 @@ static void register_res_types()
 
 void InitAppData();
 
+static void ConfigureContextPath(IResMan *pResMan, const char *dataPath)
+{
+   char path[1024];
+   ISearchPath *newContext = IResMan_NewSearchPath(pResMan, "");
+
+   // New search paths normally inherit the current global context. This path
+   // is the global context itself, so keep it rooted rather than chained to
+   // the content context it is replacing.
+   ISearchPath_SetContext(newContext, NULL);
+
+   // DarkContentConfigure has already expanded this into priority order:
+   // uber mods, the active FM, normal mods, then base resources.
+   if (config_get_raw("resname_base", path, sizeof(path)))
+      ISearchPath_AddPath(newContext, path);
+
+   {
+      char install[80] = ".";
+      config_get_raw("install_path", install, sizeof(install));
+      sprintf(path, "%s\\patch", install);
+      ISearchPath_AddPath(newContext, path);
+   }
+
+   ISearchPath_AddPath(newContext, ".");
+   if (dataPath && dataPath[0])
+      ISearchPath_AddPath(newContext, dataPath);
+
+   IResMan_SetGlobalContext(pResMan, newContext);
+   IResMan_SetDefaultPath(pResMan, newContext);
+   SafeRelease(gContextPath);
+   gContextPath = newContext;
+}
+
+void LGAPI ResSysRefreshContentPath(void)
+{
+   char dataPath[1024] = "";
+   IResMan *pResMan = AppGetObj(IResMan);
+   if (!pResMan)
+      return;
+   config_get_raw("data_path", dataPath, sizeof(dataPath));
+   ConfigureContextPath(pResMan, dataPath);
+   IResMan_GlobalRefresh(pResMan);
+   SafeRelease(pResMan);
+}
+
 static STDMETHODIMP InitFunc(IUnknown* goof)
 {
    char path[1024];
@@ -104,32 +148,7 @@ static STDMETHODIMP InitFunc(IUnknown* goof)
       SafeRelease(vpath); 
    }
 
-   gContextPath = IResMan_NewSearchPath(pResMan, "");
-
-   // DarkContentConfigure has already expanded this into priority order:
-   // uber mods, the active FM, normal mods, then base resources.  Keep the
-   // complete configured path ahead of legacy current-directory fallbacks.
-   // Otherwise loose retail/patch assets can mask an active mod.
-   if (config_get_raw("resname_base", path, sizeof(path)))
-      ISearchPath_AddPath(gContextPath, path);
-
-   // PATCH, add a patch path
-   {
-      char install[80] = "."; 
-      config_get_raw("install_path",install,sizeof(install));
-      sprintf(path,"%s\\patch",install); 
-      ISearchPath_AddPath(gContextPath, path);
-   }
-
-   ISearchPath_AddPath(gContextPath,"."); 
-
-   if (dataPath[0])
-      ISearchPath_AddPath(gContextPath, dataPath);
-
-   // With this in place, you generally shouldn't need to get at
-   // gContextPath directly, unless you're doing something really fancy...
-   IResMan_SetGlobalContext(pResMan, gContextPath);
-   IResMan_SetDefaultPath(pResMan, gContextPath);
+   ConfigureContextPath(pResMan, dataPath);
    register_res_types(); 
 
    // Prep the statistic reporting, if desired:

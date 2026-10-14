@@ -11,6 +11,7 @@
 
 #include <scrnmode.h>
 #include <scrnman.h>
+#include <gamescrn.h>
 
 #include <panlmode.h>
 #include <loopapi.h>
@@ -342,6 +343,23 @@ cDarkPanel::~cDarkPanel()
    SafeRelease(mpFontRes); 
 }
 
+IPanelMode* cDarkPanel::GetPanelMode()
+{
+   // The legacy panel description deliberately fixes only the logical canvas
+   // dimensions.  Supplying no flags made the first menu inherit the
+   // bootstrap/default display kind, so game_full_screen did not take effect
+   // until gameplay entered.  Keep the 640x480 canvas, but present every Dark
+   // panel through the currently configured game backend and window mode.
+   ScrnModeCopy(&scrnmode_desc, GetGameScreenMode(), kScrnModeFlagsValid);
+
+   // Dark constructs most menu objects before the startup content picker is
+   // entered. Their backgrounds therefore still refer to the original
+   // resource context after an FM is selected. Other panel resources are
+   // loaded by InitUI on entry; rebind the cached background here as well.
+   ReloadBackground();
+   return cModalButtonPanel::GetPanelMode();
+}
+
 //
 // Set path 
 //
@@ -357,6 +375,11 @@ void cDarkPanel::SetResPath(const char* path)
    pdesc.pal = p;  // from our desc 
    mpPanelMode->SetDescription(&pdesc); 
 
+   ReloadBackground();
+}
+
+void cDarkPanel::ReloadBackground()
+{
    char backname[32];
    sprintf(backname,"%sb",panel_name);
    IImageSource* bg = FetchUIImage(backname,mResPath); 

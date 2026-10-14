@@ -22,6 +22,7 @@
 #include <init.h>
 #include <appname.h>
 #include <drkgame.h>
+#include <contentctx.h>
 #include <metagame.h>
 #include <drkdebrf.h>
 #include <bugterm.h>
@@ -1148,6 +1149,8 @@ void dark_init_game(void)
    DarkBookInit(); 
    DarkVoiceOverInit(); 
    DarkMenusInit(); 
+   if (DarkContentShowPicker())
+      gPrimordialMode = (sLoopInstantiator*)DescribeContentMenuMode();
    DarkSaveGameInit(); 
    DarkSaveInitUI();
    DarkReportInit();

@@ -22,6 +22,10 @@ EXTERN void DarkMenusTerm(void);
 EXTERN const struct sLoopInstantiator* DescribeMainMenuMode(void); 
 EXTERN void SwitchToMainMenuMode(BOOL push); 
 
+// Startup content/FM chooser. It is used as the primordial mode only for a
+// plain game launch; explicit content= and fm= launches bypass it.
+EXTERN const struct sLoopInstantiator* DescribeContentMenuMode(void);
+
 //
 // Sim menu 
 //

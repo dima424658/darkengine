@@ -76,6 +76,8 @@ struct sSaveGameDesc
 
 HRESULT DarkSaveGameInternal(const char* descstr, ITagFile* file)
 {
+   if (!file)
+      return E_FAIL;
    AutoAppIPtr_(SimManager,pSimMan); 
    ulong lastmsg = pSimMan->LastMsg(); 
    // we are "in the sim" if we can't change difficulty
@@ -137,6 +139,8 @@ static TagVersion checkpoint_ver = { 1, 0 } ;
 
 HRESULT DarkSaveGame(const char* descstr, ITagFile* file)
 {
+   if (!file)
+      return E_FAIL;
    HRESULT result = DarkSaveGameInternal(descstr,file); 
    if (FAILED(result))
       return result; 
@@ -206,6 +210,8 @@ static inline BOOL fully_invalid(const TagVersion& v)
 
 HRESULT DarkLoadGameInternal(ITagFile* file)
 {
+   if (!file)
+      return E_FAIL;
    
    //
    // Read the descriptor
@@ -302,6 +308,8 @@ HRESULT DarkLoadGameInternal(ITagFile* file)
 
 HRESULT DarkLoadGame(ITagFile* file)
 {
+   if (!file)
+      return E_FAIL;
 
    TagVersion v = checkpoint_ver; 
    if (SUCCEEDED(file->OpenBlock(&checkpoint_tag,&v)))
@@ -366,6 +374,8 @@ BOOL DarkLoadGameDescription(ITagFile* file, char* buf, int buflen)
 {
    Assert_(buf && buflen > 0); 
    *buf = '\0'; 
+   if (!file)
+      return FALSE;
 
    TagVersion v = desc_ver; 
    if (FAILED(file->OpenBlock(&desc_tag,&v)))
@@ -392,6 +402,8 @@ BOOL DarkLoadGameDescription(ITagFile* file, char* buf, int buflen)
 
 BOOL DarkGameIsMidMission(ITagFile* file)
 {
+   if (!file)
+      return FALSE;
    TagVersion v = desc_ver; 
    if (FAILED(file->OpenBlock(&desc_tag,&v)))
       return FALSE; 
@@ -431,7 +443,7 @@ void DarkQuickSaveGame(void)
 void DarkQuickLoadGame(void)
 {
    char path[DARK_CONTENT_MAX_PATH];
-   DarkContentMakeSavePath(path, sizeof(path), QUICK_SAVE);
+   DarkContentMakeLoadPath(path, sizeof(path), QUICK_SAVE);
    long success = DarkQuickLoadGameFile(path);
 
    switch(success)
@@ -487,17 +499,33 @@ EXTERN void DarkSaveCheckpoint(void)
    char path[DARK_CONTENT_MAX_PATH];
    DarkContentMakeSavePath(path, sizeof(path), CHECKPOINT_SAVE);
    ITagFile* file = TagFileOpen(path,kTagOpenWrite);
+   if (!file)
+   {
+      Warning(("Unable to create checkpoint save '%s'\n", path));
+      return;
+   }
    long retval = DarkSaveGameInternal("Mission Start",file); 
    SafeRelease(file); 
+   if (FAILED(retval))
+      Warning(("Unable to write checkpoint save '%s' (0x%08lx)\n",
+               path, retval));
 }
 
 EXTERN void DarkRestoreCheckpoint(void)
 {
    char path[DARK_CONTENT_MAX_PATH];
-   DarkContentMakeSavePath(path, sizeof(path), CHECKPOINT_SAVE);
+   DarkContentMakeLoadPath(path, sizeof(path), CHECKPOINT_SAVE);
    ITagFile* file = BufTagFileOpen(path,kTagOpenRead);
+   if (!file)
+   {
+      Warning(("Unable to open checkpoint save '%s'\n", path));
+      return;
+   }
    long retval = DarkLoadGameInternal(file); 
    SafeRelease(file); 
+   if (FAILED(retval))
+      Warning(("Unable to restore checkpoint save '%s' (0x%08lx)\n",
+               path, retval));
 }
 
 

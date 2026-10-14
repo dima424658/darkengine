@@ -28,6 +28,20 @@
 #include <metasnd.h>
 #include <gamemode.h>
 #include <contentctx.h>
+#include <filepanl.h>
+#include <platform_services.h>
+#include <resapp.h>
+#include <scrptprp.h>
+
+#pragma pack(push, 8)
+#include <algorithm>
+#include <string>
+#include <vector>
+#pragma pack(pop)
+
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
 
 #include <command.h>
 #include <uiamov.h>
@@ -83,6 +97,364 @@ protected:
       cDarkPanel::OnLoopMsg(msg,data);
    }
 }; 
+
+//------------------------------------------------------------
+// STARTUP CONTENT / FAN-MISSION MENU
+//
+// Reuse the load-game panel and its sixteen selectable rows. Large FM
+// collections are paged through rows at the top and bottom, so the menu is
+// usable with the mouse without adding platform widgets or new art assets.
+//
+
+namespace
+{
+
+enum eContentChoice
+{
+   kContentConfigured,
+   kContentVanilla,
+   kContentFanMission,
+};
+
+struct sContentItem
+{
+   eContentChoice choice;
+   std::string fmName;
+   std::string name;
+   std::string description;
+};
+
+static std::string TrimContentText(const std::string& value)
+{
+   size_t first = 0;
+   size_t last = value.size();
+   while (first < last && isspace((unsigned char)value[first]))
+      ++first;
+   while (last > first && isspace((unsigned char)value[last - 1]))
+      --last;
+   return value.substr(first, last - first);
+}
+
+static void MakeContentPath(char* output, int size, const char* root,
+                            const char* leaf)
+{
+   if (!output || size <= 0)
+      return;
+
+   size_t used = 0;
+   output[0] = '\0';
+   const auto append = [output, size, &used](const char* text)
+   {
+      if (!text || used >= (size_t)size - 1)
+         return;
+      const size_t count = std::min(strlen(text),
+                                    (size_t)size - used - 1);
+      memcpy(output + used, text, count);
+      used += count;
+      output[used] = '\0';
+   };
+
+   const size_t rootLength = root ? strlen(root) : 0;
+   append(root);
+   if (rootLength && root[rootLength - 1] != '/' &&
+       root[rootLength - 1] != '\\')
+      append("/");
+   append(leaf);
+}
+
+static BOOL ContentFileExists(const char* directory, const char* name)
+{
+   char path[DARK_CONTENT_MAX_PATH];
+   char resolved[DARK_CONTENT_MAX_PATH];
+   MakeContentPath(path, sizeof(path), directory, name);
+   return PlatformResolvePath(path, resolved, sizeof(resolved));
+}
+
+static BOOL ContentHasFiles(const char* directory, const char* pattern)
+{
+   char path[DARK_CONTENT_MAX_PATH];
+   sPlatformFileFind find = {};
+   MakeContentPath(path, sizeof(path), directory, pattern);
+   if (!PlatformFindFirst(path, &find))
+      return FALSE;
+   do
+   {
+      if (!(find.attributes & kPlatformFileDirectory))
+      {
+         PlatformFindClose(&find);
+         return TRUE;
+      }
+   } while (PlatformFindNext(&find));
+   PlatformFindClose(&find);
+   return FALSE;
+}
+
+static BOOL LooksLikeFanMission(const char* directory)
+{
+   static const char* markers[] = {
+      "fm.ini", "fmsel.inf", "dark.cfg", "fm.cfg", "startmis.sav"
+   };
+   for (int i = 0; i < sizeof(markers) / sizeof(markers[0]); ++i)
+      if (ContentFileExists(directory, markers[i]))
+         return TRUE;
+   return ContentHasFiles(directory, "*.mis") ||
+          ContentHasFiles(directory, "*.gam") ||
+          ContentHasFiles(directory, "*.cow");
+}
+
+static void ReadFanMissionInfo(const char* directory, std::string& name,
+                               std::string& description)
+{
+   char path[DARK_CONTENT_MAX_PATH];
+   MakeContentPath(path, sizeof(path), directory, "fm.ini");
+   FILE* file = fopen(path, "rt");
+   if (!file)
+      return;
+   char line[2048];
+   while (fgets(line, sizeof(line), file))
+   {
+      char* newline = strpbrk(line, "\r\n");
+      char* equals;
+      if (newline)
+         *newline = '\0';
+      equals = strchr(line, '=');
+      if (!equals)
+         continue;
+      *equals = '\0';
+      const std::string key = TrimContentText(line);
+      const std::string value = TrimContentText(equals + 1);
+      if (_stricmp(key.c_str(), "NiceName") == 0 && !value.empty())
+         name = value;
+      else if (_stricmp(key.c_str(), "Descr") == 0 && !value.empty())
+         description = value;
+   }
+   fclose(file);
+}
+
+static void BuildContentCatalog(std::vector<sContentItem>& items)
+{
+   sContentItem configured;
+   configured.choice = kContentConfigured;
+   configured.name = "Original Missions - Configured";
+   configured.description =
+      "Use cam_mod.ini, uber_mod_path, and mod_path for the original campaign.";
+   items.push_back(configured);
+
+   sContentItem vanilla;
+   vanilla.choice = kContentVanilla;
+   vanilla.name = "Original Missions - Vanilla";
+   vanilla.description =
+      "Use only the base retail resources for the original campaign.";
+   items.push_back(vanilla);
+
+   char root[DARK_CONTENT_MAX_PATH];
+   char configuredRoot[DARK_CONTENT_MAX_PATH] = "FMs";
+   char pattern[DARK_CONTENT_MAX_PATH];
+   config_get_raw("fm_path", configuredRoot, sizeof(configuredRoot));
+   configuredRoot[sizeof(configuredRoot) - 1] = '\0';
+   const BOOL absoluteRoot = configuredRoot[0] == '/' ||
+      configuredRoot[0] == '\\' ||
+      (isalpha((unsigned char)configuredRoot[0]) && configuredRoot[1] == ':');
+   MakeContentPath(root, sizeof(root),
+                   absoluteRoot ? "" : DarkContentBasePath(), configuredRoot);
+   MakeContentPath(pattern, sizeof(pattern), root, "*");
+   sPlatformFileFind find = {};
+   if (!PlatformFindFirst(pattern, &find))
+      return;
+   do
+   {
+      if (!(find.attributes & kPlatformFileDirectory) ||
+          find.name[0] == '.')
+         continue;
+      char directory[DARK_CONTENT_MAX_PATH];
+      MakeContentPath(directory, sizeof(directory), root, find.name);
+      if (!LooksLikeFanMission(directory))
+         continue;
+      sContentItem item;
+      item.choice = kContentFanMission;
+      item.fmName = find.name;
+      item.name = find.name;
+      item.description = "Launch this fan mission using the configured mod paths.";
+      ReadFanMissionInfo(directory, item.name, item.description);
+      items.push_back(item);
+   } while (PlatformFindNext(&find));
+   PlatformFindClose(&find);
+
+   if (items.size() > 2)
+      std::sort(items.begin() + 2, items.end(),
+         [](const sContentItem& left, const sContentItem& right)
+         {
+            return _stricmp(left.name.c_str(), right.name.c_str()) < 0;
+         });
+}
+
+}
+
+class cContentMenu: public cFilePanel
+{
+public:
+   cContentMenu() : cFilePanel(&gDesc), mPage(0)
+   {
+      BuildContentCatalog(mItems);
+      for (int i = 0; i < kNumSlots; ++i)
+         mVisible[i] = -1;
+      MapPage();
+   }
+
+protected:
+   enum { kPageItems = kNumSlots - 2, kPreviousPage = -2,
+          kNextPage = -3 };
+   static sDarkPanelDesc gDesc;
+   std::vector<sContentItem> mItems;
+   int mVisible[kNumSlots];
+   int mPage;
+
+   void MapPage()
+   {
+      for (int i = 0; i < kNumSlots; ++i)
+         mVisible[i] = -1;
+      const int first = mPage * kPageItems;
+      if (mPage > 0)
+         mVisible[0] = kPreviousPage;
+      for (int i = 0; i < kPageItems && first + i < (int)mItems.size(); ++i)
+         mVisible[i + 1] = first + i;
+      if (first + kPageItems < (int)mItems.size())
+         mVisible[kNumSlots - 1] = kNextPage;
+   }
+
+   void RefreshPage()
+   {
+      SelectSlot(-1);
+      MapPage();
+      for (int i = 0; i < kNumSlots; ++i)
+      {
+         ComputeSlot(i);
+         RedrawSlot(i);
+      }
+      Message("Select original content or a fan mission, then choose Play.");
+   }
+
+   const char* SlotFileName(int) { return ""; }
+
+   void ComputeSlot(int which)
+   {
+      sSlot& slot = mpSlots[which];
+      slot.flags = 0;
+      const int visible = mVisible[which];
+      if (visible == kPreviousPage)
+         strncpy(slot.buf, "< Previous page", sizeof(slot.buf));
+      else if (visible == kNextPage)
+         strncpy(slot.buf, "Next page >", sizeof(slot.buf));
+      else if (visible >= 0 && visible < (int)mItems.size())
+      {
+         const sContentItem& item = mItems[visible];
+         _snprintf(slot.buf, sizeof(slot.buf) - 1, "%s%s",
+                   item.choice == kContentFanMission ? "FM: " : "",
+                   item.name.c_str());
+      }
+      else
+      {
+         slot.buf[0] = '\0';
+         slot.flags |= kUnused;
+      }
+      slot.buf[sizeof(slot.buf) - 1] = '\0';
+      LGadUpdateTextBox(&slot.box);
+   }
+
+   void OnSelect(int which)
+   {
+      const int visible = mVisible[which];
+      if (visible < 0 && visible != kPreviousPage && visible != kNextPage)
+      {
+         EnableFileOp(FALSE);
+         return;
+      }
+      if (visible == kPreviousPage || visible == kNextPage)
+         Message("Choose Play to change pages.");
+      else
+         Message(mItems[visible].description.c_str());
+   }
+
+   void DoFileOp(int which)
+   {
+      const int visible = mVisible[which];
+      if (visible == kPreviousPage)
+      {
+         --mPage;
+         RefreshPage();
+         return;
+      }
+      if (visible == kNextPage)
+      {
+         ++mPage;
+         RefreshPage();
+         return;
+      }
+      if (visible < 0 || visible >= (int)mItems.size())
+         return;
+
+      const sContentItem& item = mItems[visible];
+      const char* mode = item.choice == kContentVanilla ?
+                         "vanilla" : "configured";
+      const char* fmName = item.choice == kContentFanMission ?
+                           item.fmName.c_str() : NULL;
+      if (!DarkContentApplySelection(mode, fmName))
+      {
+         Message("Could not activate the selected content.");
+         return;
+      }
+
+      // The SDL window, renderer, and loop remain alive. Only the content
+      // roots used by the already-created engine services are republished.
+      ResSysRefreshContentPath();
+      RefreshScriptModulePath();
+      SwitchToMainMenuMode(FALSE);
+   }
+
+   void TotalFailure()
+   {
+      AutoAppIPtr_(Application, pApp);
+      pApp->Quit();
+   }
+
+   void InitUI()
+   {
+      cFilePanel::InitUI();
+      mStrings[(int)kDoFile] = "Play";
+      mStrings[(int)kDone] = "Exit";
+      mElems[(int)kDoFile].draw_data =
+         (void*)(const char*)mStrings[(int)kDoFile];
+      mElems[(int)kDone].draw_data =
+         (void*)(const char*)mStrings[(int)kDone];
+      Message("Select original content or a fan mission, then choose Play.");
+   }
+};
+
+static const char* content_button_names[] = { "load", "done" };
+
+sDarkPanelDesc cContentMenu::gDesc =
+{
+   "gamelod",
+   cContentMenu::kNumButts,
+   cContentMenu::kNumRects,
+   cContentMenu::kNumButts,
+   content_button_names,
+   NULL,
+   0,
+   kMetaSndPanelSaveLoad,
+};
+
+static cContentMenu* gpContentMenu = NULL;
+
+const sLoopInstantiator* DescribeContentMenuMode(void)
+{
+   if (gpContentMenu)
+   {
+      cAutoIPtr<IPanelMode> panel = gpContentMenu->GetPanelMode();
+      return panel->Instantiator();
+   }
+   return NULL;
+}
 
 //------------------------------------------------------------
 // MAIN MENU 
@@ -624,6 +996,8 @@ EXTERN void OptionsMenuTerm ();
 
 void DarkMenusInit()
 {
+   if (DarkContentShowPicker())
+      gpContentMenu = new cContentMenu;
    gpMainMenu = new cMainMenu; 
    gpSimMenu = new cSimMenu; 
    gpNewGame = new cNewGame; 
@@ -634,6 +1008,8 @@ void DarkMenusInit()
 
 void DarkMenusTerm()
 {
+   delete gpContentMenu;
+   gpContentMenu = NULL;
    delete gpMainMenu; 
    delete gpSimMenu; 
    delete gpNewGame;

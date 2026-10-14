@@ -1,4 +1,5 @@
 #include <search.h>
+#include <storeman.h>
 #include <pathutil.h>
 #include <storbase.h>
 #include <hshsttem.h>
@@ -15,7 +16,9 @@ cSearchPath::cSearchPath(IStoreManager* pStoreMan)
 	m_pVariants{ nullptr },
 	m_pPathStorages{ nullptr },
 	m_pLastNode{ nullptr },
-	m_pStoreMan{ pStoreMan }
+	m_pStoreMan{ pStoreMan },
+	m_ContextVersion{ StorageManagerContextVersion(pStoreMan) },
+	m_bUsesGlobalContext{ false }
 {
 	if (m_pStoreMan)
 		m_pStoreMan->AddRef();
@@ -44,6 +47,7 @@ cSearchPath::~cSearchPath()
 
 void cSearchPath::Clear()
 {
+	m_bUsesGlobalContext = false;
 	if (m_pContext)
 	{
 		m_pContext->Release();
@@ -72,7 +76,12 @@ ISearchPath* cSearchPath::Copy()
 	auto* pSearchPath = new cSearchPath{ m_pStoreMan };
 
 	if (m_pContext)
-		pSearchPath->SetContext(m_pContext);
+	{
+		if (m_bUsesGlobalContext)
+			pSearchPath->SetGlobalContextPath(m_pContext);
+		else
+			pSearchPath->SetContext(m_pContext);
+	}
 
 	if (m_pVariants)
 		pSearchPath->SetVariants(m_pVariants);
@@ -114,6 +123,7 @@ void cSearchPath::AddPathTrees(const char* pPath, BOOL bRecurse)
 
 void cSearchPath::Ready()
 {
+	EnsureCurrentContext();
 	if (!m_bPathParsed)
 		SetupStorages();
 }
@@ -122,12 +132,14 @@ void cSearchPath::Ready()
 
 void cSearchPath::Refresh()
 {
+	ClearStorages();
 }
 
 ///////////////////////////////////////
 
 void cSearchPath::SetContext(ISearchPath* pContext)
 {
+	m_bUsesGlobalContext = false;
 	if (m_pContext)
 	{
 		m_pContext->Release();
@@ -141,6 +153,12 @@ void cSearchPath::SetContext(ISearchPath* pContext)
 	}
 
 	m_bPathParsed = FALSE;
+}
+
+void cSearchPath::SetGlobalContextPath(ISearchPath* pContext)
+{
+	SetContext(pContext);
+	m_bUsesGlobalContext = true;
 }
 
 ///////////////////////////////////////
@@ -225,6 +243,7 @@ IStore* cSearchPath::Find(const char* pName, uint fFlags, IStore** ppCanonStore,
 		return nullptr;
 	}
 
+	EnsureCurrentContext();
 	if (!m_bPathParsed)
 		SetupStorages();
 
@@ -283,6 +302,7 @@ IStore* cSearchPath::FindAny(const char* const* ppNames, int nNames, uint fFlags
 	if (!ppNames || nNames <= 0)
 		return nullptr;
 
+	EnsureCurrentContext();
 	if (!m_bPathParsed)
 		SetupStorages();
 
@@ -355,6 +375,7 @@ struct SearchCookie
 
 void* cSearchPath::BeginContents(const char* pPattern, uint fFlags, const char* pRelPath)
 {
+	EnsureCurrentContext();
 	if (!m_bPathParsed)
 		SetupStorages();
 
@@ -594,6 +615,25 @@ void cSearchPath::ClearStorages()
 	m_pLastNode = nullptr;
 	m_pPathStorages = nullptr;
 	m_bPathParsed = FALSE;
+}
+
+void cSearchPath::EnsureCurrentContext()
+{
+	const unsigned version = StorageManagerContextVersion(m_pStoreMan);
+	if (m_ContextVersion != version)
+	{
+		ClearStorages();
+		if (m_bUsesGlobalContext)
+		{
+			ISearchPath* pContext = StorageManagerGlobalContext(m_pStoreMan);
+			if (pContext)
+				pContext->AddRef();
+			if (m_pContext)
+				m_pContext->Release();
+			m_pContext = pContext;
+		}
+		m_ContextVersion = version;
+	}
 }
 
 ///////////////////////////////////////

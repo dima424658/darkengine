@@ -41,8 +41,10 @@ public:
 
 	void DoIterate(const char* pContext, tSearchPathIterateCallback callback, void* pClientData);
 	void SetupSingleStore(const char* pStorePath, int fRecurse);
+	void SetGlobalContextPath(ISearchPath* pContext);
 
 private:
+	void EnsureCurrentContext();
 	void ClearStorages();
 	void SetupStorages();
 	void DoAddStore(const char* pStoreName, int fRecurse);
@@ -56,4 +58,6 @@ private:
 	ISearchPath* m_pVariants;
 	PathStorageNode* m_pPathStorages;
 	PathStorageNode* m_pLastNode;
+	unsigned m_ContextVersion;
+	bool m_bUsesGlobalContext;
 };

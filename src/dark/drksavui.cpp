@@ -71,6 +71,18 @@ const char* cDarkFilePanel::SlotFileName(int which)
    return buf; 
 }
 
+static void MakeSlotLoadPath(char* buf, int size, int which)
+{
+   if (which == cFilePanel::kQuickSlot)
+      DarkContentMakeLoadPath(buf, size, QUICK_SAVE);
+   else
+   {
+      char name[32];
+      sprintf(name, "game%04d.sav", which);
+      DarkContentMakeLoadPath(buf, size, name);
+   }
+}
+
 //----------------------------------------
 
 void cDarkFilePanel::ComputeSlot(int which)
@@ -79,7 +91,9 @@ void cDarkFilePanel::ComputeSlot(int which)
    if (!(slot.flags & kNoCompute))
    {
       slot.flags = 0; 
-      ITagFile* file = TagFileOpen(SlotFileName(which),kTagOpenRead); 
+      char path[DARK_CONTENT_MAX_PATH];
+      MakeSlotLoadPath(path, sizeof(path), which);
+      ITagFile* file = TagFileOpen(path,kTagOpenRead);
       BOOL read = FALSE; 
       if (file)
          read = DarkLoadGameDescription(file,slot.buf,sizeof(slot.buf)); 
@@ -132,7 +146,8 @@ void cLoadPanel::DoFileOp(int which)
       return; 
    MessageNamed("loading"); 
 
-   const char* fname = SlotFileName(which); 
+   char fname[DARK_CONTENT_MAX_PATH];
+   MakeSlotLoadPath(fname, sizeof(fname), which);
 
    HRESULT result = DarkQuickLoadGameFile(fname); 
    if (FAILED(result))
@@ -414,7 +429,7 @@ const char* cLoadBndPanel::SlotFileName(int which)
    static char buf[DARK_CONTENT_MAX_PATH];
    char name[32];
    sprintf(name,"cfg%04d.bnd",which);
-   DarkContentMakeSavePath(buf, sizeof(buf), name);
+   DarkContentMakeLoadPath(buf, sizeof(buf), name);
    return buf; 
 }
 
@@ -551,7 +566,11 @@ void cSaveBndPanel::ComputeSlot(int which)
    {
       slot.flags = 0; 
       static char str[128], *p_str;
-      FILE *fp = fopen (SlotFileName (which), "rb");
+      char name[32];
+      char path[DARK_CONTENT_MAX_PATH];
+      sprintf(name,"cfg%04d.bnd",which);
+      DarkContentMakeLoadPath(path, sizeof(path), name);
+      FILE *fp = fopen (path, "rb");
       if (fp) {
          fgets (str, 127, fp);
          fclose (fp);

@@ -50,6 +50,29 @@ static BOOL UsesDarkData(const char* executable)
            _strnicmp(name, "dromed", 6) == 0;
 }
 
+static BOOL IsDromEdExecutable(const char* executable)
+{
+    const char* name = executable ? executable : "";
+    const char* slash = strrchr(name, '\\');
+    if (slash)
+        name = slash + 1;
+    slash = strrchr(name, '/');
+    if (slash)
+        name = slash + 1;
+    return _strnicmp(name, "dromed", 6) == 0;
+}
+
+static void SetPickerEnvironment(BOOL enabled)
+{
+    SetEnvironmentVariableA("DARK_CONTENT_PICKER", enabled ? "1" : NULL);
+    _putenv_s("DARK_CONTENT_PICKER", enabled ? "1" : "");
+    if (enabled)
+    {
+        SetEnvironmentVariableA("DARK_CONTENT_MODE", "vanilla");
+        _putenv_s("DARK_CONTENT_MODE", "vanilla");
+    }
+}
+
 static BOOL FileExistsInDirectory(const char* directory, const char* name)
 {
     char path[MAX_PATH];
@@ -233,9 +256,19 @@ static BOOL PrepareDarkDataDirectory(int argc, const char* argv[])
         _putenv_s("DARK_GAME_PATH", directory);
 
         // Explicit command lines remain non-interactive for shortcuts and
-        // unattended tests. Plain launches get the pre-engine content menu.
+        // unattended tests. Thief uses the engine-owned content panel;
+        // DromEd retains its pre-engine chooser because it has a different
+        // primordial mode and lifecycle.
         if (!interactive)
+        {
+            SetPickerEnvironment(FALSE);
             return TRUE;
+        }
+        if (!IsDromEdExecutable(argc > 0 ? argv[0] : NULL))
+        {
+            SetPickerEnvironment(TRUE);
+            return TRUE;
+        }
 
         const int choice = SelectContent(directory, profile,
                                          argc > 0 ? argv[0] : NULL);

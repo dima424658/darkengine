@@ -29,15 +29,28 @@ EXTERN void DarkContentLoadFMConfig(int argc, const char* argv[]);
 // the game-specific includes have been processed.
 EXTERN void DarkContentConfigure(int argc, const char* argv[]);
 
+// Applies a one-time selection made by the in-engine startup picker. This
+// reloads FM-local configuration and republishes the resolved content paths
+// without replacing the process (and therefore without replacing its window).
+EXTERN BOOL DarkContentApplySelection(const char* mode, const char* fmName);
+
 EXTERN const char* DarkContentProfile(void);
 EXTERN const char* DarkContentMode(void);
 EXTERN const char* DarkContentBasePath(void);
 EXTERN const char* DarkContentFMPath(void);
 EXTERN const char* DarkContentSearchPath(eDarkContentPath path);
+EXTERN BOOL DarkContentShowPicker(void);
 
-// Savegames are deliberately outside both the retail install and the FM.
+// Savegames use the selected profile directory, except that Linux preserves
+// a writable retail saves directory for compatibility with existing installs.
 EXTERN const char* DarkContentSaveDirectory(void);
 EXTERN BOOL DarkContentMakeSavePath(char* destination, int size,
+                                    const char* filename);
+// Resolves an existing save from the active save directory, then from the
+// compatibility/fallback directory when no explicit override was supplied.
+// If the file does not exist, returns the active save path so callers retain
+// their normal failure reporting.
+EXTERN BOOL DarkContentMakeLoadPath(char* destination, int size,
                                     const char* filename);
 
 #endif

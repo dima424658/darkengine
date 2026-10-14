@@ -41,10 +41,16 @@ public:
    cDarkPanel(const sDarkPanelDesc* desc, const char* respath = INTERFACE_PATH);
    ~cDarkPanel();
 
+   // Dark's menus keep a 640x480 logical canvas, but they should use the
+   // windowed/fullscreen presentation selected for gameplay from startup.
+   IPanelMode* GetPanelMode();
+
    // set the resource path
    void SetResPath(const char* path);
 
 protected:  
+   void ReloadBackground();
+
    static BOOL region_cb(uiEvent *ev, Region *reg, void *data);
    //
    // Modal button panel ops

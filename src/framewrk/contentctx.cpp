@@ -8,6 +8,7 @@
 #include <config.h>
 #include <cfg.h>
 #include <mprintf.h>
+#include <platform_services.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -16,6 +17,8 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#else
+#include <sys/stat.h>
 #endif
 
 // Keep one canonical, bounded representation instead of allowing individual
@@ -27,7 +30,27 @@ static char gContentMode[32] = "configured";
 static char gBasePath[DARK_CONTENT_MAX_PATH] = ".";
 static char gFMPath[DARK_CONTENT_MAX_PATH] = "";
 static char gSavePath[DARK_CONTENT_MAX_PATH] = "saves";
+static char gSaveFallbackPath[DARK_CONTENT_MAX_PATH] = "";
+static BOOL gSavePathExplicit = FALSE;
 static char gPaths[5][CONTENT_PATH_SIZE];
+static char gSourcePaths[5][CONTENT_PATH_SIZE];
+static uint gSourcePathPriorities[5];
+static BOOL gSourcePathDefined[5];
+static BOOL gSourcePathsCaptured = FALSE;
+
+static const char* kContentPathVariables[5] = {
+   "resname_base", "load_path", "script_module_path", "include_path",
+   "movie_path"
+};
+
+static char* NextToken(char* text, const char* delimiters, char** context)
+{
+#ifdef _WIN32
+   return strtok_s(text, delimiters, context);
+#else
+   return strtok_r(text, delimiters, context);
+#endif
+}
 
 static BOOL IsAbsolutePath(const char* path)
 {
@@ -54,18 +77,42 @@ static void JoinPath(char* output, int size, const char* root, const char* leaf)
    size_t rootLen;
    if (!output || size <= 0)
       return;
+   output[0] = '\0';
+   const auto append = [output, size](const char* text)
+   {
+      if (!text)
+         return;
+      size_t used = strlen(output);
+      size_t available = (size_t)size - used - 1;
+      size_t count = strlen(text);
+      if (count > available)
+         count = available;
+      if (count)
+         memmove(output + used, text, count);
+      output[used + count] = '\0';
+   };
    if (!leaf || !leaf[0])
-      _snprintf(output, size - 1, "%s", root ? root : "");
+      append(root);
    else if (IsAbsolutePath(leaf))
-      _snprintf(output, size - 1, "%s", leaf);
+      append(leaf);
    else
    {
       rootLen = root ? strlen(root) : 0;
-      _snprintf(output, size - 1, "%s%s%s", root ? root : "",
-                rootLen && root[rootLen - 1] != '\\' && root[rootLen - 1] != '/' ? "\\" : "",
-                leaf);
+#ifdef _WIN32
+      const char separator = '\\';
+#else
+      const char separator = '/';
+#endif
+      append(root);
+      if (rootLen && root[rootLen - 1] != '\\' && root[rootLen - 1] != '/')
+         append(separator == '\\' ? "\\" : "/");
+      append(leaf);
    }
-   output[size - 1] = '\0';
+#ifndef _WIN32
+   for (char* character = output; *character; ++character)
+      if (*character == '\\')
+         *character = '/';
+#endif
 }
 
 static BOOL DirectoryExists(const char* path)
@@ -75,8 +122,33 @@ static BOOL DirectoryExists(const char* path)
    return attributes != INVALID_FILE_ATTRIBUTES &&
           (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #else
-   return FALSE;
+   struct stat status;
+   char resolved[DARK_CONTENT_MAX_PATH];
+   return path && PlatformResolvePath(path, resolved, sizeof(resolved)) &&
+          stat(resolved, &status) == 0 && S_ISDIR(status.st_mode);
 #endif
+}
+
+static BOOL FileExists(const char* path)
+{
+   char resolved[DARK_CONTENT_MAX_PATH];
+   return path && PlatformResolvePath(path, resolved, sizeof(resolved));
+}
+
+static const char* DetectProfile(const char* directory)
+{
+   char path[DARK_CONTENT_MAX_PATH];
+   JoinPath(path, sizeof(path), directory, "cam.cfg");
+   if (!FileExists(path))
+      return NULL;
+   JoinPath(path, sizeof(path), directory, "MISS18.MIS");
+   if (FileExists(path))
+      return "gold";
+   JoinPath(path, sizeof(path), directory, "MISS8.MIS");
+   if (FileExists(path))
+      return "thief2";
+   JoinPath(path, sizeof(path), directory, "DARK.GAM");
+   return FileExists(path) ? "tdp" : NULL;
 }
 
 static void AddPath(char* list, int size, const char* path)
@@ -104,8 +176,8 @@ static void AddExpandedList(char* output, int outputSize, const char* list,
       return;
    strncpy(copy, list, sizeof(copy));
    copy[sizeof(copy) - 1] = '\0';
-   for (token = strtok_s(copy, "+;", &context); token;
-        token = strtok_s(NULL, "+;", &context))
+   for (token = NextToken(copy, "+;", &context); token;
+        token = NextToken(NULL, "+;", &context))
    {
       char absolute[DARK_CONTENT_MAX_PATH];
       char suffixed[DARK_CONTENT_MAX_PATH];
@@ -134,8 +206,8 @@ static void AddLastExpandedPath(char* output, int outputSize, const char* list,
       return;
    strncpy(copy, list, sizeof(copy));
    copy[sizeof(copy) - 1] = '\0';
-   for (token = strtok_s(copy, "+;", &context); token;
-        token = strtok_s(NULL, "+;", &context))
+   for (token = NextToken(copy, "+;", &context); token;
+        token = NextToken(NULL, "+;", &context))
    {
       char absolute[DARK_CONTENT_MAX_PATH];
       char suffixed[DARK_CONTENT_MAX_PATH];
@@ -175,10 +247,12 @@ static const char* SelectedFMName(int argc, const char* argv[], char* storage,
                                   int storageSize)
 {
    const char* fmName = CommandValue(argc, argv, "fm");
-#ifdef _WIN32
+   // An explicit original-content selection must also suppress any fm value
+   // inherited from an old environment or installation configuration.
+   if (!fmName && CommandValue(argc, argv, "content"))
+      return NULL;
    if (!fmName)
       fmName = getenv("DARK_FM_NAME");
-#endif
    if (!fmName && config_get_raw("fm", storage, storageSize))
       fmName = storage;
    return IsSafeFMName(fmName) ? fmName : NULL;
@@ -220,13 +294,13 @@ static void SanitizeComponent(char* text)
          *p = '_';
 }
 
-#ifdef _WIN32
 static void CreateDirectories(const char* path)
 {
    char partial[DARK_CONTENT_MAX_PATH];
    char* p;
    strncpy(partial, path, sizeof(partial));
    partial[sizeof(partial) - 1] = '\0';
+#ifdef _WIN32
    for (p = partial + 3; *p; ++p)
       if (*p == '\\' || *p == '/')
       {
@@ -236,33 +310,137 @@ static void CreateDirectories(const char* path)
          *p = separator;
       }
    CreateDirectoryA(partial, NULL);
+#else
+   for (p = partial + (partial[0] == '/' ? 1 : 0); *p; ++p)
+      if (*p == '/')
+      {
+         *p = '\0';
+         if (partial[0])
+            mkdir(partial, 0755);
+         *p = '/';
+      }
+   mkdir(partial, 0755);
+#endif
 }
-#endif
 
-static void ConfigureSavePath(const char* fmName, BOOL vanilla)
+static BOOL DirectoryWritable(const char* path)
 {
-   char root[DARK_CONTENT_MAX_PATH] = "";
+   char probe[DARK_CONTENT_MAX_PATH];
+   char probeName[64];
+   FILE* file;
+   CreateDirectories(path);
+   _snprintf(probeName, sizeof(probeName) - 1,
+             ".darkengine-write-test-%u", PlatformMilliseconds());
+   probeName[sizeof(probeName) - 1] = '\0';
+   JoinPath(probe, sizeof(probe), path, probeName);
+   file = fopen(probe, "wbx");
+   if (!file)
+      return FALSE;
+   fclose(file);
+   remove(probe);
+   return TRUE;
+}
+
+static void BuildProfileSavePath(char* output, int size, const char* root,
+                                 const char* fmName, BOOL vanilla)
+{
    char component[96];
-#ifdef _WIN32
-   if (!GetEnvironmentVariableA("LOCALAPPDATA", root, sizeof(root)))
-      GetEnvironmentVariableA("APPDATA", root, sizeof(root));
-#endif
-   if (!root[0])
-   {
-      strncpy(gSavePath, "saves", sizeof(gSavePath));
-      return;
-   }
    strncpy(component, fmName && fmName[0] ? fmName :
            (vanilla ? "original-vanilla" : "original-configured"),
            sizeof(component));
    component[sizeof(component) - 1] = '\0';
    SanitizeComponent(component);
-   _snprintf(gSavePath, sizeof(gSavePath) - 1,
+#ifdef _WIN32
+   _snprintf(output, size,
              "%s\\OpenDarkEngine\\Profiles\\%s\\%s\\saves",
              root, gProfile, component);
-   gSavePath[sizeof(gSavePath) - 1] = '\0';
+#else
+   _snprintf(output, size,
+             "%s/OpenDarkEngine/Profiles/%s/%s/saves",
+             root, gProfile, component);
+#endif
+   output[size - 1] = '\0';
+}
+
+static void ConfigureSavePath(int argc, const char* argv[],
+                              const char* fmName, BOOL vanilla)
+{
+   char userRoot[DARK_CONTENT_MAX_PATH] = "";
+#ifndef _WIN32
+   char localPath[DARK_CONTENT_MAX_PATH];
+   char userPath[DARK_CONTENT_MAX_PATH] = "";
+#endif
+   const char* requested = CommandValue(argc, argv, "save_path");
+   if (!requested || !requested[0])
+      requested = getenv("DARK_SAVE_PATH");
+
+   gSaveFallbackPath[0] = '\0';
+   gSavePathExplicit = requested && requested[0];
+   if (gSavePathExplicit)
+   {
+      strncpy(gSavePath, requested, sizeof(gSavePath));
+      gSavePath[sizeof(gSavePath) - 1] = '\0';
+      CreateDirectories(gSavePath);
+      return;
+   }
+
 #ifdef _WIN32
+   if (!GetEnvironmentVariableA("LOCALAPPDATA", userRoot, sizeof(userRoot)))
+      GetEnvironmentVariableA("APPDATA", userRoot, sizeof(userRoot));
+   if (userRoot[0])
+      BuildProfileSavePath(gSavePath, sizeof(gSavePath), userRoot, fmName,
+                           vanilla);
+   else
+      JoinPath(gSavePath, sizeof(gSavePath), gBasePath, "saves");
    CreateDirectories(gSavePath);
+#else
+   JoinPath(localPath, sizeof(localPath), gBasePath, "saves");
+   // Retail installations commonly spell this directory "SAVES".  Reuse
+   // that existing directory on a case-sensitive filesystem instead of
+   // creating a second, empty lowercase sibling that hides the old saves
+   // from the compatibility lookup layer.
+   char resolvedLocalPath[DARK_CONTENT_MAX_PATH];
+   if (PlatformResolvePath(localPath, resolvedLocalPath,
+                           sizeof(resolvedLocalPath)))
+   {
+      strncpy(localPath, resolvedLocalPath, sizeof(localPath));
+      localPath[sizeof(localPath) - 1] = '\0';
+   }
+   const char* xdgData = getenv("XDG_DATA_HOME");
+   if (xdgData && xdgData[0])
+      strncpy(userRoot, xdgData, sizeof(userRoot));
+   else
+   {
+      const char* home = getenv("HOME");
+      if (home && home[0])
+         JoinPath(userRoot, sizeof(userRoot), home, ".local/share");
+   }
+   userRoot[sizeof(userRoot) - 1] = '\0';
+   if (userRoot[0])
+      BuildProfileSavePath(userPath, sizeof(userPath), userRoot, fmName,
+                           vanilla);
+
+   if (DirectoryWritable(localPath))
+   {
+      strncpy(gSavePath, localPath, sizeof(gSavePath));
+      if (userPath[0])
+         strncpy(gSaveFallbackPath, userPath, sizeof(gSaveFallbackPath));
+   }
+   else if (userPath[0] && DirectoryWritable(userPath))
+   {
+      strncpy(gSavePath, userPath, sizeof(gSavePath));
+      strncpy(gSaveFallbackPath, localPath, sizeof(gSaveFallbackPath));
+      Warning(("Save directory '%s' is not writable; using '%s'\n",
+               localPath, userPath));
+   }
+   else
+   {
+      // Preserve a deterministic path and let the ordinary save failure UI
+      // report the problem when neither location can be made writable.
+      strncpy(gSavePath, localPath, sizeof(gSavePath));
+   }
+   gSavePath[sizeof(gSavePath) - 1] = '\0';
+   gSaveFallbackPath[sizeof(gSaveFallbackPath) - 1] = '\0';
 #endif
 }
 
@@ -272,16 +450,65 @@ static void PublishPath(const char* variable, eDarkContentPath slot)
    config_set_priority(variable, PRIORITY_TRANSIENT);
 }
 
+static void CaptureSourcePaths(void)
+{
+   int i;
+   if (gSourcePathsCaptured)
+      return;
+   for (i = 0; i < 5; ++i)
+   {
+      gSourcePathDefined[i] = config_get_raw(kContentPathVariables[i],
+                                             gSourcePaths[i],
+                                             sizeof(gSourcePaths[i]));
+      gSourcePathPriorities[i] = config_get_priority(kContentPathVariables[i]);
+   }
+   gSourcePathsCaptured = TRUE;
+}
+
+static void RestoreSourcePaths(void)
+{
+   int i;
+   for (i = 0; i < 5; ++i)
+   {
+      if (!gSourcePathDefined[i])
+      {
+         config_unset(kContentPathVariables[i]);
+         continue;
+      }
+      config_set_string(kContentPathVariables[i], gSourcePaths[i]);
+      config_set_priority(kContentPathVariables[i],
+                          gSourcePathPriorities[i]);
+   }
+}
+
+static void SetSelectionEnvironment(const char* mode, const char* fmName)
+{
+#ifdef _WIN32
+   _putenv_s("DARK_CONTENT_MODE", mode ? mode : "configured");
+   _putenv_s("DARK_FM_NAME", fmName ? fmName : "");
+   _putenv_s("DARK_CONTENT_PICKER", "");
+#else
+   setenv("DARK_CONTENT_MODE", mode ? mode : "configured", 1);
+   if (fmName && fmName[0])
+      setenv("DARK_FM_NAME", fmName, 1);
+   else
+      unsetenv("DARK_FM_NAME");
+   unsetenv("DARK_CONTENT_PICKER");
+#endif
+}
+
 void DarkContentConfigureProfile(void)
 {
    const char* env;
+   BOOL profileFromEnvironment = FALSE;
+   const char* detected;
 
-#ifdef _WIN32
    env = getenv("DARK_GAME_PROFILE");
    if (env && env[0])
    {
       strncpy(gProfile, env, sizeof(gProfile));
       gProfile[sizeof(gProfile) - 1] = '\0';
+      profileFromEnvironment = TRUE;
    }
    env = getenv("DARK_GAME_PATH");
    if (env && env[0])
@@ -290,7 +517,20 @@ void DarkContentConfigureProfile(void)
       gBasePath[sizeof(gBasePath) - 1] = '\0';
    }
    else
-      GetCurrentDirectoryA(sizeof(gBasePath), gBasePath);
+      PlatformGetCurrentDirectory(gBasePath, sizeof(gBasePath));
+   if (!profileFromEnvironment &&
+       (detected = DetectProfile(gBasePath)) != NULL)
+   {
+      strncpy(gProfile, detected, sizeof(gProfile));
+      gProfile[sizeof(gProfile) - 1] = '\0';
+   }
+#ifndef _WIN32
+   // The OSM compatibility bridge selects the original game's service
+   // vtable layout from this environment value. Windows publishes it in the
+   // pre-engine launcher; Linux detects the profile here and must publish the
+   // same result before script modules are loaded.
+   setenv("DARK_GAME_PROFILE", gProfile, 1);
+   setenv("DARK_GAME_PATH", gBasePath, 1);
 #endif
    // The restored executable contains Thief II's networking client.  Thief 1
    // installations do not provide the matching network configuration/data.
@@ -317,10 +557,8 @@ void DarkContentLoadFMConfig(int argc, const char* argv[])
    for (i = 0; i < sizeof(files) / sizeof(files[0]); ++i)
    {
       JoinPath(configPath, sizeof(configPath), fmPath, files[i]);
-#ifdef _WIN32
-      if (GetFileAttributesA(configPath) != INVALID_FILE_ATTRIBUTES)
+      if (FileExists(configPath))
          config_load(configPath);
-#endif
    }
 }
 
@@ -337,11 +575,10 @@ void DarkContentConfigure(int argc, const char* argv[])
    // Refresh the environment-derived values for callers outside normal
    // startup; during normal startup this has already run before pick_game().
    DarkContentConfigureProfile();
+   CaptureSourcePaths();
 
-#ifdef _WIN32
    if (!requestedMode)
       requestedMode = getenv("DARK_CONTENT_MODE");
-#endif
    vanilla = requestedMode && _stricmp(requestedMode, "vanilla") == 0;
 
    if (requestedMode && !vanilla && _stricmp(requestedMode, "configured") != 0)
@@ -414,17 +651,60 @@ void DarkContentConfigure(int argc, const char* argv[])
    PublishPath("script_module_path", kDarkContentScripts);
    PublishPath("include_path", kDarkContentIncludes);
    PublishPath("movie_path", kDarkContentMovies);
-   ConfigureSavePath(fmName, vanilla);
+   ConfigureSavePath(argc, argv, fmName, vanilla);
 
-   mprintf("Content profile: %s, mode: %s, base: %s%s%s\n",
+   mprintf("Content profile: %s, mode: %s, base: %s%s%s, saves: %s\n",
            gProfile, gContentMode, gBasePath,
-           gFMPath[0] ? ", FM: " : "", gFMPath[0] ? gFMPath : "");
+           gFMPath[0] ? ", FM: " : "", gFMPath[0] ? gFMPath : "",
+           gSavePath);
+}
+
+BOOL DarkContentApplySelection(const char* mode, const char* fmName)
+{
+   const char* arguments[3] = { "darkengine", NULL, NULL };
+   char modeArgument[48];
+   char fmArgument[DARK_CONTENT_MAX_PATH + 4];
+   int argc = 2;
+
+   if (!mode || (_stricmp(mode, "configured") != 0 &&
+                 _stricmp(mode, "vanilla") != 0))
+      return FALSE;
+   if (fmName && fmName[0] && !IsSafeFMName(fmName))
+      return FALSE;
+
+   RestoreSourcePaths();
+   _snprintf(modeArgument, sizeof(modeArgument) - 1, "content=%s", mode);
+   modeArgument[sizeof(modeArgument) - 1] = '\0';
+   arguments[1] = modeArgument;
+   if (fmName && fmName[0])
+   {
+      _snprintf(fmArgument, sizeof(fmArgument) - 1, "fm=%s", fmName);
+      fmArgument[sizeof(fmArgument) - 1] = '\0';
+      arguments[2] = fmArgument;
+      argc = 3;
+      {
+         char resolved[DARK_CONTENT_MAX_PATH];
+         if (!ResolveFMPath(argc, arguments, fmName, resolved,
+                            sizeof(resolved)))
+            return FALSE;
+      }
+   }
+
+   SetSelectionEnvironment(mode, fmName);
+   DarkContentLoadFMConfig(argc, arguments);
+   DarkContentConfigure(argc, arguments);
+   return !fmName || !fmName[0] || gFMPath[0] != '\0';
 }
 
 const char* DarkContentProfile(void) { return gProfile; }
 const char* DarkContentMode(void) { return gContentMode; }
 const char* DarkContentBasePath(void) { return gBasePath; }
 const char* DarkContentFMPath(void) { return gFMPath; }
+BOOL DarkContentShowPicker(void)
+{
+   const char* value = getenv("DARK_CONTENT_PICKER");
+   return value && value[0] && strcmp(value, "0") != 0;
+}
 const char* DarkContentSearchPath(eDarkContentPath path)
 {
    return path >= kDarkContentResources && path <= kDarkContentMovies ? gPaths[path] : "";
@@ -436,5 +716,22 @@ BOOL DarkContentMakeSavePath(char* destination, int size, const char* filename)
    if (!destination || size <= 0 || !filename)
       return FALSE;
    JoinPath(destination, size, gSavePath, filename);
+   return destination[0] != '\0';
+}
+
+BOOL DarkContentMakeLoadPath(char* destination, int size, const char* filename)
+{
+   if (!DarkContentMakeSavePath(destination, size, filename))
+      return FALSE;
+   if (FileExists(destination) || gSavePathExplicit || !gSaveFallbackPath[0])
+      return TRUE;
+
+   char fallback[DARK_CONTENT_MAX_PATH];
+   JoinPath(fallback, sizeof(fallback), gSaveFallbackPath, filename);
+   if (FileExists(fallback))
+   {
+      strncpy(destination, fallback, size);
+      destination[size - 1] = '\0';
+   }
    return destination[0] != '\0';
 }

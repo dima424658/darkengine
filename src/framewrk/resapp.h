@@ -11,6 +11,9 @@
 
 
 EXTERN void LGAPI ResSysCreate(void);
+// Rebuilds the named-resource roots after the in-engine content picker has
+// republished resname_base. Existing search paths observe the new context.
+EXTERN void LGAPI ResSysRefreshContentPath(void);
 DEFINE_LG_GUID(IID_Res, 0x1d);
 
 
