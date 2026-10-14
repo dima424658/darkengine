@@ -470,7 +470,7 @@ errtype config_write_file(const char* in,writefunc writable)
    strcpy(fn,dbuf);
    strcat(fn,"_");
    strcat(fn,fbuf+1);
-   ofd = _open(fn,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE);
+   ofd = _open(fn,O_WRONLY|O_CREAT|O_TRUNC,S_IREAD|S_IWRITE);
    if (ofd == -1) return ERR_FOPEN;
    config_write_iter_success=TRUE;
 
