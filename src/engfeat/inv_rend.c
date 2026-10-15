@@ -112,10 +112,10 @@ static mls_multi_light lights[] =
 };
 
 //zb:
-static void start_ir_stride(void)
+static void start_ir_stride(BOOL hardware)
 {
 #ifdef RGB_LIGHTING
-   if( g_lgd3d )
+   if( hardware )
    {
       r3d_glob.cur_stride = sizeof(g2s_point); // for
       mdd_rgb_lighting = TRUE;
@@ -142,6 +142,7 @@ static void render_single_obj(invRendState *us, BOOL bClearZBuffer)
 {
    int clr_color=g_inv_bcolor;
    mxs_real zoom = gRenderZoom;
+   BOOL software_back_buffer = FALSE;
 
 #ifdef DEEPC
 #ifndef SHIP
@@ -155,6 +156,19 @@ static void render_single_obj(invRendState *us, BOOL bClearZBuffer)
       gr_push_canvas(us->back_buffer);
    else
       gr_push_canvas(&us->vis_buffer);
+
+   // Loadout/shop models are deliberately rendered into a temporary CPU
+   // canvas and then composed into the menu.  Merely pushing that canvas does
+   // not change r3's primitive driver: after hardware initialization it still
+   // submits triangles to lgd3d, leaving the CPU canvas empty.  Use the g2
+   // driver for this explicit off-screen path and restore lgd3d before
+   // returning.  Keep g_lgd3d itself set so the texture manager can restore
+   // the source bits of resident hardware textures for g2.
+   software_back_buffer = g_lgd3d && !g_null_raster &&
+      us->back_buffer != NULL && (us->flags & INVREND_MODEL) &&
+      !(us->flags & INVREND_HARDWARE);
+   if (software_back_buffer)
+      r3_use_g2();
 
    if ((g_lgd3d) && (!g_null_raster))
    {
@@ -188,6 +202,8 @@ static void render_single_obj(invRendState *us, BOOL bClearZBuffer)
       if(objmodelGetModelType(us->model_idx)!=OM_TYPE_MD)
       {
          ConfigSpew("InvrendSpew",("render_single_obj: unable to render non-md inventory item\n"));
+         if (software_back_buffer)
+            r3_use_lgd3d();
          gr_pop_canvas();
          return;
       }
@@ -252,7 +268,7 @@ static void render_single_obj(invRendState *us, BOOL bClearZBuffer)
 // wsf: why was md_fancy_render_model being called twice?
 //         md_fancy_render_model(m,parms);
 
-		 start_ir_stride();//zb
+		 start_ir_stride(!software_back_buffer && g_lgd3d);//zb
          md_fancy_render_model(m,parms);
 		 end_ir_stride(); //zb
       }
@@ -269,6 +285,9 @@ static void render_single_obj(invRendState *us, BOOL bClearZBuffer)
    }
    else
       Warning(("No modelNum for inv obj %d\n",us->obj_id));
+
+   if (software_back_buffer)
+      r3_use_lgd3d();
 
    gr_pop_canvas();
 }
