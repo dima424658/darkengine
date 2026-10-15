@@ -233,19 +233,19 @@ static void ReadFanMissionInfo(const char* directory, std::string& name,
 
 static void BuildContentCatalog(std::vector<sContentItem>& items)
 {
-   sContentItem configured;
-   configured.choice = kContentConfigured;
-   configured.name = "Original Missions - Configured";
-   configured.description =
-      "Use cam_mod.ini, uber_mod_path, and mod_path for the original campaign.";
-   items.push_back(configured);
-
    sContentItem vanilla;
    vanilla.choice = kContentVanilla;
-   vanilla.name = "Original Missions - Vanilla";
+   vanilla.name = "Original Missions";
    vanilla.description =
-      "Use only the base retail resources for the original campaign.";
+      "Use only the base retail resources; this is the most compatible original campaign mode.";
    items.push_back(vanilla);
+
+   sContentItem configured;
+   configured.choice = kContentConfigured;
+   configured.name = "Original Missions - Modded";
+   configured.description =
+      "Use configured mod paths; installed mods may require unsupported NewDark features.";
+   items.push_back(configured);
 
    char root[DARK_CONTENT_MAX_PATH];
    char configuredRoot[DARK_CONTENT_MAX_PATH] = "FMs";

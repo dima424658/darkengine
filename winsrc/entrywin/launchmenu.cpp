@@ -289,23 +289,24 @@ static bool IsDromEd(const char* executable)
 
 static void AddItems(sLaunchMenuState* state)
 {
-    sLaunchItem configured;
-    configured.choice = kDarkLaunchConfigured;
-    configured.name = "Original Missions — Configured";
-    configured.category = "ORIGINAL CAMPAIGN";
-    configured.description =
-        "Play the original campaign using cam_mod.ini, uber_mod_path, and mod_path. "
-        "Choose this for an installed enhancement pack or other configured mods.";
-    state->items.push_back(configured);
-
     sLaunchItem vanilla;
     vanilla.choice = kDarkLaunchVanilla;
-    vanilla.name = "Original Missions — Vanilla";
+    vanilla.name = "Original Missions";
     vanilla.category = "ORIGINAL CAMPAIGN";
     vanilla.description =
-        "Play from the base retail resources only. Configured mod layers are disabled, "
-        "and saves are kept separate from the configured campaign.";
+        "Play the original campaign from the base retail resources only. Mod layers "
+        "are disabled, and saves are kept separate from the modded campaign. This is "
+        "the recommended and most compatible choice.";
     state->items.push_back(vanilla);
+
+    sLaunchItem configured;
+    configured.choice = kDarkLaunchConfigured;
+    configured.name = "Original Missions - Modded";
+    configured.category = "ORIGINAL CAMPAIGN";
+    configured.description =
+        "Use cam_mod.ini, uber_mod_path, and mod_path. Installed enhancement packs "
+        "may require NewDark features that this engine does not support yet.";
+    state->items.push_back(configured);
     AddFanMissions(state);
 }
 
