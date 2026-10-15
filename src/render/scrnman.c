@@ -702,6 +702,12 @@ void ScrnClear(void)
    if (grd_mode < 0 || _cur_res < 0) 
       return; 
 
+   // A zero-valued compatibility pixel is transparent while a retained D3D11
+   // scene is active.  A screen clear must discard that scene so the cleared
+   // canvas presents as black, but unlike ScrnBlacken it preserves the active
+   // indexed palette for a suspended menu to use when it resumes.
+   if (RenderBackendAvailable())
+      RenderBackendDeactivateScene();
 
    if (have_canv)
    {
