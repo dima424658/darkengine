@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClCompile Include="multparm.cpp" />
     <ClCompile Include="nullsrv.cpp" />
+    <ClCompile Include="osm_emu\osm32abi.cpp" />
     <ClCompile Include="osm_emu\osm32bridge.cpp" />
     <ClCompile Include="osm_emu\osm32cpu.cpp" />
     <ClCompile Include="osm_emu\osm32env.cpp" />
@@ -172,6 +173,7 @@
   <ItemGroup>
     <ClInclude Include="multparm.h" />
     <ClInclude Include="nullsrv.h" />
+    <ClInclude Include="osm_emu\osm32abi.h" />
     <ClInclude Include="osm_emu\osm32bridge.h" />
     <ClInclude Include="osm_emu\osm32cpu.h" />
     <ClInclude Include="osm_emu\osm32env.h" />

@@ -41,10 +41,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="osm32_cpu_test.cpp" />
+    <ClCompile Include="..\..\libsrc\script\osm_emu\osm32abi.cpp" />
     <ClCompile Include="..\..\libsrc\script\osm_emu\osm32cpu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libsrc\script\osm_emu\osm32cpu.h" />
+    <ClInclude Include="..\..\libsrc\script\osm_emu\osm32abi.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

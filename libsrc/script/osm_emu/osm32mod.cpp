@@ -484,8 +484,9 @@ bool ReadGuestParm(osm32::cMemory *memory, uint32_t address,
 class cOsm32Environment : public osm32::cEnvironment
 {
 public:
-   explicit cOsm32Environment(IScriptMan *scriptManager)
+   cOsm32Environment(IScriptMan *scriptManager, osm32::eGuestAbi guestAbi)
     : m_scriptManager(scriptManager),
+      m_guestAbi(guestAbi),
       m_linkQueryVtable(0)
    {
    }
@@ -496,6 +497,8 @@ public:
          if (m_linkQueries[i].query)
             m_linkQueries[i].query->Release();
    }
+
+   osm32::eGuestAbi GuestAbi() const { return m_guestAbi; }
 
    size_t LinkQueryCheckpoint() const
    {
@@ -567,9 +570,7 @@ protected:
       if (slot == 26 || slot == 27)
       {
          const bool hasResult = slot == 26;
-         const char *profile = getenv("DARK_GAME_PROFILE");
-         const bool thief1 = profile &&
-            (!_stricmp(profile, "gold") || !_stricmp(profile, "tdp"));
+         const bool hasFlags = osm32::GuestPostMessageHasFlags(m_guestAbi);
          const unsigned offset = hasResult ? 1 : 0;
          uint32_t resultAddress = 0, from, to, parmAddresses[3], flags = 0;
          std::string message;
@@ -599,12 +600,12 @@ protected:
          // call has six explicit parameters; treating the next stack local
          // as flags and popping it shifts ESP, corrupting every destructor
          // that follows the post.
-         if (!thief1 && !Argument(*state, *memory, 7, &flags, error))
+         if (hasFlags && !Argument(*state, *memory, 7, &flags, error))
             return false;
          m_scriptManager->PostMessage2(
             static_cast<ObjID>(from), static_cast<ObjID>(to), message.c_str(),
             parms[0], parms[1], parms[2], static_cast<ulong>(flags));
-         return Return(state, memory, thief1 ? 28 : 32, 0, error);
+         return Return(state, memory, hasFlags ? 32 : 28, 0, error);
       }
       if (slot == 28)
       {
@@ -678,6 +679,12 @@ protected:
           !GetScriptServiceId(guestObject, &serviceId))
          return false;
 
+      if (!osm32::GuestServiceMethodExists(m_guestAbi, serviceId, slot))
+      {
+         if (error) *error = "method is absent from the guest service ABI";
+         return false;
+      }
+
       GUID guid;
       MAKE_LG_GUID(&guid, serviceId);
       if (getenv("DARK_OSM32_TRACE"))
@@ -692,6 +699,14 @@ protected:
       {
          if (error) *error = "native script service is unavailable";
          return false;
+      }
+
+      if (slot == 3 || slot == 4)
+      {
+         void **vtable = *reinterpret_cast<void ***>(service);
+         reinterpret_cast<void (LGAPI *)(void *)>(vtable[slot])(service);
+         service->Release();
+         return Return(state, memory, 4, 0, error);
       }
 
       bool invoked = false;
@@ -1088,6 +1103,14 @@ private:
                             osm32::cMemory *memory,
                             std::string *error)
    {
+      unsigned nativeSlot;
+      if (!osm32::ResolveServiceMethod(m_guestAbi, osm32::kAbiServiceObject,
+                                       slot, &nativeSlot))
+      {
+         if (error) *error = "Object method is absent from the guest ABI";
+         return false;
+      }
+      slot = nativeSlot;
       uint32_t first, second;
       std::string text;
       if (slot == 9 || slot == 15 || slot == 16 || slot == 17 ||
@@ -1224,7 +1247,8 @@ private:
             return Return(state, memory, 12,
                           service->SetTransience(object1, second), error);
          case 24: case 25:
-            if (!StringArgument(*state, memory, 2, &text, error)) return false;
+            if (!ScriptStringArgument(*state, memory, 2, &text, error))
+               return false;
             first = slot == 24 ?
                service->AddMetaPropertyToMany(object1, cScrStr(text.c_str())) :
                service->RemoveMetaPropertyFromMany(object1,
@@ -1242,9 +1266,15 @@ private:
    {
       uint32_t objectId, third, fourth;
       std::string property, field;
-      const char *profile = getenv("DARK_GAME_PROFILE");
-      const bool thief1 = profile &&
-         (!_stricmp(profile, "gold") || !_stricmp(profile, "tdp"));
+      unsigned nativeSlot;
+      if (!osm32::ResolveServiceMethod(m_guestAbi,
+                                       osm32::kAbiServiceProperty,
+                                       slot, &nativeSlot))
+      {
+         if (error) *error = "Property method is absent from the guest ABI";
+         return false;
+      }
+      slot = nativeSlot;
       if (slot == 5)
       {
          uint32_t resultAddress, fieldAddress;
@@ -1283,12 +1313,11 @@ private:
       const object target(static_cast<int32_t>(objectId));
 
       // The VC guest vtable emits the field-taking Set overload before the
-      // simple overload.  Thief 1 then omits SetLocal from this point in the
-      // vtable and appends it after Possessed instead, shifting slots 8
-      // through 12 relative to Thief 2.  The native engine service retains
-      // the Thief 2 layout, so dispatch guest slots by the selected content
-      // profile rather than forwarding their numbers directly.
-      if (slot == 6 || (!thief1 && slot == 8) || (thief1 && slot == 12))
+      // simple overload.  Gold has no SetLocal method, so its Add through
+      // Possessed slots are one earlier than the native Dark 2 service.
+      // Dispatch guest slots by the selected content profile rather than
+      // forwarding their numbers directly.
+      if (slot == 6 || slot == 8)
       {
          uint32_t fieldAddress;
          if (!Argument(*state, *memory, 3, &fieldAddress, error) ||
@@ -1296,7 +1325,7 @@ private:
               !ReadGuestString(memory, fieldAddress, &field, error)) ||
              !Argument(*state, *memory, 4, &fourth, error))
             return false;
-         if (getenv("DARK_OSM32_TRACE") && thief1 && slot == 12)
+         if (getenv("DARK_OSM32_TRACE") && slot == 8)
          {
             uint32_t args[7] = { 0 };
             uint32_t returnAddress = 0;
@@ -1307,7 +1336,7 @@ private:
             memory->Read32(fourth, &parmData, 0);
             memory->Read32(fourth + 4, &parmType, 0);
             fprintf(stderr,
-                    "OSM32 Gold Property SetLocal target=%d property='%s' "
+                    "OSM32 Property SetLocal target=%d property='%s' "
                     "field='%s' parm=%08x[%08x,%08x] "
                     "return=%08x args=%08x,%08x,%08x,%08x,%08x,%08x,%08x\n",
                     static_cast<int32_t>(objectId), property.c_str(),
@@ -1345,20 +1374,20 @@ private:
          return Return(state, memory, 16,
                        service->Set(target, property.c_str(), parm), error);
       }
-      if (slot == (thief1 ? 8u : 9u))
+      if (slot == 9)
          return Return(state, memory, 12,
                        service->Add(target, property.c_str()), error);
-      if (slot == (thief1 ? 9u : 10u))
+      if (slot == 10)
          return Return(state, memory, 12,
                        service->Remove(target, property.c_str()), error);
-      if (slot == (thief1 ? 10u : 11u))
+      if (slot == 11)
       {
          if (!Argument(*state, *memory, 3, &third, error)) return false;
          return Return(state, memory, 16,
                        service->CopyFrom(target, property.c_str(),
                           object(static_cast<int32_t>(third))), error);
       }
-      if (slot == (thief1 ? 11u : 12u))
+      if (slot == 12)
          return Return(state, memory, 12,
                        service->Possessed(target, property.c_str()), error);
       if (slot == 13)
@@ -1835,7 +1864,10 @@ private:
       }
       if (slot == 6)
       {
-         for (unsigned i = 0; i < 4; ++i)
+         const bool hasSource =
+            osm32::GuestStimulateHasSourceArgument(m_guestAbi);
+         const unsigned count = hasSource ? 4 : 3;
+         for (unsigned i = 0; i < count; ++i)
             if (!Argument(*state, *memory, i + 1, &args[i], error))
                return false;
          float intensity;
@@ -1843,8 +1875,8 @@ private:
          const HRESULT result = service->Stimulate(
             object(static_cast<int32_t>(args[0])),
             stimulus_kind(static_cast<int32_t>(args[1])), intensity,
-            object(static_cast<int32_t>(args[3])));
-         return Return(state, memory, 20, result, error);
+            object(hasSource ? static_cast<int32_t>(args[3]) : 0));
+         return Return(state, memory, 4 + count * 4, result, error);
       }
       if (slot == 7)
       {
@@ -1891,6 +1923,14 @@ private:
                         std::string *error)
    {
       IAIScriptService *ai = reinterpret_cast<IAIScriptService *>(service);
+      unsigned nativeSlot;
+      if (!osm32::ResolveServiceMethod(m_guestAbi, osm32::kAbiServiceAI,
+                                       slot, &nativeSlot))
+      {
+         if (error) *error = "AI method is absent from the guest ABI";
+         return false;
+      }
+      slot = nativeSlot;
       uint32_t args[7] = {};
       if (slot >= 5 && slot <= 7)
       {
@@ -2775,11 +2815,20 @@ private:
       return false;
    }
 
-   static bool InvokePhysicsService(IUnknown *unknown, unsigned slot,
+   bool InvokePhysicsService(IUnknown *unknown, unsigned slot,
                                     osm32::sCpuState *state,
                                     osm32::cMemory *memory,
                                     std::string *error)
    {
+      unsigned nativeSlot;
+      if (!osm32::ResolveServiceMethod(m_guestAbi,
+                                       osm32::kAbiServicePhysics,
+                                       slot, &nativeSlot))
+      {
+         if (error) *error = "Physics method is absent from the guest ABI";
+         return false;
+      }
+      slot = nativeSlot;
       void **vtable = *reinterpret_cast<void ***>(unknown);
       uint32_t first, second, third, fourth, fifth;
       if (slot == 5 || slot == 6)
@@ -2950,15 +2999,22 @@ private:
    {
       ISoundScriptService *service =
          reinterpret_cast<ISoundScriptService *>(unknown);
-      const char *profile = getenv("DARK_GAME_PROFILE");
-      const bool thief1 = profile &&
-         (!_stricmp(profile, "gold") || !_stricmp(profile, "tdp"));
+      unsigned nativeSlot;
+      if (!osm32::ResolveServiceMethod(m_guestAbi, osm32::kAbiServiceSound,
+                                       slot, &nativeSlot))
+      {
+         if (error) *error = "Sound method is absent from the guest ABI";
+         return false;
+      }
+      slot = nativeSlot;
+      const bool hasNetwork =
+         osm32::GuestSoundHasNetworkArgument(m_guestAbi);
       uint32_t args[8] = {};
       std::string text;
       if (slot >= 5 && slot <= 8)
       {
          const unsigned count = (slot == 6 || slot == 7) ?
-            (thief1 ? 5 : 6) : (thief1 ? 4 : 5);
+            (hasNetwork ? 6 : 5) : (hasNetwork ? 5 : 4);
          for (unsigned i = 0; i < count; ++i)
             if (!Argument(*state, *memory, i + 1, &args[i], error))
                return false;
@@ -2970,13 +3026,13 @@ private:
          if (slot == 5)
             result = service->Play(callback, name,
                static_cast<eSoundSpecial>(args[3]),
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[4]));
          else if (slot == 6)
             result = service->Play(callback, name,
                object(static_cast<int32_t>(args[3])),
                static_cast<eSoundSpecial>(args[4]),
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[5]));
          else if (slot == 7)
          {
@@ -2986,13 +3042,13 @@ private:
             cScrVec nativePosition(position);
             result = service->Play(callback, name, nativePosition,
                static_cast<eSoundSpecial>(args[4]),
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[5]));
          }
          else
             result = service->PlayAmbient(callback, name,
                static_cast<eSoundSpecial>(args[3]),
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[4]));
          return ReturnBoolean(state, memory, args[0], 4 + count * 4,
                               result, error);
@@ -3000,7 +3056,7 @@ private:
       if (slot >= 9 && slot <= 12)
       {
          const unsigned count = (slot == 10 || slot == 11) ?
-            (thief1 ? 4 : 5) : (thief1 ? 3 : 4);
+            (hasNetwork ? 5 : 4) : (hasNetwork ? 4 : 3);
          for (unsigned i = 0; i < count; ++i)
             if (!Argument(*state, *memory, i + 1, &args[i], error))
                return false;
@@ -3010,12 +3066,12 @@ private:
          if (slot == 9)
             result = service->PlaySchema(
                callback, schema,
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[3]));
          else if (slot == 10)
             result = service->PlaySchema(
                callback, schema, object(static_cast<int32_t>(args[3])),
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[4]));
          else if (slot == 11)
          {
@@ -3025,20 +3081,20 @@ private:
             cScrVec nativePosition(position);
             result = service->PlaySchema(
                callback, schema, nativePosition,
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[4]));
          }
          else
             result = service->PlaySchemaAmbient(
                callback, schema,
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[3]));
          return ReturnBoolean(state, memory, args[0], 4 + count * 4,
                               result, error);
       }
       if (slot == 13)
       {
-         const unsigned count = thief1 ? 6 : 7;
+         const unsigned count = hasNetwork ? 7 : 6;
          for (unsigned i = 0; i < count; ++i)
             if (!Argument(*state, *memory, i + 1, &args[i], error))
                return false;
@@ -3051,7 +3107,7 @@ private:
                object(static_cast<int32_t>(args[3])),
                object(static_cast<int32_t>(args[4])),
                static_cast<eEnvSoundLoc>(args[5]),
-               thief1 ? kSoundNetDefault :
+               !hasNetwork ? kSoundNetDefault :
                         static_cast<eSoundNetwork>(args[6])), error);
       }
       if (slot == 14)
@@ -3149,6 +3205,7 @@ private:
    };
 
    IScriptMan *m_scriptManager;
+   const osm32::eGuestAbi m_guestAbi;
    uint32_t m_linkQueryVtable;
    std::vector<sLinkQueryProxy> m_linkQueries;
 };
@@ -3179,8 +3236,8 @@ class cOsm32Module : public cCTUnaggregated<IScriptModule,
                                              kCTU_Default>
 {
 public:
-   explicit cOsm32Module(IScriptMan *scriptManager)
-    : m_environment(scriptManager)
+   cOsm32Module(IScriptMan *scriptManager, osm32::eGuestAbi guestAbi)
+    : m_environment(scriptManager, guestAbi)
    {
    }
    virtual ~cOsm32Module()
@@ -3193,8 +3250,9 @@ public:
    {
       if (getenv("DARK_OSM32_TRACE"))
       {
-         fprintf(stderr, "OSM32 load '%s' from '%s'\n",
-                 moduleName ? moduleName : "", path ? path : "");
+         fprintf(stderr, "OSM32 load '%s' from '%s' ABI=%s\n",
+                 moduleName ? moduleName : "", path ? path : "",
+                 osm32::GuestAbiName(m_environment.GuestAbi()));
          fflush(stderr);
       }
       if (!m_runtime.Load(path, moduleName, &m_environment, error))
@@ -3407,13 +3465,13 @@ STDMETHODIMP cOsm32Script::ReceiveMessage(sScrMsg *message,
 } // namespace
 
 BOOL LoadOsm32Module(const char *path, const char *moduleName,
-                     IScriptMan *scriptManager,
+                     IScriptMan *scriptManager, osm32::eGuestAbi guestAbi,
                      IScriptModule **module, std::string *error)
 {
    if (!module)
       return FALSE;
    *module = 0;
-   cOsm32Module *adapter = new cOsm32Module(scriptManager);
+   cOsm32Module *adapter = new cOsm32Module(scriptManager, guestAbi);
    if (!adapter->Load(path, moduleName, error))
    {
       adapter->Release();

@@ -1,4 +1,5 @@
 #include <osm_emu/osm32cpu.h>
+#include <osm_emu/osm32abi.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -459,6 +460,100 @@ bool TestX87RegisterAndSqrt()
    return true;
 }
 
+bool TestGuestAbiMaps()
+{
+   struct sGoldServiceLayout
+   {
+      uint16_t id;
+      uint8_t lastSlot;
+   };
+   static const sGoldServiceLayout layouts[] = {
+      { 0x00d7,  7 }, { 0x00da, 11 }, { 0x00df, 24 }, { 0x00e5, 14 },
+      { 0x00ee, 15 }, { 0x00ef,  9 }, { 0x00f1, 18 }, { 0x00f4, 13 },
+      { 0x00f6,  8 }, { 0x00fb,  5 }, { 0x00fd,  5 }, { 0x00fe,  7 },
+      { 0x010d,  5 }, { 0x010e,  9 }, { 0x0111, 10 }, { 0x0115, 11 },
+      { 0x0141, 11 }, { 0x0150,  7 }, { 0x0152,  9 }, { 0x0153,  7 },
+      { 0x015d,  8 }, { 0x016a,  5 }, { 0x016c, 10 }, { 0x017d,  7 },
+      { 0x019f, 11 }, { 0x01a0, 10 }, { 0x01b4,  7 }, { 0x01f8,  5 }
+   };
+   struct sMethodMap
+   {
+      osm32::eAbiService service;
+      uint8_t guestSlot;
+      uint8_t nativeSlot;
+   };
+   static const sMethodMap goldMappings[] = {
+      { osm32::kAbiServiceObject, 22, 24 },
+      { osm32::kAbiServiceObject, 23, 25 },
+      { osm32::kAbiServiceObject, 24, 26 },
+      { osm32::kAbiServiceProperty, 8, 9 },
+      { osm32::kAbiServiceProperty, 9, 10 },
+      { osm32::kAbiServiceProperty, 10, 11 },
+      { osm32::kAbiServiceProperty, 11, 12 },
+      { osm32::kAbiServicePhysics, 10, 12 },
+      { osm32::kAbiServicePhysics, 11, 13 },
+      { osm32::kAbiServiceSound, 5, 7 },
+      { osm32::kAbiServiceSound, 6, 6 },
+      { osm32::kAbiServiceSound, 7, 5 },
+      { osm32::kAbiServiceSound, 8, 8 },
+      { osm32::kAbiServiceSound, 9, 11 },
+      { osm32::kAbiServiceSound, 10, 10 },
+      { osm32::kAbiServiceSound, 11, 9 },
+      { osm32::kAbiServiceSound, 12, 12 },
+      { osm32::kAbiServiceAI, 6, 7 },
+      { osm32::kAbiServiceAI, 7, 6 }
+   };
+   unsigned slot = 0;
+   bool passed =
+      osm32::GuestAbiFromProfile("gold") == osm32::kGuestAbiDark1 &&
+      osm32::GuestAbiFromProfile("TDP") == osm32::kGuestAbiDark1 &&
+      osm32::GuestAbiFromProfile("thief2") == osm32::kGuestAbiDark2 &&
+      !osm32::ResolveServiceMethod(osm32::kGuestAbiDark1,
+         osm32::kAbiServiceProperty, 12, &slot) &&
+      osm32::ResolveServiceMethod(osm32::kGuestAbiDark2,
+         osm32::kAbiServiceSound, 5, &slot) && slot == 7 &&
+      osm32::ResolveServiceMethod(osm32::kGuestAbiDark1,
+         osm32::kAbiServiceAI, 6, &slot) && slot == 7 &&
+      !osm32::ResolveServiceMethod(osm32::kGuestAbiDark1,
+         osm32::kAbiServicePhysics, 12, &slot) &&
+      !osm32::ResolveServiceMethod(osm32::kGuestAbiDark1,
+         osm32::kAbiServiceSound, 19, &slot) &&
+      !osm32::ResolveServiceMethod(osm32::kGuestAbiDark1,
+         osm32::kAbiServiceAI, 15, &slot) &&
+      !osm32::GuestPostMessageHasFlags(osm32::kGuestAbiDark1) &&
+      osm32::GuestPostMessageHasFlags(osm32::kGuestAbiDark2) &&
+      !osm32::GuestSoundHasNetworkArgument(osm32::kGuestAbiDark1) &&
+      !osm32::GuestStimulateHasSourceArgument(osm32::kGuestAbiDark1);
+
+   for (size_t i = 0;
+        i < sizeof(goldMappings) / sizeof(goldMappings[0]); ++i)
+      passed = passed &&
+         osm32::ResolveServiceMethod(osm32::kGuestAbiDark1,
+                                     goldMappings[i].service,
+                                     goldMappings[i].guestSlot, &slot) &&
+         slot == goldMappings[i].nativeSlot;
+
+   for (size_t i = 0; i < sizeof(layouts) / sizeof(layouts[0]); ++i)
+      passed = passed &&
+         osm32::GuestServiceMethodExists(osm32::kGuestAbiDark1,
+                                         layouts[i].id, 3) &&
+         osm32::GuestServiceMethodExists(osm32::kGuestAbiDark1,
+                                         layouts[i].id,
+                                         layouts[i].lastSlot) &&
+         !osm32::GuestServiceMethodExists(osm32::kGuestAbiDark1,
+                                          layouts[i].id,
+                                          layouts[i].lastSlot + 1);
+   passed = passed &&
+      osm32::GuestServiceMethodExists(osm32::kGuestAbiDark1, 0x7fff, 5);
+   if (!passed)
+   {
+      fprintf(stderr, "guest ABI maps: FAIL\n");
+      return false;
+   }
+   puts("guest ABI maps: PASS");
+   return true;
+}
+
 bool TestX87IntegerArithmetic()
 {
    static const uint32_t realAddress = kStack + kStackSize - 160;
@@ -501,7 +596,8 @@ bool TestX87IntegerArithmetic()
 
 int main()
 {
-   return TestStdcall() && TestBranches() && TestHostCall() &&
+   return TestGuestAbiMaps() &&
+          TestStdcall() && TestBranches() && TestHostCall() &&
           TestBytesAndShifts() && TestStringStore() &&
           TestByteShiftAndSetCondition() && TestAbsoluteByteMoves() &&
           TestX87SingleArithmetic() && TestX87Integer64Store() &&

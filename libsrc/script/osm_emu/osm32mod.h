@@ -5,13 +5,14 @@
 
 #include <lg.h>
 #include <scrptapi.h>
+#include <osm_emu/osm32abi.h>
 
 #pragma pack(push, 8)
 #include <string>
 #pragma pack(pop)
 
 BOOL LoadOsm32Module(const char *path, const char *moduleName,
-                     IScriptMan *scriptManager,
+                     IScriptMan *scriptManager, osm32::eGuestAbi guestAbi,
                      IScriptModule **module, std::string *error);
 
 // Creates a script when descriptor belongs to a portable OSM. `handled` is

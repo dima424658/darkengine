@@ -5,6 +5,7 @@
 
 #pragma pack(push, 8)
 #include <dlfcn.h>
+#include <stdlib.h>
 #include <string>
 #pragma pack(pop)
 
@@ -27,7 +28,10 @@ BOOL cScriptMan::LoadModule(const cFileSpec &module, sScrModuleInfo *info)
     }
 
     std::string error;
+    const osm32::eGuestAbi guestAbi =
+        osm32::GuestAbiFromProfile(getenv("DARK_GAME_PROFILE"));
     return LoadOsm32Module(module.GetName(), module.GetFileName(), this,
+                           guestAbi,
                            &info->pModule, &error) ? TRUE : FALSE;
 }
 

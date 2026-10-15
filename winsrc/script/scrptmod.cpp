@@ -31,6 +31,7 @@ BOOL cScriptMan::LoadModule(const cFileSpec & fsModule, sScrModuleInfo * pInfo)
    pInfo->pModule = NULL;
 
    const char *profile = getenv("DARK_GAME_PROFILE");
+   const osm32::eGuestAbi guestAbi = osm32::GuestAbiFromProfile(profile);
    if (getenv("DARK_OSM32_TRACE"))
    {
       fprintf(stderr, "Script module '%s' profile='%s'\n",
@@ -63,7 +64,7 @@ BOOL cScriptMan::LoadModule(const cFileSpec & fsModule, sScrModuleInfo * pInfo)
       // consume as the Thief II IScriptModule interface, even in a 32-bit
       // host.  Run them through the same 32-bit service bridge used by x64.
       std::string error;
-      if (LoadOsm32Module(modulePath, fsModule.GetFileName(), this,
+      if (LoadOsm32Module(modulePath, fsModule.GetFileName(), this, guestAbi,
                           &pInfo->pModule, &error))
          return TRUE;
       mprintf("Script module '%s' failed to load: %s\n",
@@ -92,7 +93,7 @@ BOOL cScriptMan::LoadModule(const cFileSpec & fsModule, sScrModuleInfo * pInfo)
    }
 
    std::string error;
-   if (LoadOsm32Module(modulePath, fsModule.GetFileName(), this,
+   if (LoadOsm32Module(modulePath, fsModule.GetFileName(), this, guestAbi,
                        &pInfo->pModule, &error))
       return TRUE;
 
