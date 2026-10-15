@@ -62,6 +62,14 @@ struct sMessage
    // Native pointers are never copied into an extension. These patches
    // allocate guest-owned strings and write their 32-bit guest addresses.
    std::vector<sStringPatch> extensionStrings;
+   struct sValuePatch
+   {
+      uint32_t offset;
+      sValue value;
+   };
+   // cMultiParm has an eight-byte fixed guest representation, but strings
+   // and vectors referenced by it require guest-owned allocations.
+   std::vector<sValuePatch> extensionValues;
 };
 
 // Supplies the host objects and imported functions visible to a guest OSM.

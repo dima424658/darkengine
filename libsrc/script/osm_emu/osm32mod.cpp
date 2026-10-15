@@ -88,6 +88,66 @@ struct sNativePhysMessage : public sScrMsg
    int transSubmod;
 };
 
+struct sNativeMovingTerrainMessage : public sScrMsg
+{
+   ObjID waypoint;
+};
+
+struct sNativeWaypointMessage : public sScrMsg
+{
+   ObjID moving_terrain;
+};
+
+// Keep message decoding independent of subsystem-private headers. These
+// mirrors contain only the public fields following the native sScrMsg base;
+// guest layout is written explicitly below and never inferred from sizeof.
+struct sNativeDarkGameModeMessage : public sScrMsg
+{
+   int resuming;
+   int suspending;
+};
+
+struct sNativeAISignalMessage : public sScrMsg
+{
+   cScrStr signal;
+};
+
+struct sNativeAIPatrolPointMessage : public sScrMsg
+{
+   ObjID patrolObj;
+};
+
+struct sNativeAIAlertMessage : public sScrMsg
+{
+   int level;
+   int oldLevel;
+};
+
+struct sNativeAIModeChangeMessage : public sScrMsg
+{
+   int mode;
+   int previousMode;
+};
+
+struct sNativeAIObjActResultMessage : public sScrMsg
+{
+   int action;
+   int result;
+   cMultiParm data;
+   ObjID target;
+};
+
+struct sNativeDifficultyMessage : public sScrMsg
+{
+   int difficulty;
+};
+
+struct sNativePickStateMessage : public sScrMsg
+{
+   int previousState;
+   int currentState;
+};
+
 bool ToGuestValue(const sMultiParm &source, osm32::sValue *destination)
 {
    destination->type = static_cast<osm32::eValueType>(source.type);
@@ -186,6 +246,18 @@ void AppendString(std::vector<uint8_t> *target,
    osm32::sMessage::sStringPatch patch;
    patch.offset = static_cast<uint32_t>(target->size());
    patch.value = value ? value : "";
+   Append32(target, 0);
+   patches->push_back(patch);
+}
+
+void AppendValue(std::vector<uint8_t> *target,
+                 std::vector<osm32::sMessage::sValuePatch> *patches,
+                 const sMultiParm &value)
+{
+   osm32::sMessage::sValuePatch patch;
+   patch.offset = static_cast<uint32_t>(target->size());
+   ToGuestValue(value, &patch.value);
+   Append32(target, 0);
    Append32(target, 0);
    patches->push_back(patch);
 }
@@ -395,6 +467,89 @@ void MarshalMessageExtension(const sScrMsg *message,
       patch.offset = 0;
       patch.value = quest->name ? quest->name : "";
       guest->extensionStrings.push_back(patch);
+   }
+   else if (!strcmp(name, "DarkGameModeChange"))
+   {
+      const sNativeDarkGameModeMessage *mode =
+         reinterpret_cast<const sNativeDarkGameModeMessage *>(message);
+      Append32(&guest->extension, static_cast<uint32_t>(mode->resuming));
+      Append32(&guest->extension, static_cast<uint32_t>(mode->suspending));
+   }
+   else if (!strcmp(name, "SignalAI"))
+   {
+      const sNativeAISignalMessage *signal =
+         reinterpret_cast<const sNativeAISignalMessage *>(message);
+      AppendString(&guest->extension, &guest->extensionStrings,
+                   signal->signal);
+   }
+   else if (!strcmp(name, "PatrolPoint"))
+   {
+      const sNativeAIPatrolPointMessage *patrol =
+         reinterpret_cast<const sNativeAIPatrolPointMessage *>(message);
+      Append32(&guest->extension, static_cast<uint32_t>(patrol->patrolObj));
+   }
+   else if (!strcmp(name, "Alertness") || !strcmp(name, "HighAlert"))
+   {
+      if (!strcmp(name, "Alertness"))
+      {
+         const sNativeAIAlertMessage *alert =
+            reinterpret_cast<const sNativeAIAlertMessage *>(message);
+         Append32(&guest->extension, static_cast<uint32_t>(alert->level));
+         Append32(&guest->extension, static_cast<uint32_t>(alert->oldLevel));
+      }
+      else
+      {
+         const sNativeAIAlertMessage *alert =
+            reinterpret_cast<const sNativeAIAlertMessage *>(message);
+         Append32(&guest->extension, static_cast<uint32_t>(alert->level));
+         Append32(&guest->extension, static_cast<uint32_t>(alert->oldLevel));
+      }
+   }
+   else if (!strcmp(name, "AIModeChange"))
+   {
+      const sNativeAIModeChangeMessage *mode =
+         reinterpret_cast<const sNativeAIModeChangeMessage *>(message);
+      Append32(&guest->extension, static_cast<uint32_t>(mode->mode));
+      Append32(&guest->extension,
+               static_cast<uint32_t>(mode->previousMode));
+   }
+   else if (!strcmp(name, "ObjActResult"))
+   {
+      const sNativeAIObjActResultMessage *result =
+         reinterpret_cast<const sNativeAIObjActResultMessage *>(message);
+      Append32(&guest->extension, static_cast<uint32_t>(result->action));
+      Append32(&guest->extension, static_cast<uint32_t>(result->result));
+      AppendValue(&guest->extension, &guest->extensionValues, result->data);
+      Append32(&guest->extension, static_cast<uint32_t>(result->target));
+   }
+   else if (!strcmp(name, "Difficulty"))
+   {
+      const sNativeDifficultyMessage *difficulty =
+         reinterpret_cast<const sNativeDifficultyMessage *>(message);
+      Append32(&guest->extension,
+               static_cast<uint32_t>(difficulty->difficulty));
+   }
+   else if (!strcmp(name, "PickStateChange"))
+   {
+      const sNativePickStateMessage *pick =
+         reinterpret_cast<const sNativePickStateMessage *>(message);
+      Append32(&guest->extension,
+               static_cast<uint32_t>(pick->previousState));
+      Append32(&guest->extension,
+               static_cast<uint32_t>(pick->currentState));
+   }
+   else if (!strcmp(name, "MovingTerrainWaypoint"))
+   {
+      const sNativeMovingTerrainMessage *terrain =
+         reinterpret_cast<const sNativeMovingTerrainMessage *>(message);
+      Append32(&guest->extension, static_cast<uint32_t>(terrain->waypoint));
+   }
+   else if (!strcmp(name, "WaypointReached"))
+   {
+      const sNativeWaypointMessage *waypoint =
+         reinterpret_cast<const sNativeWaypointMessage *>(message);
+      Append32(&guest->extension,
+               static_cast<uint32_t>(waypoint->moving_terrain));
    }
 }
 
@@ -3386,6 +3541,8 @@ public:
          return E_INVALIDARG;
 
       osm32::sValue guestReply;
+      if (reply && !ToGuestValue(*reply, &guestReply))
+         return E_INVALIDARG;
       uint32_t result;
       std::string error;
       const size_t linkQueryCheckpoint = m_environment.LinkQueryCheckpoint();

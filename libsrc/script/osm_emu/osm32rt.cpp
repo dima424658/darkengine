@@ -254,6 +254,22 @@ bool cModule::ReceiveMessage(uint32_t script, const sMessage &message,
          return false;
       }
    }
+   for (size_t i = 0; i < message.extensionValues.size(); ++i)
+   {
+      const sMessage::sValuePatch &patch = message.extensionValues[i];
+      if (patch.offset > message.extension.size() ||
+          message.extension.size() - patch.offset < 8)
+      {
+         FreeAllocations(allocations);
+         return Fail(error, "guest message value patch is out of range");
+      }
+      if (!WriteValue(messageAddress + kBaseMessageSize + patch.offset,
+                      patch.value, &allocations, error))
+      {
+         FreeAllocations(allocations);
+         return false;
+      }
+   }
 
    bool written = m_cpu.Memory().Write32(messageAddress + 12,
                                           static_cast<uint32_t>(message.from),
@@ -271,9 +287,14 @@ bool cModule::ReceiveMessage(uint32_t script, const sMessage &message,
    for (unsigned i = 0; written && i < 3; ++i)
       written = WriteValue(messageAddress + 32 + i * 8, message.data[i],
                            &allocations, error);
+   // The script manager supplies an initial reply value.  In particular,
+   // frob dispatch starts with integer true so scripts can veto an action by
+   // explicitly changing it.  Preserve that in/out value across the guest
+   // boundary instead of replacing it with undefined before every call.
    sValue emptyReply;
+   const sValue &initialReply = reply ? *reply : emptyReply;
    if (written)
-      written = WriteValue(replyAddress, emptyReply, &allocations, error);
+      written = WriteValue(replyAddress, initialReply, &allocations, error);
 
    const uint32_t arguments[] = { messageAddress, replyAddress, debugAction };
    const bool called = written &&

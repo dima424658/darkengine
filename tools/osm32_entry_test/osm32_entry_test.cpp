@@ -74,12 +74,23 @@ int main(int argc, char **argv)
    message.time = 0;
    message.flags = 0;
    osm32::sValue reply;
+   reply.type = osm32::kValueInteger;
+   reply.bits = 1;
    uint32_t messageResult;
    if (!module.ReceiveMessage(script, message, &reply, 0, &messageResult,
                               &error))
    {
       fprintf(stderr, "%s: guest IScript::ReceiveMessage FAIL: %s\n",
               argv[1], error.c_str());
+      return 1;
+   }
+   if (argc < 4 &&
+       (reply.type != osm32::kValueInteger || reply.bits != 1))
+   {
+      fprintf(stderr,
+              "%s: guest IScript::ReceiveMessage discarded initial reply "
+              "type=%u bits=%08x\n",
+              argv[1], static_cast<unsigned>(reply.type), reply.bits);
       return 1;
    }
 
