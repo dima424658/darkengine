@@ -1013,6 +1013,15 @@ void cStoredProperty::SetRebuildConcretes(BOOL fRebuild)
 
 void cStoredProperty::RebuildOneConcrete(ObjID obj)
 {
+   // remove_obj() marks an object inactive before notifying its properties.
+   // Deleting a directly stored value can therefore expose an inherited value
+   // while the object is already being destroyed.  Rebuilding that value is
+   // both pointless and unsafe: active properties such as AI may construct
+   // runtime state after prerequisite properties (notably Position) have
+   // already been removed.
+   if (OBJ_IS_CONCRETE(obj) && !ObjExists(obj))
+      return;
+
    sDatum             value;
    uPropListenerValue cbval;
 
