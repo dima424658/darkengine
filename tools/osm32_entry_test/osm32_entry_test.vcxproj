@@ -36,6 +36,7 @@
     <ClCompile Include="..\..\libsrc\script\osm_emu\osm32cpu.cpp" />
     <ClCompile Include="..\..\libsrc\script\osm_emu\osm32env.cpp" />
     <ClCompile Include="..\..\libsrc\script\osm_emu\osm32img.cpp" />
+    <ClCompile Include="..\..\libsrc\script\osm_emu\osm32imports.cpp" />
     <ClCompile Include="..\..\libsrc\script\osm_emu\osm32rt.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -43,6 +44,7 @@
     <ClInclude Include="..\..\libsrc\script\osm_emu\osm32cpu.h" />
     <ClInclude Include="..\..\libsrc\script\osm_emu\osm32env.h" />
     <ClInclude Include="..\..\libsrc\script\osm_emu\osm32img.h" />
+    <ClInclude Include="..\..\libsrc\script\osm_emu\osm32imports.h" />
     <ClInclude Include="..\..\libsrc\script\osm_emu\osm32rt.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,11 +1,15 @@
 // Default portable host environment for legacy 32-bit OSM modules.
 
 #include <osm_emu/osm32env.h>
+#include <osm_emu/osm32imports.h>
 
+#pragma pack(push, 8)
+#include <chrono>
 #include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#pragma pack(pop)
 
 namespace
 {
@@ -28,6 +32,7 @@ const uint32_t kImportDataBase = kProxyBase + 0x900;
 const uint32_t kThreadEnvironmentBlock = kProxyBase + 0xa00;
 const uint32_t kHeapBase = 0x40000000;
 const uint32_t kHeapSize = 0x02000000;
+const uint32_t kGuestHeapHandle = kProxyBase + 0xb00;
 
 void Write32(uint8_t *target, uint32_t value)
 {
@@ -118,10 +123,18 @@ bool cEnvironment::Prepare(cImage *image, cMemory *memory,
    m_imports = &image->Imports();
    m_moduleHandle = image->LoadedBase();
    for (size_t i = 0; i < m_imports->size(); ++i)
+   {
+      if (getenv("DARK_OSM32_TRACE") &&
+          !IsSupportedImport((*m_imports)[i]))
+         fprintf(stderr, "OSM32 preflight unsupported import %s!%s\n",
+                 (*m_imports)[i].module.c_str(),
+                 (*m_imports)[i].byOrdinal ? "<ordinal>" :
+                                             (*m_imports)[i].name.c_str());
       Write32(image->Data() + (*m_imports)[i].iatRva,
               IsCrtDataImport((*m_imports)[i]) ?
                  kImportDataBase + static_cast<uint32_t>(i) * 4 :
                  kImportTrap + static_cast<uint32_t>(i) * kTrapStride);
+   }
 
    uint8_t proxies[0x1000] = {};
    const char commandLine[] = "darkengine";
@@ -623,6 +636,70 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
       if (!ReadStackArgument(*state, *memory, 0, &name, error)) return false;
       return ReturnStdcall(state, memory, 4, name ? 0 : m_moduleHandle, error);
    }
+   if (IsKernelImport(item, "GetProcessHeap"))
+      return ReturnStdcall(state, memory, 0, kGuestHeapHandle, error);
+   if (IsKernelImport(item, "HeapCreate"))
+      return ReturnStdcall(state, memory, 12, kGuestHeapHandle, error);
+   if (IsKernelImport(item, "HeapDestroy"))
+   {
+      uint32_t heap;
+      if (!ReadStackArgument(*state, *memory, 0, &heap, error)) return false;
+      return ReturnStdcall(state, memory, 4,
+                           heap == kGuestHeapHandle ? 1 : 0, error);
+   }
+   if (IsKernelImport(item, "HeapAlloc"))
+   {
+      uint32_t heap, flags, size;
+      if (!ReadStackArgument(*state, *memory, 0, &heap, error) ||
+          !ReadStackArgument(*state, *memory, 1, &flags, error) ||
+          !ReadStackArgument(*state, *memory, 2, &size, error)) return false;
+      if (heap != kGuestHeapHandle)
+         return ReturnStdcall(state, memory, 12, 0, error);
+      const uint32_t allocation = m_heap.Alloc(size, error);
+      if (!allocation && size) return false;
+      if (flags & 8)
+         for (uint32_t i = 0; i < size; ++i)
+            if (!memory->Write8(allocation + i, 0, error)) return false;
+      return ReturnStdcall(state, memory, 12, allocation, error);
+   }
+   if (IsKernelImport(item, "HeapReAlloc"))
+   {
+      uint32_t heap, flags, allocation, size;
+      if (!ReadStackArgument(*state, *memory, 0, &heap, error) ||
+          !ReadStackArgument(*state, *memory, 1, &flags, error) ||
+          !ReadStackArgument(*state, *memory, 2, &allocation, error) ||
+          !ReadStackArgument(*state, *memory, 3, &size, error)) return false;
+      if (heap != kGuestHeapHandle)
+         return ReturnStdcall(state, memory, 16, 0, error);
+      const uint32_t oldSize = m_heap.GetSize(allocation);
+      const uint32_t resized = m_heap.Realloc(allocation, size, error);
+      if (!resized && size) return false;
+      if ((flags & 8) && size > oldSize)
+         for (uint32_t i = oldSize; i < size; ++i)
+            if (!memory->Write8(resized + i, 0, error)) return false;
+      return ReturnStdcall(state, memory, 16, resized, error);
+   }
+   if (IsKernelImport(item, "HeapFree"))
+   {
+      uint32_t heap, allocation;
+      if (!ReadStackArgument(*state, *memory, 0, &heap, error) ||
+          !ReadStackArgument(*state, *memory, 2, &allocation, error))
+         return false;
+      const bool freed = heap == kGuestHeapHandle &&
+                         (!allocation || m_heap.Free(allocation, error));
+      return ReturnStdcall(state, memory, 12, freed ? 1 : 0, error);
+   }
+   if (IsKernelImport(item, "HeapSize"))
+   {
+      uint32_t heap, allocation;
+      if (!ReadStackArgument(*state, *memory, 0, &heap, error) ||
+          !ReadStackArgument(*state, *memory, 2, &allocation, error))
+         return false;
+      const uint32_t size = heap == kGuestHeapHandle ?
+         m_heap.GetSize(allocation) : 0xffffffffu;
+      return ReturnStdcall(state, memory, 12,
+                           size ? size : 0xffffffffu, error);
+   }
    if (IsKernelImport(item, "InitializeCriticalSection") ||
        IsKernelImport(item, "DeleteCriticalSection") ||
        IsKernelImport(item, "EnterCriticalSection") ||
@@ -698,7 +775,15 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
    if (IsKernelImport(item, "SetThreadPriority"))
       return ReturnStdcall(state, memory, 8, 1, error);
    if (IsKernelImport(item, "GetTickCount"))
-      return ReturnStdcall(state, memory, 0, 0, error);
+   {
+      static const std::chrono::steady_clock::time_point start =
+         std::chrono::steady_clock::now();
+      const uint64_t milliseconds = static_cast<uint64_t>(
+         std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start).count());
+      return ReturnStdcall(state, memory, 0,
+                           static_cast<uint32_t>(milliseconds), error);
+   }
    if (IsKernelImport(item, "GetCommandLineA"))
       return ReturnStdcall(state, memory, 0, kCommandLine, error);
    if (IsKernelImport(item, "GetEnvironmentStrings") ||

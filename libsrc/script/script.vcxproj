@@ -158,6 +158,7 @@
     <ClCompile Include="osm_emu\osm32cpu.cpp" />
     <ClCompile Include="osm_emu\osm32env.cpp" />
     <ClCompile Include="osm_emu\osm32img.cpp" />
+    <ClCompile Include="osm_emu\osm32imports.cpp" />
     <ClCompile Include="osm_emu\osm32mod.cpp" />
     <ClCompile Include="osm_emu\osm32rt.cpp" />
     <ClCompile Include="persist.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="osm_emu\osm32cpu.h" />
     <ClInclude Include="osm_emu\osm32env.h" />
     <ClInclude Include="osm_emu\osm32img.h" />
+    <ClInclude Include="osm_emu\osm32imports.h" />
     <ClInclude Include="osm_emu\osm32mod.h" />
     <ClInclude Include="osm_emu\osm32rt.h" />
     <ClInclude Include="persist.h" />
