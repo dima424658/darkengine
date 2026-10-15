@@ -838,6 +838,11 @@ static Command commands[] =
 {
    { "use_item", FUNC_INT, use_item_command, "use item  0 = start, 1 = finish", HK_GAME_MODE },
    { "use_weapon", FUNC_INT, use_weapon_command, "weapon item  0 = start, 1 = finish",  HK_GAME_MODE },
+   // Thief 1/Gold's stock DARK.BND, QUAKE.BND, and saved control sets use
+   // these names directly.  Keep them as aliases for the newer directional
+   // commands so original bindings work without rewriting retail files.
+   { "cycle_item", FUNC_INT, cycle_item_command, "cycle item  1 = forward, -1 = backward", HK_GAME_MODE },
+   { "cycle_weapon", FUNC_INT, cycle_weapon_command, "cycle weapon  1 = forward, -1 = backward", HK_GAME_MODE },
    { "next_item", FUNC_INT, next_item_command, "next item  1 = forward, -1 = backward", HK_GAME_MODE },
    { "prev_item", FUNC_INT, prev_item_command, "previous item  -1 = forward, 1 = backward", HK_GAME_MODE },
    { "next_weapon", FUNC_INT, next_weapon_command, "next weapon  1 = forward, -1 = backward", HK_GAME_MODE },

@@ -340,6 +340,18 @@ BOOL AnimLightUpdateTimer(sAnimLight *light, long time_change)
    light->countdown_ms = time;
    old_brightness = light->brightness;
 
+   // Some Thief 1/Gold missions leave coherent-random lights at zero in the
+   // saved property even though their authored range is wholly above zero.
+   // Starting the random walk outside that range can leave a nominally lit
+   // fixture dark for a very long time.  Treat that state as uninitialized.
+   if (light->mode == ANIM_LIGHT_MODE_RAND_COHERENT
+    && (old_brightness < light->min_brightness
+     || old_brightness > light->max_brightness)) {
+      old_brightness = light->max_brightness;
+      light->brightness = old_brightness;
+      light->refresh = TRUE;
+   }
+
    switch (light->mode) {
       case ANIM_LIGHT_MODE_FLIP:
       case ANIM_LIGHT_MODE_FLICKER:

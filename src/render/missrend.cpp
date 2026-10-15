@@ -20,6 +20,7 @@
 
 #include <config.h>
 #include <csg.h>
+#include <string.h>
 
 // must be last header
 #include <dbmem.h>
@@ -58,6 +59,35 @@ protected:
    {
       TagVersion version = { 2, 0 };
       return version;
+   }
+
+   virtual BOOL ReadBlock(ITagFile* file, const TagVersion& version)
+   {
+      // Thief 1/Gold stores only a palette name and one scalar ambient-light
+      // value in RENDPARAMS 1.0.  Thief 2 kept the same block version while
+      // expanding ambient light to RGB and appending the sunlight fields, so
+      // the version alone cannot distinguish the two layouts.
+      struct sLegacyRenderParams
+      {
+         char pal_res[16];
+         float ambient_light;
+      };
+
+      if (file->TellFromEnd() == sizeof(sLegacyRenderParams))
+      {
+         sLegacyRenderParams legacy;
+         if (file->Read((char*)&legacy,sizeof(legacy)) != sizeof(legacy))
+            return FALSE;
+
+         Reset();
+         memcpy(pal_res,legacy.pal_res,sizeof(pal_res));
+         ambient_light.x = legacy.ambient_light;
+         ambient_light.y = legacy.ambient_light;
+         ambient_light.z = legacy.ambient_light;
+         return TRUE;
+      }
+
+      return cFileVarBase::ReadBlock(file,version);
    }
 
 public:
@@ -99,7 +129,8 @@ public:
       pal_res[0] = '\0';
       mx_mk_vec(&ambient_light, .25, .25, .25);
       use_sun = FALSE;
-   mx_mk_vec(&sunlight_vector, .25f, .1f, -1.0f);
+      sunlight_quad = FALSE;
+      mx_mk_vec(&sunlight_vector, .25f, .1f, -1.0f);
       sun_h = 0;
       sun_s = 1;
       sun_b = 100;

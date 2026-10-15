@@ -48,6 +48,15 @@ mls_multi_light light_this[32];
 // how many feet away sunlight is considered to be for object lighting
 #define SUNLIGHT_DISTANCE 125.0f
 
+// Thief 2 reserves object-light slot zero for sunlight.  Thief 1/Gold has no
+// such reservation: WR 0.23 may store an ordinary static light in slot zero
+// and cells may reference it.  Only give slot zero the Thief 2 meaning when
+// this mission actually enables sunlight.
+static BOOL mission_uses_sunlight(void)
+{
+   return GetMissionRenderParams()->use_sun;
+}
+
 
 void reset_object_lighting(void)
 {
@@ -171,7 +180,7 @@ BOOL location_sees_light(Location *loc, int light_id)
 {
    Location dummy;
    Location p;
-   if (light_id == SUNLIGHT_INDEX) {
+   if (light_id == SUNLIGHT_INDEX && mission_uses_sunlight()) {
       return portal_loc_has_sunlight(loc);
    } else {
       MakeLocationFromVector(&p, &light_data[light_id].loc);
@@ -320,9 +329,12 @@ static void setup_location_lighting(Location *loc, mxs_vector *newlight, int *sh
 
    num = num_light + num_dyn;
 
-   // put sunlight next to object
-   mx_scale_add_vec(&light_data[SUNLIGHT_INDEX].loc, &loc->vec,
-                    &portal_sunlight_norm, SUNLIGHT_DISTANCE + radius);
+   // Put sunlight next to the object.  Slot zero is an ordinary static light
+   // in Thief 1/Gold missions, so it must remain untouched when sunlight is
+   // disabled.
+   if (mission_uses_sunlight())
+      mx_scale_add_vec(&light_data[SUNLIGHT_INDEX].loc, &loc->vec,
+                       &portal_sunlight_norm, SUNLIGHT_DISTANCE + radius);
 
    // first iterate over non-dynamic lights
    for (n=0, i=0; i <= lt[0]; i += 32, shadPtr++)
@@ -372,7 +384,8 @@ void setup_object_lighting(ObjID o, mxs_vector *newlight, float bright)
    // get info for level
    parms = GetMissionRenderParams();
    mx_copy_vec(&mld_multi_rgb_ambient, &parms->ambient_light);
-   mx_copy_vec(&light_data[SUNLIGHT_INDEX].bright, &parms->sun_scaled_rgb);
+   if (parms->use_sun)
+      mx_copy_vec(&light_data[SUNLIGHT_INDEX].bright, &parms->sun_scaled_rgb);
 
    if (ObjExtraLightGet(o, &extra_light)) {
 #ifdef RGB_LIGHTING
@@ -408,7 +421,7 @@ static float _apply_one_light(int i, Location *loc)
 {
    float scale = 1.0;
 
-   if (i == SUNLIGHT_INDEX) {
+   if (i == SUNLIGHT_INDEX && mission_uses_sunlight()) {
       mx_scale_add_vec(&light_data[SUNLIGHT_INDEX].loc, &loc->vec,
                        &portal_sunlight_norm, SUNLIGHT_DISTANCE);
       return ml_multi_light_on_object(&light_data[i], &loc->vec);

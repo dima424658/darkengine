@@ -1155,16 +1155,16 @@ EXTERN void ParticleGroupUpdate(void)
 
          BOOL force_unreffed = FALSE;
 
-		 if (!pg->force_match_unrefs)
-		 {
-			 if (pg->attach_obj != OBJ_NULL)
-				 if (!ObjHasRefs(pg->attach_obj))
-				 {
-					 if (ObjHasRefs(obj))
-						 ObjSetHasRefs(obj, FALSE);
-					 force_unreffed = TRUE;
-				 }
-		 }
+         // This opt-in is stronger than the ordinary attached/trailing rule
+         // below.  The old negated test made every pre-1006 particle group
+         // (including all Gold groups) behave as if it had opted in.
+         if (pg->force_match_unrefs && pg->attach_obj != OBJ_NULL
+          && !ObjHasRefs(pg->attach_obj))
+         {
+            if (ObjHasRefs(obj))
+               ObjSetHasRefs(obj, FALSE);
+            force_unreffed = TRUE;
+         }
 
          if (!pg->ignore_attach_refs)
          {
