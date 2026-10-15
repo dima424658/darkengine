@@ -44,6 +44,9 @@ EXTERN BOOL g_lgd3d;
 
 class cHeatDiskOps : public cClassDataOps<sHeatDiskCluster>
 {
+public:
+   // NewDark extends the 52-byte retail record with one trailing word.
+   STDMETHOD_(int, ReadVersion)() { return 56; };
 };
 
 //

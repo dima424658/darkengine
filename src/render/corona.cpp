@@ -95,6 +95,11 @@ static sPropertyDesc g_CoronaDesc
 
 class cCoronaOps : public cClassDataOps<sCoronaLight>
 {
+public:
+   // NewDark retains the 52-byte retail corona prefix and appends its
+   // additional runtime/render settings.  The legacy renderer can use the
+   // prefix while the compatibility layer preserves the remaining bytes.
+   STDMETHOD_(int, ReadVersion)() { return 84; };
 };
 
 class cCoronaStore : public cHashPropertyStore<cCoronaOps>

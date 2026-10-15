@@ -221,6 +221,12 @@ IColorProperty *g_ColorProp = NULL;
 
 class cAnimOps : public cClassDataOps<sAnimLightProp>
 {
+public:
+   // NewDark 1.28 appends one 32-bit field to the retail animated-light
+   // record.  The authored retail prefix is unchanged and contains every
+   // field used by this renderer; cClassDataOps reads the complete record,
+   // copies the known prefix, and the property loader retains the tail.
+   STDMETHOD_(int, ReadVersion)() { return 80; };
 };
 
 class cAnimStore : public cHashPropertyStore<cAnimOps>

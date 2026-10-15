@@ -74,8 +74,20 @@ static BOOL setup_file(const sPropertyDesc* desc, ITagFile* file, uint& version)
       return FALSE;
 
    const uint maxValueVersion = version;
-   TagVersion v = { PROPERTY_MAJOR_VERSION, MAKE_MINOR_VERSION(desc->version,version)};
-   TagVersion thisver = v;
+   TagVersion thisver = { PROPERTY_MAJOR_VERSION,
+                          MAKE_MINOR_VERSION(desc->version,version) };
+   TagVersion v = thisver;
+   if (file->OpenMode() == kTagOpenRead)
+   {
+      // The packed minor version orders the property-schema word before the
+      // value-codec word.  Supplying our write schema here would prevent
+      // OpenBlock from exposing a newer schema even when its value prefix is
+      // understood.  Admit every practical schema version, then validate the
+      // value version and the descriptor's oldest supported schema below.
+      // Keep the packed value at INT_MAX or below because the historical
+      // VersionNumsCompare implementation subtracts uints into an int.
+      v.minor = MAKE_MINOR_VERSION(0x7fffu,maxValueVersion);
+   }
    BOOL retval = file->OpenBlock(&tag,&v) == S_OK;
 
    version = MINOR_2_VFUNC(v.minor);

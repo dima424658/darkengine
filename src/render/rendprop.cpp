@@ -276,6 +276,9 @@ static sPropertyDesc g_BitmapWorldspaceDesc
 
 class cBitmapWorldspaceOps : public cClassDataOps<sBitmapWorldspace>
 {
+public:
+   // NewDark's v2 record appends two words to the four retail dimensions.
+   STDMETHOD_(int, ReadVersion)() { return 24; };
 };
 
 class cBitmapWorldspaceStore : public cHashPropertyStore<cBitmapWorldspaceOps>
