@@ -5414,9 +5414,9 @@ static BOOL OpenPathTagFile(ITagFile* pTagFile, TagVersion *pLoadedVersion = NUL
    {
       const BOOL current = v.major == g_AIPathTagVersion.major &&
                            v.minor == g_AIPathTagVersion.minor;
-      const BOOL gold = pLoadedVersion && v.major == 2 && v.minor == 8;
+      const BOOL dark1 = pLoadedVersion && v.major == 2 && v.minor == 8;
       const BOOL newDark = pLoadedVersion && v.major == 3 && v.minor == 4;
-      if (!current && !gold && !newDark)
+      if (!current && !dark1 && !newDark)
       {
          pTagFile->CloseBlock();
          Warning (("File contains old AI path data, data not loaded.\n"));
@@ -5424,7 +5424,7 @@ static BOOL OpenPathTagFile(ITagFile* pTagFile, TagVersion *pLoadedVersion = NUL
       else if (pLoadedVersion)
          *pLoadedVersion = v;
 
-      return current || gold || newDark;
+      return current || dark1 || newDark;
    }
 
    return FALSE;
@@ -5518,7 +5518,8 @@ static void ReadPathCells(ITagFile* file, BOOL wide, sAIPathCell* cells, int cou
    }
 }
 
-static void ReadPathLinks(ITagFile* file, BOOL wide, sAIPathCellLink* links, int count)
+static void ReadPathLinks(ITagFile* file, BOOL wide, BOOL dark1,
+                          sAIPathCellLink* links, int count)
 {
    for (int i = 0; i < count; ++i)
    {
@@ -5540,7 +5541,13 @@ static void ReadPathLinks(ITagFile* file, BOOL wide, sAIPathCellLink* links, int
          links[i].dest = disk.dest;
          links[i].vertex_1 = disk.vertex1;
          links[i].vertex_2 = disk.vertex2;
-         links[i].okBits = disk.okBits;
+         // Dark 1 used the 0x10 and 0x20 traversal bits before Thief 2
+         // repurposed them as conditional stressed/high-strike flags.  The
+         // legacy pathfinder treated these as additional capabilities, so
+         // they must not restrict ordinary walking when a Dark 1 database is
+         // consumed by the Thief 2 pathfinder.
+         links[i].okBits = dark1 ?
+            (disk.okBits & ~kConditionMask) : disk.okBits;
          links[i].runtimePad = 0;
          links[i].cost = disk.cost;
       }
@@ -5610,7 +5617,8 @@ void AIPathFindRead(ITagFile * pTagFile)
    if (!OpenPathTagFile(pTagFile, &loadedVersion))
       return;
 
-   const BOOL goldFormat = loadedVersion.major == 2 && loadedVersion.minor == 8;
+   const BOOL dark1Format = loadedVersion.major == 2 &&
+                            loadedVersion.minor == 8;
    const BOOL wideFormat = loadedVersion.major == 3 && loadedVersion.minor == 4;
    if (wideFormat)
    {
@@ -5634,7 +5642,7 @@ void AIPathFindRead(ITagFile * pTagFile)
       pTagFile->Move((char*)&g_AIPathDB.m_nCells, sizeof(tAIPathCellID));
       const unsigned codecLimit = wideFormat
          ? DARK_LIMIT_AIPATH_34_INDEX
-         : (goldFormat ? DARK_LIMIT_AIPATH_28_INDEX
+         : (dark1Format ? DARK_LIMIT_AIPATH_28_INDEX
                        : DARK_LIMIT_AIPATH_33_INDEX);
       if (!AIPathCountIsValid("cell", g_AIPathDB.m_nCells, codecLimit))
       {
@@ -5678,7 +5686,8 @@ void AIPathFindRead(ITagFile * pTagFile)
          return;
       }
       g_AIPathDB.m_Links.SetSize(g_AIPathDB.m_nLinks+1);
-      ReadPathLinks(pTagFile, wideFormat, g_AIPathDB.m_Links.AsPointer(),
+      ReadPathLinks(pTagFile, wideFormat, dark1Format,
+                    g_AIPathDB.m_Links.AsPointer(),
                     g_AIPathDB.m_nLinks + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCellVertices, sizeof(tAIPathCell2VertexLinkID));
@@ -5735,10 +5744,10 @@ void AIPathFindRead(ITagFile * pTagFile)
       }
       else
       {
-         // Gold 2.8 stores one zone database.  T2 3.2 introduced the four
-         // movement-capability variants; duplicate the Gold topology so every
-         // modern query sees the legacy connectivity and permission bits.
-         const int zoneDatabaseCount = goldFormat ? 1 : kAIZone_Num;
+         // Dark 1 AIPATH 2.8 stores one zone database.  T2 3.2 introduced the
+         // four movement-capability variants; duplicate the Dark 1 topology
+         // so every modern query sees the legacy connectivity and permissions.
+         const int zoneDatabaseCount = dark1Format ? 1 : kAIZone_Num;
          for (i = 0; i < zoneDatabaseCount; i++)
          {
             g_AIPathDB.m_ZoneDatabases[i].m_CellZones.SetSize(g_AIPathDB.m_nCells+1);
@@ -5765,7 +5774,7 @@ void AIPathFindRead(ITagFile * pTagFile)
             }
          }
 
-         if (goldFormat)
+         if (dark1Format)
          {
             for (i = 1; i < kAIZone_Num; ++i)
             {
@@ -5799,7 +5808,7 @@ void AIPathFindRead(ITagFile * pTagFile)
             g_AIPathDB.m_CellToDoorsTable.Insert(&g_AIPathDB.m_CellDoors[i]);
 #endif
 
-         if (!goldFormat)
+         if (!dark1Format)
          {
             pTagFile->Move((char *)&size, sizeof(int));
             g_AIPathDB.m_MovableCells.SetSize(size);
@@ -5833,7 +5842,7 @@ void AIPathFindRead(ITagFile * pTagFile)
       memset(g_AIPathDB.m_Marks, 0, (g_AIPathDB.m_nCells + 1) * sizeof(sbool));
       g_AIPathDB.m_BestCostToReach.SetSize(g_AIPathDB.m_nCells + 1);
 
-      if (!goldFormat && !wideFormat)
+      if (!dark1Format && !wideFormat)
       {
          // New for version 3.0: Store Flee Point Region Info
          pTagFile->Move((char *)&g_AIPathDB.m_nNumFleeRegions, sizeof(int));
