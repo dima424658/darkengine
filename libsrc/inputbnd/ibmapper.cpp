@@ -1336,7 +1336,8 @@ int cIBInputMapper::ProcessMouseMove(uiMouseEvent* event)
 
 	int rel_x = 0;
 	int rel_y = 0;
-	if (!mouse_consume_relative_motion(&rel_x, &rel_y))
+	const bool relative = mouse_consume_relative_motion(&rel_x, &rel_y);
+	if (!relative)
 	{
 		auto old_mouse_mask = bindingMouseMask;
 		bindingMouseMask &= 254;
@@ -1370,7 +1371,7 @@ int cIBInputMapper::ProcessMouseMove(uiMouseEvent* event)
 		g_IB_variable_manager->Cmd(final, 0);
 	}
 
-	return 0;
+	return relative ? 1 : 0;
 }
 
 void cIBInputMapper::StripSendDoubleCmd(const char* control, long double a)
