@@ -128,6 +128,9 @@ starting the game again.
   - a Windows 10 or Windows 11 SDK
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data
+- FFmpeg's `ffmpeg.exe` on `PATH` when the installation has only the stock
+  Indeo 5 AVIs and Windows has no compatible DirectShow decoder. It is not
+  needed when H.264 MP4 siblings are already installed.
 
 The Windows SDK supplies the DirectX declarations used by the Windows input,
 audio, and rendering providers. Current Windows output uses a D3D11 swap chain
@@ -229,6 +232,26 @@ build\Release\x64\DromEd\DromEd.exe
 Static libraries remain shared between Thief2 and DromEd within a given
 architecture. They must not vary with `BuildThief2`.
 
+### Legacy OSM diagnostics
+
+The portable OSM loader selects a fixed guest ABI when each module is loaded:
+`gold` and `tdp` use the Dark 1 service layout, while `thief2` uses Dark 2.
+Set `DARK_OSM32_TRACE=1` to log the selected ABI, service calls, and imports
+that are not implemented by the guest runtime.
+
+`osm32_probe` validates a PE32 script module without executing it. Use
+`--imports` to list its imports or `--strict-imports` to fail when any import
+is outside the runtime's supported manifest:
+
+```powershell
+.\build\Release\x64\osm32_probe.exe --strict-imports `
+  'C:\Games\Thief Gold\SCRIPT.OSM'
+```
+
+The probe checks the PE image, required `_ScriptModuleInit@20` export,
+relocations, and import surface. It does not replace an in-mission behavior
+test because service calls and message traffic depend on retail mission data.
+
 ## Running
 
 The executables read retail data in place; they do not copy it into this
@@ -291,14 +314,15 @@ v1.0** and press **Play** to play the installed Black Parade campaign.
 
 The available content modes are:
 
-- **Configured originals** honors `uber_mod_path`, `mod_path`, and the full
+- **Original Missions (recommended)** suppresses both mod layers and uses the last existing
+  entry in each base path, normally `RES` for resources and the installation
+  root for missions. This is the most compatible mode for the original
+  campaigns and is selected by default when no prior choice has been saved.
+- **Original Missions - Modded** honors `uber_mod_path`, `mod_path`, and the full
   paths in the installation configuration. Installation-wide `cam_ext.cfg`
   defaults are read before `cam.cfg`, and `cam_mod.ini` supplies NewDark-style
-  mod/FM settings. This is the normal choice for a patched installation, but
-  it can expose NewDark features that this engine does not support yet.
-- **Vanilla originals** suppresses both mod layers and uses the last existing
-  entry in each base path, normally `RES` for resources and the installation
-  root for missions.
+  mod/FM settings. Use it for an installed enhancement pack, with the caveat
+  that it can expose NewDark features this engine does not support yet.
 - **Fan mission** selects one immediate child directory of the installation's
   `FMs` folder. Its files are inserted between `uber_mod_path` and `mod_path`,
   matching NewDark path precedence. An FM's `DARK.CFG`, `fm.cfg`, and
@@ -364,11 +388,19 @@ releases focus without hiding the pane. It uses the same scrollback, command
 history, completion, clipboard controls, and output path as the pop-up console
 in gameplay and play preview.
 
-The historical editing commands are present, but this build is not yet a
-dependable mission-authoring environment. Work from backups and do not rely on
-it as the only editor or copy of a mission. DromEd can read the supported
-NewDark format prefixes and retains newer or unknown chunks when saving, but
-this is not yet comprehensive NewDark authoring support. In particular,
+The built-in historical editing command registry is present, but a complete
+DromEd or NewDark editing environment also relies on command definitions and
+companion-tool workflows supplied outside the engine executable. This
+repository does not include or reproduce that complete external command
+environment, so some familiar editor commands and tool-driven workflows are
+unavailable rather than merely untested.
+
+This build is therefore not yet a dependable mission-authoring environment.
+Work from backups and do not rely on it as the only editor or copy of a
+mission. DromEd can read the supported NewDark format prefixes and retains
+newer or unknown chunks when saving, but raw preservation does not make a
+modified chunk safely writable and this is not comprehensive NewDark
+authoring support. In particular,
 WREXT 0.30 and AIPATH 3.4 are currently read-only codecs: their original
 chunks are retained instead of being rewritten by the legacy serializers.
 RENDPARAMS 2.0 is prefix-decoded and retained, while CELL_MOTION 0.2 is fully
@@ -434,7 +466,11 @@ The retail game writes `skip_intro` after the intro has played. Add
 `always_play_intro` to `cam.cfg` to show the intro on every launch. When the
 retail movie directory contains both formats, the runner uses the H.264 MP4
 through Windows Media Foundation instead of requiring the obsolete Indeo 5
-codec used by the original AVI.
+codec used by the original AVI. If only the AVI exists and DirectShow cannot
+decode it, the Windows runner uses `ffmpeg.exe` to prepare an H.264/AAC copy in
+`%LOCALAPPDATA%\OpenDarkEngine\MovieCache`; it never changes the retail movie.
+The cache key includes the source path, size, and timestamp. Set
+`DARK_MOVIE_CACHE` to override the cache directory.
 
 ## Xbox controller support
 
@@ -591,11 +627,13 @@ repository.
 - Stock Thief Gold mission/world and AI-path formats pass initial runner and
   DromEd smoke tests. TDP and broader Gold campaign/UI behavior still need
   validation; System Shock 2 is not a supported game target.
-- DromEd is currently a viewer and playtest tool, not a reliable editor. It
-  builds with the shared D3D11 renderer in a resizable window, but stability,
-  editing and save integrity, and complete mission-authoring workflows still
-  require substantial validation. NewDark missions and data are not
-  supported.
+- DromEd is currently a viewer and playtest tool with partial editing support,
+  not a general-purpose mission-authoring environment. The limitation is
+  functional as well as a matter of validation: the repository does not
+  provide the complete external DromEd/NewDark command environment or its
+  companion-tool commands, and several owned mission formats still cannot be
+  rewritten after editing. NewDark reading and raw preservation are partial;
+  they do not imply safe NewDark authoring or save compatibility.
 - Environmental audio now maps the original EAX room presets onto DirectSound
   I3DL2 or OpenAL EFX. DirectSound provides room reverb while the optional
   OpenAL provider also supplies per-source low-pass occlusion; both paths need
