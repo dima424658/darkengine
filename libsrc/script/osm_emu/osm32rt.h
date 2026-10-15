@@ -70,6 +70,15 @@ struct sMessage
    // cMultiParm has an eight-byte fixed guest representation, but strings
    // and vectors referenced by it require guest-owned allocations.
    std::vector<sValuePatch> extensionValues;
+   struct sBufferPatch
+   {
+      uint32_t offset;
+      uint32_t capacity;
+      char *destination;
+   };
+   // Writable native buffers require guest-owned storage and an explicit
+   // copy back after the guest message handler returns.
+   std::vector<sBufferPatch> extensionBuffers;
 };
 
 // Supplies the host objects and imported functions visible to a guest OSM.

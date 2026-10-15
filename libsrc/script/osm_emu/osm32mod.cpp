@@ -44,6 +44,7 @@ namespace
 
 const uint32_t kLinkQueryTrap = 0xf3000000;
 const uint32_t kLinkQueryTrapStride = 16;
+const uint32_t kReportBufferCapacity = 256 * 1024;
 
 struct sNativeQuestMessage : public sScrMsg
 {
@@ -140,6 +141,14 @@ struct sNativeAIObjActResultMessage : public sScrMsg
 struct sNativeDifficultyMessage : public sScrMsg
 {
    int difficulty;
+};
+
+struct sNativeReportMessage : public sScrMsg
+{
+   int warnLevel;
+   int flags;
+   int types;
+   char *textBuffer;
 };
 
 struct sNativePickStateMessage : public sScrMsg
@@ -294,6 +303,22 @@ void MarshalMessageExtension(const sScrMsg *message,
       const sScrTimerMsg *timer = static_cast<const sScrTimerMsg *>(message);
       AppendString(&guest->extension, &guest->extensionStrings, timer->name);
    }
+   else if (!strcmp(name, "ReportMessage"))
+   {
+      const sNativeReportMessage *report =
+         reinterpret_cast<const sNativeReportMessage *>(message);
+      Append32(&guest->extension, static_cast<uint32_t>(report->warnLevel));
+      Append32(&guest->extension, static_cast<uint32_t>(report->flags));
+      Append32(&guest->extension, static_cast<uint32_t>(report->types));
+      osm32::sMessage::sBufferPatch patch;
+      patch.offset = static_cast<uint32_t>(guest->extension.size());
+      // Report.cpp owns a 256 KiB output buffer for each ReportMessage.
+      patch.capacity = kReportBufferCapacity;
+      patch.destination = report->textBuffer;
+      Append32(&guest->extension, 0);
+      if (patch.destination)
+         guest->extensionBuffers.push_back(patch);
+   }
    else if (!strcmp(name, "FrobToolBegin") ||
             !strcmp(name, "FrobToolEnd") ||
             !strcmp(name, "FrobWorldBegin") ||
@@ -405,7 +430,11 @@ void MarshalMessageExtension(const sScrMsg *message,
    else if (!strcmp(name, "PhysCollision") ||
             !strcmp(name, "PhysContactCreate") ||
             !strcmp(name, "PhysContactDestroy") ||
-            !strcmp(name, "PhysEnter") || !strcmp(name, "PhysExit"))
+            !strcmp(name, "PhysEnter") || !strcmp(name, "PhysExit") ||
+            !strcmp(name, "PhysFellAsleep") ||
+            !strcmp(name, "PhysWokeUp") ||
+            !strcmp(name, "PhysMadePhysical") ||
+            !strcmp(name, "PhysMadeNonPhysical"))
    {
       // A guest sPhysMsg inherits sPhysMsgBase after the 56-byte x86
       // sScrMsg base.  Omitting this extension made collision scripts read

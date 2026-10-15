@@ -737,6 +737,7 @@ bool cCpu::Step(std::string *error)
    }
 
    if (opcode == 0xa4 || opcode == 0xa5 ||
+       opcode == 0xa6 || opcode == 0xa7 ||
        opcode == 0xaa || opcode == 0xab ||
        opcode == 0xae || opcode == 0xaf)
    {
@@ -769,6 +770,34 @@ bool cCpu::Step(std::string *error)
                if (!m_memory.Read32(m_state.reg[kEsi], &value, error) ||
                    !m_memory.Write32(m_state.reg[kEdi], value, error))
                   return false;
+            }
+         }
+         else if (opcode == 0xa6)
+         {
+            uint8_t left, right;
+            if (!m_memory.Read8(m_state.reg[kEsi], &left, error) ||
+                !m_memory.Read8(m_state.reg[kEdi], &right, error))
+               return false;
+            SetSubFlags8(left, right, static_cast<uint8_t>(left - right));
+         }
+         else if (opcode == 0xa7)
+         {
+            if (operand16)
+            {
+               uint16_t left, right;
+               if (!m_memory.Read16(m_state.reg[kEsi], &left, error) ||
+                   !m_memory.Read16(m_state.reg[kEdi], &right, error))
+                  return false;
+               SetSubFlags16(left, right,
+                             static_cast<uint16_t>(left - right));
+            }
+            else
+            {
+               uint32_t left, right;
+               if (!m_memory.Read32(m_state.reg[kEsi], &left, error) ||
+                   !m_memory.Read32(m_state.reg[kEdi], &right, error))
+                  return false;
+               SetSubFlags(left, right, left - right);
             }
          }
          else if (opcode == 0xaa)
@@ -814,11 +843,12 @@ bool cCpu::Step(std::string *error)
                                     error))
             return false;
 
-         if (opcode == 0xa4 || opcode == 0xa5)
+         if (opcode >= 0xa4 && opcode <= 0xa7)
             m_state.reg[kEsi] += delta;
          m_state.reg[kEdi] += delta;
 
-         if (repeat && (opcode == 0xae || opcode == 0xaf))
+         if (repeat && (opcode == 0xa6 || opcode == 0xa7 ||
+                        opcode == 0xae || opcode == 0xaf))
          {
             const bool equal = (m_state.eflags & kFlagZero) != 0;
             if ((repeatNotEqual && equal) || (!repeatNotEqual && !equal))

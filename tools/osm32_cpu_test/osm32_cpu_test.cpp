@@ -1,5 +1,6 @@
 #include <osm_emu/osm32cpu.h>
 #include <osm_emu/osm32abi.h>
+#include <osm_emu/osm32imports.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -206,6 +207,42 @@ bool TestStringStore()
       return false;
    }
    puts("repeated string store: PASS");
+   return true;
+}
+
+bool TestStringCompare()
+{
+   static const uint32_t leftAddress = kStack + kStackSize - 256;
+   static const uint32_t rightAddress = leftAddress + 16;
+   static const uint8_t code[] = {
+      0xbe, 0x00, 0xff, 0x20, 0x00, // mov esi,0x20ff00
+      0xbf, 0x10, 0xff, 0x20, 0x00, // mov edi,0x20ff10
+      0xb9, 0x04, 0x00, 0x00, 0x00, // mov ecx,4
+      0xf3, 0xa6,                   // repe cmpsb
+      0x89, 0xc8,                   // mov eax,ecx
+      0xc3                          // ret
+   };
+   static const uint8_t left[] = { 1, 2, 3, 4 };
+   static const uint8_t right[] = { 1, 2, 9, 4 };
+   osm32::cCpu cpu;
+   std::string error;
+   if (!Prepare(&cpu, code, sizeof(code), &error) ||
+       !cpu.Memory().Load(leftAddress, left, sizeof(left), &error) ||
+       !cpu.Memory().Load(rightAddress, right, sizeof(right), &error) ||
+       !Enter(&cpu, 0, 0, &error) ||
+       cpu.Run(kStop, 100, &error) != osm32::cCpu::kRunStopped ||
+       cpu.State().reg[osm32::kEax] != 1 ||
+       cpu.State().reg[osm32::kEsi] != leftAddress + 3 ||
+       cpu.State().reg[osm32::kEdi] != rightAddress + 3 ||
+       (cpu.State().eflags & 0x40) != 0)
+   {
+      fprintf(stderr,
+              "string compare: FAIL: %s eax=%u esi=%08x edi=%08x\n",
+              error.c_str(), cpu.State().reg[osm32::kEax],
+              cpu.State().reg[osm32::kEsi], cpu.State().reg[osm32::kEdi]);
+      return false;
+   }
+   puts("repeated string compare: PASS");
    return true;
 }
 
@@ -462,12 +499,12 @@ bool TestX87RegisterAndSqrt()
 
 bool TestGuestAbiMaps()
 {
-   struct sGoldServiceLayout
+   struct sDark1ServiceLayout
    {
       uint16_t id;
       uint8_t lastSlot;
    };
-   static const sGoldServiceLayout layouts[] = {
+   static const sDark1ServiceLayout layouts[] = {
       { 0x00d7,  7 }, { 0x00da, 11 }, { 0x00df, 24 }, { 0x00e5, 14 },
       { 0x00ee, 15 }, { 0x00ef,  9 }, { 0x00f1, 18 }, { 0x00f4, 13 },
       { 0x00f6,  8 }, { 0x00fb,  5 }, { 0x00fd,  5 }, { 0x00fe,  7 },
@@ -482,7 +519,7 @@ bool TestGuestAbiMaps()
       uint8_t guestSlot;
       uint8_t nativeSlot;
    };
-   static const sMethodMap goldMappings[] = {
+   static const sMethodMap dark1Mappings[] = {
       { osm32::kAbiServiceObject, 22, 24 },
       { osm32::kAbiServiceObject, 23, 25 },
       { osm32::kAbiServiceObject, 24, 26 },
@@ -526,12 +563,12 @@ bool TestGuestAbiMaps()
       !osm32::GuestStimulateHasSourceArgument(osm32::kGuestAbiDark1);
 
    for (size_t i = 0;
-        i < sizeof(goldMappings) / sizeof(goldMappings[0]); ++i)
+        i < sizeof(dark1Mappings) / sizeof(dark1Mappings[0]); ++i)
       passed = passed &&
          osm32::ResolveServiceMethod(osm32::kGuestAbiDark1,
-                                     goldMappings[i].service,
-                                     goldMappings[i].guestSlot, &slot) &&
-         slot == goldMappings[i].nativeSlot;
+                                     dark1Mappings[i].service,
+                                     dark1Mappings[i].guestSlot, &slot) &&
+         slot == dark1Mappings[i].nativeSlot;
 
    for (size_t i = 0; i < sizeof(layouts) / sizeof(layouts[0]); ++i)
       passed = passed &&
@@ -551,6 +588,27 @@ bool TestGuestAbiMaps()
       return false;
    }
    puts("guest ABI maps: PASS");
+   return true;
+}
+
+bool TestLegacyCrtImportNames()
+{
+   osm32::sImport item = {};
+   item.module = "msvcrt.dll";
+   item.name = "strlen";
+   const bool passed = osm32::IsSupportedImport(item);
+   item.module = "MSVCRT.DLL";
+   const bool caseInsensitive = osm32::IsSupportedImport(item);
+   item.module = "MSVCR90.dll";
+   const bool vc9 = osm32::IsSupportedImport(item);
+   item.name = "definitely_missing";
+   const bool rejectsUnknown = !osm32::IsSupportedImport(item);
+   if (!passed || !caseInsensitive || !vc9 || !rejectsUnknown)
+   {
+      fprintf(stderr, "legacy CRT import names: FAIL\n");
+      return false;
+   }
+   puts("legacy CRT import names: PASS");
    return true;
 }
 
@@ -596,9 +654,9 @@ bool TestX87IntegerArithmetic()
 
 int main()
 {
-   return TestGuestAbiMaps() &&
+   return TestGuestAbiMaps() && TestLegacyCrtImportNames() &&
           TestStdcall() && TestBranches() && TestHostCall() &&
-          TestBytesAndShifts() && TestStringStore() &&
+          TestBytesAndShifts() && TestStringStore() && TestStringCompare() &&
           TestByteShiftAndSetCondition() && TestAbsoluteByteMoves() &&
           TestX87SingleArithmetic() && TestX87Integer64Store() &&
           TestX87PopArithmetic() && TestX87ExamineAndStatusStore() &&

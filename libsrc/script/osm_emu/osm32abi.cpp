@@ -44,18 +44,19 @@ const osm32::sServiceMethod kDark1Methods[] = {
    { osm32::kAbiServiceAI,        7,  6 }
 };
 
-struct sGoldServiceLayout
+struct sDark1ServiceLayout
 {
    uint16_t id;
    uint8_t lastSlot;
 };
 
-// Exact retail Thief Gold layouts recovered from the CodeView type records in
-// the stock OSMs.  Slots 0-2 are IUnknown and slots 3-4 are the inherited
-// IAutoScriptService lifecycle methods.  Services absent from the recovered
-// type records are deliberately left unconstrained: absence is not evidence
-// that a separately supplied Gold OSM could not request an extension service.
-const sGoldServiceLayout kGoldServices[] = {
+// Dark 1 service layouts, recovered from the CodeView type records in the
+// retail Thief Gold OSMs. Slots 0-2 are IUnknown and slots 3-4 are the
+// inherited IAutoScriptService lifecycle methods. Services absent from the
+// recovered type records are deliberately left unconstrained: absence is not
+// evidence that a separately supplied TDP or Gold OSM could not request an
+// extension service.
+const sDark1ServiceLayout kDark1Services[] = {
    { 0x00d7,  7 }, // IDebugScriptService
    { 0x00da, 11 }, // IPropertyScriptService
    { 0x00df, 24 }, // IObjectScriptService
@@ -107,7 +108,7 @@ namespace osm32
 
 const char *GuestAbiName(eGuestAbi abi)
 {
-   return abi == kGuestAbiDark1 ? "Dark 1/Gold" : "Dark 2";
+   return abi == kGuestAbiDark1 ? "Dark 1 (TDP/Gold)" : "Dark 2";
 }
 
 eGuestAbi GuestAbiFromProfile(const char *profile)
@@ -151,9 +152,9 @@ bool GuestServiceMethodExists(eGuestAbi abi, uint16_t serviceId,
       return true;
 
    for (size_t i = 0;
-        i < sizeof(kGoldServices) / sizeof(kGoldServices[0]); ++i)
-      if (kGoldServices[i].id == serviceId)
-         return guestSlot >= 3 && guestSlot <= kGoldServices[i].lastSlot;
+        i < sizeof(kDark1Services) / sizeof(kDark1Services[0]); ++i)
+      if (kDark1Services[i].id == serviceId)
+         return guestSlot >= 3 && guestSlot <= kDark1Services[i].lastSlot;
 
    // Do not impose the stock ABI on a separately supplied custom service.
    return true;

@@ -67,6 +67,31 @@ bool ReadCString(const osm32::cMemory &memory, uint32_t address,
    return Fail(error, "unterminated guest string");
 }
 
+bool ReadStackDouble(const osm32::sCpuState &state,
+                     const osm32::cMemory &memory, unsigned wordOffset,
+                     double *value, std::string *error)
+{
+   uint64_t bits;
+   if (!memory.Read64(state.reg[osm32::kEsp] + 4 + wordOffset * 4,
+                      &bits, error))
+      return false;
+   memcpy(value, &bits, sizeof(*value));
+   return true;
+}
+
+bool ReturnCrtDouble(osm32::sCpuState *state, osm32::cMemory *memory,
+                     double value, std::string *error)
+{
+   if (state->x87Depth == 8)
+      return Fail(error, "guest CRT x87 stack overflow");
+   for (unsigned i = state->x87Depth; i != 0; --i)
+      state->x87[i] = state->x87[i - 1];
+   state->x87[0] = value;
+   ++state->x87Depth;
+   return osm32::ReturnStdcall(state, memory, 0, state->reg[osm32::kEax],
+                              error);
+}
+
 uint8_t AsciiLower(uint8_t character)
 {
    return character >= 'A' && character <= 'Z' ?
@@ -81,14 +106,29 @@ bool IsKernelImport(const osm32::sImport &item, const char *name)
 
 bool IsCrtImport(const osm32::sImport &item, const char *name)
 {
-   return !item.byOrdinal && item.module == "MSVCR90.dll" &&
-          item.name == name;
+   if (item.byOrdinal || item.name != name)
+      return false;
+   std::string module = item.module;
+   for (size_t i = 0; i < module.size(); ++i)
+      if (module[i] >= 'A' && module[i] <= 'Z')
+         module[i] += 'a' - 'A';
+   return module == "msvcr90.dll" || module == "msvcrt.dll";
 }
 
 bool IsCrtDataImport(const osm32::sImport &item)
 {
    return !item.byOrdinal &&
           (item.name == "_encoded_null" || item.name == "_adjust_fdiv");
+}
+
+bool EqualAsciiNoCase(const std::string &left, const std::string &right)
+{
+   if (left.size() != right.size()) return false;
+   for (size_t i = 0; i < left.size(); ++i)
+      if (AsciiLower(static_cast<uint8_t>(left[i])) !=
+          AsciiLower(static_cast<uint8_t>(right[i])))
+         return false;
+   return true;
 }
 
 } // namespace
@@ -154,6 +194,7 @@ bool cEnvironment::Prepare(cImage *image, cMemory *memory,
    for (unsigned i = 0; i < 16; ++i)
       Write32(proxies + (kAllocatorVtable - kProxyBase) + i * 4,
               kAllocatorTrap + i * kTrapStride);
+   m_atoms.clear();
    m_services.clear();
    m_initializers.clear();
 
@@ -448,20 +489,24 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
       // CRT functions use cdecl; the guest caller removes their arguments.
       return ReturnStdcall(state, memory, 0, result, error);
    }
-   if (IsCrtImport(item, "_stricmp"))
+   if (IsCrtImport(item, "_stricmp") || IsCrtImport(item, "_strnicmp"))
    {
-      uint32_t leftAddress, rightAddress;
+      uint32_t leftAddress, rightAddress, count = 0xffffffffu;
       std::string left, right;
       if (!ReadStackArgument(*state, *memory, 0, &leftAddress, error) ||
           !ReadStackArgument(*state, *memory, 1, &rightAddress, error) ||
           !ReadCString(*memory, leftAddress, &left, error) ||
-          !ReadCString(*memory, rightAddress, &right, error))
+          !ReadCString(*memory, rightAddress, &right, error) ||
+          (item.name == "_strnicmp" &&
+           !ReadStackArgument(*state, *memory, 2, &count, error)))
          return false;
       size_t i = 0;
-      while (i < left.size() && i < right.size() &&
+      while (i < count && i < left.size() && i < right.size() &&
              AsciiLower(static_cast<uint8_t>(left[i])) ==
                 AsciiLower(static_cast<uint8_t>(right[i])))
          ++i;
+      if (i == count)
+         return ReturnStdcall(state, memory, 0, 0, error);
       const int result =
          static_cast<int>(AsciiLower(i < left.size() ?
             static_cast<uint8_t>(left[i]) : 0)) -
@@ -470,6 +515,150 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
       return ReturnStdcall(state, memory, 0,
                            static_cast<uint32_t>(result), error);
    }
+   if (IsCrtImport(item, "strlen"))
+   {
+      uint32_t address;
+      std::string value;
+      if (!ReadStackArgument(*state, *memory, 0, &address, error) ||
+          !ReadCString(*memory, address, &value, error))
+         return false;
+      return ReturnStdcall(state, memory, 0,
+                           static_cast<uint32_t>(value.size()), error);
+   }
+   if (IsCrtImport(item, "strcmp"))
+   {
+      uint32_t leftAddress, rightAddress;
+      std::string left, right;
+      if (!ReadStackArgument(*state, *memory, 0, &leftAddress, error) ||
+          !ReadStackArgument(*state, *memory, 1, &rightAddress, error) ||
+          !ReadCString(*memory, leftAddress, &left, error) ||
+          !ReadCString(*memory, rightAddress, &right, error))
+         return false;
+      const int result = left.compare(right);
+      return ReturnStdcall(state, memory, 0,
+                           static_cast<uint32_t>(result), error);
+   }
+   if (IsCrtImport(item, "strcpy") || IsCrtImport(item, "strcat"))
+   {
+      uint32_t destination, source;
+      std::string prefix, value;
+      if (!ReadStackArgument(*state, *memory, 0, &destination, error) ||
+          !ReadStackArgument(*state, *memory, 1, &source, error) ||
+          !ReadCString(*memory, source, &value, error) ||
+          (item.name == "strcat" &&
+           !ReadCString(*memory, destination, &prefix, error)))
+         return false;
+      const uint32_t offset = static_cast<uint32_t>(prefix.size());
+      for (uint32_t i = 0; i <= value.size(); ++i)
+         if (!memory->Write8(destination + offset + i,
+                             i < value.size() ?
+                                static_cast<uint8_t>(value[i]) : 0,
+                             error))
+            return false;
+      return ReturnStdcall(state, memory, 0, destination, error);
+   }
+   if (IsCrtImport(item, "strchr") || IsCrtImport(item, "strrchr") ||
+       IsCrtImport(item, "strstr"))
+   {
+      uint32_t address, argument;
+      std::string value;
+      if (!ReadStackArgument(*state, *memory, 0, &address, error) ||
+          !ReadStackArgument(*state, *memory, 1, &argument, error) ||
+          !ReadCString(*memory, address, &value, error))
+         return false;
+      size_t offset = std::string::npos;
+      if (item.name == "strstr")
+      {
+         std::string needle;
+         if (!ReadCString(*memory, argument, &needle, error)) return false;
+         offset = value.find(needle);
+      }
+      else if (item.name == "strchr")
+         offset = static_cast<char>(argument) == '\0' ? value.size() :
+            value.find(static_cast<char>(argument));
+      else
+         offset = static_cast<char>(argument) == '\0' ? value.size() :
+            value.rfind(static_cast<char>(argument));
+      return ReturnStdcall(state, memory, 0,
+         offset == std::string::npos ? 0 :
+            address + static_cast<uint32_t>(offset), error);
+   }
+   if (IsCrtImport(item, "strcspn") || IsCrtImport(item, "strpbrk") ||
+       IsCrtImport(item, "strspn"))
+   {
+      uint32_t address, setAddress;
+      std::string value, set;
+      if (!ReadStackArgument(*state, *memory, 0, &address, error) ||
+          !ReadStackArgument(*state, *memory, 1, &setAddress, error) ||
+          !ReadCString(*memory, address, &value, error) ||
+          !ReadCString(*memory, setAddress, &set, error))
+         return false;
+      size_t offset;
+      if (item.name == "strspn")
+         offset = value.find_first_not_of(set);
+      else
+         offset = value.find_first_of(set);
+      if (offset == std::string::npos)
+         offset = value.size();
+      const uint32_t result = item.name == "strpbrk" ?
+         (offset == value.size() ? 0 :
+            address + static_cast<uint32_t>(offset)) :
+         static_cast<uint32_t>(offset);
+      return ReturnStdcall(state, memory, 0, result, error);
+   }
+   if (IsCrtImport(item, "strtol") || IsCrtImport(item, "strtod"))
+   {
+      uint32_t address, endAddress;
+      std::string value;
+      if (!ReadStackArgument(*state, *memory, 0, &address, error) ||
+          !ReadStackArgument(*state, *memory, 1, &endAddress, error) ||
+          !ReadCString(*memory, address, &value, error))
+         return false;
+      char *end = 0;
+      if (item.name == "strtol")
+      {
+         uint32_t base;
+         if (!ReadStackArgument(*state, *memory, 2, &base, error))
+            return false;
+         const long result = strtol(value.c_str(), &end,
+                                    static_cast<int>(base));
+         if (endAddress && !memory->Write32(endAddress, address +
+               static_cast<uint32_t>(end - value.c_str()), error))
+            return false;
+         return ReturnStdcall(state, memory, 0,
+                              static_cast<uint32_t>(result), error);
+      }
+      const double result = strtod(value.c_str(), &end);
+      if (endAddress && !memory->Write32(endAddress, address +
+            static_cast<uint32_t>(end - value.c_str()), error))
+         return false;
+      return ReturnCrtDouble(state, memory, result, error);
+   }
+   if (IsCrtImport(item, "cos") || IsCrtImport(item, "exp") ||
+       IsCrtImport(item, "log") || IsCrtImport(item, "log10") ||
+       IsCrtImport(item, "sin") || IsCrtImport(item, "sqrt") ||
+       IsCrtImport(item, "pow"))
+   {
+      double first;
+      if (!ReadStackDouble(*state, *memory, 0, &first, error)) return false;
+      double result;
+      if (item.name == "cos") result = std::cos(first);
+      else if (item.name == "exp") result = std::exp(first);
+      else if (item.name == "log") result = std::log(first);
+      else if (item.name == "log10") result = std::log10(first);
+      else if (item.name == "sin") result = std::sin(first);
+      else if (item.name == "sqrt") result = std::sqrt(first);
+      else
+      {
+         double second;
+         if (!ReadStackDouble(*state, *memory, 2, &second, error))
+            return false;
+         result = std::pow(first, second);
+      }
+      return ReturnCrtDouble(state, memory, result, error);
+   }
+   if (IsCrtImport(item, "fflush"))
+      return ReturnStdcall(state, memory, 0, 0, error);
    if (IsCrtImport(item, "_itoa"))
    {
       uint32_t rawValue, destination, radix;
@@ -607,6 +796,32 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
             return false;
       return ReturnStdcall(state, memory, 0, destination, error);
    }
+   if (IsCrtImport(item, "memcmp") || IsCrtImport(item, "memchr"))
+   {
+      uint32_t left, rightOrValue, count;
+      if (!ReadStackArgument(*state, *memory, 0, &left, error) ||
+          !ReadStackArgument(*state, *memory, 1, &rightOrValue, error) ||
+          !ReadStackArgument(*state, *memory, 2, &count, error))
+         return false;
+      for (uint32_t i = 0; i < count; ++i)
+      {
+         uint8_t a, b;
+         if (!memory->Read8(left + i, &a, error)) return false;
+         if (item.name == "memchr")
+         {
+            if (a == static_cast<uint8_t>(rightOrValue))
+               return ReturnStdcall(state, memory, 0, left + i, error);
+         }
+         else
+         {
+            if (!memory->Read8(rightOrValue + i, &b, error)) return false;
+            if (a != b)
+               return ReturnStdcall(state, memory, 0,
+                  static_cast<uint32_t>(static_cast<int>(a) - b), error);
+         }
+      }
+      return ReturnStdcall(state, memory, 0, 0, error);
+   }
    if (IsCrtImport(item, "strncpy"))
    {
       uint32_t destination, source, count;
@@ -630,6 +845,56 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
 
    if (IsKernelImport(item, "GetVersion"))
       return ReturnStdcall(state, memory, 0, 5, error);
+   if (IsKernelImport(item, "DisableThreadLibraryCalls"))
+      return ReturnStdcall(state, memory, 4, 1, error);
+   if (IsKernelImport(item, "FindAtomA") ||
+       IsKernelImport(item, "AddAtomA"))
+   {
+      uint32_t nameAddress;
+      std::string name;
+      if (!ReadStackArgument(*state, *memory, 0, &nameAddress, error))
+         return false;
+      // MAKEINTATOM values name a predefined atom directly.
+      if (nameAddress && nameAddress < 0x10000)
+         return ReturnStdcall(state, memory, 4, nameAddress, error);
+      if (!ReadCString(*memory, nameAddress, &name, error)) return false;
+      for (size_t i = 0; i < m_atoms.size(); ++i)
+         if (EqualAsciiNoCase(m_atoms[i].name, name))
+         {
+            if (item.name == "AddAtomA") ++m_atoms[i].references;
+            return ReturnStdcall(state, memory, 4,
+               0xc000u + static_cast<uint32_t>(i), error);
+         }
+      if (item.name == "FindAtomA")
+         return ReturnStdcall(state, memory, 4, 0, error);
+      if (m_atoms.size() >= 0x4000)
+         return ReturnStdcall(state, memory, 4, 0, error);
+      sAtom atom;
+      atom.name = name;
+      atom.references = 1;
+      m_atoms.push_back(atom);
+      return ReturnStdcall(state, memory, 4,
+         0xc000u + static_cast<uint32_t>(m_atoms.size() - 1), error);
+   }
+   if (IsKernelImport(item, "GetAtomNameA"))
+   {
+      uint32_t atom, destination, capacity;
+      if (!ReadStackArgument(*state, *memory, 0, &atom, error) ||
+          !ReadStackArgument(*state, *memory, 1, &destination, error) ||
+          !ReadStackArgument(*state, *memory, 2, &capacity, error))
+         return false;
+      if (atom < 0xc000 || atom - 0xc000 >= m_atoms.size() || !capacity)
+         return ReturnStdcall(state, memory, 12, 0, error);
+      const std::string &name = m_atoms[atom - 0xc000].name;
+      const uint32_t copied = static_cast<uint32_t>(
+         name.size() < capacity - 1 ? name.size() : capacity - 1);
+      for (uint32_t i = 0; i < copied; ++i)
+         if (!memory->Write8(destination + i,
+                             static_cast<uint8_t>(name[i]), error))
+            return false;
+      if (!memory->Write8(destination + copied, 0, error)) return false;
+      return ReturnStdcall(state, memory, 12, copied, error);
+   }
    if (IsKernelImport(item, "GetModuleHandleA"))
    {
       uint32_t name;
@@ -638,6 +903,18 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
    }
    if (IsKernelImport(item, "GetProcessHeap"))
       return ReturnStdcall(state, memory, 0, kGuestHeapHandle, error);
+   if (IsKernelImport(item, "GlobalAlloc"))
+   {
+      uint32_t flags, size;
+      if (!ReadStackArgument(*state, *memory, 0, &flags, error) ||
+          !ReadStackArgument(*state, *memory, 1, &size, error)) return false;
+      const uint32_t allocation = m_heap.Alloc(size, error);
+      if (!allocation && size) return false;
+      if (flags & 0x40)
+         for (uint32_t i = 0; i < size; ++i)
+            if (!memory->Write8(allocation + i, 0, error)) return false;
+      return ReturnStdcall(state, memory, 8, allocation, error);
+   }
    if (IsKernelImport(item, "HeapCreate"))
       return ReturnStdcall(state, memory, 12, kGuestHeapHandle, error);
    if (IsKernelImport(item, "HeapDestroy"))
@@ -727,6 +1004,18 @@ bool cEnvironment::InvokeImport(const sImport &item, sCpuState *state,
           !memory->Write32(destination, exchange, error))
          return false;
       return ReturnStdcall(state, memory, 8, previous, error);
+   }
+   if (IsKernelImport(item, "InterlockedIncrement") ||
+       IsKernelImport(item, "InterlockedDecrement"))
+   {
+      uint32_t destination, previous;
+      if (!ReadStackArgument(*state, *memory, 0, &destination, error) ||
+          !memory->Read32(destination, &previous, error))
+         return false;
+      const uint32_t result = item.name == "InterlockedIncrement" ?
+         previous + 1 : previous - 1;
+      if (!memory->Write32(destination, result, error)) return false;
+      return ReturnStdcall(state, memory, 4, result, error);
    }
    if (IsKernelImport(item, "TlsAlloc"))
    {

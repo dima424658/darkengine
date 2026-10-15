@@ -270,6 +270,46 @@ bool cModule::ReceiveMessage(uint32_t script, const sMessage &message,
          return false;
       }
    }
+   std::vector<uint32_t> bufferAddresses(message.extensionBuffers.size(), 0);
+   for (size_t i = 0; i < message.extensionBuffers.size(); ++i)
+   {
+      const sMessage::sBufferPatch &patch = message.extensionBuffers[i];
+      if (patch.offset > message.extension.size() ||
+          message.extension.size() - patch.offset < 4 ||
+          !patch.destination || !patch.capacity ||
+          patch.capacity > 0x00100000u)
+      {
+         FreeAllocations(allocations);
+         return Fail(error, "guest message buffer patch is invalid");
+      }
+      uint32_t length = 0;
+      while (length < patch.capacity && patch.destination[length]) ++length;
+      if (length == patch.capacity)
+      {
+         FreeAllocations(allocations);
+         return Fail(error, "native message buffer is unterminated");
+      }
+      const uint32_t bufferAddress =
+         m_environment->AllocGuest(patch.capacity, error);
+      if (!bufferAddress)
+      {
+         FreeAllocations(allocations);
+         return false;
+      }
+      allocations.push_back(bufferAddress);
+      std::vector<uint8_t> buffer(patch.capacity, 0);
+      if (length)
+         memcpy(&buffer[0], patch.destination, length);
+      if (!m_cpu.Memory().Load(bufferAddress, &buffer[0], buffer.size(),
+                               error) ||
+          !m_cpu.Memory().Write32(messageAddress + kBaseMessageSize +
+                                  patch.offset, bufferAddress, error))
+      {
+         FreeAllocations(allocations);
+         return false;
+      }
+      bufferAddresses[i] = bufferAddress;
+   }
 
    bool written = m_cpu.Memory().Write32(messageAddress + 12,
                                           static_cast<uint32_t>(message.from),
@@ -299,7 +339,32 @@ bool cModule::ReceiveMessage(uint32_t script, const sMessage &message,
    const uint32_t arguments[] = { messageAddress, replyAddress, debugAction };
    const bool called = written &&
       CallCom(script, 4, arguments, 3, result, error);
-   const bool read = called && (!reply || ReadValue(replyAddress, reply, error));
+   bool read = called && (!reply || ReadValue(replyAddress, reply, error));
+   for (size_t i = 0; read && i < message.extensionBuffers.size(); ++i)
+   {
+      const sMessage::sBufferPatch &patch = message.extensionBuffers[i];
+      bool terminated = false;
+      for (uint32_t j = 0; j < patch.capacity; ++j)
+      {
+         uint8_t value;
+         if (!m_cpu.Memory().Read8(bufferAddresses[i] + j, &value, error))
+         {
+            read = false;
+            break;
+         }
+         patch.destination[j] = static_cast<char>(value);
+         if (!value)
+         {
+            terminated = true;
+            break;
+         }
+      }
+      if (read && !terminated)
+      {
+         patch.destination[patch.capacity - 1] = '\0';
+         read = Fail(error, "guest message buffer is unterminated");
+      }
+   }
    FreeAllocations(allocations);
    return called && read;
 }

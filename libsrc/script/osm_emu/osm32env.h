@@ -58,6 +58,12 @@ private:
       bool stopOnError;
    };
 
+   struct sAtom
+   {
+      std::string name;
+      uint32_t references;
+   };
+
    bool InvokeAllocator(unsigned slot, sCpuState *state, cMemory *memory,
                         std::string *error);
    bool BeginInitializers(bool stopOnError, sCpuState *state,
@@ -73,6 +79,7 @@ private:
    uint32_t m_lastError;
    std::vector<bool> m_tlsUsed;
    std::vector<uint32_t> m_tlsValues;
+   std::vector<sAtom> m_atoms;
    std::vector<sServiceProxy> m_services;
    std::vector<sInitializerContext> m_initializers;
 };
