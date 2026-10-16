@@ -352,11 +352,11 @@ static void BuildProfileSavePath(char* output, int size, const char* root,
    SanitizeComponent(component);
 #ifdef _WIN32
    _snprintf(output, size,
-             "%s\\OpenDarkEngine\\Profiles\\%s\\%s\\saves",
+             "%s\\DarkEngineRestored\\Profiles\\%s\\%s\\saves",
              root, gProfile, component);
 #else
    _snprintf(output, size,
-             "%s/OpenDarkEngine/Profiles/%s/%s/saves",
+             "%s/DarkEngineRestored/Profiles/%s/%s/saves",
              root, gProfile, component);
 #endif
    output[size - 1] = '\0';

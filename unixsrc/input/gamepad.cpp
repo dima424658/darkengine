@@ -274,7 +274,7 @@ extern "C" const sGamepadBackendOps *GamepadXInputBackend(void)
 
 #if defined(__ANDROID__)
 extern "C" JNIEXPORT void JNICALL
-Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchControllerConnected(
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeSetTouchControllerConnected(
    JNIEnv *, jclass, jboolean connected)
 {
    std::lock_guard<std::mutex> lock(g_touchMutex);
@@ -288,7 +288,7 @@ Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchControllerConnected(
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchAxis(
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeSetTouchAxis(
    JNIEnv *, jclass, jint axis, jfloat x, jfloat y)
 {
    const int rawX = (int)(std::max(-1.0f, std::min(1.0f, x)) *
@@ -310,7 +310,7 @@ Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchAxis(
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchButton(
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeSetTouchButton(
    JNIEnv *, jclass, jint button, jboolean down)
 {
    if (button < 0 || button >= kGamepadButtonCount)
@@ -336,21 +336,21 @@ Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchButton(
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_org_opendarkengine_thief2_ThiefActivity_nativeTouchControlsActive(
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeTouchControlsActive(
    JNIEnv *, jclass)
 {
    return DarkInputRelativeMouseActive() ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_org_opendarkengine_thief2_ThiefActivity_nativeNotifyTouchInput(
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeNotifyTouchInput(
    JNIEnv *, jclass)
 {
    GamepadNotifyInput(kTouchSlot);
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_org_opendarkengine_thief2_ThiefActivity_nativeTouchControlsVisible(
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeTouchControlsVisible(
    JNIEnv *, jclass)
 {
    const unsigned lastInput = GamepadGetLastInputIndex();

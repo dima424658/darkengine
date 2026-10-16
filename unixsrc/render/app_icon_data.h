@@ -1,4 +1,4 @@
-// Generated from assets/icons/opendarkengine.svg. Do not edit by hand.
+// Generated from assets/icons/dark-engine-restored.svg. Do not edit by hand.
 #pragma once
 
 namespace dark_app_icon {

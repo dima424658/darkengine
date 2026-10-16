@@ -320,9 +320,9 @@ static BOOL BuildPreparedMoviePath(const WCHAR *legacyPath,
         DWORD length = GetEnvironmentVariableW(L"LOCALAPPDATA", cacheDirectory,
                                                MAX_PATH);
         if (!length || length >= MAX_PATH ||
-            length + wcslen(L"\\OpenDarkEngine\\MovieCache") >= MAX_PATH)
+            length + wcslen(L"\\DarkEngineRestored\\MovieCache") >= MAX_PATH)
             return FALSE;
-        wcscat(cacheDirectory, L"\\OpenDarkEngine\\MovieCache");
+        wcscat(cacheDirectory, L"\\DarkEngineRestored\\MovieCache");
     }
     createResult = SHCreateDirectoryExW(NULL, cacheDirectory, NULL);
     if (createResult != ERROR_SUCCESS &&

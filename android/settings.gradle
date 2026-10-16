@@ -121,5 +121,5 @@ if (!hidSource.contains("private void registerReceiverCompat")) {
     hidManager.setText(hidSource.replace(anchor, helper + anchor), "UTF-8")
 }
 
-rootProject.name = "OpenDarkEngine"
+rootProject.name = "DarkEngineRestored"
 include(":app")

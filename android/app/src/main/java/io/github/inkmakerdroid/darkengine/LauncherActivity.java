@@ -1,4 +1,4 @@
-package org.opendarkengine.thief2;
+package io.github.inkmakerdroid.darkengine;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;

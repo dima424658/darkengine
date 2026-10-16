@@ -17,7 +17,7 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $androidRoot = Join-Path $repositoryRoot 'android'
 $apkPath = Join-Path $androidRoot 'app\build\outputs\apk\debug\app-debug.apk'
-$packageName = 'org.opendarkengine.thief2'
+$packageName = 'io.github.inkmakerdroid.darkengine'
 
 $adbCommand = Get-Command adb -ErrorAction SilentlyContinue
 if ($adbCommand) {
@@ -59,19 +59,19 @@ if ($Install) {
 $launchArguments = @(
     'shell', 'am', 'start', '-S', '-W',
     '-n', "$packageName/.LauncherActivity",
-    '--es', 'org.opendarkengine.thief2.extra.QUICKSTART', $Mission
+    '--es', "${packageName}.extra.QUICKSTART", $Mission
 )
 if ($Position) {
     $launchArguments += @(
-        '--es', 'org.opendarkengine.thief2.extra.QUICKSTART_POS', $Position)
+        '--es', "${packageName}.extra.QUICKSTART_POS", $Position)
 }
 if ($Angles) {
     $launchArguments += @(
-        '--es', 'org.opendarkengine.thief2.extra.QUICKSTART_ANGLES', $Angles)
+        '--es', "${packageName}.extra.QUICKSTART_ANGLES", $Angles)
 }
 if ($AutoStop -gt 0) {
     $launchArguments += @(
-        '--ei', 'org.opendarkengine.thief2.extra.AUTO_STOP', "$AutoStop")
+        '--ei', "${packageName}.extra.AUTO_STOP", "$AutoStop")
 }
 
 & $adbPath @deviceArguments @launchArguments

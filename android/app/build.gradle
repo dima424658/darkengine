@@ -23,12 +23,12 @@ def nativeArguments = [
 ]
 
 android {
-    namespace = "org.opendarkengine.thief2"
+    namespace = "io.github.inkmakerdroid.darkengine"
     compileSdk = 36
     ndkVersion = "30.0.16248370"
 
     defaultConfig {
-        applicationId = "org.opendarkengine.thief2"
+        applicationId = "io.github.inkmakerdroid.darkengine"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

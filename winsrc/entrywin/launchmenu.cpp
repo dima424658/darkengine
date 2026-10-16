@@ -12,8 +12,8 @@
 namespace
 {
 
-const char* const kWindowClass = "OpenDarkEngineLaunchMenu";
-const char* const kRegistryKey = "Software\\OpenDarkEngine\\Launcher";
+const char* const kWindowClass = "DarkEngineRestoredLaunchMenu";
+const char* const kRegistryKey = "Software\\DarkEngineRestored\\Launcher";
 
 enum
 {

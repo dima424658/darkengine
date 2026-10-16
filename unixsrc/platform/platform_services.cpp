@@ -148,7 +148,7 @@ void PlatformShowError(const char *title, const char *message)
    const char *resolvedTitle = title ? title : "Dark Engine";
    const char *resolvedMessage = message ? message : "";
 #if defined(__ANDROID__)
-   __android_log_print(ANDROID_LOG_ERROR, "OpenDarkEngine", "%s: %s",
+   __android_log_print(ANDROID_LOG_ERROR, "DarkEngineRestored", "%s: %s",
                        resolvedTitle, resolvedMessage);
 #endif
    std::fprintf(stderr, "%s: %s\n", resolvedTitle, resolvedMessage);
@@ -205,7 +205,7 @@ void PlatformDebugOutput(const char *text)
 {
    const char *resolvedText = text ? text : "";
 #if defined(__ANDROID__)
-   __android_log_write(ANDROID_LOG_DEBUG, "OpenDarkEngine", resolvedText);
+   __android_log_write(ANDROID_LOG_DEBUG, "DarkEngineRestored", resolvedText);
 #endif
    std::fputs(resolvedText, stderr);
 }

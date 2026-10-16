@@ -427,12 +427,12 @@ if(DARK_BUILD_ENGINE)
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
           install(TARGETS thief2 RUNTIME DESTINATION bin)
           install(FILES
-            "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/opendarkengine.desktop"
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/dark-engine-restored.desktop"
             DESTINATION share/applications
           )
           foreach(icon_size 16 24 32 48 64 128 256 512)
             install(FILES
-              "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/hicolor/${icon_size}x${icon_size}/apps/opendarkengine.png"
+              "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/hicolor/${icon_size}x${icon_size}/apps/dark-engine-restored.png"
               DESTINATION "share/icons/hicolor/${icon_size}x${icon_size}/apps"
             )
           endforeach()

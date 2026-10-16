@@ -151,7 +151,7 @@ static BOOL MakeUserKey(char *key, size_t size, const char *store)
    int count;
    if (!key || !size || !store || !store[0])
       return FALSE;
-   count = snprintf(key, size, "Software\\OpenDarkEngine\\%s", store);
+   count = snprintf(key, size, "Software\\DarkEngineRestored\\%s", store);
    return count > 0 && (size_t)count < size;
 }
 

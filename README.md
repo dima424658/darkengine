@@ -1,4 +1,4 @@
-# Dark Engine restoration for Windows, Linux, and Android
+# Dark Engine Restored for Windows, Linux, and Android
 
 This repository restores the historical Dark Engine sources as a portable,
 working codebase. It builds a Thief 2 runner on Windows, Linux, and Android,
@@ -344,9 +344,9 @@ The runner identifies TDP, Gold, or Thief II from the installed stock mission
 set. If the initial working directory is not a recognizable installation, it
 prompts for one and uses the selected folder as the working directory for that
 run. The picker starts at the last successfully selected game directory, stored
-under `HKCU\Software\OpenDarkEngine\Launcher`; that value is only a picker hint
-and is never used to choose or launch a game silently. Retail data is read in
-place and is not copied.
+under `HKCU\Software\DarkEngineRestored\Launcher`; that value is only a
+picker hint and is never used to choose or launch a game silently. Retail data
+is read in place and is not copied.
 
 A launch with no arguments opens the shared engine-owned content menu. It lists the
 two original-campaign modes followed by every recognized immediate child of
@@ -394,10 +394,10 @@ assignments (there are no GNU `--` prefixes):
 ```
 
 The detected game, original-content mode, and each FM have separate save
-directories under `%LOCALAPPDATA%\OpenDarkEngine\Profiles`. The content menu
-remembers the last valid selection separately for each installation and has a
-**Change Game Folder** command, so adding another game does not require editing
-the registry or changing a shortcut.
+directories under `%LOCALAPPDATA%\DarkEngineRestored\Profiles`. The content
+menu remembers the last valid selection separately for each installation and
+has a **Change Game Folder** command, so adding another game does not require
+editing the registry or changing a shortcut.
 
 ### DromEd on Windows
 
@@ -511,8 +511,8 @@ retail movie directory contains both formats, the runner uses the H.264 MP4
 through Windows Media Foundation instead of requiring the obsolete Indeo 5
 codec used by the original AVI. If only the AVI exists and DirectShow cannot
 decode it, the Windows runner uses `ffmpeg.exe` to prepare an H.264/AAC copy in
-`%LOCALAPPDATA%\OpenDarkEngine\MovieCache`; it never changes the retail movie.
-The cache key includes the source path, size, and timestamp. Set
+`%LOCALAPPDATA%\DarkEngineRestored\MovieCache`; it never changes the retail
+movie. The cache key includes the source path, size, and timestamp. Set
 `DARK_MOVIE_CACHE` to override the cache directory.
 
 ## Xbox controller support
@@ -573,10 +573,11 @@ only in the Thief2 target.
 On Linux, saves normally remain in the retail installation's `saves`
 directory for compatibility with existing installs. If it cannot be created
 or written, the game falls back to
-`$XDG_DATA_HOME/OpenDarkEngine/Profiles/<game>/<content>/saves` (normally
-`~/.local/share/OpenDarkEngine/...`). With no explicit override, loading checks
-both locations. Set `DARK_SAVE_PATH` or pass `save_path=<directory>` to use one
-specific directory for both saving and loading.
+`$XDG_DATA_HOME/DarkEngineRestored/Profiles/<game>/<content>/saves`
+(normally `~/.local/share/DarkEngineRestored/...`). With no explicit
+override, loading checks both locations. Set `DARK_SAVE_PATH` or pass
+`save_path=<directory>` to use one specific directory for both saving and
+loading.
 
 ## Command console
 

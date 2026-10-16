@@ -43,11 +43,11 @@ cd android
 The debug APK is written below `android/app/build/outputs/apk/debug`.
 
 Install and launch the APK. If the app-specific `game` directory does not
-already contain a recognizable installation, OpenDarkEngine opens Android's
-folder picker. Select the folder that directly contains `cam.cfg` and the
-retail mission files. The app validates the selection, imports it without
-changing the source folder, and then starts the engine. Keep the device awake
-and the app in the foreground while the initial import completes.
+already contain a recognizable installation, Dark Engine Restored opens
+Android's folder picker. Select the folder that directly contains `cam.cfg`
+and the retail mission files. The app validates the selection, imports it
+without changing the source folder, and then starts the engine. Keep the
+device awake and the app in the foreground while the initial import completes.
 
 The importer is necessary because Android's Storage Access Framework exposes
 the selected tree through content URIs rather than a native filesystem path
@@ -63,9 +63,9 @@ For example, after building the APK:
 ```powershell
 $adb = Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe'
 & $adb install -r app\build\outputs\apk\debug\app-debug.apk
-& $adb shell mkdir -p /sdcard/Android/data/org.opendarkengine.thief2/files/game
-& $adb push 'C:\Games\Thief2\.' /sdcard/Android/data/org.opendarkengine.thief2/files/game/
-& $adb shell am start -n org.opendarkengine.thief2/.LauncherActivity
+& $adb shell mkdir -p /sdcard/Android/data/io.github.inkmakerdroid.darkengine/files/game
+& $adb push 'C:\Games\Thief2\.' /sdcard/Android/data/io.github.inkmakerdroid.darkengine/files/game/
+& $adb shell am start -n io.github.inkmakerdroid.darkengine/.LauncherActivity
 ```
 
 Substitute the source path for a legal installation. The app validates the

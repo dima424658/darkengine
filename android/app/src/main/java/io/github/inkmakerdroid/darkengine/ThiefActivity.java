@@ -1,4 +1,4 @@
-package org.opendarkengine.thief2;
+package io.github.inkmakerdroid.darkengine;
 
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -24,13 +24,13 @@ import org.videolan.libvlc.interfaces.IVLCVout;
 
 public final class ThiefActivity extends SDLActivity {
     static final String EXTRA_QUICKSTART =
-        "org.opendarkengine.thief2.extra.QUICKSTART";
+        "io.github.inkmakerdroid.darkengine.extra.QUICKSTART";
     static final String EXTRA_QUICKSTART_POS =
-        "org.opendarkengine.thief2.extra.QUICKSTART_POS";
+        "io.github.inkmakerdroid.darkengine.extra.QUICKSTART_POS";
     static final String EXTRA_QUICKSTART_ANGLES =
-        "org.opendarkengine.thief2.extra.QUICKSTART_ANGLES";
+        "io.github.inkmakerdroid.darkengine.extra.QUICKSTART_ANGLES";
     static final String EXTRA_AUTO_STOP =
-        "org.opendarkengine.thief2.extra.AUTO_STOP";
+        "io.github.inkmakerdroid.darkengine.extra.AUTO_STOP";
 
     static native void nativeSetTouchControllerConnected(boolean connected);
     static native void nativeSetTouchAxis(int axis, float x, float y);

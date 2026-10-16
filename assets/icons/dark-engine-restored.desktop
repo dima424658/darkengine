@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=OpenDarkEngine
-Comment=Portable Dark Engine restoration
+Name=Dark Engine Restored
+Comment=Portable restoration of the Dark Engine
 Exec=Thief2
 TryExec=Thief2
-Icon=opendarkengine
+Icon=dark-engine-restored
 Terminal=false
 Categories=Game;ActionGame;

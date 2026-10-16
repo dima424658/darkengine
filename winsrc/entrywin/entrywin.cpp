@@ -142,7 +142,7 @@ static BOOL PromptForDirectory(char* directory, DWORD size, const char* title)
 }
 
 static const char* const kLauncherRegistryKey =
-    "Software\\OpenDarkEngine\\Launcher";
+    "Software\\DarkEngineRestored\\Launcher";
 static const char* const kLastGameFolderValue = "LastGameFolder";
 
 static BOOL LoadLastGameFolder(char* directory, DWORD size)
