@@ -724,11 +724,41 @@ static void console_format_retinfo(char* message, int size)
    {
       int polygon = PortalRaycastFindPolygon();
       int texture = -1;
+      int flags = -1;
+      int lightWidth = 0;
+      int lightHeight = 0;
+      int lightRow = 0;
+      int lightMin = 31;
+      int lightMax = 0;
+      int lightAverage = 0;
       if (PortalRaycastCell != CELL_INVALID && polygon != POLY_INVALID)
-         texture = WR_CELL(PortalRaycastCell)->render_list[polygon].texture_id;
+      {
+         PortalCell* cell = WR_CELL(PortalRaycastCell);
+         PortalLightMap* lightmap = &cell->light_list[polygon];
+         int lightSamples = 0;
+         int lightTotal = 0;
+         texture = cell->render_list[polygon].texture_id;
+         flags = cell->poly_list[polygon].flags;
+         lightWidth = lightmap->w;
+         lightHeight = lightmap->h;
+         lightRow = lightmap->pixel_row;
+         for (int y = 0; lightmap->data && y < lightHeight; ++y)
+            for (int x = 0; x < lightWidth; ++x)
+            {
+               int sample = lightmap->data[y * lightRow + x] & 0x1f;
+               if (sample < lightMin) lightMin = sample;
+               if (sample > lightMax) lightMax = sample;
+               lightTotal += sample;
+               ++lightSamples;
+            }
+         if (lightSamples)
+            lightAverage = lightTotal / lightSamples;
+      }
       _snprintf(message, size - 1,
-                "Terrain: cell %d, polygon %d, texture %d",
-                PortalRaycastCell, polygon, texture);
+                "Terrain: cell %d, polygon %d, texture %d, flags %d, lightmap %dx%d/%d RGB5 %d-%d avg %d",
+                PortalRaycastCell, polygon, texture, flags,
+                lightWidth, lightHeight, lightRow,
+                lightMin, lightMax, lightAverage);
       message[size - 1] = '\0';
       return;
    }
