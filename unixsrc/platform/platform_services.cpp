@@ -19,6 +19,10 @@
 #include <vector>
 #include <unistd.h>
 
+#if defined(__ANDROID__)
+#include <android/log.h>
+#endif
+
 #if defined(__linux__)
 #include <SDL2/SDL.h>
 #include <malloc.h>
@@ -141,8 +145,13 @@ const char *PlatformGetLanguageCode(void)
 
 void PlatformShowError(const char *title, const char *message)
 {
-   std::fprintf(stderr, "%s: %s\n", title ? title : "Dark Engine",
-                message ? message : "");
+   const char *resolvedTitle = title ? title : "Dark Engine";
+   const char *resolvedMessage = message ? message : "";
+#if defined(__ANDROID__)
+   __android_log_print(ANDROID_LOG_ERROR, "OpenDarkEngine", "%s: %s",
+                       resolvedTitle, resolvedMessage);
+#endif
+   std::fprintf(stderr, "%s: %s\n", resolvedTitle, resolvedMessage);
 }
 
 BOOL PlatformAskYesNo(const char *title, const char *message)
@@ -184,7 +193,7 @@ void PlatformHeapCheck(void)
 
 void PlatformHeapMinimize(void)
 {
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__ANDROID__)
    malloc_trim(0);
 #endif
 }
@@ -192,7 +201,14 @@ void PlatformHeapMinimize(void)
 void *PlatformLoadLibrary(const char *name) { return dlopen(name, RTLD_NOW | RTLD_LOCAL); }
 void *PlatformFindSymbol(void *library, const char *name) { return dlsym(library, name); }
 void PlatformUnloadLibrary(void *library) { if (library) dlclose(library); }
-void PlatformDebugOutput(const char *text) { std::fputs(text ? text : "", stderr); }
+void PlatformDebugOutput(const char *text)
+{
+   const char *resolvedText = text ? text : "";
+#if defined(__ANDROID__)
+   __android_log_write(ANDROID_LOG_DEBUG, "OpenDarkEngine", resolvedText);
+#endif
+   std::fputs(resolvedText, stderr);
+}
 
 ePlatformAssertAction PlatformShowAssert(const char *message)
 {
@@ -348,6 +364,8 @@ std::string ResolveNativePath(const char *path, bool *exists)
       }
 
       std::filesystem::path match;
+      const std::filesystem::path exact = resolved / part;
+      std::error_code exactError;
       // Each directory index preserves all original spellings. An exact
       // component wins; only a unique folded match is accepted as fallback.
       // This avoids a stat for every extension candidate during resource
@@ -355,7 +373,12 @@ std::string ResolveNativePath(const char *path, bool *exists)
       // Two differently cased names can coexist on a POSIX filesystem. Do
       // not choose one arbitrarily: callers will receive their stated path
       // and the normal operation will fail visibly instead.
-      if (FindPathComponent(resolved, part.string(), &match))
+      // Check the exact spelling without enumerating the parent first. Apart
+      // from being cheaper, this is required for Android absolute paths: an
+      // app may traverse /storage to its own directory but may not list /.
+      if (std::filesystem::exists(exact, exactError))
+         resolved = exact;
+      else if (FindPathComponent(resolved, part.string(), &match))
          resolved /= match;
       else
       {

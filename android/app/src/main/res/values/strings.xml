@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">OpenDarkEngine</string>
+    <string name="import_title">Retail game data required</string>
+    <string name="import_description">Choose the Thief installation folder containing cam.cfg. The game files will be imported into OpenDarkEngine\'s app storage; the selected source folder will not be changed.</string>
+    <string name="choose_game_folder">Choose Thief folder</string>
+    <string name="folder_picker_unavailable">This device does not provide an Android folder picker.</string>
+    <string name="no_folder_selected">No folder was selected. Choose the folder containing cam.cfg and the retail mission files.</string>
+    <string name="checking_game_folder">Checking the selected folder…</string>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="import_progress">Importing %1$s\n%2$d files, %3$.1f MB copied</string>
+</resources>

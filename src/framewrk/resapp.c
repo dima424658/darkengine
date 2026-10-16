@@ -9,6 +9,7 @@
 #include <comtools.h>
 
 #include <config.h>
+#include <darklimit.h>
 #include <res.h>
 #include <aggmemb.h>
 #include <appagg.h>
@@ -71,7 +72,12 @@ void InitAppData();
 
 static void ConfigureContextPath(IResMan *pResMan, const char *dataPath)
 {
-   char path[1024];
+   // Configured NewDark/TFix installs can contribute dozens of mod roots.
+   // On Android each one is expanded to an absolute application-data path,
+   // so the resulting list readily exceeds the old 1 KiB scratch buffer.
+   // Keep this consumer at the same limit as the content/config systems;
+   // config_get_raw() does not terminate a truncated value.
+   char path[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS];
    ISearchPath *newContext = IResMan_NewSearchPath(pResMan, "");
 
    // New search paths normally inherit the current global context. This path
@@ -103,7 +109,7 @@ static void ConfigureContextPath(IResMan *pResMan, const char *dataPath)
 
 void LGAPI ResSysRefreshContentPath(void)
 {
-   char dataPath[1024] = "";
+   char dataPath[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS] = "";
    IResMan *pResMan = AppGetObj(IResMan);
    if (!pResMan)
       return;
@@ -115,8 +121,8 @@ void LGAPI ResSysRefreshContentPath(void)
 
 static STDMETHODIMP InitFunc(IUnknown* goof)
 {
-   char path[1024];
-   char dataPath[1024] = "";
+   char path[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS];
+   char dataPath[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS] = "";
    int mem;
    IResMan *pResMan;
 

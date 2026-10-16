@@ -53,6 +53,8 @@ screen*.pcx
 ReleaseGame/
 .codex-build/
 build/
+.gradle/
+local.properties
 
 # External build dependency. Clone Squirrel 3.2 here; do not vendor or
 # register it as a submodule.

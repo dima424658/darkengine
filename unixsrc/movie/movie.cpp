@@ -1,5 +1,9 @@
 #pragma pack(push, 8)
 #include <SDL2/SDL.h>
+#ifdef __ANDROID__
+#include <SDL2/SDL_system.h>
+#include <jni.h>
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -177,7 +181,35 @@ bool WaitForFrame(MovieClock::time_point start, double seconds)
 
 bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
 {
-#ifndef DARK_HAVE_FFMPEG
+#ifdef __ANDROID__
+    JNIEnv *environment = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+    jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+    if (!environment || !activity || !legacyPath)
+        return false;
+
+    jclass activityClass = environment->GetObjectClass(activity);
+    jmethodID playMovie = activityClass ? environment->GetMethodID(
+        activityClass, "playMovieSynchronously", "(Ljava/lang/String;I)Z") :
+        nullptr;
+    jstring path = environment->NewStringUTF(legacyPath);
+    bool played = false;
+    if (playMovie && path)
+    {
+        played = environment->CallBooleanMethod(activity, playMovie, path,
+                                                 volume) == JNI_TRUE;
+        if (environment->ExceptionCheck())
+        {
+            environment->ExceptionClear();
+            played = false;
+        }
+    }
+    if (path)
+        environment->DeleteLocalRef(path);
+    if (activityClass)
+        environment->DeleteLocalRef(activityClass);
+    environment->DeleteLocalRef(activity);
+    return played;
+#elif !defined(DARK_HAVE_FFMPEG)
     (void)legacyPath;
     (void)volume;
     static bool warned = false;

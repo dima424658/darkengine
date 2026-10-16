@@ -596,6 +596,15 @@ tResult LGAPI CoreEngineAppInit()
    if (!config_is_defined("game_hardware"))
       config_set_int("game_hardware", 1);
 
+#ifdef __ANDROID__
+   // Android always owns a fullscreen surface.  Fit therefore means using
+   // that surface's settled pixel dimensions for the gameplay canvas, not
+   // stretching a legacy 4:3 canvas across it.  Menus keep their fixed
+   // logical size and are aspect-fitted by the presentation backend.
+   if (!config_is_defined("game_screen_fit"))
+      config_set_int("game_screen_fit", 1);
+#endif
+
    // The D3D11 scene is 32-bit, while the retained 2D UI/movie canvas is
    // 16-bit. Normalize NewDark configuration values to that canvas format.
    {

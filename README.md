@@ -1,10 +1,10 @@
-# Dark Engine restoration for Windows and Linux
+# Dark Engine restoration for Windows, Linux, and Android
 
 This repository restores the historical Dark Engine sources as a portable,
-working codebase. It builds a Thief 2 runner on Windows and Linux, plus a
-preliminary Windows DromEd mission viewer. The engine core is shared across
-platforms; operating-system, rendering, input, audio, movie, and filesystem
-services are supplied by platform backends.
+working codebase. It builds a Thief 2 runner on Windows, Linux, and Android,
+plus a preliminary Windows DromEd mission viewer. The engine core is shared
+across platforms; operating-system, rendering, input, audio, movie, and
+filesystem services are supplied by platform backends.
 
 The repository does not include retail missions, movies, sounds, scripts, or
 other game assets. A legally obtained installation of *Thief: The Dark
@@ -12,16 +12,16 @@ Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
 
 ## Platform status
 
-| Capability | Windows x86 | Windows x64 | Linux x64 |
-| --- | --- | --- | --- |
-| Thief 2 | Playable | Playable; broader validation ongoing | Playable early port |
-| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Not implemented |
-| Graphics | D3D11 | D3D11 | SDL2/OpenGL |
-| Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft |
-| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg |
-| Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
-| Squirrel scripts | Optional native Squirrel 3.2 provider | Optional native Squirrel 3.2 provider | Not implemented |
-| Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja |
+| Capability | Windows x86 | Windows x64 | Linux x64 | Android ARM64 |
+| --- | --- | --- | --- | --- |
+| Thief 2 | Playable | Playable; broader validation ongoing | Playable early port | Playable early port |
+| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Not implemented | Not implemented |
+| Graphics | D3D11 | D3D11 | SDL2/OpenGL | SDL2/OpenGL ES 3 |
+| Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft | OpenAL Soft/OpenSL |
+| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg | LibVLC |
+| Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
+| Squirrel scripts | Optional native Squirrel 3.2 provider | Optional native Squirrel 3.2 provider | Not implemented | Not implemented |
+| Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja | Gradle, CMake, and Android NDK |
 
 The Windows Release targets build with the Visual Studio 2022 v143 toolset.
 The x86 builds are the established target; native x64 builds compile and run
@@ -39,9 +39,9 @@ validated, and NewDark formats and features are not supported.
 
 Modern scene submission crosses the platform-neutral `h/render_backend.h`
 boundary. Windows supplies D3D11 display and rendering providers under
-`winsrc`; Linux supplies SDL2/OpenGL providers under `unixsrc`. Engine, UI,
-movie, and `lgd3d` code use the shared renderer boundary rather than calling a
-platform graphics API directly.
+`winsrc`; Linux and Android use the SDL2/OpenGL providers under `unixsrc`, with
+OpenGL ES selected for Android. Engine, UI, movie, and `lgd3d` code use the
+shared renderer boundary rather than calling a platform graphics API directly.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
 synchronization, and filesystem operations cross `platform_services.h` and
@@ -67,7 +67,8 @@ cannot initialize, so the standard executable has no OpenAL dependency.
 Movie playback is exposed through the platform-neutral engine movie API. The
 Windows Media Foundation, DirectShow, and legacy DirectDraw implementation is
 isolated under `winsrc/movie`; Linux uses FFmpeg for video/audio decoding and
-the existing SDL/OpenGL presentation surface.
+the existing SDL/OpenGL presentation surface. Android uses LibVLC on a native
+Android surface while retaining the engine's synchronous movie lifecycle.
 
 Legacy PKWARE DCL-compressed resources are decoded in-process with Mark
 Adler's small `blast` decoder under `3rdparty/blast`; newly written resources
@@ -137,6 +138,15 @@ audio, and rendering providers. Current Windows output uses a D3D11 swap chain
 and Windows Media Foundation. No assembler is required by the active x86 or
 x64 build.
 
+### Android
+
+- Android 8.0 (API 26) or later on an ARM64 device
+- JDK 17 or later
+- Android SDK platform and build tools 36
+- CMake 3.31.6 and Android NDK 30.0.16248370 installed through the Android SDK
+- A retail TDP, Thief Gold, or Thief II folder available to the system folder
+  picker or copied to the app-specific external-files directory
+
 ## Build instructions
 
 Squirrel 3.2 is an optional external Windows build dependency. Normal builds
@@ -151,6 +161,39 @@ git clone --branch v3.2 --depth 1 \
 Then add `/p:EnableSquirrel=true` to the MSBuild command. The checkout can live
 elsewhere by also passing `/p:SquirrelSourceDir=C:\path\to\squirrel`. The
 default is `EnableSquirrel=false`.
+
+### Android
+
+The Android/ARM64 target uses the checked-in Gradle wrapper and the same CMake
+engine definition on Windows and Linux. SDL 2.32.10 and OpenAL Soft 1.25.2 are
+downloaded from their official releases during the first build and verified
+against pinned SHA-256 digests.
+
+From PowerShell:
+
+```powershell
+Set-Location android
+.\gradlew.bat assembleDebug
+```
+
+From a Linux shell:
+
+```sh
+cd android
+./gradlew assembleDebug
+```
+
+The APK is written below `android/app/build/outputs/apk/debug`. On first launch,
+select the folder that directly contains `cam.cfg` and the retail mission files.
+The launcher imports the selected tree into app-specific storage; it does not
+modify the source installation or include retail data in the APK. Gameplay has
+native touch sticks and action, inventory, weapon, map, and pause controls.
+Bluetooth, USB, and built-in gamepads use the shared SDL gamepad path. Retail
+movies play through the packaged LibVLC backend; PNG replacement resources are
+not yet enabled on Android.
+
+See [`docs/android.md`](docs/android.md) for installation, direct-mission
+debugging, data-import, controller, and touch-control details.
 
 ### Linux / WSL2
 

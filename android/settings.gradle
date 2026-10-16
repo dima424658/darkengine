@@ -1,0 +1,125 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+import java.security.MessageDigest
+
+def sdlVersion = "2.32.10"
+def sdlArchiveHash = "12b2dc2eb8f2836100a7916b5d394a0c82f1f7e32693f95f98305403af242f08"
+def openalVersion = "1.25.2"
+def openalArchiveHash = "fb27e5839aa11f0e5b9d33756965291fad5d6909ab928ea1f796f4a1a6877894"
+def repositoryRoot = file("..").canonicalFile
+def dependencyRoot = new File(repositoryRoot, ".codex-build/android-deps")
+def sdlRoot = new File(dependencyRoot, "SDL2-${sdlVersion}")
+def archive = new File(dependencyRoot, "SDL2-${sdlVersion}.zip")
+def openalRoot = new File(dependencyRoot, "openal-soft-${openalVersion}")
+def openalArchive = new File(dependencyRoot, "openal-soft-${openalVersion}.tar.gz")
+
+def sha256 = { File file ->
+    def digest = MessageDigest.getInstance("SHA-256")
+    file.withInputStream { input ->
+        byte[] buffer = new byte[1024 * 1024]
+        for (int count = input.read(buffer); count >= 0; count = input.read(buffer)) {
+            if (count > 0) {
+                digest.update(buffer, 0, count)
+            }
+        }
+    }
+    digest.digest().collect { String.format("%02x", it & 0xff) }.join()
+}
+
+if (!new File(sdlRoot, "CMakeLists.txt").isFile()) {
+    dependencyRoot.mkdirs()
+    if (!archive.isFile() || sha256(archive) != sdlArchiveHash) {
+        archive.delete()
+        def temporary = new File(dependencyRoot, archive.name + ".part")
+        temporary.delete()
+        new URL("https://github.com/libsdl-org/SDL/releases/download/release-${sdlVersion}/${archive.name}")
+            .withInputStream { input ->
+                temporary.withOutputStream { output -> output << input }
+            }
+        if (sha256(temporary) != sdlArchiveHash) {
+            temporary.delete()
+            throw new GradleException("SDL ${sdlVersion} download failed its SHA-256 check")
+        }
+        if (!temporary.renameTo(archive)) {
+            throw new GradleException("Could not move the verified SDL archive into place")
+        }
+    }
+    copy {
+        from zipTree(archive)
+        into dependencyRoot
+    }
+}
+
+if (!new File(openalRoot, "CMakeLists.txt").isFile()) {
+    dependencyRoot.mkdirs()
+    if (!openalArchive.isFile() || sha256(openalArchive) != openalArchiveHash) {
+        openalArchive.delete()
+        def temporary = new File(dependencyRoot, openalArchive.name + ".part")
+        temporary.delete()
+        new URL("https://github.com/kcat/openal-soft/archive/refs/tags/${openalVersion}.tar.gz")
+            .withInputStream { input ->
+                temporary.withOutputStream { output -> output << input }
+            }
+        if (sha256(temporary) != openalArchiveHash) {
+            temporary.delete()
+            throw new GradleException(
+                "OpenAL Soft ${openalVersion} download failed its SHA-256 check")
+        }
+        if (!temporary.renameTo(openalArchive)) {
+            throw new GradleException("Could not move the verified OpenAL Soft archive into place")
+        }
+    }
+    copy {
+        from tarTree(resources.gzip(openalArchive))
+        into dependencyRoot
+    }
+}
+
+// SDL 2.32.10 predates Android 13's explicit dynamic-receiver flags. Apply the
+// small compatibility change already present on SDL's SDL2 maintenance branch
+// so the USB HID path remains usable when targeting Android 16.
+def hidManager = new File(sdlRoot,
+    "android-project/app/src/main/java/org/libsdl/app/HIDDeviceManager.java")
+def hidSource = hidManager.getText("UTF-8")
+if (!hidSource.contains("private void registerReceiverCompat")) {
+    def oldRegistration = "mContext.registerReceiver(mUsbBroadcast, filter);"
+    if (!hidSource.contains(oldRegistration)) {
+        throw new GradleException("SDL HID receiver compatibility patch no longer applies")
+    }
+    hidSource = hidSource.replace(oldRegistration,
+        "registerReceiverCompat(mUsbBroadcast, filter);")
+    hidSource = hidSource.replace(
+        "mContext.registerReceiver(mBluetoothBroadcast, filter);",
+        "registerReceiverCompat(mBluetoothBroadcast, filter);")
+    def anchor = "    // Chromebooks do not pass along ACTION_ACL_CONNECTED / ACTION_ACL_DISCONNECTED properly."
+    def helper = """    private void registerReceiverCompat(BroadcastReceiver receiver, IntentFilter filter) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            mContext.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            mContext.registerReceiver(receiver, filter);
+        }
+    }
+
+"""
+    if (!hidSource.contains(anchor)) {
+        throw new GradleException("SDL HID receiver compatibility insertion point is missing")
+    }
+    hidManager.setText(hidSource.replace(anchor, helper + anchor), "UTF-8")
+}
+
+rootProject.name = "OpenDarkEngine"
+include(":app")

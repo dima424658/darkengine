@@ -16,6 +16,10 @@
 #include <movie_backend.h>
 #include <platform_services.h>
 
+#ifdef __ANDROID__
+#include <SDL2/SDL_main.h>
+#endif
+
 #include "../render/runtime.h"
 
 extern "C" int LGAPI _AppMain(int argc, const char *argv[]);
@@ -177,6 +181,20 @@ bool PrepareDarkDataDirectory(const char *requested, bool interactive)
 
 int main(int argc, char *argv[])
 {
+#ifdef __ANDROID__
+    char entryMessage[96];
+    std::snprintf(entryMessage, sizeof(entryMessage),
+                  "[startup] SDL_main begin argc=%d\n", argc);
+    PlatformDebugOutput(entryMessage);
+    for (int i = 0; i < argc; ++i)
+    {
+        std::snprintf(entryMessage, sizeof(entryMessage),
+                      "[startup] argv[%d]=%.64s\n", i,
+                      argv[i] ? argv[i] : "(null)");
+        PlatformDebugOutput(entryMessage);
+    }
+#endif
+
     bool explicitContent = false;
     const char *requestedGamePath = nullptr;
     std::vector<const char *> arguments;
@@ -208,15 +226,41 @@ int main(int argc, char *argv[])
     const int engineArgc = static_cast<int>(arguments.size());
     const bool interactive = engineArgc == 1 && !explicitContent;
     if (!PrepareDarkDataDirectory(requestedGamePath, interactive))
+    {
+#ifdef __ANDROID__
+        PlatformShowError("Dark Engine",
+                          "The Android game data directory could not be prepared.");
+#endif
         return 2;
+    }
+
+#ifdef __ANDROID__
+    PlatformDebugOutput("[startup] game directory prepared\n");
+#endif
+
+    // Any non-interactive launch without an explicit content choice still
+    // needs a deterministic search path.  Previously only the picker path set
+    // this default, so quickstart reached GUI initialization before a retail
+    // font path existed.
+    const char *environmentContentMode = std::getenv("DARK_CONTENT_MODE");
+    if (interactive ||
+        (!explicitContent &&
+         (!environmentContentMode || !environmentContentMode[0])))
+        setenv("DARK_CONTENT_MODE", "vanilla", 1);
 
     if (interactive)
     {
         setenv("DARK_CONTENT_PICKER", "1", 1);
-        setenv("DARK_CONTENT_MODE", "vanilla", 1);
     }
     else
         unsetenv("DARK_CONTENT_PICKER");
 
-    return _AppMain(engineArgc, arguments.data());
+    const int result = _AppMain(engineArgc, arguments.data());
+#ifdef __ANDROID__
+    char resultMessage[96];
+    std::snprintf(resultMessage, sizeof(resultMessage),
+                  "[startup] _AppMain returned %d\n", result);
+    PlatformDebugOutput(resultMessage);
+#endif
+    return result;
 }

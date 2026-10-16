@@ -10,6 +10,7 @@
 #include <aggmemb.h>
 #include <appagg.h>
 #include <appapi.h>
+#include <platform_services.h>
 
 class cUnixApplication : public IApplication
 {
@@ -39,7 +40,7 @@ public:
    }
    void Abort(const char *reason) override
    {
-      std::fprintf(stderr, "%s\n", reason ? reason : "Dark Engine aborted");
+      PlatformShowError(m_caption.c_str(), reason ? reason : "Dark Engine aborted");
       for (auto *sink : m_sinks) sink->OnCriticalError(1);
       std::exit(1);
    }
@@ -51,7 +52,7 @@ public:
    const char *GetPath() override { return m_path.c_str(); }
    int MessageBox(const char *message, const char *caption, int) override
    {
-      std::fprintf(stderr, "%s: %s\n", caption ? caption : m_caption.c_str(), message ? message : "");
+      PlatformShowError(caption ? caption : m_caption.c_str(), message);
       return 0;
    }
    HRESULT Advise(IAppAdviseSink *sink, DWORD *cookie) override

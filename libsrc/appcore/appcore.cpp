@@ -11,7 +11,14 @@
 #include <appagg.h>
 #include <objcguid.h>
 #include <objcoll.h>
+#include <platform_services.h>
 #include <stdlib.h>
+
+#ifdef __ANDROID__
+#define ANDROID_STARTUP_TRACE(message) PlatformDebugOutput("[startup] " message "\n")
+#else
+#define ANDROID_STARTUP_TRACE(message) ((void)0)
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,6 +76,8 @@ extern int _g_referenceEntryPoint;
 extern "C"
 int LGAPI _AppMain(int argc, const char *argv[])
 {
+    ANDROID_STARTUP_TRACE("_AppMain begin");
+
     // Force link of main/WinMain/LibMain
     _g_referenceEntryPoint = 1;
 
@@ -85,27 +94,42 @@ int LGAPI _AppMain(int argc, const char *argv[])
 
     // Create the core aggregate entity
     _AppAggregateCreate(IID_IAggregate);
+    ANDROID_STARTUP_TRACE("application aggregate created");
 
     // Tell the app to create the application-level COM objects
     if (AppCreateObjects(argc, argv) != NOERROR)
+    {
+        ANDROID_STARTUP_TRACE("AppCreateObjects failed");
         return 1;
+    }
+    ANDROID_STARTUP_TRACE("AppCreateObjects complete");
 
     // Clean-up is done through exit()
     atexit(AppOnExit);
 
     // Initialize the components
     if (pAppAggregate)
+    {
+        ANDROID_STARTUP_TRACE("aggregate initialization begin");
         pAppAggregate->Init();
+        ANDROID_STARTUP_TRACE("aggregate initialization complete");
+    }
 
     // Tell the app the components are initialized
     if (AppInit() != NOERROR)
+    {
+        ANDROID_STARTUP_TRACE("AppInit failed");
         return 1;
+    }
+    ANDROID_STARTUP_TRACE("AppInit complete");
 
     // Set flag indicating successful initialization, so should call AppExit()
     g_fCallAppExit = TRUE;
 
     // Start the application
+    ANDROID_STARTUP_TRACE("AppMain begin");
     int mainRetVal = AppMain(argc, argv);
+    ANDROID_STARTUP_TRACE("AppMain returned");
     g_fReturnedFromMain = TRUE;
     return mainRetVal;
 }

@@ -25,7 +25,15 @@ bool OpenALLoad(sOpenALApi *api)
     if (getenv("WSL2_GUI_APPS_ENABLED") && !getenv("ALSOFT_DRIVERS"))
         setenv("ALSOFT_DRIVERS", "pulse", 0);
     if (!g_openal)
-        g_openal = dlopen("libopenal.so.1", RTLD_NOW | RTLD_LOCAL);
+    {
+#if defined(__ANDROID__)
+        // OpenAL Soft is built and packaged with the APK. Android shared
+        // libraries are unversioned, unlike the usual Linux SONAME.
+        g_openal = dlopen("libopenal.so", RTLD_NOW | RTLD_LOCAL);
+#endif
+        if (!g_openal)
+            g_openal = dlopen("libopenal.so.1", RTLD_NOW | RTLD_LOCAL);
+    }
     if (!g_openal)
         return false;
 #define LOAD(name) if (!LoadProc(api->name, #name)) { OpenALUnload(); return false; }

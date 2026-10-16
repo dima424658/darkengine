@@ -36,7 +36,9 @@ STDMETHODIMP_(SIZE_T) cStdAlloc::GetSize(void *memory)
 
 STDMETHODIMP_(void) cStdAlloc::HeapMinimize()
 {
+#if !defined(__ANDROID__)
     malloc_trim(0);
+#endif
 }
 
 #ifndef SHIP

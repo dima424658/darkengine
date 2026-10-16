@@ -410,7 +410,9 @@ static BOOL build_fit_screen_mode(sScrnMode* mode)
    int registered;
 
    if (!config_get_int("game_screen_fit", &fit) || !fit ||
+#ifndef __ANDROID__
        !(selected->flags & kScrnModeWindowed) ||
+#endif
        !RenderBackendGetSettledClientSize(&width, &height) ||
        width < 400 || height < 300 || width > 8191 || height > 8191)
       return FALSE;

@@ -1,20 +1,61 @@
 cmake_minimum_required(VERSION 3.20)
 project(DarkEnginePortability LANGUAGES C CXX)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+set(DARK_SDL_PLATFORM OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
+  set(DARK_SDL_PLATFORM ON)
+endif()
+
+if(DARK_SDL_PLATFORM)
   option(DARK_OPENGL_ES "Use the OpenGL ES 3 renderer instead of desktop OpenGL" OFF)
-  if(DARK_OPENGL_ES)
+  if(ANDROID)
+    set(DARK_OPENGL_ES ON CACHE BOOL
+      "Use the OpenGL ES 3 renderer instead of desktop OpenGL" FORCE)
+    if(NOT DARK_SDL2_SOURCE OR
+       NOT EXISTS "${DARK_SDL2_SOURCE}/CMakeLists.txt")
+      message(FATAL_ERROR
+        "Android requires DARK_SDL2_SOURCE to name an extracted SDL2 source tree")
+    endif()
+    set(SDL_SHARED ON CACHE BOOL "Build the SDL shared library" FORCE)
+    set(SDL_STATIC OFF CACHE BOOL "Do not build a second static SDL library" FORCE)
+    set(SDL_TEST OFF CACHE BOOL "Do not build SDL tests" FORCE)
+    set(SDL_TESTS OFF CACHE BOOL "Do not build SDL tests" FORCE)
+    add_subdirectory("${DARK_SDL2_SOURCE}"
+      "${CMAKE_BINARY_DIR}/third_party/SDL2" EXCLUDE_FROM_ALL)
+
+    if(NOT DARK_OPENAL_SOFT_SOURCE OR
+       NOT EXISTS "${DARK_OPENAL_SOFT_SOURCE}/CMakeLists.txt")
+      message(FATAL_ERROR
+        "Android requires DARK_OPENAL_SOFT_SOURCE to name an extracted OpenAL Soft source tree")
+    endif()
+    set(ALSOFT_UTILS OFF CACHE BOOL "Do not build OpenAL Soft utilities" FORCE)
+    set(ALSOFT_EXAMPLES OFF CACHE BOOL "Do not build OpenAL Soft examples" FORCE)
+    set(ALSOFT_TESTS OFF CACHE BOOL "Do not build OpenAL Soft tests" FORCE)
+    set(ALSOFT_INSTALL OFF CACHE BOOL "Do not create OpenAL Soft install rules" FORCE)
+    set(ALSOFT_DLOPEN OFF CACHE BOOL "Link the Android OpenSL backend directly" FORCE)
+    set(ALSOFT_BACKEND_OBOE OFF CACHE BOOL "Do not require the separate Oboe dependency" FORCE)
+    set(ALSOFT_BACKEND_OPENSL ON CACHE BOOL "Use Android OpenSL for playback" FORCE)
+    set(ALSOFT_REQUIRE_OPENSL ON CACHE BOOL "Require Android OpenSL support" FORCE)
+    set(ALSOFT_BACKEND_WAVE OFF CACHE BOOL "Do not build the file writer backend" FORCE)
+    add_subdirectory("${DARK_OPENAL_SOFT_SOURCE}"
+      "${CMAKE_BINARY_DIR}/third_party/openal-soft" EXCLUDE_FROM_ALL)
+
+    find_library(DARK_GLES3_LIBRARY NAMES GLESv3 REQUIRED)
+    find_library(DARK_ANDROID_LOG_LIBRARY NAMES log REQUIRED)
+  elseif(DARK_OPENGL_ES)
     find_path(DARK_GLES3_INCLUDE_DIR GLES3/gl3.h REQUIRED)
     find_library(DARK_GLES3_LIBRARY NAMES GLESv2 GLESv3 REQUIRED)
   else()
     find_package(OpenGL REQUIRED)
   endif()
-  find_package(PNG REQUIRED)
-  find_package(SDL2 REQUIRED)
-  find_package(PkgConfig QUIET)
-  if(PkgConfig_FOUND)
-    pkg_check_modules(FFMPEG QUIET IMPORTED_TARGET
-      libavformat libavcodec libavutil libswscale libswresample)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PNG REQUIRED)
+    find_package(SDL2 REQUIRED)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+      pkg_check_modules(FFMPEG QUIET IMPORTED_TARGET
+        libavformat libavcodec libavutil libswscale libswresample)
+    endif()
   endif()
 endif()
 
@@ -42,15 +83,18 @@ target_include_directories(dark_platform PUBLIC
 )
 if(NOT WIN32)
   target_link_libraries(dark_platform PUBLIC ${CMAKE_DL_LIBS})
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if(DARK_SDL_PLATFORM)
     target_link_libraries(dark_platform PUBLIC SDL2::SDL2)
+  endif()
+  if(ANDROID)
+    target_link_libraries(dark_platform PUBLIC "${DARK_ANDROID_LOG_LIBRARY}")
   endif()
 endif()
 
 add_library(dark_compression STATIC 3rdparty/blast/blast.c)
 target_include_directories(dark_compression PUBLIC 3rdparty/blast)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(DARK_SDL_PLATFORM)
   set(dark_build_engine_default ON)
 else()
   set(dark_build_engine_default OFF)
@@ -90,6 +134,9 @@ if(DARK_BUILD_ENGINE)
       endforeach()
     endforeach()
     cmake_path(NORMAL_PATH resolved)
+    # Keep manifest paths in CMake's portable slash form so the source filters
+    # behave identically on Windows and Linux hosts.
+    file(TO_CMAKE_PATH "${resolved}" resolved)
     set(${out_var} "${resolved}" PARENT_SCOPE)
   endfunction()
 
@@ -163,8 +210,15 @@ if(DARK_BUILD_ENGINE)
   target_compile_definitions(dark_engine_config INTERFACE
     RGB_LIGHTING BIG_LIGHTMAPS SOFTWARE_RGB SCHEMA_LOADING
     $<$<PLATFORM_ID:Linux>:_DEFAULT_SOURCE>
-    $<$<CONFIG:Debug>:DEBUG;DBG_ON;WARN_ON;SPEW_ON>
   )
+  # A debuggable APK keeps native symbols without enabling the legacy DEBUG
+  # allocator. Do not define SHIP there: some old loop diagnostics are part of
+  # the engine ABI even when their debug instrumentation is disabled.
+  if(NOT ANDROID)
+    target_compile_definitions(dark_engine_config INTERFACE
+      $<$<CONFIG:Debug>:DEBUG;DBG_ON;WARN_ON;SPEW_ON>
+    )
+  endif()
   if(MSVC)
     target_compile_options(dark_engine_config INTERFACE /FItypes.h)
   else()
@@ -217,6 +271,9 @@ if(DARK_BUILD_ENGINE)
     if(library STREQUAL "gfile")
       list(FILTER library_sources EXCLUDE REGEX "/gftest\\.c$")
     endif()
+    if(library STREQUAL "namedres" AND ANDROID)
+      list(FILTER library_sources EXCLUDE REGEX "/png\\.cpp$")
+    endif()
     if(library_sources)
       add_library("dark_${library}" STATIC ${library_sources})
       list(APPEND dark_engine_targets "dark_${library}")
@@ -239,10 +296,17 @@ if(DARK_BUILD_ENGINE)
   target_link_libraries(dark_namedres PUBLIC dark_compression)
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(dark_namedres PUBLIC PNG::PNG)
+  elseif(ANDROID)
+    # Retail resources do not require PNG. Keep the first Android bring-up
+    # independent of a second native codec package; replacement PNG support
+    # will be enabled once its Android dependency is bundled.
+    target_sources(dark_namedres PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}/androidsrc/namedres/png_stub.cpp"
+    )
   endif()
   target_link_libraries(dark_res PUBLIC dark_compression)
 
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if(DARK_SDL_PLATFORM)
     add_library(dark_unix_providers STATIC
       unixsrc/appcore/appcore.cpp
       unixsrc/dispdev/display.cpp
@@ -268,26 +332,37 @@ if(DARK_BUILD_ENGINE)
       target_compile_definitions(dark_unix_providers PRIVATE DARK_HAVE_FFMPEG=1)
       target_link_libraries(dark_unix_providers PUBLIC PkgConfig::FFMPEG)
     else()
-      message(WARNING "FFmpeg development libraries were not found; Linux movie playback will be disabled")
+      message(WARNING "FFmpeg development libraries were not found; movie playback will be disabled")
     endif()
     if(DARK_OPENGL_ES)
       target_compile_definitions(dark_unix_providers PRIVATE DARK_OPENGL_ES=1)
-      target_include_directories(dark_unix_providers PRIVATE "${DARK_GLES3_INCLUDE_DIR}")
+      if(DARK_GLES3_INCLUDE_DIR)
+        target_include_directories(dark_unix_providers PRIVATE "${DARK_GLES3_INCLUDE_DIR}")
+      endif()
       target_link_libraries(dark_unix_providers PUBLIC "${DARK_GLES3_LIBRARY}")
     else()
       target_link_libraries(dark_unix_providers PUBLIC OpenGL::GL)
     endif()
 
-    option(DARK_BUILD_THIEF2 "Compile the native Linux Thief 2 game sources" ON)
+    option(DARK_BUILD_THIEF2 "Compile the native SDL Thief 2 game sources" ON)
     if(DARK_BUILD_THIEF2)
       dark_sources_from_vcxproj(dark_game_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/src/dromed.vcxproj")
 
       # The Visual Studio project contains both DromEd and Thief2. Match its
       # BuildThief2 selection without maintaining a second source manifest.
-      list(FILTER dark_game_sources EXCLUDE REGEX "/src/(editor|csg)/")
-      list(FILTER dark_game_sources EXCLUDE REGEX "/src/framewrk/(initedit|report)\.cpp$")
-      list(FILTER dark_game_sources EXCLUDE REGEX "/src/sound/songedtr\.cpp$")
+      set(dark_thief2_sources)
+      foreach(source IN LISTS dark_game_sources)
+        file(RELATIVE_PATH source_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${source}")
+        file(TO_CMAKE_PATH "${source_rel}" source_rel)
+        if(source_rel MATCHES "^src/(editor|csg)/" OR
+           source_rel MATCHES "^src/framewrk/(initedit|report)[.]cpp$" OR
+           source_rel MATCHES "^src/sound/songedtr[.]cpp$")
+          continue()
+        endif()
+        list(APPEND dark_thief2_sources "${source}")
+      endforeach()
+      set(dark_game_sources ${dark_thief2_sources})
       list(APPEND dark_game_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/src/editor/isdesced.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/editor/prompts.c"
@@ -312,16 +387,30 @@ if(DARK_BUILD_ENGINE)
       add_library(dark_game_core OBJECT ${dark_game_sources})
       target_link_libraries(dark_game_core PRIVATE dark_engine_packed)
       target_compile_definitions(dark_game_core PRIVATE
-        PLAYTEST NEW_NETWORK_ENABLED THIEF THIEF2_GAME PROPERTY_BLAME STRICT=1
+        PLAYTEST NEW_NETWORK_ENABLED THIEF THIEF2_GAME STRICT=1
       )
+      if(NOT ANDROID)
+        target_compile_definitions(dark_game_core PRIVATE
+          PROPERTY_BLAME
+        )
+      endif()
       target_include_directories(dark_game_core BEFORE PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
       )
 
-      add_executable(thief2
-        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
-        $<TARGET_OBJECTS:dark_game_core>
-      )
+      if(ANDROID)
+        # SDLActivity loads libSDL2.so followed by libmain.so and resolves the
+        # SDL_main entry point from this shared library.
+        add_library(thief2 SHARED
+          "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
+          $<TARGET_OBJECTS:dark_game_core>
+        )
+      else()
+        add_executable(thief2
+          "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
+          $<TARGET_OBJECTS:dark_game_core>
+        )
+      endif()
       target_link_libraries(thief2 PRIVATE
         dark_engine_config
         -Wl,--start-group
@@ -331,9 +420,27 @@ if(DARK_BUILD_ENGINE)
         dark_unix_providers
         -Wl,--end-group
         m
-        pthread
       )
-      set_target_properties(thief2 PROPERTIES OUTPUT_NAME Thief2)
+      if(NOT ANDROID)
+        target_link_libraries(thief2 PRIVATE pthread)
+        set_target_properties(thief2 PROPERTIES OUTPUT_NAME Thief2)
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+          install(TARGETS thief2 RUNTIME DESTINATION bin)
+          install(FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/opendarkengine.desktop"
+            DESTINATION share/applications
+          )
+          foreach(icon_size 16 24 32 48 64 128 256 512)
+            install(FILES
+              "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/hicolor/${icon_size}x${icon_size}/apps/opendarkengine.png"
+              DESTINATION "share/icons/hicolor/${icon_size}x${icon_size}/apps"
+            )
+          endforeach()
+        endif()
+      else()
+        set_target_properties(thief2 PROPERTIES OUTPUT_NAME main)
+        add_dependencies(thief2 OpenAL)
+      endif()
     endif()
   endif()
 endif()

@@ -107,6 +107,7 @@ STDMETHODIMP_(eSndError) cALSndMixer::Init(sSndSetup *, uint32 channels,
       mprintf("OpenAL: unable to create a playback context; audio is disabled\n");
       return kSndCantSetupDevice;
    }
+   mprintf("OpenAL: playback context initialized\n");
 
    mNumMixerChans = static_cast<int32>(channels);
    mNumFreeMixerChans = static_cast<int32>(channels);
