@@ -16,7 +16,9 @@
 // Does this wrap and stuff right?
 mxs_ang mxd_rad2ang(double rad)
 {
-   return (mxs_ang)(rad*MX_ANG_PI/MX_REAL_PI);
+   // Preserve negative angles by converting through a signed integer before
+   // wrapping them into Dark's unsigned 16-bit angle representation.
+   return (mxs_ang)(int)(rad*MX_ANG_PI/MX_REAL_PI);
 }
 
 // Always returns positive rads
@@ -28,7 +30,7 @@ double mxd_ang2rad(mxs_ang ang)
 // convert to and from degs
 mxs_ang mxd_deg2ang(double deg)
 {
-   return (mxs_ang)(deg*MX_ANG_PI/180.0);
+   return (mxs_ang)(int)(deg*MX_ANG_PI/180.0);
 }
 
 double mxd_ang2deg(double ang)

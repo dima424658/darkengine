@@ -15,7 +15,7 @@ typedef struct {
 } fix_ulong;
 
 /* returns -1 if there's a carry. */
-__inline long ulong_add_get_carry(ulong *a, ulong b)
+static __inline long ulong_add_get_carry(ulong *a, ulong b)
 {
    ulong old = *a;
    *a += b;

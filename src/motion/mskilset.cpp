@@ -100,7 +100,7 @@ cMotionPlan *cMSkillSet::BuildPlanFromParams(const sMcMoveParams *pParams,\
       if(doSpew)
       {
          spewString.Append(8,"no match");
-         mprintf("tag request {%s\n",spewString);
+         mprintf("tag request {%s\n", static_cast<const char *>(spewString));
       }
       return NULL;
    }
@@ -114,7 +114,7 @@ cMotionPlan *cMSkillSet::BuildPlanFromParams(const sMcMoveParams *pParams,\
       sprintf(buf,"match %d : %d mots",pSchema->GetSchemaID(),pSchema->NumMotions());
       buf[31]='\0';
       spewString.Append((int)strlen(buf), buf);
-      mprintf("tag request {%s\n",spewString);
+      mprintf("tag request {%s\n", static_cast<const char *>(spewString));
    }
 
    int id;

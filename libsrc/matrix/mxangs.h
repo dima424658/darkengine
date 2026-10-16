@@ -31,14 +31,14 @@ struct sMxAng
    inline sMxAng &Set(mxs_ang _a) {a = _a; return *this;}
 
    inline sMxAng &SetRad(float rad) 
-    {a = (mxs_ang)(rad*(MX_ANG_PI/MX_REAL_PI)); return *this;}
+    {a = (mxs_ang)(int)(rad*(MX_ANG_PI/MX_REAL_PI)); return *this;}
    inline sMxAng &SetRad(double rad) 
-    {a = (mxs_ang)(rad*(MX_ANG_PI/MX_REAL_PI)); return *this;}
+    {a = (mxs_ang)(int)(rad*(MX_ANG_PI/MX_REAL_PI)); return *this;}
 
    inline sMxAng &SetDeg(float rad) 
-    {a = (mxs_ang)(rad*(MX_ANG_PI/180.0f)); return *this;}
+    {a = (mxs_ang)(int)(rad*(MX_ANG_PI/180.0f)); return *this;}
    inline sMxAng &SetDeg(double rad) 
-    {a = (mxs_ang)(rad*(MX_ANG_PI/180.0)); return *this;}
+    {a = (mxs_ang)(int)(rad*(MX_ANG_PI/180.0)); return *this;}
    
    // Gets radians and degrees
     const inline float Rad() {return (float)a * ((float)MX_REAL_PI/MX_ANG_PI);}

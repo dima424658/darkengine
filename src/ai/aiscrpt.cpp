@@ -337,7 +337,8 @@ public:
    STDMETHOD_(void, Signal)(ObjID objIdAI, const string& signalName)
    {
       // This will go to doSignal() on the AI's host machine:
-      g_pAISignalMsg->Send(OBJ_NULL, objIdAI, signalName);
+      g_pAISignalMsg->Send(OBJ_NULL, objIdAI,
+                           static_cast<const char *>(signalName));
    }
 
    STDMETHOD_(boolean, StartConversation)(ObjID conversationID)

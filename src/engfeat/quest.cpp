@@ -576,7 +576,7 @@ STDMETHODIMP cQuestData::ObjSpewListen(ObjID objID)
       for (; !iter.Done(); iter.Next())
       {
          cQuestDataNode* pQuestNode = iter.Value(); 
-         mprintf("%s ", pQuestNode->m_pName);
+         mprintf("%s ", static_cast<const char *>(pQuestNode->m_pName));
       }
    }
    return S_OK;

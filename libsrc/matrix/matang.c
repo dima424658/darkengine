@@ -16,7 +16,10 @@
 // Does this wrap and stuff right?
 mxs_ang mx_rad2ang(mxs_real rad)
 {
-   return (mxs_ang)(rad*MX_ANG_PI/MX_REAL_PI);
+   // A negative floating-point value cannot be converted directly to the
+   // unsigned mxs_ang type portably.  Convert through a signed integer so
+   // the final cast performs the intended 16-bit angle wrap.
+   return (mxs_ang)(int)(rad*MX_ANG_PI/MX_REAL_PI);
 }
 
 // Always returns positive rads
@@ -28,7 +31,7 @@ mxs_real mx_ang2rad(mxs_ang ang)
 // convert to and from degs
 mxs_ang mx_deg2ang(mxs_real deg)
 {
-   return (mxs_ang)(deg*MX_ANG_PI/180.0f);
+   return (mxs_ang)(int)(deg*MX_ANG_PI/180.0f);
 }
 
 mxs_real mx_ang2deg(mxs_real ang)

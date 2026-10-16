@@ -217,7 +217,7 @@ extern fix fix_div_safe (fix a, fix b);
 
 /* Multiply two fixed-point numbers and divide by a third.
     Maintains the 64-bit intermediate result. */
-__inline fix fix_mul_div_fast (fix m0, fix m1, fix d)
+static __inline fix fix_mul_div_fast (fix m0, fix m1, fix d)
 {
    return (fix)(((int64_t)m0 * (int64_t)m1) / d);
 }

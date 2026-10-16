@@ -237,8 +237,11 @@ struct sNetMsgDesc {
    // If pClientData was passed in when the message was created, then that
    // will be sent as the final parameter.
    tMsgHandlerFunc msgHandler;
-   // An array of parameters, ending with kNMPT_End
-   sNetMsgParam params[];
+   // An array of parameters, ending with kNMPT_End. Dispatch supports at
+   // most eight arguments; keeping one extra slot for the terminator avoids
+   // the non-standard initialized flexible array previously accepted by MSVC
+   // and GCC but rejected by Android Clang.
+   sNetMsgParam params[9];
 };
 #if defined(_MSC_VER)
 #pragma warning(pop)

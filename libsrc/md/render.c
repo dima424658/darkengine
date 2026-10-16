@@ -1093,10 +1093,21 @@ mdf_light_obj_cback md_set_light_obj_callback(mdf_light_obj_cback l)
 void md_norm2light(ulong *l,mxs_vector *n)
 {
    uint x,y,z;
+   int sx,sy,sz;
 
-   x = (((uint)(16384*n->x) & 0xFFC0) << 16);
-   y = (((uint)(16384*n->y) & 0xFFC0) << 6);
-   z = (((uint)(16384*n->z) & 0xFFC0) >> 4);
+   // A direct negative-float-to-unsigned conversion is undefined when the
+   // value is outside the unsigned range.  MSVC/x86 happened to preserve the
+   // two's-complement bits expected by this packed normal format, while
+   // Clang/ARM64 commonly produced zero.  Scaled models consequently lost
+   // every negative lighting-normal component and rendered at ambient only.
+   // Convert through the signed domain first, then deliberately retain the
+   // packed low bits.
+   sx = (int)(16384.0f*n->x);
+   sy = (int)(16384.0f*n->y);
+   sz = (int)(16384.0f*n->z);
+   x = (((uint)sx & 0xFFC0) << 16);
+   y = (((uint)sy & 0xFFC0) << 6);
+   z = (((uint)sz & 0xFFC0) >> 4);
 
    *l = x | y | z;
 }

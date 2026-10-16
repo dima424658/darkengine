@@ -82,7 +82,9 @@ typedef struct ModelHandle
 // replace_idx in the MH points into this, and it is inited to -1 on startup
 #define MAX_REPL_MODELS  (255)
 #define REPL_LIST_UNUSED (-1)
-static char g_aReplaceList[MAX_REPL_MODELS][MAX_REPL_TXT];
+// AArch64 uses unsigned plain char. Keep the -1 unused sentinel explicit so
+// the first replacement texture does not make every entry appear occupied.
+static signed char g_aReplaceList[MAX_REPL_MODELS][MAX_REPL_TXT];
 static ModelHandle g_aModelHandles[MAX_OBJMODELS];
 
 #ifndef SHIP         
@@ -141,7 +143,7 @@ static void FreeDummyObjTmap(void)
 // lets do some managing of the ReplaceList
 static void init_replace_list(void)
 {
-   memset(g_aReplaceList,REPL_LIST_UNUSED,MAX_REPL_MODELS*MAX_REPL_TXT);
+   memset(g_aReplaceList, REPL_LIST_UNUSED, sizeof(g_aReplaceList));
 }
 
 // find a free replace idx 

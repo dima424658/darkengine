@@ -151,7 +151,7 @@ void RndSeed(RndStream *prs, ulong seed)
 //
 //	Returns: next random value scaled into range low->high, inclusive
 
-__inline ulong high_umpy(ulong a, ulong b)
+static __inline ulong high_umpy(ulong a, ulong b)
 {
    return (ulong)(((uint64_t)a * (uint64_t)b) >> 32);
 }
