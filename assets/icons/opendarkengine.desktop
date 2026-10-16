@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=OpenDarkEngine
+Comment=Portable Dark Engine restoration
+Exec=Thief2
+TryExec=Thief2
+Icon=opendarkengine
+Terminal=false
+Categories=Game;ActionGame;

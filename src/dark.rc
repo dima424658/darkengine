@@ -1,0 +1,3 @@
+#define IDI_APPICON 10001
+
+IDI_APPICON ICON "..\\assets\\icons\\windows\\opendarkengine.ico"

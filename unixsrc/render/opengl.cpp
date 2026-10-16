@@ -9,6 +9,7 @@
 #endif
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdarg>
 #include <cstdio>
@@ -21,6 +22,7 @@
 #include <mouse.h>
 #include <render_backend.h>
 
+#include "app_icon_data.h"
 #include "runtime.h"
 
 extern "C" void DarkInputKey(uchar scan, int down);
@@ -63,7 +65,27 @@ bool g_samplerWrap[2];
 bool g_samplerSmooth[2] = {true, true};
 GLuint g_sceneProgram, g_sceneBuffer, g_sceneVertexArray;
 GLint g_viewportUniform, g_useTexture1Uniform, g_fogEnabledUniform;
-GLint g_fogColorUniform, g_alphaTestUniform;
+GLint g_fogColorUniform, g_alphaTestUniform, g_transparentBlackUniform;
+
+void set_window_icon()
+{
+   std::array<Uint8, dark_app_icon::kWidth * dark_app_icon::kHeight * 4> pixels;
+   for (size_t i = 0; i < dark_app_icon::kWidth * dark_app_icon::kHeight; ++i) {
+      const Uint8 *color = dark_app_icon::kPalette[dark_app_icon::kPixels[i]];
+      pixels[i * 4] = color[0];
+      pixels[i * 4 + 1] = color[1];
+      pixels[i * 4 + 2] = color[2];
+      pixels[i * 4 + 3] = color[3];
+   }
+
+   SDL_Surface *icon = SDL_CreateRGBSurfaceWithFormatFrom(pixels.data(),
+      dark_app_icon::kWidth, dark_app_icon::kHeight, 32,
+      dark_app_icon::kWidth * 4, SDL_PIXELFORMAT_RGBA32);
+   if (icon) {
+      SDL_SetWindowIcon(g_window, icon);
+      SDL_FreeSurface(icon);
+   }
+}
 
 #ifdef DARK_OPENGL_ES
 const char kShaderPreamble[] =
@@ -554,6 +576,7 @@ bool DarkRenderOpen(int width, int height, const char *title)
    g_window = SDL_CreateWindow(title ? title : "Dark Engine",
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+   if (g_window) set_window_icon();
    if (g_window) g_context = SDL_GL_CreateContext(g_window);
    if (!g_window || !g_context) { DarkRenderClose(); return false; }
    SDL_GL_MakeCurrent(g_window, g_context);
