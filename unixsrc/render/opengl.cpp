@@ -29,6 +29,9 @@ extern "C" void DarkInputKey(uchar scan, int down);
 extern "C" void DarkInputMouse(short x, short y, uchar type, uchar buttons, char wheel);
 extern "C" void DarkInputMouseRelative(int x, int y, uchar buttons);
 
+static void present_legacy_frame(const void *pixels, int width, int height,
+   int rowBytes, int depth, const uint8_t *palette);
+
 namespace {
 struct Texture {
    GLuint name{};
@@ -47,6 +50,7 @@ uint32_t g_fogColor;
 void *g_textures[2];
 GLuint g_overlayTexture;
 int g_overlayWidth, g_overlayHeight;
+int g_overlayStorage;
 std::vector<uint32_t> g_overlay;
 FILE *g_trace;
 uchar g_buttons;
@@ -61,6 +65,9 @@ bool g_swapIntervalApplied;
 unsigned g_unsupportedSwapIntervals;
 unsigned g_applicationFrameDepth;
 bool g_presentPending;
+const void *g_deferredPixels;
+const uint8_t *g_deferredPalette;
+int g_deferredWidth, g_deferredHeight, g_deferredRowBytes, g_deferredDepth;
 bool g_samplerWrap[2];
 bool g_samplerSmooth[2] = {true, true};
 GLuint g_sceneProgram, g_sceneBuffer, g_sceneVertexArray;
@@ -128,10 +135,13 @@ const char kSceneFragmentShader[] =
    "uniform float fogEnabled;\n"
    "uniform vec3 fogColor;\n"
    "uniform float alphaTest;\n"
+   "uniform float transparentBlack;\n"
    "out vec4 fragmentColor;\n"
    "void main(){\n"
    " float weight=max(linearWeight,0.000001);\n"
-   " vec4 color=(linearColor/weight)*texture(texture0,uv0);\n"
+   " vec4 texel=texture(texture0,uv0);\n"
+   " if(transparentBlack>0.5&&all(equal(texel.rgb,vec3(0.0))))texel.a=0.0;\n"
+   " vec4 color=(linearColor/weight)*texel;\n"
    " if(useTexture1>0.5)color*=texture(texture1,uv1);\n"
    " if(alphaTest>0.5&&color.a<0.5)discard;\n"
    " if(fogEnabled>0.5)color.rgb=mix(fogColor,color.rgb,"
@@ -197,6 +207,8 @@ bool create_scene_pipeline()
    g_fogEnabledUniform = glGetUniformLocation(g_sceneProgram, "fogEnabled");
    g_fogColorUniform = glGetUniformLocation(g_sceneProgram, "fogColor");
    g_alphaTestUniform = glGetUniformLocation(g_sceneProgram, "alphaTest");
+   g_transparentBlackUniform = glGetUniformLocation(g_sceneProgram,
+      "transparentBlack");
 
    glGenVertexArrays(1, &g_sceneVertexArray);
    glBindVertexArray(g_sceneVertexArray);
@@ -456,7 +468,7 @@ const void *tight_texture_pixels(int width, int height, const void *pixels,
 
 bool draw_vertices(GLenum primitive, const sRenderBackendVertex *vertices,
    int count, bool second, int width, int height, bool fog, uint32_t fogColor,
-   bool alphaTest)
+   bool alphaTest, bool transparentBlack = false)
 {
    if (!g_sceneProgram || !vertices || count <= 0 || width <= 0 || height <= 0)
       return false;
@@ -468,6 +480,7 @@ bool draw_vertices(GLenum primitive, const sRenderBackendVertex *vertices,
    glUniform3f(g_fogColorUniform, ((fogColor >> 16) & 255) / 255.0f,
       ((fogColor >> 8) & 255) / 255.0f, (fogColor & 255) / 255.0f);
    glUniform1f(g_alphaTestUniform, alphaTest ? 1.0f : 0.0f);
+   glUniform1f(g_transparentBlackUniform, transparentBlack ? 1.0f : 0.0f);
    glBindVertexArray(g_sceneVertexArray);
    glBindBuffer(GL_ARRAY_BUFFER, g_sceneBuffer);
    glBufferData(GL_ARRAY_BUFFER,
@@ -525,6 +538,10 @@ bool capture_frame(const char *path)
 bool DarkRenderOpen(int width, int height, const char *title)
 {
    if (g_context) {
+      // A logical mode change can replace the display device and its backing
+      // pixel vector during an application frame. Do not retain a pointer to
+      // the preceding mode's canvas.
+      g_deferredPixels = nullptr;
       g_width = width; g_height = height;
       DarkRenderSetTitle(title);
       SDL_GetWindowSize(g_window, &g_clientWidth, &g_clientHeight);
@@ -616,7 +633,7 @@ void DarkRenderClose(void)
    }
    g_window = nullptr; g_context = nullptr; g_overlayTexture = 0;
    g_invisibleCursor = nullptr;
-   g_overlayWidth = g_overlayHeight = 0;
+   g_overlayWidth = g_overlayHeight = g_overlayStorage = 0;
    g_relativeActive = false;
    g_wslPointerWorkaround = false;
    g_pointerWarpWarningPrinted = false;
@@ -625,6 +642,7 @@ void DarkRenderClose(void)
    g_unsupportedSwapIntervals = 0;
    g_applicationFrameDepth = 0;
    g_presentPending = false;
+   g_deferredPixels = nullptr;
    SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
    if (g_trace) { fclose(g_trace); g_trace = nullptr; }
 }
@@ -789,6 +807,16 @@ void DarkRenderEndApplicationFrame(void)
 {
    if (g_applicationFrameDepth > 0)
       --g_applicationFrameDepth;
+   if (g_applicationFrameDepth == 0 && g_deferredPixels) {
+      const void *pixels = g_deferredPixels;
+      const uint8_t *palette = g_deferredPalette;
+      const int width = g_deferredWidth;
+      const int height = g_deferredHeight;
+      const int rowBytes = g_deferredRowBytes;
+      const int depth = g_deferredDepth;
+      g_deferredPixels = nullptr;
+      present_legacy_frame(pixels, width, height, rowBytes, depth, palette);
+   }
    if (g_applicationFrameDepth == 0)
       swap_presented_frame();
 }
@@ -811,18 +839,10 @@ void DarkRenderSetRelativeMouse(bool enabled)
    update_relative_mouse();
 }
 
-void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, int depth, const uint8_t *palette)
+static void present_legacy_frame(const void *pixels, int width, int height,
+   int rowBytes, int depth, const uint8_t *palette)
 {
    if (!g_context || !pixels) return; SDL_GL_MakeCurrent(g_window, g_context);
-   g_overlay.resize(static_cast<size_t>(width) * height);
-   for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
-      uint8_t r, g, b; uint32_t raw;
-      if (depth == 8) { raw = static_cast<const uint8_t *>(pixels)[y * rowBytes + x]; r = palette[raw*3]; g = palette[raw*3+1]; b = palette[raw*3+2]; }
-      else { raw = reinterpret_cast<const uint16_t *>(static_cast<const uint8_t *>(pixels) + y * rowBytes)[x];
-         if (depth == 15) { r = ((raw >> 10) & 31) * 255 / 31; g = ((raw >> 5) & 31) * 255 / 31; b = (raw & 31) * 255 / 31; }
-         else { r = ((raw >> 11) & 31) * 255 / 31; g = ((raw >> 5) & 63) * 255 / 63; b = (raw & 31) * 255 / 31; } }
-      uint8_t a = g_scene && raw == 0 ? 0 : 255; g_overlay[static_cast<size_t>(y)*width+x] = r | (g<<8) | (b<<16) | (a<<24);
-   }
    int vx, vy, vw, vh; viewport(vx, vy, vw, vh);
    if (!g_scene) {
       // Logical mode changes may alter the aspect-fitted viewport. Clear the
@@ -838,13 +858,44 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, 
    glActiveTexture(GL_TEXTURE0);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   if (width != g_overlayWidth || height != g_overlayHeight) {
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
-         GL_RGBA, GL_UNSIGNED_BYTE, g_overlay.data());
-      g_overlayWidth = width; g_overlayHeight = height;
+   if (depth == 16) {
+      // The legacy canvas is already tightly packed RGB565. Upload it in its
+      // native format and let the fragment shader apply Dark's index-zero
+      // gameplay transparency key. Expanding a native-resolution Android
+      // canvas to RGBA on the CPU consumed most of an entire core.
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, rowBytes / 2);
+      if (width != g_overlayWidth || height != g_overlayHeight ||
+          g_overlayStorage != 16) {
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB565, width, height, 0,
+            GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+         g_overlayWidth = width; g_overlayHeight = height;
+         g_overlayStorage = 16;
+      } else {
+         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
+            GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+      }
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    } else {
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
-         GL_RGBA, GL_UNSIGNED_BYTE, g_overlay.data());
+      g_overlay.resize(static_cast<size_t>(width) * height);
+      for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+         uint8_t r, g, b; uint32_t raw;
+         if (depth == 8) { raw = static_cast<const uint8_t *>(pixels)[y * rowBytes + x]; r = palette[raw*3]; g = palette[raw*3+1]; b = palette[raw*3+2]; }
+         else { raw = reinterpret_cast<const uint16_t *>(static_cast<const uint8_t *>(pixels) + y * rowBytes)[x];
+            r = ((raw >> 10) & 31) * 255 / 31; g = ((raw >> 5) & 31) * 255 / 31; b = (raw & 31) * 255 / 31; }
+         uint8_t a = g_scene && raw == 0 ? 0 : 255; g_overlay[static_cast<size_t>(y)*width+x] = r | (g<<8) | (b<<16) | (a<<24);
+      }
+      if (width != g_overlayWidth || height != g_overlayHeight ||
+          g_overlayStorage != 32) {
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, g_overlay.data());
+         g_overlayWidth = width; g_overlayHeight = height;
+         g_overlayStorage = 32;
+      } else {
+         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
+            GL_RGBA, GL_UNSIGNED_BYTE, g_overlay.data());
+      }
    }
    glDisable(GL_DEPTH_TEST); glDepthMask(GL_FALSE);
    glEnable(GL_BLEND);
@@ -859,7 +910,7 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, 
       {w, h, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
       {0, h, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0}};
    draw_vertices(GL_TRIANGLES, quad, 6, false, width, height, false, 0,
-      false);
+      false, g_scene && depth == 16);
    if (g_scene && g_presentedGeneration != g_sceneGeneration) {
       g_presentedGeneration = g_sceneGeneration; ++g_hardwareFrameCount;
       const char *path = getenv("DARK_RENDER_CAPTURE");
@@ -869,8 +920,25 @@ void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes, 
          g_captureComplete = capture_frame(path);
    }
    g_presentPending = true;
-   if (g_applicationFrameDepth == 0)
-      swap_presented_frame();
+}
+
+void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes,
+                       int depth, const uint8_t *palette)
+{
+   if (g_applicationFrameDepth > 0) {
+      // Cursor save-under and the end-of-frame page flip can both flush the
+      // same stable display canvas. Retain only its final state; uploading
+      // every intermediate request doubled native-resolution Android work.
+      g_deferredPixels = pixels;
+      g_deferredPalette = palette;
+      g_deferredWidth = width;
+      g_deferredHeight = height;
+      g_deferredRowBytes = rowBytes;
+      g_deferredDepth = depth;
+      return;
+   }
+   present_legacy_frame(pixels, width, height, rowBytes, depth, palette);
+   swap_presented_frame();
 }
 
 bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
@@ -918,11 +986,13 @@ bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
                 (size_t)width * 4);
       pixels = g_overlay.data();
    }
-   if (width != g_overlayWidth || height != g_overlayHeight) {
+   if (width != g_overlayWidth || height != g_overlayHeight ||
+       g_overlayStorage != 32) {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
                    GL_RGBA, GL_UNSIGNED_BYTE, pixels);
       g_overlayWidth = width;
       g_overlayHeight = height;
+      g_overlayStorage = 32;
    } else {
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
                       GL_RGBA, GL_UNSIGNED_BYTE, pixels);
@@ -942,7 +1012,7 @@ bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
       {0, h, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0}
    };
    draw_vertices(GL_TRIANGLES, quad, 6, false, width, height, false, 0,
-                 false);
+      false);
    SDL_GL_SwapWindow(g_window);
    return true;
 }

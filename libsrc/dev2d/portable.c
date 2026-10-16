@@ -19,6 +19,16 @@ static unsigned short rsd_u16(const uchar *p)
 void flat16_memset(ushort c16, ushort *dst, int count)
 {
    int i;
+
+   if (count <= 0)
+      return;
+   // Full-frame hardware-overlay clears overwhelmingly use color zero. Let
+   // the platform's optimized libc handle that multi-megabyte path instead
+   // of issuing one unoptimized 16-bit store at a time in debug APKs.
+   if (c16 == 0) {
+      memset(dst, 0, (size_t)count * sizeof(*dst));
+      return;
+   }
    for (i = 0; i < count; ++i)
       dst[i] = c16;
 }
