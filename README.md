@@ -476,18 +476,24 @@ The cache key includes the source path, size, and timestamp. Set
 
 Thief2 supports one active Xbox-style controller through a platform-neutral
 gamepad layer, using runtime-loaded XInput on Windows and SDL GameController on
-Linux. Controllers can be connected, disconnected, and reconnected while the
-game is running. Keyboard and mouse remain active, and a modern controller is
-not also polled through the legacy joystick path.
+Linux and Android. Controllers can be connected, disconnected, and reconnected
+while the game is running. Keyboard and mouse remain active, and a modern
+controller is not also polled through the legacy joystick path.
 
-The default layout follows a NewDark-compatible Thief control scheme: left
-stick moves and strafes, right stick looks, A jumps, B crouches, X/Y use or
-frob, the triggers block and attack, the shoulders lean, and the D-pad cycles
-inventory or weapons. View opens the automap and Menu opens the pause menu.
-Stick clicks run and recenter the view. Menus accept D-pad navigation, A to
-accept, and B or Menu to go back. These controls use semantic names such as
-`pad_a`, `pad_rt`, and `pad_right_x` in `user.bnd`; existing `joy1` and
-`joy_axis*` bindings remain valid as fallbacks.
+The default layout follows the modern Thief radial-menu scheme. Left stick
+moves and right stick looks; A jumps, B crouches, X uses the selected item, RT
+attacks, and LT blocks. Tap Y to equip or holster the last weapon, or hold Y to
+drop the selected item. Hold LB and point the left stick to lean left, right,
+or forward. Hold RB for the native radial: the left stick selects weapons and
+the right stick selects items, and both rings include a none slot. D-pad
+up/down cycles weapons and left/right cycles items. L3 toggles the movement
+speed mode, R3 forces sneak speed, View opens the automap, and Menu pauses.
+L3+Y quicksaves and L3+B quickloads.
+
+In menus, either stick moves the mouse pointer, A/X left-click, Y right-click,
+and B or Menu goes back; the D-pad remains directional navigation. These
+controls use semantic names such as `pad_a`, `pad_rt`, and `pad_right_x` in
+`user.bnd`; existing `joy1` and `joy_axis*` bindings remain valid as fallbacks.
 
 Gamepad behavior can be adjusted in `cam.cfg`:
 
@@ -499,17 +505,24 @@ gamepad_left_deadzone 0.18
 gamepad_right_deadzone 0.14
 gamepad_left_response 1.0
 gamepad_right_response 1.35
+gamepad_run_threshold 0.78
+gamepad_fast_run_threshold 0.35
+gamepad_lean_threshold 0.55
 gamepad_trigger_press 0.15
 gamepad_trigger_release 0.10
 gamepad_look_sensitivity 1.0
+gamepad_look_turn_seconds 1.0
+gamepad_menu_cursor_speed 16.0
+gamepad_hold_msec 400
+gamepad_radial_time_scale 0.15
 gamepad_look_invert_y 0
 gamepad_rumble 1
 ```
 
 `gamepad_backend` accepts `auto`, `xinput`, `legacy`, or `off` on Windows and
-`auto`, `sdl`, `legacy`, or `off` on Linux. One configured controller owns
-gameplay input at a time; `gamepad_index` selects it, with automatic failover
-to another connected controller if it disconnects. The
+`auto`, `sdl`, `legacy`, or `off` on Linux, while Android uses SDL. One
+configured controller owns gameplay input at a time; `gamepad_index` selects
+it, with automatic failover to another connected controller if it disconnects. The
 `gamepad_status` console command prints the selected backend and normalized
 state. DromEd editor input remains unchanged; gamepad input is currently enabled
 only in the Thief2 target.

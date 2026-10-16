@@ -2,6 +2,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <atomic>
+
 #include <config.h>
 #include <gamepad.h>
 #include <gamepad_backend.h>
@@ -15,6 +17,7 @@ typedef struct sGamepadSettings
    float trigger_press;
    float trigger_release;
    int preferred_index;
+   int auto_select;
    int rumble;
 } sGamepadSettings;
 
@@ -22,6 +25,7 @@ static sGamepadState g_states[GAMEPAD_MAX_CONTROLLERS];
 static const sGamepadBackendOps *g_backend;
 static sGamepadSettings g_settings;
 static unsigned g_active_index;
+static std::atomic<unsigned> g_last_input_index(GAMEPAD_MAX_CONTROLLERS);
 static int g_initialized;
 static int g_active;
 static int g_enabled;
@@ -93,7 +97,8 @@ static void LoadSettings(void)
    g_settings.right_response = 1.35f;
    g_settings.trigger_press = 0.15f;
    g_settings.trigger_release = 0.10f;
-   g_settings.preferred_index = 0;
+   g_settings.preferred_index = -1;
+   g_settings.auto_select = 1;
    g_settings.rumble = 1;
 
    config_get_float("gamepad_left_deadzone", &g_settings.left_deadzone);
@@ -102,7 +107,8 @@ static void LoadSettings(void)
    config_get_float("gamepad_right_response", &g_settings.right_response);
    config_get_float("gamepad_trigger_press", &g_settings.trigger_press);
    config_get_float("gamepad_trigger_release", &g_settings.trigger_release);
-   config_get_int("gamepad_index", &g_settings.preferred_index);
+   if (config_get_int("gamepad_index", &g_settings.preferred_index))
+      g_settings.auto_select = 0;
    config_get_int("gamepad_rumble", &g_settings.rumble);
 
    g_settings.left_deadzone = Clamp(g_settings.left_deadzone, 0.0f, 0.95f);
@@ -113,8 +119,42 @@ static void LoadSettings(void)
    g_settings.trigger_release = Clamp(g_settings.trigger_release, 0.0f, 1.0f);
    if (g_settings.trigger_release > g_settings.trigger_press)
       g_settings.trigger_release = g_settings.trigger_press;
-   if (g_settings.preferred_index < 0 || g_settings.preferred_index >= GAMEPAD_MAX_CONTROLLERS)
+   if (g_settings.preferred_index < 0 ||
+       g_settings.preferred_index >= GAMEPAD_MAX_CONTROLLERS)
+   {
       g_settings.preferred_index = 0;
+      g_settings.auto_select = 1;
+   }
+}
+
+static int HasActivity(const sGamepadState *state)
+{
+   return state->buttons_pressed ||
+      state->left_x != 0.0f || state->left_y != 0.0f ||
+      state->right_x != 0.0f || state->right_y != 0.0f ||
+      state->left_trigger >= g_settings.trigger_press ||
+      state->right_trigger >= g_settings.trigger_press;
+}
+
+static int HasHeldInput(const sGamepadState *state)
+{
+   return state->buttons ||
+      state->left_x != 0.0f || state->left_y != 0.0f ||
+      state->right_x != 0.0f || state->right_y != 0.0f ||
+      state->left_trigger >= g_settings.trigger_press ||
+      state->right_trigger >= g_settings.trigger_press;
+}
+
+static void SelectActiveController(unsigned selected)
+{
+   if (selected == g_active_index)
+      return;
+
+   const uint32_t old_buttons = g_states[g_active_index].buttons;
+   sGamepadState *next = &g_states[selected];
+   next->buttons_pressed |= next->buttons & ~old_buttons;
+   next->buttons_released |= old_buttons & ~next->buttons;
+   g_active_index = selected;
 }
 
 int GamepadInit(void)
@@ -127,6 +167,7 @@ int GamepadInit(void)
    g_active_index = 0;
    for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
       ClearState(i, 0);
+   g_last_input_index.store(GAMEPAD_MAX_CONTROLLERS);
 
 #ifdef THIEF2_GAME
    g_enabled = 1;
@@ -172,6 +213,7 @@ void GamepadTerm(void)
    g_backend = 0;
    g_initialized = 0;
    g_enabled = 0;
+   g_last_input_index.store(GAMEPAD_MAX_CONTROLLERS);
    for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
       ClearState(i, 0);
 }
@@ -184,6 +226,7 @@ void GamepadUpdate(void)
       return;
 
    const int active_was_connected = g_states[g_active_index].connected;
+   int input_activity[GAMEPAD_MAX_CONTROLLERS] = {};
    for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
    {
       sGamepadRawState raw = {};
@@ -227,26 +270,61 @@ void GamepadUpdate(void)
       next.buttons_pressed = was_connected ? (next.buttons & ~old_buttons) : 0;
       next.buttons_released = old_buttons & ~next.buttons;
       g_states[i] = next;
+      input_activity[i] = HasActivity(&next);
    }
 
-   // Keep a disconnected active slot selected for one update so its button
-   // releases and zero axes reach the compatibility bridge before failover.
-   if (!g_states[g_active_index].connected && !active_was_connected)
+   if (g_settings.auto_select)
    {
-      const unsigned preferred = (unsigned)g_settings.preferred_index;
-      if (g_states[preferred].connected)
-         g_active_index = preferred;
-      else
+      unsigned selected = g_active_index;
+      for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
+         if (input_activity[i])
+            g_last_input_index.store(i);
+
+      // Android handhelds can expose one set of built-in controls through
+      // two controller interfaces.  Both slots then report the same physical
+      // stick in one update, and selecting the last slot makes ownership (and
+      // sometimes the axis mapping) alternate in the middle of a turn.  Keep
+      // a controller while it has held input; another controller may claim
+      // ownership once the active one returns to neutral.
+      if (g_states[selected].connected && !HasHeldInput(&g_states[selected]))
+      {
+         for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
+         {
+            if (i != selected && input_activity[i])
+            {
+               selected = i;
+               break;
+            }
+         }
+      }
+
+      // Keep a disconnected active slot selected for one update so its
+      // releases and zero axes reach the compatibility bridge first.
+      if (!g_states[selected].connected && !active_was_connected)
       {
          for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
          {
             if (g_states[i].connected)
             {
-               g_active_index = i;
+               selected = i;
                break;
             }
          }
       }
+      SelectActiveController(selected);
+   }
+   else if (!g_states[g_active_index].connected && !active_was_connected)
+   {
+      const unsigned preferred = (unsigned)g_settings.preferred_index;
+      if (g_states[preferred].connected)
+         SelectActiveController(preferred);
+   }
+
+   if (!g_settings.auto_select)
+   {
+      for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
+         if (input_activity[i])
+            g_last_input_index.store(i);
    }
 }
 
@@ -260,6 +338,17 @@ const sGamepadState *GamepadGetState(unsigned index)
 unsigned GamepadGetActiveIndex(void)
 {
    return g_active_index;
+}
+
+unsigned GamepadGetLastInputIndex(void)
+{
+   return g_last_input_index.load();
+}
+
+void GamepadNotifyInput(unsigned index)
+{
+   if (index < GAMEPAD_MAX_CONTROLLERS)
+      g_last_input_index.store(index);
 }
 
 int GamepadOwnsInput(void)

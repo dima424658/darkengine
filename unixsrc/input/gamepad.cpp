@@ -3,10 +3,18 @@
 
 #include <algorithm>
 #include <cstring>
+#include <mutex>
+#if defined(__ANDROID__)
+#include <jni.h>
+#endif
 #pragma pack(pop)
 
 #include <gamepad.h>
 #include <gamepad_backend.h>
+
+#if defined(__ANDROID__)
+extern "C" int DarkInputRelativeMouseActive(void);
+#endif
 
 namespace
 {
@@ -20,6 +28,21 @@ struct sSDLGamepadSlot
 
 sSDLGamepadSlot g_slots[GAMEPAD_MAX_CONTROLLERS];
 Uint32 g_nextRefresh;
+
+#if defined(__ANDROID__)
+constexpr unsigned kTouchSlot = GAMEPAD_MAX_CONTROLLERS - 1;
+std::mutex g_touchMutex;
+sGamepadRawState g_touchState;
+uint32_t g_touchDesiredButtons;
+uint32_t g_touchPolledButtons;
+uint32_t g_touchPendingPresses;
+uint32_t g_touchPendingReleases;
+
+void TouchStateChanged()
+{
+   ++g_touchState.packet_number;
+}
+#endif
 
 void CloseSlot(unsigned index)
 {
@@ -46,7 +69,13 @@ void RefreshControllers(bool force)
       return;
    g_nextRefresh = now + 500;
 
-   for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
+   const unsigned physicalSlots =
+#if defined(__ANDROID__)
+      kTouchSlot;
+#else
+      GAMEPAD_MAX_CONTROLLERS;
+#endif
+   for (unsigned i = 0; i < physicalSlots; ++i)
       if (g_slots[i].controller &&
           !SDL_GameControllerGetAttached(g_slots[i].controller))
          CloseSlot(i);
@@ -60,14 +89,14 @@ void RefreshControllers(bool force)
       if (instance < 0 || HasInstance(instance))
          continue;
 
-      unsigned slot = GAMEPAD_MAX_CONTROLLERS;
-      for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
+      unsigned slot = physicalSlots;
+      for (unsigned i = 0; i < physicalSlots; ++i)
          if (!g_slots[i].controller)
          {
             slot = i;
             break;
          }
-      if (slot == GAMEPAD_MAX_CONTROLLERS)
+      if (slot == physicalSlots)
          break;
 
       SDL_GameController *controller = SDL_GameControllerOpen(device);
@@ -124,6 +153,38 @@ int SDLBackendPoll(unsigned index, sGamepadRawState *raw)
    if (!raw || index >= GAMEPAD_MAX_CONTROLLERS)
       return 0;
    std::memset(raw, 0, sizeof(*raw));
+#if defined(__ANDROID__)
+   if (index == kTouchSlot)
+   {
+      std::lock_guard<std::mutex> lock(g_touchMutex);
+      // Java may complete a short tap between two engine polls.  Emit a
+      // queued press for at least one poll and its release on a later poll so
+      // the input binder cannot lose the entire gesture during a slow frame.
+      const uint32_t presses = g_touchPendingPresses & ~g_touchPolledButtons;
+      if (presses)
+      {
+         g_touchPolledButtons |= presses;
+         g_touchPendingPresses &= ~presses;
+      }
+
+      const uint32_t releases = g_touchPendingReleases &
+         g_touchPolledButtons & ~presses;
+      if (releases)
+      {
+         g_touchPolledButtons &= ~releases;
+         g_touchPendingReleases &= ~releases;
+         // A second press may have arrived while this queued release was
+         // waiting.  Preserve it for the following poll.
+         g_touchPendingPresses |= releases & g_touchDesiredButtons;
+      }
+
+      if (presses || releases)
+         TouchStateChanged();
+      g_touchState.buttons = g_touchPolledButtons;
+      *raw = g_touchState;
+      return 1;
+   }
+#endif
    SDL_GameControllerUpdate();
    RefreshControllers(false);
 
@@ -183,6 +244,10 @@ int SDLBackendPoll(unsigned index, sGamepadRawState *raw)
 
 void SDLBackendRumble(unsigned index, float low, float high)
 {
+#if defined(__ANDROID__)
+   if (index == kTouchSlot)
+      return;
+#endif
    if (index >= GAMEPAD_MAX_CONTROLLERS || !g_slots[index].controller)
       return;
    const Uint16 lowStrength = (Uint16)(low * 65535.0f + 0.5f);
@@ -206,3 +271,91 @@ extern "C" const sGamepadBackendOps *GamepadXInputBackend(void)
 {
    return nullptr;
 }
+
+#if defined(__ANDROID__)
+extern "C" JNIEXPORT void JNICALL
+Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchControllerConnected(
+   JNIEnv *, jclass, jboolean connected)
+{
+   std::lock_guard<std::mutex> lock(g_touchMutex);
+   std::memset(&g_touchState, 0, sizeof(g_touchState));
+   g_touchDesiredButtons = 0;
+   g_touchPolledButtons = 0;
+   g_touchPendingPresses = 0;
+   g_touchPendingReleases = 0;
+   g_touchState.connected = connected ? 1 : 0;
+   TouchStateChanged();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchAxis(
+   JNIEnv *, jclass, jint axis, jfloat x, jfloat y)
+{
+   const int rawX = (int)(std::max(-1.0f, std::min(1.0f, x)) *
+      (x < 0.0f ? 32768.0f : 32767.0f));
+   const int rawY = (int)(std::max(-1.0f, std::min(1.0f, y)) *
+      (y < 0.0f ? 32768.0f : 32767.0f));
+   std::lock_guard<std::mutex> lock(g_touchMutex);
+   if (axis == 0)
+   {
+      g_touchState.left_x = rawX;
+      g_touchState.left_y = rawY;
+   }
+   else if (axis == 1)
+   {
+      g_touchState.right_x = rawX;
+      g_touchState.right_y = rawY;
+   }
+   TouchStateChanged();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_opendarkengine_thief2_ThiefActivity_nativeSetTouchButton(
+   JNIEnv *, jclass, jint button, jboolean down)
+{
+   if (button < 0 || button >= kGamepadButtonCount)
+      return;
+   std::lock_guard<std::mutex> lock(g_touchMutex);
+   const uint32_t mask = 1u << button;
+   if (down)
+   {
+      if (!(g_touchDesiredButtons & mask))
+      {
+         g_touchDesiredButtons |= mask;
+         g_touchPendingPresses |= mask;
+      }
+   }
+   else
+   {
+      if (g_touchDesiredButtons & mask)
+      {
+         g_touchDesiredButtons &= ~mask;
+         g_touchPendingReleases |= mask;
+      }
+   }
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_org_opendarkengine_thief2_ThiefActivity_nativeTouchControlsActive(
+   JNIEnv *, jclass)
+{
+   return DarkInputRelativeMouseActive() ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_opendarkengine_thief2_ThiefActivity_nativeNotifyTouchInput(
+   JNIEnv *, jclass)
+{
+   GamepadNotifyInput(kTouchSlot);
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_org_opendarkengine_thief2_ThiefActivity_nativeTouchControlsVisible(
+   JNIEnv *, jclass)
+{
+   const unsigned lastInput = GamepadGetLastInputIndex();
+   return DarkInputRelativeMouseActive() &&
+      (lastInput >= GAMEPAD_MAX_CONTROLLERS || lastInput == kTouchSlot)
+      ? JNI_TRUE : JNI_FALSE;
+}
+#endif

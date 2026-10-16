@@ -312,6 +312,16 @@ input_code g_valid_input_controls[] = {
 	{"pad_dpad_right", -1},
 	{"pad_lt", -1},
 	{"pad_rt", -1},
+	{"pad_touch_leanforward", -1},
+	{"pad_touch_clear_weapon", -1},
+	{"pad_touch_drop_item", -1},
+	{"pad_touch_cycle_weapon", -1},
+	{"pad_touch_cycle_item", -1},
+	{"pad_weapon_toggle", -1},
+	{"pad_drop_item", -1},
+	{"pad_speed_toggle", -1},
+	{"pad_quick_save", -1},
+	{"pad_quick_load", -1},
 	{"pad_left_x", -1},
 	{"pad_left_y", -1},
 	{"pad_right_x", -1},
@@ -323,7 +333,11 @@ static const char* g_gamepad_button_controls[kGamepadButtonCount] = {
 	"pad_lb", "pad_rb", "pad_view", "pad_menu",
 	"pad_leftstick", "pad_rightstick",
 	"pad_dpad_up", "pad_dpad_down", "pad_dpad_left", "pad_dpad_right",
-	"pad_lt", "pad_rt"
+	"pad_lt", "pad_rt", "pad_touch_leanforward",
+	"pad_touch_clear_weapon", "pad_touch_drop_item",
+	"pad_touch_cycle_weapon", "pad_touch_cycle_item",
+	"pad_weapon_toggle", "pad_drop_item", "pad_speed_toggle",
+	"pad_quick_save", "pad_quick_load"
 };
 
 cIBInputMapper::cIBInputMapper()

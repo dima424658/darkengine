@@ -28,6 +28,10 @@ EXTERN void headmoveInit(void);
 EXTERN void headmoveSetRelPosX (float x);
 EXTERN void headmoveSetRelPosY (float y);
 
+// Gamepad axes are continuous angular rates measured in turns per second.
+EXTERN void headmoveSetGamepadTurn(float turns_per_second);
+EXTERN void headmoveSetGamepadLook(float turns_per_second);
+
 //sets the current turn state as controlled by the keyboard
 EXTERN void headmoveSetKeyboardInput(float turn_rate);
 EXTERN void headmoveKeyboardReset(void);

@@ -30,6 +30,9 @@
 #include <mprintf.h>
 
 #include <drk_bind.h>
+#ifdef THIEF2_GAME
+#include <drkinvui.h>
+#endif
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -107,8 +110,25 @@ float g_joystickSensitivity = 1.0;
 float g_joystickDeadzone = 0.05f;
 float g_rudderSensitivity = 1.0;
 float g_rudderDeadzone = 0.05f;
-static float g_gamepadLookSensitivity = 1.0;
+static float g_gamepadLookSensitivity = 1.0f;
+static float g_gamepadLookTurnSeconds = 1.0f;
 static int g_gamepadLookInvertY = 0;
+static float g_gamepadRunThreshold = 0.78f;
+static float g_gamepadFastRunThreshold = 0.35f;
+static float g_gamepadLeanThreshold = 0.55f;
+static float g_gamepadForwardAxis = 0.0f;
+static float g_gamepadSidestepAxis = 0.0f;
+static float g_gamepadTurnAxis = 0.0f;
+static float g_gamepadLookAxis = 0.0f;
+static BOOL g_gamepadFastMode = FALSE;
+static BOOL g_gamepadForceSneak = FALSE;
+static BOOL g_gamepadLeanModifier = FALSE;
+static int g_gamepadLeanDirection = 0;
+static ulong g_gamepadLowMagnitudeSince = 0;
+
+static char *LeanLeftProc(const char *, const char *, BOOL);
+static char *LeanRightProc(const char *, const char *, BOOL);
+static char *LeanForwardProc(const char *, const char *, BOOL);
 
 static float parse_float(const char *value)
 {
@@ -238,21 +258,149 @@ static char *JoyForwardProc (const char *, const char *val, BOOL)
    return NULL;
 }
 
+static void UpdateGamepadMovement(void)
+{
+   float magnitude = (float)sqrt((double)(g_gamepadForwardAxis * g_gamepadForwardAxis +
+      g_gamepadSidestepAxis * g_gamepadSidestepAxis));
+   if (magnitude > 1.0f)
+      magnitude = 1.0f;
+
+#ifdef THIEF2_GAME
+   if (InvUIRadialActive())
+   {
+      SetForwardState(0.0f);
+      SetSidestepState(0.0f);
+      InvUIRadialSetStick(0, g_gamepadSidestepAxis,
+                         g_gamepadForwardAxis);
+      UpdatePlayerSpeed();
+      return;
+   }
+#endif
+
+   if (g_gamepadLeanModifier)
+   {
+      int direction = 0;
+      const float absX = (float)fabs(g_gamepadSidestepAxis);
+      if (g_gamepadForwardAxis >= g_gamepadLeanThreshold &&
+          g_gamepadForwardAxis >= absX * 0.75f)
+         direction = 3;
+      else if (g_gamepadSidestepAxis <= -g_gamepadLeanThreshold)
+         direction = 1;
+      else if (g_gamepadSidestepAxis >= g_gamepadLeanThreshold)
+         direction = 2;
+
+      if (direction != g_gamepadLeanDirection)
+      {
+         if (g_gamepadLeanDirection == 1)
+            LeanLeftProc(NULL, "0", FALSE);
+         else if (g_gamepadLeanDirection == 2)
+            LeanRightProc(NULL, "0", FALSE);
+         else if (g_gamepadLeanDirection == 3)
+            LeanForwardProc(NULL, "0", FALSE);
+         g_gamepadLeanDirection = direction;
+         if (direction == 1)
+            LeanLeftProc(NULL, "1", FALSE);
+         else if (direction == 2)
+            LeanRightProc(NULL, "1", FALSE);
+         else if (direction == 3)
+            LeanForwardProc(NULL, "1", FALSE);
+      }
+      SetForwardState(0.0f);
+      SetSidestepState(0.0f);
+      UpdatePlayerSpeed();
+      return;
+   }
+
+   if (magnitude >= 0.98f)
+      g_gamepadFastMode = TRUE;
+
+   const float runThreshold = g_gamepadFastMode
+      ? g_gamepadFastRunThreshold : g_gamepadRunThreshold;
+   const BOOL forceSneak = g_gamepadForceSneak || (gcreepon && !grunpref);
+
+   float speed = 0.0f;
+   if (magnitude > 0.0f)
+   {
+      if (forceSneak)
+         speed = NORMSPEED * magnitude;
+      else if (magnitude <= runThreshold)
+         speed = NORMSPEED * magnitude / runThreshold;
+      else
+         speed = NORMSPEED + (FASTSPEED - NORMSPEED) *
+            (magnitude - runThreshold) / (1.0f - runThreshold);
+   }
+
+   const float directionScale = magnitude > 0.0f ? speed / magnitude : 0.0f;
+   const BOOL automaticRun = !forceSneak && speed > NORMSPEED;
+   const BOOL modifierRun = !forceSneak && grunon && grunpref;
+
+   // Player mode accepts movement states only in [-2, 2].  Running is the
+   // same state with its faster toggle enabled, so keep the analog curve
+   // continuous by halving the forward state once it enters the run band.
+   // Sidestepping deliberately has no run multiplier in player mode; leave
+   // that component at its normal (clamped) speed.
+   float forwardState = g_gamepadForwardAxis * directionScale;
+   if (automaticRun)
+      forwardState *= 0.5f;
+   SetForwardState(forwardState);
+   SetSidestepState(g_gamepadSidestepAxis * directionScale);
+
+   // Full stick deflection runs automatically.  Clicking the left stick is
+   // also retained as a run modifier for partial deflection.
+   gtogglefast = TRUE;
+   if (forceSneak)
+   {
+      SetSpeedToggleMeansFaster(FALSE);
+      SetSpeedToggleState(TRUE);
+   }
+   else
+   {
+      SetSpeedToggleMeansFaster(TRUE);
+      SetSpeedToggleState(automaticRun || modifierRun);
+   }
+   UpdatePlayerSpeed();
+}
+
 static char *GamepadForwardProc(const char *, const char *val, BOOL)
 {
    float f = parse_float(val);
    if ((f != 0.0f) && (GetPlayerMode() == kPM_Dead || gNoMoveKeys))
       return NULL;
 
-   float forward_val = 2.0f * f;
-   if (forward_val > 2.0f) forward_val = 2.0f;
-   if (forward_val < -2.0f) forward_val = -2.0f;
-   SetForwardState(forward_val);
-   gtogglefast = FALSE;
-   if (grunpref)
-      SetSpeedToggleState(0);
-   SetSpeedToggleMeansFaster(gtogglefast);
-   UpdatePlayerSpeed();
+   g_gamepadForwardAxis = f;
+   UpdateGamepadMovement();
+   return NULL;
+}
+
+static char *GamepadSpeedToggleProc(const char *, const char *, BOOL)
+{
+   g_gamepadFastMode = !g_gamepadFastMode;
+   g_gamepadLowMagnitudeSince = 0;
+   UpdateGamepadMovement();
+   return NULL;
+}
+
+static char *GamepadForceSneakProc(const char *, const char *, BOOL)
+{
+   g_gamepadForceSneak = !g_gamepadForceSneak;
+   UpdateGamepadMovement();
+   return NULL;
+}
+
+static char *GamepadLeanProc(const char *, const char *val, BOOL)
+{
+   g_gamepadLeanModifier = parse_float(val) != 0.0f;
+   if (!g_gamepadLeanModifier && g_gamepadLeanDirection)
+   {
+      if (g_gamepadLeanDirection == 1)
+         LeanLeftProc(NULL, "0", FALSE);
+      else if (g_gamepadLeanDirection == 2)
+         LeanRightProc(NULL, "0", FALSE);
+      else
+         LeanForwardProc(NULL, "0", FALSE);
+      g_gamepadLeanDirection = 0;
+   }
+   UpdateGamepadMovement();
    return NULL;
 }
 
@@ -358,11 +506,8 @@ static char *GamepadSidestepProc(const char *, const char *val, BOOL)
    if ((f != 0.0f) && (GetPlayerMode() == kPM_Dead || gNoMoveKeys))
       return NULL;
 
-   float sidestep_val = 2.0f * f;
-   if (sidestep_val > 2.0f) sidestep_val = 2.0f;
-   if (sidestep_val < -2.0f) sidestep_val = -2.0f;
-   SetSidestepState(sidestep_val);
-   UpdatePlayerSpeed();
+   g_gamepadSidestepAxis = f;
+   UpdateGamepadMovement();
    return NULL;
 }
 
@@ -967,27 +1112,116 @@ static char *RudderTurnProc (const char *, const char *val, BOOL)
 
 static char *GamepadTurnProc(const char *, const char *val, BOOL)
 {
-   if (gNoLookAround || GetPlayerMode() == kPM_Dead)
+   const float value = parse_float(val);
+   g_gamepadTurnAxis = value;
+#ifdef THIEF2_GAME
+   if (InvUIRadialActive())
+   {
+      headmoveSetGamepadTurn(0.0f);
+      InvUIRadialSetStick(1, g_gamepadTurnAxis, g_gamepadLookAxis);
       return NULL;
+   }
+#endif
+   if (gNoLookAround || GetPlayerMode() == kPM_Dead)
+   {
+      headmoveSetGamepadTurn(0.0f);
+      return NULL;
+   }
 
    BOOL freelook = (parse_float(g_pInputBinder->ProcessCmd("echo $freelook")) != 0.0);
    if (g_freelookon ^ freelook)
-      headmoveSetRelPosX(parse_float(val) * 200.0f * g_gamepadLookSensitivity);
+   {
+      headmoveSetGamepadTurn(value * g_gamepadLookSensitivity /
+         g_gamepadLookTurnSeconds);
+      if (value != 0.0f)
+         headmoveTouch();
+   }
+   else
+      headmoveSetGamepadTurn(0.0f);
    return NULL;
 }
 
 static char *GamepadLookProc(const char *, const char *val, BOOL)
 {
-   if (gNoLookAround || GetPlayerMode() == kPM_Dead)
+   const float axis = parse_float(val);
+   g_gamepadLookAxis = axis;
+#ifdef THIEF2_GAME
+   if (InvUIRadialActive())
+   {
+      headmoveSetGamepadLook(0.0f);
+      InvUIRadialSetStick(1, g_gamepadTurnAxis, g_gamepadLookAxis);
       return NULL;
+   }
+#endif
+   if (gNoLookAround || GetPlayerMode() == kPM_Dead)
+   {
+      headmoveSetGamepadLook(0.0f);
+      return NULL;
+   }
 
    BOOL freelook = (parse_float(g_pInputBinder->ProcessCmd("echo $freelook")) != 0.0);
    if (g_freelookon ^ freelook)
    {
-      float value = parse_float(val) * 200.0f * g_gamepadLookSensitivity;
-      headmoveSetRelPosY(g_gamepadLookInvertY ? -value : value);
+      // The binding layer's Y axis uses screen-motion polarity, while the
+      // gamepad backends normalize stick-up as positive.  Match normal mouse
+      // look by reversing that value unless the explicit invert option is on.
+      const float value = axis * g_gamepadLookSensitivity /
+         g_gamepadLookTurnSeconds;
+      headmoveSetGamepadLook(g_gamepadLookInvertY ? value : -value);
+      if (axis != 0.0f)
+         headmoveTouch();
+   }
+   else
+      headmoveSetGamepadLook(0.0f);
+   return NULL;
+}
+
+#ifdef THIEF2_GAME
+static char *GamepadRadialProc(const char *, const char *val, BOOL)
+{
+   const BOOL active = parse_float(val) != 0.0f;
+   InvUIRadialSetActive(active);
+   if (active)
+   {
+      SetForwardState(0.0f);
+      SetSidestepState(0.0f);
+      headmoveSetGamepadTurn(0.0f);
+      headmoveSetGamepadLook(0.0f);
+      InvUIRadialSetStick(0, g_gamepadSidestepAxis,
+                         g_gamepadForwardAxis);
+      InvUIRadialSetStick(1, g_gamepadTurnAxis, g_gamepadLookAxis);
+   }
+   else
+   {
+      UpdateGamepadMovement();
+      char value[32];
+      sprintf(value, "%f", g_gamepadTurnAxis);
+      GamepadTurnProc(NULL, value, FALSE);
+      sprintf(value, "%f", g_gamepadLookAxis);
+      GamepadLookProc(NULL, value, FALSE);
    }
    return NULL;
+}
+#endif
+
+void GamepadBindingFrame(void)
+{
+   const float magnitude = (float)sqrt((double)(
+      g_gamepadForwardAxis * g_gamepadForwardAxis +
+      g_gamepadSidestepAxis * g_gamepadSidestepAxis));
+   if (magnitude < 0.30f)
+   {
+      const ulong now = PlatformMilliseconds();
+      if (!g_gamepadLowMagnitudeSince)
+         g_gamepadLowMagnitudeSince = now;
+      else if (g_gamepadFastMode && now - g_gamepadLowMagnitudeSince >= 1000)
+      {
+         g_gamepadFastMode = FALSE;
+         UpdateGamepadMovement();
+      }
+   }
+   else
+      g_gamepadLowMagnitudeSince = 0;
 }
 
 
@@ -1015,6 +1249,12 @@ IB_var g_gen_ib_vars[] = {
    {"gamepad_sidestep", "0", 0, GamepadSidestepProc, IBAddActiveAgg, NULL},
    {"gamepad_turn", "0", 0, GamepadTurnProc, NULL, NULL},
    {"gamepad_look", "0", 0, GamepadLookProc, NULL, NULL},
+   {"gamepad_speed_toggle", "0", 0, GamepadSpeedToggleProc, NULL, NULL},
+   {"gamepad_force_sneak", "0", 0, GamepadForceSneakProc, NULL, NULL},
+   {"gamepad_lean", "0", 0, GamepadLeanProc, NULL, NULL},
+#ifdef THIEF2_GAME
+   {"gamepad_radial", "0", 0, GamepadRadialProc, NULL, NULL},
+#endif
 
    {"mturn", "0", 0, MTurnProc, NULL, NULL},
    {"mlook", "0", 0, MLookProc, NULL, NULL},
@@ -1443,25 +1683,68 @@ void InitIBVars ()
          {"pad_a", "+jump"},
          {"pad_b", "crouch"},
          {"pad_x", "+use_item"},
-         {"pad_y", "+use_item"},
          {"pad_rt", "+use_weapon"},
          {"pad_lt", "+block"},
+         {"pad_lb", "+gamepad_lean"},
+         {"pad_rb", "+gamepad_radial"},
+         {"pad_dpad_up", "gamepad_cycle_weapon 1"},
+         {"pad_dpad_down", "gamepad_cycle_weapon -1"},
+         {"pad_dpad_left", "gamepad_cycle_item -1"},
+         {"pad_dpad_right", "gamepad_cycle_item 1"},
+         {"pad_view", "automap"},
+         {"pad_menu", "sim_menu"},
+         {"pad_rightstick", "gamepad_force_sneak"},
+         {"pad_weapon_toggle", "toggle_weapon"},
+         {"pad_drop_item", "gamepad_drop_item"},
+         {"pad_speed_toggle", "gamepad_speed_toggle"},
+         {"pad_quick_save", "quick_save"},
+         {"pad_quick_load", "quick_load"},
+         {"pad_touch_leanforward", "+leanforward"},
+         {"pad_touch_clear_weapon", "clear_weapon"},
+         {"pad_touch_drop_item", "gamepad_drop_item"},
+         {"pad_touch_cycle_weapon", "touch_cycle_weapon"},
+         {"pad_touch_cycle_item", "touch_cycle_item"},
+         {NULL, NULL}
+      };
+
+      // Earlier portable builds wrote these defaults into user.bnd.  Upgrade
+      // only exact known defaults so the new shared layout takes effect while
+      // preserving any genuinely custom controller command.
+      static const sDefaultGamepadBind legacy_gamepad_binds[] = {
+         {"pad_lb", "prev_item"},
          {"pad_lb", "+leanleft"},
+         {"pad_rb", "next_item"},
          {"pad_rb", "+leanright"},
          {"pad_dpad_up", "next_weapon"},
          {"pad_dpad_down", "prev_weapon"},
          {"pad_dpad_left", "prev_item"},
          {"pad_dpad_right", "next_item"},
-         {"pad_view", "automap"},
-         {"pad_menu", "sim_menu"},
-         {"pad_leftstick", "+runon"},
          {"pad_rightstick", "lookcenter"},
+         {"pad_touch_drop_item", "drop_item"},
          {NULL, NULL}
       };
 
       ulong old_context = 0;
       g_pInputBinder->GetContext(&old_context);
       g_pInputBinder->SetContext(HK_GAME_MODE, TRUE);
+      for (const sDefaultGamepadBind *legacy = legacy_gamepad_binds;
+           legacy->control; ++legacy)
+      {
+         char current[256] = {};
+         g_pInputBinder->QueryBind(legacy->control, current, sizeof(current));
+         if (!strcmp(current, legacy->command))
+         {
+            for (const sDefaultGamepadBind *bind = gamepad_binds;
+                 bind->control; ++bind)
+            {
+               if (!strcmp(bind->control, legacy->control))
+               {
+                  g_pInputBinder->Bind(bind->control, bind->command);
+                  break;
+               }
+            }
+         }
+      }
       for (const sDefaultGamepadBind *bind = gamepad_binds; bind->control; ++bind)
       {
          char current[256] = {};
@@ -1494,7 +1777,21 @@ void InitIBVars ()
    g_rudderSensitivity = parse_float(g_pInputBinder->ProcessCmd ("echo $rudder_sensitivity"));
    g_rudderDeadzone = parse_float(g_pInputBinder->ProcessCmd ("echo $rudder_deadzone"));
    config_get_float("gamepad_look_sensitivity", &g_gamepadLookSensitivity);
+   if (g_gamepadLookSensitivity < 0.1f) g_gamepadLookSensitivity = 0.1f;
+   if (g_gamepadLookSensitivity > 3.0f) g_gamepadLookSensitivity = 3.0f;
+   config_get_float("gamepad_look_turn_seconds", &g_gamepadLookTurnSeconds);
+   if (g_gamepadLookTurnSeconds < 0.25f) g_gamepadLookTurnSeconds = 0.25f;
+   if (g_gamepadLookTurnSeconds > 4.0f) g_gamepadLookTurnSeconds = 4.0f;
    config_get_int("gamepad_look_invert_y", &g_gamepadLookInvertY);
+   config_get_float("gamepad_run_threshold", &g_gamepadRunThreshold);
+   if (g_gamepadRunThreshold < 0.55f) g_gamepadRunThreshold = 0.55f;
+   if (g_gamepadRunThreshold > 0.95f) g_gamepadRunThreshold = 0.95f;
+   config_get_float("gamepad_fast_run_threshold", &g_gamepadFastRunThreshold);
+   if (g_gamepadFastRunThreshold < 0.15f) g_gamepadFastRunThreshold = 0.15f;
+   if (g_gamepadFastRunThreshold > 0.60f) g_gamepadFastRunThreshold = 0.60f;
+   config_get_float("gamepad_lean_threshold", &g_gamepadLeanThreshold);
+   if (g_gamepadLeanThreshold < 0.30f) g_gamepadLeanThreshold = 0.30f;
+   if (g_gamepadLeanThreshold > 0.90f) g_gamepadLeanThreshold = 0.90f;
 
 }
 

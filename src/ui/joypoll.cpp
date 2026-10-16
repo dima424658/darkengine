@@ -8,6 +8,7 @@
 //taken from flight 2 - DL
 
 #include <limits.h>
+#include <math.h>
 #include <stdlib.h>
 
 #include <appagg.h>
@@ -40,10 +41,25 @@
 #define MAX_BUTTONS 32
 #define DOWN(x)    ((x)|KB_FLAG_DOWN)
 
+EXTERN void ui_dispatch_mouse_event(uiMouseEvent *event);
+
 static IJoystick *g_pJoystick;
 static bool gGamepadWasOwner = FALSE;
 static short gGamepadAxes[4] = {0, 0, 0, 0};
 static bool gGamepadCommandsRegistered = FALSE;
+static float gGamepadMenuCursorSpeed = 16.0f;
+static float gGamepadMenuCursorRemainderX = 0.0f;
+static float gGamepadMenuCursorRemainderY = 0.0f;
+static uint32_t gGamepadMenuMouseSources = 0;
+static uint32_t gGamepadLogicalButtons = 0;
+static unsigned gGamepadActionController = GAMEPAD_MAX_CONTROLLERS;
+static ulong gGamepadYDownTime = 0;
+static int gGamepadHoldMsec = 400;
+static bool gGamepadYPending = FALSE;
+static bool gGamepadYHeld = FALSE;
+static bool gGamepadL3Pending = FALSE;
+static bool gGamepadL3Chord = FALSE;
+static bool gGamepadSuppressB = FALSE;
 
 
 static bool bHasNoRudder = FALSE;
@@ -91,19 +107,21 @@ cDarkJoyProcControl g_dark_joy_control;
 
 static void GamepadStatus(void)
 {
-   const unsigned index = GamepadGetActiveIndex();
-   const sGamepadState *state = GamepadGetState(index);
-   if (!state)
+   const unsigned active = GamepadGetActiveIndex();
+   mprintf("gamepad: backend=%s active=%u last_input=%u\n",
+           GamepadGetBackendName(), active, GamepadGetLastInputIndex());
+   for (unsigned index = 0; index < GAMEPAD_MAX_CONTROLLERS; ++index)
    {
-      mprintf("gamepad: backend=%s no state\n", GamepadGetBackendName());
-      return;
+      const sGamepadState *state = GamepadGetState(index);
+      if (!state || (!state->connected && index != active))
+         continue;
+      mprintf("  slot=%u%s connected=%d packet=%u buttons=0x%04x "
+              "left=(%.3f,%.3f) right=(%.3f,%.3f) triggers=(%.3f,%.3f)\n",
+              index, index == active ? "*" : "", state->connected,
+              state->packet_number, state->buttons, state->left_x,
+              state->left_y, state->right_x, state->right_y,
+              state->left_trigger, state->right_trigger);
    }
-
-   mprintf("gamepad: backend=%s index=%u connected=%d packet=%u buttons=0x%04x "
-           "left=(%.3f,%.3f) right=(%.3f,%.3f) triggers=(%.3f,%.3f)\n",
-           GamepadGetBackendName(), index, state->connected, state->packet_number,
-           state->buttons, state->left_x, state->left_y, state->right_x,
-           state->right_y, state->left_trigger, state->right_trigger);
 }
 
 cDarkJoyProcControl :: cDarkJoyProcControl() : cIBJoyAxisProcess()
@@ -202,6 +220,17 @@ void UiJoyInit ()
    buttonRepeatDelay = DEFAULT_BUTTON_REPEAT_DELAY;
    config_get_float( "joykey_repeat_delay", &buttonRepeatDelay );
 
+   config_get_float("gamepad_menu_cursor_speed", &gGamepadMenuCursorSpeed);
+   if (gGamepadMenuCursorSpeed < 4.0f)
+      gGamepadMenuCursorSpeed = 4.0f;
+   if (gGamepadMenuCursorSpeed > 40.0f)
+      gGamepadMenuCursorSpeed = 40.0f;
+   config_get_int("gamepad_hold_msec", &gGamepadHoldMsec);
+   if (gGamepadHoldMsec < 200)
+      gGamepadHoldMsec = 200;
+   if (gGamepadHoldMsec > 1000)
+      gGamepadHoldMsec = 1000;
+
    // get the no-rudder & no-throttle overrides
    bHasNoRudder = config_is_defined( "has_no_rudder" );
    bHasNoThrottle = config_is_defined( "has_no_throttle" );
@@ -218,6 +247,16 @@ void UiJoyTerm(void)
    GamepadTerm();
    g_pJoystick = NULL;
    gGamepadWasOwner = FALSE;
+   gGamepadMenuCursorRemainderX = 0.0f;
+   gGamepadMenuCursorRemainderY = 0.0f;
+   gGamepadMenuMouseSources = 0;
+   gGamepadLogicalButtons = 0;
+   gGamepadActionController = GAMEPAD_MAX_CONTROLLERS;
+   gGamepadYPending = FALSE;
+   gGamepadYHeld = FALSE;
+   gGamepadL3Pending = FALSE;
+   gGamepadL3Chord = FALSE;
+   gGamepadSuppressB = FALSE;
 }
 
 
@@ -288,15 +327,85 @@ static int GamepadMenuKey(unsigned button)
 {
    switch (button)
    {
-      case kGamepadButtonA: return KEY_ENTER;
-      case kGamepadButtonB:
       case kGamepadButtonMenu: return KEY_ESC;
+      case kGamepadButtonB: return KEY_ESC;
       case kGamepadButtonDpadUp: return KEY_UP;
       case kGamepadButtonDpadDown: return KEY_DOWN;
       case kGamepadButtonDpadLeft: return KEY_LEFT;
       case kGamepadButtonDpadRight: return KEY_RIGHT;
       default: return 0;
    }
+}
+
+static void DispatchGamepadMenuMouseButtons(uint32_t buttons)
+{
+   const uint32_t faceMask =
+      (1u << kGamepadButtonA) | (1u << kGamepadButtonX) |
+      (1u << kGamepadButtonY);
+   const uint32_t sources = HotkeyContext == HK_PANEL_MODE
+      ? buttons & faceMask : 0;
+   const int oldLeft = (gGamepadMenuMouseSources &
+      ((1u << kGamepadButtonA) | (1u << kGamepadButtonX))) != 0;
+   const int newLeft = (sources &
+      ((1u << kGamepadButtonA) | (1u << kGamepadButtonX))) != 0;
+   const int oldRight = (gGamepadMenuMouseSources &
+      (1u << kGamepadButtonY)) != 0;
+   const int newRight = (sources &
+      (1u << kGamepadButtonY)) != 0;
+
+   gGamepadMenuMouseSources = sources;
+   if (oldLeft == newLeft && oldRight == newRight)
+      return;
+
+   uiMouseEvent event;
+   uiMakeMotionEvent(&event);
+   event.type = UI_EVENT_MOUSE;
+   event.action = 0;
+   if (oldLeft != newLeft)
+      event.action |= newLeft ? MOUSE_BTN2DOWN(MOUSE_LBUTTON)
+                              : MOUSE_BTN2UP(MOUSE_LBUTTON);
+   if (oldRight != newRight)
+      event.action |= newRight ? MOUSE_BTN2DOWN(MOUSE_RBUTTON)
+                               : MOUSE_BTN2UP(MOUSE_RBUTTON);
+   if (newLeft)
+      event.buttons |= MouseMakeButtonBit(MOUSE_LBUTTON);
+   if (newRight)
+      event.buttons |= MouseMakeButtonBit(MOUSE_RBUTTON);
+   ui_dispatch_mouse_event(&event);
+}
+
+static void MoveGamepadMenuCursor(const sGamepadState *state)
+{
+   if (HotkeyContext != HK_PANEL_MODE)
+   {
+      gGamepadMenuCursorRemainderX = 0.0f;
+      gGamepadMenuCursorRemainderY = 0.0f;
+      return;
+   }
+
+   // Either stick can point the menu cursor.  If both are displaced, use the
+   // one moved farther so the two inputs cannot fight or double the speed.
+   const float leftMagnitude = state->left_x * state->left_x +
+      state->left_y * state->left_y;
+   const float rightMagnitude = state->right_x * state->right_x +
+      state->right_y * state->right_y;
+   const float x = rightMagnitude > leftMagnitude ? state->right_x : state->left_x;
+   const float y = rightMagnitude > leftMagnitude ? state->right_y : state->left_y;
+   const float scaledX = x * (float)fabs(x) * gGamepadMenuCursorSpeed;
+   const float scaledY = -y * (float)fabs(y) * gGamepadMenuCursorSpeed;
+
+   const float moveX = scaledX + gGamepadMenuCursorRemainderX;
+   const float moveY = scaledY + gGamepadMenuCursorRemainderY;
+   const int deltaX = (int)moveX;
+   const int deltaY = (int)moveY;
+   gGamepadMenuCursorRemainderX = moveX - deltaX;
+   gGamepadMenuCursorRemainderY = moveY - deltaY;
+   if (!deltaX && !deltaY)
+      return;
+
+   short mouseX, mouseY;
+   mouse_get_xy(&mouseX, &mouseY);
+   mouse_put_xy((short)(mouseX + deltaX), (short)(mouseY + deltaY));
 }
 
 static void DispatchGamepadMenuKey(unsigned button, int down)
@@ -312,12 +421,147 @@ static void DispatchGamepadMenuKey(unsigned button, int down)
    uiDispatchEvent((uiEvent *)&event);
 }
 
+static void ResetGamepadActions(void)
+{
+   gGamepadYDownTime = 0;
+   gGamepadYPending = FALSE;
+   gGamepadYHeld = FALSE;
+   gGamepadL3Pending = FALSE;
+   gGamepadL3Chord = FALSE;
+   gGamepadSuppressB = FALSE;
+}
+
+// Convert physical buttons into the stateful layout used by the radial-menu
+// controller scheme.  Keeping this above the binding layer makes tap/hold
+// timing and chords identical for XInput, SDL, and Android's SDL backend.
+static uint32_t TranslateGamepadButtons(const sGamepadState *state, ulong now)
+{
+   const uint32_t yBit = 1u << kGamepadButtonY;
+   const uint32_t bBit = 1u << kGamepadButtonB;
+   const uint32_t l3Bit = 1u << kGamepadButtonLeftStick;
+   uint32_t logical = state->buttons;
+   uint32_t pulses = 0;
+
+   if (HotkeyContext != HK_GAME_MODE && HotkeyContext != HK_GAME2_MODE)
+   {
+      ResetGamepadActions();
+      return logical;
+   }
+
+   // Y and L3 are delayed until their tap/hold or chord is known.
+   logical &= ~(yBit | l3Bit);
+
+   if (state->buttons_pressed & l3Bit)
+   {
+      gGamepadL3Pending = TRUE;
+      gGamepadL3Chord = FALSE;
+   }
+
+   if (state->buttons_pressed & yBit)
+   {
+      if (state->buttons & l3Bit)
+      {
+         pulses |= 1u << kGamepadButtonQuickSave;
+         gGamepadL3Chord = TRUE;
+         gGamepadYPending = FALSE;
+         gGamepadYHeld = TRUE;
+      }
+      else
+      {
+         gGamepadYPending = TRUE;
+         gGamepadYHeld = FALSE;
+         gGamepadYDownTime = now;
+      }
+   }
+
+   if (gGamepadYPending && (state->buttons & yBit) &&
+       now - gGamepadYDownTime >= (ulong)gGamepadHoldMsec)
+   {
+      pulses |= 1u << kGamepadButtonDropItem;
+      gGamepadYPending = FALSE;
+      gGamepadYHeld = TRUE;
+   }
+
+   if (state->buttons_released & yBit)
+   {
+      if (gGamepadYPending && !gGamepadYHeld)
+         pulses |= 1u << kGamepadButtonWeaponToggle;
+      gGamepadYPending = FALSE;
+      gGamepadYHeld = FALSE;
+   }
+
+   if ((state->buttons_pressed & bBit) && (state->buttons & l3Bit))
+   {
+      pulses |= 1u << kGamepadButtonQuickLoad;
+      gGamepadL3Chord = TRUE;
+      gGamepadSuppressB = TRUE;
+   }
+   if (gGamepadSuppressB)
+   {
+      logical &= ~bBit;
+      if (state->buttons_released & bBit)
+         gGamepadSuppressB = FALSE;
+   }
+
+   if (state->buttons_released & l3Bit)
+   {
+      if (gGamepadL3Pending && !gGamepadL3Chord)
+         pulses |= 1u << kGamepadButtonSpeedToggle;
+      gGamepadL3Pending = FALSE;
+      gGamepadL3Chord = FALSE;
+   }
+
+   return logical | pulses;
+}
+
 static void DispatchGamepadState(void)
 {
    static float repeatTime[kGamepadButtonCount] = {};
    const sGamepadState *state = GamepadGetState(GamepadGetActiveIndex());
    if (!state)
       return;
+
+   const unsigned active = GamepadGetActiveIndex();
+   if (active != gGamepadActionController)
+   {
+      ResetGamepadActions();
+      gGamepadActionController = active;
+   }
+
+   const ulong nowMsec = tm_get_millisec();
+   const uint32_t logicalButtons = TranslateGamepadButtons(state, nowMsec);
+   const uint32_t buttonsPressed = logicalButtons & ~gGamepadLogicalButtons;
+   const uint32_t buttonsReleased = gGamepadLogicalButtons & ~logicalButtons;
+   gGamepadLogicalButtons = logicalButtons;
+
+   MoveGamepadMenuCursor(state);
+   DispatchGamepadMenuMouseButtons(logicalButtons);
+
+   // Buttons are delivered before axes so an LB/RB modifier pressed on the
+   // same frame can consume the stick instead of leaking one movement frame.
+   const float now = (float)(nowMsec / 1000.0);
+   for (unsigned i = 0; i < kGamepadButtonCount; ++i)
+   {
+      const uint32_t bit = 1u << i;
+      if (buttonsPressed & bit)
+      {
+         DispatchGamepadButtonEvent((char)i, 1);
+         DispatchGamepadMenuKey(i, 1);
+         repeatTime[i] = now + buttonRepeatDelay;
+      }
+      if (buttonsReleased & bit)
+      {
+         DispatchGamepadButtonEvent((char)i, 0);
+         DispatchGamepadMenuKey(i, 0);
+         repeatTime[i] = 0.0f;
+      }
+      const bool repeatable = i >= kGamepadButtonDpadUp && i <= kGamepadButtonDpadRight;
+      if (repeatable && (logicalButtons & bit) && now >= repeatTime[i])
+      {
+         DispatchGamepadMenuKey(i, 1);
+         repeatTime[i] = now + buttonRepeatInterval;
+      }
+   }
 
    const short axes[4] = {
       GamepadAxisToShort(state->left_x),
@@ -330,30 +574,6 @@ static void DispatchGamepadState(void)
    if (axes[2] != gGamepadAxes[2] || axes[3] != gGamepadAxes[3])
       DispatchGamepadMoveEvent(1, axes[2], axes[3]);
    memcpy(gGamepadAxes, axes, sizeof(gGamepadAxes));
-
-   const float now = (float)(tm_get_millisec() / 1000.0);
-   for (unsigned i = 0; i < kGamepadButtonCount; ++i)
-   {
-      const uint32_t bit = 1u << i;
-      if (state->buttons_pressed & bit)
-      {
-         DispatchGamepadButtonEvent((char)i, 1);
-         DispatchGamepadMenuKey(i, 1);
-         repeatTime[i] = now + buttonRepeatDelay;
-      }
-      if (state->buttons_released & bit)
-      {
-         DispatchGamepadButtonEvent((char)i, 0);
-         DispatchGamepadMenuKey(i, 0);
-         repeatTime[i] = 0.0f;
-      }
-      const bool repeatable = i >= kGamepadButtonDpadUp && i <= kGamepadButtonDpadRight;
-      if (repeatable && (state->buttons & bit) && now >= repeatTime[i])
-      {
-         DispatchGamepadMenuKey(i, 1);
-         repeatTime[i] = now + buttonRepeatInterval;
-      }
-   }
 }
 
 static void ReleaseLegacyJoystickState(void)
@@ -385,6 +605,7 @@ void UiJoySuspend(void)
    if (gGamepadWasOwner)
       ReleaseLegacyJoystickState();
    gGamepadWasOwner = FALSE;
+   ResetGamepadActions();
 }
 
 void UiJoyResume(void)
@@ -416,6 +637,7 @@ void uiJoystickPoller(void)
    float now;
 
    GamepadUpdate();
+   GamepadBindingFrame();
    DispatchGamepadState();
    const bool gamepadOwnsInput = GamepadOwnsInput() != 0;
    if (gamepadOwnsInput && !gGamepadWasOwner)

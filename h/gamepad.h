@@ -27,6 +27,18 @@ typedef enum eGamepadButton
    kGamepadButtonDpadRight,
    kGamepadButtonLeftTrigger,
    kGamepadButtonRightTrigger,
+   kGamepadButtonTouchLeanForward,
+   kGamepadButtonTouchClearWeapon,
+   kGamepadButtonTouchDropItem,
+   kGamepadButtonTouchCycleWeapon,
+   kGamepadButtonTouchCycleItem,
+   // Logical buttons synthesized by the shared controller action layer.
+   // Backends never set these bits directly.
+   kGamepadButtonWeaponToggle,
+   kGamepadButtonDropItem,
+   kGamepadButtonSpeedToggle,
+   kGamepadButtonQuickSave,
+   kGamepadButtonQuickLoad,
    kGamepadButtonCount
 } eGamepadButton;
 
@@ -53,6 +65,8 @@ void GamepadTerm(void);
 void GamepadUpdate(void);
 const sGamepadState *GamepadGetState(unsigned index);
 unsigned GamepadGetActiveIndex(void);
+unsigned GamepadGetLastInputIndex(void);
+void GamepadNotifyInput(unsigned index);
 int GamepadOwnsInput(void);
 const char *GamepadGetBackendName(void);
 

@@ -10,6 +10,7 @@
 #include <appagg.h>
 
 #include <simtime.h>
+#include <simtbase.h>
 #include <drkinvui.h>
 #include <drkplinv.h>
 #include <frobctrl.h>
@@ -20,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <math.h>
 
 #include <contain.h>
 #include <prjctile.h>
@@ -109,6 +111,28 @@ static IContainSys* pContainSys = NULL;
 
 // last object player picked up
 static ObjID gLastObjPickedUp = OBJ_NULL;
+
+// The native radial lives in the engine inventory layer so XInput, SDL and
+// Android all see exactly the same inventory contents and selection rules.
+#define INV_RADIAL_MAX_ENTRIES 32
+#define INV_RADIAL_STICK_COUNT 2
+#define INV_RADIAL_DEADZONE 0.45f
+
+struct sInvRadialRing
+{
+   ObjID entries[INV_RADIAL_MAX_ENTRIES];
+   int count;
+   int selected;
+   int current;
+   float x;
+   float y;
+};
+
+static BOOL gInvRadialActive = FALSE;
+static float gInvRadialSavedTimeScale = 1.0f;
+static float gInvRadialTimeScale = 0.15f;
+static sInvRadialRing gInvRadial[INV_RADIAL_STICK_COUNT];
+static ObjID gGamepadLastWeapon = OBJ_NULL;
 
 //------------------------------------------------------------
 // OBJECT "EXPIRATION"
@@ -529,6 +553,60 @@ void prev_item_command( int count )
    }
 }
 
+// Touch HUD regions are persistent selectors, rather than keyboard-style
+// transient inventory displays.  A tap must always advance exactly one slot,
+// even when the current selection's display timer has expired.  CycleSelection
+// deliberately contributes the empty slot after the last carried object.
+static void gamepad_cycle_weapon_command(int dir)
+{
+   if (dir == 0)
+      dir = kCycleForward;
+   set_expiration(kCurrentWeapon);
+   ObjID weapon = pInventory->CycleSelection(kCurrentWeapon,
+      dir < 0 ? kCycleBackward : kCycleForward);
+
+   if (gWeaponStartTime != NO_START_TIME
+       && gWeaponStartFrob.src_obj != weapon)
+   {
+      FrobAbort(kFrobLocNone, &gWeaponStartFrob);
+      gWeaponStartTime = NO_START_TIME;
+   }
+
+   if (gItemStartTime == NO_START_TIME)
+      pInventory->Wield(kCurrentWeapon);
+}
+
+static void gamepad_cycle_item_command(int dir)
+{
+   if (dir == 0)
+      dir = kCycleForward;
+   set_expiration(kCurrentItem);
+
+   Camera *cam = PlayerCamera();
+   if (CameraIsRemote(cam))
+      CameraAttach(cam, PlayerObject());
+
+   ObjID item = pInventory->CycleSelection(kCurrentItem,
+      dir < 0 ? kCycleBackward : kCycleForward);
+   if (gItemStartTime != NO_START_TIME
+       && gItemStartFrob.src_loc == kFrobLocInv
+       && gItemStartFrob.src_obj != item)
+   {
+      FrobAbort(kFrobLocNone, &gItemStartFrob);
+      gItemStartTime = NO_START_TIME;
+   }
+}
+
+static void touch_cycle_weapon_command(void)
+{
+   gamepad_cycle_weapon_command(kCycleForward);
+}
+
+static void touch_cycle_item_command(void)
+{
+   gamepad_cycle_item_command(kCycleForward);
+}
+
 
 //----------------------------------------
 
@@ -789,6 +867,14 @@ static void drop_command(void)
    }
 }
 
+static void gamepad_drop_item_command(void)
+{
+   // The selected object remains meaningful after its HUD display expires.
+   // A deliberate controller hold should therefore drop it immediately.
+   set_expiration(kCurrentItem);
+   drop_command();
+}
+
 //------------------------------------------------------------
 // CLEAR SELECTIONS
 //
@@ -819,6 +905,166 @@ static void clear_both_command(void)
    clear_item_command();
 }
 
+static void toggle_weapon_command(void)
+{
+   ObjID weapon = pInventory->Selection(kCurrentWeapon);
+   if (weapon != OBJ_NULL)
+   {
+      gGamepadLastWeapon = weapon;
+      abort_frob(kCurrentWeapon);
+      pInventory->ClearSelection(kCurrentWeapon);
+      InvUIRefresh();
+      return;
+   }
+
+   if (gGamepadLastWeapon != OBJ_NULL &&
+       pContainSys->IsHeld(PlayerObject(), gGamepadLastWeapon) != ECONTAIN_NULL &&
+       pInventory->GetType(gGamepadLastWeapon) == kInvTypeWeapon)
+   {
+      pInventory->Select(gGamepadLastWeapon);
+      set_expiration(kCurrentWeapon);
+   }
+   else
+   {
+      cycle_weapon_command(kCycleForward);
+      gGamepadLastWeapon = pInventory->Selection(kCurrentWeapon);
+   }
+
+   if (gItemStartTime == NO_START_TIME)
+      pInventory->Wield(kCurrentWeapon);
+   InvUIRefresh();
+}
+
+static int radial_find(const sInvRadialRing& ring, ObjID obj)
+{
+   for (int i = 0; i < ring.count; ++i)
+      if (ring.entries[i] == obj)
+         return i;
+   return 0;
+}
+
+static void radial_build(void)
+{
+   memset(gInvRadial, 0, sizeof(gInvRadial));
+   for (int stick = 0; stick < INV_RADIAL_STICK_COUNT; ++stick)
+   {
+      gInvRadial[stick].entries[0] = OBJ_NULL;
+      gInvRadial[stick].count = 1;
+   }
+
+   sContainIter *iter = pContainSys->IterStart(PlayerObject());
+   for (; !iter->finished; pContainSys->IterNext(iter))
+   {
+      const ObjID obj = iter->containee;
+      const int stick = pInventory->GetType(obj) == kInvTypeWeapon ? 0 : 1;
+      sInvRadialRing& ring = gInvRadial[stick];
+      if (ring.count < INV_RADIAL_MAX_ENTRIES)
+         ring.entries[ring.count++] = obj;
+   }
+   pContainSys->IterEnd(iter);
+
+   gInvRadial[0].current = radial_find(gInvRadial[0],
+      pInventory->Selection(kCurrentWeapon));
+   gInvRadial[1].current = radial_find(gInvRadial[1],
+      pInventory->Selection(kCurrentItem));
+   gInvRadial[0].selected = gInvRadial[0].current;
+   gInvRadial[1].selected = gInvRadial[1].current;
+}
+
+static void radial_apply(int stick)
+{
+   sInvRadialRing& ring = gInvRadial[stick];
+   if (ring.selected < 0 || ring.selected >= ring.count)
+      return;
+
+   const eWhichInvObj which = stick == 0 ? kCurrentWeapon : kCurrentItem;
+   const ObjID selected = ring.entries[ring.selected];
+   if (selected == pInventory->Selection(which))
+      return;
+
+   if (which == kCurrentItem)
+   {
+      Camera *cam = PlayerCamera();
+      if (CameraIsRemote(cam))
+         CameraAttach(cam, PlayerObject());
+      if (selected == OBJ_NULL && pInventory->WieldingJunk())
+         return;
+   }
+
+   abort_frob(which);
+   if (selected == OBJ_NULL)
+      pInventory->ClearSelection(which);
+   else
+   {
+      pInventory->Select(selected);
+      set_expiration(which);
+      if (which == kCurrentWeapon)
+         gGamepadLastWeapon = selected;
+   }
+
+   if (which == kCurrentWeapon && gItemStartTime == NO_START_TIME)
+      pInventory->Wield(kCurrentWeapon);
+}
+
+static void radial_close(BOOL apply)
+{
+   if (!gInvRadialActive)
+      return;
+
+   if (apply)
+   {
+      radial_apply(0);
+      radial_apply(1);
+      InvUIRefresh();
+   }
+   gInvRadialActive = FALSE;
+   SetSimTimeScale(gInvRadialSavedTimeScale);
+}
+
+BOOL InvUIRadialActive(void)
+{
+   return gInvRadialActive;
+}
+
+void InvUIRadialSetActive(BOOL active)
+{
+   if (active)
+   {
+      if (gInvRadialActive || !pInventory || !pContainSys)
+         return;
+      radial_build();
+      const sSimTimingParams *timing = GetSimTimingParams();
+      gInvRadialSavedTimeScale = timing ? timing->scaleFrameTime : 1.0f;
+      gInvRadialTimeScale = 0.15f;
+      config_get_float("gamepad_radial_time_scale", &gInvRadialTimeScale);
+      if (gInvRadialTimeScale < 0.0f) gInvRadialTimeScale = 0.0f;
+      if (gInvRadialTimeScale > 1.0f) gInvRadialTimeScale = 1.0f;
+      SetSimTimeScale(gInvRadialTimeScale);
+      gInvRadialActive = TRUE;
+   }
+   else
+      radial_close(TRUE);
+}
+
+void InvUIRadialSetStick(int stick, float x, float y)
+{
+   if (!gInvRadialActive || stick < 0 || stick >= INV_RADIAL_STICK_COUNT)
+      return;
+
+   sInvRadialRing& ring = gInvRadial[stick];
+   ring.x = x;
+   ring.y = y;
+   const float magnitude = (float)sqrt((double)(x * x + y * y));
+   if (magnitude < INV_RADIAL_DEADZONE || ring.count <= 1)
+      return;
+
+   const double twoPi = 6.28318530717958647692;
+   double angle = atan2((double)x, (double)y);
+   if (angle < 0.0)
+      angle += twoPi;
+   ring.selected = ((int)(angle * ring.count / twoPi + 0.5)) % ring.count;
+}
+
 // select the last item the user picked up
 static void
 select_newest_command( void )
@@ -847,9 +1093,15 @@ static Command commands[] =
    { "prev_item", FUNC_INT, prev_item_command, "previous item  -1 = forward, 1 = backward", HK_GAME_MODE },
    { "next_weapon", FUNC_INT, next_weapon_command, "next weapon  1 = forward, -1 = backward", HK_GAME_MODE },
    { "prev_weapon", FUNC_INT, prev_weapon_command, "previous weapon  -1 = forward, 1 = backward", HK_GAME_MODE },
+   { "touch_cycle_weapon", FUNC_VOID, touch_cycle_weapon_command, "advance touch weapon selection, including empty", HK_GAME_MODE },
+   { "touch_cycle_item", FUNC_VOID, touch_cycle_item_command, "advance touch item selection, including empty", HK_GAME_MODE },
+   { "gamepad_cycle_weapon", FUNC_INT, gamepad_cycle_weapon_command, "advance gamepad weapon selection, including empty", HK_GAME_MODE },
+   { "gamepad_cycle_item", FUNC_INT, gamepad_cycle_item_command, "advance gamepad item selection, including empty", HK_GAME_MODE },
    { "inv_select", FUNC_STRING, select_command, "Select an inventory object by name (or archetype name)", HK_GAME_MODE },
    { "loot_select", FUNC_VOID, select_loot_command, "Select loot in inventory", HK_GAME_MODE },
    { "drop_item", FUNC_VOID, drop_command, "Drop (actually, throw) your currently selected item", HK_GAME_MODE },
+   { "gamepad_drop_item", FUNC_VOID, gamepad_drop_item_command, "Drop the selected item regardless of HUD timeout", HK_GAME_MODE },
+   { "toggle_weapon", FUNC_VOID, toggle_weapon_command, "Equip or holster the last selected weapon", HK_GAME_MODE },
 
    { "clear_item", FUNC_VOID, clear_item_command, "Clear the player's 'current item' selection.", HK_GAME_MODE },
    { "clear_weapon", FUNC_VOID, clear_weapon_command, "Clear the player's 'current item' selection.", HK_GAME_MODE },
@@ -1184,6 +1436,99 @@ static cStr get_object_name(ObjID obj)
 {
    AutoAppIPtr(GameStrings);
    return pGameStrings->FetchObjString(obj,GAME_NAME_TABLE);
+}
+
+static void radial_label(ObjID obj, const char *emptyLabel,
+                         char *buffer, int bufferSize)
+{
+   if (obj == OBJ_NULL)
+   {
+      strncpy(buffer, emptyLabel, bufferSize - 1);
+      buffer[bufferSize - 1] = '\0';
+      return;
+   }
+
+   cStr name = get_object_name(obj);
+   strncpy(buffer, (const char *)name, bufferSize - 1);
+   buffer[bufferSize - 1] = '\0';
+   if (!buffer[0])
+      sprintf(buffer, "Object %d", obj);
+}
+
+static void render_radial_ring(const sInvRadialRing& ring, int centerX,
+                               int centerY, int radius, const char *title,
+                               const char *emptyLabel)
+{
+   const double twoPi = 6.28318530717958647692;
+   const int fg = guiStyleGetColor(NULL, StyleColorFG);
+   const int dim = guiStyleGetColor(NULL, StyleColorDim);
+   const int bright = guiStyleGetColor(NULL, StyleColorBright);
+   const int bg = guiStyleGetColor(NULL, StyleColorBG2);
+
+   short textW, textH;
+   gr_set_fcolor(bright);
+   gr_string_size((char *)title, &textW, &textH);
+   gr_string((char *)title, centerX - textW / 2,
+             centerY - radius - textH - 8);
+
+   for (int i = 0; i < ring.count; ++i)
+   {
+      const double angle = twoPi * i / ring.count - twoPi / 4.0;
+      const int x = centerX + (int)(cos(angle) * radius);
+      const int y = centerY + (int)(sin(angle) * radius);
+      if (i == ring.selected)
+      {
+         gr_set_fcolor(bright);
+         gr_rect(x - 5, y - 5, x + 5, y + 5);
+         gr_int_line(centerX, centerY, x, y);
+      }
+      else
+      {
+         gr_set_fcolor(i == ring.current ? fg : dim);
+         gr_box(x - 3, y - 3, x + 3, y + 3);
+      }
+   }
+
+   char label[80];
+   radial_label(ring.entries[ring.selected], emptyLabel,
+                label, sizeof(label));
+   if (strlen(label) > 31)
+   {
+      label[28] = '.';
+      label[29] = '.';
+      label[30] = '.';
+      label[31] = '\0';
+   }
+   gr_string_size(label, &textW, &textH);
+   const int pad = 5;
+   gr_set_fcolor(bg);
+   gr_rect(centerX - textW / 2 - pad, centerY - textH / 2 - pad,
+           centerX + textW / 2 + pad, centerY + textH / 2 + pad);
+   gr_set_fcolor(bright);
+   gr_box(centerX - textW / 2 - pad, centerY - textH / 2 - pad,
+          centerX + textW / 2 + pad, centerY + textH / 2 + pad);
+   gr_string(label, centerX - textW / 2, centerY - textH / 2);
+}
+
+static void render_radial_menu(void)
+{
+   if (!gInvRadialActive)
+      return;
+
+   const int width = grd_canvas->bm.w;
+   const int height = grd_canvas->bm.h;
+   int radius = width / 7;
+   if (radius > height / 4)
+      radius = height / 4;
+   if (radius < 48)
+      radius = 48;
+
+   guiStyleSetupFont(NULL, StyleFontNormal);
+   render_radial_ring(gInvRadial[0], width * 3 / 10, height / 2,
+                      radius, "WEAPONS - LEFT STICK", "NO WEAPON");
+   render_radial_ring(gInvRadial[1], width * 7 / 10, height / 2,
+                      radius, "ITEMS - RIGHT STICK", "NO ITEM");
+   guiStyleCleanupFont(NULL, StyleFontNormal);
 }
 
 //
@@ -1864,6 +2209,7 @@ void InvUIInit(void)
 
 void InvUITerm(void)
 {
+   radial_close(FALSE);
    SafeRelease(pContainSys);
    SafeRelease(pInventory);
    SafeRelease(gNoDropProp);
@@ -1877,6 +2223,7 @@ void InvUITerm(void)
 
 void InvUIClearState()
 {
+   radial_close(FALSE);
    InvUIAbortAllFrobs();
 
    pInventory->ClearSelection(kCurrentWeapon);
@@ -1885,6 +2232,7 @@ void InvUIClearState()
 
 void InvUIEnterMode(BOOL resuming)
 {
+   radial_close(FALSE);
    gItemStartTime = NO_START_TIME;
    gWeaponStartTime = NO_START_TIME;
 
@@ -2020,6 +2368,7 @@ void InvUIRender(ulong msec)
       }
 
       render_selection_display(msec);
+      render_radial_menu();
       ScrnUnlockDrawCanvas();
    }
 

@@ -199,6 +199,11 @@ bool mouse_consume_relative_motion(int *x, int *y)
    g_relativeX = g_relativeY = 0;
    return true;
 }
+int DarkInputRelativeMouseActive(void)
+{
+   std::lock_guard<std::mutex> lock(g_mutex);
+   return g_relativeMode ? 1 : 0;
+}
 errtype _mouse_check_btn(int button, bool *result) { *result = (mouseInstantButts >> button) & 1; return OK; }
 errtype mouse_check_btn(int button, bool *result) { return _mouse_check_btn(button, result); }
 errtype mouse_look_next(lgMouseEvent *event)

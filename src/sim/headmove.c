@@ -34,6 +34,8 @@ static int mouse_head_dead_zone=0;
 
 static float mouse_rel_x;
 static float mouse_rel_y;
+static float gamepad_turn_rate;
+static float gamepad_look_rate;
 
 #define HEADRATE  (mouse_head_speed)
 #define DEAD_ZONE (mouse_head_dead_zone)
@@ -190,7 +192,7 @@ int headmoveComputeKeyboardTurn(int ms)
 // simple "look around w/the mouse" code
 bool headmoveLookAround(Camera *cam, int ms)
 {
-   bool ret;
+   bool ret = FALSE;
    mxs_angvec ang;
    short centerx, centery;
 
@@ -212,13 +214,33 @@ bool headmoveLookAround(Camera *cam, int ms)
    // factor in the keyboard tilt rate
    ang.ty += headmoveComputeKeyboardTilt(ms);
 
+   // Unlike mouse motion, a stick is a sustained angular velocity. Apply it
+   // using real frame time so maximum deflection has a predictable turn time
+   // at every resolution and frame rate.
+   if (gamepad_turn_rate != 0.0f || gamepad_look_rate != 0.0f)
+   {
+      const float angle_per_turn = 65536.0f;
+      const float frame_seconds = (float)ms / 1000.0f;
+      const int turn = (int)(gamepad_turn_rate * angle_per_turn * frame_seconds);
+      int pitch = (short)ang.ty +
+         (int)(gamepad_look_rate * angle_per_turn * frame_seconds);
+      const int kGamepadPitchLimit = 0x3c00; // 84.375 degrees
+      if (pitch > kGamepadPitchLimit)
+         pitch = kGamepadPitchLimit;
+      else if (pitch < -kGamepadPitchLimit)
+         pitch = -kGamepadPitchLimit;
+      ang.tz = (mxs_ang)(ang.tz - turn);
+      ang.ty = (mxs_ang)pitch;
+      ret = TRUE;
+   }
+
    // buzzard: try disabling frame-rate relative, because the player will
    // get a large or smaller delta due to moving muose farther in one frame
    ms = 50;
 
    // was once 30 and 20, i think
    if ((fabs(mouse_rel_x)<=DEAD_ZONE)&&(fabs(mouse_rel_y)<=DEAD_ZONE)) {
-      ret = FALSE;                   // "dead zone"
+      // Preserve the result from the time-based gamepad path above.
    } else {
       // calc. the new offset --- TODO: make this screen size independant????
       ang.tz = (mxs_ang)(ang.tz - (HEADRATE * mouse_rel_x * ms) / (100 * 3 * centerx));
@@ -314,6 +336,8 @@ void headmoveInit(void)
    headmoveSetMouseParams(-1,-1);
    mouse_rel_x = 0;
    mouse_rel_y = 0;
+   gamepad_turn_rate = 0;
+   gamepad_look_rate = 0;
    mouse_put_xy((short)(grd_visible_canvas->bm.w/2),(short)(grd_visible_canvas->bm.h/2));
 
    config_get_int("kbd_turn_accelerate", &kbd_accelerate);
@@ -332,6 +356,18 @@ void headmoveSetRelPosX (float x)
 void headmoveSetRelPosY (float y)
 {
    mouse_rel_y = y;
+}
+
+
+void headmoveSetGamepadTurn(float turns_per_second)
+{
+   gamepad_turn_rate = turns_per_second;
+}
+
+
+void headmoveSetGamepadLook(float turns_per_second)
+{
+   gamepad_look_rate = turns_per_second;
 }
 
 
