@@ -36,9 +36,8 @@ EXTERN BOOL MoviePlaySynchronous(const char * pszFile, int volume)
    AutoAppIPtr(DisplayDevice);
    cFileSpec fileSpec(pszFile);
    float oldGamma;
-
-   if (!pMoviePlayer1)
-      return FALSE;
+   BOOL opened;
+   BOOL played;
       
    fileSpec.MakeFullPath();
    if (!fileSpec.FileExists())
@@ -48,6 +47,9 @@ EXTERN BOOL MoviePlaySynchronous(const char * pszFile, int volume)
    // This avoids depending on the obsolete 32-bit Intel Indeo codec.
    if (MovieBackendPlaySynchronous(fileSpec.GetName(), volume))
       return TRUE;
+
+   if (!pMoviePlayer1 || !pDisplayDevice)
+      return FALSE;
    
    // remember old gamma setting, set gamma to default
    //  this is to keep movies from looking bad if user has cranked up gamma
@@ -61,10 +63,14 @@ EXTERN BOOL MoviePlaySynchronous(const char * pszFile, int volume)
    gr_push_canvas(grd_visible_canvas);
 
    pMoviePlayer1->SetTermKeys(termlist);
-   pMoviePlayer1->Open(fileSpec.GetName(), 0, 0, 640, 480);
-   pMoviePlayer1->SetVolume(volume);
-   pMoviePlayer1->Play(kMoviePlayBlock);
-   pMoviePlayer1->Close();
+   opened = pMoviePlayer1->Open(fileSpec.GetName(), 0, 0, 640, 480);
+   played = FALSE;
+   if (opened)
+   {
+      pMoviePlayer1->SetVolume(volume);
+      played = pMoviePlayer1->Play(kMoviePlayBlock);
+      pMoviePlayer1->Close();
+   }
    
    gr_pop_canvas();
     
@@ -74,7 +80,7 @@ EXTERN BOOL MoviePlaySynchronous(const char * pszFile, int volume)
    g_gamma = oldGamma;
    gamma_update();
 
-   return TRUE;
+   return played;
 }
 
 

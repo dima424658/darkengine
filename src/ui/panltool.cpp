@@ -100,6 +100,24 @@ public:
    STDMETHOD_(eLoopMessageResult, ReceiveMessage)(eLoopMessage, tLoopMessageData hData);
 };
 
+static BOOL is_intro_movie(const char* path)
+{
+   const char* base = path;
+   const char* scan;
+   static const char intro[] = "intro";
+   int i;
+
+   for (scan = path; scan && *scan; ++scan)
+      if (*scan == '/' || *scan == '\\')
+         base = scan + 1;
+   if (!base)
+      return FALSE;
+   for (i = 0; intro[i]; ++i)
+      if (tolower((unsigned char)base[i]) != intro[i])
+         return FALSE;
+   return base[i] == '\0' || base[i] == '.';
+}
+
 //
 // Static: descriptor
 //
@@ -170,7 +188,13 @@ STDMETHODIMP_(eLoopMessageResult) cMovieClient::ReceiveMessage(eLoopMessage msg,
             movieVolume = (int) VolLinearToMillibel( linearVolume );
          }
 
-         MoviePlaySynchronous(mMovie, movieVolume);
+         const BOOL played = MoviePlaySynchronous(mMovie, movieVolume);
+         // The mission loop used to set skip_intro as soon as it found an AVI,
+         // even when the platform had no decoder and displayed no frames.
+         // Only remember a completed (or deliberately skipped) intro.
+         if (played && is_intro_movie(mMovie) &&
+             !config_is_defined("always_play_intro"))
+            config_set_string("skip_intro", "");
          if (sound)
          {
             metaSndEnterPanel(kMetaSndPanelLast);

@@ -330,8 +330,6 @@ void cMissionLoopClient::OnFrame()
             if (!config_is_defined("skip_intro"))
             {
                PushMovieOrBookMode("intro"); 
-               if (!config_is_defined("always_play_intro"))
-                  config_set_string("skip_intro",""); 
             }
          }
       NEXT(); 
