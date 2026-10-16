@@ -94,6 +94,23 @@ static ulong g_aszDefaultMaterial[kMaxTextureSubst];
 // other
 static IResMan *g_pResMan;
 
+static void LogicalTextureName(char *logicalName, size_t logicalNameSize,
+                               const char *textureName)
+{
+   char *extension;
+   char *slash;
+
+   strncpy(logicalName, textureName, logicalNameSize - 1);
+   logicalName[logicalNameSize - 1] = '\0';
+   strlwr(logicalName);
+   extension = strrchr(logicalName, '.');
+   slash = strrchr(logicalName, '\\');
+   if (!slash)
+      slash = strrchr(logicalName, '/');
+   if (extension && (!slash || extension > slash) && extension != logicalName)
+      *extension = '\0';
+}
+
 
 /* --<<= -+-/-/-/=/=/\/- <<< ((( ((( / \ ))) ))) >>> -\/\=\=\-\-\-+- =>>-- *\
 
@@ -374,14 +391,18 @@ static Command g_aCommands[]
 // because it's the callers business whether the texture is needed.
 grs_bitmap *MeshTexGetBitmap(char *pszName)
 {
-   strlwr(pszName);
+   char logicalName[32];
+   LogicalTextureName(logicalName, sizeof(logicalName), pszName);
 
    // Do we already have this one?  We usually will.
    for (int i = 0; i < g_Textures.Size(); ++i)
-      if (!strcmp(g_Textures[i].m_aszName, pszName))
+      if (!strcmp(g_Textures[i].m_aszName, logicalName))
          return g_Textures[i].m_pBitmap;
 
-   IRes *pRes = g_pResMan->Bind(pszName, RESTYPE_IMAGE, MeshModelTexturesPath);
+   // MeshTex values name logical artwork.  Do not let an extension retained
+   // in a mission or gamesys force a lower-priority codec (or a missing
+   // resource) when a mod provides the same texture as TGA or PNG.
+   IRes *pRes = g_pResMan->Bind(logicalName, RESTYPE_IMAGE, MeshModelTexturesPath);
    if (!pRes)
       return 0;
 
@@ -408,7 +429,8 @@ grs_bitmap *MeshTexGetBitmap(char *pszName)
    }
 
    sResTexture NewPair;
-   strncpy(NewPair.m_aszName, pszName, 16);
+   strncpy(NewPair.m_aszName, logicalName, sizeof(NewPair.m_aszName) - 1);
+   NewPair.m_aszName[sizeof(NewPair.m_aszName) - 1] = '\0';
    NewPair.m_pRes = pRes;
    NewPair.m_pBitmap = (grs_bitmap *) pRes->Lock();
    g_Textures.Append(NewPair);

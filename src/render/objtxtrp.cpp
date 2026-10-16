@@ -189,14 +189,29 @@ static void _ClearPtxt(IRes **pTxt)
 
 static void _GogetPtxt(IRes **pTxt, const char *txtName)
 {
+   char logicalName[256];
+   char *extension;
+   char *slash;
+
    if (txtName[0]=='\0') // null string
    {
       ConfigSpew("TxtReplaceSpew",("ObjTxtReplace GogetPtxt NULL string\n"));
       return;
    }
    AutoAppIPtr(ResMan);
-   // should really investigate txtName, check for txt16 and so on, expose from objmodel
-   IRes *pRes = pResMan->Bind(txtName, RESTYPE_IMAGE, NULL);
+   strncpy(logicalName, txtName, sizeof(logicalName) - 1);
+   logicalName[sizeof(logicalName) - 1] = '\0';
+   extension = strrchr(logicalName, '.');
+   slash = strrchr(logicalName, '\\');
+   if (!slash)
+      slash = strrchr(logicalName, '/');
+   if (extension && (!slash || extension > slash) && extension != logicalName)
+      *extension = '\0';
+
+   // Object replacement properties also name logical artwork.  Searching
+   // extensionlessly lets higher-priority mod roots replace an old GIF/PCX
+   // spelling with any supported image format.
+   IRes *pRes = pResMan->Bind(logicalName, RESTYPE_IMAGE, NULL);
    if (pRes)
    {
       pRes->Lock();
