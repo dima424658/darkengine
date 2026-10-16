@@ -185,15 +185,17 @@ cd android
 
 The APK is written below `android/app/build/outputs/apk/debug`. On first launch,
 select the folder that directly contains `cam.cfg` and the retail mission files.
-The launcher imports the selected tree into app-specific storage; it does not
-modify the source installation or include retail data in the APK. Gameplay has
-native touch sticks and action, inventory, weapon, map, and pause controls.
-Bluetooth, USB, and built-in gamepads use the shared SDL gamepad path. Retail
-movies play through the packaged LibVLC backend; PNG replacement resources are
-not yet enabled on Android.
+The launcher can use that directory in place after Android grants **All files
+access**, or import an optional performance copy into app-specific storage.
+Long-press the app icon and choose **Choose game folder** to change the source,
+switch modes, or refresh a copy without clearing app data. Retail data is not
+included in the APK. Gameplay has native touch sticks and action, inventory,
+weapon, map, and pause controls. Bluetooth, USB, and built-in gamepads use the
+shared SDL gamepad path. Retail movies play through the packaged LibVLC
+backend; PNG replacement resources are not yet enabled on Android.
 
-See [`docs/android.md`](docs/android.md) for installation, direct-mission
-debugging, data-import, controller, and touch-control details.
+See [`docs/android.md`](docs/android.md) for installation, direct-folder and
+copy modes, direct-mission debugging, controller, and touch-control details.
 
 ### Linux / WSL2
 

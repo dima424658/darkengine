@@ -9,8 +9,8 @@ is not an Android target.
 - Android 8.0 (API 26) or later.
 - ARM64 (`arm64-v8a`) only for the first bring-up.
 - SDL 2.32.10, OpenGL ES 3, and OpenAL Soft 1.25.2 using Android OpenSL.
-- A folder picker that imports retail TDP, Gold, or Thief 2 files into the
-  app-specific `game` directory on first launch.
+- A folder picker that can use retail TDP, Gold, or Thief 2 files directly or
+  import a performance copy into the app-specific `game` directory.
 - Retail movie playback through the packaged LibVLC backend.
 - PNG replacement resources are not part of the first APK.
 
@@ -42,17 +42,29 @@ cd android
 
 The debug APK is written below `android/app/build/outputs/apk/debug`.
 
-Install and launch the APK. If the app-specific `game` directory does not
-already contain a recognizable installation, Dark Engine Restored opens
-Android's folder picker. Select the folder that directly contains `cam.cfg`
-and the retail mission files. The app validates the selection, imports it
-without changing the source folder, and then starts the engine. Keep the
-device awake and the app in the foreground while the initial import completes.
+Install and launch the APK. When no usable installation has been selected,
+Dark Engine Restored opens Android's folder picker. Select the folder that
+directly contains `cam.cfg` and the retail mission files, then choose one of
+the storage modes:
 
-The importer is necessary because Android's Storage Access Framework exposes
-the selected tree through content URIs rather than a native filesystem path
-that the engine can use as its working directory. Files are staged before the
-app replaces an incomplete `game` directory.
+- **Use folder directly** requests Android's **All files access** permission
+  and runs from the selected filesystem directory. Changes to configuration,
+  mods, and missions are visible after restarting the app, and no second copy
+  of the retail data is created.
+- **Copy for faster loading** imports the selected tree into the app-specific
+  `game` directory without changing the source. This is useful for a game
+  installation on a slower removable SD card. Keep the device awake and the
+  app in the foreground while the import completes.
+
+Some document providers do not expose a physical filesystem location usable
+by the native engine. For those providers, only the copy option is available.
+The copy is staged before it replaces an earlier complete import.
+
+Long-press the app icon and choose **Choose game folder** to change the active
+folder, switch storage modes, or refresh an imported copy. Selecting the same
+source folder and choosing the copy option imports it again; clearing all app
+data is not required. Applying a new selection restarts a running game, so save
+before using the shortcut.
 
 For development, a legal installation can still be copied into the
 app-specific external `game` directory with `adb`. Do not put retail data in
@@ -150,4 +162,5 @@ back, and the D-pad retains directional navigation. The gameplay touch overlay
 hides when a physical gamepad was the most recently used controller and returns
 as soon as the player touches one of its controls. The content picker uses
 direct Android touch hit-testing. Text fields and the command console require
-the Android software keyboard.
+the Android software keyboard; focusing the command console opens it
+automatically.

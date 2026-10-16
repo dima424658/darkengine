@@ -23,6 +23,10 @@ import org.videolan.libvlc.MediaPlayer;
 import org.videolan.libvlc.interfaces.IVLCVout;
 
 public final class ThiefActivity extends SDLActivity {
+    private static ThiefActivity activeInstance;
+
+    static final String EXTRA_GAME_PATH =
+        "io.github.inkmakerdroid.darkengine.extra.GAME_PATH";
     static final String EXTRA_QUICKSTART =
         "io.github.inkmakerdroid.darkengine.extra.QUICKSTART";
     static final String EXTRA_QUICKSTART_POS =
@@ -52,6 +56,7 @@ public final class ThiefActivity extends SDLActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        activeInstance = this;
         if (mLayout != null) {
             touchControls = new TouchControlsView(this);
             mLayout.addView(touchControls, new ViewGroup.LayoutParams(
@@ -107,6 +112,13 @@ public final class ThiefActivity extends SDLActivity {
             nativeSetTouchControllerConnected(false);
         }
         super.onDestroy();
+        if (activeInstance == this) {
+            activeInstance = null;
+        }
+    }
+
+    static boolean isRunning() {
+        return activeInstance != null;
     }
 
     /** Called on SDL's native thread while Dark's movie panel is active. */
@@ -141,6 +153,11 @@ public final class ThiefActivity extends SDLActivity {
             ArrayList<String> options = new ArrayList<>();
             options.add("--no-video-title-show");
             options.add("--avcodec-hw=none");
+            // Some Android audio stacks create an AudioTrack successfully but
+            // never consume VLC's decoded PCM (observed on the Odin 2 while
+            // using Bluetooth).  OpenSL ES is also used successfully by the
+            // engine's OpenAL backend and avoids that silent AudioTrack path.
+            options.add("--aout=opensles");
             movieLib = new LibVLC(this, options);
             moviePlayer = new MediaPlayer(movieLib);
             movieSurface = new SurfaceView(this);
@@ -323,17 +340,23 @@ public final class ThiefActivity extends SDLActivity {
 
     @Override
     protected String[] getArguments() {
-        File root = getExternalFilesDir(null);
-        if (root == null) {
-            root = getFilesDir();
+        Intent intent = getIntent();
+        String selectedPath = intent.getStringExtra(EXTRA_GAME_PATH);
+        File game;
+        if (selectedPath != null && !selectedPath.trim().isEmpty()) {
+            game = new File(selectedPath);
+        } else {
+            File root = getExternalFilesDir(null);
+            if (root == null) {
+                root = getFilesDir();
+            }
+            game = new File(root, "game");
+            game.mkdirs();
         }
-        File game = new File(root, "game");
-        game.mkdirs();
 
         ArrayList<String> arguments = new ArrayList<>();
         arguments.add("game_path=" + game.getAbsolutePath());
         if ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
-            Intent intent = getIntent();
             addDebugArgument(arguments, intent, EXTRA_QUICKSTART,
                              "quickstart");
             addDebugArgument(arguments, intent, EXTRA_QUICKSTART_POS,

@@ -221,6 +221,20 @@ void PlatformExitProcess(int status) { std::exit(status); }
 BOOL PlatformSetClipboardText(const char *) { return FALSE; }
 int PlatformGetClipboardText(char *, int) { return 0; }
 
+void PlatformSetTextInputActive(BOOL active)
+{
+#if defined(__linux__)
+   if (!(SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO))
+      return;
+   if (active)
+      SDL_StartTextInput();
+   else
+      SDL_StopTextInput();
+#else
+   (void)active;
+#endif
+}
+
 BOOL PlatformGetCurrentDirectory(char *path, int capacity)
 {
    return path && capacity > 0 && getcwd(path, (size_t)capacity) != nullptr;

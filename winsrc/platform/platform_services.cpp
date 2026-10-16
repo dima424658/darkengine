@@ -372,6 +372,8 @@ int PlatformGetClipboardText(char *text, int capacity)
    return length;
 }
 
+void PlatformSetTextInputActive(BOOL) {}
+
 BOOL PlatformGetCurrentDirectory(char *path, int capacity)
 {
    DWORD length;

@@ -87,6 +87,7 @@ EXTERN void PlatformDebugBreak(void);
 EXTERN void PlatformExitProcess(int status);
 EXTERN BOOL PlatformSetClipboardText(const char *text);
 EXTERN int PlatformGetClipboardText(char *text, int capacity);
+EXTERN void PlatformSetTextInputActive(BOOL active);
 EXTERN BOOL PlatformGetCurrentDirectory(char *path, int capacity);
 // Converts Windows separators and resolves an existing path component by
 // component. Exact spelling always wins; on case-sensitive hosts, a unique

@@ -1,18 +1,26 @@
 package io.github.inkmakerdroid.darkengine;
 
+import android.Manifest;
+import android.app.AlarmManager;
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.DocumentsContract;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -29,39 +37,108 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Finds or imports the separately installed retail game data before SDL starts.
+ * Selects separately installed retail game data before SDL starts.
  *
  * Android's Storage Access Framework exposes a selected directory as content
- * URIs, not as a POSIX directory the native engine can chdir into.  Import the
- * selected tree into this application's external-files directory, where the
- * native launcher can use the files normally without broad storage permission.
+ * URIs, not as a POSIX directory the native engine can chdir into. A physical
+ * external-storage tree can be used directly with All files access; any other
+ * provider can be imported transactionally into the app's external-files area.
  */
 public final class LauncherActivity extends Activity {
     private static final int REQUEST_GAME_DIRECTORY = 1;
+    private static final int REQUEST_STORAGE_ACCESS = 2;
+    private static final int REQUEST_LEGACY_STORAGE_ACCESS = 3;
     private static final String GAME_DIRECTORY = "game";
     private static final String IMPORT_DIRECTORY = "game-import";
     private static final String BACKUP_DIRECTORY = "game-previous";
+    private static final String ACTION_CHOOSE_GAME_FOLDER =
+        "io.github.inkmakerdroid.darkengine.action.CHOOSE_GAME_FOLDER";
+    private static final String PREFERENCES = "game-storage";
+    private static final String PREF_STORAGE_MODE = "storage-mode";
+    private static final String PREF_GAME_PATH = "game-path";
+    private static final String PREF_TREE_URI = "tree-uri";
+    private static final String MODE_DIRECT = "direct";
+    private static final String MODE_COPY = "copy";
+    private static final String STATE_PENDING_TREE_URI = "pending-tree-uri";
+    private static final String STATE_PENDING_DIRECT_PATH = "pending-direct-path";
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private TextView statusView;
     private ProgressBar progressView;
     private Button chooseButton;
+    private Button directButton;
+    private Button copyButton;
     private boolean pickerOpen;
     private boolean importRunning;
+    private boolean awaitingStorageAccess;
+    private Uri pendingTreeUri;
+    private String pendingDirectPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        if (isRecognizableGame(gameDirectory())) {
-            startGame();
-            return;
+        if (savedInstanceState != null) {
+            String treeUri = savedInstanceState.getString(STATE_PENDING_TREE_URI);
+            if (treeUri != null) {
+                pendingTreeUri = Uri.parse(treeUri);
+            }
+            pendingDirectPath = savedInstanceState.getString(
+                STATE_PENDING_DIRECT_PATH);
         }
 
-        createImportView();
-        if (savedInstanceState == null) {
+        File activeGame = activeGameDirectory();
+        if (!isFolderSelectionRequested(getIntent()) && activeGame != null) {
+            startGame(activeGame);
+            return;
+        }
+        createSelectionView();
+        if (pendingTreeUri != null) {
+            showStorageChoices();
+        } else if (savedInstanceState == null) {
             openDirectoryPicker();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (!isFolderSelectionRequested(intent)) {
+            File activeGame = activeGameDirectory();
+            if (activeGame != null) {
+                startGame(activeGame);
+                return;
+            }
+        }
+        createSelectionView();
+        openDirectoryPicker();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        if (pendingTreeUri != null) {
+            state.putString(STATE_PENDING_TREE_URI, pendingTreeUri.toString());
+        }
+        if (pendingDirectPath != null) {
+            state.putString(STATE_PENDING_DIRECT_PATH, pendingDirectPath);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!awaitingStorageAccess) {
+            return;
+        }
+        awaitingStorageAccess = false;
+        if (hasDirectStorageAccess()) {
+            activateDirectSelection();
+        } else if (statusView != null) {
+            statusView.setText(R.string.direct_access_denied);
+            setChoiceButtonsEnabled(true);
         }
     }
 
@@ -74,7 +151,53 @@ public final class LauncherActivity extends Activity {
         return new File(storageRoot(), GAME_DIRECTORY);
     }
 
-    private void createImportView() {
+    private SharedPreferences preferences() {
+        return getSharedPreferences(PREFERENCES, MODE_PRIVATE);
+    }
+
+    private static boolean isFolderSelectionRequested(Intent intent) {
+        return intent != null && ACTION_CHOOSE_GAME_FOLDER.equals(intent.getAction());
+    }
+
+    private File activeGameDirectory() {
+        SharedPreferences preferences = preferences();
+        String mode = preferences.getString(PREF_STORAGE_MODE, "");
+        if (MODE_DIRECT.equals(mode)) {
+            String path = preferences.getString(PREF_GAME_PATH, "");
+            if (!path.isEmpty()) {
+                File directory = new File(path);
+                if (isRecognizableGame(directory)) {
+                    return directory;
+                }
+            }
+            return null;
+        }
+
+        File imported = gameDirectory();
+        if (isRecognizableGame(imported)) {
+            // Upgrade the original one-shot importer without forcing its data
+            // to be selected and copied again.
+            if (!MODE_COPY.equals(mode)) {
+                rememberSelection(MODE_COPY, imported, null);
+            }
+            return imported;
+        }
+        return null;
+    }
+
+    private void rememberSelection(String mode, File directory, Uri treeUri) {
+        SharedPreferences.Editor editor = preferences().edit()
+            .putString(PREF_STORAGE_MODE, mode)
+            .putString(PREF_GAME_PATH, directory.getAbsolutePath());
+        if (treeUri != null) {
+            editor.putString(PREF_TREE_URI, treeUri.toString());
+        } else {
+            editor.remove(PREF_TREE_URI);
+        }
+        editor.apply();
+    }
+
+    private void createSelectionView() {
         final int padding = Math.round(32.0f * getResources().getDisplayMetrics().density);
 
         LinearLayout layout = new LinearLayout(this);
@@ -107,6 +230,30 @@ public final class LauncherActivity extends Activity {
         progressView.setIndeterminate(true);
         progressView.setVisibility(View.GONE);
         layout.addView(progressView);
+
+        directButton = new Button(this);
+        directButton.setText(R.string.use_folder_directly);
+        directButton.setVisibility(View.GONE);
+        directButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                requestDirectAccess();
+            }
+        });
+        layout.addView(directButton);
+
+        copyButton = new Button(this);
+        copyButton.setText(R.string.copy_for_faster_loading);
+        copyButton.setVisibility(View.GONE);
+        copyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (pendingTreeUri != null) {
+                    beginImport(pendingTreeUri);
+                }
+            }
+        });
+        layout.addView(copyButton);
 
         chooseButton = new Button(this);
         chooseButton.setText(R.string.choose_game_folder);
@@ -142,6 +289,9 @@ public final class LauncherActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_STORAGE_ACCESS) {
+            return;
+        }
         if (requestCode != REQUEST_GAME_DIRECTORY) {
             return;
         }
@@ -162,12 +312,195 @@ public final class LauncherActivity extends Activity {
             // The transient read grant remains valid for this import.
         }
 
-        beginImport(treeUri);
+        try {
+            if (!isRecognizableTree(treeUri)) {
+                throw new IOException(
+                    "The selected folder does not directly contain cam.cfg " +
+                    "and recognizable Thief mission data.");
+            }
+        } catch (IOException exception) {
+            showFailure(getString(R.string.selection_failed,
+                                  safeMessage(exception)));
+            return;
+        }
+
+        pendingTreeUri = treeUri;
+        pendingDirectPath = directPathForTree(treeUri);
+        showStorageChoices();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQUEST_LEGACY_STORAGE_ACCESS) {
+            return;
+        }
+        if (hasDirectStorageAccess()) {
+            activateDirectSelection();
+        } else {
+            statusView.setText(R.string.direct_access_denied);
+            setChoiceButtonsEnabled(true);
+        }
+    }
+
+    private boolean isRecognizableTree(Uri treeUri) throws IOException {
+        final String rootDocumentId;
+        try {
+            rootDocumentId = DocumentsContract.getTreeDocumentId(treeUri);
+        } catch (IllegalArgumentException exception) {
+            throw new IOException("The selected location is not a directory", exception);
+        }
+
+        boolean hasConfiguration = false;
+        boolean hasGameSignature = false;
+        for (DocumentEntry entry : listChildren(treeUri, rootDocumentId)) {
+            if (DocumentsContract.Document.MIME_TYPE_DIR.equals(entry.mimeType)) {
+                continue;
+            }
+            if (entry.name.equalsIgnoreCase("cam.cfg")) {
+                hasConfiguration = true;
+            } else if (entry.name.equalsIgnoreCase("MISS18.MIS") ||
+                       entry.name.equalsIgnoreCase("MISS8.MIS") ||
+                       entry.name.equalsIgnoreCase("DARK.GAM")) {
+                hasGameSignature = true;
+            }
+        }
+        return hasConfiguration && hasGameSignature;
+    }
+
+    private void showStorageChoices() {
+        progressView.setVisibility(View.GONE);
+        directButton.setVisibility(
+            pendingDirectPath == null ? View.GONE : View.VISIBLE);
+        copyButton.setVisibility(View.VISIBLE);
+        chooseButton.setVisibility(View.VISIBLE);
+        chooseButton.setText(R.string.choose_another_folder);
+        setChoiceButtonsEnabled(true);
+
+        if (pendingDirectPath == null) {
+            statusView.setText(R.string.copy_only_description);
+        } else if (isRemovablePath(pendingDirectPath)) {
+            statusView.setText(R.string.storage_choice_removable);
+        } else {
+            statusView.setText(R.string.storage_choice_internal);
+        }
+    }
+
+    private void setChoiceButtonsEnabled(boolean enabled) {
+        if (directButton != null) {
+            directButton.setEnabled(enabled);
+        }
+        if (copyButton != null) {
+            copyButton.setEnabled(enabled);
+        }
+        if (chooseButton != null) {
+            chooseButton.setEnabled(enabled);
+        }
+    }
+
+    private static boolean isRemovablePath(String path) {
+        return path.startsWith("/storage/") &&
+               !path.startsWith("/storage/emulated/");
+    }
+
+    private String directPathForTree(Uri treeUri) {
+        if (!"com.android.externalstorage.documents".equals(treeUri.getAuthority())) {
+            return null;
+        }
+
+        final String documentId;
+        try {
+            documentId = DocumentsContract.getTreeDocumentId(treeUri);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+        int separator = documentId.indexOf(':');
+        String volume = separator >= 0 ? documentId.substring(0, separator) : documentId;
+        String relative = separator >= 0 ? documentId.substring(separator + 1) : "";
+        File volumeRoot = volume.equalsIgnoreCase("primary")
+            ? Environment.getExternalStorageDirectory()
+            : new File("/storage", volume);
+        File selected = relative.isEmpty() ? volumeRoot : new File(volumeRoot, relative);
+        try {
+            String rootPath = volumeRoot.getCanonicalPath();
+            String selectedPath = selected.getCanonicalPath();
+            if (!selectedPath.equals(rootPath) &&
+                !selectedPath.startsWith(rootPath + File.separator)) {
+                return null;
+            }
+            return selectedPath;
+        } catch (IOException exception) {
+            return null;
+        }
+    }
+
+    private boolean hasDirectStorageAccess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return Environment.isExternalStorageManager();
+        }
+        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED) {
+            return false;
+        }
+        return Build.VERSION.SDK_INT > Build.VERSION_CODES.P ||
+               checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+               PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestDirectAccess() {
+        if (pendingDirectPath == null || pendingTreeUri == null) {
+            return;
+        }
+        setChoiceButtonsEnabled(false);
+        if (hasDirectStorageAccess()) {
+            activateDirectSelection();
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent permissionIntent = new Intent(
+                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                Uri.parse("package:" + getPackageName()));
+            try {
+                awaitingStorageAccess = true;
+                startActivityForResult(permissionIntent, REQUEST_STORAGE_ACCESS);
+            } catch (ActivityNotFoundException exception) {
+                awaitingStorageAccess = true;
+                startActivityForResult(
+                    new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION),
+                    REQUEST_STORAGE_ACCESS);
+            }
+            return;
+        }
+
+        ArrayList<String> permissions = new ArrayList<>();
+        permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        requestPermissions(permissions.toArray(new String[0]),
+                           REQUEST_LEGACY_STORAGE_ACCESS);
+    }
+
+    private void activateDirectSelection() {
+        if (pendingDirectPath == null) {
+            return;
+        }
+        File directory = new File(pendingDirectPath);
+        if (!isRecognizableGame(directory)) {
+            statusView.setText(R.string.direct_access_failed);
+            setChoiceButtonsEnabled(true);
+            return;
+        }
+        rememberSelection(MODE_DIRECT, directory, pendingTreeUri);
+        startGame(directory);
     }
 
     private void beginImport(final Uri treeUri) {
         importRunning = true;
-        chooseButton.setEnabled(false);
+        setChoiceButtonsEnabled(false);
         progressView.setVisibility(View.VISIBLE);
         statusView.setText(R.string.checking_game_folder);
 
@@ -197,7 +530,9 @@ public final class LauncherActivity extends Activity {
                         @Override
                         public void run() {
                             importRunning = false;
-                            startGame();
+                            File imported = gameDirectory();
+                            rememberSelection(MODE_COPY, imported, treeUri);
+                            startGame(imported);
                         }
                     });
                 } catch (final Exception exception) {
@@ -404,12 +739,22 @@ public final class LauncherActivity extends Activity {
 
     private void showFailure(String message) {
         progressView.setVisibility(View.GONE);
+        directButton.setVisibility(View.GONE);
+        copyButton.setVisibility(View.GONE);
         chooseButton.setEnabled(true);
+        chooseButton.setVisibility(View.VISIBLE);
+        chooseButton.setText(R.string.choose_game_folder);
         statusView.setText(message);
     }
 
-    private void startGame() {
+    private void startGame(File gameDirectory) {
+        if (ThiefActivity.isRunning()) {
+            restartApplication();
+            return;
+        }
         Intent intent = new Intent(this, ThiefActivity.class);
+        intent.putExtra(ThiefActivity.EXTRA_GAME_PATH,
+                        gameDirectory.getAbsolutePath());
         if ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
             Intent launchIntent = getIntent();
             copyDebugStringExtra(launchIntent, intent,
@@ -425,6 +770,21 @@ public final class LauncherActivity extends Activity {
         }
         startActivity(intent);
         finish();
+    }
+
+    private void restartApplication() {
+        Intent relaunch = new Intent(this, LauncherActivity.class);
+        relaunch.setAction(Intent.ACTION_MAIN);
+        relaunch.addCategory(Intent.CATEGORY_LAUNCHER);
+        relaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                          Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pending = PendingIntent.getActivity(
+            this, 0, relaunch,
+            PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        AlarmManager alarms = (AlarmManager)getSystemService(ALARM_SERVICE);
+        alarms.set(AlarmManager.ELAPSED_REALTIME,
+                   SystemClock.elapsedRealtime() + 250L, pending);
+        android.os.Process.killProcess(android.os.Process.myPid());
     }
 
     private static void copyDebugStringExtra(Intent source,

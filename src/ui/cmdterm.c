@@ -1335,6 +1335,7 @@ bool cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
             }
          }
          LGadUnfocusTextBox(box);
+         PlatformSetTextInputActive(FALSE);
          if (CmdTerm.flags & kCmdTermHideUnfocused)
             region_set_invisible(LGadBoxRegion(&CmdTerm.root),TRUE);
          if (CmdTerm.statebits & kStatePaused)
@@ -1574,6 +1575,7 @@ void DestroyCommandTerminal(void)
    ulong context;
    int i;
 
+   PlatformSetTextInputActive(FALSE);
    cmdterm_set_popup_cursor(FALSE);
    if (CmdTerm.statebits & kStatePaused)
    {
@@ -1706,6 +1708,7 @@ static void cmdterm_activate_focus(BOOL position_cursor)
    LGadTextBoxSetCursor(&CmdTerm.textbox,cursor_pos);
    LGadUpdateTextBox(&CmdTerm.textbox);
    LGadFocusTextBox(&CmdTerm.textbox);
+   PlatformSetTextInputActive(TRUE);
    LGadTextBoxClrFlag(&CmdTerm.textbox,TEXTBOX_EDIT_BRANDNEW);
    if (cmdterm_is_scrollable())
    {

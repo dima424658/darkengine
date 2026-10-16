@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="choose_game_folder"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_choose_folder"
+        android:shortcutLongLabel="@string/shortcut_choose_folder_long"
+        android:shortcutDisabledMessage="@string/shortcut_choose_folder_disabled">
+        <intent
+            android:action="io.github.inkmakerdroid.darkengine.action.CHOOSE_GAME_FOLDER"
+            android:targetPackage="io.github.inkmakerdroid.darkengine"
+            android:targetClass="io.github.inkmakerdroid.darkengine.LauncherActivity" />
+    </shortcut>
+</shortcuts>
