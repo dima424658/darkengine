@@ -434,7 +434,7 @@ BOOL AmbientSave(ITagFile *file)
 
    if (result == S_OK)
    {
-      ObjID obj = ambObjID(cur_env_idx);
+      ObjID obj = (cur_env_idx != -1) ? ambObjID(cur_env_idx) : OBJ_NULL;
       ITagFile_Write(file, (char *) &obj, sizeof(obj));
       ITagFile_CloseBlock(file);
    }

@@ -8,11 +8,18 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include <lg.h>
 #include <platform_services.h>
 #include <sndsrc.h>
 #include <playlist.h>
+
+#ifdef DARK_HAVE_VORBISFILE
+#pragma pack(push, 8)
+#include <vorbis/vorbisfile.h>
+#pragma pack(pop)
+#endif
 
 #include <auxsnd.h>  // so we get our own EXTERN 
 
@@ -168,12 +175,137 @@ void WriteU32(uint8 *destination, uint32 value)
    destination[3] = static_cast<uint8>(value >> 24);
 }
 
+#ifdef DARK_HAVE_VORBISFILE
+size_t VorbisRead(void *destination, size_t size, size_t count,
+                  void *context)
+{
+   sMemorySound *memory = static_cast<sMemorySound *>(context);
+   if (!size || !count || memory->position >= memory->size)
+      return 0;
+   const sf_count_t remaining = memory->size - memory->position;
+   const size_t available = static_cast<size_t>(remaining) / size;
+   if (count > available)
+      count = available;
+   const size_t bytes = size * count;
+   memcpy(destination, memory->data + memory->position, bytes);
+   memory->position += static_cast<sf_count_t>(bytes);
+   return count;
+}
+
+int VorbisSeek(void *context, ogg_int64_t offset, int whence)
+{
+   return MemorySeek(offset, whence, context) < 0 ? -1 : 0;
+}
+
+long VorbisTell(void *context)
+{
+   const sf_count_t position = MemoryTell(context);
+   return position > LONG_MAX ? -1 : static_cast<long>(position);
+}
+
+int VorbisClose(void *) { return 0; }
+
+void *DecodeOggWithVorbisFile(const void *source, uint32 sourceLen,
+                              uint32 *waveLen)
+{
+   sMemorySound memory = { static_cast<const uint8 *>(source),
+                           sourceLen, 0 };
+   ov_callbacks callbacks = { VorbisRead, VorbisSeek, VorbisClose,
+                              VorbisTell };
+   OggVorbis_File file;
+   if (ov_open_callbacks(&memory, &file, NULL, 0, callbacks) != 0)
+   {
+      Warning(("Unable to open Ogg Vorbis sound resource\n"));
+      return NULL;
+   }
+
+   vorbis_info *info = ov_info(&file, -1);
+   const ogg_int64_t frames = ov_pcm_total(&file, -1);
+   const uint32 kMaxDecodedSoundBytes = 256u * 1024u * 1024u;
+   if (!info || ov_streams(&file) != 1 || frames <= 0 || info->rate <= 0 ||
+       (info->channels != 1 && info->channels != 2))
+   {
+      ov_clear(&file);
+      Warning(("Unable to decode Ogg Vorbis sound resource\n"));
+      return NULL;
+   }
+
+   const int channels = info->channels;
+   const int sampleRate = info->rate;
+   const uint32 frameBytes = static_cast<uint32>(channels) * 2u;
+   if (static_cast<uint64_t>(frames) >
+       kMaxDecodedSoundBytes / frameBytes)
+   {
+      ov_clear(&file);
+      Warning(("Decoded Ogg Vorbis sound resource is too large\n"));
+      return NULL;
+   }
+
+   const uint32 capacity = static_cast<uint32>(frames) * frameBytes;
+   uint8 *wave = static_cast<uint8 *>(Malloc(44u + capacity));
+   if (!wave)
+   {
+      ov_clear(&file);
+      return NULL;
+   }
+
+   uint32 bytesRead = 0;
+   bool failed = false;
+   while (bytesRead < capacity)
+   {
+      const uint32 remaining = capacity - bytesRead;
+      const int request = remaining > static_cast<uint32>(INT_MAX) ?
+         INT_MAX : static_cast<int>(remaining);
+      int bitstream = 0;
+      const long result = ov_read(&file,
+         reinterpret_cast<char *>(wave + 44u + bytesRead), request,
+         0, 2, 1, &bitstream);
+      if (result == 0)
+         break;
+      if (result < 0)
+      {
+         if (result == OV_HOLE)
+            continue;
+         failed = true;
+         break;
+      }
+      bytesRead += static_cast<uint32>(result);
+   }
+   ov_clear(&file);
+   if (failed || !bytesRead || bytesRead % frameBytes != 0)
+   {
+      Free(wave);
+      Warning(("Unable to decode Ogg Vorbis sound resource\n"));
+      return NULL;
+   }
+
+   memcpy(wave, "RIFF", 4);
+   WriteU32(wave + 4, 36u + bytesRead);
+   memcpy(wave + 8, "WAVEfmt ", 8);
+   WriteU32(wave + 16, 16);
+   WriteU16(wave + 20, 1);
+   WriteU16(wave + 22, static_cast<uint16>(channels));
+   WriteU32(wave + 24, static_cast<uint32>(sampleRate));
+   WriteU32(wave + 28, static_cast<uint32>(sampleRate) * frameBytes);
+   WriteU16(wave + 32, static_cast<uint16>(frameBytes));
+   WriteU16(wave + 34, 16);
+   memcpy(wave + 36, "data", 4);
+   WriteU32(wave + 40, bytesRead);
+   *waveLen = 44u + bytesRead;
+   return wave;
+}
+#endif
+
 void *DecodeOggToWave(const void *source, uint32 sourceLen,
                       uint32 *waveLen)
 {
-   static bool warnedMissingDecoder;
    if (sourceLen < 4 || memcmp(source, "OggS", 4) != 0)
       return NULL;
+
+#ifdef DARK_HAVE_VORBISFILE
+   return DecodeOggWithVorbisFile(source, sourceLen, waveLen);
+#else
+   static bool warnedMissingDecoder;
 
    sSndFileApi api;
    if (!LoadSndFile(&api))
@@ -247,6 +379,7 @@ void *DecodeOggToWave(const void *source, uint32 sourceLen,
    WriteU32(wave + 40, dataBytes);
    *waveLen = 44u + dataBytes;
    return wave;
+#endif
 }
 
 bool PrepareSoundBuffer(void *source, uint32 sourceLen, void **prepared,

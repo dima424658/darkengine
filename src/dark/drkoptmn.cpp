@@ -2103,7 +2103,7 @@ protected:
             {  //4, 8, 12
                SFXClose ();
                sfx_use_channels += 4;
-#define AUDIO_CHANNEL_LIMIT 24
+#define AUDIO_CHANNEL_LIMIT SFX_MAX_MODE_COUNT
                if (sfx_use_channels > AUDIO_CHANNEL_LIMIT)
                   sfx_use_channels = 4;
                config_set_int("sfx_channels", sfx_use_channels);

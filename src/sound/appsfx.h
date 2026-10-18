@@ -11,6 +11,7 @@
 
 #include <playlist.h>
 #include <matrixs.h>
+#include <darklimit.h>
 
 // says "this parm isnt being set in this struct"
 #define SFX_DEF_PARM (-1)
@@ -37,7 +38,7 @@ typedef struct {
 
 #define SFX_LOOP_INFINITE 0
 
-#define SFX_MAX_MODE_COUNT 16
+#define SFX_MAX_MODE_COUNT DARK_LIMIT_RUNTIME_SOUND_CHANNELS
 #define SFX_MAX_COUNT (SFX_MAX_MODE_COUNT * 2)
 #define SFX_CHANNELS  8
 
