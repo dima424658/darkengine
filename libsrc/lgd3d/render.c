@@ -464,8 +464,6 @@ void lgd3d_set_texture_level(int n)
 //
 
 
-// can't bilinear filter and colorkey at the same time
-// (actually, we can; it just looks really stupid)
 static void SetTransparent(int trans)
 {
    // BMF_TRANS is a binary color key. FILL_BLEND textures instead carry
@@ -480,9 +478,13 @@ static void SetTransparent(int trans)
       return;
 
    lgd3d_trans = trans;
+   // The fixed-function renderers could not combine color-keying with useful
+   // bilinear filtering.  The modern backend converts the key to alpha and
+   // performs the alpha test in its shader, so point-sampling cutout foliage
+   // only creates severe crawling and hard silhouettes as the camera moves.
    RenderBackendSetSampler(0,
                          lgd3d_get_texture_wrapping(0),
-                         (trans&BMF_TRANS) == 0);
+                         TRUE);
    RenderBackendSetBlend((trans || lgd3d_blend) ? kRenderBackendBlendAlpha : kRenderBackendBlendOpaque);
 }
 

@@ -44,6 +44,7 @@
 #include <edmedmo.h>
 
 #include <editmode.h>
+#include <missiondiag.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -147,15 +148,27 @@ static void init_brush_prop(void)
 
 static void create_obj_brushes(void)
 {
+   char diagnostic[192];
+   int before=blistCount();
    IObjectSystem* pObjSys = AppGetObj(IObjectSystem); 
    IObjectQuery* query = IObjectSystem_Iter(pObjSys,kObjectConcrete); 
    for (; !IObjectQuery_Done(query); IObjectQuery_Next(query))
    {
       ObjID obj = IObjectQuery_Object(query); 
-      editobjCreateBrushfromObj(obj);   
+      // When BRLIST is present it is the authoritative record of which
+      // concrete objects the author exposed as editor brushes.  Rebuilding
+      // every object from inherited HasBrush state can resurrect deliberately
+      // hidden brushes after property/link serialization reorders records.
+      if (!editor_BrushDataPresent() || editor_ObjectHasSourceBrush(obj))
+         editobjCreateBrushfromObj(obj);
    }
    SafeRelease(query);
    SafeRelease(pObjSys); 
+   snprintf(diagnostic,sizeof(diagnostic),
+      "Editor object-brush reconstruction: %d created, %d total brushes",
+      blistCount()-before,blistCount());
+   diagnostic[sizeof(diagnostic)-1]='\0';
+   MissionDiagnosticsIssue("INFO","editor-data",diagnostic);
 }
 
 static void destroy_obj_brushes(void)
@@ -179,7 +192,6 @@ static void obj_message(ObjID obj, eObjNotifyMsg msg, void* data)
    switch (msg)
    {
       case kObjNotifyCreate:
-      case kObjNotifyLoadObj:
          editobjCreateBrushfromObj(obj);
          break;
    }
@@ -208,6 +220,7 @@ static void term_obj_message(void)
 // and speaking of dirty work, horrible save brush focus code
 static int   editorLastBrushID=-1;
 static ObjID editorLastObjID=OBJ_NULL;
+static BOOL restoreBrushSelectionPending=FALSE;
 
 void SaveBrushSelection(void)
 {
@@ -237,6 +250,11 @@ void RestoreBrushSelection(void)
    if (focus_br==NULL)
       focus_br=vBrush_editBrush_Get();
    vBrush_SelectBrush(focus_br);
+}
+
+void ScheduleBrushSelectionRestore(void)
+{
+   restoreBrushSelectionPending=TRUE;
 }
 
 ////////////////////////////////////////
@@ -304,7 +322,14 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
       case kMsgEndFrame:
          if (state->edit_mode)
+         {
+            if (restoreBrushSelectionPending)
+            {
+               restoreBrushSelectionPending=FALSE;
+               RestoreBrushSelection();
+            }
             vBrush_FrameCallback();
+         }
          break;
 
       case kMsgDatabase:

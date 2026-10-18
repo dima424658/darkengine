@@ -270,6 +270,10 @@ EXTERN float portal_worldrep_texture_scale;
 EXTERN float *portal_wrext_u_base[];
 EXTERN float *portal_wrext_v_base[];
 
+// NewDark packs the ambient-light zone into the high nibble of the WREXT
+// per-cell zone byte. Legacy worlds and invalid cells use zone zero.
+EXTERN int portal_cell_ambient_zone(int cell);
+
 
 // for that axis field, below--gives the axis not considered
 #define MEDIUM_AXIS_X 0

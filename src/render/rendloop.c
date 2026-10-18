@@ -30,6 +30,9 @@
 #include <weather.h>
 #include <corona.h>
 #include <guistyle.h>
+#include <uigame.h>
+#include <resapi.h>
+#include <fonrstyp.h>
 #include <timer.h>
 #include <simtime.h>
 #include <playrobj.h>
@@ -135,6 +138,35 @@ bool tmgr_stats      = FALSE;
 static int dtlist[FRAMEHISTORY_COUNT];
 static int dtlist_ptr=0, dtsum=0;
 int portal_info_volume = 10;
+static IRes* gStatsFontRes = NULL;
+static BOOL gStatsFontResolved = FALSE;
+
+static guiStyle* stats_style(void)
+{
+   static guiStyle style;
+   char font[64];
+
+   if (!gStatsFontResolved)
+   {
+      gStatsFontResolved = TRUE;
+      if (uiGameGetReadableOverlayFont("stats_font", font, sizeof(font)))
+      {
+         IResMan* resman = AppGetObj(IResMan);
+         if (resman)
+         {
+            gStatsFontRes = IResMan_Bind(resman, font, RESTYPE_FONT,
+                                         NULL, "intrface", 0);
+            SafeRelease(resman);
+         }
+      }
+   }
+
+   if (!gStatsFontRes || !GetCurrentStyle())
+      return NULL;
+   memcpy(&style, GetCurrentStyle(), sizeof(style));
+   style.fonts[StyleFontNormal] = (IDataSource*)gStatsFontRes;
+   return &style;
+}
 
 // clear bkgnd when not rendering...
 static int hack_string(char *s, int x, int y)
@@ -143,16 +175,15 @@ static int hack_string(char *s, int x, int y)
    extern BOOL g_null_raster;
    extern BOOL lgd3d_punt_d3d;
 
+   gr_string_size(s, &w, &h);
    if (g_null_raster||lgd3d_punt_d3d) {
       long fc_save = gr_get_fcolor();
-      gr_string_size(s, &w, &h);
       gr_set_fcolor(0);
       gr_rect(x,y,x+w,y+h);
       gr_set_fcolor(fc_save);
-   } else
-      h = 9;
+   }
    gr_string(s, x, y);
-   return h;
+   return h > 0 ? h + 1 : 9;
 }
 
 static void superimpose_stats (int dt, int overhead, int blit_overhead)
@@ -165,6 +196,7 @@ static void superimpose_stats (int dt, int overhead, int blit_overhead)
    float rate;
    Position *player_pos;
    ObjID player;
+   guiStyle* style;
 
    dtsum-=dtlist[dtlist_ptr];
    dtlist[dtlist_ptr]=dt+overhead;
@@ -173,7 +205,8 @@ static void superimpose_stats (int dt, int overhead, int blit_overhead)
 
    rate = 1000.0f / dt;
 
-   guiStyleSetupFont(NULL,StyleFontNormal);
+   style = stats_style();
+   guiStyleSetupFont(style,StyleFontNormal);
    gr_set_fcolor(guiStyleGetColor(NULL,StyleColorFG)); // StyleColorWhite?
 
    if (show_full_stats)
@@ -222,7 +255,7 @@ static void superimpose_stats (int dt, int overhead, int blit_overhead)
       y += hack_string(text, x, y);
    }
 
-   guiStyleCleanupFont(NULL,StyleFontNormal);
+   guiStyleCleanupFont(style,StyleFontNormal);
 }
 
 // Hack for getting rendering time into histogram profiler
@@ -688,6 +721,8 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
       case kMsgAppTerm:
          ParticleGroupCleanup();
+         SafeRelease(gStatsFontRes);
+         gStatsFontResolved = FALSE;
          break;
 
    }

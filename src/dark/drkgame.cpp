@@ -22,6 +22,7 @@
 #include <init.h>
 #include <appname.h>
 #include <drkgame.h>
+#include <missiondiag.h>
 #include <contentctx.h>
 #include <metagame.h>
 #include <drkdebrf.h>
@@ -827,23 +828,24 @@ static const char* audit_texture_status(int texture, IRes** resource)
    return "MISSING";
 }
 
-static void console_texture_audit(char* value)
+static void run_texture_audit(const char* requestedPath)
 {
    char path[260] = "texture-audit.log";
    int* terrainCounts;
    int terrainSurfaces = 0;
    int terrainMissing = 0;
    int objectCount = 0;
+   int objectModelsMissing = 0;
    int objectMissing;
+   int objectCheckerboards = 0;
    int objectReplacementsMissing = 0;
+   int objectReplacementCheckerboards = 0;
    int cellIndex;
    FILE* log;
 
-   while (value && isspace((unsigned char)*value))
-      ++value;
-   if (value && *value)
+   if (requestedPath && requestedPath[0])
    {
-      strncpy(path, value, sizeof(path));
+      strncpy(path, requestedPath, sizeof(path));
       path[sizeof(path) - 1] = '\0';
    }
 
@@ -851,6 +853,8 @@ static void console_texture_audit(char* value)
    if (!log)
    {
       console_message("Could not create texture audit: %s", path);
+      MissionDiagnosticsIssue("ERROR","texture-audit",
+                              "Could not create texture-audit.log");
       return;
    }
 
@@ -859,6 +863,8 @@ static void console_texture_audit(char* value)
    {
       fclose(log);
       console_message("Could not allocate texture audit inventory.");
+      MissionDiagnosticsIssue("ERROR","texture-audit",
+                              "Could not allocate texture audit inventory");
       return;
    }
 
@@ -922,39 +928,75 @@ static void console_texture_audit(char* value)
          char model[64] = "";
          int handle = MIDX_INVALID;
          const char* name;
+         ObjPos* objectPosition;
          mxs_vector* position;
          if (!ObjGetModelName(object, model) || !model[0])
             continue;
          ObjGetModelNumber(object, &handle);
          name = pObjectSystem->GetName(object);
+         objectPosition = ObjPosGet(object);
          position = ObjPosGetLocVector(object);
          fprintf(log,
                  "OBJECT_INSTANCE object=%d name=\"%s\" model=\"%s\" "
-                 "model_handle=%d status=%s position=%.3f,%.3f,%.3f\n",
+                 "model_handle=%d status=%s position=%.3f,%.3f,%.3f "
+                 "cell=%d hint=%d\n",
                  object, name && *name ? name : "(unnamed)", model, handle,
                  handle == MIDX_INVALID ? "MISSING" : "ok",
                  position ? position->x : 0.0f,
                  position ? position->y : 0.0f,
-                 position ? position->z : 0.0f);
+                 position ? position->z : 0.0f,
+                 objectPosition ? objectPosition->loc.cell : CELL_INVALID,
+                 objectPosition ? objectPosition->loc.hint : CELL_INVALID);
          if (handle != MIDX_INVALID)
             objectReplacementsMissing +=
-               objmodelAuditObjectTextures(log, object, handle);
+               objmodelAuditObjectTextures(log, object, handle,
+                                           &objectReplacementCheckerboards);
+         else
+            ++objectModelsMissing;
          ++objectCount;
       }
       objects->Release();
    }
 
-   objectMissing = objmodelAuditTextures(log);
+   objectMissing = objmodelAuditTextures(log, &objectCheckerboards);
    fprintf(log,
            "SUMMARY terrain_surfaces=%d terrain_missing=%d "
-           "object_instances=%d object_textures_missing=%d "
-           "object_replacements_missing=%d\n",
-           terrainSurfaces, terrainMissing, objectCount, objectMissing,
-           objectReplacementsMissing);
+            "object_instances=%d object_models_missing=%d "
+            "object_textures_missing=%d object_textures_checkerboard=%d "
+           "object_replacements_missing=%d "
+           "object_replacements_checkerboard=%d\n",
+           terrainSurfaces, terrainMissing, objectCount, objectModelsMissing,
+           objectMissing, objectCheckerboards, objectReplacementsMissing,
+           objectReplacementCheckerboards);
    fclose(log);
-   console_message("Texture audit wrote %s: terrain missing %d, object textures missing %d, replacements missing %d.",
-                   path, terrainMissing, objectMissing,
-                   objectReplacementsMissing);
+   char summary[512];
+   _snprintf(summary,sizeof(summary)-1,
+             "Texture preflight wrote %s: %d terrain surface%s missing, "
+             "%d object model%s missing, %d object texture%s missing, "
+             "%d object texture checkerboard%s, %d replacement%s missing, "
+             "%d replacement checkerboard%s",
+             path,terrainMissing,terrainMissing == 1 ? "" : "s",
+             objectModelsMissing,objectModelsMissing == 1 ? "" : "s",
+             objectMissing,objectMissing == 1 ? "" : "s",
+             objectCheckerboards,objectCheckerboards == 1 ? "" : "s",
+             objectReplacementsMissing,
+             objectReplacementsMissing == 1 ? "" : "s",
+             objectReplacementCheckerboards,
+             objectReplacementCheckerboards == 1 ? "" : "s");
+   summary[sizeof(summary)-1] = '\0';
+   MissionDiagnosticsIssue(
+      terrainMissing || objectModelsMissing || objectMissing ||
+         objectCheckerboards || objectReplacementsMissing ||
+         objectReplacementCheckerboards
+         ? "ERROR" : "INFO", "texture-audit", summary);
+   console_message("%s.",summary);
+}
+
+static void console_texture_audit(char* value)
+{
+   while (value && isspace((unsigned char)*value))
+      ++value;
+   run_texture_audit(value && *value ? value : "texture-audit.log");
 }
 
 static void console_list_scripts(void)
@@ -1022,6 +1064,7 @@ static Command thief_console_commands[] =
 };
 
 #endif // THIEF2_GAME
+
 
 BOOL DarkConsoleIsImmune(void)
 {

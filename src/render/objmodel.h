@@ -56,9 +56,11 @@ EXTERN char *objmodelGetName(int idx);
 EXTERN int   objmodelMaxModel(void);
 
 // Write a deterministic inventory of every currently loaded model texture.
-// Returns the number of unresolved material resources.
-EXTERN int   objmodelAuditTextures(FILE *log);
-EXTERN int   objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx);
+// Returns the number of unresolved material resources and reports textures
+// that reached the renderer's checkerboard error fallback separately.
+EXTERN int   objmodelAuditTextures(FILE *log, int *checkerboards);
+EXTERN int   objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx,
+                                         int *checkerboards);
 
 // returns a pointer to the model.  user needs to know how to cast it
 EXTERN void *objmodelGetModel(int idx);
@@ -82,6 +84,7 @@ EXTERN int   objmodelGetModelType(int idx);
 // these, sadly, need Obj now, since it holds the replace properties
 EXTERN void  objmodelSetupMdTextures(ObjID obj, void *model, int idx);
 EXTERN void  objmodelSetupMeshTextures(ObjID obj, void *model, int idx);
+EXTERN BOOL  objmodelIsDummyTexture(const grs_bitmap *bitmap);
 
 // You should Release when you are done with the texture from Setup:
 EXTERN r3s_texture objmodelSetupBitmapTexture(int idx, int frame);

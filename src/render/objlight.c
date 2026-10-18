@@ -41,6 +41,7 @@ BOOL g_bAllObjsUnlit=FALSE;
 int num_light, num_dyn;
 mls_multi_light light_data[MAX_STATIC];
 mls_multi_light light_this[32];
+static BOOL dynamic_light_overflow_warned;
 
 #define SUNLIGHT_INDEX 0
 #define FIRST_LIGHT (SUNLIGHT_INDEX + 1)// reserve one index for sunlight
@@ -61,6 +62,11 @@ static BOOL mission_uses_sunlight(void)
 void reset_object_lighting(void)
 {
    num_light=FIRST_LIGHT;
+   // Mission transitions can rebuild static lighting before the render
+   // loop's first BeginFrame reset.  Do not carry dynamic object lights from
+   // the menu or previous mission into that initial update.
+   num_dyn=0;
+   dynamic_light_overflow_warned = FALSE;
 }
 
 void reset_dynamic_lighting(void)
@@ -87,7 +93,18 @@ void add_dynamic_light(Location *loc, float bright, float clamp_radius)
       ++num_dyn;
    }
    else
-      CriticalMsg("Out of Dynamic Lights");
+   {
+      // The portal lightmap has already received this light.  Only the
+      // fixed-size object-light list is full, so keep rendering instead of
+      // aborting the mission.  NewDark retains 32 object-light slots and
+      // likewise treats additional simultaneous lights as a capped effect.
+      if (!dynamic_light_overflow_warned)
+      {
+         Warning(("Object dynamic-light capacity (%d) exceeded; "
+                  "additional lights affect terrain only\n", MAX_DYNAMIC));
+         dynamic_light_overflow_warned = TRUE;
+      }
+   }
 }
 
 #ifdef RGB_LIGHTING

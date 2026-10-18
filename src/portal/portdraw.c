@@ -609,6 +609,7 @@ void draw_background_hack(int n, r3s_phandle *vlist)
 
 extern int portal_sky_id;
 extern int portal_sky_spans;
+extern bool portal_is_star_sky_texture(ushort texture_id);
 
 // returns FALSE if it was totally transparent; return TRUE if it was
 // non-transparent, even if not visible (e.g. clipped away)
@@ -623,10 +624,15 @@ bool draw_surface(PortalPolygonCore *poly, PortalPolygonRenderInfo *render,
    fix corner_u_offset, corner_v_offset;
    uchar not_light;
    bool position_from_motion = FALSE;
+   bool star_sky;
    r3s_phandle vlist[MAX_VERT], *valid3d, *final;
 
    // get the raw, unlit texture
    texture = portal_get_texture(render->texture_id);
+   star_sky = !bRenderNewSky &&
+      portal_is_star_sky_texture(render->texture_id);
+   if (star_sky && render->texture_id == 0)
+      texture = portal_get_texture(portal_sky_id);
    // It is our impression (wsf) that this only happens for the sky hack:
    if (!texture && !bRenderNewSky) {
       n = poly->num_vertices;
@@ -767,7 +773,7 @@ bool draw_surface(PortalPolygonCore *poly, PortalPolygonRenderInfo *render,
    }
 
 
-   if ((render->texture_id == portal_sky_id) && !bRenderNewSky)
+   if (star_sky)
    {
       switch (ptsky_type) {
       case PTSKY_SPAN:

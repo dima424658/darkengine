@@ -11,6 +11,7 @@
 #define __EDITSAVE_H
 
 #include <tagfile.h>
+#include <objtype.h>
 
 // save out the editor components of a Cow
 EXTERN BOOL editor_SaveCow(ITagFile *file);
@@ -23,6 +24,10 @@ EXTERN BOOL editor_PostLoadCow(void);
 EXTERN BOOL editor_BrushDataPresent(void);
 EXTERN void editor_ResetBrushDataState(void);
 EXTERN ulong editor_BrushDataGeneration(void);
+// Object brushes are serialized in BRLIST even though their transforms are
+// rebuilt from the object database.  This membership test preserves the
+// author's deliberate HasBrush exclusions when reconstructing that view.
+EXTERN BOOL editor_ObjectHasSourceBrush(ObjID object);
 
 // save out minibrush (ie. multibrush brush only) info
 EXTERN BOOL editor_SaveMiniBrush(char *fname, int group);

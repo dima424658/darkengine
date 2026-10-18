@@ -50,8 +50,10 @@
 #include <objnotif.h>
 #include <objpos.h>
 #include <objquery.h>
+#include <objremap.h>
 #include <editobj.h>
 #include <dbfile.h>
+#include <missiondiag.h>
 
 #include <sdesc.h>
 #include <sdesbase.h>
@@ -81,6 +83,36 @@ static TagVersion BrushVer={1,0};
 static TagFileTag BrushTag={"BRLIST"};
 static BOOL g_EditorBrushDataPresent=TRUE;
 static ulong g_EditorBrushDataGeneration=1;
+static ObjID *g_SourceObjectBrushes=NULL;
+static int g_SourceObjectBrushCount=0;
+static int g_SourceObjectBrushCapacity=0;
+
+static void clear_source_object_brushes(void)
+{
+   g_SourceObjectBrushCount=0;
+}
+
+static void remember_source_object_brush(ObjID object)
+{
+   if (g_SourceObjectBrushCount==g_SourceObjectBrushCapacity)
+   {
+      int capacity=g_SourceObjectBrushCapacity ?
+         g_SourceObjectBrushCapacity*2 : 256;
+      g_SourceObjectBrushes=(ObjID *)Realloc(g_SourceObjectBrushes,
+                                             capacity*sizeof(ObjID));
+      g_SourceObjectBrushCapacity=capacity;
+   }
+   g_SourceObjectBrushes[g_SourceObjectBrushCount++]=object;
+}
+
+BOOL editor_ObjectHasSourceBrush(ObjID object)
+{
+   int index;
+   for (index=0;index<g_SourceObjectBrushCount;++index)
+      if (g_SourceObjectBrushes[index]==object)
+         return TRUE;
+   return FALSE;
+}
 
 BOOL editor_BrushDataPresent(void)
 {
@@ -93,6 +125,7 @@ void editor_ResetBrushDataState(void)
    // not contain a brush yet.  Only a map load which lacks BRLIST is treated
    // as stripped data.
    g_EditorBrushDataPresent=TRUE;
+   clear_source_object_brushes();
    ++g_EditorBrushDataGeneration;
 }
 
@@ -148,6 +181,8 @@ static bool _loadSingleBrush(editBrush *newbr)
          if (ITagFile_Read(_brTagFile,(char *)&newbr->txs,xtra_sz)!=xtra_sz)
             return FALSE;
       }
+      else if (brushGetType(newbr)==brType_OBJECT)
+         remember_source_object_brush(brObj_ID(newbr));
       if (loadBrushNewGroup)
          brSelect_Group(newbr)=loadBrushNewGroup;
       return TRUE;
@@ -162,12 +197,17 @@ static BOOL _loadAllBrushes(ITagFile *file, BOOL preserve_id)
    HRESULT result=ITagFile_OpenBlock(file,&BrushTag,&LocalVer);
    BOOL rv=FALSE;
 
+   clear_source_object_brushes();
+
    if (result==S_OK)
    {
       _brTagFile=file;
       rv=saveloadReadBrushes(_loadSingleBrush,SAVELOAD_NO_COUNT,preserve_id);
       ITagFile_CloseBlock(_brTagFile);
       _brTagFile=NULL;
+      if (rv)
+         dbCompatibilityMarkTag(&BrushTag,kDBCompatDecoded,
+            "1.0 brush records decoded; up to 28 terrain faces are writable");
    }
    return rv;
 }
@@ -658,7 +698,34 @@ BOOL editor_LoadCow(ITagFile *file)
 
 BOOL editor_PostLoadCow(void)
 {
+   char diagnostic[256];
+   int terrain=0, lights=0, areas=0, objects=0, flows=0, rooms=0;
+   int iterator;
+   editBrush *brush;
+   for (iterator=0;iterator<g_SourceObjectBrushCount;++iterator)
+      g_SourceObjectBrushes[iterator]=
+         ObjRemapOnLoad(g_SourceObjectBrushes[iterator]);
    saveloadPostLoadBrushes();
+   brush=blistIterStart(&iterator);
+   while (brush)
+   {
+      switch (brushGetType(brush))
+      {
+         case brType_TERRAIN:   ++terrain; break;
+         case brType_LIGHT:     ++lights; break;
+         case brType_HOTREGION: ++areas; break;
+         case brType_OBJECT:    ++objects; break;
+         case brType_FLOW:      ++flows; break;
+         case brType_ROOM:      ++rooms; break;
+      }
+      brush=blistIterNext(iterator);
+   }
+   snprintf(diagnostic,sizeof(diagnostic),
+      "Editor source-brush inventory: %d total (%d terrain, %d object, %d room, "
+      "%d flow, %d light, %d area)",blistCount(),terrain,objects,rooms,
+      flows,lights,areas);
+   diagnostic[sizeof(diagnostic)-1]='\0';
+   MissionDiagnosticsIssue("INFO","editor-data",diagnostic);
    return TRUE; 
 }
 

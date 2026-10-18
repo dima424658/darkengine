@@ -10,6 +10,7 @@
 #include <lg.h>
 #include <appagg.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <config.h>
@@ -74,6 +75,7 @@ typedef struct ModelHandle
    ushort refs;       // # objects using the model, so we can free if nobody is
    short type;
    bool used;         // cant this be a flags field with the above, or something
+   bool bitmap_direct;// bitmap model uses mhandle as its sole texture
    uchar replace_idx; // index into the replace list array
 } ModelHandle;
 
@@ -123,6 +125,14 @@ static TextureLoadFunc g_afnTextureLoadFuncs[] =
 
 // other globals
 static grs_bitmap *g_pDummyObjTmap;
+
+extern void *g_ModernTextures[DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES];
+extern grs_bitmap *g_ModernBitmaps[DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES];
+
+BOOL objmodelIsDummyTexture(const grs_bitmap *bitmap)
+{
+   return bitmap == g_pDummyObjTmap;
+}
 
 static void FreeDummyObjTmap(void)
 {
@@ -445,8 +455,17 @@ static void BitmapTextureLoad(ModelHandle *mh, char *objName)
       common_texture_load(mh, BitmapTexturesPath, 
                           name, i, objName);
       if (temp_load[i] == NULL)
-         if (i == 0) // illegal to fail to find first one, but okay for the rest:
-            Warning(("Couldn't load bitmap texture %s\n", name));
+         if (i == 0) {
+            // NewDark content may use a single image in bitmap\ directly
+            // instead of an animated bitmap\txt[16]\name00 sequence.  That
+            // image is already the model handle.  Do not bind it a second
+            // time: the resource app-data slot cannot represent two owning
+            // roles, and the duplicate lock/reference corrupts teardown.
+            temp_load[0] = mh->mhandle;
+            mh->bitmap_direct = TRUE;
+            i = 1;
+            break;
+         }
          else
             break;
    }
@@ -604,6 +623,7 @@ static void InitModelHandle(ModelHandle *mh)
    mh->numtex = 0;
    mh->refs = 0;
    mh->used = FALSE;
+   mh->bitmap_direct = FALSE;
    mh->replace_idx= 0;
 }
 
@@ -628,13 +648,27 @@ static BOOL FreeModel(int idx, BOOL drop)
 
          if (mh->type!=OM_TYPE_SPARK)
          {
+            // A direct bitmap model and an animated texture frame can resolve
+            // to the same cached IRes.  Tear down texture animation while the
+            // owning model resource is still intact; dropping the model first
+            // leaves the shared resource object alive but without its data
+            // control, and ectsAnimTxtCheckFree then dereferences that shell.
+            if (mh->bitmap_direct)
+            {
+               Free(mh->texptr);
+               mh->texptr = NULL;
+               mh->numtex = 0;
+            }
+            else
+               FreeTextures(mh);
             IRes_Unlock(mh->mhandle);
             if (drop)
                if (!IRes_Drop(mh->mhandle))
                   dropped=FALSE;
             SafeRelease(mh->mhandle);
          }
-         FreeTextures(mh);
+         else
+            FreeTextures(mh);
       }
       else
       {  // Well, then, is it an effect without anything in ResName?
@@ -1221,45 +1255,95 @@ char *objmodelGetName(int idx)
 }
 
 static void audit_texture(FILE *log, int model_idx, const char *model_name,
-                          int slot, const char *material, IRes *resource,
-                          BOOL used, int *missing)
+                          int slot, int material_num, const char *material,
+                          IRes *resource,
+                          BOOL used, int *missing, int *checkerboards)
 {
    char *canonical = NULL;
    grs_bitmap *bitmap = NULL;
    grs_bitmap *frame = NULL;
    BOOL placeholder = material && !strnicmp(material, "replace", 7);
+   BOOL checkerboard = FALSE;
+   BOOL checkerboard_fallback = FALSE;
+   uint32 pixel_hash = 2166136261u;
+   int unique_indices = -1;
+   int resident_id = -1;
+   int gpu_present = 0;
+   int gpu_owner_matches = 0;
 
    if (resource)
    {
       IRes_GetCanonPathName(resource, &canonical);
       bitmap = (grs_bitmap *)IRes_DataPeek(resource);
       frame = (grs_bitmap *)ectsAnimTxtGetFrame(resource);
+      checkerboard = frame == g_pDummyObjTmap;
+      checkerboard_fallback = used && !placeholder && checkerboard;
+      if (frame && (frame->flags & BMF_LOADED))
+      {
+         resident_id = (int)(uintptr_t)frame->bits;
+         if (resident_id >= 0 &&
+             resident_id < DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES)
+         {
+            gpu_present = g_ModernTextures[resident_id] != NULL;
+            gpu_owner_matches = g_ModernBitmaps[resident_id] == frame;
+         }
+      }
+      if (frame && frame->type == BMT_FLAT8 &&
+          !(frame->flags & BMF_LOADED) && frame->bits)
+      {
+         BOOL seen[256] = { FALSE };
+         int x, y;
+         unique_indices = 0;
+         for (y = 0; y < frame->h; ++y)
+            for (x = 0; x < frame->w; ++x)
+            {
+               uchar value = frame->bits[y * frame->row + x];
+               pixel_hash = (pixel_hash ^ value) * 16777619u;
+               if (!seen[value])
+               {
+                  seen[value] = TRUE;
+                  ++unique_indices;
+               }
+            }
+      }
    }
    else if (used && !placeholder)
+   {
       ++*missing;
+      checkerboard_fallback = TRUE;
+   }
+   if (checkerboard_fallback && checkerboards)
+      ++*checkerboards;
 
    fprintf(log,
            "OBJECT_TEXTURE model_handle=%d model=\"%s\" slot=%d "
-           "material=\"%s\" used=%d status=%s resource=\"%s\" "
+           "material_num=%d material=\"%s\" used=%d status=%s resource=\"%s\" "
            "width=%d height=%d row=%u type=%u flags=0x%04x palette=%u "
-           "renderable=%d dummy=%d\n",
+           "renderable=%d dummy=%d pixel_hash=0x%08x unique_indices=%d "
+           "resident_id=%d gpu_present=%d gpu_owner_matches=%d fallback=%s\n",
            model_idx, model_name ? model_name : "(unnamed)", slot,
+           material_num,
            material ? material : "(unknown)", used,
-           resource ? "ok" : !used ? "unused" :
+           checkerboard ? "CHECKERBOARD" : resource ? "ok" : !used ? "unused" :
               placeholder ? "replacement-placeholder" : "MISSING",
            canonical ? canonical : "", bitmap ? bitmap->w : 0,
            bitmap ? bitmap->h : 0, bitmap ? bitmap->row : 0,
            bitmap ? bitmap->type : 0, bitmap ? bitmap->flags : 0,
            bitmap ? bitmap->align : 0, frame != NULL,
-           frame == g_pDummyObjTmap);
+           checkerboard, pixel_hash, unique_indices,
+           resident_id, gpu_present, gpu_owner_matches,
+           checkerboard_fallback ? "CHECKERBOARD" : "none");
    if (canonical)
       Free(canonical);
 }
 
-int objmodelAuditTextures(FILE *log)
+int objmodelAuditTextures(FILE *log, int *checkerboards)
 {
    int idx;
    int missing = 0;
+
+   if (checkerboards)
+      *checkerboards = 0;
 
    if (!log)
       return 0;
@@ -1300,9 +1384,10 @@ int objmodelAuditTextures(FILE *log)
                IRes *resource = texture_slot < mh->numtex && mh->texptr ?
                                 mh->texptr[texture_slot] : NULL;
                audit_texture(log, idx, model_name, texture_slot,
+                             materials[i].num,
                              materials[i].name, resource,
                              used_material[materials[i].num],
-                             &missing);
+                             &missing, checkerboards);
                ++texture_slot;
             }
       }
@@ -1322,9 +1407,9 @@ int objmodelAuditTextures(FILE *log)
                {
                   IRes *resource = texture_slot < mh->numtex && mh->texptr ?
                                    mh->texptr[texture_slot] : NULL;
-                  audit_texture(log, idx, model_name, texture_slot,
+                  audit_texture(log, idx, model_name, texture_slot, i,
                                 materials[i].name, resource, used_material[i],
-                                &missing);
+                                &missing, checkerboards);
                   ++texture_slot;
                }
          }
@@ -1341,9 +1426,9 @@ int objmodelAuditTextures(FILE *log)
                {
                   IRes *resource = texture_slot < mh->numtex && mh->texptr ?
                                    mh->texptr[texture_slot] : NULL;
-                  audit_texture(log, idx, model_name, texture_slot,
+                  audit_texture(log, idx, model_name, texture_slot, i,
                                 materials[i].name, resource, used_material[i],
-                                &missing);
+                                &missing, checkerboards);
                   ++texture_slot;
                }
          }
@@ -1351,14 +1436,16 @@ int objmodelAuditTextures(FILE *log)
       else
       {
          for (i = 0; i < mh->numtex; ++i)
-            audit_texture(log, idx, model_name, i, "(frame)",
-                          mh->texptr ? mh->texptr[i] : NULL, TRUE, &missing);
+            audit_texture(log, idx, model_name, i, i, "(frame)",
+                          mh->texptr ? mh->texptr[i] : NULL, TRUE, &missing,
+                          checkerboards);
       }
    }
    return missing;
 }
 
-int objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx)
+int objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx,
+                                int *checkerboards)
 {
    ModelHandle *mh;
    IRes **replacements;
@@ -1379,6 +1466,9 @@ int objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx)
       int texture_slot;
       char *canonical = NULL;
       grs_bitmap *bitmap = NULL;
+      grs_bitmap *frame = NULL;
+      BOOL checkerboard = FALSE;
+      BOOL checkerboard_fallback = FALSE;
       texture_slot = g_aReplaceList[mh->replace_idx][replacement];
       if (texture_slot == REPL_LIST_UNUSED)
          continue;
@@ -1391,17 +1481,28 @@ int objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx)
       {
          IRes_GetCanonPathName(resource, &canonical);
          bitmap = (grs_bitmap *)IRes_DataPeek(resource);
+         frame = (grs_bitmap *)ectsAnimTxtGetFrame(resource);
+         checkerboard = frame == g_pDummyObjTmap;
+         checkerboard_fallback = checkerboard;
       }
       else
+      {
          ++missing;
+         checkerboard_fallback = TRUE;
+      }
+      if (checkerboard_fallback && checkerboards)
+         ++*checkerboards;
       fprintf(log,
               "OBJECT_REPLACEMENT object=%d model_handle=%d replace=%d "
-              "status=%s resource=\"%s\" width=%d height=%d\n",
+              "status=%s resource=\"%s\" width=%d height=%d "
+              "renderable=%d dummy=%d fallback=%s\n",
               obj, idx, replacement,
-              resource ? (resource == fallback ? "base-fallback" : "override") :
+              checkerboard ? "CHECKERBOARD" :
+                 resource ? (resource == fallback ? "base-fallback" : "override") :
                  "MISSING",
               canonical ? canonical : "", bitmap ? bitmap->w : 0,
-              bitmap ? bitmap->h : 0);
+              bitmap ? bitmap->h : 0, frame != NULL, checkerboard,
+              checkerboard_fallback ? "CHECKERBOARD" : "none");
       if (canonical)
          Free(canonical);
    }
@@ -1571,6 +1672,12 @@ r3s_texture objmodelSetupBitmapTexture(int idx, int frame)
    r3s_texture tex;
    IRes *pRes;
 
+   if (!IS_VALID_MH_INDEX(idx) || frame < 0 ||
+       frame >= g_aModelHandles[idx].numtex ||
+       g_aModelHandles[idx].texptr == NULL ||
+       g_aModelHandles[idx].texptr[frame] == NULL)
+      return g_pDummyObjTmap;
+
    pRes = g_aModelHandles[idx].texptr[frame];
    tex = (r3s_texture) IRes_Lock(pRes);
 
@@ -1579,8 +1686,11 @@ r3s_texture objmodelSetupBitmapTexture(int idx, int frame)
 
 void objmodelReleaseBitmapTexture(int idx, int frame)
 {
-   IRes *pRes = g_aModelHandles[idx].texptr[frame];
-   IRes_Unlock(pRes);
+   if (IS_VALID_MH_INDEX(idx) && frame >= 0 &&
+       frame < g_aModelHandles[idx].numtex &&
+       g_aModelHandles[idx].texptr != NULL &&
+       g_aModelHandles[idx].texptr[frame] != NULL)
+      IRes_Unlock(g_aModelHandles[idx].texptr[frame]);
 }
 
 int objmodelBitmapNumFrames(int idx)

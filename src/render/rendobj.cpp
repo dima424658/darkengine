@@ -1636,6 +1636,17 @@ static void queue_render_md(void *q, uchar *clut)
          for (i=0; i < count; ++i, ++poly) {
             if (!queued_pgon_is_valid(m, *poly, qm->obj_id))
                continue;
+            if (((*poly)->type & MD_PGON_PRIM_MASK) == MD_PGON_PRIM_TMAP &&
+                (*poly)->data < MD_TAB_SIZE &&
+                objmodelIsDummyTexture(mdd_vtext_tab[(*poly)->data])) {
+               static int dummy_reports_left = 64;
+               if (dummy_reports_left-- > 0)
+                  fprintf(stderr,
+                          "Object texture fallback: object=%d model=%s "
+                          "handle=%d material=%u\n",
+                          qm->obj_id, objmodelGetName(qm->idx), qm->idx,
+                          (unsigned)(*poly)->data);
+            }
             if (!poly_clip_codes_and(*poly))
 #ifdef EDITOR
                editor_safe_render_pgon(*poly);

@@ -39,6 +39,7 @@
 #include <objpos.h>
 #include <texsave.h>
 #include <texmem.h>
+#include <missrend.h>
 
 #include <config.h>
 #include <cfgdbg.h>
@@ -193,11 +194,17 @@ static_assert(sizeof(sPortalPolygonRenderInfoDiskLegacy) == 48,
 // brightness.  The live engine remains RGB; these flags affect only decoding.
 static BOOL gReadScalarWorldRep = FALSE;
 static BOOL gReadExtendedWorldRep = FALSE;
+static int gExtendedHeaderVersion = 4;
+static int gExtendedHeaderFlags = 0;
 static int gExtendedLightmapFormat = 0;
 static int gExtendedLightmapScale = 1;
+static uchar gExtendedCellZones[MAX_REGIONS] = { 0 };
 float portal_worldrep_texture_scale = 1.0f;
 float *portal_wrext_u_base[MAX_REGIONS] = { NULL };
 float *portal_wrext_v_base[MAX_REGIONS] = { NULL };
+#ifdef RGB_LIGHTING
+static TagFileTag WRExtTag = { "WREXT" };
+#endif
 
 // NewDark WREXT replaces the fixed-point texture bases and byte texture id
 // with floats and a 16-bit id.  Keep the disk record independent of the live
@@ -214,6 +221,12 @@ typedef struct sWRExtRenderInfoDisk
 
 static_assert(sizeof(sWRExtRenderInfoDisk) == 52,
               "Unexpected WREXT render-info record layout");
+
+int portal_cell_ambient_zone(int cell)
+{
+   return cell >= 0 && cell < wr_num_cells
+      ? (gExtendedCellZones[cell] >> 4) : 0;
+}
 
 typedef struct sScalarMultiLightDisk
 {
@@ -381,6 +394,11 @@ void FreeWR(void)
    PortalCell  *p;
    
    clear_surface_cache();
+#ifdef RGB_LIGHTING
+   dbCompatibilityRewriteTag(&WRExtTag,
+      "world representation changed; source block will be regenerated");
+   memset(gExtendedCellZones,0,sizeof(gExtendedCellZones));
+#endif
    ObjDeleteAllRefs();
    reset_dynamic_lights();
 
@@ -445,7 +463,7 @@ static int lightmap_count(PortalCell *cell, int polygon_index)
    return count;
 }
 
-ulong WriteWR(PortalReadWrite func)
+ulong WriteWR(PortalReadWrite func, BOOL extended = FALSE)
 {
    int            ci, i;            // portal cell index
    int            pi, voff, num_light_indices;
@@ -457,7 +475,7 @@ ulong WriteWR(PortalReadWrite func)
    
    // write the number of portal cells to be written
    (*func)(&wr_num_cells, sizeof(int), 1);
-   
+
    for (ci = 0; ci < wr_num_cells; ci++)
    {
       p = wr_cell[ci];
@@ -474,30 +492,52 @@ ulong WriteWR(PortalReadWrite func)
       (*func)(p->poly_list, sizeof(PortalPolygonCore), p->num_polys);
       alloced_bytes_written += sizeof(PortalPolygonCore)*p->num_polys; 
       
-      // Write the fixed legacy record rather than the widened live structure.
+      // Keep the disk record independent of the widened live structure.
       for (i = 0; i < p->num_render_polys; ++i)
       {
-         sPortalPolygonRenderInfoDiskLegacy diskRender;
-         diskRender.tex_u = p->render_list[i].tex_u;
-         diskRender.tex_v = p->render_list[i].tex_v;
-         diskRender.u_base = p->render_list[i].u_base;
-         diskRender.v_base = p->render_list[i].v_base;
-         if (p->render_list[i].texture_id >
-             DARK_LIMIT_WR_LEGACY_TEXTURE_ID_MAX)
+         if (extended)
          {
-            Warning(("Legacy WR cannot encode terrain texture id %u; writing texture 0\n",
-                     p->render_list[i].texture_id));
-            diskRender.texture_id = 0;
+            sWRExtRenderInfoDisk diskRender;
+            diskRender.tex_u = p->render_list[i].tex_u;
+            diskRender.tex_v = p->render_list[i].tex_v;
+            diskRender.u_base = portal_wrext_u_base[ci]
+               ? portal_wrext_u_base[ci][i]
+               : p->render_list[i].u_base / 4096.0f;
+            diskRender.v_base = portal_wrext_v_base[ci]
+               ? portal_wrext_v_base[ci][i]
+               : p->render_list[i].v_base / 4096.0f;
+            diskRender.texture_id = p->render_list[i].texture_id;
+            diskRender.cached_surface = 0;
+            diskRender.texture_mag = p->render_list[i].texture_mag;
+            diskRender.center = p->render_list[i].center;
+            (*func)(&diskRender, sizeof(diskRender), 1);
          }
          else
-            diskRender.texture_id = (uchar)p->render_list[i].texture_id;
-         diskRender.texture_anchor = p->render_list[i].texture_anchor;
-         diskRender.cached_surface = 0;
-         diskRender.texture_mag = p->render_list[i].texture_mag;
-         diskRender.center = p->render_list[i].center;
-         (*func)(&diskRender, sizeof(diskRender), 1);
+         {
+            sPortalPolygonRenderInfoDiskLegacy diskRender;
+            diskRender.tex_u = p->render_list[i].tex_u;
+            diskRender.tex_v = p->render_list[i].tex_v;
+            diskRender.u_base = p->render_list[i].u_base;
+            diskRender.v_base = p->render_list[i].v_base;
+            if (p->render_list[i].texture_id >
+                DARK_LIMIT_WR_LEGACY_TEXTURE_ID_MAX)
+            {
+               Warning(("Legacy WR cannot encode terrain texture id %u; writing texture 0\n",
+                        p->render_list[i].texture_id));
+               diskRender.texture_id = 0;
+            }
+            else
+               diskRender.texture_id = (uchar)p->render_list[i].texture_id;
+            diskRender.texture_anchor = p->render_list[i].texture_anchor;
+            diskRender.cached_surface = 0;
+            diskRender.texture_mag = p->render_list[i].texture_mag;
+            diskRender.center = p->render_list[i].center;
+            (*func)(&diskRender, sizeof(diskRender), 1);
+         }
       }
-      alloced_bytes_written += sizeof(sPortalPolygonRenderInfoDiskLegacy)*p->num_render_polys;
+      alloced_bytes_written += (extended ? sizeof(sWRExtRenderInfoDisk)
+                                         : sizeof(sPortalPolygonRenderInfoDiskLegacy))
+                               * p->num_render_polys;
 
       // calculate the highest index into the vertex_list used,
       // and then write the index, and then the vertex_list array.
@@ -538,13 +578,52 @@ ulong WriteWR(PortalReadWrite func)
       alloced_bytes_written += sizeof(PortalLightMap) * p->num_render_polys;
       for (i = 0; i < p->num_render_polys; i++)
       {
-         int lightmap_size = (p->light_list[i].h)
-                           * (p->light_list[i].pixel_row)
-                           * sizeof(LightmapEntry)
-                           * (lightmap_count(p, i));
-
-         (*func)(p->light_list[i].data, 1, lightmap_size);
-         alloced_bytes_written += /* sizeof(LightmapEntry) * */ lightmap_size;
+         const int layers = lightmap_count(p,i);
+         const int height = p->light_list[i].h;
+         const int width = p->light_list[i].w;
+         const int row = p->light_list[i].pixel_row;
+         int lightmap_entries = height * (extended ? width : row) * layers;
+         LightmapEntry* packed = NULL;
+         if (extended)
+         {
+            packed = new LightmapEntry[lightmap_entries];
+            for (int layer = 0; layer < layers; ++layer)
+               for (int y = 0; y < height; ++y)
+                  memcpy(packed + (layer * height + y) * width,
+                         p->light_list[i].data +
+                            (layer * height + y) * row,
+                         width * sizeof(LightmapEntry));
+         }
+         if (extended && gExtendedLightmapFormat != 0)
+         {
+            uint32* pixels = new uint32[lightmap_entries];
+            for (int pixel = 0; pixel < lightmap_entries; ++pixel)
+            {
+               const uint value = packed[pixel];
+               uint red = (value & 0x1f) * 255 / 31;
+               uint green = ((value >> 5) & 0x1f) * 255 / 31;
+               uint blue = ((value >> 10) & 0x1f) * 255 / 31;
+               if (gExtendedLightmapFormat == 2)
+               {
+                  red >>= 1;
+                  green >>= 1;
+                  blue >>= 1;
+               }
+               pixels[pixel] = blue | (green << 8) | (red << 16) |
+                               0xff000000;
+            }
+            (*func)(pixels,sizeof(uint32),lightmap_entries);
+            delete [] pixels;
+         }
+         else if (extended)
+            (*func)(packed,sizeof(LightmapEntry),lightmap_entries);
+         else
+            (*func)(p->light_list[i].data,sizeof(LightmapEntry),
+                    lightmap_entries);
+         delete [] packed;
+         alloced_bytes_written +=
+            (extended && gExtendedLightmapFormat != 0
+               ? sizeof(uint32) : sizeof(LightmapEntry)) * lightmap_entries;
       }
 
       // write the light_indices
@@ -703,6 +782,9 @@ void ReadWR(PortalReadWrite func)
          p->light_list[i].pixel_row = diskLightMap.pixel_row;
          p->light_list[i].h = diskLightMap.h;
          p->light_list[i].w = diskLightMap.w;
+         if (gReadExtendedWorldRep &&
+             p->light_list[i].pixel_row < p->light_list[i].w)
+            p->light_list[i].pixel_row = p->light_list[i].w;
          p->light_list[i].data = NULL;
          p->light_list[i].dynamic_light = NULL;
          p->light_list[i].anim_light_bitmask = diskLightMap.anim_light_bitmask;
@@ -710,29 +792,36 @@ void ReadWR(PortalReadWrite func)
 
       for (i = 0; i < p->num_render_polys; i++)
       {
-         int lightmap_entries = (p->light_list[i].h)
-                              * (p->light_list[i].pixel_row)
-                              * (lightmap_count(p, i));
-         int lightmap_size = lightmap_entries * sizeof(LightmapEntry);
+         const int layers = lightmap_count(p,i);
+         const int height = p->light_list[i].h;
+         const int width = p->light_list[i].w;
+         const int row = p->light_list[i].pixel_row;
+         const int serializedEntries = height *
+            (gReadExtendedWorldRep ? width : row) * layers;
+         const int storageEntries = height * row * layers;
+         const int lightmap_size = storageEntries * sizeof(LightmapEntry);
 
          p->light_list[i].data = (LightmapEntry*) wrAlloc(lightmap_size);
+         memset(p->light_list[i].data,0,lightmap_size);
+         LightmapEntry* packed = gReadExtendedWorldRep
+            ? new LightmapEntry[serializedEntries] : p->light_list[i].data;
          if (gReadScalarWorldRep)
          {
-            uchar* scalar = new uchar[lightmap_entries];
-            (*func)(scalar, 1, lightmap_entries);
-            for (int pixel = 0; pixel < lightmap_entries; ++pixel)
+            uchar* scalar = new uchar[serializedEntries];
+            (*func)(scalar, 1, serializedEntries);
+            for (int pixel = 0; pixel < serializedEntries; ++pixel)
             {
                ushort component = (ushort)(scalar[pixel] >> 3);
-               p->light_list[i].data[pixel] =
+               packed[pixel] =
                   (LightmapEntry)(component | (component << 5) | (component << 10));
             }
             delete [] scalar;
          }
          else if (gReadExtendedWorldRep && gExtendedLightmapFormat != 0)
          {
-            uint32* extended = new uint32[lightmap_entries];
-            (*func)(extended, sizeof(uint32), lightmap_entries);
-            for (int pixel = 0; pixel < lightmap_entries; ++pixel)
+            uint32* extended = new uint32[serializedEntries];
+            (*func)(extended, sizeof(uint32), serializedEntries);
+            for (int pixel = 0; pixel < serializedEntries; ++pixel)
             {
                uint32 value = extended[pixel];
                uint red = (value >> 16) & 0xff;
@@ -746,13 +835,31 @@ void ReadWR(PortalReadWrite func)
                   green = green > 127 ? 255 : green * 2;
                   blue = blue > 127 ? 255 : blue * 2;
                }
-               p->light_list[i].data[pixel] = (LightmapEntry)
-                  ((red >> 3) | ((green >> 3) << 5) | ((blue >> 3) << 10));
+               // Preserve the nearest representable RGB555 value.  A shift
+               // always rounds down; at NewDark's common low-light floor of
+               // 14 that produced 1/31 instead of the much closer 2/31 and
+               // made dark WREXT cells appear nearly black.
+               red = (red * 31 + 127) / 255;
+               green = (green * 31 + 127) / 255;
+               blue = (blue * 31 + 127) / 255;
+               packed[pixel] = (LightmapEntry)
+                  (red | (green << 5) | (blue << 10));
             }
             delete [] extended;
          }
          else
-            (*func)(p->light_list[i].data, 1, lightmap_size);
+            (*func)(packed,sizeof(LightmapEntry),serializedEntries);
+
+         if (gReadExtendedWorldRep)
+         {
+            for (int layer = 0; layer < layers; ++layer)
+               for (int y = 0; y < height; ++y)
+                  memcpy(p->light_list[i].data +
+                            (layer * height + y) * row,
+                         packed + (layer * height + y) * width,
+                         width * sizeof(LightmapEntry));
+            delete [] packed;
+         }
 
          p->light_list[i].dynamic_light = NULL;
       }
@@ -925,14 +1032,12 @@ void ReadWriteLight(LightReadWrite func, BOOL reading)
 // WREXT stores one weather byte per cell, followed by only the used static
 // and dynamic lights (plus the 32 scratch lights).  Legacy WR always writes
 // the entire fixed-capacity static-light array.
-void ReadWRExtLight(LightReadWrite func)
+void ReadWriteWRExtLight(LightReadWrite func, BOOL reading)
 {
-   int staticLights = 0;
-   int dynamicLights = 0;
-   int animatedCount = 0;
-   uchar* weather = new uchar[wr_num_cells];
-   (*func)(weather, sizeof(uchar), wr_num_cells);
-   delete [] weather;
+   int staticLights = reading ? 0 : num_light;
+   int dynamicLights = reading ? 0 : num_dyn;
+   int animatedCount = reading ? 0 : g_iCurAnimLightToCell;
+   (*func)(gExtendedCellZones, sizeof(uchar), wr_num_cells);
 
    (*func)(&staticLights, sizeof(int), 1);
    (*func)(&dynamicLights, sizeof(int), 1);
@@ -940,22 +1045,28 @@ void ReadWRExtLight(LightReadWrite func)
        staticLights + dynamicLights > 1048576)
    {
       Warning(("Invalid WREXT light counts %d/%d\n", staticLights, dynamicLights));
-      num_light = num_dyn = 0;
+      if (reading)
+         num_light = num_dyn = 0;
       return;
    }
 
-   memset(light_data, 0, sizeof(mls_multi_light) * MAX_STATIC);
-   num_light = staticLights > MAX_STATIC ? MAX_STATIC : staticLights;
-   num_dyn = dynamicLights;
-   if (num_light + num_dyn > MAX_STATIC)
-      num_dyn = MAX_STATIC - num_light;
+   if (reading)
+   {
+      memset(light_data, 0, sizeof(mls_multi_light) * MAX_STATIC);
+      num_light = staticLights > MAX_STATIC ? MAX_STATIC : staticLights;
+      num_dyn = dynamicLights;
+      if (num_light + num_dyn > MAX_STATIC)
+         num_dyn = MAX_STATIC - num_light;
+   }
 
    const int serializedLights = staticLights + dynamicLights;
    for (int i = 0; i < serializedLights; ++i)
    {
-      mls_multi_light light;
+      mls_multi_light light = {};
+      if (!reading && i < MAX_STATIC)
+         light = light_data[i];
       (*func)(&light, sizeof(light), 1);
-      if (i < MAX_STATIC)
+      if (reading && i < MAX_STATIC)
          light_data[i] = light;
    }
    (*func)(light_this, sizeof(mls_multi_light), 32);
@@ -966,14 +1077,19 @@ void ReadWRExtLight(LightReadWrite func)
       Warning(("Invalid WREXT animated-light/cell count %d\n", animatedCount));
       animatedCount = 0;
    }
-   g_iCurAnimLightToCell = animatedCount;
-   if (g_iCurAnimLightToCell > MAX_ANIM_LIGHT_TO_CELLS)
-      g_iCurAnimLightToCell = MAX_ANIM_LIGHT_TO_CELLS;
+   if (reading)
+   {
+      g_iCurAnimLightToCell = animatedCount;
+      if (g_iCurAnimLightToCell > MAX_ANIM_LIGHT_TO_CELLS)
+         g_iCurAnimLightToCell = MAX_ANIM_LIGHT_TO_CELLS;
+   }
    for (int i = 0; i < animatedCount; ++i)
    {
-      sAnimLightToCell entry;
+      sAnimLightToCell entry = {};
+      if (!reading && i < MAX_ANIM_LIGHT_TO_CELLS)
+         entry = g_aAnimLightToCell[i];
       (*func)(&entry, sizeof(entry), 1);
-      if (i < MAX_ANIM_LIGHT_TO_CELLS)
+      if (reading && i < MAX_ANIM_LIGHT_TO_CELLS)
          g_aAnimLightToCell[i] = entry;
    }
 }
@@ -1059,7 +1175,6 @@ enum eMinorVersions
 TagFileTag WrTag = { "WRRGB" };
 static TagFileTag LegacyWrTag = { "WR" };
 static TagVersion AcceptLegacyWrVersion = { 0, 23 };
-static TagFileTag WRExtTag = { "WREXT" };
 static TagVersion WRExtVersion = { 0, 30 };
 static TagVersion AcceptWRExtVersion = { 0, 30 };
 #else
@@ -1145,7 +1260,14 @@ static void water_db_message(DispatchData* msg)
       case kDatabaseSave:
          if (msg->subtype & kDBMap)
          {
-            TagVersion v = WaterMotionVersion; 
+            TagVersion v = WaterMotionVersion;
+            if (data.save->OpenMode() == kTagOpenWrite)
+            {
+               if (dbFormatGetWriteProfile() == kDBWritePreserveSource)
+                  dbFormatSourceTag(&WaterMotionTag,&v,NULL);
+               else if (dbFormatUsesNewDark())
+                  v = ReadWaterMotionVersion;
+            }
             const BOOL writingRetainedRaw =
                data.save->OpenMode() == kTagOpenWrite &&
                dbCompatibilityUseRawTag(&WaterMotionTag);
@@ -1154,12 +1276,12 @@ static void water_db_message(DispatchData* msg)
                               &AcceptWaterMotionVersion,
                               &ReadWaterMotionVersion) )
             {
-               const BOOL extended = data.save->OpenMode() == kTagOpenRead &&
+               const BOOL extended =
                   VersionNumsCompare(&v,&ReadWaterMotionVersion) == 0;
                ReadWriteWaterMotion(movefunc,extended);
-               if (extended)
-                  dbCompatibilityRetainRawTag(&WaterMotionTag,
-                     "0.2 decoded; original retained because writer emits 0.1");
+               if (extended && data.save->OpenMode() == kTagOpenRead)
+                  dbCompatibilityRewriteTag(&WaterMotionTag,
+                     "0.2 fully decoded; source version is writable");
                cleanup_tagfile(data.save);
             }
          }
@@ -1181,6 +1303,11 @@ static void db_message(DispatchData* msg)
       case kDatabaseReset:
       {
          portal_worldrep_texture_scale = 1.0f;
+         gExtendedHeaderVersion = 4;
+         gExtendedHeaderFlags = 0;
+         gExtendedLightmapFormat = 0;
+         gExtendedLightmapScale = 0;
+         memset(gExtendedCellZones,0,sizeof(gExtendedCellZones));
          FreeWR();
 
          wrBspTreeDeallocate();
@@ -1206,31 +1333,63 @@ static void db_message(DispatchData* msg)
             if (!gedit_editted && wr_num_cells > 0)
             {
                ITagFile* file = data.save; 
-               TagVersion v = WrVersion;
-               if (!dbCompatibilityUseRawTag(&WRExtTag) &&
-                   setup_tagfile(file, &WrTag, &v,&AcceptWrVersion))
-               {             
-                  ulong size = 0; 
-
-                  // make room for the size 
-                  file->Write((char*)&size,sizeof(size));
-
-                  // write the world rep
-                  size = WriteWR(movefunc);
-
-                  // write the light stuff
-                  ReadWriteLight(movefunc, FALSE);
-
-                  // write the csg editting stuff
+               const BOOL writeExtended = dbFormatTargetHasTag(&WRExtTag);
+               if (writeExtended)
+               {
+                  if (!dbCompatibilityUseRawTag(&WRExtTag))
+                  {
+                     TagVersion v = WRExtVersion;
+                     if (dbFormatGetWriteProfile() == kDBWritePreserveSource)
+                        dbFormatSourceTag(&WRExtTag,&v,NULL);
+                     if (setup_tagfile(file,&WRExtTag,&v,&AcceptWRExtVersion))
+                     {
+                        const sMissionLightmapParams* params =
+                           GetMissionLightmapParams();
+                        if (dbFormatUsesNewDark() &&
+                            !dbFormatSourceTag(&WRExtTag,NULL,NULL))
+                        {
+                           // New WREXT exports use NewDark's 32-bit BGR
+                           // lightmaps.  LM_PARAM.shadow_depth controls the
+                           // lighting algorithm and is not the disk format.
+                           gExtendedLightmapFormat = 1;
+                           gExtendedLightmapScale = params->lightmap_scale;
+                        }
+                        int headerSize = 20;
+                        ulong size = 0;
+                        file->Write((char*)&headerSize,sizeof(headerSize));
+                        file->Write((char*)&gExtendedHeaderVersion,
+                                    sizeof(gExtendedHeaderVersion));
+                        file->Write((char*)&gExtendedHeaderFlags,
+                                    sizeof(gExtendedHeaderFlags));
+                        file->Write((char*)&gExtendedLightmapFormat,
+                                    sizeof(gExtendedLightmapFormat));
+                        file->Write((char*)&gExtendedLightmapScale,
+                                    sizeof(gExtendedLightmapScale));
+                        file->Write((char*)&size,sizeof(size));
+                        size = WriteWR(movefunc,TRUE);
+                        ReadWriteWRExtLight(movefunc,FALSE);
+                        file->Seek(headerSize,kTagSeekFromStart);
+                        file->Write((char*)&size,sizeof(size));
+                        cleanup_tagfile(data.save);
+                     }
+                  }
+               }
+               else
+               {
+                  TagVersion v = WrVersion;
+                  if (setup_tagfile(file, &WrTag, &v,&AcceptWrVersion))
+                  {
+                     ulong size = 0;
+                     file->Write((char*)&size,sizeof(size));
+                     size = WriteWR(movefunc);
+                     ReadWriteLight(movefunc, FALSE);
 #ifdef EDITOR
-                  save_csg_internal_database(movefunc);
+                     save_csg_internal_database(movefunc);
 #endif 
-
-                  // backpatch the writen size 
-                  file->Seek(0,kTagSeekFromStart); 
-                  file->Write((char*)&size,sizeof(size)); 
-
-                  cleanup_tagfile(data.save);
+                     file->Seek(0,kTagSeekFromStart);
+                     file->Write((char*)&size,sizeof(size));
+                     cleanup_tagfile(data.save);
+                  }
                }
             }
 
@@ -1269,7 +1428,7 @@ static void db_message(DispatchData* msg)
                gReadExtendedWorldRep = opened;
                if (opened)
                   dbCompatibilityRetainRawTag(&WRExtTag,
-                     "decoded; original retained because the writer emits WRRGB 0.24");
+                     "decoded; source block retained until the world changes");
             }
 #endif
             if (opened)
@@ -1278,11 +1437,11 @@ static void db_message(DispatchData* msg)
                if (gReadExtendedWorldRep)
                {
                   int headerSize = 0;
-                  int version = 0;
-                  int flags = 0;
                   file->Read((char*)&headerSize, sizeof(headerSize));
-                  file->Read((char*)&version, sizeof(version));
-                  file->Read((char*)&flags, sizeof(flags));
+                  file->Read((char*)&gExtendedHeaderVersion,
+                             sizeof(gExtendedHeaderVersion));
+                  file->Read((char*)&gExtendedHeaderFlags,
+                             sizeof(gExtendedHeaderFlags));
                   file->Read((char*)&gExtendedLightmapFormat, sizeof(gExtendedLightmapFormat));
                   file->Read((char*)&gExtendedLightmapScale, sizeof(gExtendedLightmapScale));
                   portal_worldrep_texture_scale = gExtendedLightmapScale > 0
@@ -1312,7 +1471,7 @@ static void db_message(DispatchData* msg)
 
                // load the light stuff
                if (gReadExtendedWorldRep)
-                  ReadWRExtLight(movefunc);
+                  ReadWriteWRExtLight(movefunc,TRUE);
                else
                   ReadWriteLight(movefunc, TRUE);
 

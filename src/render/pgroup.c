@@ -19,6 +19,7 @@
 #include <objshape.h>
 #include <objedit.h>
 #include <parttype.h>
+#include <pgroup.h>
 #include <pgrpprop.h>
 #include <rendprop.h>
 #include <scrnman.h>
@@ -329,6 +330,25 @@ void ParticleGroupRender(ObjID obj)
       if ((pg->launch = ObjGetParticleGroupLaunchInfo(obj)) == NULL)
       {
          Warning(("No launch info for %s?\n", ObjWarnName(obj)));
+         return;
+      }
+   }
+
+   // Some NewDark property loads materialize a concrete particle group after
+   // the property listener that normally rebuilds these runtime-only
+   // callbacks.  Never call serialized/null function pointers; initialize
+   // the group on first use and reject only an enum combination that still
+   // cannot select a renderer.
+   if (!pg->pc.particle_transform || !pg->pc.particle_render)
+   {
+      Warning(("Reinitializing particle callbacks for %s.\n",
+               ObjWarnName(obj)));
+      particle_group_update(obj);
+      pg = ObjGetParticleGroup(obj);
+      if (!pg || !pg->pc.particle_transform || !pg->pc.particle_render)
+      {
+         Warning(("Skipping particle group %s with unsupported type %d.\n",
+                  ObjWarnName(obj),pg ? pg->render_type : -1));
          return;
       }
    }

@@ -1379,9 +1379,12 @@ void portal_traverse_scene(int cell)
         // area to the unsorted area)
       explore_portals(wr_cell[n]);
 
-        // avoid us getting in an infinite loop;
-        // although this may result in major sorting bugs!
-      if (++count == 1024) {
+        // Avoid an infinite loop.  The original 1024-step guard predates the
+        // extended active-region capacity and truncates valid large NewDark
+        // scenes.  Bound the work by the extended active-region capacity;
+        // revisits consume that budget too, preventing malformed portal
+        // cycles from stalling an entire frame.
+      if (++count >= MAX_ACTIVE_REGIONS) {
 #ifndef SHIP
          if (trav_file)
             fprintf(trav_file, "Apparent cell cycle!\n");
@@ -1392,7 +1395,6 @@ void portal_traverse_scene(int cell)
          break;
       }
    }
-
 
 // Traverse active cells to see if any sky is visible:
    for (i = r_sorted_count-1; (i >= 0) && !bRenderSky; i--)

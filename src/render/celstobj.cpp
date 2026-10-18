@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include <celstobj.h>
+#include <missiondiag.h>
 
 #include <skyrend.h>
 #include <memall.h>
@@ -290,7 +291,15 @@ void cCelestialObject::Init()
    IResMan *pResMan = AppGetObj(IResMan);
    pCelestRes = IResMan_Bind(pResMan, pCelestialObj->TextureName, RESTYPE_IMAGE, NULL, "fam\\skyhw\\", 0);
    if (!pCelestRes)
+   {
+      char diagnostic[256];
+      snprintf(diagnostic,sizeof(diagnostic),
+               "Celestial-object texture is missing: fam\\skyhw\\%s",
+               pCelestialObj->TextureName);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue("ERROR","sky",diagnostic);
       return;
+   }
 
    ////////////////////////////////////////////////////////////////////////////////////////
    // Compute 3d points based on direction, angular size, and sky shape, and distance.

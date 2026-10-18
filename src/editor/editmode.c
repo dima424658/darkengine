@@ -61,6 +61,7 @@
 #include <rendprop.h>
 #include <pgrpprop.h>
 #include <render_backend.h>
+#include <missiondiag.h>
 
 // stuff for camera synch
 #include <dbasemsg.h>
@@ -264,6 +265,7 @@ static mxs_ang degrees_to_ang(float degrees)
 static void configure_render_test_view(void)
 {
    char value[160];
+   char diagnostic[256];
    mxs_vector position = { 0, 0, 0 };
    mxs_angvec facing = { 0, 0, 0 };
    Position *player_start = NULL;
@@ -304,6 +306,12 @@ static void configure_render_test_view(void)
    vm_set_location(0,&position);
    vm_set_facing(0,&facing);
    vm_redraw();
+   snprintf(diagnostic,sizeof(diagnostic),
+      "Render-test camera: source object %d, position %.3f,%.3f,%.3f, "
+      "angles %.3f,%.3f,%.3f",start_object,position.x,position.y,
+      position.z,pitch,heading,roll);
+   diagnostic[sizeof(diagnostic)-1]='\0';
+   MissionDiagnosticsIssue("INFO","editor-view",diagnostic);
    RenderBackendTrace(
       "render-test-view pos=%.3f,%.3f,%.3f angles=%.3f,%.3f,%.3f",
       position.x,position.y,position.z,pitch,heading,roll);
@@ -523,26 +531,26 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
          if (state->first_frame)
          {
-            if (!once)
-               process_config_scripts("edit_script");
-            once = TRUE;
-            process_config_scripts("edit_always_script");
-
             if (state->from_game)
             {
                RestoreMissionBackup(); 
                RemoveMissionBackup(); 
-               RestoreBrushSelection(); 
             }
-            else if (state->from_editor)
-            {
-                // Changing the editor's canvas size switches from edit mode
-                // back into edit mode.  The brush-list loop removes its
-                // transient object/light brushes while the old mode exits;
-                // rebuild them after the new GUI and canvas are ready, just
-                // as the game-preview return path does after its backup load.
-                RestoreBrushSelection();
-            }
+
+            // Object brushes are transient editor views of concrete database
+            // objects. The mission is loaded before the first edit-mode enter,
+            // so its object-create notifications precede the brush listener.
+            // Rebuild them on every completed edit-mode entry, including the
+            // initial one and a canvas-size edit-to-edit transition.
+            RestoreBrushSelection();
+
+            // Command-line automation may save immediately. Run it only
+            // after the transient object brushes have been reconstructed so
+            // BRLIST output cannot silently omit every concrete object.
+            if (!once)
+               process_config_scripts("edit_script");
+            once = TRUE;
+            process_config_scripts("edit_always_script");
 
             state->first_frame = FALSE;
 

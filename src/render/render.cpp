@@ -304,7 +304,11 @@ r3s_texture texture_lookup(int n)
 
    // @OPTIMIZE: THIS MUST GO, extra if per texture lookup = ~10000 per second?
    //  or at least bias it towards the expected jump (ie. not backhack)
-   if (((GetSkyMode() == kSkyModeStars) && (n==BACKHACK_IDX)) && !SkyRendererUseEnhanced())
+   // NewDark WREXT worlds use texture zero for the same sky portal that
+   // legacy worlds store in BACKHACK_IDX.  Both must arm the deferred star
+   // pass when the mission selects the non-enhanced star sky.
+   if ((GetSkyMode() == kSkyModeStars) &&
+       (n == BACKHACK_IDX || n == 0) && !SkyRendererUseEnhanced())
    any_stars=TRUE;
 
    return texmemGetTexture(n);

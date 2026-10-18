@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include <cloudobj.h>
+#include <missiondiag.h>
 
 #include <mprintf.h>
 #include <memall.h>
@@ -1067,7 +1068,15 @@ void cCloudDeck::Init()
    IResMan *pResMan = AppGetObj(IResMan);
    pRes = IResMan_Bind(pResMan, g_CloudObj.TextureName, RESTYPE_IMAGE, NULL, "fam\\skyhw\\", 0);
    if (!pRes)
+   {
+      char diagnostic[256];
+      snprintf(diagnostic,sizeof(diagnostic),
+               "Cloud deck texture is missing: fam\\skyhw\\%s",
+               g_CloudObj.TextureName);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue("ERROR","sky",diagnostic);
       return;
+   }
 
    for (i = 16; i < 256; i++)
       AlphaTable[i] = 0;

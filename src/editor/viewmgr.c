@@ -16,6 +16,7 @@
 #include <2d.h>
 #include <r3d.h>
 #include <lgd3d.h>
+#include <render_backend.h>
 #include <mm.h>
 #include <mprintf.h>
 
@@ -42,6 +43,7 @@
 #include <wrlimit.h>
 
 #include <status.h>
+#include <missiondiag.h>
 
 #include <config.h>
 #include <memall.h>
@@ -1271,10 +1273,23 @@ static BOOL update_links = TRUE;
 // ok, secretly knows there is the "new_camera" and "new_select" subflags of redraw....
 void vm_render_camera(int c)
 {
+   static BOOL render_test_logged=FALSE;
    int reg, rv_flag=0;
    BOOL restore_bm=FALSE, show_grid, compiled_fallback;
    uchar mode;
 
+   if (!render_test_logged && c==0 && config_is_defined("render_test"))
+   {
+      char diagnostic[256];
+      snprintf(diagnostic,sizeof(diagnostic),
+         "Render-test viewport entry: display=%d visible=%d camera3d=%d "
+         "mode=0x%x redraw=%d camera=%d render=%d",
+         vm_display_enable,VIS_CAM(c),camera[c].camera_3d,
+         (uint)camera[c].render_mode,redraw,new_camera,new_render);
+      diagnostic[sizeof(diagnostic)-1]='\0';
+      MissionDiagnosticsIssue("INFO","editor-view",diagnostic);
+      render_test_logged=TRUE;
+   }
    if (!vm_display_enable) return;
    if (!VIS_CAM(c)) return;
 
@@ -1293,6 +1308,13 @@ void vm_render_camera(int c)
    vm_start_3d(c);
 
    mode = camera[c].render_mode;
+   if (camera[c].camera_3d)
+      RenderBackendTrace(
+         "editor-render index=%d requested-mode=0x%x level-valid=%d "
+         "world-cells=%d cell=%d pos=%.3f,%.3f,%.3f",
+         c,(uint)mode,gedcsg_level_valid,wr_num_cells,
+         CellFromLoc(&camera[c].loc),camera[c].loc.vec.x,
+         camera[c].loc.vec.y,camera[c].loc.vec.z);
 
 // New stuff here:
    if (!config_is_defined("Editor_NoInvalidCellCheck"))

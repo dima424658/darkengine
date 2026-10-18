@@ -475,6 +475,16 @@ static bool is_new_sky_surface(ushort texture_id)
       (texture_id >= BACKHACK_IDX && texture_id < TEXMEM_RESERVED_LIMIT);
 }
 
+bool portal_is_star_sky_texture(ushort texture_id)
+{
+   // WREXT stores its sky portal as texture zero.  In legacy star-sky mode
+   // that is an alias for BACKHACK_IDX, whose locked invisible bitmap and
+   // far-plane treatment reveal the star field.  Do not apply the alias in
+   // textured-sky mode, where texture zero may be a genuine missing texture.
+   return texture_id == portal_sky_id ||
+      (texture_id == 0 && portal_sky_id == BACKHACK_IDX);
+}
+
 
 void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render,
                         PortalLightMap *lt, int voff, void *clip)
@@ -485,6 +495,7 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
    r3s_phandle vlist[MAX_VERT], *final;
    scale_info info;
    bool motion, post_clip_uv, zsky = FALSE;
+   bool star_sky;
 
    n = poly->num_vertices;
    AssertMsg (n <= MAX_VERT, "draw_surface: too many vertices.");
@@ -497,6 +508,11 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
       END_PROF;
       return;
    }
+
+   star_sky = !bRenderNewSky &&
+      portal_is_star_sky_texture(render->texture_id);
+   if (star_sky && render->texture_id == 0)
+      hw.tex = portal_get_texture(portal_sky_id);
 
    motion = poly->motion_index && portal_cell_motion[poly->motion_index].in_motion;
    post_clip_uv = (hw.tex == NULL)||portal_clip_num||motion;
@@ -628,7 +644,7 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
       porthw_get_cached_lightmap(&hw, render, lt);
    }
 
-   if ((render->texture_id == portal_sky_id) && !bRenderNewSky)
+   if (star_sky)
    {
       // don't need to lightmap!
       hw.lm = NULL;
@@ -832,6 +848,7 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
    r3s_phandle vlist[MAX_VERT], *final;
    scale_info info;
    bool motion, post_clip_uv, zsky = FALSE;
+   bool star_sky;
 
    n = poly->num_vertices;
    AssertMsg (n <= MAX_VERT, "draw_surface: too many vertices.");
@@ -844,6 +861,11 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
       END_PROF;
       return;
    }
+
+   star_sky = !bRenderNewSky &&
+      portal_is_star_sky_texture(render->texture_id);
+   if (star_sky && render->texture_id == 0)
+      hw.tex = portal_get_texture(portal_sky_id);
 
    motion = poly->motion_index && portal_cell_motion[poly->motion_index].in_motion;
    post_clip_uv = (hw.tex == NULL)||portal_clip_num||motion;
@@ -975,7 +997,7 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
       porthw_get_cached_lightmap(&hw, render, lt);
    }
 
-   if ((render->texture_id == portal_sky_id) && !bRenderNewSky)
+   if (star_sky)
    {
       hw.lm = NULL;
       switch (ptsky_type) {
@@ -1137,6 +1159,7 @@ void draw_surface_texture_only(PortalPolygonCore *poly, PortalPolygonRenderInfo 
    r3s_phandle vlist[MAX_VERT], *final;
    scale_info info;
    bool motion, post_clip_uv, zsky = FALSE;
+   bool star_sky;
 
    n = poly->num_vertices;
    AssertMsg (n <= MAX_VERT, "draw_surface: too many vertices.");
@@ -1149,6 +1172,11 @@ void draw_surface_texture_only(PortalPolygonCore *poly, PortalPolygonRenderInfo 
       END_PROF;
       return;
    }
+
+   star_sky = !bRenderNewSky &&
+      portal_is_star_sky_texture(render->texture_id);
+   if (star_sky && render->texture_id == 0)
+      hw.tex = portal_get_texture(portal_sky_id);
 
    motion = poly->motion_index && portal_cell_motion[poly->motion_index].in_motion;
    post_clip_uv = (hw.tex == NULL)||portal_clip_num||motion;
@@ -1272,7 +1300,7 @@ void draw_surface_texture_only(PortalPolygonCore *poly, PortalPolygonRenderInfo 
       Error(1, "Texture non-power-of-two in h!\n");
 #endif
 
-   if ((render->texture_id == portal_sky_id) && !bRenderNewSky)
+   if (star_sky)
    {
       switch (ptsky_type) {
       case PTSKY_SPAN:
@@ -1389,7 +1417,8 @@ void draw_surface_lightmap_only(PortalPolygonCore *poly, PortalPolygonRenderInfo
 
    // water or sky poly?
    if ((poly->flags & PORTAL_SPLITS_OBJECT)||
-       (render->texture_id == portal_sky_id))
+       portal_is_star_sky_texture(render->texture_id) ||
+       (bRenderNewSky && is_new_sky_surface(render->texture_id)))
       {END_PROF; return;}
 
    // sky hack?

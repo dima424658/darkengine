@@ -27,6 +27,7 @@
 #include <star.h>
 
 #include <starobj.h>
+#include <missiondiag.h>
 
 #include <skyrend.h>
 #include <memall.h>
@@ -184,7 +185,11 @@ static BOOL CalcStarData()
    IResMan *pResMan = AppGetObj(IResMan);
    pStarRes = IResMan_Bind(pResMan, "stars.bin", RESTYPE_BINARY, NULL, "fam\\skyhw\\", 0);
    if (!pStarRes)
+   {
+      MissionDiagnosticsIssue("ERROR","sky",
+                              "Star field is enabled but fam\\skyhw\\stars.bin is missing");
       return FALSE;
+   }
    pRawStarData = (char *)pStarRes->Lock();
    if (!pRawStarData)
    {

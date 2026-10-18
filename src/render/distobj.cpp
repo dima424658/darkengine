@@ -26,6 +26,7 @@
 
 #include <skyrend.h>
 #include <distobj.h>
+#include <missiondiag.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header!
 
@@ -218,10 +219,27 @@ void cDistantArt::Init()
    IResMan *pResMan = AppGetObj(IResMan);
    pDistantArtRes1 = IResMan_Bind(pResMan, g_DistantObj.Texture1Name, RESTYPE_IMAGE, NULL, "fam\\skyhw\\", 0);
    if (!pDistantArtRes1)
+   {
+      char diagnostic[256];
+      snprintf(diagnostic,sizeof(diagnostic),
+               "Primary distant-art texture is missing: fam\\skyhw\\%s",
+               g_DistantObj.Texture1Name);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue("ERROR","sky",diagnostic);
       return;
+   }
 
    if (g_DistantObj.Texture2Name[0])
       pDistantArtRes2 = IResMan_Bind(pResMan, g_DistantObj.Texture2Name, RESTYPE_IMAGE, NULL, "fam\\skyhw\\", 0);
+   if (g_DistantObj.Texture2Name[0] && !pDistantArtRes2)
+   {
+      char diagnostic[256];
+      snprintf(diagnostic,sizeof(diagnostic),
+               "Secondary distant-art texture is missing: fam\\skyhw\\%s",
+               g_DistantObj.Texture2Name);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue("ERROR","sky",diagnostic);
+   }
 
    // Load palette
    IRes *pPalRes = IResMan_Bind(pResMan, IRes_GetName(pDistantArtRes1), RESTYPE_PALETTE,
