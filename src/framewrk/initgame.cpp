@@ -24,6 +24,7 @@
 #include <dbasemsg.h>
 #include <objmodel.h>
 #include <sdestool.h>
+#include <contentctx.h>
 #ifdef THIEF2_GAME
 #include <motmngr.h>
 #endif
@@ -112,7 +113,7 @@ tResult LGAPI AppInit()
    const char *load_var = quickstart ? "quickstart" : "file";
    if (config_get_raw(load_var,buf,sizeof(buf)))
       dbLoad(buf,kFiletypeAll);
-   else
+   else if (!DarkContentShowPicker())
       dbBuildDefault();
 
    return NOERROR;

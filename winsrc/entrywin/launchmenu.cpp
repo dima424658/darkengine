@@ -39,6 +39,7 @@ struct sLaunchMenuState
     std::string gameName;
     std::string registryValue;
     std::string selectedFM;
+    bool editorMode;
     int result;
     HWND list;
     HFONT titleFont;
@@ -47,7 +48,7 @@ struct sLaunchMenuState
     HFONT smallFont;
 
     sLaunchMenuState()
-        : result(kDarkLaunchCancel), list(NULL), titleFont(NULL),
+        : editorMode(false), result(kDarkLaunchCancel), list(NULL), titleFont(NULL),
           headingFont(NULL), bodyFont(NULL), smallFont(NULL)
     {
     }
@@ -174,7 +175,9 @@ static void AddFanMissions(sLaunchMenuState* state)
         item.fmName = found.cFileName;
         item.name = found.cFileName;
         item.category = "FAN MISSION";
-        item.description = "Launch this fan mission with the installation's configured mod paths.";
+        item.description = state->editorMode
+            ? "Use this FM's resources in DromEd. After Open in DromEd, choose its .mis file; the mission's referenced .gam and assets are resolved from this FM folder."
+            : "Launch this fan mission with the installation's configured mod paths.";
         ReadFMInfo(fullPath, item.name, item.description);
         state->items.push_back(item);
     } while (FindNextFileA(search, &found));
@@ -293,19 +296,18 @@ static void AddItems(sLaunchMenuState* state)
     vanilla.choice = kDarkLaunchVanilla;
     vanilla.name = "Original Missions";
     vanilla.category = "ORIGINAL CAMPAIGN";
-    vanilla.description =
-        "Play the original campaign from the base retail resources only. Mod layers "
-        "are disabled, and saves are kept separate from the modded campaign. This is "
-        "the recommended and most compatible choice.";
+    vanilla.description = state->editorMode
+        ? "Open a retail .mis or .cow in DromEd using only the base game resources. The game folder is the installation root containing cam.cfg, not its FMs folder."
+        : "Play the original campaign from the base retail resources only. Mod layers are disabled, and saves are kept separate from the modded campaign. This is the recommended and most compatible choice.";
     state->items.push_back(vanilla);
 
     sLaunchItem configured;
     configured.choice = kDarkLaunchConfigured;
     configured.name = "Original Missions - Modded";
     configured.category = "ORIGINAL CAMPAIGN";
-    configured.description =
-        "Use cam_mod.ini, uber_mod_path, and mod_path. Installed enhancement packs "
-        "may require NewDark features that this engine does not support yet.";
+    configured.description = state->editorMode
+        ? "Open a retail .mis or .cow in DromEd with cam_mod.ini, uber_mod_path, and mod_path enabled. Choose the installation root containing cam.cfg."
+        : "Use cam_mod.ini, uber_mod_path, and mod_path. Installed enhancement packs may require NewDark features that this engine does not support yet.";
     state->items.push_back(configured);
     AddFanMissions(state);
 }
@@ -488,7 +490,9 @@ static LRESULT CALLBACK LaunchMenuProc(HWND window, UINT message,
                              (LPARAM)state->items[i].name.c_str());
             SendMessageA(state->list, LB_SETCURSEL, InitialSelection(state), 0);
 
-            CreateWindowExA(0, "BUTTON", "LAUNCH", WS_CHILD | WS_VISIBLE |
+            CreateWindowExA(0, "BUTTON",
+                state->editorMode ? "OPEN IN DROMED" : "LAUNCH",
+                WS_CHILD | WS_VISIBLE |
                 WS_TABSTOP | BS_OWNERDRAW, 438, 455, 175, 41, window,
                 (HMENU)kLaunchButton, GetModuleHandleA(NULL), NULL);
             CreateWindowExA(0, "BUTTON", "CHANGE GAME FOLDER", WS_CHILD |
@@ -590,7 +594,8 @@ int DarkShowLaunchMenu(const char* directory, const char* profile,
     sLaunchMenuState state;
     state.directory = directory;
     state.gameName = ProfileName(profile);
-    if (IsDromEd(executable))
+    state.editorMode = IsDromEd(executable);
+    if (state.editorMode)
         state.gameName += "  /  DROMED";
     MakeRegistryValue(&state, profile);
     AddItems(&state);

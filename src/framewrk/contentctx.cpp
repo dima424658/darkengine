@@ -29,6 +29,7 @@ static char gProfile[32] = "thief2";
 static char gContentMode[32] = "configured";
 static char gBasePath[DARK_CONTENT_MAX_PATH] = ".";
 static char gFMPath[DARK_CONTENT_MAX_PATH] = "";
+static char gFMName[DARK_CONTENT_MAX_PATH] = "";
 static char gSavePath[DARK_CONTENT_MAX_PATH] = "saves";
 static char gSaveFallbackPath[DARK_CONTENT_MAX_PATH] = "";
 static BOOL gSavePathExplicit = FALSE;
@@ -284,6 +285,171 @@ static BOOL IsSafeFMName(const char* name)
 {
    return name && name[0] && !IsAbsolutePath(name) &&
           !strstr(name, "..") && !strchr(name, '\\') && !strchr(name, '/');
+}
+
+struct sPickerBootstrapLimits
+{
+   int objMin;
+   int objMax;
+   int maxRefs;
+   int soundChannels;
+   int directories;
+   int files;
+};
+
+static int ClampPickerLimit(const char* variable, long value, int minimum,
+                            int maximum, const char* source)
+{
+   if (value >= minimum && value <= maximum)
+      return (int)value;
+
+   char diagnostic[512];
+   const int clamped = value < minimum ? minimum : maximum;
+   _snprintf(diagnostic, sizeof(diagnostic) - 1,
+             "%s requests %s=%ld outside the supported range %d..%d; "
+             "using %d for startup capacity", source, variable, value,
+             minimum, maximum, clamped);
+   diagnostic[sizeof(diagnostic) - 1] = '\0';
+   PlatformDiagnosticsLog("ERROR", "content-bootstrap", diagnostic);
+   return clamped;
+}
+
+static void ReadPickerLimitFile(const char* path,
+                                sPickerBootstrapLimits* limits)
+{
+   char resolved[DARK_CONTENT_MAX_PATH];
+   if (!PlatformResolvePath(path, resolved, sizeof(resolved)))
+      return;
+
+   FILE* file = fopen(resolved, "rt");
+   if (!file)
+      return;
+   ++limits->files;
+
+   char line[DARK_LIMIT_RUNTIME_CONFIG_LINE_CHARS + 2];
+   while (fgets(line, sizeof(line), file))
+   {
+      char* comment = strchr(line, ';');
+      if (comment)
+         *comment = '\0';
+      Trim(line);
+      if (!line[0])
+         continue;
+
+      char* valueText = line;
+      while (*valueText && !isspace((unsigned char)*valueText))
+         ++valueText;
+      if (!*valueText)
+         continue;
+      *valueText++ = '\0';
+      while (*valueText && isspace((unsigned char)*valueText))
+         ++valueText;
+
+      char* end = NULL;
+      const long value = strtol(valueText, &end, 0);
+      if (end == valueText)
+         continue;
+
+      if (_stricmp(line, "obj_min") == 0)
+      {
+         const int candidate = ClampPickerLimit(
+            line, value, -DARK_LIMIT_RUNTIME_ABSTRACT_OBJECT_IDS, -1,
+            resolved);
+         if (candidate < limits->objMin)
+            limits->objMin = candidate;
+      }
+      else if (_stricmp(line, "obj_max") == 0)
+      {
+         const int candidate = ClampPickerLimit(
+            line, value, 1, DARK_LIMIT_RUNTIME_CONCRETE_OBJECT_IDS,
+            resolved);
+         if (candidate > limits->objMax)
+            limits->objMax = candidate;
+      }
+      else if (_stricmp(line, "max_refs") == 0)
+      {
+         const int candidate = ClampPickerLimit(
+            line, value, 1, DARK_LIMIT_RUNTIME_OBJECT_REFS, resolved);
+         if (candidate > limits->maxRefs)
+            limits->maxRefs = candidate;
+      }
+      else if (_stricmp(line, "sfx_channels") == 0)
+      {
+         const int candidate = ClampPickerLimit(
+            line, value, 1, DARK_LIMIT_RUNTIME_SOUND_CHANNELS, resolved);
+         if (candidate > limits->soundChannels)
+            limits->soundChannels = candidate;
+      }
+   }
+   fclose(file);
+}
+
+void DarkContentPreparePickerBootstrap(void)
+{
+   if (!DarkContentShowPicker())
+      return;
+
+   sPickerBootstrapLimits limits = {
+      -DARK_LIMIT_LEGACY_ABSTRACT_OBJECT_IDS,
+      DARK_LIMIT_LEGACY_CONCRETE_OBJECT_IDS,
+      DARK_LIMIT_LEGACY_OBJECT_REFS,
+      DARK_LIMIT_LEGACY_SOUND_CHANNELS,
+      0,
+      0
+   };
+   config_get_int("obj_min", &limits.objMin);
+   config_get_int("obj_max", &limits.objMax);
+   config_get_int("max_refs", &limits.maxRefs);
+   config_get_int("sfx_channels", &limits.soundChannels);
+
+   char fmBase[CONTENT_PATH_SIZE] = "FMs";
+   char fmRoot[DARK_CONTENT_MAX_PATH];
+   char pattern[DARK_CONTENT_MAX_PATH];
+   config_get_raw("fm_path", fmBase, sizeof(fmBase));
+   fmBase[sizeof(fmBase) - 1] = '\0';
+   JoinPath(fmRoot, sizeof(fmRoot), gBasePath, fmBase);
+   JoinPath(pattern, sizeof(pattern), fmRoot, "*");
+
+   static const char* files[] = { "DARK.CFG", "fm.cfg", "cam_ext.cfg" };
+   sPlatformFileFind find = {};
+   if (PlatformFindFirst(pattern, &find))
+   {
+      do
+      {
+         if (!(find.attributes & kPlatformFileDirectory) ||
+             find.name[0] == '.')
+            continue;
+         ++limits.directories;
+         char directory[DARK_CONTENT_MAX_PATH];
+         JoinPath(directory, sizeof(directory), fmRoot, find.name);
+         for (int i = 0; i < sizeof(files) / sizeof(files[0]); ++i)
+         {
+            char path[DARK_CONTENT_MAX_PATH];
+            JoinPath(path, sizeof(path), directory, files[i]);
+            ReadPickerLimitFile(path, &limits);
+         }
+      } while (PlatformFindNext(&find));
+      PlatformFindClose(&find);
+   }
+
+   // Object bounds are consumed by the deferred dbBuildDefault(). The
+   // reference and mixer capacities are consumed during kMsgAppInit, before
+   // the content panel can return a selection.
+   config_set_int("obj_min", limits.objMin);
+   config_set_int("obj_max", limits.objMax);
+   config_set_int("max_refs", limits.maxRefs);
+   config_set_int("sfx_channels", limits.soundChannels);
+
+   char diagnostic[512];
+   _snprintf(diagnostic, sizeof(diagnostic) - 1,
+             "themed picker bootstrap scanned %d FM director%s (%d config "
+             "file%s): obj_min=%d obj_max=%d max_refs=%d sfx_channels=%d",
+             limits.directories, limits.directories == 1 ? "y" : "ies",
+             limits.files, limits.files == 1 ? "" : "s", limits.objMin,
+             limits.objMax, limits.maxRefs, limits.soundChannels);
+   diagnostic[sizeof(diagnostic) - 1] = '\0';
+   PlatformDiagnosticsLog("INFO", "content-bootstrap", diagnostic);
+   mprintf("%s\n", diagnostic);
 }
 
 static void SanitizeComponent(char* text)
@@ -585,6 +751,7 @@ void DarkContentConfigure(int argc, const char* argv[])
       Warning(("Unknown content mode '%s'; using configured content\n", requestedMode));
    strcpy(gContentMode, vanilla ? "vanilla" : "configured");
    gFMPath[0] = '\0';
+   gFMName[0] = '\0';
 
    fmName = SelectedFMName(argc, argv, fmStorage, sizeof(fmStorage));
 
@@ -595,6 +762,11 @@ void DarkContentConfigure(int argc, const char* argv[])
          Warning(("Active FM '%s' was not found\n", fmName));
          gFMPath[0] = '\0';
          fmName = NULL;
+      }
+      else
+      {
+         strncpy(gFMName,fmName,sizeof(gFMName));
+         gFMName[sizeof(gFMName) - 1] = '\0';
       }
    }
 
@@ -652,6 +824,14 @@ void DarkContentConfigure(int argc, const char* argv[])
    PublishPath("include_path", kDarkContentIncludes);
    PublishPath("movie_path", kDarkContentMovies);
    ConfigureSavePath(argc, argv, fmName, vanilla);
+   // Explicit command-line selections supersede the environment inherited
+   // from the picker process. Publish the resolved selection so crash reports,
+   // diagnostics, and out-of-process script bridges identify the active FM.
+   // A no-argument launch is still constructing the engine-owned picker here;
+   // SetSelectionEnvironment also clears DARK_CONTENT_PICKER, so leave that
+   // bootstrap marker intact until the user has made a selection.
+   if (!DarkContentShowPicker())
+      SetSelectionEnvironment(gContentMode,gFMName[0] ? gFMName : NULL);
 
    mprintf("Content profile: %s, mode: %s, base: %s%s%s, saves: %s\n",
            gProfile, gContentMode, gBasePath,
@@ -700,6 +880,7 @@ const char* DarkContentProfile(void) { return gProfile; }
 const char* DarkContentMode(void) { return gContentMode; }
 const char* DarkContentBasePath(void) { return gBasePath; }
 const char* DarkContentFMPath(void) { return gFMPath; }
+const char* DarkContentFMName(void) { return gFMName; }
 BOOL DarkContentShowPicker(void)
 {
    const char* value = getenv("DARK_CONTENT_PICKER");

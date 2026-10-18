@@ -758,11 +758,17 @@ public final class LauncherActivity extends Activity {
         if ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
             Intent launchIntent = getIntent();
             copyDebugStringExtra(launchIntent, intent,
+                                 ThiefActivity.EXTRA_CONTENT);
+            copyDebugStringExtra(launchIntent, intent,
+                                 ThiefActivity.EXTRA_FAN_MISSION);
+            copyDebugStringExtra(launchIntent, intent,
                                  ThiefActivity.EXTRA_QUICKSTART);
             copyDebugStringExtra(launchIntent, intent,
                                  ThiefActivity.EXTRA_QUICKSTART_POS);
             copyDebugStringExtra(launchIntent, intent,
                                  ThiefActivity.EXTRA_QUICKSTART_ANGLES);
+            copyDebugStringExtra(launchIntent, intent,
+                                 ThiefActivity.EXTRA_TEXTURE_AUDIT);
             if (launchIntent.hasExtra(ThiefActivity.EXTRA_AUTO_STOP)) {
                 intent.putExtra(ThiefActivity.EXTRA_AUTO_STOP,
                     launchIntent.getIntExtra(ThiefActivity.EXTRA_AUTO_STOP, 0));

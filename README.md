@@ -20,7 +20,7 @@ Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
 | Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft | OpenAL Soft/OpenSL |
 | Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg | LibVLC |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
-| Squirrel scripts | Optional native Squirrel 3.2 provider | Optional native Squirrel 3.2 provider | Not implemented | Not implemented |
+| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Not implemented | Native Squirrel 3.2 provider |
 | Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja | Gradle, CMake, and Android NDK |
 
 The Windows Release targets build with the Visual Studio 2022 v143 toolset.
@@ -51,8 +51,8 @@ the compatibility headers isolate Windows and LP64 ABI differences.
 Native 64-bit builds include a compatibility runtime for legacy 32-bit `.osm`
 script modules. It reads PE32 modules, interprets IA-32 code, and bridges the
 supported script-manager and engine-service calls into the host process.
-Windows builds made with `EnableSquirrel=true` also provide an in-process
-Squirrel 3.2 script module for NewDark-style `sq_scripts/*.nut` sources; it
+Windows and Android builds provide an in-process Squirrel 3.2 script module for
+NewDark-style `sq_scripts/*.nut` sources; it
 uses the normal Dark script manager and service interfaces rather than loading
 the game-specific NewDark `squirrel.osm` binary. Both bridges are still being
 expanded and validated against third-party scripts.
@@ -149,25 +149,53 @@ x64 build.
 
 ## Build instructions
 
-Squirrel 3.2 is an optional external Windows build dependency. Normal builds
-do not require it. To enable Squirrel scripts, clone it into the ignored
-`3rdparty/squirrel` directory:
+Squirrel 3.2 is an external Windows and Android build dependency. Clone
+it outside this source tree in the dependency directory used by the default
+build configuration:
 
 ```sh
 git clone --branch v3.2 --depth 1 \
-  https://github.com/albertodemichelis/squirrel.git 3rdparty/squirrel
+  https://github.com/albertodemichelis/squirrel.git ../../darkengine-deps/squirrel
 ```
 
-Then add `/p:EnableSquirrel=true` to the MSBuild command. The checkout can live
-elsewhere by also passing `/p:SquirrelSourceDir=C:\path\to\squirrel`. The
-default is `EnableSquirrel=false`.
+The checkout can live elsewhere by passing
+`/p:SquirrelSourceDir=C:\path\to\squirrel`. Constrained builds can explicitly
+disable the feature with `/p:EnableSquirrel=false`.
+
+KCTools v1.3.4 follows the same external-checkout policy: it is optional and
+is neither vendored nor registered as a Git submodule. Clone it into the
+external dependency directory used by the default build configuration:
+
+```sh
+git clone --branch v1.3.4 --depth 1 \
+  https://github.com/JarrodDoyle/KCTools.git ../../darkengine-deps/kctools
+```
+
+Install the .NET 10 SDK, then add `/p:EnableKCTools=true` when building the
+DromEd variant. A portable SDK at `../../darkengine-deps/dotnet10-sdk` is
+detected automatically; otherwise set `/p:DotNetExecutable=C:\path\to\dotnet.exe`.
+The build publishes a self-contained x64 sidecar to the
+`KCTools` directory beside `DromEd.exe`; Win32 DromEd can launch it because it
+runs out of process. To keep the checkout elsewhere, pass
+`/p:KCToolsSourceDir=C:\path\to\KCTools`. The default is
+`EnableKCTools=false`.
+
+Fan missions may supply Ogg Vorbis sounds instead of WAV files. On Windows,
+download the official architecture-matched libsndfile 1.2.2 release outside
+the repository (the default locations are
+`../../darkengine-deps/libsndfile-1.2.2-win32` and `-win64`) and build with
+`/p:EnableSndFileRuntime=true`. The build copies only `sndfile.dll` beside the
+selected Thief2 or DromEd executable. Override its `bin` directory with
+`/p:SndFileRuntimeDir=C:\path\to\bin`; the source and release archive remain
+external and uncommitted.
 
 ### Android
 
 The Android/ARM64 target uses the checked-in Gradle wrapper and the same CMake
-engine definition on Windows and Linux. SDL 2.32.10 and OpenAL Soft 1.25.2 are
-downloaded from their official releases during the first build and verified
-against pinned SHA-256 digests.
+engine definition on Windows and Linux. SDL 2.32.10, OpenAL Soft 1.25.2,
+libpng 1.6.59, libogg 1.3.5, and libvorbis 1.3.7 are downloaded from their official releases
+during the first build and verified against pinned SHA-256 digests. The
+Squirrel checkout described above is compiled into the APK.
 
 From PowerShell:
 
@@ -192,7 +220,8 @@ switch modes, or refresh a copy without clearing app data. Retail data is not
 included in the APK. Gameplay has native touch sticks and action, inventory,
 weapon, map, and pause controls. Bluetooth, USB, and built-in gamepads use the
 shared SDL gamepad path. Retail movies play through the packaged LibVLC
-backend; PNG replacement resources are not yet enabled on Android.
+backend; the packaged libpng decoder supports replacement PNG resources used
+by NewDark fan missions.
 
 See [`docs/android.md`](docs/android.md) for installation, direct-folder and
 copy modes, direct-mission debugging, controller, and touch-control details.
@@ -328,8 +357,9 @@ because Dark performs many small, case-insensitive resource lookups.
 
 A launch with no arguments opens the same engine-owned content menu used on
 Windows. It uses the retail load-game artwork and controls; selecting content
-restarts once with explicit `content=` and (for an FM) `fm=` assignments so
-the chosen configuration is applied before resources are initialized.
+applies the chosen `content=` and (for an FM) `fm=` configuration, refreshes
+the content-owned resource paths, builds the first database, and enters the
+main menu without replacing the process, window, or presentation surface.
 
 ### Windows
 
@@ -350,10 +380,10 @@ under `HKCU\Software\DarkEngineRestored\Launcher`; that value is only a
 picker hint and is never used to choose or launch a game silently. Retail data
 is read in place and is not copied.
 
-A launch with no arguments opens the shared engine-owned content menu. It lists the
-two original-campaign modes followed by every recognized immediate child of
-the installation's configured `fm_path` directory (`FMs` by default). Display
-names and descriptions come from
+A Thief2 launch with no arguments opens the shared engine-owned, themed
+content menu. It lists the two original-campaign modes followed by every
+recognized immediate child of the installation's configured `fm_path`
+directory (`FMs` by default). Display names and descriptions come from
 each FM's `fm.ini` when present. For example, select **Thief: The Black Parade
 v1.0** and press **Play** to play the installed Black Parade campaign.
 
@@ -371,9 +401,14 @@ The available content modes are:
 - **Fan mission** selects one immediate child directory of the installation's
   `FMs` folder. Its files are inserted between `uber_mod_path` and `mod_path`,
   matching NewDark path precedence. An FM's `DARK.CFG`, `fm.cfg`, and
-  `cam_ext.cfg` are loaded when Play is chosen. The resource and script search
-  roots are refreshed in place before the main menu or mission content is
-  entered, so the picker and game keep the same window and fullscreen state.
+  `cam_ext.cfg` are loaded when Play is chosen. Before the themed picker is
+  shown, a narrow bootstrap pass scans those files only for fixed-capacity
+  limits and reserves the largest installed reference and sound pools. Play
+  before the first database is built. The picker pre-reserves the largest
+  installed object, reference, and sound capacities, then Play applies the FM
+  configuration and refreshes resource and script paths in place. The logical
+  mode changes to the main menu while the top-level window and presentation
+  surface remain persistent.
 
 PNG replacement images are supported and take precedence over the original
 TGA, GIF, PCX, CEL, and BMP resources. Image content is signature-sniffed
@@ -386,6 +421,56 @@ Set `DARK_RESOURCE_TRACE=1` to include each resolved resource name, type, and
 source path in `monolog`; this is useful for distinguishing a decoder problem
 from an FM/mod/base path-precedence problem.
 
+Every run also creates `darkengine-diagnostics.log` in the selected game
+directory. It records the executable, architecture, content/FM selection,
+mission database compatibility warnings, assertions, and every distinct
+resource probe that could not be resolved when `DARK_RESOURCE_TRACE=1` or
+`DARK_RESOURCE_MISS_TRACE=1`. Raw misses are opt-in because the engine normally
+probes absent animation frames and alternate model formats while resolving a
+valid asset. Immediately after mission post-load the
+engine prints a conspicuous summary to `monolog` and writes a detailed
+`texture-audit.log` covering terrain surfaces, object models, base textures,
+and per-object replacements. A texture that resolves to the renderer's
+checkerboard fallback is an error and is counted separately from a resource
+that is wholly missing. The counts intentionally overlap when a missing
+resource would render as the checkerboard. Missing resources requested later during play are
+appended to the same diagnostics report. Set `DARK_DIAGNOSTICS_PATH` to an
+absolute filename to redirect the main report for unattended tests, and
+`DARK_TEXTURE_AUDIT_PATH` to redirect the detailed texture inventory.
+
+On Windows, an unhandled exception, pure virtual call, invalid C runtime
+parameter, allocation failure, or C++ termination writes
+`darkengine-crash.log` plus a timestamped `darkengine-crash-*.dmp`. The crash
+report includes launch/content context, memory state, registers, a symbolized
+stack when symbols are available, and the last 64 KiB of `monolog.txt`.
+`DARK_CRASH_OUTPUT_DIR` redirects the crash log and dump for automated tests;
+setting the environment-only `DARK_CRASH_REPORT_TEST=1` deliberately raises a
+startup exception to verify the reporter without loading a mission.
+Diagnostics deliberately do not attempt to continue after memory-corruption
+or runtime-fatal failures; doing so would risk corrupting saves and obscure the
+original fault.
+
+Mission, FM, resource, property, and script data are treated as untrusted
+input. Tag-file directories are validated completely before dispatch (bounded
+counts, terminated tags, unique names, checked ranges, and matching block
+headers), and decoders report required-data failures through one database-load
+transaction. A failed transaction skips post-load, rebuilds a safe empty
+database, and returns the retail game to its menu; optional asset and script
+failures are written as `ERROR` diagnostics and use their subsystem fallback.
+File sizes, allocation sizes, record ranges, and loading-progress calculations
+use checked 64-bit arithmetic. Assertions remain for internal invariants, not
+for values read from content files.
+
+`tools\mission_load_regression.ps1` generates malformed synthetic missions
+under `.codex-build` (no retail data is copied) and sends them through the
+normal loading-panel and database-loader path. It fails unless each case is
+rejected without entering gameplay and records a `mission-regression` PASS in
+the redirected diagnostics log:
+
+```powershell
+.\tools\mission_load_regression.ps1 -GameDirectory 'C:\Games\Thief 2 1.29'
+```
+
 For shortcuts, scripts, and tests, bypass the chooser with explicit Dark-style
 assignments (there are no GNU `--` prefixes):
 
@@ -393,6 +478,17 @@ assignments (there are no GNU `--` prefixes):
 & $thief content=configured
 & $thief content=vanilla
 & $thief fm='TheDarkMansion'
+```
+
+PLAYTEST builds can exercise the complete mission-loop loading path without
+manual input. Unlike `quickstart`, this retains the loading panel and database
+progress proxy, mission preparation, player creation, and the transition into
+gameplay; it skips only the briefing and loadout screens:
+
+```powershell
+& $thief content=configured `
+  'fm=Reflections in Red [2025-11-14] T2 FM v1.1b (EN)' `
+  mission_loop_test=20 auto_stop=120
 ```
 
 The detected game, original-content mode, and each FM have separate save
@@ -409,6 +505,14 @@ DromEd uses the same working-directory detection as the game runner:
 cd /d "C:\Games\Thief Gold"
 "C:\src\darkengine\build\Release\Win32\DromEd\DromEd.exe"
 ```
+
+The first folder choice is the retail installation root containing `cam.cfg`,
+not its `FMs` child. The content list then chooses either the base/modded game
+or one installed FM. **Open in DromEd** opens a second file picker rooted at
+that content directory; select the actual `.mis` or `.cow` to edit. For an FM,
+the selected content context stays active while the mission opens, so its
+referenced `.gam` and its `obj`, `mesh`, `fam`, `snd`, `strings`, and other
+resource directories remain ahead of ordinary mods and retail data.
 
 The DromEd viewer uses the same D3D11 scene renderer and swap-chain presenter
 as the game. Its legacy editor canvas remains 16-bit internally, while the D3D11
@@ -433,25 +537,63 @@ releases focus without hiding the pane. It uses the same scrollback, command
 history, completion, clipboard controls, and output path as the pop-up console
 in gameplay and play preview.
 
-The built-in historical editing command registry is present, but a complete
-DromEd or NewDark editing environment also relies on command definitions and
-companion-tool workflows supplied outside the engine executable. This
-repository does not include or reproduce that complete external command
-environment, so some familiar editor commands and tool-driven workflows are
-unavailable rather than merely untested.
+The built-in historical editing command registry is present. KCTools lighting
+is exposed directly as `kctools_light`, `kctools_portalize`, and
+`kctools_optimize`; these commands perform a checked save/run/import
+transaction without NewDark's command script or `kctools.osm`. They first use
+the optional sidecar published beside DromEd, then fall back to the historical
+`Tools\KCTools\KCTools.exe` location. `kctools_path` remains an explicit
+override. Other companion-tool workflows and some familiar external commands
+are still unavailable.
 
 This build is therefore not yet a dependable mission-authoring environment.
 Work from backups and do not rely on it as the only editor or copy of a
-mission. DromEd can read the supported NewDark format prefixes and retains
-newer or unknown chunks when saving, but raw preservation does not make a
-modified chunk safely writable and this is not comprehensive NewDark
-authoring support. In particular,
-WREXT 0.30 and AIPATH 3.4 are currently read-only codecs: their original
-chunks are retained instead of being rewritten by the legacy serializers.
-RENDPARAMS 2.0 is prefix-decoded and retained, while CELL_MOTION 0.2 is fully
-decoded (including its global water-projection threshold) and retained because
-the legacy writer remains at 0.1. NewDark's 28-face brush records and 16,384
-brush limit are accepted by the editor without changing the BRLIST 1.0 writer.
+mission. DromEd inventories the version and size of every source chunk and
+preserves that per-chunk target by default. WREXT 0.30, LM_PARAM 0.1, extended
+RENDPARAMS layouts, CELL_MOTION 0.2, and NewDark's 28-face BRLIST records have
+writable paths; untouched raw WREXT data is still replayed exactly. Unknown
+chunks and unowned suffixes remain preservation-only, and AIPATH 3.4 remains
+raw-preserved rather than regenerated, so this is not yet comprehensive
+NewDark authoring support.
+
+Use `db_format_report` to print the current source inventory. The
+`db_write_profile preserve|retail|newdark` command selects an explicit output
+policy; `preserve` is the default and is the only policy intended for normal
+round-trip editing.
+
+`save_mission` writes the mission partitions to `.mis`; `save_gamesys` writes
+the abstract object/game-system partitions to `.gam`; and `save_cow` writes
+both into an editor working file. None of them packages external FM resources.
+Custom models, textures, samples, strings, movies, scripts, and motion data
+remain files in their normal FM directories and must be distributed by the FM
+author.
+
+Sound schema source (`schema\*.sch`, `*.spc`, and `*.arc`) is likewise not
+embedded as source text. `reload_schemas` parses those files into schema
+objects and sample mappings; saving the gamesys persists that compiled object
+data, while the audio samples themselves remain under `snd`. Keep custom
+schema source with an authoring project so it can be rebuilt, and ship the
+custom `.gam` plus every referenced sample. Motion schema source under
+`mschema` is compiled separately into `motiondb.bin`, which is also an
+external FM file.
+
+For a copy-only save/load regression, run:
+
+```powershell
+.\tools\dromed_roundtrip.ps1 `
+  -GameRoot 'C:\Games\Thief 2 1.29' `
+  -FanMission 'Reflections in Red [2025-11-14] T2 FM v1.1b (EN)' `
+  -Mission miss20.mis `
+  -GameSys lakeside.gam
+```
+
+The harness writes only beneath `.codex-build\dromed-roundtrip`. It loads the
+installed source, saves `.mis` and `.gam` copies with the `preserve` profile,
+reloads and saves each again, then launches a second DromEd process for a full
+reload of the resulting mission. `roundtrip-report.json` compares every tag's
+presence, version, size, and SHA-256. Structural compatibility and exact byte
+stability are reported separately because decoded hash/property tables may be
+serialized in a different order without changing their runtime meaning.
 
 Serializer read ceilings are independent from writer versions. Unknown chunks,
 newer read-only chunks, and unowned record suffixes are carried through an
@@ -687,17 +829,16 @@ repository.
   DromEd smoke tests. TDP and broader Gold campaign/UI behavior still need
   validation; System Shock 2 is not a supported game target.
 - DromEd is currently a viewer and playtest tool with partial editing support,
-  not a general-purpose mission-authoring environment. The limitation is
-  functional as well as a matter of validation: the repository does not
-  provide the complete external DromEd/NewDark command environment or its
-  companion-tool commands, and several owned mission formats still cannot be
-  rewritten after editing. NewDark reading and raw preservation are partial;
-  they do not imply safe NewDark authoring or save compatibility.
+  not yet a validated general-purpose mission-authoring environment. Direct
+  KCTools lighting and the principal NewDark lighting chunks are implemented,
+  but the complete external DromEd/NewDark command environment is not. NewDark
+  reading and preservation coverage still does not imply universal authoring
+  or save compatibility.
 - Environmental audio now maps the original EAX room presets onto DirectSound
   I3DL2 or OpenAL EFX. DirectSound provides room reverb while the optional
   OpenAL provider also supplies per-source low-pass occlusion; both paths need
   broader in-mission acoustic comparison against the original game.
-- Windows builds made with `EnableSquirrel=true` load NewDark-style loose
+- Windows builds load NewDark-style loose
   `sq_scripts/*.nut` sources with the native Squirrel 3.2 provider. Core
   object, property, link, physics, Act/React, door, lock, damage, containment,
   quest, data, and light calls are bridged, but the complete NewDark service

@@ -416,6 +416,13 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    LoadUserVideoSettings();
    config_parse_commandline(g_argc,g_argv,NULL);
 
+   // The themed content panel runs inside the normal engine window. Some
+   // capacities (notably object references and mixer voices) are constructed
+   // before that panel can return a selection, so reserve enough for every
+   // installed FM now. The selected FM is applied before the first database
+   // is built; this is capacity bootstrap, not a live content switch.
+   DarkContentPreparePickerBootstrap();
+
    AtExit(AppShutdownConfig);
 
    // now that we have config, lets go make sure we can run

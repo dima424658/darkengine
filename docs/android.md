@@ -9,16 +9,19 @@ is not an Android target.
 - Android 8.0 (API 26) or later.
 - ARM64 (`arm64-v8a`) only for the first bring-up.
 - SDL 2.32.10, OpenGL ES 3, and OpenAL Soft 1.25.2 using Android OpenSL.
+- Native Squirrel 3.2 scripts, PNG replacement resources, and Ogg Vorbis
+  fan-mission sounds.
 - A folder picker that can use retail TDP, Gold, or Thief 2 files directly or
   import a performance copy into the app-specific `game` directory.
 - Retail movie playback through the packaged LibVLC backend.
-- PNG replacement resources are not part of the first APK.
 
-SDL and OpenAL Soft are downloaded from their official releases during the
-first Gradle run and verified against pinned SHA-256 digests. They are
-extracted only under the ignored `.codex-build/android-deps` directory. The
-APK obtains LibVLC 3.6.5 from Maven Central through the normal Gradle dependency
-resolution process.
+SDL, OpenAL Soft, libpng, libogg, and libvorbis are downloaded from their official
+releases during the first Gradle run and verified against pinned SHA-256
+digests. They are extracted only under the ignored
+`.codex-build/android-deps` directory. Squirrel 3.2 must be checked out at
+`../../darkengine-deps/squirrel` relative to the repository, as described in
+the top-level README. The APK obtains LibVLC 3.6.5 from Maven Central through
+the normal Gradle dependency resolution process.
 
 ## Toolchain
 
@@ -106,6 +109,18 @@ arguments mirror the desktop engine options:
     -AutoStop 300
 ```
 
+An installed fan mission can be selected explicitly for the same direct
+launch without navigating its menus:
+
+```powershell
+.\tools\android_quickstart.ps1 `
+    -Mission MISS20.MIS `
+    -FanMission 'The Black Parade'
+```
+
+`-FanMission` implies `-ContentMode configured`; pass
+`-ContentMode vanilla` when explicitly testing the original campaign.
+
 Use `-Build -Install` when the device also needs the latest debug APK. Release
 builds ignore these intent extras; normal launcher and retail menu behavior is
 unchanged.
@@ -127,6 +142,11 @@ controller disconnects or the app backgrounds. Menus, books, automap,
 objectives, and load/save screens also need D-pad/stick navigation plus
 confirm/cancel. The touch overlay should be independently hideable for an
 attached or built-in gamepad.
+
+On handhelds which expose separate Select/View and Android Back gamepad keys,
+Select/View opens the automap and the dedicated Back key opens the in-game
+command console. SDL otherwise aliases those two Android keys; the activity
+keeps them distinct before they enter the shared semantic binding layer.
 
 At the default `gamepad_look_turn_seconds 1.0`, maximum right-stick deflection
 turns exactly 360 degrees per second independent of frame rate and resolution.

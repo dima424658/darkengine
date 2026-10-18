@@ -28,6 +28,7 @@
 #include <metasnd.h>
 #include <gamemode.h>
 #include <contentctx.h>
+#include <dbfile.h>
 #include <filepanl.h>
 #include <platform_services.h>
 #include <resapp.h>
@@ -309,6 +310,95 @@ protected:
    int mVisible[kNumSlots];
    int mPage;
 
+   std::string FitSlotTitle(const std::string& title)
+   {
+      // The file-panel text gadget always word-wraps its buffer.  Content
+      // names are labels, not paragraphs, so elide them before the gadget can
+      // turn a long FM title into a second, clipped line.
+      guiStyleSetupFont(&mSlotStyle,StyleFontNormal);
+      const int availableWidth = RectWidth(&mRects[(int)kFiles]) - 4;
+      if (gr_string_width(title.c_str()) <= availableWidth)
+      {
+         guiStyleCleanupFont(&mSlotStyle,StyleFontNormal);
+         return title;
+      }
+
+      static const char ellipsis[] = "...";
+      std::string fitted = title;
+      while (!fitted.empty())
+      {
+         while (!fitted.empty() && isspace((unsigned char)fitted.back()))
+            fitted.pop_back();
+         if (gr_string_width((fitted + ellipsis).c_str()) <= availableWidth)
+            break;
+         fitted.pop_back();
+      }
+      fitted += ellipsis;
+      guiStyleCleanupFont(&mSlotStyle,StyleFontNormal);
+      return fitted;
+   }
+
+   std::string FitDescription(const std::string& description)
+   {
+      // FM metadata is often prose copied from a readme, with arbitrary
+      // whitespace and far more text than the fixed save/load message panel
+      // can display.  Keep the normal UI font and elide whole trailing words
+      // instead of drawing wrapped lines above and below the panel.
+      std::string text;
+      bool pendingSpace = false;
+      for (std::string::const_iterator it = description.begin();
+           it != description.end(); ++it)
+      {
+         if (isspace((unsigned char)*it))
+         {
+            pendingSpace = !text.empty();
+         }
+         else
+         {
+            if (pendingSpace)
+               text += ' ';
+            text += *it;
+            pendingSpace = false;
+         }
+      }
+
+      if (text.empty())
+         return text;
+
+      Rect& rect = mRects[(int)kMessage];
+      guiStyleSetupFont(&mMessageStyle,StyleFontNormal);
+
+      const int availableHeight = RectHeight(&rect);
+      const int availableWidth = RectWidth(&rect);
+      const auto fits = [availableHeight,availableWidth](const std::string& value)
+      {
+         std::vector<char> wrapped(value.begin(),value.end());
+         wrapped.push_back('\0');
+         gr_font_string_wrap(gr_get_font(),wrapped.data(),availableWidth);
+         short width,height;
+         gr_string_size(wrapped.data(),&width,&height);
+         return width <= availableWidth && height <= availableHeight;
+      };
+
+      std::string fitted = text;
+      while (!fits(fitted))
+      {
+         const std::string::size_type suffix = fitted.size() >= 3 &&
+            fitted.compare(fitted.size() - 3,3,"...") == 0 ? 3 : 0;
+         std::string::size_type cut = fitted.rfind(' ',fitted.size() - suffix);
+         if (cut == std::string::npos)
+         {
+            fitted = "...";
+            break;
+         }
+         fitted.erase(cut);
+         fitted += "...";
+      }
+
+      guiStyleCleanupFont(&mMessageStyle,StyleFontNormal);
+      return fitted;
+   }
+
    void MapPage()
    {
       for (int i = 0; i < kNumSlots; ++i)
@@ -348,9 +438,10 @@ protected:
       else if (visible >= 0 && visible < (int)mItems.size())
       {
          const sContentItem& item = mItems[visible];
-         _snprintf(slot.buf, sizeof(slot.buf) - 1, "%s%s",
-                   item.choice == kContentFanMission ? "FM: " : "",
-                   item.name.c_str());
+         const std::string label = FitSlotTitle(
+            std::string(item.choice == kContentFanMission ? "FM: " : "") +
+            item.name);
+         strncpy(slot.buf,label.c_str(),sizeof(slot.buf) - 1);
       }
       else
       {
@@ -372,7 +463,11 @@ protected:
       if (visible == kPreviousPage || visible == kNextPage)
          Message("Choose Play to change pages.");
       else
-         Message(mItems[visible].description.c_str());
+      {
+         const std::string description =
+            FitDescription(mItems[visible].description);
+         Message(description.c_str());
+      }
    }
 
    void DoFileOp(int which)
@@ -401,13 +496,25 @@ protected:
       if (!DarkContentApplySelection(mode, fmName))
       {
          Message("Could not activate the selected content.");
+         PlatformDiagnosticsLog("ERROR","content-bootstrap",
+            "Could not apply the themed content selection in place");
          return;
       }
 
-      // The SDL window, renderer, and loop remain alive. Only the content
-      // roots used by the already-created engine services are republished.
+      // The content picker is a logical engine mode, not a launcher. Keep the
+      // process, top-level window, renderer, and presentation surface alive;
+      // only republish content-owned search paths before constructing the
+      // first database and switching to the ordinary main menu.
       ResSysRefreshContentPath();
       RefreshScriptModulePath();
+      dbBuildDefault();
+
+      char diagnostic[512];
+      _snprintf(diagnostic,sizeof(diagnostic) - 1,
+                "Activated in place with content=%s%s%s",mode,
+                fmName ? " fm=" : "",fmName ? fmName : "");
+      diagnostic[sizeof(diagnostic) - 1] = '\0';
+      PlatformDiagnosticsLog("INFO","content-bootstrap",diagnostic);
       SwitchToMainMenuMode(FALSE);
    }
 

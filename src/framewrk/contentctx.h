@@ -29,6 +29,11 @@ EXTERN void DarkContentLoadFMConfig(int argc, const char* argv[]);
 // the game-specific includes have been processed.
 EXTERN void DarkContentConfigure(int argc, const char* argv[]);
 
+// A no-argument Thief launch shows the engine-owned content panel before an
+// FM has been chosen. Reserve fixed-capacity pools for the installed choices;
+// the selected FM's complete configuration is still applied by the panel.
+EXTERN void DarkContentPreparePickerBootstrap(void);
+
 // Applies a one-time selection made by the in-engine startup picker. This
 // reloads FM-local configuration and republishes the resolved content paths
 // without replacing the process (and therefore without replacing its window).
@@ -38,6 +43,7 @@ EXTERN const char* DarkContentProfile(void);
 EXTERN const char* DarkContentMode(void);
 EXTERN const char* DarkContentBasePath(void);
 EXTERN const char* DarkContentFMPath(void);
+EXTERN const char* DarkContentFMName(void);
 EXTERN const char* DarkContentSearchPath(eDarkContentPath path);
 EXTERN BOOL DarkContentShowPicker(void);
 
