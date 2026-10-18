@@ -1,47 +1,101 @@
-# Dark Engine Restored for Windows, Linux, and Android
+# Thief: Dark Engine Restored for Windows, Linux, and Android
 
 This repository restores the historical Dark Engine sources as a portable,
-working codebase. It builds a Thief 2 runner on Windows, Linux, and Android,
-plus a preliminary Windows DromEd mission viewer. The engine core is shared
-across platforms; operating-system, rendering, input, audio, movie, and
-filesystem services are supplied by platform backends.
+working codebase. It builds the ThiefRunner game executable on Windows, Linux,
+and Android, plus a work-in-progress Windows DromEd mission viewer
+and editor. The engine core is shared across platforms; operating-system,
+rendering, input, audio, movie, and filesystem services are supplied by
+platform backends.
 
 The repository does not include retail missions, movies, sounds, scripts, or
 other game assets. A legally obtained installation of *Thief: The Dark
 Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
+
+> **Development disclosure:** This restoration has made extensive use of
+> supervised AI coding assistants, including OpenAI Codex, for implementation,
+> porting, debugging, testing, and documentation. A human maintainer directs
+> the work, reviews the resulting changes, and remains responsible for what is
+> accepted into the project. AI-assisted changes receive the same build and
+> runtime validation as other changes, but that review cannot guarantee the
+> absence of defects.
 
 ## Platform status
 
 | Capability | Windows x86 | Windows x64 | Linux x64 | Android ARM64 |
 | --- | --- | --- | --- | --- |
 | Thief 2 | Playable | Playable; broader validation ongoing | Playable early port | Playable early port |
+| Thief Gold/TDP | Playable; less stable than Thief 2 | Playable; less stable than Thief 2 | Playable early port; less stable than Thief 2 | Playable early port; less stable than Thief 2 |
+| Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
+| System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
 | DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Not implemented | Not implemented |
 | Graphics | D3D11 | D3D11 | SDL2/OpenGL | SDL2/OpenGL ES 3 |
 | Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft | OpenAL Soft/OpenSL |
 | Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg | LibVLC |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
-| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Not implemented | Native Squirrel 3.2 provider |
+| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
 | Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja | Gradle, CMake, and Android NDK |
 
-The Windows Release targets build with the Visual Studio 2022 v143 toolset.
-The x86 builds are the established target; native x64 builds compile and run
-but remain under active runtime validation. The Linux CMake target builds a
-native 64-bit ELF executable that can load retail missions and run gameplay.
+The legacy `.osm` row refers to ordinary compiled mission script modules.
+NewDark's `squirrel.osm` is not loaded through that compatibility path: on all
+four targets it is replaced by the engine's native Squirrel 3.2 provider,
+which loads the FM's loose `sq_scripts/*.nut` sources directly.
 
-Thief2 retains mission loading, the game UI, inventory, automap, and the
-in-game command console. On Windows it also retains the normal startup and
+The source tree also contains historical System Shock 2 code, but this project
+does not currently provide or validate a System Shock 2 build target.
+
+The x86 builds are the established target; native x64 builds compile and run
+but remain under active runtime validation. In particular, x64 relies on the
+IA-32 interpreter and service bridge for 32-bit mission `.osm` binaries, while
+many NewDark FMs rely on the newer Squirrel provider. Both compatibility
+layers need broader mission coverage. The Linux CMake target builds a native
+64-bit ELF executable that can load retail missions and run gameplay.
+
+The game runner retains mission loading, the game UI, inventory, automap, and
+the in-game command console. On Windows it also retains the normal startup and
 movie flow. DromEd can load, inspect, and playtest legacy Thief 2 missions in
 a resizable window, but should still be treated as a viewer rather than a
 dependable editor. Editing and save integrity are not comprehensively
-validated, and NewDark formats and features are not supported.
+validated, and NewDark formats and features are only partially supported.
+
+### Mission compatibility and goals
+
+`ThiefRunner.exe` replaces the retail `Thief2.exe`. It is more than a straight
+port: the same runner supports all three Thief releases and selected NewDark
+content, while continuing to read an existing installation in place. It is
+not a complete NewDark implementation. Compatibility currently breaks down as
+follows:
+
+- **Thief II** is the primary and most-tested target. The stock campaign is
+  playable on every supported platform; Windows x86 remains the reference
+  build, with Windows x64, Linux, and Android receiving progressively broader
+  mission, save/load, and script validation.
+- **Thief Gold and The Dark Project** stock missions load through the same
+  runner, with the Dark 1 service layout selected for legacy scripts. Gold has
+  passed initial runner and DromEd smoke tests. TDP and the complete Gold
+  campaign, UI, and save/load paths still need broader coverage.
+- **Fan missions** using retail-era data and legacy `.osm` scripts are a core
+  compatibility goal. FM-local configuration, NewDark-style path precedence,
+  PNG replacement art, and Ogg Vorbis sounds are supported. Individual FMs may
+  still expose missing script services, formats, or raised engine limits;
+  `darkengine-diagnostics.log` and `mission_compatibility.log` record those
+  failures explicitly.
+- **NewDark content** is partially supported, not promised compatible. The
+  runner understands selected configuration conventions, resources, database
+  extensions, and loose Squirrel 3.2 sources, but it does not implement the
+  complete NewDark service, renderer, object/property, or authoring surface.
+
+The near-term goal is dependable play of all three stock Thief releases and
+retail-format FMs, followed by measured expansion of NewDark FM compatibility.
+NewDark-only data should be diagnosed or preserved where possible rather than
+silently discarded. DromEd remains a viewer/playtest and preservation tool
+until its editing and round-trip behavior is comprehensively validated.
 
 ### Cross-platform architecture
 
-Modern scene submission crosses the platform-neutral `h/render_backend.h`
-boundary. Windows supplies D3D11 display and rendering providers under
-`winsrc`; Linux and Android use the SDL2/OpenGL providers under `unixsrc`, with
-OpenGL ES selected for Android. Engine, UI, movie, and `lgd3d` code use the
-shared renderer boundary rather than calling a platform graphics API directly.
+The shared renderer sends the same engine drawing commands to D3D11 on Windows
+and to SDL2/OpenGL on Linux and Android; Android uses OpenGL ES. Platform code
+lives under `winsrc` and `unixsrc`, while the game and editor continue to use
+Looking Glass's `lgd3d` interface.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
 synchronization, and filesystem operations cross `platform_services.h` and
@@ -51,11 +105,11 @@ the compatibility headers isolate Windows and LP64 ABI differences.
 Native 64-bit builds include a compatibility runtime for legacy 32-bit `.osm`
 script modules. It reads PE32 modules, interprets IA-32 code, and bridges the
 supported script-manager and engine-service calls into the host process.
-Windows and Android builds provide an in-process Squirrel 3.2 script module for
-NewDark-style `sq_scripts/*.nut` sources; it
-uses the normal Dark script manager and service interfaces rather than loading
-the game-specific NewDark `squirrel.osm` binary. Both bridges are still being
-expanded and validated against third-party scripts.
+Every game build provides an in-process Squirrel 3.2 script module for
+NewDark-style `sq_scripts/*.nut` sources. It uses the normal Dark script
+manager and service interfaces in place of the game-specific NewDark
+`squirrel.osm` binary. Both bridges are still being expanded and validated
+against third-party scripts.
 
 Audio follows the same provider model. Windows uses DirectSound 3D by default,
 with native I3DL2 environmental reverb. An OpenAL provider supplies positional
@@ -74,12 +128,13 @@ Legacy PKWARE DCL-compressed resources are decoded in-process with Mark
 Adler's small `blast` decoder under `3rdparty/blast`; newly written resources
 use the engine's existing LZW codec. No external compression DLL is required.
 
-### Thief2 runner features
+### Game runner features
 
 The runner currently provides:
 
 - use of an external retail Thief installation without copying its data;
-- automatic TDP, Gold, or Thief II detection from the working directory;
+- automatic TDP, Gold, Thief II, and current GOG Gold collection-layout
+  detection from the working directory;
 - native display-resolution defaults when the user has not configured a
   resolution;
 - borderless fullscreen and resizable windowed presentation;
@@ -87,226 +142,185 @@ The runner currently provides:
 - direct mission startup and unattended frame-limited smoke tests; and
 - a configurable command console, defaulting to `:` and `;` in every mode.
 
-## Requirements
+## Building and running
 
-### Linux / WSL2
+### Windows
 
-- A 64-bit Linux distribution with GCC, CMake, and Ninja
-- SDL2, OpenGL, and libpng development headers
-- OpenGL ES 3 development headers when building the optional ES renderer
-- A retail Thief 2 installation
-- OpenAL Soft at runtime for audio; the executable has no hard OpenAL link
-- libsndfile at runtime for Ogg Vorbis sounds used by fan missions; it is
-  loaded dynamically and is not a build dependency
+#### Prerequisites
+
+- 64-bit Windows 10 or Windows 11.
+- Visual Studio 2022 or Visual Studio 2022 Build Tools with the **Desktop
+  development with C++** workload, MSVC v143 x86/x64 tools, and a Windows 10
+  or 11 SDK.
+- Git, used by the dependency bootstrap.
+- A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
+  the stock mission data.
+- Optional: `ffmpeg.exe` on `PATH` for stock Indeo 5 AVIs when Windows has no
+  compatible DirectShow decoder. H.264 MP4 siblings do not require it.
+
+Normal game builds include the native Squirrel 3.2 provider, and normal DromEd
+builds include the KCTools v1.3.4 sidecar. Both are external source checkouts;
+bootstrap the pinned versions with:
+
+```powershell
+.\tools\bootstrap-dependencies.ps1
+```
+
+The default locations are `../../darkengine-deps/squirrel` and
+`../../darkengine-deps/kctools`. Use `-Target Game` or `-Target DromEd` to
+bootstrap only one variant. DromEd also requires the .NET 10 SDK to publish its
+self-contained KCTools sidecar. Override the checkouts with
+`/p:SquirrelSourceDir=...` or `/p:KCToolsSourceDir=...`, and override `dotnet`
+with `/p:DotNetExecutable=...`.
+
+Both integrations can be omitted only by opting out explicitly:
+`/p:EnableSquirrel=false` for the game or `/p:EnableKCTools=false` for DromEd.
+Omitting those properties enables the corresponding integration.
+
+Ogg Vorbis FM sounds are loaded through libsndfile at runtime. To package it on
+Windows, place the official architecture-matched libsndfile 1.2.2 release in
+the default `../../darkengine-deps/libsndfile-1.2.2-win32` or `-win64` folder
+and build with `/p:EnableSndFileRuntime=true`; use
+`/p:SndFileRuntimeDir=C:\path\to\bin` for another location.
+
+#### Build
+
+In Visual Studio, open `thief2.sln`, select `Release` and `x86`, then choose
+**Build > Build Solution**. From a regular PowerShell prompt, the equivalent
+explicit commands are:
+
+```powershell
+$msbuild = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe'
+& $msbuild src\dromed.vcxproj /m /t:Build /p:Configuration=Release /p:Platform=Win32 /p:BuildThief2=true
+& $msbuild src\dromed.vcxproj /m /t:Build /p:Configuration=Release /p:Platform=Win32 /p:BuildThief2=false
+```
+
+Use `Platform=x64` for native 64-bit builds. Outputs are separated by
+architecture and application:
+
+```text
+build\Release\Win32\ThiefRunner\ThiefRunner.exe
+build\Release\Win32\DromEd\DromEd.exe
+build\Release\x64\ThiefRunner\ThiefRunner.exe
+build\Release\x64\DromEd\DromEd.exe
+```
+
+The game and editor share `src\dromed.vcxproj`; `BuildThief2` selects their
+different source sets. Static libraries are shared within an architecture and
+must not vary with that property.
+
+#### Running
+
+Run from the retail directory, or launch elsewhere and choose the installation
+when prompted. For the current GOG Gold package, either the common **Thief
+Gold** collection folder or one of its runnable child game folders can be
+selected:
+
+```powershell
+Set-Location 'C:\Games\Thief Gold'
+& 'C:\src\darkengine\build\Release\Win32\ThiefRunner\ThiefRunner.exe'
+```
+
+The chosen game directory is used in place; retail data is not copied. The picker
+remembers only a starting-folder hint under
+`HKCU\Software\DarkEngineRestored\Launcher`. Use Dark-style assignments such
+as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
+
+### Linux
+
+#### Prerequisites
+
+- A 64-bit Linux distribution, GCC, CMake 3.20 or later, and Ninja.
+- Git, used to bootstrap Squirrel 3.2.
+- SDL2, OpenGL, and libpng development packages.
+- OpenAL Soft and libsndfile at runtime. Both are loaded dynamically; libsndfile
+  enables Ogg Vorbis sounds used by many FMs.
 - FFmpeg development libraries (`libavformat`, `libavcodec`, `libavutil`,
-  `libswscale`, and `libswresample`) for movie playback. The build remains
-  usable without them, but reports movies as unavailable.
+  `libswscale`, and `libswresample`) for movie playback. The build succeeds
+  without them but reports movies unavailable.
+- A retail TDP, Thief Gold, or Thief II installation.
 
-On Ubuntu under WSL2, the minimal build packages are:
+For Ubuntu/Debian:
 
 ```sh
 sudo apt update
 sudo apt install build-essential cmake ninja-build libsdl2-dev libgl-dev \
-  libpng-dev libsndfile1 libavformat-dev libavcodec-dev libavutil-dev \
-  libswscale-dev libswresample-dev
+  libpng-dev libopenal1 libsndfile1 libavformat-dev libavcodec-dev \
+  libavutil-dev libswscale-dev libswresample-dev
 ```
 
-Gameplay uses SDL's native relative-pointer mode and consumes motion deltas;
-menus use absolute window coordinates. The provider prefers the compositor's
-native Wayland path when it is advertised. WSLg may not confine its Windows
-host cursor as reliably as a native Linux Wayland or X11 session.
+#### Build
 
-WSLg audio uses its PulseAudio socket. If WSLg stops accepting audio clients,
-close running WSL applications and run `wsl --shutdown` from PowerShell before
-starting the game again.
+```sh
+sh tools/bootstrap-dependencies.sh game
+cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build-linux -j "$(nproc)"
+```
 
-### Windows
+The result is `build-linux/thief-runner`. Desktop OpenGL 3.3 is the
+default. Install GLES development headers and configure with
+`-DDARK_OPENGL_ES=ON` to exercise the OpenGL ES 3 path. Normal builds include
+the native Squirrel provider. Use `-DDARK_SQUIRREL_SOURCE=/path/to/squirrel`
+for a non-default checkout, or explicitly pass `-DDARK_ENABLE_SQUIRREL=OFF`
+for a reduced build without NewDark Squirrel FM support.
 
-- 64-bit Windows 10 or Windows 11
-- Visual Studio 2022 or Visual Studio 2022 Build Tools
-- The **Desktop development with C++** workload, including:
-  - MSVC v143 x86/x64 build tools
-  - a Windows 10 or Windows 11 SDK
-- A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
-  the stock mission data
-- FFmpeg's `ffmpeg.exe` on `PATH` when the installation has only the stock
-  Indeo 5 AVIs and Windows has no compatible DirectShow decoder. It is not
-  needed when H.264 MP4 siblings are already installed.
+#### Running
 
-The Windows SDK supplies the DirectX declarations used by the Windows input,
-audio, and rendering providers. Current Windows output uses a D3D11 swap chain
-and Windows Media Foundation. No assembler is required by the active x86 or
-x64 build.
+The launcher accepts the current directory, `DARK_GAME_PATH`, or
+`game_path=<directory>`:
+
+```sh
+cd "$HOME/Games/Thief 2"
+/path/to/darkengine/build-linux/thief-runner quickstart=MISS1.MIS
+```
+
+An interactive launch from another directory opens the folder chooser. SDL
+uses relative-pointer input during gameplay and absolute coordinates in menus,
+with native Wayland preferred when available. Saves use the retail `saves`
+directory when writable and otherwise fall back below
+`$XDG_DATA_HOME/DarkEngineRestored/Profiles`.
 
 ### Android
 
-- Android 8.0 (API 26) or later on an ARM64 device
-- JDK 17 or later
-- Android SDK platform and build tools 36
-- CMake 3.31.6 and Android NDK 30.0.16248370 installed through the Android SDK
-- A retail TDP, Thief Gold, or Thief II folder available to the system folder
-  picker or copied to the app-specific external-files directory
+#### Prerequisites
 
-## Build instructions
+- JDK 17 or later.
+- Android SDK platform and build tools 36.
+- Android SDK CMake 3.31.6 and NDK 30.0.16248370.
+- Git, used to bootstrap Squirrel 3.2.
+- An ARM64 device running Android 8.0 (API 26) or later and a retail game
+  folder available to Android's system folder picker.
 
-Squirrel 3.2 is an external Windows and Android build dependency. Clone
-it outside this source tree in the dependency directory used by the default
-build configuration:
+#### Build
 
-```sh
-git clone --branch v3.2 --depth 1 \
-  https://github.com/albertodemichelis/squirrel.git ../../darkengine-deps/squirrel
-```
-
-The checkout can live elsewhere by passing
-`/p:SquirrelSourceDir=C:\path\to\squirrel`. Constrained builds can explicitly
-disable the feature with `/p:EnableSquirrel=false`.
-
-KCTools v1.3.4 follows the same external-checkout policy: it is optional and
-is neither vendored nor registered as a Git submodule. Clone it into the
-external dependency directory used by the default build configuration:
-
-```sh
-git clone --branch v1.3.4 --depth 1 \
-  https://github.com/JarrodDoyle/KCTools.git ../../darkengine-deps/kctools
-```
-
-Install the .NET 10 SDK, then add `/p:EnableKCTools=true` when building the
-DromEd variant. A portable SDK at `../../darkengine-deps/dotnet10-sdk` is
-detected automatically; otherwise set `/p:DotNetExecutable=C:\path\to\dotnet.exe`.
-The build publishes a self-contained x64 sidecar to the
-`KCTools` directory beside `DromEd.exe`; Win32 DromEd can launch it because it
-runs out of process. To keep the checkout elsewhere, pass
-`/p:KCToolsSourceDir=C:\path\to\KCTools`. The default is
-`EnableKCTools=false`.
-
-Fan missions may supply Ogg Vorbis sounds instead of WAV files. On Windows,
-download the official architecture-matched libsndfile 1.2.2 release outside
-the repository (the default locations are
-`../../darkengine-deps/libsndfile-1.2.2-win32` and `-win64`) and build with
-`/p:EnableSndFileRuntime=true`. The build copies only `sndfile.dll` beside the
-selected Thief2 or DromEd executable. Override its `bin` directory with
-`/p:SndFileRuntimeDir=C:\path\to\bin`; the source and release archive remain
-external and uncommitted.
-
-### Android
-
-The Android/ARM64 target uses the checked-in Gradle wrapper and the same CMake
-engine definition on Windows and Linux. SDL 2.32.10, OpenAL Soft 1.25.2,
-libpng 1.6.59, libogg 1.3.5, and libvorbis 1.3.7 are downloaded from their official releases
-during the first build and verified against pinned SHA-256 digests. The
-Squirrel checkout described above is compiled into the APK.
-
-From PowerShell:
+Bootstrap Squirrel, then use the checked-in Gradle wrapper:
 
 ```powershell
+.\tools\bootstrap-dependencies.ps1 -Target Game
 Set-Location android
 .\gradlew.bat assembleDebug
 ```
 
-From a Linux shell:
+On a Linux host, use `sh tools/bootstrap-dependencies.sh game`, then
+`cd android && ./gradlew assembleDebug`. Gradle downloads SDL 2.32.10, OpenAL
+Soft 1.25.2, libpng 1.6.59, libogg 1.3.5, and libvorbis 1.3.7 from their
+official releases and verifies pinned SHA-256 digests. LibVLC 3.6.5 is resolved
+through Maven. The APK is written under
+`android/app/build/outputs/apk/debug`.
 
-```sh
-cd android
-./gradlew assembleDebug
-```
+#### Running
 
-The APK is written below `android/app/build/outputs/apk/debug`. On first launch,
-select the folder that directly contains `cam.cfg` and the retail mission files.
-The launcher can use that directory in place after Android grants **All files
-access**, or import an optional performance copy into app-specific storage.
-Long-press the app icon and choose **Choose game folder** to change the source,
-switch modes, or refresh a copy without clearing app data. Retail data is not
-included in the APK. Gameplay has native touch sticks and action, inventory,
-weapon, map, and pause controls. Bluetooth, USB, and built-in gamepads use the
-shared SDL gamepad path. Retail movies play through the packaged LibVLC
-backend; the packaged libpng decoder supports replacement PNG resources used
-by NewDark fan missions.
+Install the APK and select the folder that directly contains `cam.cfg` and the
+retail missions. The launcher can use that folder in place after **All files
+access** is granted, or import an optional copy into app-specific storage.
+Long-press the app icon and choose **Choose game folder** to switch or refresh
+content. Touch controls, keyboard, mouse, and SDL-compatible Bluetooth, USB,
+or built-in gamepads remain active together.
 
-See [`docs/android.md`](docs/android.md) for installation, direct-folder and
-copy modes, direct-mission debugging, controller, and touch-control details.
+See [`docs/android.md`](docs/android.md) for installation, storage modes,
+direct-mission debugging, and touch-control details.
 
-### Linux / WSL2
-
-Keep the source and build trees in the Linux filesystem for good build
-performance. From a WSL shell:
-
-```sh
-rsync -a --delete --exclude=.git --exclude=build --exclude=.codex-build \
-  /mnt/c/path/to/darkengine/ ~/darkengine-src/
-cmake -S ~/darkengine-src -B ~/darkengine-build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build ~/darkengine-build -j "$(nproc)"
-```
-
-The Linux renderer uses an OpenGL 3.3 core context by default. To build the
-same shader path against OpenGL ES 3 instead, install the GLES development
-headers (`libgles-dev` on Ubuntu) and configure with
-`-DDARK_OPENGL_ES=ON`.
-
-The result is `~/darkengine-build/Thief2`, a native 64-bit ELF executable.
-
-To exercise FFmpeg decoding, SDL audio, event handling, and OpenGL movie
-presentation without entering the game, pass one absolute or working-directory
-relative movie path:
-
-```sh
-~/darkengine-build/Thief2 movie_test=MOVIES/INTRO.AVI
-```
-
-### Windows with Visual Studio
-
-1. Open `thief2.sln` in Visual Studio 2022.
-2. Select the `Release` configuration and `x86` solution platform.
-3. Build the solution with **Build > Build Solution**.
-4. The resulting executable is
-   `build\Release\Win32\Thief2\Thief2.exe`.
-
-`Directory.Build.props` selects the Thief 2 target by default and applies the
-packing and C-language compatibility settings required by the legacy code.
-The game and editor intentionally use the same `src\dromed.vcxproj`; the
-`BuildThief2` property selects which source set and executable name it emits.
-
-### Windows command line
-
-From an **x86 Native Tools Command Prompt for VS 2022**, run:
-
-```bat
-msbuild thief2.sln /m /t:Build /p:Configuration=Release /p:Platform=x86
-```
-
-The command should finish with
-`build\Release\Win32\Thief2\Thief2.exe`.
-
-To build DromEd from the same project, run:
-
-```bat
-msbuild thief2.sln /m /t:dromed /p:Configuration=Release /p:Platform=x86 /p:BuildThief2=false
-```
-
-The command should finish with
-`build\Release\Win32\DromEd\DromEd.exe`. The editor switch also
-works for a direct project build; `Directory.Build.props` supplies the solution
-root needed by the legacy include and library paths:
-
-```bat
-msbuild src\dromed.vcxproj /m /t:Build /p:Configuration=Release /p:Platform=Win32 /p:BuildThief2=false
-```
-
-Use `Platform=x64` for a native 64-bit direct build. Final executables and
-their object files are separated by architecture, configuration, and target:
-
-```text
-build\Release\Win32\Thief2\Thief2.exe
-build\Release\Win32\DromEd\DromEd.exe
-build\Release\x64\Thief2\Thief2.exe
-build\Release\x64\DromEd\DromEd.exe
-```
-
-Static libraries remain shared between Thief2 and DromEd within a given
-architecture. They must not vary with `BuildThief2`.
-
-### Legacy OSM diagnostics
+## Legacy OSM diagnostics
 
 The portable OSM loader selects a fixed guest ABI when each module is loaded:
 `gold` and `tdp` use the Dark 1 service layout, while `thief2` uses Dark 2.
@@ -326,73 +340,56 @@ The probe checks the PE image, required `_ScriptModuleInit@20` export,
 relocations, and import surface. It does not replace an in-mission behavior
 test because service calls and message traffic depend on retail mission data.
 
-## Running
-
-The executables read retail data in place; they do not copy it into this
-repository.
-
-### Linux
-
-The native launcher accepts a retail installation from the working directory,
-`DARK_GAME_PATH`, or `game_path=<directory>`. If an interactive launch starts
-elsewhere, it asks for the installation folder before initializing the engine;
-an invalid folder never enters the legacy assertion path. Dark then uses the
-selected installation as its working directory because configuration and
-resources resolve relative to it:
-
-```sh
-cd "/mnt/c/Games/Thief 2 - The Metal Age"
-~/darkengine-build/Thief2 quickstart=MISS1.MIS
-```
-
-For a shortcut, script, or unattended launch from another directory:
-
-```sh
-~/darkengine-build/Thief2 game_path="/mnt/c/Games/Thief 2 - The Metal Age"
-```
-
-For an unattended smoke test, add `auto_stop=60`. Retail data on `/mnt/c`
-works under WSL2 but loads more slowly than data in the Linux filesystem
-because Dark performs many small, case-insensitive resource lookups.
-
-A launch with no arguments opens the same engine-owned content menu used on
-Windows. It uses the retail load-game artwork and controls; selecting content
-applies the chosen `content=` and (for an FM) `fm=` configuration, refreshes
-the content-owned resource paths, builds the first database, and enters the
-main menu without replacing the process, window, or presentation surface.
-
-### Windows
-
-Set the working directory to the retail installation, then run the executable
-by absolute path (or from a script/shortcut whose **Start in** directory is the
-installation):
-
-```powershell
-Set-Location 'C:\Games\Thief Gold'
-& 'C:\src\darkengine\build\Release\Win32\Thief2\Thief2.exe'
-```
+## Content selection and diagnostics
 
 The runner identifies TDP, Gold, or Thief II from the installed stock mission
-set. If the initial working directory is not a recognizable installation, it
-prompts for one and uses the selected folder as the working directory for that
-run. The picker starts at the last successfully selected game directory, stored
-under `HKCU\Software\DarkEngineRestored\Launcher`; that value is only a
-picker hint and is never used to choose or launch a game silently. Retail data
-is read in place and is not copied.
+set. It also recognizes GOG's current Gold collection layout: a common folder
+containing complete `Thief Gold` and `Thief The Dark Project` child installs
+plus a shared `FMs` folder. Selecting that common folder presents Gold and TDP,
+each in base-resource and configured-mod form, followed by the shared fan
+missions in the engine-owned Thief content menu. Shared FMs always run against
+the Gold child; they are not duplicated as speculative TDP variants.
 
-A Thief2 launch with no arguments opens the shared engine-owned, themed
-content menu. It lists the two original-campaign modes followed by every
-recognized immediate child of the installation's configured `fm_path`
-directory (`FMs` by default). Display names and descriptions come from
-each FM's `fm.ini` when present. For example, select **Thief: The Black Parade
-v1.0** and press **Play** to play the installed Black Parade campaign.
+```text
+Thief Gold\                         selectable collection folder
+|-- Thief Gold\cam.cfg             selectable Gold game folder
+|-- Thief The Dark Project\cam.cfg selectable TDP game folder
+`-- FMs\                            shared fan missions (Gold runtime)
+```
+
+Either layout may be selected directly. Choosing the `Thief Gold` child of a
+recognized GOG collection still discovers the parent's shared `FMs` folder;
+choosing the TDP child is an explicit TDP campaign selection. The engine keeps
+the selected runnable child as its working directory and the shared FM folder
+as a separate content root. The common folder is also the final lookup location
+for collection-level mission dependencies such as GOG's `TFIX.GAM`; it never
+overrides a child, mod, or FM file. The engine does not copy files between the
+folders and does not run from the non-game collection folder. A non-interactive
+command launched from the collection folder also defaults to Gold, including
+an explicit `fm=<folder>` launch.
+
+If the initial working directory is not recognizable, the runner prompts for a
+game or collection folder. The picker starts at the last successfully selected
+folder, stored under `HKCU\Software\DarkEngineRestored\Launcher`; that value is
+only a picker hint and is never used to choose or launch a game silently.
+Retail data is read in place and is not copied.
+
+A game-runner launch with no arguments opens the shared engine-owned, themed
+content menu. For a single game folder it lists the two original-campaign
+modes followed by every recognized immediate child of the installation's
+configured `fm_path` directory (`FMs` by default). For the GOG collection it
+lists those two modes for Gold and TDP, then the shared Gold FMs. Display names
+and descriptions come from each FM's `fm.ini` when present. For example,
+select **Thief: The Black Parade v1.0** and press **Play** to play the installed
+Black Parade campaign. The menu is shown afresh on every ordinary interactive
+launch; a previous campaign or FM selection is not applied automatically.
 
 The available content modes are:
 
 - **Original Missions (recommended)** suppresses both mod layers and uses the last existing
   entry in each base path, normally `RES` for resources and the installation
   root for missions. This is the most compatible mode for the original
-  campaigns and is selected by default when no prior choice has been saved.
+  campaigns. Gold is listed first when a GOG Gold collection is selected.
 - **Original Missions - Modded** honors `uber_mod_path`, `mod_path`, and the full
   paths in the installation configuration. Installation-wide `cam_ext.cfg`
   defaults are read before `cam.cfg`, and `cam_mod.ini` supplies NewDark-style
@@ -410,12 +407,17 @@ The available content modes are:
   mode changes to the main menu while the top-level window and presentation
   surface remain persistent.
 
-PNG replacement images are supported and take precedence over the original
-TGA, GIF, PCX, CEL, and BMP resources. Image content is signature-sniffed
-because NewDark FMs sometimes retain a `.gif` name for PCX, TIFF, or PSD data.
-Indexed animations retain their own palettes and arbitrary GIF transparency
-indices are normalized to Dark's index-zero convention. RGBA animation frames
-are alpha-composited into the engine's 16-bit UI canvas.
+Dark model materials identify logical texture names rather than requiring one
+image codec. The runner removes a material's historical image extension and,
+within the highest-priority content directory, tries DDS, PNG, TGA, GIF, PCX,
+CEL, and BMP in that order. This is why an FM can intentionally ship a PNG
+replacement with the same basename as retail TGA, GIF, or PCX art; installed
+NewDark FMs use that pattern. Explicit image-resource requests retain their
+extension. Decoders also inspect the file signature so a supported image with
+a misleading historical extension is decoded by its actual format. Indexed
+animations retain their own palettes, arbitrary GIF transparency indices are
+normalized to Dark's index-zero convention, and RGBA animation frames are
+alpha-composited into the engine's 16-bit UI canvas.
 
 Set `DARK_RESOURCE_TRACE=1` to include each resolved resource name, type, and
 source path in `monolog`; this is useful for distinguishing a decoder problem
@@ -430,11 +432,12 @@ probes absent animation frames and alternate model formats while resolving a
 valid asset. Immediately after mission post-load the
 engine prints a conspicuous summary to `monolog` and writes a detailed
 `texture-audit.log` covering terrain surfaces, object models, base textures,
-and per-object replacements. A texture that resolves to the renderer's
-checkerboard fallback is an error and is counted separately from a resource
-that is wholly missing. The counts intentionally overlap when a missing
-resource would render as the checkerboard. Missing resources requested later during play are
-appended to the same diagnostics report. Set `DARK_DIAGNOSTICS_PATH` to an
+and per-object replacements. Any texture that would reach the renderer's
+checkerboard fallback is treated as an error. A missing texture resource is
+therefore included in both the missing-resource and checkerboard-fallback
+totals; a loaded resource whose decoded frame is already the dummy
+checkerboard is only in the latter. Missing resources requested later during
+play are appended to the same diagnostics report. Set `DARK_DIAGNOSTICS_PATH` to an
 absolute filename to redirect the main report for unattended tests, and
 `DARK_TEXTURE_AUDIT_PATH` to redirect the detailed texture inventory.
 
@@ -492,12 +495,12 @@ gameplay; it skips only the briefing and loadout screens:
 ```
 
 The detected game, original-content mode, and each FM have separate save
-directories under `%LOCALAPPDATA%\DarkEngineRestored\Profiles`. The content
-menu remembers the last valid selection separately for each installation and
-has a **Change Game Folder** command, so adding another game does not require
-editing the registry or changing a shortcut.
+directories under `%LOCALAPPDATA%\DarkEngineRestored\Profiles`. Interactive
+launches require a fresh choice from the content menu. The remembered game
+folder is used only to position the folder dialog; it never selects a game,
+campaign mode, or FM on a later launch.
 
-### DromEd on Windows
+## DromEd on Windows
 
 DromEd uses the same working-directory detection as the game runner:
 
@@ -506,11 +509,14 @@ cd /d "C:\Games\Thief Gold"
 "C:\src\darkengine\build\Release\Win32\DromEd\DromEd.exe"
 ```
 
-The first folder choice is the retail installation root containing `cam.cfg`,
-not its `FMs` child. The content list then chooses either the base/modded game
-or one installed FM. **Open in DromEd** opens a second file picker rooted at
-that content directory; select the actual `.mis` or `.cow` to edit. For an FM,
-the selected content context stays active while the mission opens, so its
+The first prompt accepts either a named game's base folder (the runnable root
+containing `cam.cfg`) or the recognized GOG Gold collection folder, but not an
+`FMs` child. The next dialog is headed
+**DromEd <game> - Select mission set or FM to work with** and chooses either
+the base/modded game or one installed FM. DromEd then opens without prompting
+for a mission. Its Open/Save dialogs default to that selected base or FM
+directory; use **File > Open** to select the `.mis` or `.cow` to edit. For an
+FM, the selected content context stays active while the mission opens, so its
 referenced `.gam` and its `obj`, `mesh`, `fam`, `snd`, `strings`, and other
 resource directories remain ahead of ordinary mods and retail data.
 
@@ -541,7 +547,7 @@ The built-in historical editing command registry is present. KCTools lighting
 is exposed directly as `kctools_light`, `kctools_portalize`, and
 `kctools_optimize`; these commands perform a checked save/run/import
 transaction without NewDark's command script or `kctools.osm`. They first use
-the optional sidecar published beside DromEd, then fall back to the historical
+the published sidecar beside DromEd, then fall back to the historical
 `Tools\KCTools\KCTools.exe` location. `kctools_path` remains an explicit
 override. Other companion-tool workflows and some familiar external commands
 are still unavailable.
@@ -659,13 +665,17 @@ decode it, the Windows runner uses `ffmpeg.exe` to prepare an H.264/AAC copy in
 movie. The cache key includes the source path, size, and timestamp. Set
 `DARK_MOVIE_CACHE` to override the cache directory.
 
-## Xbox controller support
+## Controls
 
-Thief2 supports one active Xbox-style controller through a platform-neutral
-gamepad layer, using runtime-loaded XInput on Windows and SDL GameController on
-Linux and Android. Controllers can be connected, disconnected, and reconnected
-while the game is running. Keyboard and mouse remain active, and a modern
-controller is not also polled through the legacy joystick path.
+This project's game runner replaces the original game's legacy DirectInput
+joystick polling with a platform-neutral gamepad layer: runtime-loaded XInput
+on Windows and SDL GameController on Linux and Android. SDL accepts compatible
+controllers regardless of branding; the default bindings merely use the familiar
+Xbox-style button names and layout. One controller owns gameplay input at a
+time and can be connected, disconnected, or reconnected while the game runs.
+The selected modern controller is excluded from the legacy joystick fallback,
+avoiding duplicate input. Keyboard and mouse remain active on every platform,
+and Android touch controls remain active alongside them and the gamepad.
 
 The default layout follows the modern Thief radial-menu scheme. Left stick
 moves and right stick looks; A jumps, B crouches, X uses the selected item, RT
@@ -676,6 +686,16 @@ the right stick selects items, and both rings include a none slot. D-pad
 up/down cycles weapons and left/right cycles items. L3 toggles the movement
 speed mode, R3 forces sneak speed, View opens the automap, and Menu pauses.
 L3+Y quicksaves and L3+B quickloads.
+
+The radial menu currently uses text labels rather than the inventory artwork.
+Those labels use the same density-aware readable-overlay font selection as
+messages, `show_stats`, and the console. Windows obtains the scale from the
+window's current monitor, Linux uses the SDL drawable/compositor scale with a
+display-DPI fallback, and Android uses `scaledDensity`, including the user's
+system font-size preference. Presentation magnification is removed before a
+font is selected so text is not enlarged twice. Set `gamepad_radial_font` to a
+font resource name to override it on any platform; `overlay_font` overrides
+the automatic choice for all readable overlays.
 
 In menus, either stick moves the mouse pointer, A/X left-click, Y right-click,
 and B or Menu goes back; the D-pad remains directional navigation. These
@@ -712,22 +732,13 @@ configured controller owns gameplay input at a time; `gamepad_index` selects
 it, with automatic failover to another connected controller if it disconnects. The
 `gamepad_status` console command prints the selected backend and normalized
 state. DromEd editor input remains unchanged; gamepad input is currently enabled
-only in the Thief2 target.
-
-On Linux, saves normally remain in the retail installation's `saves`
-directory for compatibility with existing installs. If it cannot be created
-or written, the game falls back to
-`$XDG_DATA_HOME/DarkEngineRestored/Profiles/<game>/<content>/saves`
-(normally `~/.local/share/DarkEngineRestored/...`). With no explicit
-override, loading checks both locations. Set `DARK_SAVE_PATH` or pass
-`save_path=<directory>` to use one specific directory for both saving and
-loading.
+only in the game-runner target.
 
 ## Command console
 
 The console appears as **Console** under **Options > Controls > Customize
 Controls**. It defaults to both `:` and `;` in DromEd, DromEd play preview,
-and Thief2 gameplay when those keys are free. Existing commands assigned to
+and game-runner gameplay when those keys are free. Existing commands assigned to
 either key are preserved. The console can be rebound like any other control,
 and the selection is saved in `user.bnd`.
 
@@ -768,6 +779,8 @@ Available commands:
 - `debug_scripts [on/off]` - log dispatched script messages to
   `script-debug.log`
 - `console_copy [visible/all/command]` - copy console text to the clipboard
+- `copy_screen_text` - copy the currently visible tutorial/reticle message and
+  `show_stats` lines to the clipboard
 - `console_diagnostics [on/off]` - optionally include general `mprintf`
   diagnostic output in the console
 
@@ -784,13 +797,13 @@ These captures were produced during local runtime verification with external
 retail game data. The data shown in the captures is not included in the
 repository.
 
-### In-game menu
-
-![Thief 2 in-game menu](docs/screenshots/in-game-menu.png)
-
 ### Gameplay and inventory HUD
 
 ![Thief 2 gameplay and inventory HUD](docs/screenshots/gameplay-inventory.png)
+
+### In-game menu
+
+![Thief 2 in-game menu](docs/screenshots/in-game-menu.png)
 
 ### Automap
 
@@ -802,16 +815,16 @@ repository.
   runtime-validated as Release/x86. The embedded compatibility runtime covers
   the IA-32 instructions, imports, and engine services exercised by tested
   legacy `.osm` modules; broader third-party script coverage remains ongoing.
-- Modern rendering is still exposed through the historical `lgd3d` API as a
+- Modern rendering is still exposed through Looking Glass's `lgd3d` API as a
   compatibility facade over the renderer-neutral backend. The unusable
-  Direct3D 2 implementation and its dormant build sources have been removed;
-  callers still need migration away from the facade itself.
+  Direct3D 2 implementation and its dormant build sources have been removed.
 - The native 64-bit builds still need broader mission and save/load
   validation. The renderer also still uses a 16-bit internal canvas despite
   presenting through 32-bit D3D11 or OpenGL output, so full 32-bit scene
   rendering remains to be implemented.
-- Native-resolution, high-DPI, window resizing, and ultrawide behavior need
-  testing across more GPUs and display configurations.
+- Native-resolution, window resizing, ultrawide presentation, and the new
+  cross-platform high-DPI text scaling need testing across more GPUs, desktop
+  scales, Android font-size settings, and display configurations.
 - Gamma correction is implemented in the Windows D3D11 presentation path.
   Equivalent Linux/OpenGL behavior and broader visual comparison of shadow
   detail, lightmaps, and emissive-looking light-source textures remain to be
@@ -831,11 +844,15 @@ repository.
   but the complete external DromEd/NewDark command environment is not. NewDark
   reading and preservation coverage still does not imply universal authoring
   or save compatibility.
+- DromEd mission loads currently report phases in the status field but do not
+  show the game's animated loading progress. Play preview remains unstable:
+  returning to the editor can still crash, and a resolution selected in the
+  gameplay Video Options menu may not take effect in the preview window.
 - Environmental audio now maps the original EAX room presets onto DirectSound
   I3DL2 or OpenAL EFX. DirectSound provides room reverb while the optional
   OpenAL provider also supplies per-source low-pass occlusion; both paths need
   broader in-mission acoustic comparison against the original game.
-- Windows builds load NewDark-style loose
+- Game builds load NewDark-style loose
   `sq_scripts/*.nut` sources with the native Squirrel 3.2 provider. Core
   object, property, link, physics, Act/React, door, lock, damage, containment,
   quest, data, and light calls are bridged, but the complete NewDark service
@@ -855,7 +872,7 @@ repository.
   perception behavior has not been exhaustively verified for every mission.
 - Keyboard-layout behavior for the default `:` and `;` console bindings needs
   broader testing on non-US layouts.
-- The four Windows Release targets and native Linux Thief2 target compile and
+- The four Windows Release targets and native Linux game target compile and
   link with their configured toolchains. Raising warning levels and enabling
   additional static analysis remain future work.
 - Automated runtime tests are limited because licensed retail data cannot be
