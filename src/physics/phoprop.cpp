@@ -81,6 +81,12 @@ class cPPlateOps : public cClassDataOps<sPhysPPlateProp>
 {
 public:
    STDMETHOD_(int,Version)() { return 1000; };
+   STDMETHOD(Read)(sDatum* pdat, IDataOpsFile* file, int)
+   {
+      // 1000 is this property's schema revision, not its serialized size.
+      return cClassDataOps<sPhysPPlateProp>::Read(
+         pdat,file,sizeof(sPhysPPlateProp));
+   }
 };
 
 typedef cHashPropertyStore<cPPlateOps> cPhysPPlateStore;
