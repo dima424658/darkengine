@@ -407,8 +407,36 @@ ePlatformAssertAction PlatformShowAssert(const char *message)
 
 void PlatformDebugBreak(void) { __builtin_trap(); }
 void PlatformExitProcess(int status) { std::exit(status); }
-BOOL PlatformSetClipboardText(const char *) { return FALSE; }
-int PlatformGetClipboardText(char *, int) { return 0; }
+BOOL PlatformSetClipboardText(const char *text)
+{
+#if defined(__linux__)
+   return SDL_SetClipboardText(text ? text : "") == 0;
+#else
+   (void)text;
+   return FALSE;
+#endif
+}
+
+int PlatformGetClipboardText(char *text, int capacity)
+{
+#if defined(__linux__)
+   if (!text || capacity <= 0 || SDL_HasClipboardText() != SDL_TRUE)
+      return 0;
+   char *clipboard = SDL_GetClipboardText();
+   if (!clipboard)
+      return 0;
+   const int length = (int)std::strlen(clipboard);
+   const int copied = std::min(length, capacity - 1);
+   std::memcpy(text, clipboard, (size_t)copied);
+   text[copied] = '\0';
+   SDL_free(clipboard);
+   return copied;
+#else
+   (void)text;
+   (void)capacity;
+   return 0;
+#endif
+}
 
 void PlatformSetTextInputActive(BOOL active)
 {

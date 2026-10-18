@@ -7,6 +7,8 @@
 
 #include <lg.h>
 #include <loopapi.h>
+#include <stdio.h>
+#include <string.h>
 
 // Messages
 #include <dispbase.h>
@@ -139,17 +141,50 @@ static int dtlist[FRAMEHISTORY_COUNT];
 static int dtlist_ptr=0, dtsum=0;
 int portal_info_volume = 10;
 static IRes* gStatsFontRes = NULL;
-static BOOL gStatsFontResolved = FALSE;
+static char gStatsFontName[64];
+static char gStatsText[4096];
+
+static void append_stats_text(const char* text)
+{
+   size_t used;
+   size_t available;
+   int written;
+
+   if (!text || !text[0])
+      return;
+   used = strlen(gStatsText);
+   available = sizeof(gStatsText) - used;
+   if (available <= 1)
+      return;
+   written = snprintf(gStatsText + used, available, "%s%s", text,
+                      text[strlen(text) - 1] == '\n' ? "" : "\n");
+   if (written < 0 || (size_t)written >= available)
+      gStatsText[sizeof(gStatsText) - 1] = '\0';
+}
+
+BOOL RenderStatsGetText(char* buffer, int capacity)
+{
+   if (!buffer || capacity <= 0)
+      return FALSE;
+   buffer[0] = '\0';
+   if (!show_stats || !gStatsText[0])
+      return FALSE;
+   strncpy(buffer, gStatsText, capacity);
+   buffer[capacity - 1] = '\0';
+   return TRUE;
+}
 
 static guiStyle* stats_style(void)
 {
    static guiStyle style;
-   char font[64];
+   char font[64] = "";
 
-   if (!gStatsFontResolved)
+   uiGameGetReadableOverlayFont("stats_font", font, sizeof(font));
+   if (stricmp(font, gStatsFontName))
    {
-      gStatsFontResolved = TRUE;
-      if (uiGameGetReadableOverlayFont("stats_font", font, sizeof(font)))
+      SafeRelease(gStatsFontRes);
+      gStatsFontName[0] = '\0';
+      if (font[0])
       {
          IResMan* resman = AppGetObj(IResMan);
          if (resman)
@@ -157,6 +192,11 @@ static guiStyle* stats_style(void)
             gStatsFontRes = IResMan_Bind(resman, font, RESTYPE_FONT,
                                          NULL, "intrface", 0);
             SafeRelease(resman);
+            if (gStatsFontRes)
+            {
+               strncpy(gStatsFontName, font, sizeof(gStatsFontName));
+               gStatsFontName[sizeof(gStatsFontName) - 1] = '\0';
+            }
          }
       }
    }
@@ -175,6 +215,7 @@ static int hack_string(char *s, int x, int y)
    extern BOOL g_null_raster;
    extern BOOL lgd3d_punt_d3d;
 
+   append_stats_text(s);
    gr_string_size(s, &w, &h);
    if (g_null_raster||lgd3d_punt_d3d) {
       long fc_save = gr_get_fcolor();
@@ -198,6 +239,7 @@ static void superimpose_stats (int dt, int overhead, int blit_overhead)
    ObjID player;
    guiStyle* style;
 
+   gStatsText[0] = '\0';
    dtsum-=dtlist[dtlist_ptr];
    dtlist[dtlist_ptr]=dt+overhead;
    dtsum+=dt+overhead;
@@ -279,6 +321,13 @@ static void do_stats(ulong time, ulong overhead, ulong blit_overhead)
 
 #else // !PLAYTEST
 #define do_stats(time, overhead, blit_overhead)
+
+BOOL RenderStatsGetText(char* buffer, int capacity)
+{
+   if (buffer && capacity > 0)
+      buffer[0] = '\0';
+   return FALSE;
+}
 #endif
 
 ////////////////////////////////////////
@@ -722,7 +771,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
       case kMsgAppTerm:
          ParticleGroupCleanup();
          SafeRelease(gStatsFontRes);
-         gStatsFontResolved = FALSE;
+         gStatsFontName[0] = '\0';
          break;
 
    }

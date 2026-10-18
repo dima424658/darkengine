@@ -19,6 +19,9 @@ DEFINE_LG_GUID(LOOPID_RenderBase, 0x147);
 EXTERN struct sLoopClientDesc RenderLoopClientDesc;
 EXTERN struct sLoopClientDesc RenderBaseLoopClientDesc;
 
+// Copies the latest text drawn by show_stats into the caller's buffer.
+EXTERN BOOL RenderStatsGetText(char* buffer, int capacity);
+
 //
 // KEEP THIS FILE RELATIVELY CLEAR OF JUNK!  DO NOT PUT YOUR SYSTEM'S API HERE! 
 // DO NOT INCLUDE OTHER HEADER FILES FROM THIS FILE!

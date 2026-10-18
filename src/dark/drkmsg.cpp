@@ -15,6 +15,8 @@
 #include <gcompose.h>
 #include <uigame.h>
 #include <2d.h>
+#include <rendloop.h>
+#include <platform_services.h>
 
 #include <command.h>
 #include <stdio.h>
@@ -122,6 +124,42 @@ void DarkMessage(const char* msg)
    DarkMessageParams(msg,DEFAULT_TIMEOUT,kDefaultMsgColor); 
 }
 
+static BOOL current_message_text(char* buffer, int capacity)
+{
+   if (!buffer || capacity <= 0)
+      return FALSE;
+   buffer[0] = '\0';
+   if (!gpGameShell || gpGameShell->GetTimerTick() >= gMsg.timeout ||
+       !((const char*)gMsg.text)[0])
+      return FALSE;
+   strncpy(buffer, (const char*)gMsg.text, capacity);
+   buffer[capacity - 1] = '\0';
+   return TRUE;
+}
+
+static void copy_screen_text(void)
+{
+   char message[1024];
+   char stats[4096];
+   char combined[sizeof(message) + sizeof(stats) + 2];
+   const BOOL hasMessage = current_message_text(message, sizeof(message));
+   const BOOL hasStats = RenderStatsGetText(stats, sizeof(stats));
+
+   if (!hasMessage && !hasStats)
+   {
+      DarkMessage("No visible message or show_stats text to copy.");
+      return;
+   }
+
+   snprintf(combined, sizeof(combined), "%s%s%s",
+            hasMessage ? message : "", hasMessage && hasStats ? "\n" : "",
+            hasStats ? stats : "");
+   combined[sizeof(combined) - 1] = '\0';
+   DarkMessage(PlatformSetClipboardText(combined)
+      ? "Copied visible message and statistics text."
+      : "Clipboard copy is unavailable.");
+}
+
 void DarkMessageUpdateFrame(void)
 {
    resolve_message_font();
@@ -180,6 +218,8 @@ void DarkMessageUpdateFrame(void)
 static Command commands[] = 
 {
    { "game_message", FUNC_STRING, DarkMessage, "Display a message on the game screen", HK_GAME_MODE },
+   { "copy_screen_text", FUNC_VOID, copy_screen_text,
+     "copy the visible message and show_stats text to the clipboard", HK_GAME_MODE },
 }; 
 
 static void init_commands()
