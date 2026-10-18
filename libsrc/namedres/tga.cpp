@@ -187,6 +187,31 @@ grs_bitmap* ResTgaReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 		}
 	}
 
+	// A number of widely used Thief enhancement packs contain X1R5G5B5
+	// textures whose headers incorrectly advertise one alpha bit.  Since the
+	// unused high bit is clear in every pixel, interpreting that header
+	// literally makes otherwise valid AI and object textures fully invisible.
+	// Preserve genuine 1-bit transparency, but treat an entirely transparent
+	// 16-bit image as opaque, which is also how legacy Dark handled these files.
+	if (header.pixelDepth == 16 && alphaBits)
+	{
+		bool hasOpaquePixel = false;
+		for (unsigned long i = 0; i < pixelCount; ++i)
+		{
+			if (pBits[i] & 0xf000)
+			{
+				hasOpaquePixel = true;
+				break;
+			}
+		}
+
+		if (!hasOpaquePixel)
+		{
+			for (unsigned long i = 0; i < pixelCount; ++i)
+				pBits[i] |= 0xf000;
+		}
+	}
+
 	gr_init_bitmap(pBitmap, reinterpret_cast<uint8*>(pBits), BMT_FLAT16,
 		BMF_RGB_4444, header.width, header.height);
 	return pBitmap;

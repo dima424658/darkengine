@@ -1,5 +1,6 @@
 #include "pathutil.h"
 #include <lg.h>
+#include <storcnst.h>
 
 #include <cstring>
 
@@ -44,14 +45,22 @@ void GetNormalizedPath(const char* pOldPath, char** ppNewPath)
 	pNewPath[nameLen] = '\0';
 }
 
-void GetPathTop(const char* pFullPath, char* pTopLevel, const char** ppPathRest)
+bool GetPathTop(const char* pFullPath, char* pTopLevel, size_t topLevelSize,
+	const char** ppPathRest)
 {
-	if (!pFullPath || !pTopLevel || !ppPathRest)
-		return;
+	if (!pFullPath || !pTopLevel || !topLevelSize || !ppPathRest)
+		return false;
 
 	auto i = 0;
 	for (auto c = *pFullPath; c != '\0' && c != '\\' && c != '/'; c = pFullPath[i])
 		++i;
+	if (static_cast<size_t>(i) + 2 > topLevelSize)
+	{
+		Warning(("Storage path component is too long: %s\n", pFullPath));
+		pTopLevel[0] = '\0';
+		*ppPathRest = pFullPath;
+		return false;
+	}
 
 	memmove(pTopLevel, pFullPath, i);
 	pTopLevel[i] = '\\';
@@ -61,6 +70,8 @@ void GetPathTop(const char* pFullPath, char* pTopLevel, const char** ppPathRest)
 		*ppPathRest = &pFullPath[i + 1];
 	else
 		*ppPathRest = &pFullPath[i];
+
+	return true;
 }
 
 bool PathAndName(const char* pPathName, char* pPath, char* pName)
@@ -82,7 +93,7 @@ bool PathAndName(const char* pPathName, char* pPath, char* pName)
 	int i;
 	for (i = nSize - 1; i >= 0 && pPathName[i] != '\\' && pPathName[i] != '/'; --i)
 		;
-	if (nSize - i > 32)
+	if (nSize - i > MAX_STORENAME)
 	{
 		Warning(("PathAndName: name too long: %s\n", &pPathName[i]));
 		return false;

@@ -521,6 +521,14 @@ void cSearchPath::Iterate(tSearchPathIterateCallback callback, BOOL bUseContext,
 	static char pContext[4]; // TODO ???
 	PathIterateData envelope{};
 
+	// Search paths can themselves be the context of another search path (for
+	// example, object textures use the object-model path as their context).
+	// Find() refreshes a path before using it, but nested path expansion comes
+	// through Iterate() directly.  Without refreshing here, an in-process
+	// content switch leaves the nested path rooted in the previous global
+	// context even though the outer path noticed the context-version change.
+	EnsureCurrentContext();
+
 	if (bUseContext && m_pContext)
 	{
 		envelope.pPath = this;

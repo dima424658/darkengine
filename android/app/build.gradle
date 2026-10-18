@@ -13,12 +13,20 @@ dependencies {
 def repositoryRoot = file("../..").canonicalFile
 def sdlRoot = new File(repositoryRoot, ".codex-build/android-deps/SDL2-2.32.10")
 def openalRoot = new File(repositoryRoot, ".codex-build/android-deps/openal-soft-1.25.2")
+def pngRoot = new File(repositoryRoot, ".codex-build/android-deps/libpng-1.6.59")
+def oggRoot = new File(repositoryRoot, ".codex-build/android-deps/ogg-1.3.5")
+def vorbisRoot = new File(repositoryRoot, ".codex-build/android-deps/vorbis-1.3.7")
+def squirrelRoot = new File(repositoryRoot, "../../darkengine-deps/squirrel").canonicalFile
 def nativeArguments = [
     "-DDARK_BUILD_ENGINE=ON",
     "-DDARK_BUILD_THIEF2=ON",
     "-DDARK_OPENGL_ES=ON",
     "-DDARK_SDL2_SOURCE=${sdlRoot.absolutePath.replace('\\', '/')}",
     "-DDARK_OPENAL_SOFT_SOURCE=${openalRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_PNG_SOURCE=${pngRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_OGG_SOURCE=${oggRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_VORBIS_SOURCE=${vorbisRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_SQUIRREL_SOURCE=${squirrelRoot.absolutePath.replace('\\', '/')}",
     "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
 ]
 

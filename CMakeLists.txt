@@ -40,6 +40,31 @@ if(DARK_SDL_PLATFORM)
     add_subdirectory("${DARK_OPENAL_SOFT_SOURCE}"
       "${CMAKE_BINARY_DIR}/third_party/openal-soft" EXCLUDE_FROM_ALL)
 
+    if(NOT DARK_PNG_SOURCE OR
+       NOT EXISTS "${DARK_PNG_SOURCE}/CMakeLists.txt")
+      message(FATAL_ERROR
+        "Android requires DARK_PNG_SOURCE to name an extracted libpng source tree")
+    endif()
+    set(PNG_SHARED OFF CACHE BOOL "Do not package a separate libpng shared library" FORCE)
+    set(PNG_STATIC ON CACHE BOOL "Build libpng for the engine" FORCE)
+    set(PNG_TESTS OFF CACHE BOOL "Do not build libpng tests" FORCE)
+    set(PNG_TOOLS OFF CACHE BOOL "Do not build libpng tools" FORCE)
+    add_subdirectory("${DARK_PNG_SOURCE}"
+      "${CMAKE_BINARY_DIR}/third_party/libpng" EXCLUDE_FROM_ALL)
+
+    # namedres deliberately includes <libpng16/png.h> because it also owns a
+    # public header named png.h.  Recreate the installed libpng header layout
+    # inside the build tree so the bundled source can be consumed directly.
+    set(DARK_PNG_COMPAT_INCLUDE_DIR
+      "${CMAKE_BINARY_DIR}/third_party/libpng-include")
+    file(MAKE_DIRECTORY "${DARK_PNG_COMPAT_INCLUDE_DIR}/libpng16")
+    configure_file("${DARK_PNG_SOURCE}/png.h"
+      "${DARK_PNG_COMPAT_INCLUDE_DIR}/libpng16/png.h" COPYONLY)
+    configure_file("${DARK_PNG_SOURCE}/pngconf.h"
+      "${DARK_PNG_COMPAT_INCLUDE_DIR}/libpng16/pngconf.h" COPYONLY)
+    configure_file("${CMAKE_BINARY_DIR}/third_party/libpng/pnglibconf.h"
+      "${DARK_PNG_COMPAT_INCLUDE_DIR}/libpng16/pnglibconf.h" COPYONLY)
+
     find_library(DARK_GLES3_LIBRARY NAMES GLESv3 REQUIRED)
     find_library(DARK_ANDROID_LOG_LIBRARY NAMES log REQUIRED)
   elseif(DARK_OPENGL_ES)
@@ -271,9 +296,6 @@ if(DARK_BUILD_ENGINE)
     if(library STREQUAL "gfile")
       list(FILTER library_sources EXCLUDE REGEX "/gftest\\.c$")
     endif()
-    if(library STREQUAL "namedres" AND ANDROID)
-      list(FILTER library_sources EXCLUDE REGEX "/png\\.cpp$")
-    endif()
     if(library_sources)
       add_library("dark_${library}" STATIC ${library_sources})
       list(APPEND dark_engine_targets "dark_${library}")
@@ -297,14 +319,97 @@ if(DARK_BUILD_ENGINE)
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(dark_namedres PUBLIC PNG::PNG)
   elseif(ANDROID)
-    # Retail resources do not require PNG. Keep the first Android bring-up
-    # independent of a second native codec package; replacement PNG support
-    # will be enabled once its Android dependency is bundled.
-    target_sources(dark_namedres PRIVATE
-      "${CMAKE_CURRENT_SOURCE_DIR}/androidsrc/namedres/png_stub.cpp"
+    target_include_directories(dark_namedres PRIVATE
+      "${DARK_PNG_COMPAT_INCLUDE_DIR}"
     )
+    target_link_libraries(dark_namedres PUBLIC png_static)
   endif()
   target_link_libraries(dark_res PUBLIC dark_compression)
+
+  set(DARK_SQUIRREL_SOURCE "" CACHE PATH
+      "Path to an external Squirrel 3.2 source checkout")
+  if(DARK_SQUIRREL_SOURCE)
+    if(NOT EXISTS "${DARK_SQUIRREL_SOURCE}/include/squirrel.h")
+      message(FATAL_ERROR
+        "DARK_SQUIRREL_SOURCE does not contain include/squirrel.h: ${DARK_SQUIRREL_SOURCE}")
+    endif()
+    set(dark_squirrel_sources
+      sqapi.cpp sqbaselib.cpp sqclass.cpp sqcompiler.cpp sqdebug.cpp
+      sqfuncstate.cpp sqlexer.cpp sqmem.cpp sqobject.cpp sqstate.cpp
+      sqtable.cpp sqvm.cpp
+    )
+    list(TRANSFORM dark_squirrel_sources
+      PREPEND "${DARK_SQUIRREL_SOURCE}/squirrel/")
+    set(dark_squirrel_stdlib_sources
+      sqstdaux.cpp sqstdblob.cpp sqstdio.cpp sqstdmath.cpp sqstdrex.cpp
+      sqstdstream.cpp sqstdstring.cpp sqstdsystem.cpp
+    )
+    list(TRANSFORM dark_squirrel_stdlib_sources
+      PREPEND "${DARK_SQUIRREL_SOURCE}/sqstdlib/")
+    add_library(dark_squirrel STATIC
+      ${dark_squirrel_sources}
+      ${dark_squirrel_stdlib_sources}
+    )
+    target_include_directories(dark_squirrel PUBLIC
+      "${DARK_SQUIRREL_SOURCE}/include"
+    )
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      target_compile_definitions(dark_squirrel PUBLIC _SQ64)
+    endif()
+    target_compile_definitions(dark_script PRIVATE
+      DARK_ENABLE_SQUIRREL=1
+    )
+    target_link_libraries(dark_script PRIVATE dark_squirrel)
+  endif()
+
+  set(DARK_OGG_SOURCE "" CACHE PATH
+      "Path to an external libogg 1.3.5 source tree")
+  set(DARK_VORBIS_SOURCE "" CACHE PATH
+      "Path to an external libvorbis 1.3.7 source tree")
+  if(DARK_OGG_SOURCE OR DARK_VORBIS_SOURCE)
+    if(NOT DARK_OGG_SOURCE OR NOT DARK_VORBIS_SOURCE)
+      message(FATAL_ERROR
+        "DARK_OGG_SOURCE and DARK_VORBIS_SOURCE must be provided together")
+    endif()
+    if(NOT EXISTS "${DARK_OGG_SOURCE}/include/ogg/ogg.h")
+      message(FATAL_ERROR
+        "DARK_OGG_SOURCE does not contain include/ogg/ogg.h: ${DARK_OGG_SOURCE}")
+    endif()
+    if(NOT EXISTS "${DARK_VORBIS_SOURCE}/include/vorbis/vorbisfile.h")
+      message(FATAL_ERROR
+        "DARK_VORBIS_SOURCE does not contain include/vorbis/vorbisfile.h: ${DARK_VORBIS_SOURCE}")
+    endif()
+
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static dependencies" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "Disable dependency tests" FORCE)
+    set(INSTALL_DOCS OFF CACHE BOOL "Disable dependency documentation" FORCE)
+    set(INSTALL_PKG_CONFIG_MODULE OFF CACHE BOOL
+        "Disable dependency pkg-config installation" FORCE)
+    set(INSTALL_CMAKE_PACKAGE_MODULE OFF CACHE BOOL
+        "Disable dependency CMake package installation" FORCE)
+    add_subdirectory("${DARK_OGG_SOURCE}"
+      "${CMAKE_CURRENT_BINARY_DIR}/dark_ogg" EXCLUDE_FROM_ALL)
+
+    set(dark_vorbis_sources
+      mdct.c smallft.c block.c envelope.c window.c lsp.c lpc.c analysis.c
+      synthesis.c psy.c info.c floor1.c floor0.c res0.c mapping0.c registry.c
+      codebook.c sharedbook.c lookup.c bitrate.c
+    )
+    list(TRANSFORM dark_vorbis_sources
+      PREPEND "${DARK_VORBIS_SOURCE}/lib/")
+    add_library(dark_vorbis STATIC ${dark_vorbis_sources})
+    target_include_directories(dark_vorbis
+      PUBLIC "${DARK_VORBIS_SOURCE}/include"
+      PRIVATE "${DARK_VORBIS_SOURCE}/lib"
+    )
+    target_link_libraries(dark_vorbis PUBLIC ogg PRIVATE m)
+
+    add_library(dark_vorbisfile STATIC
+      "${DARK_VORBIS_SOURCE}/lib/vorbisfile.c")
+    target_include_directories(dark_vorbisfile PUBLIC
+      "${DARK_VORBIS_SOURCE}/include")
+    target_link_libraries(dark_vorbisfile PUBLIC dark_vorbis)
+  endif()
 
   if(DARK_SDL_PLATFORM)
     add_library(dark_unix_providers STATIC
@@ -328,6 +433,10 @@ if(DARK_BUILD_ENGINE)
     )
     target_link_libraries(dark_unix_providers PUBLIC dark_engine_packed)
     target_link_libraries(dark_unix_providers PUBLIC SDL2::SDL2)
+    if(TARGET dark_squirrel)
+      target_compile_definitions(dark_unix_providers PRIVATE
+        DARK_ENABLE_SQUIRREL=1)
+    endif()
     if(FFMPEG_FOUND)
       target_compile_definitions(dark_unix_providers PRIVATE DARK_HAVE_FFMPEG=1)
       target_link_libraries(dark_unix_providers PUBLIC PkgConfig::FFMPEG)
@@ -397,6 +506,12 @@ if(DARK_BUILD_ENGINE)
       target_include_directories(dark_game_core BEFORE PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
       )
+      if(TARGET dark_vorbisfile)
+        target_compile_definitions(dark_game_core PRIVATE
+          DARK_HAVE_VORBISFILE=1
+        )
+        target_link_libraries(dark_game_core PRIVATE dark_vorbisfile)
+      endif()
 
       if(ANDROID)
         # SDLActivity loads libSDL2.so followed by libmain.so and resolves the
@@ -418,6 +533,10 @@ if(DARK_BUILD_ENGINE)
         dark_platform
         dark_compression
         dark_unix_providers
+        $<$<TARGET_EXISTS:dark_squirrel>:dark_squirrel>
+        $<$<TARGET_EXISTS:dark_vorbisfile>:dark_vorbisfile>
+        $<$<TARGET_EXISTS:dark_vorbis>:dark_vorbis>
+        $<$<TARGET_EXISTS:ogg>:ogg>
         -Wl,--end-group
         m
       )

@@ -290,15 +290,20 @@ void cStorageManager::Close()
 int cStorageManager::HeteroStoreExists(IStore* pParentStore, const char* pSubStoreName, char* pNameBuffer)
 {
 	auto nLen = strlen(pSubStoreName);
+	if (!nLen)
+		return FALSE;
+	auto baseLen = nLen;
+	if (pSubStoreName[baseLen - 1] == '\\' || pSubStoreName[baseLen - 1] == '/')
+		--baseLen;
 
 	tHashSetHandle hsh{};
 	for (auto* pEntry = m_pFactoryTable->GetFirst(hsh); pEntry != nullptr; pEntry = m_pFactoryTable->GetNext(hsh))
 	{
-		strcpy(pNameBuffer, pSubStoreName);
-		if (pNameBuffer[nLen - 1] == '\\')
-			pNameBuffer[nLen - 1] = '\0';
-
-		strcat(pNameBuffer, pEntry->m_pExt);
+		const auto extLen = strlen(pEntry->m_pExt);
+		if (baseLen + extLen >= MAX_STORENAME)
+			continue;
+		memcpy(pNameBuffer, pSubStoreName, baseLen);
+		memcpy(pNameBuffer + baseLen, pEntry->m_pExt, extLen + 1);
 		if (pParentStore->StreamExists(pNameBuffer))
 			return TRUE;
 	}

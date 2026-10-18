@@ -200,9 +200,10 @@ IStore* cZipSubstorage::GetSubstorage(const char* pSubPath, BOOL bCreate)
 	if (!pSubPath || !strlen(pSubPath))
 		return nullptr;
 
-	char topPathLevel[32];
+	char topPathLevel[MAX_STORENAME];
 	const char* pathRest;
-	GetPathTop(pSubPath, topPathLevel, &pathRest);
+	if (!GetPathTop(pSubPath, topPathLevel, sizeof(topPathLevel), &pathRest))
+		return nullptr;
 
 	IStore* pSubstorage = nullptr;
 
@@ -231,7 +232,7 @@ IStore* cZipSubstorage::GetSubstorage(const char* pSubPath, BOOL bCreate)
 		}
 		else
 		{
-			char nameBuffer[32];
+			char nameBuffer[MAX_STORENAME];
 			if (!m_pStoreManager->HeteroStoreExists(this, topPathLevel, nameBuffer))
 				return 0;
 
@@ -605,9 +606,10 @@ cZipSubstorage* cZipSubstorage::MakeSubstorage(const char* pSubPath)
 	if (strlen(pSubPath) == 0)
 		CriticalMsg("cZipStorage::MakeSubstorage -- empty subpath");
 
-	char topPathLevel[32];
+	char topPathLevel[MAX_STORENAME];
 	const char* pathRest;
-	GetPathTop(pSubPath, topPathLevel, &pathRest);
+	if (!GetPathTop(pSubPath, topPathLevel, sizeof(topPathLevel), &pathRest))
+		return nullptr;
 
 	cZipSubstorage* pSubstorage = nullptr;
 
@@ -727,7 +729,7 @@ cZipStorage::cZipStorage(IStore* pParent, IStoreStream* pZipStream, const char* 
 		else
 		{
 			char pPath[512]{};
-			char pFileRoot[32]{};
+			char pFileRoot[MAX_STORENAME]{};
 			if (PathAndName(pEntryName, pPath, pFileRoot))
 			{
 				auto* pSubstore = MakeSubstorage(pPath);

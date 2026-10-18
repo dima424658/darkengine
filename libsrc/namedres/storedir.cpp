@@ -114,9 +114,10 @@ IStore* cDirectoryStorage::GetSubstorage(const char* pSubPath, BOOL bCreate)
 	if (!pSubPath || !strlen(pSubPath))
 		return nullptr;
 
-	char topPathLevel[32]{};
+	char topPathLevel[MAX_STORENAME]{};
 	const char* pathRest = nullptr;
-	GetPathTop(pSubPath, topPathLevel, &pathRest);
+	if (!GetPathTop(pSubPath, topPathLevel, sizeof(topPathLevel), &pathRest))
+		return nullptr;
 
 	IStore* pSubstorage = nullptr;
 	cFilePath AnchoredSubpath{};
@@ -167,7 +168,7 @@ IStore* cDirectoryStorage::GetSubstorage(const char* pSubPath, BOOL bCreate)
 		}
 		else
 		{
-			char pNameBuffer[32]{};
+			char pNameBuffer[MAX_STORENAME]{};
 			if (m_pStoreManager->HeteroStoreExists(this, topPathLevel, pNameBuffer))
 			{
 				pSubstorage = m_pStoreManager->CreateSubstore(this, pNameBuffer);
