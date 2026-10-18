@@ -28,6 +28,10 @@
 static char gProfile[32] = "thief2";
 static char gContentMode[32] = "configured";
 static char gBasePath[DARK_CONTENT_MAX_PATH] = ".";
+static char gFMRoot[DARK_CONTENT_MAX_PATH] = "";
+static char gCollectionRoot[DARK_CONTENT_MAX_PATH] = "";
+static char gCollectionGoldPath[DARK_CONTENT_MAX_PATH] = "";
+static char gCollectionTDPPath[DARK_CONTENT_MAX_PATH] = "";
 static char gFMPath[DARK_CONTENT_MAX_PATH] = "";
 static char gFMName[DARK_CONTENT_MAX_PATH] = "";
 static char gSavePath[DARK_CONTENT_MAX_PATH] = "saves";
@@ -259,14 +263,12 @@ static const char* SelectedFMName(int argc, const char* argv[], char* storage,
    return IsSafeFMName(fmName) ? fmName : NULL;
 }
 
-static BOOL ResolveFMPath(int argc, const char* argv[], const char* fmName,
-                          char* result, int resultSize)
+static void ResolveFMRoot(int argc, const char* argv[], char* result,
+                          int resultSize)
 {
    char fmBase[CONTENT_PATH_SIZE] = "FMs";
    const char* commandFMPath;
-   char fmRoot[DARK_CONTENT_MAX_PATH];
-   if (!fmName)
-      return FALSE;
+   const char* launcherFMRoot;
 
    commandFMPath = CommandValue(argc, argv, "fm_path");
    if (commandFMPath)
@@ -275,8 +277,26 @@ static BOOL ResolveFMPath(int argc, const char* argv[], const char* fmName,
       fmBase[sizeof(fmBase) - 1] = '\0';
    }
    else
-      config_get_raw("fm_path", fmBase, sizeof(fmBase));
-   JoinPath(fmRoot, sizeof(fmRoot), gBasePath, fmBase);
+   {
+      launcherFMRoot = getenv("DARK_FM_ROOT");
+      if (launcherFMRoot && launcherFMRoot[0])
+      {
+         strncpy(fmBase, launcherFMRoot, sizeof(fmBase));
+         fmBase[sizeof(fmBase) - 1] = '\0';
+      }
+      else
+         config_get_raw("fm_path", fmBase, sizeof(fmBase));
+   }
+   JoinPath(result, resultSize, gBasePath, fmBase);
+}
+
+static BOOL ResolveFMPath(int argc, const char* argv[], const char* fmName,
+                          char* result, int resultSize)
+{
+   char fmRoot[DARK_CONTENT_MAX_PATH];
+   if (!fmName)
+      return FALSE;
+   ResolveFMRoot(argc, argv, fmRoot, sizeof(fmRoot));
    JoinPath(result, resultSize, fmRoot, fmName);
    return DirectoryExists(result);
 }
@@ -402,12 +422,9 @@ void DarkContentPreparePickerBootstrap(void)
    config_get_int("max_refs", &limits.maxRefs);
    config_get_int("sfx_channels", &limits.soundChannels);
 
-   char fmBase[CONTENT_PATH_SIZE] = "FMs";
    char fmRoot[DARK_CONTENT_MAX_PATH];
    char pattern[DARK_CONTENT_MAX_PATH];
-   config_get_raw("fm_path", fmBase, sizeof(fmBase));
-   fmBase[sizeof(fmBase) - 1] = '\0';
-   JoinPath(fmRoot, sizeof(fmRoot), gBasePath, fmBase);
+   ResolveFMRoot(0, NULL, fmRoot, sizeof(fmRoot));
    JoinPath(pattern, sizeof(pattern), fmRoot, "*");
 
    static const char* files[] = { "DARK.CFG", "fm.cfg", "cam_ext.cfg" };
@@ -684,6 +701,15 @@ void DarkContentConfigureProfile(void)
    }
    else
       PlatformGetCurrentDirectory(gBasePath, sizeof(gBasePath));
+   env = getenv("DARK_COLLECTION_ROOT");
+   strncpy(gCollectionRoot, env ? env : "", sizeof(gCollectionRoot));
+   gCollectionRoot[sizeof(gCollectionRoot) - 1] = '\0';
+   env = getenv("DARK_COLLECTION_GOLD_PATH");
+   strncpy(gCollectionGoldPath, env ? env : "", sizeof(gCollectionGoldPath));
+   gCollectionGoldPath[sizeof(gCollectionGoldPath) - 1] = '\0';
+   env = getenv("DARK_COLLECTION_TDP_PATH");
+   strncpy(gCollectionTDPPath, env ? env : "", sizeof(gCollectionTDPPath));
+   gCollectionTDPPath[sizeof(gCollectionTDPPath) - 1] = '\0';
    if (!profileFromEnvironment &&
        (detected = DetectProfile(gBasePath)) != NULL)
    {
@@ -750,6 +776,7 @@ void DarkContentConfigure(int argc, const char* argv[])
    if (requestedMode && !vanilla && _stricmp(requestedMode, "configured") != 0)
       Warning(("Unknown content mode '%s'; using configured content\n", requestedMode));
    strcpy(gContentMode, vanilla ? "vanilla" : "configured");
+   ResolveFMRoot(argc, argv, gFMRoot, sizeof(gFMRoot));
    gFMPath[0] = '\0';
    gFMName[0] = '\0';
 
@@ -818,6 +845,15 @@ void DarkContentConfigure(int argc, const char* argv[])
       AddConfigPaths(gPaths[kDarkContentMovies], sizeof(gPaths[0]), "movie_path");
    }
 
+   // GOG's current Gold collection keeps TFIX.GAM beside its Gold and TDP
+   // child installs even though the patched Gold missions reference it. Keep
+   // the runnable child first, then use the common folder only as a final
+   // database dependency root. It must not override an FM, mod, or child file.
+   if (gCollectionRoot[0] &&
+       _stricmp(gCollectionRoot, gBasePath) != 0)
+      AddPath(gPaths[kDarkContentMissions], sizeof(gPaths[0]),
+              gCollectionRoot);
+
    PublishPath("resname_base", kDarkContentResources);
    PublishPath("load_path", kDarkContentMissions);
    PublishPath("script_module_path", kDarkContentScripts);
@@ -879,6 +915,15 @@ BOOL DarkContentApplySelection(const char* mode, const char* fmName)
 const char* DarkContentProfile(void) { return gProfile; }
 const char* DarkContentMode(void) { return gContentMode; }
 const char* DarkContentBasePath(void) { return gBasePath; }
+const char* DarkContentFMRoot(void) { return gFMRoot; }
+const char* DarkContentCollectionGoldPath(void)
+{
+   return gCollectionGoldPath;
+}
+const char* DarkContentCollectionTDPPath(void)
+{
+   return gCollectionTDPPath;
+}
 const char* DarkContentFMPath(void) { return gFMPath; }
 const char* DarkContentFMName(void) { return gFMName; }
 BOOL DarkContentShowPicker(void)

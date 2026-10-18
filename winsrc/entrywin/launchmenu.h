@@ -13,4 +13,6 @@ enum eDarkLaunchChoice
 // engine resources.  The selected content is applied before install.cfg and
 // the resource manager are initialized.
 int DarkShowLaunchMenu(const char* directory, const char* profile,
-                       const char* executable, char* fmName, int fmNameSize);
+                       const char* executable, const char* fmRoot,
+                       bool collection, char* gameDirectory,
+                       int gameDirectorySize, char* fmName, int fmNameSize);

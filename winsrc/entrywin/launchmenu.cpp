@@ -26,6 +26,8 @@ enum
 struct sLaunchItem
 {
     eDarkLaunchChoice choice;
+    std::string gameDirectory;
+    std::string profile;
     std::string fmName;
     std::string name;
     std::string category;
@@ -38,7 +40,10 @@ struct sLaunchMenuState
     std::string directory;
     std::string gameName;
     std::string registryValue;
+    std::string fmRoot;
+    std::string selectedGameDirectory;
     std::string selectedFM;
+    bool collection;
     bool editorMode;
     int result;
     HWND list;
@@ -48,7 +53,7 @@ struct sLaunchMenuState
     HFONT smallFont;
 
     sLaunchMenuState()
-        : editorMode(false), result(kDarkLaunchCancel), list(NULL), titleFont(NULL),
+        : collection(false), editorMode(false), result(kDarkLaunchCancel), list(NULL), titleFont(NULL),
           headingFont(NULL), bodyFont(NULL), smallFont(NULL)
     {
     }
@@ -145,12 +150,13 @@ static bool LooksLikeFanMission(const char* directory)
            HasMatchingFile(directory, "*.cow");
 }
 
-static void AddFanMissions(sLaunchMenuState* state)
+static void AddFanMissions(sLaunchMenuState* state, const char* root,
+                           const char* gameDirectory)
 {
-    char root[MAX_PATH];
     char pattern[MAX_PATH];
-    _snprintf(root, sizeof(root) - 1, "%s\\FMs", state->directory.c_str());
-    root[sizeof(root) - 1] = '\0';
+    const size_t firstFM = state->items.size();
+    if (!root || !root[0])
+        return;
     _snprintf(pattern, sizeof(pattern) - 1, "%s\\*", root);
     pattern[sizeof(pattern) - 1] = '\0';
 
@@ -172,19 +178,21 @@ static void AddFanMissions(sLaunchMenuState* state)
 
         sLaunchItem item;
         item.choice = kDarkLaunchFanMission;
+        item.gameDirectory = gameDirectory;
         item.fmName = found.cFileName;
         item.name = found.cFileName;
-        item.category = "FAN MISSION";
+        item.category = state->collection ? "FAN MISSION  /  THIEF GOLD"
+                                          : "FAN MISSION";
         item.description = state->editorMode
-            ? "Use this FM's resources in DromEd. After Open in DromEd, choose its .mis file; the mission's referenced .gam and assets are resolved from this FM folder."
+            ? "Start DromEd with this FM's resources active. File > Open and Save default to the FM folder; its referenced .gam and assets remain in this content context."
             : "Launch this fan mission with the installation's configured mod paths.";
         ReadFMInfo(fullPath, item.name, item.description);
         state->items.push_back(item);
     } while (FindNextFileA(search, &found));
     FindClose(search);
 
-    if (state->items.size() > 2)
-        std::sort(state->items.begin() + 2, state->items.end(),
+    if (state->items.size() > firstFM)
+        std::sort(state->items.begin() + firstFM, state->items.end(),
                   [](const sLaunchItem& left, const sLaunchItem& right)
                   {
                       return _stricmp(left.name.c_str(), right.name.c_str()) < 0;
@@ -242,9 +250,11 @@ static void SaveLastSelection(const sLaunchMenuState* state,
         return;
     std::string value;
     if (item.choice == kDarkLaunchConfigured)
-        value = "configured";
+        value = state->collection ? item.profile + ":configured"
+                                  : "configured";
     else if (item.choice == kDarkLaunchVanilla)
-        value = "vanilla";
+        value = state->collection ? item.profile + ":vanilla"
+                                  : "vanilla";
     else
         value = "fm:" + item.fmName;
     RegSetValueExA(key, state->registryValue.c_str(), 0, REG_SZ,
@@ -259,8 +269,18 @@ static int InitialSelection(const sLaunchMenuState* state)
     for (size_t i = 0; i < state->items.size(); ++i)
     {
         const sLaunchItem& item = state->items[i];
-        if ((saved == "configured" && item.choice == kDarkLaunchConfigured) ||
-            (saved == "vanilla" && item.choice == kDarkLaunchVanilla) ||
+        std::string campaignKey;
+        if (state->collection && item.choice != kDarkLaunchFanMission)
+        {
+            campaignKey = item.profile + ":";
+            campaignKey += item.choice == kDarkLaunchConfigured ?
+                           "configured" : "vanilla";
+        }
+        if ((!state->collection && saved == "configured" &&
+             item.choice == kDarkLaunchConfigured) ||
+            (!state->collection && saved == "vanilla" &&
+             item.choice == kDarkLaunchVanilla) ||
+            (state->collection && saved == campaignKey) ||
             (saved.size() > 3 && _strnicmp(saved.c_str(), "fm:", 3) == 0 &&
              item.choice == kDarkLaunchFanMission &&
              _stricmp(saved.c_str() + 3, item.fmName.c_str()) == 0))
@@ -292,8 +312,61 @@ static bool IsDromEd(const char* executable)
 
 static void AddItems(sLaunchMenuState* state)
 {
+    if (state->collection)
+    {
+        char gold[MAX_PATH];
+        char tdp[MAX_PATH];
+        _snprintf(gold, sizeof(gold) - 1, "%s\\Thief Gold",
+                  state->directory.c_str());
+        gold[sizeof(gold) - 1] = '\0';
+        _snprintf(tdp, sizeof(tdp) - 1, "%s\\Thief The Dark Project",
+                  state->directory.c_str());
+        tdp[sizeof(tdp) - 1] = '\0';
+
+        sLaunchItem goldVanilla;
+        goldVanilla.choice = kDarkLaunchVanilla;
+        goldVanilla.gameDirectory = gold;
+        goldVanilla.profile = "gold";
+        goldVanilla.name = "Thief Gold - Base Resources";
+        goldVanilla.category = "ORIGINAL CAMPAIGN";
+        goldVanilla.description = "Use the Thief Gold campaign and its base resource paths, with configured mod layers disabled.";
+        state->items.push_back(goldVanilla);
+
+        sLaunchItem goldConfigured;
+        goldConfigured.choice = kDarkLaunchConfigured;
+        goldConfigured.gameDirectory = gold;
+        goldConfigured.profile = "gold";
+        goldConfigured.name = "Thief Gold - Configured Mods";
+        goldConfigured.category = "ORIGINAL CAMPAIGN";
+        goldConfigured.description = "Use the Thief Gold campaign with cam_mod.ini, uber_mod_path, and mod_path enabled.";
+        state->items.push_back(goldConfigured);
+
+        sLaunchItem tdpVanilla;
+        tdpVanilla.choice = kDarkLaunchVanilla;
+        tdpVanilla.gameDirectory = tdp;
+        tdpVanilla.profile = "tdp";
+        tdpVanilla.name = "The Dark Project - Base Resources";
+        tdpVanilla.category = "ORIGINAL CAMPAIGN";
+        tdpVanilla.description = "Use The Dark Project campaign and its base resource paths, with configured mod layers disabled.";
+        state->items.push_back(tdpVanilla);
+
+        sLaunchItem tdpConfigured;
+        tdpConfigured.choice = kDarkLaunchConfigured;
+        tdpConfigured.gameDirectory = tdp;
+        tdpConfigured.profile = "tdp";
+        tdpConfigured.name = "The Dark Project - Configured Mods";
+        tdpConfigured.category = "ORIGINAL CAMPAIGN";
+        tdpConfigured.description = "Use The Dark Project campaign with cam_mod.ini, uber_mod_path, and mod_path enabled.";
+        state->items.push_back(tdpConfigured);
+
+        AddFanMissions(state, state->fmRoot.c_str(), gold);
+        return;
+    }
+
     sLaunchItem vanilla;
     vanilla.choice = kDarkLaunchVanilla;
+    vanilla.gameDirectory = state->directory;
+    vanilla.profile = state->gameName;
     vanilla.name = "Original Missions";
     vanilla.category = "ORIGINAL CAMPAIGN";
     vanilla.description = state->editorMode
@@ -303,13 +376,15 @@ static void AddItems(sLaunchMenuState* state)
 
     sLaunchItem configured;
     configured.choice = kDarkLaunchConfigured;
+    configured.gameDirectory = state->directory;
+    configured.profile = state->gameName;
     configured.name = "Original Missions - Modded";
     configured.category = "ORIGINAL CAMPAIGN";
     configured.description = state->editorMode
         ? "Open a retail .mis or .cow in DromEd with cam_mod.ini, uber_mod_path, and mod_path enabled. Choose the installation root containing cam.cfg."
         : "Use cam_mod.ini, uber_mod_path, and mod_path. Installed enhancement packs may require NewDark features that this engine does not support yet.";
     state->items.push_back(configured);
-    AddFanMissions(state);
+    AddFanMissions(state, state->fmRoot.c_str(), state->directory.c_str());
 }
 
 static void DrawTextWithFont(HDC dc, HFONT font, COLORREF color,
@@ -393,10 +468,14 @@ static void PaintWindow(HWND window, sLaunchMenuState* state)
     DeleteObject(background);
 
     RECT title = { 36, 25, client.right - 36, 68 };
-    DrawTextWithFont(dc, state->titleFont, kGold, "DARK ENGINE", &title,
+    const std::string heading = state->editorMode
+        ? "DROMED  " + state->gameName : "DARK ENGINE";
+    DrawTextWithFont(dc, state->titleFont, kGold, heading.c_str(), &title,
                      DT_LEFT | DT_SINGLELINE);
     RECT subtitle = { 38, 70, client.right - 36, 96 };
-    const std::string line = state->gameName + "  /  SELECT CONTENT";
+    const std::string line = state->editorMode
+        ? "SELECT MISSION SET OR FM TO WORK WITH"
+        : state->gameName + "  /  SELECT CONTENT";
     DrawTextWithFont(dc, state->smallFont, kMuted, line.c_str(), &subtitle,
                      DT_LEFT | DT_SINGLELINE);
 
@@ -444,6 +523,7 @@ static void AcceptSelection(HWND window, sLaunchMenuState* state)
         return;
     const sLaunchItem& item = state->items[selected];
     state->result = item.choice;
+    state->selectedGameDirectory = item.gameDirectory;
     state->selectedFM = item.fmName;
     SaveLastSelection(state, item);
     DestroyWindow(window);
@@ -585,18 +665,23 @@ static LRESULT CALLBACK LaunchMenuProc(HWND window, UINT message,
 } // namespace
 
 int DarkShowLaunchMenu(const char* directory, const char* profile,
-                       const char* executable, char* fmName, int fmNameSize)
+                       const char* executable, const char* fmRoot,
+                       bool collection, char* gameDirectory,
+                       int gameDirectorySize, char* fmName, int fmNameSize)
 {
-    if (!directory || !directory[0] || !fmName || fmNameSize <= 0)
+    if (!directory || !directory[0] || !gameDirectory ||
+        gameDirectorySize <= 0 || !fmName || fmNameSize <= 0)
         return kDarkLaunchCancel;
+    gameDirectory[0] = '\0';
     fmName[0] = '\0';
 
     sLaunchMenuState state;
     state.directory = directory;
-    state.gameName = ProfileName(profile);
+    state.gameName = collection ? "THIEF GOLD / THE DARK PROJECT"
+                                : ProfileName(profile);
+    state.fmRoot = fmRoot ? fmRoot : "";
+    state.collection = collection;
     state.editorMode = IsDromEd(executable);
-    if (state.editorMode)
-        state.gameName += "  /  DROMED";
     MakeRegistryValue(&state, profile);
     AddItems(&state);
 
@@ -618,8 +703,11 @@ int DarkShowLaunchMenu(const char* directory, const char* profile,
     SystemParametersInfoA(SPI_GETWORKAREA, 0, &workArea, 0);
     const int x = workArea.left + (workArea.right - workArea.left - width) / 2;
     const int y = workArea.top + (workArea.bottom - workArea.top - height) / 2;
+    const std::string windowTitle = state.editorMode
+        ? "DromEd " + state.gameName + " - Select mission set or FM"
+        : "Thief Content";
     HWND window = CreateWindowExA(WS_EX_APPWINDOW, kWindowClass,
-        IsDromEd(executable) ? "DromEd Content" : "Thief Content",
+        windowTitle.c_str(),
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         x, y, width, height, NULL, NULL, GetModuleHandleA(NULL), &state);
     if (!window)
@@ -641,6 +729,14 @@ int DarkShowLaunchMenu(const char* directory, const char* profile,
     {
         strncpy(fmName, state.selectedFM.c_str(), fmNameSize);
         fmName[fmNameSize - 1] = '\0';
+    }
+    if (state.result == kDarkLaunchConfigured ||
+        state.result == kDarkLaunchVanilla ||
+        state.result == kDarkLaunchFanMission)
+    {
+        strncpy(gameDirectory, state.selectedGameDirectory.c_str(),
+                gameDirectorySize);
+        gameDirectory[gameDirectorySize - 1] = '\0';
     }
     return state.result;
 }

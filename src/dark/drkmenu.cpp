@@ -120,6 +120,7 @@ enum eContentChoice
 struct sContentItem
 {
    eContentChoice choice;
+   std::string gameDirectory;
    std::string fmName;
    std::string name;
    std::string description;
@@ -234,30 +235,52 @@ static void ReadFanMissionInfo(const char* directory, std::string& name,
 
 static void BuildContentCatalog(std::vector<sContentItem>& items)
 {
+   const char* goldPath = DarkContentCollectionGoldPath();
+   const char* tdpPath = DarkContentCollectionTDPPath();
+   const BOOL collection = goldPath[0] && tdpPath[0];
+
    sContentItem vanilla;
    vanilla.choice = kContentVanilla;
-   vanilla.name = "Original Missions";
+   vanilla.gameDirectory = collection ? goldPath : DarkContentBasePath();
+   vanilla.name = collection ? "Thief Gold - Original Missions"
+                             : "Original Missions";
    vanilla.description =
       "Use only the base retail resources; this is the most compatible original campaign mode.";
    items.push_back(vanilla);
 
    sContentItem configured;
    configured.choice = kContentConfigured;
-   configured.name = "Original Missions - Modded";
+   configured.gameDirectory = collection ? goldPath : DarkContentBasePath();
+   configured.name = collection ? "Thief Gold - Original Missions - Modded"
+                                : "Original Missions - Modded";
    configured.description =
       "Use configured mod paths; installed mods may require unsupported NewDark features.";
    items.push_back(configured);
 
+   if (collection)
+   {
+      sContentItem tdpVanilla;
+      tdpVanilla.choice = kContentVanilla;
+      tdpVanilla.gameDirectory = tdpPath;
+      tdpVanilla.name = "The Dark Project - Original Missions";
+      tdpVanilla.description =
+         "Run The Dark Project campaign using only its base retail resources.";
+      items.push_back(tdpVanilla);
+
+      sContentItem tdpConfigured;
+      tdpConfigured.choice = kContentConfigured;
+      tdpConfigured.gameDirectory = tdpPath;
+      tdpConfigured.name = "The Dark Project - Original Missions - Modded";
+      tdpConfigured.description =
+         "Run The Dark Project campaign with its configured mod paths enabled.";
+      items.push_back(tdpConfigured);
+   }
+
+   const size_t firstFM = items.size();
    char root[DARK_CONTENT_MAX_PATH];
-   char configuredRoot[DARK_CONTENT_MAX_PATH] = "FMs";
    char pattern[DARK_CONTENT_MAX_PATH];
-   config_get_raw("fm_path", configuredRoot, sizeof(configuredRoot));
-   configuredRoot[sizeof(configuredRoot) - 1] = '\0';
-   const BOOL absoluteRoot = configuredRoot[0] == '/' ||
-      configuredRoot[0] == '\\' ||
-      (isalpha((unsigned char)configuredRoot[0]) && configuredRoot[1] == ':');
-   MakeContentPath(root, sizeof(root),
-                   absoluteRoot ? "" : DarkContentBasePath(), configuredRoot);
+   strncpy(root, DarkContentFMRoot(), sizeof(root));
+   root[sizeof(root) - 1] = '\0';
    MakeContentPath(pattern, sizeof(pattern), root, "*");
    sPlatformFileFind find = {};
    if (!PlatformFindFirst(pattern, &find))
@@ -281,8 +304,8 @@ static void BuildContentCatalog(std::vector<sContentItem>& items)
    } while (PlatformFindNext(&find));
    PlatformFindClose(&find);
 
-   if (items.size() > 2)
-      std::sort(items.begin() + 2, items.end(),
+   if (items.size() > firstFM)
+      std::sort(items.begin() + firstFM, items.end(),
          [](const sContentItem& left, const sContentItem& right)
          {
             return _stricmp(left.name.c_str(), right.name.c_str()) < 0;
@@ -493,6 +516,30 @@ protected:
                          "vanilla" : "configured";
       const char* fmName = item.choice == kContentFanMission ?
                            item.fmName.c_str() : NULL;
+
+      if (!item.gameDirectory.empty() &&
+          _stricmp(item.gameDirectory.c_str(), DarkContentBasePath()) != 0)
+      {
+         char modeArgument[48];
+         _snprintf(modeArgument,sizeof(modeArgument) - 1,
+                   "content=%s",mode);
+         modeArgument[sizeof(modeArgument) - 1] = '\0';
+         const char* arguments[] = { modeArgument };
+         if (!PlatformRelaunchSelf(arguments,1,item.gameDirectory.c_str()))
+         {
+            Message("Could not start the selected campaign.");
+            PlatformDiagnosticsLog("ERROR","content-bootstrap",
+               "Could not relaunch into the selected collection campaign");
+            return;
+         }
+
+         PlatformDiagnosticsLog("INFO","content-bootstrap",
+            "Relaunched into the selected collection campaign");
+         AutoAppIPtr_(Application, pApp);
+         pApp->Quit();
+         return;
+      }
+
       if (!DarkContentApplySelection(mode, fmName))
       {
          Message("Could not activate the selected content.");

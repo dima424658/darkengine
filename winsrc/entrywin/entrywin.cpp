@@ -20,7 +20,6 @@
 #include <exception>
 #include <new.h>
 #include <intrin.h>
-#include <vector>
 #include <lg.h>
 #include <platform_services.h>
 
@@ -36,8 +35,6 @@ extern "C"
 {
 	int _g_referenceEntryPoint = 0;
 }
-
-static char gDromEdStartupFile[MAX_PATH] = "";
 
 static BOOL UsesDarkData(const char* executable)
 {
@@ -97,6 +94,18 @@ static BOOL FileExistsInDirectory(const char* directory, const char* name)
            !(attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
+static BOOL DirectoryExistsInDirectory(const char* directory, const char* name)
+{
+    char path[MAX_PATH];
+    if (!directory || !directory[0])
+        return FALSE;
+    _snprintf(path, sizeof(path) - 1, "%s\\%s", directory, name);
+    path[sizeof(path) - 1] = '\0';
+    const DWORD attributes = GetFileAttributesA(path);
+    return attributes != INVALID_FILE_ATTRIBUTES &&
+           (attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 static const char* DetectGameProfile(const char* directory)
 {
     if (!FileExistsInDirectory(directory, "cam.cfg") ||
@@ -112,6 +121,108 @@ static const char* DetectGameProfile(const char* directory)
     if (FileExistsInDirectory(directory, "MISS8.MIS"))
         return "thief2";
     return "tdp";
+}
+
+struct sGameLocation
+{
+    char chooserDirectory[MAX_PATH];
+    char gameDirectory[MAX_PATH];
+    char fmRoot[MAX_PATH];
+    char collectionRoot[MAX_PATH];
+    char goldDirectory[MAX_PATH];
+    char tdpDirectory[MAX_PATH];
+    char profile[16];
+    BOOL collection;
+};
+
+static void CopyPath(char* destination, size_t size, const char* source)
+{
+    strncpy(destination, source ? source : "", size);
+    destination[size - 1] = '\0';
+}
+
+static void JoinWindowsPath(char* destination, size_t size,
+                            const char* root, const char* leaf)
+{
+    _snprintf(destination, size - 1, "%s\\%s", root, leaf);
+    destination[size - 1] = '\0';
+}
+
+static BOOL DetectGameCollection(const char* directory, char* gold,
+                                 char* tdp, char* fmRoot)
+{
+    const char* goldProfile;
+    const char* tdpProfile;
+    JoinWindowsPath(gold, MAX_PATH, directory, "Thief Gold");
+    JoinWindowsPath(tdp, MAX_PATH, directory, "Thief The Dark Project");
+    JoinWindowsPath(fmRoot, MAX_PATH, directory, "FMs");
+    goldProfile = DetectGameProfile(gold);
+    tdpProfile = DetectGameProfile(tdp);
+    return goldProfile && _stricmp(goldProfile, "gold") == 0 &&
+           tdpProfile && _stricmp(tdpProfile, "tdp") == 0 &&
+           DirectoryExistsInDirectory(directory, "FMs");
+}
+
+static BOOL ResolveGameLocation(const char* directory, sGameLocation* result)
+{
+    char absolute[MAX_PATH];
+    char gold[MAX_PATH];
+    char tdp[MAX_PATH];
+    char fmRoot[MAX_PATH];
+    const char* profile;
+
+    if (!directory || !result)
+        return FALSE;
+    const DWORD absoluteLength = GetFullPathNameA(
+        directory, sizeof(absolute), absolute, NULL);
+    if (!absoluteLength || absoluteLength >= sizeof(absolute))
+        return FALSE;
+
+    memset(result, 0, sizeof(*result));
+    profile = DetectGameProfile(absolute);
+    if (profile)
+    {
+        CopyPath(result->chooserDirectory, sizeof(result->chooserDirectory),
+                 absolute);
+        CopyPath(result->gameDirectory, sizeof(result->gameDirectory), absolute);
+        CopyPath(result->profile, sizeof(result->profile), profile);
+        JoinWindowsPath(result->fmRoot, sizeof(result->fmRoot), absolute, "FMs");
+
+        // GOG's current Gold package keeps its shared FMs beside two complete
+        // child installs. A directly selected Gold child should still see
+        // those FMs; TDP remains an explicit campaign-only selection.
+        if (_stricmp(profile, "gold") == 0)
+        {
+            char parent[MAX_PATH];
+            CopyPath(parent, sizeof(parent), absolute);
+            char* slash = strrchr(parent, '\\');
+            if (slash)
+            {
+                *slash = '\0';
+                if (DetectGameCollection(parent, gold, tdp, fmRoot) &&
+                    _stricmp(gold, absolute) == 0)
+                {
+                    CopyPath(result->fmRoot, sizeof(result->fmRoot), fmRoot);
+                    CopyPath(result->collectionRoot,
+                             sizeof(result->collectionRoot), parent);
+                }
+            }
+        }
+        return TRUE;
+    }
+
+    if (!DetectGameCollection(absolute, gold, tdp, fmRoot))
+        return FALSE;
+    CopyPath(result->chooserDirectory, sizeof(result->chooserDirectory),
+             absolute);
+    CopyPath(result->gameDirectory, sizeof(result->gameDirectory), gold);
+    CopyPath(result->fmRoot, sizeof(result->fmRoot), fmRoot);
+    CopyPath(result->collectionRoot, sizeof(result->collectionRoot), absolute);
+    CopyPath(result->goldDirectory, sizeof(result->goldDirectory), gold);
+    CopyPath(result->tdpDirectory, sizeof(result->tdpDirectory), tdp);
+    CopyPath(result->profile, sizeof(result->profile), "gold");
+    result->collection = TRUE;
+    return TRUE;
 }
 
 static int CALLBACK SelectFolderCallback(HWND window, UINT message,
@@ -148,28 +259,6 @@ static BOOL PromptForDirectory(char* directory, DWORD size, const char* title)
     if (result)
         directory[size - 1] = '\0';
     return result;
-}
-
-static BOOL PromptForDromEdFile(const char* directory)
-{
-    OPENFILENAMEA dialog = {};
-    char file[MAX_PATH] = "";
-    dialog.lStructSize = sizeof(dialog);
-    dialog.hwndOwner = GetActiveWindow();
-    dialog.lpstrTitle =
-        "Choose a MIS or COW (its referenced GAM loads automatically)";
-    dialog.lpstrFilter =
-        "Dark mission or editor files (*.mis;*.cow)\0*.mis;*.cow\0\0";
-    dialog.lpstrFile = file;
-    dialog.nMaxFile = sizeof(file);
-    dialog.lpstrInitialDir = directory;
-    dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST |
-                   OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
-    if (!GetOpenFileNameA(&dialog))
-        return FALSE;
-    strncpy(gDromEdStartupFile,file,sizeof(gDromEdStartupFile));
-    gDromEdStartupFile[sizeof(gDromEdStartupFile) - 1] = '\0';
-    return TRUE;
 }
 
 static const char* const kLauncherRegistryKey =
@@ -223,14 +312,24 @@ static BOOL HasArgument(int argc, const char* argv[], const char* name)
     return FALSE;
 }
 
-static int SelectContent(const char* directory, const char* profile,
-                         const char* executable)
+static int SelectContent(sGameLocation* location, const char* executable)
 {
+    char gameDirectory[MAX_PATH] = "";
     char fmName[MAX_PATH] = "";
-    char contentDirectory[MAX_PATH] = "";
-    gDromEdStartupFile[0] = '\0';
-    const int choice = DarkShowLaunchMenu(directory, profile, executable,
-                                           fmName, sizeof(fmName));
+    const int choice = DarkShowLaunchMenu(
+        location->chooserDirectory, location->profile, executable,
+        location->fmRoot, location->collection != FALSE, gameDirectory,
+        sizeof(gameDirectory), fmName, sizeof(fmName));
+    if (choice == kDarkLaunchConfigured || choice == kDarkLaunchVanilla ||
+        choice == kDarkLaunchFanMission)
+    {
+        const char* profile = DetectGameProfile(gameDirectory);
+        if (!profile)
+            return kDarkLaunchCancel;
+        CopyPath(location->gameDirectory, sizeof(location->gameDirectory),
+                 gameDirectory);
+        CopyPath(location->profile, sizeof(location->profile), profile);
+    }
     if (choice == kDarkLaunchConfigured || choice == kDarkLaunchVanilla)
     {
         const char* mode = choice == kDarkLaunchConfigured ?
@@ -239,9 +338,6 @@ static int SelectContent(const char* directory, const char* profile,
         SetEnvironmentVariableA("DARK_FM_NAME", NULL);
         _putenv_s("DARK_CONTENT_MODE", mode);
         _putenv_s("DARK_FM_NAME", "");
-        if (IsDromEdExecutable(executable) &&
-            !PromptForDromEdFile(directory))
-            return kDarkLaunchCancel;
         return choice;
     }
     if (choice == kDarkLaunchFanMission)
@@ -250,63 +346,79 @@ static int SelectContent(const char* directory, const char* profile,
         SetEnvironmentVariableA("DARK_FM_NAME", fmName);
         _putenv_s("DARK_CONTENT_MODE", "configured");
         _putenv_s("DARK_FM_NAME", fmName);
-        _snprintf(contentDirectory,sizeof(contentDirectory) - 1,
-                  "%s\\FMs\\%s",directory,fmName);
-        contentDirectory[sizeof(contentDirectory) - 1] = '\0';
-        if (IsDromEdExecutable(executable) &&
-            !PromptForDromEdFile(contentDirectory))
-            return kDarkLaunchCancel;
     }
     return choice;
+}
+
+static BOOL PublishGameLocation(const sGameLocation* location)
+{
+    if (!SetCurrentDirectoryA(location->gameDirectory))
+        return FALSE;
+    SetEnvironmentVariableA("DARK_GAME_PROFILE", location->profile);
+    SetEnvironmentVariableA("DARK_GAME_PATH", location->gameDirectory);
+    SetEnvironmentVariableA("DARK_FM_ROOT", location->fmRoot);
+    SetEnvironmentVariableA("DARK_COLLECTION_ROOT",
+                            location->collectionRoot[0]
+                                ? location->collectionRoot : NULL);
+    SetEnvironmentVariableA("DARK_COLLECTION_GOLD_PATH",
+                            location->goldDirectory[0]
+                                ? location->goldDirectory : NULL);
+    SetEnvironmentVariableA("DARK_COLLECTION_TDP_PATH",
+                            location->tdpDirectory[0]
+                                ? location->tdpDirectory : NULL);
+    // The legacy runtime uses getenv(), whose MSVC environment snapshot is
+    // not refreshed by SetEnvironmentVariableA.
+    _putenv_s("DARK_GAME_PROFILE", location->profile);
+    _putenv_s("DARK_GAME_PATH", location->gameDirectory);
+    _putenv_s("DARK_FM_ROOT", location->fmRoot);
+    _putenv_s("DARK_COLLECTION_ROOT", location->collectionRoot);
+    _putenv_s("DARK_COLLECTION_GOLD_PATH", location->goldDirectory);
+    _putenv_s("DARK_COLLECTION_TDP_PATH", location->tdpDirectory);
+    return TRUE;
 }
 
 static BOOL PrepareDarkDataDirectory(int argc, const char* argv[])
 {
     char directory[MAX_PATH];
-    const char* profile = NULL;
+    sGameLocation location = {};
     const BOOL interactive = argc == 1 &&
         !HasArgument(argc, argv, "content") &&
         !HasArgument(argc, argv, "fm");
 
     if (!GetCurrentDirectoryA(sizeof(directory), directory))
         return FALSE;
-    profile = DetectGameProfile(directory);
-    if (!profile)
+    // A remembered path is only the initial location for the folder chooser.
+    // It must never silently select the same installation on a later launch.
+    if (!ResolveGameLocation(directory, &location))
         LoadLastGameFolder(directory, sizeof(directory));
-    while (!profile)
+    while (!location.gameDirectory[0])
     {
         if (!PromptForDirectory(directory, sizeof(directory),
-                "Select a Thief: The Dark Project, Thief Gold, or Thief II folder"))
+                "Pick a Thief base folder or GOG Thief Gold collection folder"))
             return FALSE;
-        profile = DetectGameProfile(directory);
-        if (!profile)
+        if (!ResolveGameLocation(directory, &location))
             MessageBoxA(NULL,
-                        "That folder is not a recognizable Thief installation. Select a folder containing cam.cfg and the retail mission data.",
+                        "That folder is not a recognizable Thief installation or GOG Thief Gold collection. Select a game folder containing cam.cfg and retail missions, or the parent containing the Thief Gold and Thief The Dark Project folders.",
                         "Thief game data required", MB_OK | MB_ICONERROR);
     }
 
     for (;;)
     {
-        SaveLastGameFolder(directory);
-        if (!SetCurrentDirectoryA(directory))
+        SaveLastGameFolder(location.chooserDirectory);
+        if (!PublishGameLocation(&location))
             return FALSE;
-        SetEnvironmentVariableA("DARK_GAME_PROFILE", profile);
-        SetEnvironmentVariableA("DARK_GAME_PATH", directory);
-        // The legacy runtime uses getenv(), whose MSVC environment snapshot is
-        // not refreshed by SetEnvironmentVariableA.
-        _putenv_s("DARK_GAME_PROFILE", profile);
-        _putenv_s("DARK_GAME_PATH", directory);
 
         // Explicit command lines remain non-interactive for shortcuts and
-        // unattended tests. Thief uses the engine-owned content panel;
-        // DromEd retains its pre-engine chooser because it has a different
-        // primordial mode and lifecycle.
+        // unattended tests. A GOG collection defaults these launches to Gold.
         if (!interactive)
         {
             SetPickerEnvironment(FALSE);
             return TRUE;
         }
 
+        // Every game-runner launch uses the engine-owned Thief panel. A
+        // collection starts the engine from Gold and publishes both runnable
+        // child paths so that panel can also offer the TDP campaign.
         if (!IsDromEdExecutable(argc > 0 ? argv[0] : NULL))
         {
             SetPickerEnvironment(TRUE);
@@ -314,31 +426,28 @@ static BOOL PrepareDarkDataDirectory(int argc, const char* argv[])
         }
 
         SetPickerEnvironment(FALSE);
-        const int choice = SelectContent(directory, profile,
+        const int choice = SelectContent(&location,
                                          argc > 0 ? argv[0] : NULL);
         if (choice == kDarkLaunchCancel)
             return FALSE;
         if (choice != kDarkLaunchChooseGame)
-            return TRUE;
+            return PublishGameLocation(&location);
 
         char selected[MAX_PATH];
-        strncpy(selected, directory, sizeof(selected));
-        selected[sizeof(selected) - 1] = '\0';
+        CopyPath(selected, sizeof(selected), location.chooserDirectory);
         for (;;)
         {
             if (!PromptForDirectory(selected, sizeof(selected),
-                    "Select a Thief: The Dark Project, Thief Gold, or Thief II folder"))
+                    "Pick a Thief base folder or GOG Thief Gold collection folder"))
                 break;
-            const char* selectedProfile = DetectGameProfile(selected);
-            if (selectedProfile)
+            sGameLocation selectedLocation = {};
+            if (ResolveGameLocation(selected, &selectedLocation))
             {
-                strncpy(directory, selected, sizeof(directory));
-                directory[sizeof(directory) - 1] = '\0';
-                profile = selectedProfile;
+                location = selectedLocation;
                 break;
             }
             MessageBoxA(NULL,
-                        "That folder is not a recognizable Thief installation. Select a folder containing cam.cfg and the retail mission data.",
+                        "That folder is not a recognizable Thief installation or GOG Thief Gold collection. Select a game folder containing cam.cfg and retail missions, or the parent containing the Thief Gold and Thief The Dark Project folders.",
                         "Thief game data required", MB_OK | MB_ICONERROR);
         }
     }
@@ -679,21 +788,7 @@ int main(int argc, const char* argv[])
         !PrepareDarkDataDirectory(argc, argv))
         return 0;
 
-    std::vector<const char*> engineArguments(argv,argv + argc);
-    char startupFileArgument[MAX_PATH + 5] = "";
-    if (gDromEdStartupFile[0] && !HasArgument(argc,argv,"file") &&
-        !HasArgument(argc,argv,"render_test"))
-    {
-        _snprintf(startupFileArgument,sizeof(startupFileArgument) - 1,
-                  "file=%s",gDromEdStartupFile);
-        startupFileArgument[sizeof(startupFileArgument) - 1] = '\0';
-        engineArguments.push_back(startupFileArgument);
-    }
-    const int engineArgc = (int)engineArguments.size();
-    const char* const* engineArgv = engineArguments.data();
-
-    PlatformDiagnosticsStartSession(engineArgc > 0 ? engineArgv[0] : NULL,
-                                    engineArgc,engineArgv);
+    PlatformDiagnosticsStartSession(argc > 0 ? argv[0] : NULL, argc, argv);
 
     // Explicit regression hook for validating the last-resort reporter. It is
     // environment-only so an FM or configuration file cannot trigger it.
@@ -701,7 +796,7 @@ int main(int argc, const char* argv[])
     if (crashReportTest && !strcmp(crashReportTest, "1"))
         RaiseException(0xE000D4A2, EXCEPTION_NONCONTINUABLE, 0, NULL);
 
-	return _AppMain(engineArgc, engineArgv);
+	return _AppMain(argc, argv);
 }
 
 /*

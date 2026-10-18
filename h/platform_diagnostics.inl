@@ -47,6 +47,10 @@ void PlatformDiagnosticsStartSession(const char *application, int argc,
                 PlatformDiagnosticProcessId(),
                 directory[0] ? directory : "(unknown)");
    WriteDiagnosticsContext(report, "DARK_GAME_PROFILE");
+   WriteDiagnosticsContext(report, "DARK_FM_ROOT");
+   WriteDiagnosticsContext(report, "DARK_COLLECTION_ROOT");
+   WriteDiagnosticsContext(report, "DARK_COLLECTION_GOLD_PATH");
+   WriteDiagnosticsContext(report, "DARK_COLLECTION_TDP_PATH");
    WriteDiagnosticsContext(report, "DARK_CONTENT_MODE");
    WriteDiagnosticsContext(report, "DARK_FM_NAME");
    std::fprintf(report, "Arguments:");

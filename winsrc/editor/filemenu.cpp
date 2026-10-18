@@ -12,6 +12,7 @@
 #include <filemenu.h>
 #include <str.h>
 #include <dbfile.h>
+#include <contentctx.h>
 
 // for the windows controls
 #include <commdlg.h>
@@ -70,6 +71,11 @@ char* FileDialog(eFileMenuMode mode, sFileMenuFilter* pFilters, const char* def_
    ofn.nFilterIndex = idx;
    ofn.lpstrFile = buffer;
    ofn.nMaxFile = buflen;
+   const char* content_dir = DarkContentFMPath();
+   if (!content_dir || !content_dir[0])
+      content_dir = DarkContentBasePath();
+   if (content_dir && content_dir[0])
+      ofn.lpstrInitialDir = content_dir;
    ofn.Flags = OFN_NOCHANGEDIR|OFN_HIDEREADONLY;
    if (mode == kFileMenuLoad)
       ofn.Flags |= OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;

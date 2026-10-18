@@ -42,6 +42,12 @@ EXTERN BOOL DarkContentApplySelection(const char* mode, const char* fmName);
 EXTERN const char* DarkContentProfile(void);
 EXTERN const char* DarkContentMode(void);
 EXTERN const char* DarkContentBasePath(void);
+EXTERN const char* DarkContentFMRoot(void);
+// A recognized multi-install collection publishes its runnable campaign
+// children here. Empty strings mean that the selected folder is a single
+// installation rather than a collection.
+EXTERN const char* DarkContentCollectionGoldPath(void);
+EXTERN const char* DarkContentCollectionTDPPath(void);
 EXTERN const char* DarkContentFMPath(void);
 EXTERN const char* DarkContentFMName(void);
 EXTERN const char* DarkContentSearchPath(eDarkContentPath path);
