@@ -13,10 +13,10 @@
     <SquirrelSourceDir Condition="'$(SquirrelSourceDir)' == ''">$(MSBuildThisFileDirectory)..\..\darkengine-deps\squirrel\</SquirrelSourceDir>
     <SquirrelSourceRoot>$([MSBuild]::EnsureTrailingSlash('$(SquirrelSourceDir)'))</SquirrelSourceRoot>
     <SquirrelIncludePath Condition="'$(EnableSquirrel)' == 'true'">$(SquirrelSourceRoot)include;</SquirrelIncludePath>
-    <!-- KCTools follows the same external-checkout policy as Squirrel.  The
-         editor can publish a sibling dependency checkout beside DromEd, or
-         callers can point KCToolsSourceDir at another external checkout. -->
-    <EnableKCTools Condition="'$(EnableKCTools)' == ''">false</EnableKCTools>
+    <!-- KCTools is part of the normal DromEd feature set just as Squirrel is
+         part of the normal game set. Constrained editor builds may opt out
+         explicitly with EnableKCTools=false. -->
+    <EnableKCTools Condition="'$(EnableKCTools)' == ''">true</EnableKCTools>
     <KCToolsSourceDir Condition="'$(KCToolsSourceDir)' == ''">$(MSBuildThisFileDirectory)..\..\darkengine-deps\kctools\</KCToolsSourceDir>
     <KCToolsSourceRoot>$([MSBuild]::EnsureTrailingSlash('$(KCToolsSourceDir)'))</KCToolsSourceRoot>
     <DotNetExecutable Condition="'$(DotNetExecutable)' == '' And Exists('$(MSBuildThisFileDirectory)..\..\darkengine-deps\dotnet10-sdk\dotnet.exe')">$(MSBuildThisFileDirectory)..\..\darkengine-deps\dotnet10-sdk\dotnet.exe</DotNetExecutable>

@@ -23,9 +23,9 @@ BOOL cScriptMan::LoadModule(const cFileSpec &module, sScrModuleInfo *info)
     if (_stricmp(module.GetFileName(), "squirrel.osm") == 0)
     {
 #ifdef DARK_ENABLE_SQUIRREL
-        // NewDark's squirrel.osm is a PE32 module. Android uses the native,
-        // engine-owned provider so its loose sq_scripts sources can run
-        // without crossing the legacy x86 module ABI.
+        // NewDark's squirrel.osm is a PE32 module. Unix builds use the native,
+        // engine-owned provider so loose sq_scripts sources can run without
+        // crossing the legacy x86 module ABI.
         if (CreateSquirrelScriptModule(module.GetFileName(), this, m_pfnPrint,
                                        &info->pModule))
             return TRUE;

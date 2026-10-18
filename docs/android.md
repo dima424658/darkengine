@@ -18,10 +18,11 @@ is not an Android target.
 SDL, OpenAL Soft, libpng, libogg, and libvorbis are downloaded from their official
 releases during the first Gradle run and verified against pinned SHA-256
 digests. They are extracted only under the ignored
-`.codex-build/android-deps` directory. Squirrel 3.2 must be checked out at
-`../../darkengine-deps/squirrel` relative to the repository, as described in
-the top-level README. The APK obtains LibVLC 3.6.5 from Maven Central through
-the normal Gradle dependency resolution process.
+`.codex-build/android-deps` directory. Bootstrap the required Squirrel 3.2
+checkout with `tools/bootstrap-dependencies.ps1` on Windows or
+`sh tools/bootstrap-dependencies.sh game` on Linux; it is stored at
+`../../darkengine-deps/squirrel`. The APK obtains LibVLC 3.6.5 from Maven
+Central through the normal Gradle dependency resolution process.
 
 ## Toolchain
 

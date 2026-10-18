@@ -326,12 +326,17 @@ if(DARK_BUILD_ENGINE)
   endif()
   target_link_libraries(dark_res PUBLIC dark_compression)
 
-  set(DARK_SQUIRREL_SOURCE "" CACHE PATH
+  option(DARK_ENABLE_SQUIRREL
+    "Build the native Squirrel 3.2 provider" ON)
+  set(DARK_SQUIRREL_SOURCE
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../darkengine-deps/squirrel" CACHE PATH
       "Path to an external Squirrel 3.2 source checkout")
-  if(DARK_SQUIRREL_SOURCE)
+  if(DARK_ENABLE_SQUIRREL)
     if(NOT EXISTS "${DARK_SQUIRREL_SOURCE}/include/squirrel.h")
       message(FATAL_ERROR
-        "DARK_SQUIRREL_SOURCE does not contain include/squirrel.h: ${DARK_SQUIRREL_SOURCE}")
+        "The normal build requires Squirrel 3.2 at ${DARK_SQUIRREL_SOURCE}. "
+        "Run tools/bootstrap-dependencies.sh game, set DARK_SQUIRREL_SOURCE, "
+        "or explicitly set DARK_ENABLE_SQUIRREL=OFF for a reduced build.")
     endif()
     set(dark_squirrel_sources
       sqapi.cpp sqbaselib.cpp sqclass.cpp sqcompiler.cpp sqdebug.cpp

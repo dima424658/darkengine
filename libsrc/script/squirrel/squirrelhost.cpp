@@ -65,6 +65,8 @@
 #undef integer
 #undef boolean
 #undef timer_handle
+#undef min
+#undef max
 
 // The historical script project is compiled with /Zp1 for Dark's persisted
 // and COM-facing structures.  Squirrel's public value types contain native
