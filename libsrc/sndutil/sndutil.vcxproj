@@ -157,9 +157,6 @@
     <ClCompile Include="imaadpcm.cpp" />
     <ClCompile Include="mstremer.c" />
     <ClCompile Include="oneshot.c" />
-    <ClCompile Include="roneshot.c" />
-    <ClCompile Include="rsplicer.c" />
-    <ClCompile Include="rstremer.c" />
     <ClCompile Include="sndrezst.c" />
     <ClCompile Include="splicer.c" />
     <ClCompile Include="streamer.c" />

@@ -10,6 +10,8 @@
 #ifndef __INV_REND_H
 #define __INV_REND_H
 
+struct sInvRenderType;
+
 #include <dev2d.h>  // for grs_canvas, sadly
 #include <rect.h>
 

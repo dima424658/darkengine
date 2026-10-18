@@ -25,7 +25,6 @@ int flat8_ugpix8(int x, int y)
    return (*p);
 }
 
-#pragma off(unreferenced)
 gdgpix_func *flat8_ugpix8_expose(int x, int y)
 {
    return flat8_ugpix8;
@@ -40,7 +39,6 @@ gdupix_func *flat8_upix16_expose(int c, int x, int y)
 {
    return (gdupix_func *)flat8_upix16_func[grd_gc.fill_type];
 }
-#pragma on(unreferenced)
 
 void flat8_upix8(int c, int x, int y)
 {

@@ -10,7 +10,6 @@ static BOOL opaque;
 static fix u_mask, v_mask;
 static uchar v_shift;
 
-#pragma off(unreferenced)
 void translucent_8to8_inner_loop(g2s_raster *r, g2s_poly_params *tp)
 {
    uchar *p_dst = r->p + r->x + r->n;
@@ -56,4 +55,3 @@ void translucent_8to8_setup(grs_bitmap *bm, void (*caller)(grs_bitmap *))
       g2d_pp.dy = 1;
    }
 }
-#pragma on(unreferenced)

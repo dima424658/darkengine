@@ -121,7 +121,9 @@ public:
 	STDMETHOD(Register)(const sStructDesc* desc) override
 	{
 		if (mRegistry.HasKey(desc->name))
+		{
 			ConfigSpew("sdesctab", ("A struct desc has already been registered for %s\n", desc->name));
+		}
 
 		mRegistry.Set(desc->name, desc);
 

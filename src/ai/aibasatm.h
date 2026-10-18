@@ -53,7 +53,7 @@ STDMETHODIMP_(BOOL) AI_ACTOR_BASE::SaveActions(ITagFile * pTagFile, cAIActions *
 {
    unsigned nActions = pActions->Size();
    AITagMove(pTagFile, &nActions);
-   for (int i = 0; i < nActions; i++)
+   for (unsigned i = 0; i < nActions; i++)
       this->m_pAI->AccessBehaviorSet()->SaveAction(pTagFile, (*pActions)[i]);
    return TRUE;
 }
@@ -66,7 +66,7 @@ STDMETHODIMP_(BOOL) AI_ACTOR_BASE::LoadActions(ITagFile * pTagFile, cAIActions *
    unsigned nActions;
 
    AITagMove(pTagFile, &nActions);
-   for (int i = 0; i < nActions; i++)
+   for (unsigned i = 0; i < nActions; i++)
    {
       IAIAction *pAction = this->m_pAI->AccessBehaviorSet()->LoadAndCreateAction(pTagFile, this);
       if (pAction)

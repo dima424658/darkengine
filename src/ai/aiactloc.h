@@ -32,8 +32,8 @@ class cAIMoveAction;
 // CLASS: cAILocoAction
 //
 
-#define kAILA_DefaultAccuracy  (sq(3.0))
-#define kAILA_DefaultAccuracyZ (6.0833)
+#define kAILA_DefaultAccuracy  (sq(3.0f))
+#define kAILA_DefaultAccuracyZ (6.0833f)
 #define kAILA_NoZAccuracy      kFloatMax
 
 enum eAILocoActionFlags
@@ -185,7 +185,7 @@ inline cAILocoAction::cAILocoAction(IAIActor * pOwner, DWORD data)
    m_moveSuggKind(kAIMS_Loco),
    m_pPath(NULL),
    m_hintCell(0),
-   fPathNearDist(-1)
+   fPathNearDist(-1.0f)
 {
 }
 

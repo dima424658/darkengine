@@ -5,9 +5,6 @@
 
 // $Header: r:/t2repos/thief2/src/framewrk/initedit.cpp,v 1.26 2000/02/19 13:16:19 toml Exp $
 
-#include <windows.h>
-#include <dynfunc.h>
-
 #include <comtools.h>
 
 
@@ -16,12 +13,14 @@
 #include <appagg.h>
 #include <loopapi.h>
 #include <config.h>
+#include <render_backend.h>
 #include <stdlib.h>
 
 #include <init.h>
 #include <editapp.h>
 #include <editmode.h>
 #include <gamemode.h>
+#include <gamescrn.h>
 #include <gameapp.h>
 #include <scrnmode.h>
 #include <cfgtool.h>
@@ -31,6 +30,9 @@
 #include <edittool.h>
 #include <sdestool.h>
 #include <iobjed.h>
+#ifdef THIEF2_GAME
+#include <motmngr.h>
+#endif
 
 // must be last header
 #include <dbmem.h>
@@ -52,7 +54,6 @@
 // COM object initializaiton
 //
 
-#ifdef _WIN32
 //
 // Called to notify start-up code is complete, COM initialization is
 // pending.
@@ -83,7 +84,26 @@ static void setup_edit_mode(void)
    sScrnMode mode = {0 };
 
    memset(&desc,0,sizeof(desc));
-   desc.scrnmode = ScrnModeGetConfig(&mode,"edit_");
+   ScrnModeGetConfig(&mode,"edit_");
+
+   // DromEd shares the modern renderer with the game executable.  Keep the
+   // legacy canvas at a layout the editor understands, but render its 3D
+   // views through lgd3d's D3D11 implementation and present them in a normal
+   // resizable desktop window.  An explicit edit_screen_size remains useful
+   // for choosing another editor layout.
+   if (!(mode.valid_fields & kScrnModeDimsValid))
+   {
+      mode.w = 1024;
+      mode.h = 768;
+      mode.valid_fields |= kScrnModeDimsValid;
+   }
+   mode.bitdepth = 16;
+   mode.valid_fields |= kScrnModeBitDepthValid;
+   mode.flags &= ~kScrnModeFullScreen;
+   mode.flags |= kScrnModeWindowed | kScrnMode2dDriver | kScrnMode3dDriver;
+   mode.valid_fields |= kScrnModeFlagsValid;
+
+   desc.scrnmode = &mode;
    gPrimordialMode = DescribeEditMode(mmEditDefault,&desc);
 }
 
@@ -97,30 +117,16 @@ static void setup_game_mode(void)
    gPrimordialMode = DescribeGameMode(mmGameDefault,&desc);
 }
 
-////////////////////////////////////////
-
-//
-// Editor DLL loading
-//
-
-
-static void LGAPI woe(IUnknown *)
+static void constrain_editor_game_mode(sScrnMode* mode)
 {
-   Warning(("Cannot find darkdlgs.dll.  Dialogs will not be available\n"));
+   // Game mode is a preview hosted by DromEd, not a separate exclusive-mode
+   // application. Keep the legacy render canvas compatible with the D3D11
+   // presenter and retain the editor's normal resizable top-level window.
+   mode->bitdepth = 16;
+   mode->flags &= ~kScrnModeFullScreen;
+   mode->flags |= kScrnModeWindowed | kScrnMode2dDriver | kScrnMode3dDriver;
+   mode->valid_fields |= kScrnModeBitDepthValid | kScrnModeFlagsValid;
 }
-
-DeclDynFunc_(void, LGAPI, DarkDlgsSetAggregate, (IUnknown *));
-ImplDynFunc(DarkDlgsSetAggregate, "darkdlgs.dll", "_DarkDlgsSetAggregate@4", woe);
-
-#define DynDarkDlgsSetAggregate (DynFunc(DarkDlgsSetAggregate).GetProcAddress())
-
-static void load_dlg_lib(void)
-{
-   AutoAppIPtr_(Unknown,pUnk);
-   DynDarkDlgsSetAggregate(pUnk);
-}
-
-
 
 //
 // Called to notify COM initialization is complete.  The application
@@ -133,22 +139,52 @@ EXTERN void new_world(void);
 
 tResult LGAPI AppInit()
 {
+   RenderBackendTraceReset();
+#ifndef THIEF2_GAME
+   // DromEd's render canvas tracks its resizable client area. Keep the
+   // presenter pixel-aligned; the game executable retains the default
+   // aspect-fit scaling for its fixed-resolution menus and gameplay canvas.
+   RenderBackendSetScaleToWindow(FALSE);
+   RenderBackendSetPreserveCanvas(TRUE);
+#endif
+
+#ifndef THIEF2_GAME
+   ConstrainGameScreenMode(constrain_editor_game_mode);
+#endif
    CoreEngineAppInit();
+
+#ifdef THIEF2_GAME
+   // The playtest startup path can load a command-line mission before the
+   // biped loop client has created its motion database on modern builds.
+   if (!g_pMotionSet)
+      MotionManagerInit();
+#endif
 
    if (!gPrimordialMode)
    {
-      if (config_is_defined("start_game_mode"))
-         setup_game_mode();
-      else
-         setup_edit_mode();
+#ifdef THIEF2_GAME
+      setup_game_mode();
+#else
+      // DromEd must enter its normal editor mode before starting a playtest.
+      // Making game mode primordial skips the editor-to-game handoff (mission
+      // backup, simulation setup, UI teardown, etc.) and can start AI work
+      // while simulation time is already advancing.  The editor loop consumes
+      // start_game_mode after its first fully initialized frame instead.
+      setup_edit_mode();
+#endif
    }
 
-   load_dlg_lib();
 
-   char buf[80];
-   if (config_get_raw("file",buf,80))
-      dbLoad(buf,kFiletypeAll);
-   else new_world();
+   char buf[260];
+   const char *load_var = config_is_defined("render_test") ? "render_test" : "file";
+   if (config_get_raw(load_var,buf,sizeof(buf)))
+   {
+      edbFiletype loaded = dbLoad(buf,kFiletypeAll);
+      RenderBackendTrace("database-load var=%s file=%s result=0x%x",
+                       load_var,buf,loaded);
+   }
+   else
+      new_world();
 
 
    return NOERROR;
@@ -172,11 +208,6 @@ tResult LGAPI AppExit()
    CoreEngineAppExit();
    return NOERROR;
 }
-
-
-
-
-#endif
 
 
 

@@ -33,9 +33,9 @@
 // @TODO: At the moment these are in rendobj.c, though that may change
 // when we reorganize our object model management.  When that's done,
 // we should be able to get these from a header somewhere.  (Mat, 1/2/98)
-extern void stupid_jointpos_callback(mms_model *m, int joint_id,
+extern void stupid_jointpos_callback(const mms_model *m, int joint_id,
                                      mxs_trans *t);
-extern void stupid_stretchy_joint_callback(mms_model *m, int joint_id,
+extern void stupid_stretchy_joint_callback(const mms_model *m, int joint_id,
                                            mxs_trans *t, quat *rot);
 
 

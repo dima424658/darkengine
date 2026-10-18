@@ -4,7 +4,6 @@
 
 #ifndef __MXLATCH_H
 #define __MXLATCH_H
-#include <conio.h>
 #include <vgareg.h>
 
 #ifdef __cplusplus
@@ -18,8 +17,7 @@ extern volatile int rlatch_semaphore;
 extern uchar modex_lmask[];
 extern uchar modex_rmask[];
 
-#define modex_force_wlatch(m) \
-   outpw ((ushort )SRX_ADR, (ushort )(SR_MAP | ((modex_wlatch=(m))<<8)))
+#define modex_force_wlatch(m) (modex_wlatch = (m))
 
 #define modex_set_wlatch(m)  \
 do {                         \
@@ -27,8 +25,7 @@ do {                         \
       modex_force_wlatch(m); \
 } while (0)
 
-#define modex_force_rlatch(m) \
-   outpw ((ushort )GRX_ADR, (ushort )(GR_MAP | ((modex_rlatch=(m))<<8)))
+#define modex_force_rlatch(m) (modex_rlatch = (m))
 
 #define modex_set_rlatch(m)  \
 do {                         \

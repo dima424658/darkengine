@@ -9,7 +9,7 @@
 #include <g2.h>
 
 
-static set_uvs(int num, int pt_start, mms_uvn *uvns)
+static void set_uvs(int num, int pt_start, mms_uvn *uvns)
 {
    r3s_point *p_ptr;
    mms_uvn *uvn_ptr=uvns;

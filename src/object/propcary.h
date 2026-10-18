@@ -79,13 +79,13 @@ public:
 
    int NewIdx()
    {
-      for (int i = kMinIdx; i < mObjIDs.Size(); i++)
+       for (int i = kMinIdx; i < (int)mObjIDs.Size(); i++)
       {
          if (mObjIDs[i] == OBJ_NULL)
             return i; 
       }
       int idx = mObjIDs.Append(OBJ_NULL); 
-      while (mValues.Size() <= idx)
+       while ((int)mValues.Size() <= idx)
          mValues.Append(sDatum()); 
       return idx; 
    }
@@ -98,7 +98,7 @@ public:
    sDatum& operator[](int idx) { return mValues[idx]; }; 
 
    int Obj2Idx(ObjID obj) const {  return mMap.GetIndex(obj); }; 
-   int Idx2Obj(int idx) const { return (idx < mObjIDs.Size()) ? mObjIDs[idx] : OBJ_NULL; }; 
+   int Idx2Obj(int idx) const { return (idx < (int)mObjIDs.Size()) ? mObjIDs[idx] : OBJ_NULL; };
 
    int MaxIdx() const { return mValues.Size(); };
 
@@ -195,7 +195,7 @@ public:
 
    STDMETHOD(Reset)()
    {
-      for (int i = 0; i < mObjIDs.Size(); i++)
+       for (int i = 0; i < (int)mObjIDs.Size(); i++)
          if (mObjIDs[i] != OBJ_NULL)
          {
             this->mOps.Delete(mValues[i]);
@@ -215,10 +215,10 @@ public:
 
    STDMETHOD_(BOOL,IterNext)(sPropertyObjIter* piter, ObjID* obj, sDatum* value) const 
    {
-      while (piter->next < mObjIDs.Size() && mObjIDs[piter->next] == OBJ_NULL)
+       while (piter->next < (int)mObjIDs.Size() && mObjIDs[piter->next] == OBJ_NULL)
          piter->next++; 
 
-      if (piter->next >= mObjIDs.Size()) 
+       if (piter->next >= (int)mObjIDs.Size())
          return FALSE; 
 
       if (obj)
@@ -259,7 +259,7 @@ public:
    int GetIndex(ObjID obj) const 
    {
       cObjIDs& ids = *mpObjIDs; // ptrs to dynarrays are nasty to work with
-      for (int i = 1; i < ids.Size(); i++)
+       for (int i = 1; i < (int)ids.Size(); i++)
          if (ids[i] == obj)
             return i; 
       return 0; 

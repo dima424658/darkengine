@@ -29,7 +29,7 @@ static void
 {
    sndSegInternal  *pSeg;
    FILE *inFile;
-   uint32   nRead;
+   size_t nRead;
    //mprintf( "read %ld bytes @ %ld\n", nBytes, offset );
    pSeg = (sndSegInternal *) pCBData;
    inFile = (FILE *) pSeg->extras[0];
@@ -112,7 +112,7 @@ CreateSoundFileSplicer( ISndMixer       *pMixer,
          strcat( fname, ".wav" );
       }
       inFile = fopen( fname, "rb" );
-      pSeg->extras[0] = (uint32) inFile;
+      pSeg->extras[0] = (uintptr_t)inFile;
       if ( inFile == NULL ) {
          Warning( ("couldn't open %s\n", fname) );
          Free( pSeg0 );

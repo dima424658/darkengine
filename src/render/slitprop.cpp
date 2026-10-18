@@ -101,7 +101,7 @@ void SelfLitUpdateAll(void)
             portal_set_normalized_color(r,g,b);
          }
 #endif
-         add_dynamic_light(&pos->loc, light, g_lgd3d ? 10.0 : 4.0);
+         add_dynamic_light(&pos->loc, (float)light, g_lgd3d ? 10.0f : 4.0f);
       }
    prop->IterStop(&iter); 
 }
@@ -150,9 +150,9 @@ BOOL ObjSetShadow(ObjID obj, int s)
 
 // Up to this distance from the object's center, the shadow is
 // at full strength.
-#define kShadowCutoff 6.0
+#define kShadowCutoff 6.0f
 // If the floor is further than this, there's no shadow.
-#define kShadowMaxDist 15.0
+#define kShadowMaxDist 15.0f
 
 void ShadowUpdateAll(void)
 {
@@ -171,7 +171,7 @@ void ShadowUpdateAll(void)
    prop->IterStart(&iter);
    while(prop->IterNextValue(&iter, &obj, &iLevel))
       if (OBJ_IS_CONCRETE(obj) && ObjHasRefs(obj)) {
-         fIntensity = iLevel;
+         fIntensity = (float)iLevel;
          pos = ObjPosGet(obj);
          EndLoc = pos->loc;
          HitLoc = EndLoc;
@@ -183,7 +183,7 @@ void ShadowUpdateAll(void)
                fIntensity *= (kShadowMaxDist - fZDiff)
                            / (kShadowMaxDist - kShadowCutoff);
 
-            HitLoc.vec.z += .1;
+            HitLoc.vec.z += .1f;
             portal_add_simple_dynamic_dark(fIntensity, fIntensity,
                                            &HitLoc, 8.0);
          }

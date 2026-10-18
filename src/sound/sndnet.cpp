@@ -73,7 +73,7 @@ static cDWORDSet ClientSet;
 // The method that gets called when a local sound finishes:
 static void soundNetEndCallback(int localHandle, void *pClientData)
 {
-   tOwnedSndHandle ownHandle = (tOwnedSndHandle) pClientData;
+   tOwnedSndHandle ownHandle = (tOwnedSndHandle)(intptr_t)pClientData;
    // Remove this entry from the map table:
    HandleMap.Delete(ownHandle);
    ClientSet.Delete(localHandle);
@@ -255,7 +255,7 @@ static void makeSoundObj(int handle,
                          ObjID owner)
 {
    parm->flag |= SFXFLG_NO_NET;
-   parm->user_data = (void *) OwnHandle(owner, handle);
+   parm->user_data = (void *)(intptr_t)OwnHandle(owner, handle);
    sSchemaPlayParams *pPlayParams = SchemaPlayParamsGet(schemaID);
    if (pPlayParams == NULL) {
       // Weird, but we're not going to try to network this one...
@@ -398,7 +398,7 @@ static void makeSoundVec(int handle,
                          ObjID owner)
 {
    parm->flag |= SFXFLG_NO_NET;
-   parm->user_data = (void *) OwnHandle(owner, handle);
+   parm->user_data = (void *)(intptr_t)OwnHandle(owner, handle);
    sSchemaPlayParams *pPlayParams = SchemaPlayParamsGet(schemaID);
    if (pPlayParams == NULL) {
       // Weird, but we're not going to try to network this one...
@@ -538,7 +538,7 @@ static void makeSound(int handle,
                       ObjID owner)
 {
    parm->flag ^= SFXFLG_NET_AMB;
-   parm->user_data = (void *) OwnHandle(owner, handle);
+   parm->user_data = (void *)(intptr_t)OwnHandle(owner, handle);
 
    // Play the sound, and record it:
    int localHandle = GenerateSound(sampleName, parm);

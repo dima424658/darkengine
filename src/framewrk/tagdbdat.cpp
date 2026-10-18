@@ -31,6 +31,9 @@
 #include <tagdbin.h>
 #include <tagdbout.h>
 #include <mprintf.h>
+#include <dbfile.h>
+#include <dataguard.h>
+#include <new>
 
 // must be last header
 #include <dbmem.h>
@@ -71,7 +74,7 @@ public:
       return *this;
    }
 
-   void Load(ITagFile *pFile);
+   BOOL LoadChecked(ITagFile *pFile, unsigned depth, uint64_t *nodeBudget);
    void Save(ITagFile *pFile);
    void Clear();
 
@@ -99,6 +102,7 @@ public:
    void Load(ITagFile *pFile);
    void Save(ITagFile *pFile);
    void Clear();
+   BOOL LoadChecked(ITagFile *pFile, unsigned depth, uint64_t *nodeBudget);
 
 #ifndef SHIP
    void Dump();
@@ -150,11 +154,15 @@ protected:
 };
 
 
-void cBranch::Load(ITagFile *pFile)
+BOOL cBranch::LoadChecked(ITagFile *pFile, unsigned depth,
+                          uint64_t *nodeBudget)
 {
-   ITagFile_Read(pFile, (char *) &m_Key, sizeof(m_Key));
-   m_Child = new cTagDBDatabase();
-   m_Child->Load(pFile);
+   if (depth > 256 || !nodeBudget || *nodeBudget >= 262144 ||
+       ITagFile_Read(pFile,(char *)&m_Key,sizeof(m_Key)) != sizeof(m_Key))
+      return FALSE;
+   ++*nodeBudget;
+   m_Child = new (std::nothrow) cTagDBDatabase();
+   return m_Child && m_Child->LoadChecked(pFile,depth + 1,nodeBudget);
 }
 
 
@@ -536,23 +544,44 @@ void cTagDBDatabase::CopyWithFilterRecursively(cTagDBDatabase *pNewDB,
 
 void cTagDBDatabase::Load(ITagFile *pFile)
 {
-   int iSize;
+   uint64_t nodeBudget = 0;
+   Clear();
+   if (!LoadChecked(pFile,0,&nodeBudget))
+   {
+      Clear();
+      dbLoadReportFailure("tag-database",
+         "Tag database has invalid counts, ranges, depth, or truncated records");
+   }
+}
 
-   ITagFile_Read(pFile, (char *) &iSize, sizeof(iSize));
+BOOL cTagDBDatabase::LoadChecked(ITagFile *pFile, unsigned depth,
+                                 uint64_t *nodeBudget)
+{
+   int iSize = 0;
+   if (!pFile || depth > 256 || !nodeBudget || *nodeBudget >= 262144 ||
+       ITagFile_Read(pFile,(char *)&iSize,sizeof(iSize)) != sizeof(iSize) ||
+       iSize < 0 || iSize > 262144)
+      return FALSE;
+
+   uint64_t dataBytes = 0;
+   if (!DarkCheckedMulU64((uint64_t)iSize,sizeof(sTagDBData),&dataBytes) ||
+       dataBytes > pFile->TellFromEnd())
+      return FALSE;
    m_Data.SetSize(iSize);
-#ifdef DBG_ON
-   Assert_(iSize < 10000);
-#endif // DBG_ON
    sTagDBData *pData = m_Data.AsPointer();
-   ITagFile_Read(pFile, (char *) pData, sizeof(sTagDBData) * iSize);
+   if (dataBytes &&
+       ITagFile_Read(pFile,(char *)pData,(int)dataBytes) != (long)dataBytes)
+      return FALSE;
 
-   ITagFile_Read(pFile, (char *) &iSize, sizeof(iSize));
-#ifdef DBG_ON
-   Assert_(iSize < 10000);
-#endif // DBG_ON
+   if (ITagFile_Read(pFile,(char *)&iSize,sizeof(iSize)) != sizeof(iSize) ||
+       iSize < 0 || iSize > 65536 ||
+       (uint64_t)iSize > 262144 - *nodeBudget)
+      return FALSE;
    m_Branch.SetSize(iSize);
    for (int i = 0; i < iSize; ++i)
-      m_Branch[i].Load(pFile);
+      if (!m_Branch[i].LoadChecked(pFile,depth,nodeBudget))
+         return FALSE;
+   return TRUE;
 }
 
 

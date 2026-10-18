@@ -41,11 +41,11 @@ void g2_dry_lit_haze_umap_setup(grs_bitmap *bm)
    g2d_pp.flags = PPF_IUVHD;
    g2d_pp.canvas_row = grd_bm.row;
    g2d_pp.bm = bm;
-   g2d_pp.i_scale = grd_light_table_size;
+   g2d_pp.i_scale = (float)grd_light_table_size;
    g2d_pp.u_scale = bm->w;
    g2d_pp.v_scale = bm->h;
-   g2d_pp.h_scale = g2d_haze_table_size;
-   g2d_pp.d_scale = g2d_dryness_table_size;
+   g2d_pp.h_scale = (float)g2d_haze_table_size;
+   g2d_pp.d_scale = (float)g2d_dryness_table_size;
    g2d_pp.inner_loop = dry_lit_haze_il;
    g2d_pp.raster_func = gen_raster_loop;
    g2d_pp.right_edge_func = gen_right_edge;

@@ -7,6 +7,8 @@
 
 #include <lg.h>
 #include <loopapi.h>
+#include <stdio.h>
+#include <string.h>
 
 // Messages
 #include <dispbase.h>
@@ -30,6 +32,9 @@
 #include <weather.h>
 #include <corona.h>
 #include <guistyle.h>
+#include <uigame.h>
+#include <resapi.h>
+#include <fonrstyp.h>
 #include <timer.h>
 #include <simtime.h>
 #include <playrobj.h>
@@ -123,7 +128,7 @@ typedef struct _StateRecord
 #ifdef PLAYTEST
 #ifdef NEW_NETWORK_ENABLED
 INetStats *g_pNetStats = NULL;
-INetManager *g_pNetMan = NULL;
+static INetManager *g_pNetMan = NULL;
 #endif
 
 bool show_stats      = FALSE;
@@ -135,6 +140,73 @@ bool tmgr_stats      = FALSE;
 static int dtlist[FRAMEHISTORY_COUNT];
 static int dtlist_ptr=0, dtsum=0;
 int portal_info_volume = 10;
+static IRes* gStatsFontRes = NULL;
+static char gStatsFontName[64];
+static char gStatsText[4096];
+
+static void append_stats_text(const char* text)
+{
+   size_t used;
+   size_t available;
+   int written;
+
+   if (!text || !text[0])
+      return;
+   used = strlen(gStatsText);
+   available = sizeof(gStatsText) - used;
+   if (available <= 1)
+      return;
+   written = snprintf(gStatsText + used, available, "%s%s", text,
+                      text[strlen(text) - 1] == '\n' ? "" : "\n");
+   if (written < 0 || (size_t)written >= available)
+      gStatsText[sizeof(gStatsText) - 1] = '\0';
+}
+
+BOOL RenderStatsGetText(char* buffer, int capacity)
+{
+   if (!buffer || capacity <= 0)
+      return FALSE;
+   buffer[0] = '\0';
+   if (!show_stats || !gStatsText[0])
+      return FALSE;
+   strncpy(buffer, gStatsText, capacity);
+   buffer[capacity - 1] = '\0';
+   return TRUE;
+}
+
+static guiStyle* stats_style(void)
+{
+   static guiStyle style;
+   char font[64] = "";
+
+   uiGameGetReadableOverlayFont("stats_font", font, sizeof(font));
+   if (stricmp(font, gStatsFontName))
+   {
+      SafeRelease(gStatsFontRes);
+      gStatsFontName[0] = '\0';
+      if (font[0])
+      {
+         IResMan* resman = AppGetObj(IResMan);
+         if (resman)
+         {
+            gStatsFontRes = IResMan_Bind(resman, font, RESTYPE_FONT,
+                                         NULL, "intrface", 0);
+            SafeRelease(resman);
+            if (gStatsFontRes)
+            {
+               strncpy(gStatsFontName, font, sizeof(gStatsFontName));
+               gStatsFontName[sizeof(gStatsFontName) - 1] = '\0';
+            }
+         }
+      }
+   }
+
+   if (!gStatsFontRes || !GetCurrentStyle())
+      return NULL;
+   memcpy(&style, GetCurrentStyle(), sizeof(style));
+   style.fonts[StyleFontNormal] = (IDataSource*)gStatsFontRes;
+   return &style;
+}
 
 // clear bkgnd when not rendering...
 static int hack_string(char *s, int x, int y)
@@ -143,16 +215,16 @@ static int hack_string(char *s, int x, int y)
    extern BOOL g_null_raster;
    extern BOOL lgd3d_punt_d3d;
 
+   append_stats_text(s);
+   gr_string_size(s, &w, &h);
    if (g_null_raster||lgd3d_punt_d3d) {
       long fc_save = gr_get_fcolor();
-      gr_string_size(s, &w, &h);
       gr_set_fcolor(0);
       gr_rect(x,y,x+w,y+h);
       gr_set_fcolor(fc_save);
-   } else
-      h = 9;
+   }
    gr_string(s, x, y);
-   return h;
+   return h > 0 ? h + 1 : 9;
 }
 
 static void superimpose_stats (int dt, int overhead, int blit_overhead)
@@ -165,15 +237,18 @@ static void superimpose_stats (int dt, int overhead, int blit_overhead)
    float rate;
    Position *player_pos;
    ObjID player;
+   guiStyle* style;
 
+   gStatsText[0] = '\0';
    dtsum-=dtlist[dtlist_ptr];
    dtlist[dtlist_ptr]=dt+overhead;
    dtsum+=dt+overhead;
    dtlist_ptr=(dtlist_ptr+1)%FRAMEHISTORY_COUNT;
 
-   rate = 1000.0 / dt;
+   rate = 1000.0f / dt;
 
-   guiStyleSetupFont(NULL,StyleFontNormal);
+   style = stats_style();
+   guiStyleSetupFont(style,StyleFontNormal);
    gr_set_fcolor(guiStyleGetColor(NULL,StyleColorFG)); // StyleColorWhite?
 
    if (show_full_stats)
@@ -186,7 +261,7 @@ static void superimpose_stats (int dt, int overhead, int blit_overhead)
    {
       ulong f_sent, f_rcv, t_sent, t_rcv, m_sent=0, m_rcv=0;
       float seconds;
-      char *f_culprit, *t_culprit;
+      const char *f_culprit, *t_culprit;
       INetStats_FrameStats(g_pNetStats, &f_sent, &f_rcv, &f_culprit);
       INetStats_BandwidthStats(g_pNetStats, &seconds, &t_sent, &t_rcv, &t_culprit);
       INetStats_MaxStats(g_pNetStats, &m_sent, &m_rcv);
@@ -222,7 +297,7 @@ static void superimpose_stats (int dt, int overhead, int blit_overhead)
       y += hack_string(text, x, y);
    }
 
-   guiStyleCleanupFont(NULL,StyleFontNormal);
+   guiStyleCleanupFont(style,StyleFontNormal);
 }
 
 // Hack for getting rendering time into histogram profiler
@@ -246,6 +321,13 @@ static void do_stats(ulong time, ulong overhead, ulong blit_overhead)
 
 #else // !PLAYTEST
 #define do_stats(time, overhead, blit_overhead)
+
+BOOL RenderStatsGetText(char* buffer, int capacity)
+{
+   if (buffer && capacity > 0)
+      buffer[0] = '\0';
+   return FALSE;
+}
 #endif
 
 ////////////////////////////////////////
@@ -328,9 +410,9 @@ static void composite(float *alpha, uchar *rgb, float under_alpha, const uchar *
    new_alpha = 1-(1-*alpha)*(1-under_alpha);
    scale = *alpha / new_alpha;
 
-   rgb[0] = under_rgb[0] + ((int) rgb[0] - (int) under_rgb[0]) * scale;
-   rgb[1] = under_rgb[1] + ((int) rgb[1] - (int) under_rgb[1]) * scale;
-   rgb[2] = under_rgb[2] + ((int) rgb[2] - (int) under_rgb[2]) * scale;
+         rgb[0] = (uchar)(under_rgb[0] + ((int) rgb[0] - (int) under_rgb[0]) * scale);
+         rgb[1] = (uchar)(under_rgb[1] + ((int) rgb[1] - (int) under_rgb[1]) * scale);
+         rgb[2] = (uchar)(under_rgb[2] + ((int) rgb[2] - (int) under_rgb[2]) * scale);
    *alpha = new_alpha;
 }
 
@@ -352,7 +434,7 @@ static BOOL RenderNewSky(void)
 }
 
 
-void cam_render_scene(Position *pos, double zoom)
+void cam_render_scene(Position *pos, float zoom)
 {
    float alpha;
    uchar rgb[3];
@@ -445,7 +527,7 @@ static void pre_draw_callback(void)
 
 static int nOldMode = -1;
 
-static const float fRemoteZoom = 0.4;
+   static const float fRemoteZoom = 0.4f;
 static void do_frame(sLoopFrameInfo* info)
 {
    Position campos;              // position of camera for renderer
@@ -474,7 +556,7 @@ static void do_frame(sLoopFrameInfo* info)
 #ifdef RGB_LIGHTING
       portal_set_normalized_color(255,255,255);
 #endif
-      add_dynamic_light(&pos->loc, player_light, 0.0);
+      add_dynamic_light(&pos->loc, (float)player_light, 0.0f);
    }
 
    // clear the array which tells us which cells were visible in the
@@ -601,7 +683,6 @@ static void db_message(DispatchData* msg)
 // Here's where we do the dirty work.
 //
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -621,6 +702,8 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          nOldMode = -1;
       case kMsgSuspendMode:
          portal_pre_draw_callback = NULL;
+         if (g_lgd3d)
+            lgd3d_scene_suspend();
          invRendFreeQueue();
          ScreenOverlaysFree();
          ParticleGroupExitMode();
@@ -687,6 +770,8 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
       case kMsgAppTerm:
          ParticleGroupCleanup();
+         SafeRelease(gStatsFontRes);
+         gStatsFontName[0] = '\0';
          break;
 
    }
@@ -698,7 +783,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function.
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -708,7 +792,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
 
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 ///////////////
 // DESCRIPTOR
@@ -719,7 +802,7 @@ sLoopClientDesc RenderLoopClientDesc =
    &MY_GUID,                           // GUID
    "Render Client",                    // NAME
    kPriorityNormal,                    // PRIORITY
-   kMsgEnd | kMsgsMode | kMsgsFrame | kMsgsAppOuter,   // INTERESTS
+   (ulong)kMsgEnd | kMsgsMode | kMsgsFrame | kMsgsAppOuter,   // INTERESTS
 
    kLCF_Callback,
    _CreateClient,
@@ -738,7 +821,6 @@ sLoopClientDesc RenderLoopClientDesc =
 // RENDERER BASE MODE CLIENT
 //
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI BaseMode(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -801,7 +883,6 @@ static eLoopMessageResult LGAPI BaseMode(void* data, eLoopMessage msg, tLoopMess
 // Loop client factory function.
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI CreateBaseClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -811,7 +892,6 @@ static ILoopClient* LGAPI CreateBaseClient(sLoopClientDesc * pDesc, tLoopClientD
 
    return CreateSimpleLoopClient(BaseMode,state,pDesc);
 }
-#pragma on(unreferenced)
 
 ///////////////
 // DESCRIPTOR
@@ -822,7 +902,7 @@ sLoopClientDesc RenderBaseLoopClientDesc =
    &LOOPID_RenderBase,                 // GUID
    "Render Base Mode Client",                    // NAME
    kPriorityNormal,                    // PRIORITY
-   kMsgEnd | kMsgsAppOuter | kMsgVisual | kMsgDatabase,   // INTERESTS
+   (ulong)kMsgEnd | kMsgsAppOuter | kMsgVisual | kMsgDatabase,   // INTERESTS
 
    kLCF_Callback,
    CreateBaseClient,
@@ -830,7 +910,7 @@ sLoopClientDesc RenderBaseLoopClientDesc =
    NO_LC_DATA,
 
    {
-      { kConstrainAfter, &LOOPID_ObjSys, kMsgDatabase|kMsgAppInit },  // for texture archetypes, so we can register our objpos listener
+      { kConstrainAfter, &LOOPID_ObjSys, (ulong)kMsgDatabase|kMsgAppInit },  // for texture archetypes, so we can register our objpos listener
       {kConstrainAfter, &LOOPID_Wr, kMsgDatabase},
       {kNullConstraint} // terminator
    }

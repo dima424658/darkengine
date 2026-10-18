@@ -38,7 +38,7 @@ void md_light_recompute()
    mx_scaleeq_vec(&obj_sun,scale);
 
    // set amb
-   amb = (ltype&MD_LT_AMB)?mdd_lt_amb:0.0;
+   amb = (ltype&MD_LT_AMB)?mdd_lt_amb:0.0f;
 }
 
 

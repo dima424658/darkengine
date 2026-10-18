@@ -20,6 +20,9 @@
 
 #include <config.h>
 #include <csg.h>
+#include <string.h>
+#include <vector>
+#include <dbfile.h>
 
 // must be last header
 #include <dbmem.h>
@@ -40,7 +43,7 @@ sFileVarDesc gRenderParamsDesc =
    { 1, 0},             // last valid version 
 }; 
 
-void pal_set(void); 
+static void pal_set(void);
 
 // The actual global variable
 class cRenderParams : public cFileVar<sMissionRenderParams,&gRenderParamsDesc> 
@@ -49,6 +52,124 @@ public:
 
    // Silly assignment operator 
    cRenderParams& operator =(const sMissionRenderParams& v) { *(sMissionRenderParams*)this = v; return *this; }; 
+
+protected:
+   // NewDark 2.0 retains the complete 1.0 prefix and appends renderer and
+   // motion-database fields. Decode the engine-owned prefix and preserve the
+   // source layout/version when writing it back.
+   virtual TagVersion ReadVersion() const
+   {
+      TagVersion version = { 2, 0 };
+      return version;
+   }
+
+   virtual TagVersion WriteVersion() const
+   {
+      TagVersion version = gRenderParamsDesc.version;
+      if (dbFormatGetWriteProfile() == kDBWritePreserveSource)
+         dbFormatSourceTag(&gRenderParamsDesc.tag,&version,NULL);
+      else if (dbFormatUsesNewDark())
+      {
+         version.major = 2;
+         version.minor = 0;
+      }
+      return version;
+   }
+
+   virtual BOOL ReadBlock(ITagFile* file, const TagVersion& version)
+   {
+      // Thief 1/Gold stores only a palette name and one scalar ambient-light
+      // value in RENDPARAMS 1.0.  Thief 2 kept the same block version while
+      // expanding ambient light to RGB and appending the sunlight fields, so
+      // the version alone cannot distinguish the two layouts.
+      struct sLegacyRenderParams
+      {
+         char pal_res[16];
+         float ambient_light;
+      };
+
+      if (file->TellFromEnd() == sizeof(sLegacyRenderParams))
+      {
+         sLegacyRenderParams legacy;
+         if (file->Read((char*)&legacy,sizeof(legacy)) != sizeof(legacy))
+            return FALSE;
+
+         Reset();
+         memcpy(pal_res,legacy.pal_res,sizeof(pal_res));
+         ambient_light.x = legacy.ambient_light;
+         ambient_light.y = legacy.ambient_light;
+         ambient_light.z = legacy.ambient_light;
+         return TRUE;
+      }
+
+      const ulong blockSize = file->TellFromEnd();
+      const BOOL result = cFileVarBase::ReadBlock(file,version);
+      if (result && blockSize > sizeof(sMissionRenderParams))
+         dbCompatibilityRewriteTag(&gRenderParamsDesc.tag,
+            "source layout retained; engine-owned prefix is writable");
+      return result;
+   }
+
+   virtual BOOL WriteBlock(ITagFile* file)
+   {
+      ulong sourceSize = 0;
+      dbFormatSourceTag(&gRenderParamsDesc.tag,NULL,&sourceSize);
+
+      if (dbFormatGetWriteProfile() == kDBWritePreserveSource &&
+          sourceSize == 20)
+      {
+         struct sLegacyRenderParams
+         {
+            char pal_res[16];
+            float ambient_light;
+         } legacy;
+         memcpy(legacy.pal_res,pal_res,sizeof(legacy.pal_res));
+         legacy.ambient_light = ambient_light.x;
+         return file->Write((char*)&legacy,sizeof(legacy)) == sizeof(legacy);
+      }
+
+      const BOOL extended = dbFormatUsesNewDark() ||
+                            sourceSize > sizeof(sMissionRenderParams);
+      if (!extended)
+         return cFileVarBase::WriteBlock(file);
+
+      ulong rawSize = 0;
+      const char* raw = (const char*)dbCompatibilityGetRawTag(
+         &gRenderParamsDesc.tag,&rawSize,NULL);
+      ulong sourceRawSize = 0;
+      const char* sourceRaw = (const char*)dbFormatSourceRawTag(
+         &gRenderParamsDesc.tag,&sourceRawSize,NULL);
+      ulong outputSize = sourceSize > sizeof(sMissionRenderParams)
+                       ? sourceSize : 232;
+      if (outputSize < 232)
+         outputSize = 232;
+      std::vector<char> output(outputSize,0);
+      if (sourceRaw && sourceRawSize)
+         memcpy(output.data(),sourceRaw,
+                sourceRawSize < outputSize ? sourceRawSize : outputSize);
+      if (raw && rawSize)
+         memcpy(output.data(),raw,rawSize < outputSize ? rawSize : outputSize);
+      memcpy(output.data(),(sMissionRenderParams*)this,
+             sizeof(sMissionRenderParams));
+
+      // Both observed NewDark layouts place eight ambient-zone RGB vectors
+      // at byte 100.  A promoted retail mission inherits the global ambient;
+      // a source NewDark suffix (including 1.29's extra fields) stays exact.
+      if (!raw || rawSize <= sizeof(sMissionRenderParams))
+      {
+         float* zones = (float*)(output.data() + 100);
+         for (int zone = 0; zone < 8; ++zone)
+         {
+            zones[zone * 3 + 0] = ambient_light.x;
+            zones[zone * 3 + 1] = ambient_light.y;
+            zones[zone * 3 + 2] = ambient_light.z;
+         }
+      }
+      return file->Write(output.data(),(int)output.size()) ==
+             (int)output.size();
+   }
+
+public:
 
 
    void Update()
@@ -71,9 +192,9 @@ public:
 #endif
       int r, g, b;
       portal_convert_hsb_to_rgb(&r, &g, &b, sun_h, sun_s);
-      sun_rgb.x = r / 255.0;
-      sun_rgb.y = g / 255.0;
-      sun_rgb.z = b / 255.0;
+      sun_rgb.x = r / 255.0f;
+      sun_rgb.y = g / 255.0f;
+      sun_rgb.z = b / 255.0f;
       mx_scale_vec(&sun_scaled_rgb, &sun_rgb, sun_b);
 
       mx_norm_vec(&portal_sunlight_norm, &sunlight_vector);
@@ -87,7 +208,8 @@ public:
       pal_res[0] = '\0';
       mx_mk_vec(&ambient_light, .25, .25, .25);
       use_sun = FALSE;
-      mx_mk_vec(&sunlight_vector, .25, .1, -1);
+      sunlight_quad = FALSE;
+      mx_mk_vec(&sunlight_vector, .25f, .1f, -1.0f);
       sun_h = 0;
       sun_s = 1;
       sun_b = 100;
@@ -95,6 +217,55 @@ public:
 };
 
 static cRenderParams gRenderParams; 
+
+static TagFileTag gLightmapParamsTag = { "LM_PARAM" };
+static sFileVarDesc gLightmapParamsDesc =
+{
+   kMissionVar,
+   "LM_PARAM",
+   "NewDark Lightmap Parameters",
+   FILEVAR_TYPE(sMissionLightmapParams),
+   { 0, 1 },
+   { 0, 1 },
+};
+
+class cLightmapParams :
+   public cFileVar<sMissionLightmapParams,&gLightmapParamsDesc>
+{
+protected:
+   virtual BOOL ShouldWrite() const
+   {
+      return dbFormatUsesNewDark() ||
+             dbFormatTargetHasTag(&gLightmapParamsTag);
+   }
+
+   virtual TagVersion WriteVersion() const
+   {
+      TagVersion version = gLightmapParamsDesc.version;
+      if (dbFormatGetWriteProfile() == kDBWritePreserveSource)
+         dbFormatSourceTag(&gLightmapParamsTag,&version,NULL);
+      return version;
+   }
+
+public:
+   virtual void Reset()
+   {
+      data_size = 36;
+      attenuation = 1.0f;
+      saturation = 1.0f;
+      shadow_type = 0;
+      shadow_softness = 0;
+      center_weight = 0.2f;
+      shadow_depth = 0;
+      lightmapped_water = FALSE;
+      lightmap_scale = 0;
+      anim_light_cutoff = 15;
+   }
+};
+
+static_assert(sizeof(sMissionLightmapParams) == 40,
+              "Unexpected LM_PARAM 0.1 layout");
+static cLightmapParams gLightmapParams;
 
 //------------------------------------------------------------
 // SDESC 
@@ -203,5 +374,16 @@ void SetMissionRenderParams(const sMissionRenderParams* params)
 {
    gRenderParams = *params; 
    gRenderParams.Update(); 
+}
+
+const sMissionLightmapParams* GetMissionLightmapParams(void)
+{
+   return &gLightmapParams;
+}
+
+void SetMissionLightmapParams(const sMissionLightmapParams* params)
+{
+   if (params)
+      *(sMissionLightmapParams*)&gLightmapParams = *params;
 }
 

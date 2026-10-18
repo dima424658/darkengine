@@ -255,7 +255,7 @@ eDamageResult LGAPI CreatureExplodeDamageListener(const sDamageMsg* pMsg, tDamag
 
          if (radius > 0.0)
          {
-            if (!SphrSphereInWorld(&pos.loc, radius * 1.05, 0))
+            if (!SphrSphereInWorld(&pos.loc, radius * 1.05f, 0))
                valid_pos = FALSE;
          }
          else

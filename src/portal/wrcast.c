@@ -616,9 +616,9 @@ bool (*_portal_raycast_hull_test)() = _PortalConvexHullXYPosZ;
 \* ----- \-\-\-\-\-\-\-\-\ <<< (((((( \/ )))))) >>> /-/-/-/-/-/-/-/-/ ----- */
 void _PortalRaycastSetHullTest(mxs_vector *norm)
 {
-   float x_size = fabs(norm->x);
-   float y_size = fabs(norm->y);
-   float z_size = fabs(norm->z);
+   float x_size = fabsf(norm->x);
+   float y_size = fabsf(norm->y);
+   float z_size = fabsf(norm->z);
 
    if (x_size > y_size)
       if (x_size > z_size)
@@ -778,7 +778,7 @@ if (use_old_raycast)
             if (end_dist < 0) {
                time = start_dist / (start_dist - end_dist);
                if (time < PortalRaycastTime) {
-                  PortalRaycastTime = time;
+                   PortalRaycastTime = (float)time;
                   cur_plane_index = plane_index;
                }
             }
@@ -1008,7 +1008,7 @@ bool PortalRaycastRefs(Location *start_loc, Location *end_loc,
             if (end_dist < 0) {
                time = start_dist / (start_dist - end_dist);
                if (time < PortalRaycastTime) {
-                  PortalRaycastTime = time;
+                   PortalRaycastTime = (float)time;
                   cur_plane_index = plane_index;
                }
             }
@@ -1366,7 +1366,7 @@ bool OldPortalRaycast(Location *start_loc, Location *end_loc,
       if (best_enter > current_exit + epsilon) {
          if (hit_loc)
             mx_interpolate_vec(&hit_loc->vec, &start_loc->vec, 
-                               &end_loc->vec, current_exit);
+                               &end_loc->vec, (mxs_real)current_exit);
          goto finished;
       }
 
@@ -1378,7 +1378,7 @@ bool OldPortalRaycast(Location *start_loc, Location *end_loc,
             Warning(("PortalRaycast: raycast went backwards; failing.\n"));
             if (hit_loc)
                mx_interpolate_vec(&hit_loc->vec, &start_loc->vec, 
-                                  &end_loc->vec, current_exit);
+                                  &end_loc->vec, (mxs_real)current_exit);
             goto finished;
 #endif
          }

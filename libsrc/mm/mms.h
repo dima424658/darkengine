@@ -108,7 +108,7 @@ typedef unsigned char mme_mat;
 typedef struct _mms_ssmatr
 {
    char name[16]; // for sanity
-   ulong handle;  // texture handle or 0bgr
+   ulong handle;  // runtime texture token or 0bgr
    union {
       float uv;   // uv coords per 3d unit for mipmapping or ipal index
       ulong ipal; // inverse pal lookup
@@ -134,7 +134,7 @@ typedef struct _mms_smatr
    float        fAlpha;
    float        fSelfIllumination;
    uint         dwForRent;
-   ulong handle;  // texture handle or 0bgr
+   ulong handle;  // runtime texture token or 0bgr
    union {
       float uv;   // uv coords per 3d unit for mipmapping or ipal index
       ulong ipal; // inverse pal lookup

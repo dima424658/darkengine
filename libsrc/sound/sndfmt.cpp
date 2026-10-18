@@ -14,151 +14,37 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include <windows.h>
 #include <lg.h>
-#include <mmsystem.h>
-#include <mmreg.h>
+#include <cstring>
 
-#include <dsound.h>
 #include <lgsndi.h>
 #include <sndfmt.h>
 
 #include <sndvoc.h>
 #include <mprintf.h>
 
-static int
-openWaveHeader(
-               HMMIO          hmmio,
-               MMIOINFO       *pMmio,
-               void           **ppPCMData,
-               uint32         *pPCMLen,
-               uint32         *pNSamples,
-               sSndAttribs    *pAttribs
-               )
+namespace
 {
-   MMCKINFO       riff;
-   MMCKINFO       chunk;
-   WAVEFORMATEX   waveFmt;
-   int            nBytes, bytesPerSamp;
-   WORD           sampsPerBlock;
-   uint32         maxSamples, nBlocks, partialBlockLen;
+const uint16 kWaveFormatPcm = 0x0001;
+const uint16 kWaveFormatImaAdpcm = 0x0011;
 
-   // get the next riff chunk
-   if(mmioDescend(hmmio,&riff, NULL, 0))
-      return TRUE;
+uint16 ReadU16(const uint8 *data)
+{
+   return static_cast<uint16>(data[0] | (data[1] << 8));
+}
 
-   // make sure its a wave file
-   if((riff.ckid != FOURCC_RIFF) || (riff.fccType != mmioFOURCC('W','A','V','E')))
-      return TRUE;
+uint32 ReadU32(const uint8 *data)
+{
+   return static_cast<uint32>(data[0]) |
+      (static_cast<uint32>(data[1]) << 8) |
+      (static_cast<uint32>(data[2]) << 16) |
+      (static_cast<uint32>(data[3]) << 24);
+}
 
-   /*----------------------------
-    * process format chunk
-    *---------------------------*/
-   // get the format chunk
-   chunk.ckid = mmioFOURCC('f', 'm', 't', ' ');
-   if (mmioDescend(hmmio, &chunk, &riff, MMIO_FINDCHUNK))
-      return TRUE;
-
-   // make sure the chunk is the right size, otherwise we dont know what
-   // kind of wave file it is
-   if(chunk.cksize < (long)sizeof(PCMWAVEFORMAT))
-      return TRUE;
-
-   // now grab the format
-   nBytes = mmioRead(hmmio, (HPSTR) &waveFmt, (long) sizeof(waveFmt));
-   if ( waveFmt.wFormatTag == WAVE_FORMAT_DVI_ADPCM ) {
-      if ( nBytes != sizeof(waveFmt) )
-         return TRUE;
-      if ( waveFmt.cbSize < sizeof(sampsPerBlock) )
-         return TRUE;
-      nBytes = mmioRead(hmmio, (HPSTR) &sampsPerBlock, (long) sizeof(sampsPerBlock));
-      pAttribs->samplesPerBlock = sampsPerBlock;
-   }
-
-   // get back out of the format chunk
-   if(mmioAscend(hmmio, &chunk, 0))
-      return TRUE;
-
-   /*----------------------------------------
-    * process fact chunk, or calc #samples
-    *---------------------------------------*/
-   // for ADPCM, get the fact chunk, which holds the number of samples
-   if ( waveFmt.wFormatTag == WAVE_FORMAT_DVI_ADPCM ) {
-      // get the format chunk
-      chunk.ckid = mmioFOURCC('f', 'a', 'c', 't');
-      // go back to beginning of riff file to handle out of order chunks
-      mmioSeek(hmmio, riff.dwDataOffset + 4, SEEK_SET);  
-      if (mmioDescend(hmmio, &chunk, &riff, MMIO_FINDCHUNK))
-         return TRUE;
-      if(chunk.cksize < sizeof(uint32) )
-         return TRUE;
-      nBytes = mmioRead(hmmio, (HPSTR) pNSamples, sizeof(long) );
-      if(mmioAscend(hmmio, &chunk, 0))
-         return TRUE;
-      pAttribs->dataType = kSndDataIMAADPCM;
-   }
-
-   /*----------------------------
-    * find data chunk
-    *---------------------------*/
-   // Find the data subchunk. The current file position should be at 
-   // the beginning of the data chunk; however, you should not make 
-   // this assumption. Use mmioDescend to locate the data chunk. 
-   // go back to beginning of riff file to handle out of order chunks
-   mmioSeek(hmmio, riff.dwDataOffset + 4, SEEK_SET);  
-   chunk.ckid = mmioFOURCC('d', 'a', 't', 'a'); 
-   if (mmioDescend(hmmio, &chunk, &riff, MMIO_FINDCHUNK)) 
-      return TRUE;
- 
-   if (chunk.cksize == 0L)
-      return TRUE;
- 
-   // now we look to see where we are
-   if(mmioGetInfo(hmmio, pMmio, 0))
-      return TRUE;
-
-   *ppPCMData = (uint8 *)pMmio->pchNext;
-	*pPCMLen = chunk.cksize;
-   pAttribs->sampleRate = waveFmt.nSamplesPerSec;
-   pAttribs->bitsPerSample = waveFmt.wBitsPerSample;
-   pAttribs->nChannels = waveFmt.nChannels;
-   pAttribs->bytesPerBlock = waveFmt.nBlockAlign;
-
-   switch( waveFmt.wFormatTag ) {
-
-      case WAVE_FORMAT_PCM:
-         bytesPerSamp = ((pAttribs->nChannels * pAttribs->bitsPerSample) / 8);
-         pAttribs->dataType = kSndDataPCM;
-         // for PCM data types, calculate the #sample from #bytes
-         *pNSamples = chunk.cksize / bytesPerSamp;
-         pAttribs->samplesPerBlock = pAttribs->bytesPerBlock / bytesPerSamp;
-         break;
-
-      case WAVE_FORMAT_DVI_ADPCM:
-         // the nSamples field in the fact chunk is often (usually!) wrong
-         // so if nSamples is larger than the max # of samples in the data
-         // chunk, limit nSamples to that
-         nBlocks = *pPCMLen / pAttribs->bytesPerBlock;
-         partialBlockLen = *pPCMLen % pAttribs->bytesPerBlock;
-         maxSamples = nBlocks * pAttribs->samplesPerBlock;
-         if ( partialBlockLen >= 4 ) {
-            // there is a partial block, account for any samples in it
-            // the block has a 4 byte header with 1 sample in it, and
-            //   2 samples in each byte after the header
-            maxSamples += ( 1 + (2 * (partialBlockLen - 4)) );
-         }
-         if ( *pNSamples > maxSamples ) {
-            *pNSamples = maxSamples;
-         }
-         break;
-
-      default:
-         // we don't handle other formats
-         return TRUE;
-   }
-
-   pAttribs->numSamples = *pNSamples;
-   return FALSE;
+bool IsChunk(const uint8 *data, const char *name)
+{
+   return std::memcmp(data, name, 4) == 0;
+}
 }
 
 
@@ -175,29 +61,94 @@ SndCrackWaveHeader(
                    uint32        *pNumSamples,
                    sSndAttribs   *pAttribs )
 {
-   HMMIO      		hmmio;
-   MMIOINFO       mmio;
-   BOOL           bad;
-
-   // set up to read from a memory file.  This is becuase
-   // we have the whole file in memory at this point...
-   memset(&mmio, 0, sizeof(MMIOINFO));
-
-   mmio.pIOProc = NULL;
-   mmio.fccIOProc = FOURCC_MEM;
-   mmio.pchBuffer = (char *) pRezData;
-   mmio.cchBuffer = rezLen;
-
-   hmmio = mmioOpen(NULL, &mmio, MMIO_READWRITE);
-   if(hmmio==NULL)
+   const uint8 *bytes = static_cast<const uint8 *>(pRezData);
+   if (rezLen < 12 || !IsChunk(bytes, "RIFF") || !IsChunk(bytes + 8, "WAVE"))
       return TRUE;
 
-   // and point to all that good sound data
-   bad = openWaveHeader( hmmio, &mmio, ppData, pDataLen,
-                         pNumSamples, pAttribs );
-   mmioClose(hmmio, 0);
+   uint16 format = 0;
+   bool haveFormat = false;
+   bool haveFact = false;
+   bool haveData = false;
+   for (uint32 offset = 12; offset <= rezLen - 8; )
+   {
+      const uint8 *chunk = bytes + offset;
+      const uint32 chunkLen = ReadU32(chunk + 4);
+      const uint32 dataOffset = offset + 8;
 
-   return bad;
+      if (IsChunk(chunk, "fmt "))
+      {
+         if (chunkLen < 16 || chunkLen > rezLen - dataOffset)
+            return TRUE;
+         format = ReadU16(bytes + dataOffset);
+         pAttribs->nChannels = ReadU16(bytes + dataOffset + 2);
+         pAttribs->sampleRate = ReadU32(bytes + dataOffset + 4);
+         pAttribs->bytesPerBlock = ReadU16(bytes + dataOffset + 12);
+         pAttribs->bitsPerSample = ReadU16(bytes + dataOffset + 14);
+         if (format == kWaveFormatImaAdpcm)
+         {
+            if (chunkLen < 20 || ReadU16(bytes + dataOffset + 16) < 2)
+               return TRUE;
+            pAttribs->samplesPerBlock = ReadU16(bytes + dataOffset + 18);
+         }
+         haveFormat = true;
+      }
+      else if (IsChunk(chunk, "fact"))
+      {
+         if (chunkLen < 4 || chunkLen > rezLen - dataOffset)
+            return TRUE;
+         *pNumSamples = ReadU32(bytes + dataOffset);
+         haveFact = true;
+      }
+      else if (IsChunk(chunk, "data"))
+      {
+         if (chunkLen == 0)
+            return TRUE;
+         *ppData = const_cast<uint8 *>(bytes + dataOffset);
+         *pDataLen = chunkLen;
+         haveData = true;
+         if (haveFormat && (format != kWaveFormatImaAdpcm || haveFact))
+            break;
+      }
+
+      const uint32 paddedLen = chunkLen + (chunkLen & 1);
+      if (paddedLen < chunkLen || paddedLen > rezLen - dataOffset)
+         break;
+      offset = dataOffset + paddedLen;
+   }
+
+   if (!haveFormat || !haveData || pAttribs->nChannels == 0 ||
+       pAttribs->bitsPerSample == 0 || pAttribs->bytesPerBlock == 0)
+      return TRUE;
+
+   if (format == kWaveFormatPcm)
+   {
+      const uint32 bytesPerSample =
+         (pAttribs->nChannels * pAttribs->bitsPerSample) / 8;
+      if (bytesPerSample == 0)
+         return TRUE;
+      pAttribs->dataType = kSndDataPCM;
+      pAttribs->samplesPerBlock = pAttribs->bytesPerBlock / bytesPerSample;
+      *pNumSamples = *pDataLen / bytesPerSample;
+   }
+   else if (format == kWaveFormatImaAdpcm && haveFact &&
+            pAttribs->samplesPerBlock != 0)
+   {
+      pAttribs->dataType = kSndDataIMAADPCM;
+      const uint32 blocks = *pDataLen / pAttribs->bytesPerBlock;
+      const uint32 partial = *pDataLen % pAttribs->bytesPerBlock;
+      uint32 maxSamples = blocks * pAttribs->samplesPerBlock;
+      if (partial >= 4)
+         maxSamples += 1 + 2 * (partial - 4);
+      if (*pNumSamples > maxSamples)
+         *pNumSamples = maxSamples;
+   }
+   else
+   {
+      return TRUE;
+   }
+
+   pAttribs->numSamples = *pNumSamples;
+   return FALSE;
 }
 
 //

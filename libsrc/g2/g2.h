@@ -27,6 +27,6 @@
 #include <grchkply.h>
 #include <setdrv.h>
 #include <frame.h>
-#include <point.h>
+#include "point.h"
 
 #endif // __G2_H_

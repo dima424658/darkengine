@@ -11,6 +11,7 @@
 #include <dlgloop.h>
 #include <uiloop.h>
 #include <scrnman.h>
+#include <scrnmode.h>
 #include <editor.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
@@ -32,16 +33,19 @@ sLoopModeDesc DialogLoopMode =
 
 
 
-static ScrnManContext _scrnmode = 
-{ 
-   SCR_640x480, 
-   0,
-   MODE_FULLSCREEN,
-}; 
+static sScrnMode _mode =
+{
+   kScrnModeAllValid,
+   640, 480,
+   8,
+   kScrnModeFullScreen,
+};
+
+static ScrnManContext _scrnmode = { { &_mode } };
 
 static uiLoopContext _uidata = 
 {
-   REF_IMG_EditCursor,
+   NULL,
 };
 
 static sLoopModeInitParm _InitContext[] =

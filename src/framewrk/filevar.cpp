@@ -14,6 +14,7 @@
 #include <loopapi.h>
 #include <dispbase.h>
 #include <dbasemsg.h>
+#include <dbfile.h>
 #include <loopmsg.h>
 #include <dispbase.h>
 #include <comtools.h>
@@ -50,6 +51,8 @@ static inline cFileVarList& VarList()
 
 cFileVarBase::cFileVarBase()
 {
+   mLoadedVersion.major = 0;
+   mLoadedVersion.minor = 0;
    VarList().Append(this); 
 }
 
@@ -87,13 +90,65 @@ BOOL cFileVarBase::SetupFile(ITagFile* file)
          return FALSE;
    }
 
-   TagVersion v = mDesc->version; 
+   if (file->OpenMode() == kTagOpenWrite &&
+       !ShouldWrite())
+      return FALSE;
+
+   if (file->OpenMode() == kTagOpenWrite &&
+       dbCompatibilityUseRawTag(&mDesc->tag))
+      return FALSE;
+
+   const TagVersion maxRead = ReadVersion();
+   TagVersion v = file->OpenMode() == kTagOpenRead ? maxRead : WriteVersion();
    if (!SUCCEEDED(file->OpenBlock(&mDesc->tag,&v)))
+   {
+      if (file->OpenMode() == kTagOpenRead &&
+          file->BlockSize(&mDesc->tag) != kTagNoSuchBlock)
+      {
+         char diagnostic[256];
+         _snprintf(diagnostic,sizeof(diagnostic)-1,
+                   "Required file-variable %.12s has a malformed or unsupported version",
+                   mDesc->tag.label);
+         diagnostic[sizeof(diagnostic)-1] = '\0';
+         dbLoadReportFailure("file-variable",diagnostic);
+      }
       return FALSE; 
+   }
+
+   if (file->OpenMode() == kTagOpenRead &&
+       VersionNumsCompare(&v,&maxRead) > 0)
+   {
+      Warning(("Unsupported file-variable version %u.%u for %s (max %u.%u)\n",
+               v.major,v.minor,mDesc->tag.label,maxRead.major,maxRead.minor));
+      file->CloseBlock();
+      char diagnostic[256];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "Required file-variable %.12s version %u.%u is newer than %u.%u",
+                mDesc->tag.label,v.major,v.minor,maxRead.major,maxRead.minor);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      dbLoadReportFailure("file-variable",diagnostic);
+      return FALSE;
+   }
+   mLoadedVersion = v;
+
+   if (file->OpenMode() == kTagOpenRead &&
+       VersionNumsCompare(&v,&mDesc->version) > 0)
+   {
+      dbCompatibilityMarkTag(&mDesc->tag,kDBCompatPrefixDecoded,
+         "newer block decoded; original retained for legacy writer");
+      dbCompatibilityRetainRawTag(&mDesc->tag,NULL);
+   }
 
    if (VersionNumsCompare(&v,&mDesc->last_good_version) < 0)
    {
       file->CloseBlock(); 
+      char diagnostic[256];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "Required file-variable %.12s version %u.%u predates the oldest safe codec %u.%u",
+                mDesc->tag.label,v.major,v.minor,
+                mDesc->last_good_version.major,mDesc->last_good_version.minor);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      dbLoadReportFailure("file-variable",diagnostic);
       return FALSE; 
    }
    return TRUE; 
@@ -117,7 +172,7 @@ void cFileVarBase::DatabaseMsg(ulong msg, ITagFile* file)
          if (SetupFile(file))
          {
             ConfigSpew("filevar_spew",("Saving %s\n",mDesc->friendly_name)); 
-            file->Write((char*)mBlock,mSize); 
+            WriteBlock(file);
             CleanupFile(file); 
          }
          break; 
@@ -126,7 +181,15 @@ void cFileVarBase::DatabaseMsg(ulong msg, ITagFile* file)
          if (SetupFile(file))
          {
             ConfigSpew("filevar_spew",("Loading %s\n",mDesc->friendly_name)); 
-            file->Read((char*)mBlock,mSize); 
+            if (!ReadBlock(file,mLoadedVersion))
+            {
+               char diagnostic[192];
+               _snprintf(diagnostic,sizeof(diagnostic)-1,
+                         "Required file-variable %.12s is truncated or malformed",
+                         mDesc->tag.label);
+               diagnostic[sizeof(diagnostic)-1] = '\0';
+               dbLoadReportFailure("file-variable",diagnostic);
+            }
             CleanupFile(file); 
          }
          break; 
@@ -190,7 +253,7 @@ static void SendDatabaseMessageToType(ulong msg, ITagFile* file, eWhichVarFile w
    
 }
 
-void setup_campaign(); 
+static void setup_campaign();
 
 STDMETHODIMP_(eLoopMessageResult) cFileVarClient::ReceiveMessage(eLoopMessage msg, tLoopMessageData hData)
 {

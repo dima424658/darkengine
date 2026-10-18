@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Dark Engine Restored</string>
+    <string name="import_title">Retail game data required</string>
+    <string name="import_description">Choose the Thief installation folder containing cam.cfg and then use it directly or copy it to faster internal storage.</string>
+    <string name="choose_game_folder">Choose Thief folder</string>
+    <string name="choose_another_folder">Choose another folder</string>
+    <string name="use_folder_directly">Use folder directly</string>
+    <string name="copy_for_faster_loading">Copy for faster loading</string>
+    <string name="storage_choice_removable">This folder is on removable storage. Use it directly to see file changes immediately, or copy it internally for faster loading.</string>
+    <string name="storage_choice_internal">Use this folder directly without duplicating it, or keep a private performance copy.</string>
+    <string name="copy_only_description">Android cannot map this provider to a native filesystem path, so this folder must be copied before the engine can use it.</string>
+    <string name="direct_access_denied">Direct access was not granted. Grant “All files access,” choose another folder, or copy the selected folder.</string>
+    <string name="direct_access_failed">Android granted storage access, but the selected filesystem path could not be read. Choose another folder or copy this one.</string>
+    <string name="folder_picker_unavailable">This device does not provide an Android folder picker.</string>
+    <string name="no_folder_selected">No folder was selected. Choose the folder containing cam.cfg and the retail mission files.</string>
+    <string name="selection_failed">Folder selection failed: %1$s</string>
+    <string name="checking_game_folder">Checking the selected folder…</string>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="import_progress">Importing %1$s\n%2$d files, %3$.1f MB copied</string>
+    <string name="shortcut_choose_folder">Choose game folder</string>
+    <string name="shortcut_choose_folder_long">Choose or refresh the retail game folder</string>
+    <string name="shortcut_choose_folder_disabled">Game-folder selection is unavailable.</string>
+</resources>

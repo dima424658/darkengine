@@ -5,7 +5,7 @@
 // Routes events into input library queues
 //
 
-#include <windows.h>
+#include <win32_platform.h>
 #include <kb.h>
 #include <mouse.h>
 #include <defehand.h>

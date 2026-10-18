@@ -122,7 +122,7 @@ errtype tng_menu_2d_draw(TNG *ptng, ushort partmask, Point loc)
             s = lstring;
             while (*s != '\0')
                s++;
-            s[0] = curp->keycode;
+            s[0] = (char)curp->keycode;
             s[1] = ')';
             s[2] = '\0';
          }
@@ -240,18 +240,14 @@ bool tng_menu_mousebutt(TNG *ptng, uchar type, Point loc)
 // Handle incoming signals
 bool tng_menu_signal(TNG *ptng, ushort signal)
 {
-   bool retval = FALSE;
-
    if (signal & TNG_SIGNAL_SELECT)
-      IF_SET_RV(tng_menu_selection(ptng));
+      tng_menu_selection(ptng);
    if (signal & TNG_SIGNAL_DESELECT)
    {
-      retval = TRUE;
       TNG_MN(ptng)->popdown_func(ptng);
    }
-   IF_SET_RV(tng_cb_signal(ptng,signal));
-   retval = TRUE;
-   return(retval);
+   tng_cb_signal(ptng,signal);
+   return TRUE;
 }
 
 errtype tng_menu_selection(TNG *ptng)
@@ -314,7 +310,7 @@ MenuElement *tng_menu_add_basic(TNG *ptng, char *label)
    newelem->f = NULL;
    newelem->user_data = NULL;
    newelem->keycode = 0;
-   newelem->context = NULL;
+   newelem->context = 0;
 
    TNG_MN(ptng)->size.y += TNG_MN(ptng)->slot_height;
    TNG_MN(ptng)->num_lines++;

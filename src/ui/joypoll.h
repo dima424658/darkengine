@@ -15,6 +15,9 @@
 #define UI_EVENT_FRAME (0x40000000)
 
 EXTERN void UiJoyInit(void);
+EXTERN void UiJoyTerm(void);
+EXTERN void UiJoySuspend(void);
+EXTERN void UiJoyResume(void);
 EXTERN void uiJoystickPoller(void);
 // set midpoint of x, y and rudders to current joystick position
 EXTERN void uiSetControlCenter( void );

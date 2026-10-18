@@ -14,6 +14,7 @@
 #include <config.h>
 #include <playtest.h>
 #include <drkamap.h>
+#include <drkmiss.h>
 
 #include <drkstats.h>
 #include <gen_bind.h>
@@ -94,7 +95,7 @@ DECLARE_SCRIPT_SERVICE_IMPL(cDarkGameSrv,DarkGame)
    {
        char comval[255];
        sprintf(comval,"echo $%s",name);
-       return (atof (g_pInputBinder->ProcessCmd (comval)));
+   return strtof(g_pInputBinder->ProcessCmd(comval), NULL);
    }
 
    STDMETHOD_(BOOL, GetAutomapLocationVisited)(int page, int location)
@@ -105,6 +106,29 @@ DECLARE_SCRIPT_SERVICE_IMPL(cDarkGameSrv,DarkGame)
    STDMETHOD(SetAutomapLocationVisited)(int page, int location)
    {
       DarkAutomapSetLocationVisited( page, location );
+      return S_OK;
+   }
+
+   STDMETHOD_(void, SetNextMission)(int mission)
+   {
+      ::SetNextMission(mission);
+   }
+
+   STDMETHOD_(int, GetCurrentMission)()
+   {
+      const sMissionData* mission = GetMissionData();
+      return mission ? mission->num : 0;
+   }
+
+   STDMETHOD_(BOOL, RespawnPlayer)()
+   {
+      // Multiplayer respawning was never present in this single-player host.
+      return FALSE;
+   }
+
+   STDMETHOD(FadeIn)(float fade_time)
+   {
+      g_pPlayerMode->StartFadeIn(tSimTime(fade_time * 1000), 0, 0, 0);
       return S_OK;
    }
 };

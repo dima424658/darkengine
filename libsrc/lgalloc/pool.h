@@ -12,7 +12,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef struct {char unused;} *HPOOL;
+typedef struct sPoolHandle { char unused; } *HPOOL;
 
 //
 // Create a pool of fixed sized objects

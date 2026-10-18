@@ -76,21 +76,21 @@ typedef enum _PnP_SliderOp
 
 
 EXTERN int PnP_SliderFloat(Rect *space, const char *name, float lo, float hi, float scale, float *var,
-                     void (*update)(PnP_SliderOp op, Rect *where, float val, int data), int data, ulong flags);
+                     void (*update)(PnP_SliderOp op, Rect *where, float val, intptr_t data), intptr_t data, ulong flags);
 EXTERN int PnP_SliderInt(Rect *space, const char *name, int lo, int hi, int scale, int *var,
-                   void (*update)(PnP_SliderOp op, Rect *where, int val, int data), int data, ulong flags);
+                   void (*update)(PnP_SliderOp op, Rect *where, int val, intptr_t data), intptr_t data, ulong flags);
 EXTERN int PnP_SliderFixang(Rect *space, const char *name, ushort lo, ushort hi, ushort scale,
-                            ushort *var, void (*update)(PnP_SliderOp op, Rect *where, ushort val, int data), 
-                            int data, ulong flags);
+                            ushort *var, void (*update)(PnP_SliderOp op, Rect *where, ushort val, intptr_t data),
+                            intptr_t data, ulong flags);
 EXTERN int PnP_SliderShort(Rect *space, const char *name, short lo, short hi, short scale,
-                           short *var, void (*update)(PnP_SliderOp op, Rect *where, short val, int data), 
-                           int data, ulong flags);
+                           short *var, void (*update)(PnP_SliderOp op, Rect *where, short val, intptr_t data),
+                           intptr_t data, ulong flags);
 
-EXTERN int PnP_SliderString(Rect *space, const char *name,  int num, char** vals, int *var,
-                     void (*update)(PnP_SliderOp op, Rect *where, int val, int data), int data, ulong flags);
+EXTERN int PnP_SliderString(Rect *space, const char *name, int num, const char * const *vals, int *var,
+                     void (*update)(PnP_SliderOp op, Rect *where, int val, intptr_t data), intptr_t data, ulong flags);
 
 // dynamic string length resetting code
-EXTERN void PnP_StringSliderSetStrings(void* g, char** strings, int num);
+EXTERN void PnP_StringSliderSetStrings(void* g, const char * const *strings, int num);
 EXTERN void *PnP_GetStringSubGadget(int owner);
 
 // this hateful macro is a utility for synching variables

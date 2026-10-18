@@ -28,8 +28,8 @@ static void CalcTarget(const mxs_vector & origin,
 {
    floatang targ = facing - angle;
    pResult->z = origin.z;
-   pResult->x = origin.x + (distance * cos(targ.value));
-   pResult->y = origin.y + (distance * sin(targ.value));
+   pResult->x = origin.x + (distance * cosf(targ.value));
+   pResult->y = origin.y + (distance * sinf(targ.value));
    pResult->x += velocity.x * time;
    pResult->y += velocity.y * time;
 }
@@ -120,7 +120,7 @@ STDMETHODIMP_(eAIResult) cAIFollowAction::Enact(ulong deltaTime)
       {
          pSuggestion->SetWeightedBias(kAIMS_Loco, 100);
          pSuggestion->dirArc.SetByCenterAndSpan(m_pAIState->AngleTo(targetLoc),
-                                                floatang(PI*1.8));
+                                                floatang(PI*1.8f));
          pSuggestion->speed       = targetSpeed;
          pSuggestion->facing.type = kAIF_SpecificDir;
          pSuggestion->facing.ang  = followObjFacing.value;

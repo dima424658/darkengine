@@ -46,7 +46,7 @@ void MedMoUpdateCellMotion(long frame_time_ms)
    int i;
    mxs_real frame_time;         // fraction of sec. since last frame
 
-   frame_time = ((float) (frame_time_ms)) / 1000.0;
+   frame_time = ((float) (frame_time_ms)) / 1000.0f;
 
    for (i = 1; i < MAX_CELL_MOTION; i++) {
       if (portal_cell_motion[i].in_motion == FALSE)
@@ -55,8 +55,8 @@ void MedMoUpdateCellMotion(long frame_time_ms)
       mx_scale_addeq_vec(&(portal_cell_motion[i].center),
                          &(g_aMedMoCellMotion[i].center_change), frame_time);
 
-      portal_cell_motion[i].angle
-         += ((float)((short)(g_aMedMoCellMotion[i].angle_change)) * frame_time);
+      portal_cell_motion[i].angle = (mxs_ang)(portal_cell_motion[i].angle
+         + (float)((short)(g_aMedMoCellMotion[i].angle_change)) * frame_time);
 
       // We can prevent sliding, surfaces from getting away,
       // provided they are axis-aligned and not rotating.

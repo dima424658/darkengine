@@ -13,6 +13,9 @@
 #include <storeapi.h>
 #include <resapi.h>
 #include <imgrstyp.h>
+#include <palrstyp.h>
+#include <bitmap.h>
+#include <palmgr.h>
 
 #include <config.h>
 #include <cfgdbg.h>
@@ -48,8 +51,8 @@ static cObjTxtReplaceTable g_ObjTxtReplaceTable;
 // horrible hacks for the string class which i get RebuildConcrete and Notify for
 
 // Forward Declare these two, so i can use them in the class
-void _ClearPtxt(IRes **pTxt);
-void _GogetPtxt(IRes **pTxt, const char *txtName);
+static void _ClearPtxt(IRes **pTxt);
+static void _GogetPtxt(IRes **pTxt, const char *txtName);
 
 typedef cAutoIPtr<IPropertyStore> cPS;
 
@@ -150,9 +153,9 @@ private:
 #define OBJ_TXT_REPL_PROP_IMPL     kPropertyImplSparseHash
 #define OBJ_TXT_REPL_PROP_DECLARE(str) \
    static sPropertyDesc str##PropDesc = { "OTxtRep"#str, 0, NULL, 0, 0, { "Shape", "TxtRepl "#str }}; \
-   static IStringProperty *##str##Prop = NULL
+   static IStringProperty *str##Prop = NULL
 #define OBJ_TXT_REPL_PROP_CREATE(str,index) \
-   str##Prop = new cTextureReplStringProperty(&##str##PropDesc,OBJ_TXT_REPL_PROP_IMPL,index)
+   str##Prop = new cTextureReplStringProperty(&str##PropDesc,OBJ_TXT_REPL_PROP_IMPL,index)
 #define OBJ_TXT_REPL_PROP_RELEASE(str) \
    SafeRelease(str##Prop)
 
@@ -171,6 +174,14 @@ static void _ClearPtxt(IRes **pTxt)
       ConfigSpew("TxtReplaceSpew",("ObjTxtReplace being asked to ClearPtxt NULL\n"));
       return;
    }
+   {
+      grs_bitmap *bitmap = (grs_bitmap *)(*pTxt)->DataPeek();
+      if (bitmap && bitmap->type == BMT_FLAT8 && bitmap->align != 0)
+      {
+         palmgr_release_slot(bitmap->align);
+         bitmap->align = 0;
+      }
+   }
    (*pTxt)->Unlock();
    SafeRelease((*pTxt));
    *pTxt=NULL;
@@ -178,16 +189,50 @@ static void _ClearPtxt(IRes **pTxt)
 
 static void _GogetPtxt(IRes **pTxt, const char *txtName)
 {
+   char logicalName[256];
+   char *extension;
+   char *slash;
+
    if (txtName[0]=='\0') // null string
    {
       ConfigSpew("TxtReplaceSpew",("ObjTxtReplace GogetPtxt NULL string\n"));
       return;
    }
    AutoAppIPtr(ResMan);
-   // should really investigate txtName, check for txt16 and so on, expose from objmodel
-   IRes *pRes = pResMan->Bind(txtName, RESTYPE_IMAGE, NULL);
+   strncpy(logicalName, txtName, sizeof(logicalName) - 1);
+   logicalName[sizeof(logicalName) - 1] = '\0';
+   extension = strrchr(logicalName, '.');
+   slash = strrchr(logicalName, '\\');
+   if (!slash)
+      slash = strrchr(logicalName, '/');
+   if (extension && (!slash || extension > slash) && extension != logicalName)
+      *extension = '\0';
+
+   // Object replacement properties also name logical artwork.  Searching
+   // extensionlessly lets higher-priority mod roots replace an old GIF/PCX
+   // spelling with any supported image format.
+   IRes *pRes = pResMan->Bind(logicalName, RESTYPE_IMAGE, NULL);
    if (pRes)
+   {
       pRes->Lock();
+      grs_bitmap *bitmap = (grs_bitmap *)pRes->DataPeek();
+      if (bitmap && bitmap->type == BMT_FLAT8)
+      {
+         IRes *palette = pResMan->Retype(pRes, RESTYPE_PALETTE, 0);
+         if (palette)
+         {
+            uchar *data = (uchar *)palette->Lock();
+            if (data)
+            {
+               bitmap->align = (uchar)palmgr_alloc_pal(data);
+               palette->Unlock();
+            }
+            // The palette manager retains its own copy.
+            palette->Drop();
+            palette->Release();
+         }
+      }
+   }
    else
       Warning(("ObjTxtReplace can't seem to load %s as typed\n",txtName));
    *pTxt=pRes;

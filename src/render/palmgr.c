@@ -166,13 +166,17 @@ void calc_ipal(uchar *pal_data, uchar *ipal)
 static int get_extra_rows()
 {
 #if defined(SOFTWARE_RGB)
-   static init;
+   static int init;
    static BOOL fHardwareOnlyTerrain;
 
    if (!init)
    {
 #if defined(SOFTWARE_MODELS_ONLY)
-      fHardwareOnlyTerrain = TRUE;
+      // The retail game normally used hardware terrain, but a software
+      // framebuffer still needs the extended RGB lighting rows consumed by
+      // portsurf.c.  Omitting them makes the surface cache index past the
+      // end of every 8-to-16 lighting table.
+      fHardwareOnlyTerrain = g_lgd3d;
 #else
       fHardwareOnlyTerrain = FALSE;
 #endif
@@ -274,6 +278,15 @@ void palmgr_update_pal_slot(int slot)
    AssertMsg(pal_list!=NULL, "palmgr_update_pal_slot(): palmgr not initialized!");
    info = &pal_list[slot];
    AssertMsg(info->pal_data!=NULL, "palmgr_update_pal_slot(): pal_data is NULL!");
+
+   // The modern renderer always expands indexed textures to RGBA when they
+   // are uploaded, regardless of the logical framebuffer depth.  The legacy
+   // path only forwarded palettes while the framebuffer was 15/16-bit, which
+   // leaves every nonzero object palette uninitialized in a 32-bit mode and
+   // turns authored greens/browns into colors from an unrelated palette.
+   if (g_lgd3d)
+      lgd3d_set_pal_slot(0, 256, info->pal_data, slot);
+
    if (grd_mode >=0)
       switch (grd_bpp)
    {
@@ -283,9 +296,6 @@ void palmgr_update_pal_slot(int slot)
             break;
          case 15:
          case 16:
-            if (g_lgd3d)
-               lgd3d_set_pal_slot(0, 256, info->pal_data, slot);
-
             gr_get_screen_rgb_bitmask(&bmask);
             if (info->pal16 == NULL)
                info->pal16 = Malloc(256 * sizeof(ushort));
@@ -375,7 +385,12 @@ int palmgr_alloc_pal(uchar *pal)
    if (pal_list==NULL)
       palmgr_init();
 
-   for (i=0; i<256; i++) {
+   // Slot zero is the mutable game/UI palette.  A resource palette may match
+   // it at load time and diverge as soon as a menu, editor pane, or mission
+   // transition installs another global palette.  Keep authored resource
+   // palettes in stable nonzero slots; subsequent allocations still
+   // deduplicate against those slots.
+   for (i=1; i<256; i++) {
       info = &pal_list[i];
 
       if ((info->pal_data != NULL) &&
@@ -395,7 +410,14 @@ int palmgr_alloc_pal(uchar *pal)
          break;
    }
 
-   AssertMsg(i<256, "palmgr_alloc_pal(): no free palette slot!");
+   if (i >= 256)
+   {
+      // align is an 8-bit field, so the legacy palette table cannot be
+      // widened independently. Falling back to the game palette is preferable
+      // to indexing one element past pal_list and corrupting the heap.
+      Warning(("palmgr_alloc_pal(): no free palette slot; using slot 0\n"));
+      return 0;
+   }
    ConfigSpew("palmgr_spew",("alloc_pal() returning new slot %d\n",i));
 
    // Free ipal if it exists, since we don't necessarily need one.

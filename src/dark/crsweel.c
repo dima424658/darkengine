@@ -58,12 +58,12 @@ static sCrPhysModOffsetTable g_WeaponPhysTable = \
    sizeof(g_JawsPhysOffsets)/sizeof(g_JawsPhysOffsets[0]), g_JawsPhysOffsets
 };
 
-#define SWEEL_PHYS_RADIUS 0.3
+#define SWEEL_PHYS_RADIUS 0.3f
 
 static sCrPhysModOffset g_aPhysModOffsets[] = \
 {
-   { BASE, BASE, 0.0, SWEEL_PHYS_RADIUS},
-   { SHOULDER, SHOULDER, 0.0, SWEEL_PHYS_RADIUS},
+   { BASE, BASE, 0.0f, SWEEL_PHYS_RADIUS},
+   { SHOULDER, SHOULDER, 0.0f, SWEEL_PHYS_RADIUS},
 };
 
 

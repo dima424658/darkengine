@@ -37,6 +37,7 @@
 #include <bspsphr.h>
 #include <osysbase.h>
 #include <wrlimit.h>
+#include <darklimit.h>
 
 #include <refsys.h>
 
@@ -68,7 +69,11 @@ static FILE *trav_file;
 #endif
 
   // max object fragments visible onscreen at once
-#define MAX_VISIBLE_OBJECTS 4096
+// In hardware mode an object is rendered once, but the portal walk still
+// allocates one visibility record for every visible cell reference to it.
+// A wide editor viewport can therefore exhaust the original 4096 records
+// even though there are far fewer than 4096 distinct objects in the mission.
+#define MAX_VISIBLE_OBJECTS DARK_LIMIT_RUNTIME_VISIBLE_OBJECTS
 
   // does lighting compute light maps or at vertices?
   // We probably don't really support vertex lighting anymore
@@ -91,12 +96,11 @@ ulong portal_fog_color[3];
 float portal_fog_dist = 0;
 BOOL portal_fog_on = TRUE;
 ulong fog_r3_color;
-float fog_dist_modifier = .05;
+float fog_dist_modifier = .05f;
 extern mxs_vector portal_sunlight;
 
 
   // default callbacks
-#pragma off(unreferenced)
 static void render_object(ObjID obj, uchar *clut, ulong fragment)
 {
 }
@@ -114,7 +118,6 @@ static BOOL object_blocks(ObjID o1, ObjID o2)
 {
    return FALSE;
 }
-#pragma on(unreferenced)
 
 void (*portal_render_object)(ObjID, uchar *, ulong fragment) = render_object;
 BOOL (*portal_object_visible)(ObjID) = object_visible;
@@ -338,8 +341,10 @@ int need_testing_count;
 STATIC
 int get_visobj(ObjID o, int fragment)
 {
-   ObjVisibleID his = num_visible_objects++;
-   if (his >= MAX_VISIBLE_OBJECTS) return VISOBJ_NULL;
+   ObjVisibleID his;
+   if (num_visible_objects >= MAX_VISIBLE_OBJECTS)
+      return VISOBJ_NULL;
+   his = num_visible_objects++;
    vis_objs[his].obj = o;
 hack_fragment[his] = TRUE;
    vis_objs[his].fragment = fragment;
@@ -362,7 +367,10 @@ void queue_object_fragment_in_cell(PortalCell *r, int visobj)
 STATIC
 void queue_object_fragment_for_obj(PortalCell *r, int visobj)
 {
-   int o = vis_objs[visobj].obj;
+   int o;
+   if (visobj < 0) return;
+
+   o = vis_objs[visobj].obj;
 hack_fragment[visobj] = FALSE;
    vis_objs[visobj].cell = r;
    vis_objs[visobj].next_visobj = obj_fragment_list[o];
@@ -593,6 +601,8 @@ void split_object(ObjID o)
 {
    int v,next;
    v = obj_fragment_list[o];
+   if (v < 0 || v >= MAX_VISIBLE_OBJECTS)
+      return;
 
    // for all fragments except the last in the chain, move them
    // to the appropriate cell and set their fragment # to the split
@@ -600,7 +610,7 @@ void split_object(ObjID o)
    // is already in the right cell, and just needs fragment #
 
    next = vis_objs[v].next_visobj;
-   while (next != VISOBJ_NULL && vis_objs[next].obj == o) {
+   while (next >= 0 && next < MAX_VISIBLE_OBJECTS && vis_objs[next].obj == o) {
 CELL(v);
       queue_object_fragment_in_cell(vis_objs[v].cell, v);
 hack_fragment[v] = TRUE;
@@ -1253,7 +1263,7 @@ int select_next_region(void)
    float mn;
 
    n = -1;
-   mn = 1e20;
+      mn = 1e20f;
 
    for (i = r_sorted_count; i < r_total_count; ++i) {
       if (NUM_INCOMING(wr_cell[active_regions[i]]) > 0)
@@ -1369,9 +1379,12 @@ void portal_traverse_scene(int cell)
         // area to the unsorted area)
       explore_portals(wr_cell[n]);
 
-        // avoid us getting in an infinite loop;
-        // although this may result in major sorting bugs!
-      if (++count == 1024) {
+        // Avoid an infinite loop.  The original 1024-step guard predates the
+        // extended active-region capacity and truncates valid large NewDark
+        // scenes.  Bound the work by the extended active-region capacity;
+        // revisits consume that budget too, preventing malformed portal
+        // cycles from stalling an entire frame.
+      if (++count >= MAX_ACTIVE_REGIONS) {
 #ifndef SHIP
          if (trav_file)
             fprintf(trav_file, "Apparent cell cycle!\n");
@@ -1383,13 +1396,14 @@ void portal_traverse_scene(int cell)
       }
    }
 
-
 // Traverse active cells to see if any sky is visible:
    for (i = r_sorted_count-1; (i >= 0) && !bRenderSky; i--)
    {
       pCell = WR_CELL(active_regions[i]);
       for (j = 0; (j < pCell->num_render_polys) && !bRenderSky; j++)
-         if ((!pCell->render_list[j].texture_id) || (pCell->render_list[j].texture_id >= BACKHACK_IDX))
+         if ((!pCell->render_list[j].texture_id) ||
+             ((pCell->render_list[j].texture_id >= BACKHACK_IDX) &&
+              (pCell->render_list[j].texture_id < TEXMEM_RESERVED_LIMIT)))
             bRenderSky = TRUE;
    }
 
@@ -1740,8 +1754,20 @@ void portal_render_scene(Position *pos, float zoom)
 
       if (portal_obj_fixup)
          check_for_extra_object_splitting();
-   } else
+   } else {
+#ifdef EDITOR
+      // Hardware rendering already clips objects against the viewport and
+      // resolves them against terrain with the depth buffer.  The legacy
+      // screen-octagon test is based on portal-local projected bounds and is
+      // unreliable when DromEd renders into an offset sub-viewport: objects
+      // are rejected as the camera moves across the pane, often surviving
+      // only near its left or right edge.  Objects reach this point only when
+      // they are referenced by a visible portal cell, so queue them and let
+      // the GPU perform the final clip/depth test.
+#else
       check_for_object_hiding();
+#endif
+   }
 
 #ifdef STATS_ON
    stat_num_sort_ms = portal_get_time() - stat_num_sort_ms;
@@ -1924,7 +1950,8 @@ int PortalRenderPick(Position *pos, int x, int y, float zoom)
 
 #ifndef RGB_888
 extern ulong pl_red_color[256], pl_green_color[256], pl_blue_color[256];
-extern ulong pl_blue_mask=0x7c00, pl_green_mask=0x03e0, pl_red_mask=0x001f;
+extern ulong pl_blue_mask, pl_green_mask, pl_red_mask;
+ulong pl_blue_mask=0x7c00, pl_green_mask=0x03e0, pl_red_mask=0x001f;
 #endif // ~RGB_888
 
 int hack_red, hack_green, hack_blue;
@@ -1980,13 +2007,13 @@ void portal_convert_hsb_to_rgb(int *rp, int *gp, int *bp, float hue, float satur
    }
 
    // blend with white
-   isat = 1.0 - saturation;
+   isat = 1.0f - saturation;
    r = r*saturation + isat;
    g = g*saturation + isat;
    b = b*saturation + isat;
-   *rp = r * 255;
-   *gp = g * 255;
-   *bp = b * 255;
+   *rp = (int)(r * 255);
+   *gp = (int)(g * 255);
+   *bp = (int)(b * 255);
 #else // ~DEEPC
    float r, g, b, isat, max_recip;
 
@@ -2095,7 +2122,7 @@ void portal_render_light(Position *pos, float zoom, float br,
    gr_pop_canvas();
 }
 
-#define MAX_LIT_CELLS 512
+#define MAX_LIT_CELLS DARK_LIMIT_RUNTIME_LIGHT_CELLS
 int lit_cell[MAX_LIT_CELLS], num_lit, num_culled;
 
 // store indexes of all cells reached in a given direction in lit_cell[]
@@ -2236,7 +2263,7 @@ int portal_add_omni_light(float br, float ambient, Location *loc,
    max_dist_2 = radius * radius;
    inner_dist = inner_radius;
    if (inner_dist)
-      dist_diff_recip = 1.0 / (radius - inner_radius);
+      dist_diff_recip = 1.0f / (radius - inner_radius);
 
    lightmap_point_callback = save_lightmap_point;
 
@@ -2578,7 +2605,8 @@ void portal_add_simple_dynamic_dark(float br, float ambient, Location *loc,
 }
 
 
-#define RECIP_TABLE_SIZE 2048
+// Perspective/lighting spans can be as wide as a modern render target.
+#define RECIP_TABLE_SIZE 8192
 fix reciprocal_table_24[RECIP_TABLE_SIZE+1];
 float int_table[32];
 
@@ -2594,7 +2622,7 @@ void init_portal_renderer(int dark, int light)
       reciprocal_table_24[i] = fix_make(256,0) / i;
 
    for (i=0; i < 32; ++i)
-      int_table[i] = i;
+      int_table[i] = (float)i;
 
    init_portal_shading(dark, light);
    init_portal_light();
@@ -2800,12 +2828,10 @@ bool show_span_lengths, show_render_times;
 
 #else
 
- #pragma off(unreferenced)
  char *portal_scene_info(int vol)
  {
     return 0;
  }
- #pragma on(unreferenced)
 
 #endif
 

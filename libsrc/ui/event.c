@@ -20,8 +20,6 @@
 #include <mousevel.h>
 #include <joystick.h>
 
-#ifdef WIN32
-
 //-----------------------------------------------------------------------------
 // Jacobson, 1-30-96
 // This include helps the UI library keep track of where it's writing to
@@ -31,8 +29,6 @@
 #include <dispapi.h>
 
 IDisplayDevice * g_pUiDisplayDevice;
-
-#endif
 
 // ---------------------
 // HANDLER CHAIN DEFINES
@@ -365,7 +361,6 @@ bool region_check_opacity(Region* reg, ulong evmask)
    return (evmask & uiGetRegionOpacity(reg)) != 0;
 }
 
-#pragma disable_message(202)
 bool event_dispatch_callback(Region* reg, Rect* r, void* v)
 {
    uiEvent* ev = (uiEvent*)v;
@@ -396,7 +391,6 @@ bool event_dispatch_callback(Region* reg, Rect* r, void* v)
    Spew(DSRC_UI_Dispatch,("Event Rejected\n"));
    return FALSE;
 }
-#pragma enable_message(202)
 
 // ui_traverse_point return values:
 #define TRAVERSE_HIT       0
@@ -545,6 +539,9 @@ errtype uiQueueEvent(uiEvent* ev)
          out.pos.y = mse.y;
          out.type = (mse.type == MOUSE_MOTION) ? UI_EVENT_MOUSE_MOVE :  UI_EVENT_MOUSE;
          out.action = mse.type;
+         out.tstamp = mse.timestamp;
+         out.buttons = mse.buttons;
+         out.wheel = mse.wheel;
          event_queue_add((uiEvent*)&out);
       }
    }
@@ -575,7 +572,7 @@ void ui_flush_mouse_events(ulong timestamp, Point pos)
       if (uiDoubleClicksOn[i] &&
          last_down_events[i].type != UI_EVENT_NULL)
       {
-         int crit = uiDoubleClickDelay;
+         ulong crit = uiDoubleClickDelay;
          ulong timediff = timestamp - last_down_events[i].tstamp;
          Point downpos = last_down_events[i].pos;
          bool out = (abs(pos.x - downpos.x) > uiDoubleClickTolerance ||
@@ -738,6 +735,7 @@ errtype uiMakeMotionEvent(uiMouseEvent* ev)
    ev->action = MOUSE_MOTION;
    ev->tstamp = mouse_get_time();
    ev->buttons = (ubyte)(ui_buttonstate|ui_joy_state);
+   ev->wheel = 0;
    return OK;
 }
 
@@ -854,8 +852,8 @@ errtype uiPoll(void)
       {
          ushort cooked;
          kbs_event kbe;
-         kbe.code = ((uiRawKeyEvent*)ev)->scancode;
-         kbe.state = ((uiRawKeyEvent*)ev)->action;
+         kbe.code = (uchar)((uiRawKeyEvent*)ev)->scancode;
+         kbe.state = (uchar)((uiRawKeyEvent*)ev)->action;
          err = kb_cook(kbe,&cooked,&result);
          if (err != OK) goto out;
          if (result)
@@ -930,6 +928,7 @@ errtype uiPoll(void)
             out.subtype = mse.type;
             mout->tstamp = mse.timestamp;
             mout->buttons = mse.buttons | ui_joy_state;
+            mout->wheel = mse.wheel;
             ui_dispatch_mouse_event(mout);
 //            uiDispatchEvent((uiEvent*)mout);
          }
@@ -1035,12 +1034,10 @@ errtype uiInit(uiSlab* slab)
    int i;
    errtype err;
    extern errtype ui_init_cursors(void);
-#ifdef WIN32
    // Jacobson, 2-12-96
    // Get a pointer to the current display interface so we can correctly
    // lock the frame during cursor draws, among other things.
    g_pUiDisplayDevice = AppGetObj(IDisplayDevice);    // Stores the current display
-#endif
    Spew(DSRC_UI_Handlers,("entering uiInit(%x)\n",slab));
    uiSetCurrentSlab(slab);
    Spew(DSRC_UI_Handlers,("uiInit(): CurFocus = %d\n",CurFocus));
@@ -1078,9 +1075,7 @@ void uiShutdown(void)
    mouse_shutdown();
    kb_shutdown();
 #endif 
-#ifdef WIN32
    SafeRelease(g_pUiDisplayDevice);
-#endif    
 
    Free(EventQueue.vec);
 }

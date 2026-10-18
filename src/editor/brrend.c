@@ -14,6 +14,7 @@
 
 #include <lg.h>
 #include <g2.h>
+#include <point.h>
 #include <r3d.h>
 #include <matrix.h>
 #include <mprintf.h>
@@ -194,8 +195,8 @@ BOOL fastrendererSetup(int camera, mxs_vector *cam_pos)
    vm_map_screen_to_world(camera,&base,0,0);
    vm_screen_axes(camera,&scr_unit_x,&scr_unit_y);
    mx_zero_vec(&scale);
-   scale.el[scr_x_axis]=1.0/scr_unit_x.el[scr_x_axis];
-   scale.el[scr_y_axis]=1.0/scr_unit_y.el[scr_y_axis];
+   scale.el[scr_x_axis]=1.0f/scr_unit_x.el[scr_x_axis];
+   scale.el[scr_y_axis]=1.0f/scr_unit_y.el[scr_y_axis];
 
    // @TODO: once we have 6 drawers, pick the correct function pointer here...
    
@@ -311,7 +312,7 @@ BOOL brushSetupDraw(int flags, int camera)
       {
          mx_sub_vec(&tmp,&us->pos,cam_pos);        // do our own distance
          if (isIso)  
-            dist=fabs(mx_dot_vec(&tmp,cur_cam_vec));     // cant use z
+            dist=fabsf(mx_dot_vec(&tmp,cur_cam_vec));     // cant use z
          else
             dist=mx_mag_vec(&tmp);                       // can use z
          if (dist<lo) lo=dist;
@@ -378,7 +379,7 @@ int brushSetDrawColor (editBrush *us, r3s_point *p)
       {                       // so have to go do the computation based on
          mxs_vector tmp;      // the camera vector
          mx_sub_vec(&tmp,&us->pos,cur_cam_pos);
-         val=fabs(mx_dot_vec(&tmp,cur_cam_vec));
+         val=fabsf(mx_dot_vec(&tmp,cur_cam_vec));
       }
       else
       {                          // the z coordinates do indicate depth
@@ -485,7 +486,8 @@ void brushCubeSetup(editBrush *curBrush)
 void brushLightSetup(editBrush *curBrush)
 {
    mxs_vector mono_scale_vec;
-   mono_scale_vec.x=mono_scale_vec.y=mono_scale_vec.z=brLight_Bright(curBrush)*lightScale;
+   mono_scale_vec.x = mono_scale_vec.y = mono_scale_vec.z =
+      (mxs_real)(brLight_Bright(curBrush) * lightScale);
    obj_offset = curBrush->pos;
    brushGenericPrimalSetup(PRIMAL_LIGHT_IDX,&mono_scale_vec,&curBrush->ang);
 }
@@ -814,7 +816,7 @@ float solve_2d_point_to_line(float x0, float y0, float x1, float y1, float x2, f
       else
          return DISTANCE_INF;   
    slope=(y2-y1)/(x2-x1);  // rise over run, woo woo-woo
-   invslope=-1.0/slope;
+   invslope=-1.0f/slope;
    coeff[0]=slope;    /* -1 */ coeff[2]=slope*x1-y1;     /*    m x - y =     m x1 - y1 */
    coeff[3]=invslope; /* -1 */ coeff[5]=invslope*x0-y0;  /*-(1/m)x - y = -(1/m)x0 - y0 */
    detA=-coeff[0]+coeff[3];  // since i know coeff[1] and [4] are always -1
@@ -858,7 +860,8 @@ float findClosestPt(editBrush *curBrush, int x, int y)
    for (i=0; i<brush_pt_cnt; i++)   // first, we go through all the points
       if (pt_on_screen(&p[i]))
       {
-         float dx=get_float(p[i].grp.sx)-x, dy=get_float(p[i].grp.sy)-y;
+         float dx = (float)get_float(p[i].grp.sx) - x;
+         float dy = (float)get_float(p[i].grp.sy) - y;
          dist=dx*dx+dy*dy;
          if (dist<best_dist_sqr)
          {
@@ -882,8 +885,8 @@ float findClosestPt(editBrush *curBrush, int x, int y)
          if (pt_on_screen(&p[p1])&&pt_on_screen(&p[p2]))
          {
             dist=solve_2d_point_to_line((float)x,(float)y,
-                                        get_float(p[p1].grp.sx), get_float(p[p1].grp.sy),
-                                        get_float(p[p2].grp.sx), get_float(p[p2].grp.sy));
+                                        (float)get_float(p[p1].grp.sx), (float)get_float(p[p1].grp.sy),
+                                        (float)get_float(p[p2].grp.sx), (float)get_float(p[p2].grp.sy));
             if (dist<best_dist_sqr)
             {
                best_dist_sqr=dist;
@@ -901,7 +904,6 @@ float findClosestPt(editBrush *curBrush, int x, int y)
    return best_dist_sqr;
 }
 
-#pragma disable_message(202)
 void brushGrowExtents(editBrush *curBrush, mxs_vector *bounds)
 {
    int i,j;
@@ -914,7 +916,6 @@ void brushGrowExtents(editBrush *curBrush, mxs_vector *bounds)
             bounds[1].el[j]=world_pts[i].el[j];
       }
 }
-#pragma enable_message(202)
 
 // Basically, first index eliminates an number, and the 
 // second index gives the other number
@@ -999,7 +1000,7 @@ bool brushOBBIntersect(editBrush *b1, editBrush *b2)
          // @OPTIMIZE: Somehow this reduces to 2 mults and a sub
          // Calculate distance between projected centers
          mx_cross_vec(&L, &(A[i]), &(B[j]));
-         T_L = fabs(mx_dot_vec(&T, &L));
+         T_L = fabsf(mx_dot_vec(&T, &L));
 
          // Calculate length of maximum radius of brush, projected
          sum = 0;
@@ -1175,7 +1176,7 @@ float brushClickCheck(editBrush *curBrush, int x, int y)
       brushLightSetup(curBrush);
       break;
    default:
-      return INT_MAX;
+      return DISTANCE_INF;
    }
    _brushTransformToWorld(curBrush);
    _brushWorldToView();
@@ -1341,7 +1342,7 @@ void brushRunOnActive(void (*cback)(editBrush *me))
 {
    editBrush *us, *tmp;
    int hIter;
-   brushSetupDraw(brFlag_COLOR_NONE,NULL);
+   brushSetupDraw(brFlag_COLOR_NONE, 0);
    r3_start_frame();
    us=blistIterStart(&hIter);
    while (us)
@@ -1357,7 +1358,7 @@ void brushRunOnActive(void (*cback)(editBrush *me))
 // maybe really should have its own local context?
 void brushConvertStart(void)
 {
-   brushSetupDraw(brFlag_COLOR_NONE,NULL);
+   brushSetupDraw(brFlag_COLOR_NONE, 0);
    r3_start_frame();
 }
 

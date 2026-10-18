@@ -10,7 +10,6 @@
 /* AIL to timer function mappings */
 // TODO: undefined AIL_* symbols
 
-#pragma off (unreferenced)
 
 typedef void  (__cdecl * tAILTimerCallback)();
 
@@ -23,7 +22,6 @@ static int tm_add_process_AIL (void (*prot_func)(), int real_func, long denom)
    return r;
 }
 
-#pragma on (unreferenced)
 
 /* these are necessary because AIL functions are cdecl'ed and we need to
    hide this _in the timer library_
@@ -65,13 +63,13 @@ static void tm_set_process_period_AIL (int id, int period)
 
 
 pfv tm_ftab_ail [TMC_TIMER_FNS] = {
-  tm_add_process_AIL,
-  tm_remove_process_AIL,
-  tm_activate_process_AIL,
-  tm_deactivate_process_AIL,
-  tm_set_process_denom_AIL,
-  tm_set_process_freq_AIL,
-  tm_set_process_period_AIL
+  (pfv)tm_add_process_AIL,
+  (pfv)tm_remove_process_AIL,
+  (pfv)tm_activate_process_AIL,
+  (pfv)tm_deactivate_process_AIL,
+  (pfv)tm_set_process_denom_AIL,
+  (pfv)tm_set_process_freq_AIL,
+  (pfv)tm_set_process_period_AIL
 };
 
 /* application main() is repsonsible for starting/stopping AIL

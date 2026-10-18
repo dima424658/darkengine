@@ -23,6 +23,7 @@
 #include <tagfile.h>
 #include <dbasemsg.h>
 #include <objremap.h>
+#include <dbfile.h>
 
 #include <config.h>
 #include <cfgdbg.h>
@@ -40,6 +41,7 @@
 #include <iobjsys.h>
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <gen_bind.h>
 #include <command.h>
 
@@ -48,7 +50,7 @@
 
 static eWhichInvObj type_to_slot[] = { kCurrentItem, kCurrentItem, kCurrentWeapon };
 
-void setup_contains_sdesc();
+static void setup_contains_sdesc();
 ////////////////////////////////////////////////////////////
 // PLAYER INVENTORY AGGREGATE MEMBER
 //
@@ -64,6 +66,10 @@ protected:
 public:
    cInventory(IUnknown* pOuter)
    {
+      mInHand = kCurrentWeapon;
+      mInSim = FALSE;
+      for (int i = 0; i < kNumItemSels; ++i)
+         mCurSel[i].obj = OBJ_NULL;
       MI_INIT_AGGREGATION_1(pOuter,IInventory,kPriorityNormal,gConstraints);
    }
 
@@ -188,7 +194,14 @@ public:
       if (!mpContainSys->Contains(PlayerObject(),obj))
          return E_FAIL;
 
-      eWhichInvObj which = type_to_slot[GetType(obj)];
+      const int type = GetType(obj);
+      if (type < kInvTypeJunk || type > kInvTypeWeapon)
+      {
+         Warning(("Inventory object %d has invalid type %d\n", obj, type));
+         return E_FAIL;
+      }
+
+      eWhichInvObj which = type_to_slot[type];
 
       if (obj == mCurSel[which].obj)
          return S_FALSE;
@@ -196,7 +209,7 @@ public:
       if (WieldingJunk())
          return E_FAIL;
 
-      old_obj = mCurSel[kCurrentItem].obj;
+      old_obj = mCurSel[which].obj;
 
       if (which == mInHand)
          Unfocus();
@@ -301,6 +314,11 @@ public:
 
          // skip past the wrong type
          int itemtype = GetType(item);
+         if (itemtype < kInvTypeJunk || itemtype > kInvTypeWeapon)
+         {
+            Warning(("Inventory object %d has invalid type %d\n", item, itemtype));
+            continue;
+         }
          if (type_to_slot[itemtype] != which)
             continue;
 
@@ -345,12 +363,12 @@ public:
       if (which == mInHand)
          return S_FALSE;
 
-      ObjID wielded = mCurSel[mInHand].obj;
       if (WieldingJunk())
          return E_FAIL;
       Unfocus();
       mInHand = which;
       Focus();
+
       return S_OK;
    }
 
@@ -438,7 +456,6 @@ public:
 
             mInSim = TRUE;
 
-
          }
          break;
          default:
@@ -508,6 +525,7 @@ STDMETHODIMP cInventory::DatabaseNotify(ulong msg, ITagFile* file)
       case kDatabaseReset:
       {
          mInHand = kCurrentWeapon;
+         mInSim = FALSE;
          for (int i = 0; i < kNumItemSels; i++)
             mCurSel[i].obj = OBJ_NULL;
       }
@@ -552,8 +570,14 @@ void cInventory::Load(ITagFile* file)
    HRESULT result = file->OpenBlock(&inv_tag,&v);
    if (SUCCEEDED(result))
    {
-      Verify(file->Read((char*)&mInHand,sizeof(mInHand)) == sizeof(mInHand));
-      Verify(file->Read((char*)&mCurSel,sizeof(mCurSel)) == sizeof(mCurSel));
+      if (file->Read((char*)&mInHand,sizeof(mInHand)) != sizeof(mInHand) ||
+          file->Read((char*)&mCurSel,sizeof(mCurSel)) != sizeof(mCurSel))
+      {
+         dbLoadReportFailure("inventory-reader",
+                             "Player inventory block is truncated");
+         file->CloseBlock();
+         return;
+      }
       file->CloseBlock();
 
       for (int i = 0; i < kNumItemSels; i++)

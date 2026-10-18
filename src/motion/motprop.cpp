@@ -462,11 +462,11 @@ BOOL ObjGetPlayerPosOffsets(ObjID obj, mxs_vector *pPosOff, mxs_angvec *pAngOff)
    if(TRUE==(success=motPlayerLimbOffsetsProp->Get(obj,&pLimbOff)))
    {
       mx_copy_vec(pPosOff,&pLimbOff->armPosOff);
-      d=pLimbOff->armAngDegrees.x;
+      d = (int)pLimbOff->armAngDegrees.x;
       pAngOff->tx=degrees_to_fixang(d);
-      d=pLimbOff->armAngDegrees.y;
+      d = (int)pLimbOff->armAngDegrees.y;
       pAngOff->ty=degrees_to_fixang(d);
-      d=pLimbOff->armAngDegrees.z;
+      d = (int)pLimbOff->armAngDegrees.z;
       pAngOff->tz=degrees_to_fixang(d);
    }
    return success;

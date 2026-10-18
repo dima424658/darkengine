@@ -54,7 +54,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -73,19 +72,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(OutDir);$(SolutionDir)3rdparty\dx7sdk\lib;$(SolutionDir)3rdparty\zlib\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
+    <LibraryPath>$(DarkLibraryOutputDir);$(SolutionDir)3rdparty\zlib\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(OutDir);$(SolutionDir)3rdparty\dx7sdk\lib;$(SolutionDir)3rdparty\zlib\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
+    <LibraryPath>$(DarkLibraryOutputDir);$(SolutionDir)3rdparty\zlib\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(OutDir);$(SolutionDir)3rdparty\dx7sdk\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <LibraryPath>$(DarkLibraryOutputDir);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(OutDir);$(SolutionDir)3rdparty\dx7sdk\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <LibraryPath>$(DarkLibraryOutputDir);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -101,7 +100,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>dinput.lib;d3dx.lib;dsound.lib;dxguid.lib;actmovie.lib;entrywin.lib;arq.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;zlib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxguid.lib;actmovie.lib;entrywin.lib;arq.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -109,6 +108,7 @@
       <AdditionalIncludeDirectories>.;.\actreact;.\ai;.\csg;.\editor;.\engfeat;.\framewrk;.\motion;.\object;.\physics;.\portal;.\render;.\script;.\shock;.\sim;.\sound;.\ui;.\dark;.\deepc;.\deepc\motion;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>types.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>None</DebugInformationFormat>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
@@ -118,11 +118,14 @@
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>arq.lib;dinput.lib;d3dx.lib;dsound.lib;dxguid.lib;actmovie.lib;entrywin.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
+      <AdditionalDependencies>arq.lib;dxguid.lib;actmovie.lib;entrywin.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
@@ -140,7 +143,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>dinput.lib;d3dx.lib;dsound.lib;dxguid.lib;actmovie.lib;entrywin.lib;arq.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxguid.lib;actmovie.lib;entrywin.lib;arq.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -148,6 +151,7 @@
       <AdditionalIncludeDirectories>.;.\actreact;.\ai;.\csg;.\editor;.\engfeat;.\framewrk;.\motion;.\object;.\physics;.\portal;.\render;.\script;.\shock;.\sim;.\sound;.\ui;.\dark;.\deepc;.\deepc\motion;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>types.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>None</DebugInformationFormat>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
@@ -157,11 +161,14 @@
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>arq.lib;dinput.lib;d3dx.lib;dsound.lib;dxguid.lib;actmovie.lib;entrywin.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
+      <AdditionalDependencies>arq.lib;dxguid.lib;actmovie.lib;entrywin.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
@@ -432,7 +439,6 @@
     <ClInclude Include="dark\Drkbndui.h" />
     <ClInclude Include="dark\Drkbook.h" />
     <ClInclude Include="dark\Drkbreth.h" />
-    <ClInclude Include="dark\Drkchkcd.h" />
     <ClInclude Include="dark\Drkcmbat.h" />
     <ClInclude Include="dark\Drkcolor.h" />
     <ClInclude Include="dark\Drkcret.h" />
@@ -486,7 +492,6 @@
     <ClInclude Include="dark\Drkwswd.h" />
     <ClInclude Include="dark\Drkwswd_.h" />
     <ClInclude Include="dark\Drk_bind.h" />
-    <ClInclude Include="dark\Eidosafp.h" />
     <ClInclude Include="dark\Filepanl.h" />
     <ClInclude Include="dark\Gadslide.h" />
     <ClInclude Include="dark\Invtype.h" />
@@ -525,7 +530,7 @@
     <ClInclude Include="editor\Cyclegad.h" />
     <ClInclude Include="editor\Doorblok.h" />
     <ClInclude Include="editor\Dragbox.h" />
-    <ClInclude Include="editor\Edinhst.h" />
+    <ClInclude Include="..\winsrc\editor\edinhst.h" />
     <ClInclude Include="editor\Edinhtyp.h" />
     <ClInclude Include="editor\Editapp.h" />
     <ClInclude Include="editor\Editbr.h" />
@@ -537,12 +542,12 @@
     <ClInclude Include="editor\Editlink.h" />
     <ClInclude Include="editor\Editmode.h" />
     <ClInclude Include="editor\Editobj.h" />
-    <ClInclude Include="editor\Editplst.h" />
+    <ClInclude Include="..\winsrc\editor\editplst.h" />
     <ClInclude Include="editor\Editprop.h" />
     <ClInclude Include="editor\Editprst.h" />
     <ClInclude Include="editor\Editsave.h" />
     <ClInclude Include="editor\Edittul_.h" />
-    <ClInclude Include="editor\Edlinkst.h" />
+    <ClInclude Include="..\winsrc\editor\edlinkst.h" />
     <ClInclude Include="editor\Edlnktyp.h" />
     <ClInclude Include="editor\Edmedmo.h" />
     <ClInclude Include="editor\Edmedmos.h" />
@@ -600,7 +605,7 @@
     <ClInclude Include="editor\Scrnedit.h" />
     <ClInclude Include="editor\Scrpted.h" />
     <ClInclude Include="editor\Sdesedit.h" />
-    <ClInclude Include="editor\Sdesedst.h" />
+    <ClInclude Include="..\winsrc\editor\sdesedst.h" />
     <ClInclude Include="editor\Sdesparm.h" />
     <ClInclude Include="editor\Simpwrap.h" />
     <ClInclude Include="editor\Status.h" />
@@ -703,9 +708,6 @@
     <ClInclude Include="framewrk\Backup.h" />
     <ClInclude Include="framewrk\Basemode.h" />
     <ClInclude Include="Framewrk\buftagf.h" />
-    <ClInclude Include="framewrk\Cdconst.h" />
-    <ClInclude Include="framewrk\Cdguid.h" />
-    <ClInclude Include="framewrk\Cdplayer.h" />
     <ClInclude Include="framewrk\Cfgtool.h" />
     <ClInclude Include="framewrk\Chainevt.h" />
     <ClInclude Include="framewrk\Command.h" />
@@ -728,8 +730,6 @@
     <ClInclude Include="framewrk\Dspchdef.h" />
     <ClInclude Include="framewrk\Dspchiid.h" />
     <ClInclude Include="framewrk\Dwordset.h" />
-    <ClInclude Include="framewrk\Dxload.h" />
-    <ClInclude Include="framewrk\Dxwrndlg.h" />
     <ClInclude Include="framewrk\Fastflts.h" />
     <ClInclude Include="framewrk\Fcytagdb.h" />
     <ClInclude Include="framewrk\Filetool.h" />
@@ -740,6 +740,7 @@
     <ClInclude Include="framewrk\Gameapp.h" />
     <ClInclude Include="framewrk\Gamecam.h" />
     <ClInclude Include="framewrk\Gameinfo.h" />
+    <ClInclude Include="framewrk\gamepad_backend.h" />
     <ClInclude Include="framewrk\Gamemode.h" />
     <ClInclude Include="framewrk\Gamemsg.h" />
     <ClInclude Include="framewrk\Gamescrn.h" />
@@ -748,7 +749,6 @@
     <ClInclude Include="framewrk\Gametabl.h" />
     <ClInclude Include="framewrk\Gametool.h" />
     <ClInclude Include="framewrk\Gen_bind.h" />
-    <ClInclude Include="framewrk\Hchkthrd.h" />
     <ClInclude Include="framewrk\Idispatc.h" />
     <ClInclude Include="framewrk\Idispat_.h" />
     <ClInclude Include="framewrk\Imgsrc.h" />
@@ -771,7 +771,6 @@
     <ClInclude Include="framewrk\Netmsg.h" />
     <ClInclude Include="framewrk\Netsim.h" />
     <ClInclude Include="framewrk\Netsynch.h" />
-    <ClInclude Include="framewrk\Netvoice.h" />
     <ClInclude Include="framewrk\Pickgame.h" />
     <ClInclude Include="framewrk\R3app.h" />
     <ClInclude Include="framewrk\Rand.h" />
@@ -1231,7 +1230,6 @@
     <ClInclude Include="script\Atkscrpt.h" />
     <ClInclude Include="script\Bodscrpt.h" />
     <ClInclude Include="Script\Camscrs.h" />
-    <ClInclude Include="script\Cdscript.h" />
     <ClInclude Include="script\Contscpt.h" />
     <ClInclude Include="script\Contscrm.h" />
     <ClInclude Include="script\Contscrs.h" />
@@ -1649,7 +1647,6 @@
     <ClCompile Include="dark\Drkamap.cpp" />
     <ClCompile Include="dark\Drkbook.cpp" />
     <ClCompile Include="dark\Drkbreth.cpp" />
-    <ClCompile Include="dark\Drkchkcd.cpp" />
     <ClCompile Include="dark\Drkcmbat.cpp" />
     <ClCompile Include="dark\Drkcolor.cpp" />
     <ClCompile Include="dark\Drkcret.cpp" />
@@ -1698,7 +1695,6 @@
     <ClCompile Include="dark\Drkwswd.cpp" />
     <ClCompile Include="dark\Drkwswd_.c" />
     <ClCompile Include="dark\Drk_bind.cpp" />
-    <ClCompile Include="dark\Eidosafp.c" />
     <ClCompile Include="dark\Filepanl.cpp" />
     <ClCompile Include="dark\Gadslide.cpp" />
     <ClCompile Include="dark\Lootprop.cpp" />
@@ -1739,7 +1735,7 @@
     <ClCompile Include="editor\Editapp.c" />
     <ClCompile Include="editor\Editbr.c" />
     <ClCompile Include="editor\Editgeom.c" />
-    <ClCompile Include="editor\Editlink.cpp">
+    <ClCompile Include="..\winsrc\editor\editlink.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1747,7 +1743,7 @@
     </ClCompile>
     <ClCompile Include="editor\Editmode.c" />
     <ClCompile Include="editor\Editobj.c" />
-    <ClCompile Include="editor\Editplst.cpp">
+    <ClCompile Include="..\winsrc\editor\editplst.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1762,7 +1758,7 @@
     <ClCompile Include="editor\Editsave.c" />
     <ClCompile Include="editor\Edmedmo.c" />
     <ClCompile Include="editor\Famedit.cpp" />
-    <ClCompile Include="editor\Filemenu.cpp" />
+    <ClCompile Include="..\winsrc\editor\Filemenu.cpp" />
     <ClCompile Include="editor\Flowpnp.cpp" />
     <ClCompile Include="editor\Fvaredit.cpp" />
     <ClCompile Include="editor\Gedit.c" />
@@ -1787,12 +1783,12 @@
     <ClCompile Include="editor\Mediface.c" />
     <ClCompile Include="editor\Medmenu.cpp" />
     <ClCompile Include="editor\Medplay.cpp" />
-    <ClCompile Include="editor\Menus.cpp" />
+    <ClCompile Include="..\winsrc\editor\menus.cpp" />
     <ClCompile Include="editor\Modalui.c" />
     <ClCompile Include="editor\Motedit.cpp" />
     <ClCompile Include="editor\Namenum.c" />
     <ClCompile Include="editor\Objed.cpp" />
-    <ClCompile Include="editor\Objedit.cpp" />
+    <ClCompile Include="..\winsrc\editor\objedit.cpp" />
     <ClCompile Include="editor\Objhistp.cpp" />
     <ClCompile Include="editor\Objpnp.c" />
     <ClCompile Include="editor\Otreeed.cpp" />
@@ -1823,7 +1819,7 @@
     <ClCompile Include="editor\Swaptool.c" />
     <ClCompile Include="editor\Txtpnp.c" />
     <ClCompile Include="editor\Txtrpal.c" />
-    <ClCompile Include="editor\Uiedit.c" />
+    <ClCompile Include="..\winsrc\editor\uiedit.c" />
     <ClCompile Include="editor\Undoredo.c" />
     <ClCompile Include="editor\Userpnp.c" />
     <ClCompile Include="editor\Vbrush.c" />
@@ -1896,16 +1892,17 @@
     <ClCompile Include="framewrk\Backup.cpp" />
     <ClCompile Include="framewrk\Basemode.c" />
     <ClCompile Include="Framewrk\buftagf.cpp" />
-    <ClCompile Include="framewrk\Cdplayer.cpp" />
     <ClCompile Include="framewrk\Cfgtool.c" />
     <ClCompile Include="framewrk\Chainevt.cpp" />
     <ClCompile Include="framewrk\Command.c" />
+    <ClCompile Include="framewrk\contentctx.cpp" />
     <ClCompile Include="framewrk\Ctag.cpp" />
     <ClCompile Include="framewrk\Ctagnet.cpp" />
     <ClCompile Include="framewrk\Ctagset.cpp" />
     <ClCompile Include="framewrk\Dappsink.cpp" />
     <ClCompile Include="framewrk\Dbfile.cpp" />
-    <ClCompile Include="framewrk\Diskfree.c" />
+    <ClCompile Include="..\winsrc\framewrk\diskfree.c" />
+    <ClCompile Include="..\winsrc\platform\platform_services.cpp" />
     <ClCompile Include="framewrk\Dispatch.cpp" />
     <ClCompile Include="framewrk\Dlgloop.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1914,8 +1911,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="framewrk\Dlgmode.c" />
-    <ClCompile Include="framewrk\Dxload.cpp" />
-    <ClCompile Include="framewrk\Dxwrndlg.cpp" />
     <ClCompile Include="framewrk\Fcytagdb.cpp" />
     <ClCompile Include="framewrk\Filetool.c" />
     <ClCompile Include="framewrk\Filevar.cpp" />
@@ -1928,12 +1923,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="framewrk\Gameinfo.c" />
+    <ClCompile Include="framewrk\gamepad.cpp" />
     <ClCompile Include="framewrk\Gamemode.c" />
     <ClCompile Include="framewrk\Gamescrn.cpp" />
     <ClCompile Include="framewrk\Gamestr.cpp" />
     <ClCompile Include="framewrk\Gametool.cpp" />
     <ClCompile Include="framewrk\Gen_bind.cpp" />
-    <ClCompile Include="framewrk\Hchkthrd.cpp" />
     <ClCompile Include="framewrk\Hybtable.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -1994,7 +1989,6 @@
     <ClCompile Include="framewrk\Netprops.cpp" />
     <ClCompile Include="framewrk\Netsim.cpp" />
     <ClCompile Include="framewrk\Netsynch.cpp" />
-    <ClCompile Include="framewrk\Netvoice.cpp" />
     <ClCompile Include="framewrk\Pickgame.cpp" />
     <ClCompile Include="framewrk\R3app.c" />
     <ClCompile Include="framewrk\Rand.cpp" />
@@ -2248,18 +2242,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="portal\Oracle.c" />
-    <ClCompile Include="portal\Perfcore.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="portal\Perftest.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="portal\Portal.c" />
     <ClCompile Include="portal\Portbg.c" />
     <ClCompile Include="portal\Portclip.c" />
@@ -2385,7 +2367,6 @@
     <ClCompile Include="script\Atkscrpt.cpp" />
     <ClCompile Include="script\Bodscrpt.cpp" />
     <ClCompile Include="Script\Camscrpt.cpp" />
-    <ClCompile Include="script\Cdscript.cpp" />
     <ClCompile Include="script\Contscrs.cpp" />
     <ClCompile Include="script\Datascrs.cpp" />
     <ClCompile Include="script\Dmgscrpt.cpp" />
@@ -2512,8 +2493,9 @@
     <ClCompile Include="ui\Bugterm.c" />
     <ClCompile Include="ui\Buttpanl.cpp" />
     <ClCompile Include="ui\Cmdterm.c" />
-    <ClCompile Include="ui\Ged_win.c" />
+    <ClCompile Include="..\winsrc\ui\ged_win.c" />
     <ClCompile Include="ui\Joypoll.cpp" />
+    <ClCompile Include="..\winsrc\input\gamepad_xinput.cpp" />
     <ClCompile Include="ui\Movie.cpp" />
     <ClCompile Include="ui\Panlmode.cpp" />
     <ClCompile Include="ui\Panltool.cpp" />
@@ -2522,9 +2504,9 @@
     <ClCompile Include="ui\Uiapp.cpp" />
     <ClCompile Include="ui\Uigame.cpp" />
     <ClCompile Include="ui\Uiloop.cpp" />
-    <ClCompile Include="ui\Winui.c" />
+    <ClCompile Include="..\winsrc\ui\winui.c" />
     <ClCompile Include="Version.c" />
-    <ClCompile Include="win32\Inclex.c">
+    <ClCompile Include="generated\Inclex.c">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">YY_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">TurnOffAllWarnings</WarningLevel>
@@ -2534,13 +2516,7 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">YY_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="Win32\Linklex.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="win32\Mschlex.c">
+    <ClCompile Include="generated\Mschlex.c">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\deepc\motion;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">YY_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2553,7 +2529,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\deepc\motion;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">YY_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="win32\Schlex.c">
+    <ClCompile Include="generated\Schlex.c">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">YY_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">TurnOffAllWarnings</WarningLevel>
@@ -2563,7 +2539,7 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">YY_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="win32\Songlex.c">
+    <ClCompile Include="generated\Songlex.c">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">YY_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">TurnOffAllWarnings</WarningLevel>
@@ -2575,64 +2551,111 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="portal\Ptfloat.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="portal\Ptlinear.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="portal\Ptmap.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="portal\Ptmapper.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="portal\Ptmap_8.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="portal\Ptmap_n.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="portal\Ptpersp.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="portal\Ptsurf.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="portal\Ptsurf16.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <None Include="portal\Ptfloat.asm" />
+    <None Include="portal\Ptlinear.asm" />
+    <None Include="portal\Ptmap.asm" />
+    <None Include="portal\Ptmapper.asm" />
+    <None Include="portal\Ptmap_8.asm" />
+    <None Include="portal\Ptmap_n.asm" />
+    <None Include="portal\Ptpersp.asm" />
+    <None Include="portal\Ptsurf.asm" />
+    <None Include="portal\Ptsurf16.asm" />
   </ItemGroup>
+  <PropertyGroup Condition="'$(BuildThief2)'=='true'">
+    <TargetName>ThiefRunner</TargetName>
+    <OutDir>$(DarkPlatformOutputDir)ThiefRunner\</OutDir>
+    <IntDir>$(DarkIntermediateRoot)ThiefRunner\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(BuildThief2)'!='true'">
+    <!-- The game and editor share this project but must never share object
+         files.  Otherwise changing BuildThief2 can link stale THIEF2_GAME
+         objects into an executable named DromEd. -->
+    <TargetName>DromEd</TargetName>
+    <OutDir>$(DarkPlatformOutputDir)DromEd\</OutDir>
+    <IntDir>$(DarkIntermediateRoot)DromEd\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(BuildThief2)'=='true' And '$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <!-- The runner validates installed retail data before engine startup. -->
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;DEBUG;DBG_ON;WARN_ON;SPEW_ON;WINDOWS_IGNORE_PACKING_MISMATCH;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;STRICT=1;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;THIEF2_GAME;PROPERTY_BLAME;DIRECTINPUT_VERSION=0x0700</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(BuildThief2)'=='true' And '$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <!-- The runner validates installed retail data before engine startup. -->
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;WINDOWS_IGNORE_PACKING_MISMATCH;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;STRICT=1;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;THIEF2_GAME;PROPERTY_BLAME;DIRECTINPUT_VERSION=0x0700</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(BuildThief2)'=='true' And '$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <!-- Keep the game/editor split identical across architectures. -->
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;DEBUG;DBG_ON;WARN_ON;SPEW_ON;WINDOWS_IGNORE_PACKING_MISMATCH;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;STRICT=1;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;THIEF2_GAME;PROPERTY_BLAME;DIRECTINPUT_VERSION=0x0700</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(BuildThief2)'=='true' And '$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <!-- Keep the game/editor split identical across architectures. -->
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;WINDOWS_IGNORE_PACKING_MISMATCH;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RGB_LIGHTING;BIG_LIGHTMAPS;SOFTWARE_RGB;SCHEMA_LOADING;__MSVC;STRICT=1;PLAYTEST;NEW_NETWORK_ENABLED;THIEF;THIEF2_GAME;PROPERTY_BLAME;DIRECTINPUT_VERSION=0x0700</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup Condition="'$(BuildThief2)'=='true'">
+    <ClCompile Update="editor\**\*.c;editor\**\*.cpp;csg\**\*.c;csg\**\*.cpp;framewrk\Report.cpp;sound\Songedtr.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Update="..\winsrc\editor\objedit.cpp;..\winsrc\editor\uiedit.c">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <!-- Small UI/service shims shared by the game command and scripting code. -->
+    <ClCompile Update="editor\Isdesced.cpp;..\winsrc\editor\menus.cpp;editor\Prompts.c;editor\Sdesparm.cpp;editor\Status.c;framewrk\Gameiid.c">
+      <ExcludedFromBuild>false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Update="framewrk\Initedit.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Update="framewrk\Initgame.cpp">
+      <ExcludedFromBuild>false</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemDefinitionGroup Condition="'$(BuildThief2)'!='true'">
+    <Manifest>
+      <!-- The editor's client area is also its render-canvas size.  Without
+           an explicit DPI declaration Windows virtualizes GetClientRect,
+           leaving the right and bottom of a maximized DromEd window unused. -->
+      <AdditionalManifestFiles>$(ProjectDir)dromed.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libsrc\squirrel\squirrel.vcxproj" Condition="'$(EnableSquirrel)' == 'true'">
+      <Project>{4AB7A069-9AAF-4B26-A81E-F31B408441AD}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="dark.rc" />
+  </ItemGroup>
+  <Target Name="ValidateKCToolsDependency" BeforeTargets="PrepareForBuild" Condition="'$(EnableKCTools)' == 'true' And '$(BuildThief2)' != 'true'">
+    <Error Condition="!Exists('$(KCToolsSourceRoot)KCTools\KCTools.csproj')" Text="EnableKCTools=true requires an external KCTools v1.3.4 checkout. Clone it into ..\..\darkengine-deps\kctools or set KCToolsSourceDir." />
+  </Target>
+  <Target Name="PublishKCToolsDependency" AfterTargets="Build" Condition="'$(EnableKCTools)' == 'true' And '$(BuildThief2)' != 'true'">
+    <Message Importance="high" Text="Publishing external KCTools dependency to $(OutDir)KCTools" />
+    <!-- KCTools NativeAOT is x64, but it is an out-of-process sidecar and is
+         therefore shared by the Win32 and x64 DromEd builds. -->
+    <Exec Command="&quot;$(DotNetExecutable)&quot; publish &quot;$(KCToolsSourceRoot)KCTools\KCTools.csproj&quot; --configuration Release --runtime win-x64 --self-contained true --output &quot;$(OutDir)KCTools&quot; --nologo" />
+  </Target>
+  <Target Name="ValidateSndFileRuntime" BeforeTargets="PrepareForBuild" Condition="'$(EnableSndFileRuntime)' == 'true'">
+    <Error Condition="!Exists('$(SndFileRuntimeRoot)sndfile.dll')" Text="EnableSndFileRuntime=true requires the architecture-matched libsndfile 1.2.2 Windows runtime outside the repository. Set SndFileRuntimeDir to its bin directory." />
+  </Target>
+  <Target Name="PublishSndFileRuntime" AfterTargets="Build" Condition="'$(EnableSndFileRuntime)' == 'true'">
+    <Copy SourceFiles="$(SndFileRuntimeRoot)sndfile.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

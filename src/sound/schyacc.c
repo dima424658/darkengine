@@ -124,7 +124,7 @@ ObjID g_SchemaID;
 static ObjID baseSchemaID;
 
 // schema parameters
-static schemaParamsSet;
+static BOOL schemaParamsSet;
 static sSchemaPlayParams schemaPlayParams;
 static ISchemaPlayParamsProperty *pPropSchemaPlayParams;
 
@@ -143,7 +143,7 @@ static ObjID archID;
 #define SAMPLE_NAME_LEN 20      // max sample file name length
 static char sampleNames[SCHEMA_SAMPLES_MAX][SAMPLE_NAME_LEN];
 static uchar sampleFreqs[SCHEMA_SAMPLES_MAX];
-static char *pSampleNames[SCHEMA_SAMPLES_MAX];
+static const char *pSampleNames[SCHEMA_SAMPLES_MAX];
 static uchar sampleFreq;
 static int samplesNum = 0;
 static BOOL freqSet;
@@ -177,16 +177,12 @@ static Label g_aTagEnumLabel[kMaxTagValues][8]; // 8 is a hard limit in tagdb
 static BOOL g_aTagNumEnums[kMaxTagValues];      // 0 indicates an int tag
 
 
-#define min(x,y) ((x)<(y)?(x):(y))
-
 #define yyerror printf
 
 // zero all the stuff telling us whether things have been set
 void SchemaDataReset(void)
 {
    sSchemaPlayParams *pSchemaPlayParams;
-   int i, j, k;
-
    samplesNum = 0;
    schemaParamsSet = FALSE;
    schemaPrioritySet = FALSE;
@@ -797,8 +793,8 @@ void SchemaYaccParse(char *schemaFile)
       pObjSys = AppGetObj(IObjectSystem);
    if (!pTraitMan)
       pTraitMan = AppGetObj(ITraitManager);
-   baseSchemaID = IObjectSystem_GetObjectNamed(pObjSys, &baseSchemaLabel);
-   baseVoiceID = IObjectSystem_GetObjectNamed(pObjSys, &baseVoiceLabel);
+   baseSchemaID = IObjectSystem_GetObjectNamed(pObjSys, baseSchemaLabel.text);
+   baseVoiceID = IObjectSystem_GetObjectNamed(pObjSys, baseVoiceLabel.text);
 
    if (pSchemaPlayParams = SchemaPlayParamsGet(baseSchemaID))
       schemaPlayParams = *pSchemaPlayParams;
@@ -827,7 +823,7 @@ void SchemaYaccParse(char *schemaFile)
    SafeRelease(pTraitMan);
 }
 
-yyparse()
+int yyparse(void)
 {
 	register short		yyi, *yyp;	/* for table lookup */
 	register short		*yyps;		/* top of state stack */
@@ -1037,8 +1033,6 @@ case YYr15: {	/* voice :  VOICE IDENT opt_voice_params */
 case YYr21: {	/* schema :  SCHEMA IDENT opt_schema_params opt_samples */
 
    ObjID objID;
-   int i, j;
-
    MakeLabel(&schemaLabel, yypvt[-2].strval);
    if (archID == OBJ_NULL)
       objID = SchemaCreate(&schemaLabel, baseSchemaID);
@@ -1179,7 +1173,7 @@ case YYr60: {	/* archetype :  ARCHETYPE IDENT */
    sSchemaPlayParams *pArchParams, *pDefaultParams;
 
    MakeLabel(&label, yypvt[0].strval);
-   archID = IObjectSystem_GetObjectNamed(pObjSys, &label);
+   archID = IObjectSystem_GetObjectNamed(pObjSys, label.text);
    if (archID == OBJ_NULL)
       Warning(("Unknown archetype %s\n", yypvt[0].strval));
    if (((pArchParams = SchemaPlayParamsGet(archID)) != NULL) &&
@@ -1271,8 +1265,8 @@ case YYr65: {	/* message :  MESSAGE IDENT */
 
 case YYr66: {	/* tag :  TAG IDENT opt_tag_states */
 
-   int i;
    Label TagNameLabel;
+   int i;
 
    MakeLabel(&TagNameLabel, yypvt[-1].strval);
    SpeechAddTag(&TagNameLabel);
@@ -1311,7 +1305,6 @@ case YYr72: {	/* tag_int :  TAG_INT IDENT */
 
 case YYr73: {	/* env_tag_required :  ENV_TAG_REQUIRED IDENT */
 
-   int i;
    Label TagNameLabel;
 
    MakeLabel(&TagNameLabel, yypvt[0].strval);
@@ -1336,7 +1329,7 @@ case YYr74: {	/* schema_voice :  SCHEMA_VOICE IDENT INT IDENT opt_schema_tags */
    for (i = 0; i < g_iNumTagsAdded; ++i) {
       if (g_aTagNumEnums[i])
          SpeechSchemaNewAddEnumTag(&g_aTagNameLabel[i],
-                                   &g_aTagEnumLabel[i]);
+                                   g_aTagEnumLabel[i]);
       else
          SpeechSchemaNewAddIntTag(&g_aTagNameLabel[i],
                                   g_aTagMinInt[i],
@@ -1405,7 +1398,7 @@ case YYr90: {	/* env_tag :  ENV_TAG opt_schema_tags */
    for (i = 0; i < g_iNumTagsAdded; ++i) {
       if (g_aTagNumEnums[i])
          ESndSchemaNewAddEnumTag(&g_aTagNameLabel[i],
-                                 &g_aTagEnumLabel[i]);
+                                 g_aTagEnumLabel[i]);
       else
          ESndSchemaNewAddIntTag(&g_aTagNameLabel[i],
                                 g_aTagMinInt[i],
@@ -1421,7 +1414,9 @@ case YYr95: {	/* sample :  IDENT opt_text opt_freq */
 
    if (samplesNum<SCHEMA_SAMPLES_MAX)
    {
-      int nameLen = min(strlen(yypvt[-2].strval), SAMPLE_NAME_LEN-1);
+      int nameLen = (int)strlen(yypvt[-2].strval);
+      if (nameLen >= SAMPLE_NAME_LEN)
+         nameLen = SAMPLE_NAME_LEN-1;
       strncpy(sampleNames[samplesNum], yypvt[-2].strval, nameLen);
       sampleNames[samplesNum][nameLen] = '\0';
       if (freqSet)
@@ -1472,6 +1467,7 @@ case YYr101: {	/* freq :  FREQ INT */
 	if (yydebug)
 		YY_TRACE(yyShowGoto)
 #endif
+	if (0) goto yyerrlabel;
 	goto yyStack;
 
 yyerrlabel:	;		/* come here from YYERROR	*/

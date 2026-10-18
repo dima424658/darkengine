@@ -42,7 +42,6 @@ int flat16_lpix8(fix i, int c)
       flat16_lpix8_direct(i, c);
 }
 
-#pragma off(unreferenced)
 gdlpix_func *flat8_lpix8_expose(fix i, int c)
 {
 
@@ -59,4 +58,3 @@ gdlpix_func *flat16_lpix16_expose(fix i, int c)
 {
    return flat16_lpix16;
 }
-#pragma on(unreferenced)

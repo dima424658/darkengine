@@ -15,97 +15,103 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="wdspmode.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdspmode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdspprov.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdspprov.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="aggddraw.h">
+    <ClInclude Include="..\..\winsrc\dispdev\aggddraw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cbchain.h">
+    <ClInclude Include="..\..\winsrc\dispdev\cbchain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="dddynf.h">
+    <ClInclude Include="..\..\winsrc\dispdev\dddynf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\winsrc\render\d3d11present.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dispbase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdcreate.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdcreate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wddmode.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wddmode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdisp.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdisp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdispapi.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdispapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdispcb.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdispcb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdispdd.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdispdd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdispgdi.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdispgdi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdisptls.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdisptls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdspgshl.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdspgshl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wdspguid.h">
+    <ClInclude Include="..\..\winsrc\dispdev\wdspguid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="wdspprov.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wdspprov.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="aggddraw.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\aggddraw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cbchain.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\cbchain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dddynf.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\dddynf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\winsrc\render\d3d11present.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dispbase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wdcreate.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wdcreate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wddmode.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wddmode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wdisp.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wdisp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wdispdd.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wdispdd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wdispgdi.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wdispgdi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wdisptls.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wdisptls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wdspgshl.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wdspgshl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wdspmode.cpp">
+    <ClCompile Include="..\..\winsrc\dispdev\wdspmode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="windisp.txt" />
+    <Text Include="..\..\winsrc\dispdev\windisp.txt" />
   </ItemGroup>
 </Project>

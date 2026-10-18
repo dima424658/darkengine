@@ -252,7 +252,7 @@ static bool unpackimage(FILE *fp,int bits)
 				Free(linebuffer);
             return FALSE;
 				}
-			*u++ = oldtoken;
+			*u++ = (uchar)oldtoken;
 			thiscode = oldcode;
 			}
 
@@ -264,7 +264,7 @@ static bool unpackimage(FILE *fp,int bits)
 
 		oldtoken = thiscode;
 		do {
-			linebuffer[byte++]=thiscode;
+			linebuffer[byte++]=(uchar)thiscode;
 
 			if (byte >= imageBlock.width)
 				{
@@ -292,7 +292,7 @@ static bool unpackimage(FILE *fp,int bits)
 		if (nextcode < 4096 && oldcode != NO_CODE)
 			{
 			codestack[nextcode] = oldcode;
-			lastcodestack[nextcode] = oldtoken;
+			lastcodestack[nextcode] = (uchar)oldtoken;
 			if (++nextcode >= codesize2 && codesize < 12)
 			    codesize2 = 1 << ++codesize;
 			}

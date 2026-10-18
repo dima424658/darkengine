@@ -121,7 +121,7 @@ static void SetBrushBounds(editBrush *brush)
 \* ----- \-\-\-\-\-\-\-\-\ <<< (((((( \/ )))))) >>> /-/-/-/-/-/-/-/-/ ----- */
 void GEdMedMoMarkWaterOneBrush(editBrush *brush, mxs_vector *seed)
 {
-   uchar medium_motion = brFlow_Index(brush);
+   uchar medium_motion = (uchar)brFlow_Index(brush);
 
    sEdMedMoSurface* info = &g_aEdMedMoSurface[medium_motion]; 
 

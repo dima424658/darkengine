@@ -19,6 +19,8 @@
 
 #include <allocapi.h>
 
+#include <platform_services.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static cResSharedCache g_ResSharedCache;
@@ -661,11 +663,16 @@ STDMETHODIMP_(ulong) cResSharedCache::Purge(ulong nBytesToPurge)
 
 STDMETHODIMP_(void) cResSharedCache::GetStats(sCacheStats* pStats)
 {
-    // TODO
-    MEMORYSTATUS Buffer;
-    Buffer.dwLength = 32;
-    GlobalMemoryStatus(&Buffer);
-    memcpy(pStats, &Buffer, sizeof(Buffer));
+    sPlatformMemoryStatus memoryStatus;
+    PlatformGetMemoryStatus(&memoryStatus);
+    pStats->reserved = 0;
+    pStats->memoryLoad = memoryStatus.load_percent;
+    pStats->totalPhys = memoryStatus.total_physical_bytes;
+    pStats->availPhys = memoryStatus.available_physical_bytes;
+    pStats->totalPageFile = memoryStatus.total_page_file_bytes;
+    pStats->availPageFile = memoryStatus.available_page_file_bytes;
+    pStats->totalVirtual = memoryStatus.total_virtual_bytes;
+    pStats->availVirtual = memoryStatus.available_virtual_bytes;
 
     sAllocLimits limits;
     AllocGetLimits(&limits);
@@ -673,9 +680,9 @@ STDMETHODIMP_(void) cResSharedCache::GetStats(sCacheStats* pStats)
     sCacheState state;
     g_pResSharedCache->GetState(&state);
 
-    pStats->allocCap = limits.allocCap;
-    pStats->totalMalloc = limits.totalAlloc;
-    pStats->lockedMalloc = limits.totalAlloc - state.nBytes;
+    pStats->allocCap = (ulong)limits.allocCap;
+    pStats->totalMalloc = (ulong)limits.totalAlloc;
+    pStats->lockedMalloc = (ulong)(limits.totalAlloc - state.nBytes);
     pStats->cachedMalloc = state.nBytes;
 }
 

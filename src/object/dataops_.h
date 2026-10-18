@@ -13,6 +13,7 @@
 #include <comtools.h>
 #include <string.h>
 #include <lgassert.h>
+#include <new>
 
 #include <memall.h>
 #include <dbmem.h>
@@ -84,8 +85,18 @@ public:
    STDMETHOD(Read)(sDatum* pdat, IDataOpsFile* file, int version )
    {
       // assumes version is the size
-      char* buf = new char[version];
-      file->Read(buf,version);
+      // Property versions are serialized sizes in this legacy codec.  Never
+      // turn a hostile signed value into a giant allocation.
+      if (version <= 0 || version > 64 * 1024 * 1024)
+         return E_FAIL;
+      char* buf = new (std::nothrow) char[version];
+      if (!buf)
+         return E_OUTOFMEMORY;
+      if (file->Read(buf,version) != version)
+      {
+         delete [] buf;
+         return E_FAIL;
+      }
 
       if (!pdat->value)
          *pdat = New();
@@ -98,7 +109,7 @@ public:
       else
          Copy(pdat,sDatum(buf));
 
-      delete buf;
+      delete [] buf;
       return S_OK;
    }
 
@@ -157,14 +168,18 @@ public:
 
    STDMETHOD(Read)(sDatum* pval, IDataOpsFile* file, int )
    {
-      if (file->Read((void*)pval,sizeof(*pval)) == sizeof(*pval))
+      // Simple properties are a fixed 32-bit database format even when
+      // sDatum is pointer-sized in a 64-bit process.  Reading sizeof(sDatum)
+      // here would consume four bytes from the following serialized field.
+      pval->value = NULL;
+      if (file->Read(&pval->value,4) == 4)
          return S_OK;
       return E_FAIL;
    }
 
    STDMETHOD(Write)(sDatum val, IDataOpsFile* file)
    {
-      if (file->Write((void*)&val,sizeof(val)) == sizeof(val))
+      if (file->Write(&val.value,4) == 4)
          return S_OK;
       return E_FAIL;
    }
@@ -212,6 +227,7 @@ public:
    STDMETHOD(Copy)(sDatum* targ, sDatum src) { Assert_(mpOps); return mpOps->Copy(targ,src); };
    STDMETHOD_(long, BlockSize)(sDatum val) { Assert_(mpOps); return mpOps->BlockSize(val); };
    STDMETHOD_(int,Version)() { Assert_(mpOps); return mpOps->Version(); };
+   STDMETHOD_(int,ReadVersion)() { Assert_(mpOps); return mpOps->ReadVersion(); };
    STDMETHOD(Read)(sDatum* dat, IDataOpsFile* file, int version) { Assert_(mpOps); return mpOps->Read(dat,file,version); };
    STDMETHOD(Write)(sDatum dat, IDataOpsFile* file) { Assert_(mpOps); return mpOps->Write(dat,file); };
 
@@ -227,9 +243,16 @@ F_DECLARE_INTERFACE(ITagFile);
 class cDataOpsTagFile : public cCTUnaggregated<IDataOpsFile,&IID_IDataOpsFile,kCTU_Default>
 {
    ITagFile* File;
+   BOOL Bounded;
+   ulong BoundStart;
+   ulong BoundEnd;
 public:
    cDataOpsTagFile(ITagFile* file)
-      : File(file)
+      : File(file), Bounded(FALSE), BoundStart(0), BoundEnd(0)
+   {}
+
+   cDataOpsTagFile(ITagFile* file, ulong start, ulong length)
+      : File(file), Bounded(TRUE), BoundStart(start), BoundEnd(start + length)
    {}
 
    STDMETHOD_(long,Read)(void* buf, int len);

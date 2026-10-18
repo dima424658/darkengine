@@ -27,7 +27,6 @@ static uchar temp[64][256];
 static uchar temp2[64][256];
 static grs_bitmap dummy[8];
 
-#pragma off(unreferenced)
 grs_bitmap *make_texture_map(int i)
 {
    static int init = TRUE;
@@ -61,7 +60,6 @@ grs_bitmap *make_texture_map(int i)
 
    return dummy;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -269,7 +267,6 @@ uchar *portal_allocate_mem_rect(int x, int y)
 }
 
 #ifndef DBG_ON
-#pragma off(unreferenced)
 #endif
 void portal_free_mem_rect(uchar *p, int x, int y)
 {
@@ -287,7 +284,7 @@ void portal_free_mem_rect(uchar *p, int x, int y)
    for (i=0; i < num_strips; ++i, ++s) {
       if (s->block <= p && p < s->block+ROW) {
          ASSERT(s->ht == y);
-         free_rectangle_from_strip(s, p - s->block, x);
+         free_rectangle_from_strip(s, (int)(p - s->block), x);
 
          // free this strip if it's empty
          if (s->num_alloc == 0) {
@@ -304,5 +301,4 @@ void portal_free_mem_rect(uchar *p, int x, int y)
 #endif
 }
 #ifndef DBG_ON
-#pragma on(unreferenced)
 #endif

@@ -14,13 +14,13 @@
 
 #define HUMANOID_PHYS_RADIUS 1.0
 
-#define SWORD_PHYS_RADIUS 0.4
+#define SWORD_PHYS_RADIUS 0.4f
 
 static sCrPhysModOffset g_SwordPhysOffsets[] = \
 {
-   { 15, 17, 0.25, SWORD_PHYS_RADIUS},
-   { 15, 17, 0.5,  SWORD_PHYS_RADIUS},
-   { 15, 17, 0.75, SWORD_PHYS_RADIUS},
+   { 15, 17, 0.25f, SWORD_PHYS_RADIUS},
+   { 15, 17, 0.5f,  SWORD_PHYS_RADIUS},
+   { 15, 17, 0.75f, SWORD_PHYS_RADIUS},
    { 17, 17, 0,    SWORD_PHYS_RADIUS},
 //   { 15, 17, 1.5, SWORD_PHYS_RADIUS},
 };
@@ -34,7 +34,7 @@ static sCrPhysModOffsetTable g_WeaponPhysTable = \
 static sCrPhysModOffset g_aHumPhysModOffsets[] = \
 {
    { 8, 8, 0.0, 1.0},
-   { 18, 9, 0.8, 1.2},
+   { 18, 9, 0.8f, 1.2f},
 };
 
 // The physics model for avatar. This deliberately tries to ape the player
@@ -47,9 +47,9 @@ static sCrPhysModOffset g_aHumPhysModOffsets[] = \
 // stick out too far.
 static sCrPhysModOffset g_aAvaPhysModOffsets[] = \
 {
-   { 18, 9, 0.3, 1.2}, // The head
+   { 18, 9, 0.3f, 1.2f}, // The head
    { 0, 1, 0.5, 0.0}, // The feet (the toes)
-   { 18, 8, 1.0, 1.2}, // The butt
+   { 18, 8, 1.0f, 1.2f}, // The butt
    { 4, 5, 0.5, 0.0}, // The knees
    { 6, 7, 0.5, 0.0}, // The hips (placeholder for the shins)
       // { 18, 8, 6, 0.0}, // The stick up his butt (to keep him elevated)

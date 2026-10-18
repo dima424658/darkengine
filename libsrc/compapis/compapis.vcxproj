@@ -182,8 +182,8 @@
     <ClInclude Include="tagguid.h" />
     <ClInclude Include="thrmguid.h" />
     <ClInclude Include="thrmnapi.h" />
-    <ClInclude Include="wappapi.h" />
-    <ClInclude Include="wappguid.h" />
+    <ClInclude Include="..\..\winsrc\appcore\wappapi.h" />
+    <ClInclude Include="..\..\winsrc\appcore\wappguid.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="compapis.txt" />

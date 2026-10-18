@@ -202,7 +202,7 @@ void BreakClimb(ObjID objID, BOOL jumping, BOOL jump_thru)
          mx_ang2mat(&orien, &pModel->GetRotation());
          mx_copy_vec(&normal, &orien.vec[0]);
          mx_scaleeq_vec(&normal, 2.0);
-         mx_scale_addeq_vec(&normal, &orien.vec[2], 0.1);
+         mx_scale_addeq_vec(&normal, &orien.vec[2], 0.1f);
 
          cPhysModel *pClimbModel;
 
@@ -402,7 +402,7 @@ BOOL CheckClimb(ObjID objID)
                   if (pModel->IsPlayer())
                      mx_scale_vec(&add_vel, &pModel->GetVelocity(PLAYER_HEAD), 5.0);
                   else
-                     mx_scale_vec(&add_vel, &pModel->GetVelocity(), pModel->GetDynamics()->GetMass() * 0.1);
+                     mx_scale_vec(&add_vel, &pModel->GetVelocity(), pModel->GetDynamics()->GetMass() * 0.1f);
                   add_vel.z = 0;
                   mx_addeq_vec(&vel, &add_vel);
                   pModel2->GetDynamics(j)->SetVelocity(vel);
@@ -471,7 +471,7 @@ void BreakMantle(ObjID objID)
 
    BOOL found_valid = PhysObjValidPos(objID, NULL);
 
-   for (float dist = 0.1; (dist < 4.0) && !found_valid; dist += 0.1)
+   for (float dist = 0.1f; (dist < 4.0f) && !found_valid; dist += 0.1f)
    {
       mx_scale_add_vec(&target_loc, &pModel->GetLocationVec(), &orien.vec[0], -dist);
       mx_sub_vec(&delta, &target_loc, &pModel->GetLocationVec());
@@ -524,7 +524,7 @@ BOOL CheckMantle(ObjID objID)
    mxs_matrix orien;
    mxs_vector ledge_offset;
    mxs_vector movement_dir;
-   mxs_real   ledge_up = 0.02;
+   mxs_real   ledge_up = 0.02f;
    mxs_real   radius = ((cPhysSphereModel *)pModel)->GetRadius(PLAYER_HEAD);
    ObjID      hit_obj = 0;
 
@@ -617,8 +617,8 @@ BOOL CheckMantle(ObjID objID)
          mxs_vector target_pos;
 
          mx_copy_vec(&target_pos, &hit_loc2.vec);
-         mx_scale_addeq_vec(&target_pos, &movement_dir, -0.55); // pull back a radius
-         target_pos.z = hit_loc.vec.z + (radius * 1.02) - PLAYER_HEAD_POS + 1.0; // and just over the lip
+         mx_scale_addeq_vec(&target_pos, &movement_dir, -0.55f); // pull back a radius
+         target_pos.z = hit_loc.vec.z + (radius * 1.02f) - PLAYER_HEAD_POS + 1.0f; // and just over the lip
 
          pModel->SetMantlingTargVec(target_pos);
          pModel->SetMantlingState(1);
@@ -639,8 +639,8 @@ BOOL CheckMantle(ObjID objID)
             mxs_vector target_pos;
 
             mx_copy_vec(&target_pos, &hit_loc2.vec);
-            mx_scale_addeq_vec(&target_pos, &movement_dir, -0.55); // pull back a radius
-            target_pos.z = hit_loc.vec.z + (radius * 1.02) - PLAYER_HEAD_POS + 1.0; // and just over the lip
+            mx_scale_addeq_vec(&target_pos, &movement_dir, -0.55f); // pull back a radius
+            target_pos.z = hit_loc.vec.z + (radius * 1.02f) - PLAYER_HEAD_POS + 1.0f; // and just over the lip
 
             pModel->SetMantlingTargVec(target_pos);
             pModel->SetMantlingState(1);
@@ -661,8 +661,8 @@ BOOL CheckMantle(ObjID objID)
                mxs_vector target_pos;
 
                mx_copy_vec(&target_pos, &hit_loc2.vec);
-               mx_scale_addeq_vec(&target_pos, &movement_dir, -0.55); // pull back a radius
-               target_pos.z = hit_loc.vec.z + (radius * 1.02) - PLAYER_HEAD_POS + 1.0; // and just over the lip
+               mx_scale_addeq_vec(&target_pos, &movement_dir, -0.55f); // pull back a radius
+               target_pos.z = hit_loc.vec.z + (radius * 1.02f) - PLAYER_HEAD_POS + 1.0f; // and just over the lip
 
                pModel->SetMantlingTargVec(target_pos);
                pModel->SetMantlingState(1);
@@ -682,7 +682,7 @@ BOOL CheckMantle(ObjID objID)
                mxs_vector target_pos;
 
                mx_copy_vec(&target_pos, &pModel->GetLocationVec(PLAYER_BODY));
-               target_pos.z = hit_loc.vec.z + (radius * 1.02) - PLAYER_HEAD_POS + 1.0;
+               target_pos.z = hit_loc.vec.z + (radius * 1.02f) - PLAYER_HEAD_POS + 1.0f;
 
                pModel->SetMantlingTargVec(target_pos);
                pModel->SetMantlingState(1);
@@ -819,7 +819,7 @@ void UpdateMantling(cPhysModel *pModel, mxs_real dt)
             pModel->SetMantlingTargVec(targ_loc);
             pModel->SetTargetLocation(pModel->GetLocationVec(PLAYER_HEAD));
 
-            pModel->SetSpringTension(PLAYER_HEAD, 0.02 * DEFAULT_SPRING_TENSION);
+            pModel->SetSpringTension(PLAYER_HEAD, 0.02f * DEFAULT_SPRING_TENSION);
 
             pModel->SetMantlingState(3);
 
@@ -838,7 +838,7 @@ void UpdateMantling(cPhysModel *pModel, mxs_real dt)
             if (spring_amt < 1)
                spring_amt = 1.0;
             else
-               spring_amt = 1.0 / spring_amt;
+               spring_amt = 1.0f / spring_amt;
 
             pModel->SetSpringTension(PLAYER_HEAD, spring_amt * DEFAULT_SPRING_TENSION);
 
@@ -869,7 +869,7 @@ void UpdateMantling(cPhysModel *pModel, mxs_real dt)
             mxs_vector targ_loc;
             mxs_vector offset;
 
-            mx_mk_vec(&targ_loc, 0, 0, -PLAYER_FOOT_POS - PLAYER_RADIUS - 1.0);
+            mx_mk_vec(&targ_loc, 0, 0, -PLAYER_FOOT_POS - PLAYER_RADIUS - 1.0f);
             mx_addeq_vec(&targ_loc, &pModel->GetLocationVec());
 
             mx_mk_vec(&offset, 0, 0, PLAYER_HEAD_POS);
@@ -947,7 +947,7 @@ void UpdateMantling(cPhysModel *pModel, mxs_real dt)
             if ((PhysRaycast(start, end, &hit, &hit_obj, 0) != kCollideNone) && CanMantleOnto(hit_obj))
             {
                mx_copy_vec(&targ_vec, &hit.vec);
-               targ_vec.z += -PLAYER_FOOT_POS + 0.1;
+               targ_vec.z += -PLAYER_FOOT_POS + 0.1f;
             }
 
             pModel->SetTargetLocation(targ_vec);
@@ -964,7 +964,7 @@ void UpdateMantling(cPhysModel *pModel, mxs_real dt)
             mxs_vector vel;
 
             mx_copy_vec(&vel, &pModel->GetVelocity(PLAYER_HEAD));
-            mx_scaleeq_vec(&vel, min(50.0, max(30.0, 30 / mx_mag2_vec(&delta_pos))));
+            mx_scaleeq_vec(&vel, min(50.0f, max(30.0f, 30 / mx_mag2_vec(&delta_pos))));
             pModel->GetDynamics(PLAYER_HEAD)->SetVelocity(vel);
             pModel->UpdateEndLocation(PLAYER_HEAD, dt);
 

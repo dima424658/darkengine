@@ -5,8 +5,6 @@
 // $Revision: 1.7 $
 //
 
-#ifdef _WIN32
-
 #include <lg.h>
 #undef Free
 #undef Malloc
@@ -19,10 +17,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-volatile cFastMutex g_AllocMutex;
-
-///////////////////////////////////////////////////////////////////////////////
-//
 // CLASS: cPrimaryMalloc, members
 //
 
@@ -45,14 +39,14 @@ cPrimaryMalloc::~cPrimaryMalloc()
 
 ///////////////////////////////////////
 
-ulong LGAPI cPrimaryMalloc::DefPageFunc(ulong needed, sAllocLimits * pLimits)
+size_t LGAPI cPrimaryMalloc::DefPageFunc(size_t needed, sAllocLimits * pLimits)
 {
     return 0;
 }
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cPrimaryMalloc::Alloc(ULONG size)
+STDMETHODIMP_(void *) cPrimaryMalloc::Alloc(SIZE_T size)
 {
     // @Note (toml 07-14-97): This code is block copied in AllocEx and should be kept in sync
     if (!size)
@@ -66,7 +60,7 @@ STDMETHODIMP_(void *) cPrimaryMalloc::Alloc(ULONG size)
     do
     {
         // Page memory if over limit
-        if (totalAlloc > allocCap)
+        if (m_pfnPage && totalAlloc > allocCap)
             fMoreToPage = ((*m_pfnPage)(size, this) != 0);
 
         // Allocate our block
@@ -78,7 +72,6 @@ STDMETHODIMP_(void *) cPrimaryMalloc::Alloc(ULONG size)
 #ifndef SHIP
             if (totalAlloc > peakAlloc)
                 peakAlloc = totalAlloc;
-#endif
             AllocThreadUnlock();
             return p;
         }
@@ -94,7 +87,7 @@ STDMETHODIMP_(void *) cPrimaryMalloc::Alloc(ULONG size)
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cPrimaryMalloc::Realloc(void * pOld, ULONG newClientSize)
+STDMETHODIMP_(void *) cPrimaryMalloc::Realloc(void * pOld, SIZE_T newClientSize)
 {
     // @Note (toml 07-14-97): This code is block copied in ReallocEx and should be kept in sync
 
@@ -111,16 +104,16 @@ STDMETHODIMP_(void *) cPrimaryMalloc::Realloc(void * pOld, ULONG newClientSize)
     AllocThreadLock();
 
     void *    pNew;
-    const int oldClientSize = m_pNext->GetSize(pOld);
+    const SIZE_T oldClientSize = m_pNext->GetSize(pOld);
     BOOL      fMoreToPage = FALSE;
-    const int difference = newClientSize - oldClientSize;
+    const SIZE_T growth = newClientSize > oldClientSize ? newClientSize - oldClientSize : 0;
 
     do
     {
-        if (difference > 0 && m_pfnPage && totalAlloc > allocCap)
+        if (growth && m_pfnPage && totalAlloc > allocCap)
         {
             AllocThreadUnlock();
-            fMoreToPage = ((*m_pfnPage)(difference, this) != 0);
+            fMoreToPage = ((*m_pfnPage)(growth, this) != 0);
             AllocThreadLock();
         }
 
@@ -130,7 +123,11 @@ STDMETHODIMP_(void *) cPrimaryMalloc::Realloc(void * pOld, ULONG newClientSize)
 
     if (pNew)
     {
-        totalAlloc += m_pNext->GetSize(pNew) - oldClientSize;
+        const SIZE_T newSize = m_pNext->GetSize(pNew);
+        if (newSize >= oldClientSize)
+            totalAlloc += newSize - oldClientSize;
+        else
+            totalAlloc -= oldClientSize - newSize;
         #ifndef SHIP
         if (totalAlloc > peakAlloc)
             peakAlloc = totalAlloc;
@@ -164,9 +161,9 @@ STDMETHODIMP_(void) cPrimaryMalloc::Free(void * p)
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(ULONG) cPrimaryMalloc::GetSize(void * p)
+STDMETHODIMP_(SIZE_T) cPrimaryMalloc::GetSize(void * p)
 {
-    ulong result;
+    SIZE_T result;
 
     if (!p)
         return 0;
@@ -203,7 +200,7 @@ STDMETHODIMP_(void) cPrimaryMalloc::HeapMinimize()
 ///////////////////////////////////////
 #ifndef SHIP
 
-STDMETHODIMP_(void *) cPrimaryMalloc::AllocEx(ULONG size, const char * pszFile, int line)
+STDMETHODIMP_(void *) cPrimaryMalloc::AllocEx(SIZE_T size, const char * pszFile, int line)
 {
     // @Note (toml 07-14-97): This code is block copied FROM Alloc and should be kept in sync
     if (!size)
@@ -217,7 +214,7 @@ STDMETHODIMP_(void *) cPrimaryMalloc::AllocEx(ULONG size, const char * pszFile, 
     do
     {
         // Page memory if over limit
-        if (totalAlloc > allocCap)
+        if (m_pfnPage && totalAlloc > allocCap)
             fMoreToPage = ((*m_pfnPage)(size, this) != 0);
 
         // Allocate our block
@@ -245,7 +242,7 @@ STDMETHODIMP_(void *) cPrimaryMalloc::AllocEx(ULONG size, const char * pszFile, 
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cPrimaryMalloc::ReallocEx(void * pOld, ULONG newClientSize, const char * pszFile, int line)
+STDMETHODIMP_(void *) cPrimaryMalloc::ReallocEx(void * pOld, SIZE_T newClientSize, const char * pszFile, int line)
 {
     // @Note (toml 07-14-97): This code is block copied FROM Realloc and should be kept in sync
 
@@ -262,16 +259,16 @@ STDMETHODIMP_(void *) cPrimaryMalloc::ReallocEx(void * pOld, ULONG newClientSize
     AllocThreadLock();
 
     void *    pNew;
-    const int oldClientSize = m_pNext->GetSize(pOld);
+    const SIZE_T oldClientSize = m_pNext->GetSize(pOld);
     BOOL      fMoreToPage = FALSE;
-    const int difference = newClientSize - oldClientSize;
+    const SIZE_T growth = newClientSize > oldClientSize ? newClientSize - oldClientSize : 0;
 
     do
     {
-        if (difference > 0 && m_pfnPage && totalAlloc > allocCap)
+        if (growth && m_pfnPage && totalAlloc > allocCap)
         {
             AllocThreadUnlock();
-            fMoreToPage = ((*m_pfnPage)(difference, this) != 0);
+            fMoreToPage = ((*m_pfnPage)(growth, this) != 0);
             AllocThreadLock();
         }
 
@@ -281,7 +278,11 @@ STDMETHODIMP_(void *) cPrimaryMalloc::ReallocEx(void * pOld, ULONG newClientSize
 
     if (pNew)
     {
-        totalAlloc += m_pNext->GetSize(pNew) - oldClientSize;
+        const SIZE_T newSize = m_pNext->GetSize(pNew);
+        if (newSize >= oldClientSize)
+            totalAlloc += newSize - oldClientSize;
+        else
+            totalAlloc -= oldClientSize - newSize;
         #ifndef SHIP
         if (totalAlloc > peakAlloc)
             peakAlloc = totalAlloc;

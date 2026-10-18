@@ -101,7 +101,7 @@ void InitPlayerMotion()
 
    pPlayerMotion = new cPlayerMotion;
 
-   gEyeLoc = 0.8;
+   gEyeLoc = 0.8f;
    config_get_float("eyeloc",&gEyeLoc);
 }
 

@@ -46,7 +46,7 @@ cPhysOBBModel::cPhysOBBModel(ObjID objID, tPhysSubModId numSubModels, unsigned f
    else
       mx_copy_vec(&m_EdgeLen, &shape);
 
-   mx_scaleeq_vec(&m_EdgeLen, 0.999);  // a little epsilon
+   mx_scaleeq_vec(&m_EdgeLen, 0.999f);  // a little epsilon
 
    m_EdgeTrigger = FALSE;
    m_ClimbableSides = 0;

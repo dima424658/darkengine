@@ -105,7 +105,11 @@ enum {
    GRM_400x300x32,      
    GRM_512x384x32,
 
-   GRD_MODES,           // 77 modes
+   // DirectDraw can advertise resolutions that did not exist when this
+   // table was written. Keep the original values stable and reserve room
+   // for modes discovered at runtime.
+   GRD_STATIC_MODES,
+   GRD_MODES = GRD_STATIC_MODES + 128,
 };
 #ifdef __cplusplus
 };

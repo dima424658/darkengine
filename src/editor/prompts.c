@@ -43,7 +43,7 @@ typedef struct { BOOL data; } sBoolPrompt;
 static sFieldDesc bool_fields[]={{"Bool Arg",kFieldTypeBool,FieldLocation(sBoolPrompt,data) } };
 static sStructDesc bool_struct = StructDescBuild(sBoolPrompt,kStructFlagNone,bool_fields);
 
-BOOL prompt_bool(char *def)
+BOOL prompt_bool(const char *def)
 {
    sBoolPrompt bdata;
    bdata.data=TRUE;
@@ -58,7 +58,7 @@ typedef struct { int data; } sIntPrompt;
 static sFieldDesc int_fields[]={{"Int Arg",kFieldTypeInt,FieldLocation(sIntPrompt,data) } };
 static sStructDesc int_struct = StructDescBuild(sIntPrompt,kStructFlagNone,int_fields);
 
-int prompt_int(char *def)
+int prompt_int(const char *def)
 {
    sIntPrompt idata;
    if (def)
@@ -73,7 +73,7 @@ typedef struct { double data; } sDoublePrompt;
 static sFieldDesc double_fields[]={{"Double Arg",kFieldTypeFloat,FieldLocation(sDoublePrompt,data) } };
 static sStructDesc double_struct = StructDescBuild(sDoublePrompt,kStructFlagNone,double_fields);
 
-double prompt_double(char *def)
+double prompt_double(const char *def)
 {
    sDoublePrompt ddata;
    if (def)
@@ -92,7 +92,7 @@ static sStructDesc string_struct = StructDescBuild(sStringPrompt,kStructFlagNone
 // ok, this one is funky, since it needs a valid tmp buffer
 // it uses the "data" field
 // then, if the editor was real, moves it into buf and returns it, else returns def
-char *prompt_string(char *def, char *buf)
+char *prompt_string(const char *def, char *buf)
 {
    sStringPrompt sdata;
    if (def)
@@ -106,5 +106,5 @@ char *prompt_string(char *def, char *buf)
       return buf;
    }
    else
-      return def;
+      return (char *)def;
 }

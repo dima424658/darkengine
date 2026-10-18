@@ -16,10 +16,13 @@
 #include <mxpix.h>
 
 void (*modex_upix8_func[])() =
+{ 0 };
+
+void init_modex_upix8_func(void)
 {
-	[FILL_NORM] =	modex_norm_upix8,
-	[FILL_XOR] =	modex_xor_upix8,
-	[FILL_BLEND] =	modex_tluc_upix8,
-	[FILL_CLUT] =	modex_clut_upix8,
-	[FILL_SOLID] =	modex_solid_upix8,
-};
+	modex_upix8_func[FILL_NORM] = modex_norm_upix8;
+	modex_upix8_func[FILL_XOR] = modex_xor_upix8;
+	modex_upix8_func[FILL_BLEND] = modex_tluc_upix8;
+	modex_upix8_func[FILL_CLUT] = modex_clut_upix8;
+	modex_upix8_func[FILL_SOLID] = modex_solid_upix8;
+}

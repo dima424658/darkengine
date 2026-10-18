@@ -297,22 +297,22 @@ DECLARE_INTERFACE_(ILoopManager, IUnknown)
     //
     // Add a client
     //
-   STDMETHOD (AddClient)(THIS_ ILoopClient *, ulong * pCookie) PURE;
+   STDMETHOD (AddClient)(THIS_ ILoopClient *, tLoopClientCookie * pCookie) PURE;
 
    //
    // Remove a client
    //
-   STDMETHOD (RemoveClient)(THIS_ ulong cookie) PURE;
+   STDMETHOD (RemoveClient)(THIS_ tLoopClientCookie cookie) PURE;
 
    //
    // Add a client factory
    //
-   STDMETHOD (AddClientFactory)(THIS_ ILoopClientFactory *, ulong * pCookie) PURE;
+   STDMETHOD (AddClientFactory)(THIS_ ILoopClientFactory *, tLoopClientCookie * pCookie) PURE;
 
    //
    // Remove a client factory
    //
-   STDMETHOD (RemoveClientFactory)(THIS_ ulong cookie) PURE;
+   STDMETHOD (RemoveClientFactory)(THIS_ tLoopClientCookie cookie) PURE;
 
    //
    // Find/create a client

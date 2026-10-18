@@ -9,6 +9,8 @@
 #include <lg.h>
 #include <mprintf.h>
 #include <cfgdbg.h>  // For ConfigSpew
+#include <config.h>
+#include <stdio.h>
 
 #include <appagg.h>
 #include <lazyagg.h>
@@ -294,15 +296,22 @@ static BOOL resolveFrobProxy(ObjID *objp, eFrobLoc loc, BOOL im_the_src)
 }
 
 // installable inventory function pointers
-EXTERN BOOL (*frobInvRemObj)(ObjID o) = NULL;
-EXTERN BOOL (*frobInvTakeObjFromWorld)(ObjID o, ObjID owner) = NULL;
-EXTERN BOOL (*frobInvThrowBackToWorld)(ObjID o, ObjID src) = NULL;
-EXTERN BOOL (*frobInvToolCursor)(ObjID o) = NULL;
-EXTERN BOOL (*frobOnSetCurrent)(eFrobLoc loc, eFrobLev lev, ObjID newobj, ObjID oldobj) = NULL;
-EXTERN BOOL (*frobInvDeselect)(eFrobLoc loc, ObjID obj, ObjID frobber) = NULL;
-EXTERN void (*frobAcknowledge)(ObjID o) = NULL;
+EXTERN BOOL (*frobInvRemObj)(ObjID o);
+EXTERN BOOL (*frobInvTakeObjFromWorld)(ObjID o, ObjID owner);
+EXTERN BOOL (*frobInvThrowBackToWorld)(ObjID o, ObjID src);
+EXTERN BOOL (*frobInvToolCursor)(ObjID o);
+EXTERN BOOL (*frobOnSetCurrent)(eFrobLoc loc, eFrobLev lev, ObjID newobj, ObjID oldobj);
+EXTERN BOOL (*frobInvDeselect)(eFrobLoc loc, ObjID obj, ObjID frobber);
+EXTERN void (*frobAcknowledge)(ObjID o);
+BOOL (*frobInvRemObj)(ObjID o) = NULL;
+BOOL (*frobInvTakeObjFromWorld)(ObjID o, ObjID owner) = NULL;
+BOOL (*frobInvThrowBackToWorld)(ObjID o, ObjID src) = NULL;
+BOOL (*frobInvToolCursor)(ObjID o) = NULL;
+BOOL (*frobOnSetCurrent)(eFrobLoc loc, eFrobLev lev, ObjID newobj, ObjID oldobj) = NULL;
+BOOL (*frobInvDeselect)(eFrobLoc loc, ObjID obj, ObjID frobber) = NULL;
+void (*frobAcknowledge)(ObjID o) = NULL;
 
-void frob_propagate(sFrobActivate* frob, BOOL reverse);
+static void frob_propagate(sFrobActivate* frob, BOOL reverse);
 
 static LazyAggMember(IObjectSystem) gpObjSys;
 static LazyAggMember(IContainSys)    gpContainSys;
@@ -601,7 +610,7 @@ static void frob_propagate(sFrobActivate* frob, BOOL reverse)
    }
 
    cContactPropagator* pGator = cContactPropagator::gpGator;
-   pGator->DoPropagationEvent(mask,src,dst,frob->ms_down*1.0);
+   pGator->DoPropagationEvent(mask,src,dst,frob->ms_down*1.0f);
 
 }
 

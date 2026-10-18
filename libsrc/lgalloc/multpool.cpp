@@ -5,8 +5,6 @@
 // $Revision: 1.3 $
 //
 
-#ifdef _WIN32
-
 #include <lg.h>
 #include <multpool.h>
 #include <string.h>
@@ -35,6 +33,10 @@
 inline void *operator new(size_t, cPoolAllocator *p)
 {
     return (void *)p;
+}
+
+inline void operator delete(void *, cPoolAllocator *) noexcept
+{
 }
 
 ///////////////////////////////////////
@@ -75,7 +77,7 @@ typedef size_t tMPAllocHeader;
 // Compute an index from an uncompensated size
 //
 
-inline size_t SizeFromIndex(int index)
+inline size_t SizeFromIndex(size_t index)
 {
     return (index + 1) << 3;
 }
@@ -105,10 +107,10 @@ inline size_t MaxFit(size_t size_val)
 // Free a block from the pool
 //
 
-inline void cMultiPool::PoolFree(void *pMemInfo, unsigned long cb)
+inline void cMultiPool::PoolFree(void *pMemInfo, size_t cb)
 {
     DebugMsgEx(HEAP, "MultiPool Freeing from Pool");
-    unsigned int ix = IndexFromSize(cb);
+    size_t ix = IndexFromSize(cb);
 
 #if DEBUG_STATS
     _pool_outstanding -= *GetMPAllocHeader(pMemInfo) + kHeaderSize;
@@ -138,9 +140,9 @@ inline void cMultiPool::AllocatorFree(void *pMemInfo)
 // Allocate a block from the pool
 //
 
-inline void *cMultiPool::PoolAlloc(unsigned long cb)
+inline void *cMultiPool::PoolAlloc(size_t cb)
 {
-    unsigned int ix = IndexFromSize(cb);
+    size_t ix = IndexFromSize(cb);
 
     DebugMsgEx(HEAP, "MultiPool Allocating from Pool");
 
@@ -158,7 +160,7 @@ inline void *cMultiPool::PoolAlloc(unsigned long cb)
 // Allocate a block from the outer allocator
 //
 
-inline void *cMultiPool::AllocatorAlloc(unsigned long cb)
+inline void *cMultiPool::AllocatorAlloc(size_t cb)
 {
 #if DEBUG_STATS
     _heap_outstanding += (cb + kHeaderSize);
@@ -186,7 +188,7 @@ inline void *cMultiPool::SelectAlloc(size_t size_val)
 
 inline void cMultiPool::SelectFree(void *MemPtr)
 {
-    unsigned long cb = *GetMPAllocHeader(MemPtr);
+    size_t cb = *GetMPAllocHeader(MemPtr);
     if (cb <= kMaxPool)
         PoolFree(MemPtr, cb);
     else
@@ -363,7 +365,7 @@ void cMultiPool::Init()
 // Allocation
 //
 
-STDMETHODIMP_(void *) cMultiPool::Alloc(ULONG cb)
+STDMETHODIMP_(void *) cMultiPool::Alloc(SIZE_T cb)
 {
     void *pMem = SelectAlloc(cb);
 
@@ -380,7 +382,7 @@ STDMETHODIMP_(void *) cMultiPool::Alloc(ULONG cb)
 // Reallocation
 //
 
-STDMETHODIMP_(void *) cMultiPool::Realloc(void * pMem, ULONG cb)
+STDMETHODIMP_(void *) cMultiPool::Realloc(void * pMem, SIZE_T cb)
 {
     DebugMsgEx(HEAP, "MultiPool reallocating");
 
@@ -456,7 +458,7 @@ STDMETHODIMP_(void) cMultiPool::Free(void * pMem)
 //  Get the usable size of a block.
 //
 
-unsigned long cMultiPool::GetSize(void *pMem)
+SIZE_T cMultiPool::GetSize(void *pMem)
 {
     DebugMsgEx1(HEAP, "cMultiPool::GetSize %p", pMem);
 
@@ -483,4 +485,3 @@ STDMETHODIMP cMultiPool::VerifyHeap()
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif

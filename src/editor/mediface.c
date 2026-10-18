@@ -130,21 +130,21 @@ void CreateMotionEditorInterface()
    // top menu buttons
    for (i=0; i < NUM_CONTROL_BUTTONS-1; i++)
    {
-      control_info[i].draw.fcolor=guiStyleGetColor(NULL,StyleColorText);
+      control_info[i].draw.fcolor = (ushort)guiStyleGetColor(NULL, StyleColorText);
       control_buttons[i]=LGadCreateButtonArgs(NULL,main_root,\
          w*i, 0, w, h,\
          &((control_info[i]).draw),control_info[i].bfunc,0);
    }
    // play button
-   play_button_control_info.draw.fcolor=guiStyleGetColor(NULL,StyleColorText);
+   play_button_control_info.draw.fcolor = (ushort)guiStyleGetColor(NULL, StyleColorText);
    control_buttons[i]=LGadCreateButtonArgs(NULL,main_root,\
       0, bot-h, w, h,\
       &(play_button_control_info.draw),play_button_control_info.bfunc,0);
 
    // motion slider
    LGadInitSlider(&control_slider);
-   control_slider_elem.fcolor=guiStyleGetColor(NULL,StyleColorText);
-   control_slider_elem.bcolor=guiStyleGetColor(NULL,StyleColorDim);
+   control_slider_elem.fcolor = (ushort)guiStyleGetColor(NULL, StyleColorText);
+   control_slider_elem.bcolor = (ushort)guiStyleGetColor(NULL, StyleColorDim);
    LGadCreateSliderArgs(&control_slider,main_root,w,bot-(h/2),right-w,h/2,&control_slider_elem,NULL,\
       &g_CurMotEditFrame,100,1,right-w,LGSLIDER_HORIZONTAL,0);
    control_slider_active = TRUE;

@@ -4,7 +4,10 @@
 #include <ddevblt.h>
 
 void (*gdd_default_dispdev_canvas_table[GDC_CANVAS_FUNCS])() =
+{ 0 };
+
+void init_gdd_default_dispdev_canvas_table(void)
 {
-	[GDC_UBITMAP] =			dispdev_ubitmap,
-	[GDC_UBITMAP_EXPOSE] =	dispdev_ubitmap_expose,
-};
+	gdd_default_dispdev_canvas_table[GDC_UBITMAP] = dispdev_ubitmap;
+	gdd_default_dispdev_canvas_table[GDC_UBITMAP_EXPOSE] = dispdev_ubitmap_expose;
+}

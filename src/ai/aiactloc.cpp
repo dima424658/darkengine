@@ -225,8 +225,8 @@ BOOL cAILocoAction::Pathfind(BOOL bTryNearEnough, float fNearDist)
 // Generate suggestions to continue on path
 //
 
-#define kDistDoAdvanceXY (2.3)
-#define kDistDoAdvanceZ (6.0)
+#define kDistDoAdvanceXY (2.3f)
+#define kDistDoAdvanceZ (6.0f)
 
 DECLARE_TIMER(AI_AILA_GS, Average);
 
@@ -286,7 +286,7 @@ HRESULT cAILocoAction::GenerateSuggestions(tAIPathOkBits nStressBits)
          pCurEdge->GetCenter(&edgeCenter);
 
          // We advance to the next edge if Z and XY tolerences are met
-         if (aflt(edgeCenter.z - loc.z, kDistDoAdvanceZ + m_pAI->GetGroundOffset() / 2) && // @tbd: getgroundoffset() is property lookup -- move to sAIState
+         if (aflt(edgeCenter.z - loc.z, kDistDoAdvanceZ + m_pAI->GetGroundOffset() * 0.5f) && // @tbd: getgroundoffset() is property lookup -- move to sAIState
              AIXYDistanceSq(edgeCenter, loc) < sq(kDistDoAdvanceXY))
          {
 #ifndef SHIP
@@ -363,7 +363,7 @@ HRESULT cAILocoAction::GenerateSuggestions(tAIPathOkBits nStressBits)
 
    pSuggestion->SetWeightedBias(m_moveSuggKind, 100);
    pSuggestion->dirArc.SetByCenterAndSpan(m_pAIState->AngleTo(suggestLoc),
-                                          floatang(PI*1.8));
+                                          floatang(PI*1.8f));
    pSuggestion->speed       = m_speed;
    pSuggestion->facing.type = kAIF_MoveDir;
    pSuggestion->dest        = suggestLoc;

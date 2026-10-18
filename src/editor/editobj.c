@@ -95,7 +95,6 @@ void editobjRescaleBrushFromObj(ObjID obj);
 
 ////////////////////////////////////////
 
-#pragma off(unreferenced)
 static void obj_pos_cb(ObjID obj, const ObjPos* pos, void* data)
 {
    // @TODO: write a version of this call that takes pos 
@@ -104,7 +103,6 @@ static void obj_pos_cb(ObjID obj, const ObjPos* pos, void* data)
    else
       editObjDeleteObjBrush(obj); 
 }
-#pragma on(unreferenced) 
 
 ////////////////////////////////////////
 
@@ -429,7 +427,6 @@ void editobjFullReref(void)
 
 ////////////////////////////////////////////////////////////
 
-#pragma off(unreferenced)
 void LGAPI editObjBrushListener(sPropertyListenMsg* msg, PropListenerData data)
 {
    if (msg->property != brushprop_id)  
@@ -467,6 +464,5 @@ void LGAPI editObjModelListener(sPropertyListenMsg* msg, PropListenerData data)
 
    }
 }
-#pragma on(unreferenced)
 
 

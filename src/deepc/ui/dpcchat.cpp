@@ -177,7 +177,6 @@ static short g_SpecKeys[] =
 // Emacs geeks).
 // The code is liberally adapted from cmdterm.
 //
-#pragma off(unreferenced)
 bool chatTextboxCallback(LGadTextBox* box, 
                          LGadTextBoxEvent event, 
                          int evdata, 
@@ -251,7 +250,6 @@ bool chatTextboxCallback(LGadTextBox* box,
    }
    return update;
 }
-#pragma on(unreferenced)
 
 //
 // Do init-time setup of the chat input box.

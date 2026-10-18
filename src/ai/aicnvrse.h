@@ -38,7 +38,8 @@ enum eAIConvActor
    kAICA_Five = 4,
    kAICA_Six = 5,
    kAICA_Num,
-   kAIMS_ConvActorMax = 0xffffffff
+   // Keep the persisted enum at the original 32-bit width on LP64 hosts.
+   kAIMS_ConvActorMax = 0x7fffffff
 };
 
 enum eAIConvActionFlags
@@ -83,12 +84,14 @@ public:
    int GetActor(int step, int action) const {return steps[step][action].actor;};
 };
 
+static_assert(sizeof(eAIConvActor) == 4, "Conversation actor IDs are persisted as 32-bit values");
+static_assert(sizeof(sAIConvAction) == 268, "Conversation actions must match the mission-file layout");
+static_assert(sizeof(cAIConversationDesc) == 19332, "Conversation descriptors must match the mission-file layout");
+
 ////////////////////////////////////////
 //
 // A conversation in progress
 //
-
-enum eAIConverseState;
 
 class cAIConversor
 {

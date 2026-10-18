@@ -73,7 +73,6 @@ DrawElement saveloadmenu_elems[] = {
 //extern Id mainMotionID,mainCompMotionID;
 extern char mainMotionName[], mainCompMotionName[];
 
-#pragma off(unreferenced)
 bool SaveLoadMenuFunc(int sel, LGadMenu *vm)
 {
    switch(sel)
@@ -96,10 +95,8 @@ bool SaveLoadMenuFunc(int sel, LGadMenu *vm)
    }
    return FALSE;
 }
-#pragma on(unreferenced)
 
 
-#pragma off(unreferenced)
 bool SaveLoadButtonFunc(short action,void *data, LGadBox *b)
 {
    if(!(action&MOUSE_LUP))
@@ -113,7 +110,6 @@ bool SaveLoadButtonFunc(short action,void *data, LGadBox *b)
    ActiveMenuAdd(VB(&saveloadmenu_gad));
    return(0);
 }
-#pragma on(unreferenced)
 
 
 // ******* PLAY OPTIONS *******
@@ -139,7 +135,6 @@ static sFieldDesc playOptions_fields[] =
 
 static sStructDesc playOptions_desc = StructDescBuild(PlayOptions,kStructFlagNone,playOptions_fields);
 
-#pragma off(unreferenced)
 bool PlayOptButtonFunc(short action,void *data, LGadBox *b)
 {
    if(!(action&MOUSE_LUP))
@@ -164,7 +159,6 @@ bool PlayOptButtonFunc(short action,void *data, LGadBox *b)
 
    return(0);
 }
-#pragma on(unreferenced)
 
 
 // ******** Header Menus ***********
@@ -199,7 +193,6 @@ VarElem headbasic_varelems[] = {
 
 // XXX to do.  Get menu "close" selection to work for header descriptor menu
 // needs to copy back the motappdata array.
-#pragma off(unreferenced)
 bool HeaderMenuFunc(int sel, LGadMenu *vm)
 {
    switch(sel)
@@ -219,9 +212,7 @@ bool HeaderMenuFunc(int sel, LGadMenu *vm)
    }
    return FALSE;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 bool HeaderButtonFunc(short action,void *data, LGadBox *b)
 {
    if(!(action&MOUSE_LUP))
@@ -241,7 +232,6 @@ bool HeaderButtonFunc(short action,void *data, LGadBox *b)
    ActiveMenuAdd(VB(&headermenu_gad));
    return FALSE;
 }
-#pragma on(unreferenced)
 
 // ******************* FRAME MENU **************
 
@@ -260,7 +250,6 @@ DrawElement framemenu_elems[] = {
    { DRAWTYPE_TEXT, (void*)"Done"},
 };
 
-#pragma off(unreferenced)
 bool FrameMenuFunc(int sel, LGadMenu *vm)
 {
    switch(sel)
@@ -304,9 +293,7 @@ bool FrameMenuFunc(int sel, LGadMenu *vm)
    }
    return FALSE;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 bool FrameButtonFunc(short action,void *data, LGadBox *b)
 {
    if(!(action&MOUSE_LUP))
@@ -322,11 +309,9 @@ bool FrameButtonFunc(short action,void *data, LGadBox *b)
    ActiveMenuAdd(VB(&framemenu_gad));
    return(0);
 }
-#pragma on(unreferenced)
 
 // ********* PLAY BUTTON ******
 
-#pragma off(unreferenced)
 bool PlayButtonFunc(short action,void *data, LGadBox *b)
 {
    if(!(action&MOUSE_LUP))
@@ -344,7 +329,6 @@ bool PlayButtonFunc(short action,void *data, LGadBox *b)
    PlayMotionStart();
    return(FALSE);
 }
-#pragma on(unreferenced)
 
 // ************ FRAME SLIDER **********************
 
@@ -380,7 +364,6 @@ void ActiveMenuAdd(LGadBox *b)
    numActiveMenus++;
 }
 
-#pragma off(unreferenced)
 bool ActiveMenuKill(short action, void *data, LGadBox *b)
 {
    int i,j;
@@ -400,7 +383,6 @@ bool ActiveMenuKill(short action, void *data, LGadBox *b)
    numActiveMenus--;
    return TRUE;
 }
-#pragma on(unreferenced)
 
 // this is bad because voyGuiMethods render to screen canvas, and these
 // should really render to render canvas.  Should probably make GUI methods

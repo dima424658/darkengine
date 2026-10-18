@@ -1,4 +1,4 @@
-#include <io.h>
+#include <platform_io.h>
 #include "pqueue.h"
 #include "string.h"
 /*
@@ -44,17 +44,17 @@ void swapelems(PQueue* q,int i, int j)
 
 void re_heapify(PQueue *q)
 {
-   uint head = 0;
+   int head = 0;
    while (head < q->fullness)
    {
-      uint lchild = LCHILD(head); 
-      uint rchild = RCHILD(head);
-      uint minchild = NULL_CHILD;
+      int lchild = LCHILD(head);
+      int rchild = RCHILD(head);
+      int minchild = -1;
       if (rchild >= q->fullness)
          minchild = lchild;
       if (lchild >= q->fullness)
          minchild = rchild;
-      if (minchild == NULL_CHILD)
+      if (minchild == -1)
          if (LESS(q,lchild,rchild))
          {
             minchild = lchild;
@@ -75,15 +75,15 @@ void re_heapify(PQueue *q)
 
 void double_re_heapify(PQueue *q, int head)
 {
-   uint lchild = LCHILD(head); 
-   uint rchild = RCHILD(head);
-   uint minchild = NULL_CHILD;
-   uint maxchild = NULL_CHILD;
+   int lchild = LCHILD(head);
+   int rchild = RCHILD(head);
+   int minchild = -1;
+   int maxchild = -1;
    if (rchild >= q->fullness)
       minchild = lchild;
    if (lchild >= q->fullness)
       minchild = rchild;
-   if (minchild == NULL_CHILD)
+   if (minchild == -1)
       if (LESS(q,lchild,rchild))
       {
          minchild = lchild;

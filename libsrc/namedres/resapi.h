@@ -899,8 +899,8 @@ DECLARE_INTERFACE_(IResControl, IUnknown)
    //
    // In general, applications shouldn't touch this.
    //
-   STDMETHOD_(void, SetManData)(THIS_ DWORD ManData) PURE;
-   STDMETHOD_(DWORD, GetManData)(THIS) PURE;
+   STDMETHOD_(void, SetManData)(THIS_ DWORD_PTR ManData) PURE;
+   STDMETHOD_(DWORD_PTR, GetManData)(THIS) PURE;
 
    //
    // @TBD (justin 5-7-98): We will probably eventually need a bit

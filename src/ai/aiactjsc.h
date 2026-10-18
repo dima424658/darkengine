@@ -26,6 +26,8 @@
 // Scan a joint (oscillate from one angle to another)
 //
 
+static void SchemaEndCallback(int hSchema, ObjID schemaID, void *pData);
+
 typedef int eAIJointScanState;
 enum eAIJointScanState_ {kAIJointScanStateOne, kAIJointScanStateTwo,};
 
@@ -91,8 +93,6 @@ inline cAIJointScanAction::cAIJointScanAction(IAIActor * pOwner, DWORD data)
    m_schemaHandle(SCH_HANDLE_NULL)
 {
 }
-
-static void SchemaEndCallback(int hSchema, ObjID schemaID, void *pData);
 
 #pragma pack()
 

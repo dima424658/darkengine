@@ -722,7 +722,8 @@ rn_hnd ResNameLoad(char *with, char *name, int valid_types, RN_ScanCallback cbac
 
 // really want a _A_VOLID, but MSVC doesnt seem to have one, argh
 
-#define _A_NOT_OK (_A_HIDDEN|_A_SYSTEM|_A_SUBDIR)
+#define _A_NOT_OK (kPlatformFileHidden | kPlatformFileSystem | \
+                   kPlatformFileDirectory)
 
 // code zaniness ahead!
 // the issue really is that we dont want to count multiply the same file in a scan

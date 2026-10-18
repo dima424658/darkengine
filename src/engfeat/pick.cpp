@@ -58,12 +58,12 @@ static IFloatProperty *g_pPickDistProp=NULL;
 ObjID g_PickCurrentObj;
 
 
-#define TO_FLOAT(fx) ((float)(fx) * (1.0 / 65536.0))
+#define TO_FLOAT(fx) ((float)(fx) * (1.0f / 65536.0f))
 #define MAX(f1, f2) ((f1) > (f2)? (f1) : (f2))
 
 #define kFudgeLog2 4
-#define kZWeightRatio .0025
-#define kPickInfinity 1000000000.0
+#define kZWeightRatio .0025f
+#define kPickInfinity 1000000000.0f
 
 #define TOP 0
 #define BOTTOM 1
@@ -247,7 +247,7 @@ void PickSetFocus(fix FocusX, fix FocusY, float fMaxDistSquared)
    g_FocusX = FocusX;
    g_FocusY = FocusY;
    g_fMaxDistSquared = fMaxDistSquared;
-   g_fDistWeight = sqrt(fMaxDistSquared) * kZWeightRatio;
+   g_fDistWeight = sqrtf(fMaxDistSquared) * kZWeightRatio;
 }
 
 ///////////////////////////////////////////////////////////

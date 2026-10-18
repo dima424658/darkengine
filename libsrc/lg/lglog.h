@@ -108,16 +108,6 @@ EXTERN void LGAPI LogDecIndent();
 // these use static buffers.
 //
 
-#if defined(_WIN32) && defined(_INC_WINDOWS)
-EXTERN const char * LGAPI LogStrWinMsg(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-#define LogStrWinRect(rc)   _LogStrWinRect( #rc, &(rc) )
-#define LogStrWinPt(pt)     _LogStrWinPt( #pt, &(pt) )
-
-EXTERN const char * LGAPI _LogStrWinRect(const char *, const RECT *);
-EXTERN const char * LGAPI _LogStrWinPt(const char *, const POINT *);
-#endif
-
-
 #ifdef __cplusplus
 }
 #endif

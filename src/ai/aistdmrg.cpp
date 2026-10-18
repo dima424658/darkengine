@@ -70,7 +70,7 @@ STDMETHODIMP cAIWallsCliffsMovReg::SuggestRegulations(cAIMoveSuggestions & sugge
    m_Suggestions.DestroyAll();
 
 #define kNumDirs   8
-#define k45 0.7071067811865
+#define k45 0.7071067811865f
 
    static mxs_vector dirVecs[kNumDirs] =
    {
@@ -367,9 +367,9 @@ STDMETHODIMP_(BOOL) cAIObjectsMovReg::NewRegulations()
 
 ///////////////////////////////////////
 
-#define kZConsiderRepel  6.0
-#define kDistObjRepelIn  1.5
-#define kDistObjRepelOut 4.5
+#define kZConsiderRepel  6.0f
+#define kDistObjRepelIn  1.5f
+#define kDistObjRepelOut 4.5f
 #define kDistObjRepelRange (kDistObjRepelOut - kDistObjRepelIn)
 
 static int CalculateObjectBias(float distance)
@@ -382,13 +382,13 @@ static int CalculateObjectBias(float distance)
       value = 100;
    else
    {
-      value = (1.0 - ((distance - kDistObjRepelIn) / kDistObjRepelRange)) * 100.0;
+      value = (int)((1.0f - ((distance - kDistObjRepelIn) / kDistObjRepelRange)) * 100.0f);
    }
 
-   if (value > 100.0)
-      value = 100.0;
-   if (value < 0.0)
-      value = 0.0;
+   if (value > 100)
+      value = 100;
+   if (value < 0)
+      value = 0;
 
    return value;
 }

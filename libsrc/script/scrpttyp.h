@@ -68,7 +68,7 @@ typedef int (*tScriptPrintFunc)(const char *pszFormatString, ...);
 #define vector       cScrVec
 #define integer      int
 #define boolean      true_bool
-#define timer_handle int
+#define timer_handle intptr_t
 
 #ifdef __cplusplus
 
@@ -90,7 +90,7 @@ public:
    void operator *=(float s) { x*=s; y*=s; z*=s; }; 
 
    float MagSquared(void) {return x*x+y*y+z*z;};
-   float Magnitude(void) {return sqrt(MagSquared());};
+   float Magnitude(void) {return sqrtf(MagSquared());};
    void Normalize(void) {float mag = Magnitude(); x=x/mag, y=y/mag, z=z/mag;};
 };
 
@@ -170,8 +170,8 @@ inline const cScrStr & cScrStr::operator=(const sMultiParm & parm)
 inline cScrStr::cScrStr(const char* s1, const char* s2)
    :m_pszData(NULL) 
 {
-   int len1 = strlen(s1);
-   int len2 = strlen(s2); 
+   int len1 = (int)strlen(s1);
+   int len2 = (int)strlen(s2);
    m_pszData = (char*)ScrAlloc(len1+len2+1);
    strcpy(m_pszData,s1);
    strcpy(m_pszData+len1,s2); 
@@ -180,8 +180,8 @@ inline cScrStr::cScrStr(const char* s1, const char* s2)
 inline cScrStr& cScrStr::operator +=(const char* s2)
 {
    char* s1 = m_pszData; 
-   int len1 = strlen(s1);
-   int len2 = strlen(s2); 
+   int len1 = (int)strlen(s1);
+   int len2 = (int)strlen(s2);
    m_pszData = (char*)ScrAlloc(len1+len2+1);
    strcpy(m_pszData,s1);
    strcpy(m_pszData+len1,s2); 
@@ -194,7 +194,7 @@ inline cScrStr& cScrStr::operator +=(const char* s2)
 //
 inline char &cScrStr::operator[](int nIndex) const
 {
-   AssertMsg(nIndex >= 0 && nIndex <= strlen(m_pszData), "Invalid index");
+   AssertMsg(nIndex >= 0 && (size_t)nIndex <= strlen(m_pszData), "Invalid index");
    return m_pszData[nIndex];
 }
 

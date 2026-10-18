@@ -10,5 +10,5 @@ class cDefResMem : public cCTUnaggregated<IResMemOverride, &IID_IResMemOverride,
 public:
 	void* STDMETHODCALLTYPE ResMalloc(ulong nNumBytes);
 	void STDMETHODCALLTYPE ResFree(void* pData);
-	unsigned long STDMETHODCALLTYPE GetSize(void* pData);
+	ulong STDMETHODCALLTYPE GetSize(void* pData);
 };

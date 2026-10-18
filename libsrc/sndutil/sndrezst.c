@@ -32,7 +32,7 @@ typedef struct _sndStreamStuff {
 //
 // getRezData - function to copy resource data into stream ring buffer
 //
-static void
+static void *
 getRezData( void     *pCBData,
             void     *pDst,
             uint32   nBytes )
@@ -41,6 +41,7 @@ getRezData( void     *pCBData,
 
    pInfo = (sndStreamStuff *) pCBData;
    ResExtractPartial( pInfo->rezId, pDst, pInfo->playOffset, nBytes );
+   return pDst;
 }
 
 
@@ -156,7 +157,7 @@ CreateSoundRezStreamer( ISndMixer        *pMixer,
       pInfo->bufferLen = bufferLen;
       pInfo->rezId = rezId;
       pInfo->rezLen = rezLen;
-      pInfo->playOffset = (long) pRawData - (long) pBuffer;
+      pInfo->playOffset = (uint32)((uint8 *)pRawData - (uint8 *)pBuffer);
       pInfo->endOffset = pInfo->playOffset + rawDataLen;
 
       // now fill the ring buffer with sample data
@@ -232,7 +233,7 @@ mprintf("start one-shot\n");
       // create our stream info struct & init it
       pInfo = (sndStreamStuff *) malloc( sizeof( sndStreamStuff ) );
       pInfo->pBuffer = pBuffer;
-      pInfo->playOffset = (long) pRawData - (long) pBuffer;
+      pInfo->playOffset = (uint32)((uint8 *)pRawData - (uint8 *)pBuffer);
 
       // now fill the buffer with sample data
       ISndSample_LoadBufferIndirect( pSample, getRezData, pInfo, rawDataLen );
@@ -296,7 +297,7 @@ typedef struct _sndSplicerStuff {
 //
 // getSpliceSingleData - function to copy resource data into stream ring buffer
 //
-static void
+static void *
 getSpliceSingleData( void     *pCBData,
                      void     *pDst,
                      uint32   nBytes )
@@ -307,13 +308,14 @@ getSpliceSingleData( void     *pCBData,
    pInfo = (sndSplicerStuff *) pCBData;
    pSeg = pInfo->pSeg;
    ResExtractPartial( pSeg->rezId, pDst, pInfo->seg1Offset, nBytes );
+   return pDst;
 }
 
 
 //
 // getSpliceDualData - function to copy & mix resource data into stream ring buffer
 //
-static void
+static void *
 getSpliceDualData( void     *pCBData,
                    void     *pDst,
                    uint32   nBytes )
@@ -357,6 +359,7 @@ getSpliceDualData( void     *pCBData,
          *pDW++ = (int16) a;
       }
    }
+   return pDst;
 }
 
 
@@ -431,7 +434,7 @@ refillSplicedStream( ISndSample  *pSample,
             //
             // just get bytes from a sound rez and copy them to ring buffer
             //
-            if ( bytesNeeded < bytesAvail ) {
+            if ( bytesNeeded < (uint32)bytesAvail ) {
                bytesXfer = bytesNeeded;
             } else {
                bytesXfer = bytesAvail;
@@ -468,7 +471,7 @@ refillSplicedStream( ISndSample  *pSample,
             //
             // get data from 2 sound resources, mix them and write them to ring buffer
             //
-            if ( bytesNeeded < bytesAvail ) {
+            if ( bytesNeeded < (uint32)bytesAvail ) {
                bytesXfer = bytesNeeded;
             } else {
                bytesXfer = bytesAvail;
@@ -511,13 +514,13 @@ refillSplicedStream( ISndSample  *pSample,
             //
             // add silence to ring buffer
             //
-            if ( bytesNeeded < bytesAvail ) {
+            if ( bytesNeeded < (uint32)bytesAvail ) {
                bytesXfer = bytesNeeded;
             } else {
                bytesXfer = bytesAvail;
                state = kSpliceEmpty;
                pSeg++;
-               LOG3( "splice silence->empty %d segsLeft, %d bytesAvail, %d endGap",
+               TLOG3( "splice silence->empty %d segsLeft, %d bytesAvail, %d endGap",
                      pInfo->segsLeft, bytesAvail, endGap );
             }
             // fill portion of ring buffer with silence
@@ -645,7 +648,7 @@ CreateSoundRezSplicer( ISndMixer       *pMixer,
             blewIt = TRUE;
          } else {
             bytesPerMilliSecond = (float) (attribs.sampleRate * (attribs.bitsPerSample >> 3))
-               / 1000.0;
+               / 1000.0f;
          }
       }
 
@@ -658,14 +661,14 @@ CreateSoundRezSplicer( ISndMixer       *pMixer,
 
       // fill in internal segment info
       pSeg->rezId = rezId;
-      pSeg->offset = (long) pRawData - (long) pBuffer;
-      pSeg->endGap = bytesPerMilliSecond * pSegList->offset;
+      pSeg->offset = (int32)((uint8 *)pRawData - (uint8 *)pBuffer);
+      pSeg->endGap = (int32)(bytesPerMilliSecond * pSegList->offset);
       if ( attribs.bitsPerSample == 16 ) {
          // force gap length to be integral # of 16-bit samples
          pSeg->endGap &= ~1;
       }
       pSeg->numBytes = rawDataLen;
-      LOG3("segment offset %ld, numBytes %ld, endGap %ld", pSeg->offset,
+      TLOG3("segment offset %ld, numBytes %ld, endGap %ld", pSeg->offset,
            pSeg->numBytes, pSeg->endGap );
       pSeg++;
       pSegList++;

@@ -12,7 +12,7 @@
 static sCrPhysModOffset g_aRobotPhysModOffsets[] = \
 {
    { 8, 8, 0.0, 1.0},
-   { 9, 10, 0.7, 1.0},
+   { 9, 10, 0.7f, 1.0f},
 };
 
 // Joint IDs

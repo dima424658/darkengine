@@ -10,5 +10,6 @@
 #include <appagg.h>
 
 EXTERN
+unsigned g_fAppStartupFlags;
 unsigned g_fAppStartupFlags = kASF_Default;
 

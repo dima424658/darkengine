@@ -8,6 +8,10 @@
 
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <2d.h>
 #include <mprintf.h>
@@ -18,6 +22,8 @@
 #include <init.h>
 #include <appname.h>
 #include <drkgame.h>
+#include <missiondiag.h>
+#include <contentctx.h>
 #include <metagame.h>
 #include <drkdebrf.h>
 #include <bugterm.h>
@@ -48,6 +54,8 @@
 #include <scrnovls.h>
 #include <partprop.h>
 #include <objshape.h>
+#include <objmodel.h>
+#include <texmem.h>
 #include <gen_bind.h>
 
 #include <drkcret.h>
@@ -60,6 +68,7 @@
 #include <rendprop.h>
 #include <physapi.h>
 #include <mnamprop.h>
+#include <mnumprop.h>
 #include <darkai.h>
 #include <drkbook.h>
 #include <pgrpprop.h>
@@ -80,6 +89,10 @@
 #include <cmdterm.h>
 #include <simtime.h>
 #include <pick.h>
+#include <objcast.h>
+#include <port.h>
+#include <wr.h>
+#include <wrdbrend.h>
 
 #include <drk_bind.h>
 #include <drkreact.h>
@@ -123,6 +136,7 @@
 #include <culpable.h>
 
 #include <questapi.h>
+#include <campaign.h>
 #include <drkgoalt.h>
 
 // Goofy alpha hack
@@ -137,6 +151,7 @@
 #include <propbase.h>
 #include <plycbllm.h>
 #include <anim_txt.h>
+#include "../../libsrc/script/squirrel/squirrelhost.h"
 
 #ifdef NEW_NETWORK_ENABLED
 #include <netman.h>
@@ -165,6 +180,13 @@
 #endif
 
 static void DarkScriptChangeMode(boolean resuming, boolean suspending);
+
+#ifdef THIEF2_GAME
+static BOOL gConsoleRetinfoHUD = FALSE;
+static BOOL gTextureAuditDone = FALSE;
+static void console_format_retinfo(char* message, int size);
+static void console_texture_audit(char* value);
+#endif
 
 ////////////////////////////////////////////////////////////
 // PER-FRAME GAME EXECUTION
@@ -198,6 +220,12 @@ static IImageSource* greek_letter = NULL;
 //
 void dark_rend_update_frame(void)
 {
+   // NewDark Squirrel overlays draw into the same retained software canvas as
+   // the stock HUD, before the presenter uploads it for this hardware frame.
+   ScrnLockDrawCanvas();
+   SquirrelRenderOverlays();
+   ScrnUnlockDrawCanvas();
+
    // display the greek letter
 #ifdef PLAYTEST
    if (greek_letter)
@@ -212,7 +240,53 @@ void dark_rend_update_frame(void)
    }
 #endif //   
 
-   DarkMessageUpdateFrame(); 
+#ifdef THIEF2_GAME
+   if (DarkConsoleReticleEnabled())
+   {
+      int old_color = gr_get_fcolor();
+      int x = grd_canvas->bm.w / 2;
+      int y = grd_canvas->bm.h / 2;
+
+      ScrnLockDrawCanvas();
+      gr_set_fcolor(guiStyleGetColor(NULL, StyleColorFG));
+      gr_hline(x - 5, y, x - 2);
+      gr_hline(x + 2, y, x + 5);
+      gr_vline(x, y - 5, y - 2);
+      gr_vline(x, y + 2, y + 5);
+      gr_set_fcolor(old_color);
+      ScrnUnlockDrawCanvas();
+   }
+#endif
+
+#ifdef THIEF2_GAME
+   if (!gTextureAuditDone)
+   {
+      char auditPath[260] = "";
+      if (wr_num_cells > 0 &&
+          config_get_raw("texture_audit", auditPath, sizeof(auditPath)))
+      {
+         gTextureAuditDone = TRUE;
+         console_texture_audit(auditPath);
+      }
+   }
+
+   if (gConsoleRetinfoHUD)
+   {
+      char message[256];
+      console_format_retinfo(message, sizeof(message));
+      DarkMessageParams(message, 100, kDefaultMsgColor);
+   }
+#endif
+
+   DarkMessageUpdateFrame();
+
+#ifdef THIEF2_GAME
+   // Gameplay clears and rebuilds its software overlay every hardware frame.
+   // A focused terminal therefore has to participate in that frame pass;
+   // event-only redraws disappear behind the following 3D frame and flicker
+   // back only while the user is typing.
+   cmdterm_redraw();
+#endif
 }
 
 
@@ -225,7 +299,6 @@ void dark_rend_update_frame(void)
 // In-game command terminal
 //
 
-#define NUM_CMD_TERM_LINES 2
 #define NUM_BUG_TERM_LINES 10
 #define CMD_Y_MARGIN 2
 
@@ -238,9 +311,13 @@ static void build_cmd_term(LGadRoot* root)
    gr_string_size("X",&w,&h);
    guiStyleCleanupFont(NULL,StyleFontNormal);
 
-   r.lr.y = (short)(h * NUM_CMD_TERM_LINES + CMD_Y_MARGIN);
-   CreateCommandTerminal(root,&r,kCmdTermHideUnfocused);
+   // Give the larger in-game message font enough room for useful scrollback.
+   // A proportional height also remains usable across the supported modes.
+   r.lr.y = (short)(r.ul.y + RectHeight(&r) / 3);
+   CreateCommandTerminal(root,&r,
+                         kCmdTermHideUnfocused | kCmdTermScrollable);
 
+   r = *LGadBoxRect(root);
    r.lr.y = h * NUM_BUG_TERM_LINES + CMD_Y_MARGIN;
    CreateBugTerminal(root,&r,kCmdTermHideUnfocused);
 }
@@ -252,20 +329,15 @@ static void build_cmd_term(LGadRoot* root)
 // parse the key
 static bool game_key_parse(int keycode)
 {
-   if (keycode&KB_FLAG_DOWN)
-   {
-   }
    return FALSE;
 }
 
-#pragma off(unreferenced)
 static BOOL key_handler_func(uiEvent* ev, Region* r, void* data)
 {
    uiCookedKeyEvent* kev = (uiCookedKeyEvent*)ev;
    return game_key_parse(kev->code);
 }
 
-#pragma on(unreferenced)
 
 static int key_handler_id;
 
@@ -375,7 +447,7 @@ static void fixup_player(void)
    pObjSys->EndCreate(start);
    mprintf("Player Starting Point Created"); 
 }
-#endif SHIP
+#endif /* SHIP */
 
 static void do_version()
 {
@@ -387,6 +459,622 @@ static void win_mission()
   AutoAppIPtr(QuestData);
   pQuestData->Set(MISSION_COMPLETE_VAR,1);
   UnwindToMissionLoop();
+}
+
+#ifdef THIEF2_GAME
+
+struct sConsoleMission
+{
+   int number;
+   const char* short_name;
+   const char* title;
+};
+
+static const sConsoleMission gConsoleMissions[] =
+{
+   { 0,  "training",     "Training" },
+   { 1,  "interference", "Running Interference" },
+   { 2,  "shipping",     "Shipping... and Receiving" },
+   { 4,  "framed",       "Framed" },
+   { 5,  "ambush",       "Ambush!" },
+   { 6,  "eavesdropping", "Eavesdropping" },
+   { 7,  "bank",         "First City Bank and Trust" },
+   { 8,  "blackmail",    "Blackmail" },
+   { 9,  "courier",      "Trace the Courier" },
+   { 10, "trail",        "Trail of Blood" },
+   { 11, "party",        "Life of the Party" },
+   { 12, "cargo",        "Precious Cargo" },
+   { 13, "kidnap",       "Kidnap" },
+   { 14, "casing",       "Casing the Joint" },
+   { 15, "masks",        "Masks" },
+   { 16, "soulforge",    "Sabotage at Soulforge" },
+};
+
+static BOOL gConsoleImmune = FALSE;
+static BOOL gConsoleFlying = FALSE;
+static BOOL gConsolePlayerPhysics = TRUE;
+static BOOL gConsoleInvisible = FALSE;
+static BOOL gConsoleReticle = FALSE;
+
+static void console_message(const char* format, ...)
+{
+   char message[256];
+   va_list args;
+
+   va_start(args, format);
+   _vsnprintf(message, sizeof(message) - 1, format, args);
+   va_end(args);
+   message[sizeof(message) - 1] = '\0';
+
+   mprintf("%s\n", message);
+}
+
+static int console_on_off(const char* value, BOOL current)
+{
+   while (value && isspace((unsigned char)*value))
+      ++value;
+
+   if (!value || !*value)
+      return current;
+   if (!_stricmp(value, "on") || !_stricmp(value, "1") || !_stricmp(value, "true"))
+      return TRUE;
+   if (!_stricmp(value, "off") || !_stricmp(value, "0") || !_stricmp(value, "false"))
+      return FALSE;
+   return -1;
+}
+
+static const sConsoleMission* console_find_mission(const char* value)
+{
+   char normalized[64];
+   int output = 0;
+   int i;
+
+   if (!value)
+      return NULL;
+   while (*value && isspace((unsigned char)*value))
+      ++value;
+
+   if (isdigit((unsigned char)*value))
+   {
+      int number = atoi(value);
+      for (i = 0; i < (int)(sizeof(gConsoleMissions) / sizeof(gConsoleMissions[0])); ++i)
+         if (gConsoleMissions[i].number == number)
+            return &gConsoleMissions[i];
+      return NULL;
+   }
+
+   while (*value && output < (int)sizeof(normalized) - 1)
+   {
+      if (isalnum((unsigned char)*value))
+         normalized[output++] = (char)tolower((unsigned char)*value);
+      ++value;
+   }
+   normalized[output] = '\0';
+
+   for (i = 0; i < (int)(sizeof(gConsoleMissions) / sizeof(gConsoleMissions[0])); ++i)
+      if (!_stricmp(normalized, gConsoleMissions[i].short_name))
+         return &gConsoleMissions[i];
+   return NULL;
+}
+
+static void console_open_mission(char* value)
+{
+   const sConsoleMission* mission = console_find_mission(value);
+   if (!mission)
+   {
+      console_message("Unknown mission. Use list_missions for valid numbers and short names.");
+      return;
+   }
+
+   AutoAppIPtr(Campaign);
+   pCampaign->New();
+
+   AutoAppIPtr(QuestData);
+   pQuestData->Create(DIFF_QVAR, 0, kQuestDataCampaign);
+
+   SetNextMission(mission->number);
+   MissionLoopReset(kMissLoopStartLoop);
+   UnwindToMissionLoop();
+}
+
+static void console_list_missions(void)
+{
+   FILE* log = fopen("thief-console.log", "a");
+   int available = 0;
+   int i;
+
+   if (log)
+      fprintf(log, "\nAvailable missions:\n");
+
+   for (i = 0; i < (int)(sizeof(gConsoleMissions) / sizeof(gConsoleMissions[0])); ++i)
+   {
+      char filename[32];
+      FILE* mission_file;
+      _snprintf(filename, sizeof(filename), "miss%d.mis", gConsoleMissions[i].number);
+      mission_file = fopen(filename, "rb");
+      if (!mission_file)
+         continue;
+      fclose(mission_file);
+      ++available;
+
+      mprintf("%2d %-14s %s\n", gConsoleMissions[i].number,
+              gConsoleMissions[i].short_name, gConsoleMissions[i].title);
+      if (log)
+         fprintf(log, "%2d %-14s %s\n", gConsoleMissions[i].number,
+                 gConsoleMissions[i].short_name, gConsoleMissions[i].title);
+   }
+
+   if (log)
+      fclose(log);
+   console_message("Listed %d installed missions in thief-console.log.", available);
+}
+
+static void console_immunity(char* value)
+{
+   int state = console_on_off(value, gConsoleImmune);
+   if (state < 0)
+   {
+      console_message("Usage: immunity [on/off]");
+      return;
+   }
+   gConsoleImmune = state;
+   console_message("Immunity %s.", state ? "on" : "off");
+}
+
+static void console_flying(char* value)
+{
+   int state = console_on_off(value, gConsoleFlying);
+   BOOL freeFlight;
+   if (state < 0)
+   {
+      console_message("Usage: flying [on/off]");
+      return;
+   }
+
+   gConsoleFlying = state;
+   freeFlight = state || !gConsolePlayerPhysics;
+   if (PlayerObjectExists())
+   {
+      PhysSetGravity(PlayerObject(), freeFlight ? 0.0f : 1.0f);
+      PhysSetBaseFriction(PlayerObject(), freeFlight ? 320.0f : 0.0f);
+      if (!freeFlight)
+         PhysStopAxisControlVelocity(PlayerObject(), 2);
+   }
+   console_message("Flying %s.", state ? "on" : "off");
+}
+
+static void console_player_physics(char* value)
+{
+   int state = console_on_off(value, gConsolePlayerPhysics);
+   BOOL freeFlight;
+
+   if (state < 0)
+   {
+      console_message("Usage: player_physics [on/off]");
+      return;
+   }
+
+   gConsolePlayerPhysics = state;
+   PhysSetPlayerPhysicsEnabled(state);
+   freeFlight = gConsoleFlying || !state;
+   if (PlayerObjectExists())
+   {
+      PhysSetGravity(PlayerObject(), freeFlight ? 0.0f : 1.0f);
+      PhysSetBaseFriction(PlayerObject(), freeFlight ? 320.0f : 0.0f);
+      if (!freeFlight)
+         PhysStopAxisControlVelocity(PlayerObject(), 2);
+   }
+   console_message("Player physics %s%s", state ? "on." : "off: ",
+                   state ? "" : "collision and gravity disabled.");
+}
+
+static void console_invisible(char* value)
+{
+   int state = console_on_off(value, gConsoleInvisible);
+   if (state < 0)
+   {
+      console_message("Usage: invisible [on/off]");
+      return;
+   }
+
+   gConsoleInvisible = state;
+   if (PlayerObjectExists() && g_pIsInvisibleProperty)
+      g_pIsInvisibleProperty->Set(PlayerObject(), state ? 0 : -1);
+   console_message("Invisibility %s.", state ? "on" : "off");
+}
+
+static void console_reticle(char* value)
+{
+   int state = console_on_off(value, gConsoleReticle);
+   if (state < 0)
+   {
+      console_message("Usage: reticle [on/off]");
+      return;
+   }
+   gConsoleReticle = state;
+   console_message("Reticle %s.", state ? "on" : "off");
+}
+
+static void console_format_retinfo(char* message, int size)
+{
+   const float rayDistance = 1000.0f;
+   mxs_vector cameraPosition;
+   mxs_angvec cameraFacing;
+   mxs_matrix cameraMatrix;
+   mxs_vector cameraForward;
+   mxs_vector forward;
+   mxs_vector endPosition;
+   Location startLocation;
+   Location endLocation;
+   Location hitLocation;
+   eObjCastResult hitType;
+   ObjID target;
+   char model[64] = "(none)";
+   const char* name;
+
+   CameraGetLocation(PlayerCamera(), &cameraPosition, &cameraFacing);
+   mx_ang2mat(&cameraMatrix, &cameraFacing);
+   mx_mk_vec(&cameraForward, 1.0f, 0.0f, 0.0f);
+   mx_mat_mul_vec(&forward, &cameraMatrix, &cameraForward);
+   mx_scale_add_vec(&endPosition, &cameraPosition, &forward, rayDistance);
+   MakeLocationFromVector(&startLocation, &cameraPosition);
+   MakeLocationFromVector(&endLocation, &endPosition);
+
+   hitType = ObjRaycast(&startLocation, &endLocation, &hitLocation, FALSE);
+   if (hitType == kObjCastTerrain)
+   {
+      int polygon = PortalRaycastFindPolygon();
+      int texture = -1;
+      int flags = -1;
+      int lightWidth = 0;
+      int lightHeight = 0;
+      int lightRow = 0;
+      int lightMin = 31;
+      int lightMax = 0;
+      int lightAverage = 0;
+      if (PortalRaycastCell != CELL_INVALID && polygon != POLY_INVALID)
+      {
+         PortalCell* cell = WR_CELL(PortalRaycastCell);
+         PortalLightMap* lightmap = &cell->light_list[polygon];
+         int lightSamples = 0;
+         int lightTotal = 0;
+         texture = cell->render_list[polygon].texture_id;
+         flags = cell->poly_list[polygon].flags;
+         lightWidth = lightmap->w;
+         lightHeight = lightmap->h;
+         lightRow = lightmap->pixel_row;
+         for (int y = 0; lightmap->data && y < lightHeight; ++y)
+            for (int x = 0; x < lightWidth; ++x)
+            {
+               int sample = lightmap->data[y * lightRow + x] & 0x1f;
+               if (sample < lightMin) lightMin = sample;
+               if (sample > lightMax) lightMax = sample;
+               lightTotal += sample;
+               ++lightSamples;
+            }
+         if (lightSamples)
+            lightAverage = lightTotal / lightSamples;
+      }
+      _snprintf(message, size - 1,
+                "Terrain: cell %d, polygon %d, texture %d, flags %d, lightmap %dx%d/%d RGB5 %d-%d avg %d",
+                PortalRaycastCell, polygon, texture, flags,
+                lightWidth, lightHeight, lightRow,
+                lightMin, lightMax, lightAverage);
+      message[size - 1] = '\0';
+      return;
+   }
+
+   if (hitType != kObjCastMD && hitType != kObjCastMesh)
+   {
+      _snprintf(message, size - 1,
+                "Reticle target: none within %.0f units", rayDistance);
+      message[size - 1] = '\0';
+      return;
+   }
+
+   target = g_ObjCastObjID;
+   if (target == OBJ_NULL)
+   {
+      _snprintf(message, size - 1,
+                "Reticle target: raycast returned no object");
+      message[size - 1] = '\0';
+      return;
+   }
+
+   AutoAppIPtr_(ObjectSystem, pObjectSystem);
+   name = pObjectSystem->GetName(target);
+   ObjGetModelName(target, model);
+   _snprintf(message, size - 1, "%s object %d: %s, model %s",
+             hitType == kObjCastMesh ? "Mesh" : "MD",
+             target, name && *name ? name : "(unnamed)", model);
+   message[size - 1] = '\0';
+}
+
+static void console_retinfo(char* value)
+{
+   while (value && isspace((unsigned char)*value))
+      ++value;
+
+   if (value && *value)
+   {
+      int state = console_on_off(value, gConsoleRetinfoHUD);
+      if (state < 0)
+      {
+         console_message("Usage: reticle_info [on/off]");
+         return;
+      }
+      gConsoleRetinfoHUD = state;
+      console_message("Reticle info HUD %s.", state ? "on" : "off");
+      return;
+   }
+
+   char message[256];
+   console_format_retinfo(message, sizeof(message));
+   console_message("%s", message);
+}
+
+static const char* audit_texture_status(int texture, IRes** resource)
+{
+   *resource = NULL;
+   if (texture == 0)
+      return "default-or-sky";
+   if (texture < 0 || texture >= TEXMEM_MAX)
+      return "INVALID";
+   *resource = texmemGetHandle(texture);
+   if (*resource)
+      return "ok";
+   if (TEXMEM_IS_RESERVED(texture))
+      return "reserved";
+   return "MISSING";
+}
+
+static void run_texture_audit(const char* requestedPath)
+{
+   char path[260] = "texture-audit.log";
+   int* terrainCounts;
+   int terrainSurfaces = 0;
+   int terrainMissing = 0;
+   int objectCount = 0;
+   int objectModelsMissing = 0;
+   int objectMissing;
+   int objectCheckerboards = 0;
+   int objectReplacementsMissing = 0;
+   int objectReplacementCheckerboards = 0;
+   int cellIndex;
+   FILE* log;
+
+   if (requestedPath && requestedPath[0])
+   {
+      strncpy(path, requestedPath, sizeof(path));
+      path[sizeof(path) - 1] = '\0';
+   }
+
+   log = fopen(path, "w");
+   if (!log)
+   {
+      console_message("Could not create texture audit: %s", path);
+      MissionDiagnosticsIssue("ERROR","texture-audit",
+                              "Could not create texture-audit.log");
+      return;
+   }
+
+   terrainCounts = (int*)calloc(TEXMEM_MAX, sizeof(*terrainCounts));
+   if (!terrainCounts)
+   {
+      fclose(log);
+      console_message("Could not allocate texture audit inventory.");
+      MissionDiagnosticsIssue("ERROR","texture-audit",
+                              "Could not allocate texture audit inventory");
+      return;
+   }
+
+   fprintf(log, "TEXTURE_AUDIT version=1 cells=%d loaded_terrain_slots=%d\n",
+           wr_num_cells, texmemGetMax());
+   for (cellIndex = 0; cellIndex < wr_num_cells; ++cellIndex)
+   {
+      PortalCell* cell = WR_CELL(cellIndex);
+      int polygon;
+      if (!cell || !cell->render_list)
+         continue;
+      for (polygon = 0; polygon < cell->num_render_polys; ++polygon)
+      {
+         int texture = cell->render_list[polygon].texture_id;
+         IRes* resource;
+         const char* status = audit_texture_status(texture, &resource);
+         ++terrainSurfaces;
+         if (texture >= 0 && texture < TEXMEM_MAX)
+            ++terrainCounts[texture];
+         if (!strcmp(status, "MISSING") || !strcmp(status, "INVALID"))
+         {
+            ++terrainMissing;
+            fprintf(log,
+                    "TERRAIN_SURFACE cell=%d polygon=%d texture=%d status=%s\n",
+                    cellIndex, polygon, texture, status);
+         }
+      }
+   }
+
+   for (int texture = 0; texture < TEXMEM_MAX; ++texture)
+   {
+      IRes* resource;
+      char* canonical = NULL;
+      grs_bitmap* bitmap = NULL;
+      const char* status;
+      if (!terrainCounts[texture])
+         continue;
+      status = audit_texture_status(texture, &resource);
+      if (resource)
+      {
+         IRes_GetCanonPathName(resource, &canonical);
+         bitmap = (grs_bitmap*)IRes_DataPeek(resource);
+      }
+      fprintf(log,
+              "TERRAIN_TEXTURE id=%d surfaces=%d status=%s resource=\"%s\" "
+              "width=%d height=%d\n",
+              texture, terrainCounts[texture], status,
+              canonical ? canonical : "", bitmap ? bitmap->w : 0,
+              bitmap ? bitmap->h : 0);
+      if (canonical)
+         free(canonical);
+   }
+   free(terrainCounts);
+
+   {
+      AutoAppIPtr_(ObjectSystem, pObjectSystem);
+      IObjectQuery* objects = pObjectSystem->Iter(kObjectConcrete);
+      for (; !objects->Done(); objects->Next())
+      {
+         ObjID object = objects->Object();
+         char model[64] = "";
+         int handle = MIDX_INVALID;
+         const char* name;
+         ObjPos* objectPosition;
+         mxs_vector* position;
+         if (!ObjGetModelName(object, model) || !model[0])
+            continue;
+         ObjGetModelNumber(object, &handle);
+         name = pObjectSystem->GetName(object);
+         objectPosition = ObjPosGet(object);
+         position = ObjPosGetLocVector(object);
+         fprintf(log,
+                 "OBJECT_INSTANCE object=%d name=\"%s\" model=\"%s\" "
+                 "model_handle=%d status=%s position=%.3f,%.3f,%.3f "
+                 "cell=%d hint=%d\n",
+                 object, name && *name ? name : "(unnamed)", model, handle,
+                 handle == MIDX_INVALID ? "MISSING" : "ok",
+                 position ? position->x : 0.0f,
+                 position ? position->y : 0.0f,
+                 position ? position->z : 0.0f,
+                 objectPosition ? objectPosition->loc.cell : CELL_INVALID,
+                 objectPosition ? objectPosition->loc.hint : CELL_INVALID);
+         if (handle != MIDX_INVALID)
+            objectReplacementsMissing +=
+               objmodelAuditObjectTextures(log, object, handle,
+                                           &objectReplacementCheckerboards);
+         else
+            ++objectModelsMissing;
+         ++objectCount;
+      }
+      objects->Release();
+   }
+
+   objectMissing = objmodelAuditTextures(log, &objectCheckerboards);
+   fprintf(log,
+           "SUMMARY terrain_surfaces=%d terrain_missing=%d "
+            "object_instances=%d object_models_missing=%d "
+            "object_textures_missing=%d object_textures_checkerboard=%d "
+           "object_replacements_missing=%d "
+           "object_replacements_checkerboard=%d\n",
+           terrainSurfaces, terrainMissing, objectCount, objectModelsMissing,
+           objectMissing, objectCheckerboards, objectReplacementsMissing,
+           objectReplacementCheckerboards);
+   fclose(log);
+   char summary[512];
+   _snprintf(summary,sizeof(summary)-1,
+             "Texture preflight wrote %s: %d terrain surface%s missing, "
+             "%d object model%s missing, %d object texture%s missing, "
+             "%d object texture checkerboard%s, %d replacement%s missing, "
+             "%d replacement checkerboard%s",
+             path,terrainMissing,terrainMissing == 1 ? "" : "s",
+             objectModelsMissing,objectModelsMissing == 1 ? "" : "s",
+             objectMissing,objectMissing == 1 ? "" : "s",
+             objectCheckerboards,objectCheckerboards == 1 ? "" : "s",
+             objectReplacementsMissing,
+             objectReplacementsMissing == 1 ? "" : "s",
+             objectReplacementCheckerboards,
+             objectReplacementCheckerboards == 1 ? "" : "s");
+   summary[sizeof(summary)-1] = '\0';
+   MissionDiagnosticsIssue(
+      terrainMissing || objectModelsMissing || objectMissing ||
+         objectCheckerboards || objectReplacementsMissing ||
+         objectReplacementCheckerboards
+         ? "ERROR" : "INFO", "texture-audit", summary);
+   console_message("%s.",summary);
+}
+
+static void console_texture_audit(char* value)
+{
+   while (value && isspace((unsigned char)*value))
+      ++value;
+   run_texture_audit(value && *value ? value : "texture-audit.log");
+}
+
+static void console_list_scripts(void)
+{
+   FILE* log = fopen("thief-console.log", "a");
+   int count = 0;
+   tScrIter iterator;
+   const sScrClassDesc* script;
+
+   AutoAppIPtr(ScriptMan);
+   script = pScriptMan->GetFirstClass(&iterator);
+   if (log)
+      fprintf(log, "\nLoaded script classes:\n");
+
+   while (script)
+   {
+      mprintf("%s (%s)\n", script->pszClass,
+              script->pszModule ? script->pszModule : "unknown module");
+      if (log)
+         fprintf(log, "%s (%s)\n", script->pszClass,
+                 script->pszModule ? script->pszModule : "unknown module");
+      ++count;
+      script = pScriptMan->GetNextClass(&iterator);
+   }
+   pScriptMan->EndClassIter(&iterator);
+
+   if (log)
+      fclose(log);
+   console_message("Listed %d scripts in thief-console.log.", count);
+}
+
+static void console_debug_scripts(char* value)
+{
+   int state = console_on_off(value, ScriptDebugIsEnabled());
+   if (state < 0)
+   {
+      console_message("Usage: debug_scripts [on/off]");
+      return;
+   }
+   ScriptDebugSetEnabled(state);
+   console_message("Script logging %s%s", state ? "on: " : "off.",
+                   state ? "script-debug.log" : "");
+}
+
+static Command thief_console_commands[] =
+{
+   { "open_mission", FUNC_STRING, console_open_mission,  "open_mission [number/shortname]" },
+   { "list_missions", FUNC_VOID,  console_list_missions, "list installed missions" },
+   { "immunity",     FUNC_STRING, console_immunity,      "immunity [on/off]" },
+   { "flying",       FUNC_STRING, console_flying,        "flying [on/off]" },
+   { "player_physics", FUNC_STRING, console_player_physics, "player_physics [on/off]" },
+   { "invisible",    FUNC_STRING, console_invisible,     "invisible [on/off]" },
+   { "reticle",      FUNC_STRING, console_reticle,       "reticle [on/off]" },
+   { "reticle_info", FUNC_STRING, console_retinfo,       "reticle_info [on/off], or report once" },
+   { "audit_textures", FUNC_STRING, console_texture_audit, "audit_textures [output file]" },
+   { "list_scripts", FUNC_VOID,   console_list_scripts,  "list loaded script classes" },
+   { "debug_scripts", FUNC_STRING, console_debug_scripts, "debug_scripts [on/off]" },
+};
+
+#endif // THIEF2_GAME
+
+
+BOOL DarkConsoleIsImmune(void)
+{
+#ifdef THIEF2_GAME
+   return gConsoleImmune;
+#else
+   return FALSE;
+#endif
+}
+
+BOOL DarkConsoleReticleEnabled(void)
+{
+#ifdef THIEF2_GAME
+   return gConsoleReticle;
+#else
+   return FALSE;
+#endif
 }
 
 static Command drk_ui_keys[] =
@@ -663,6 +1351,9 @@ void DarkToolsInit(void)
 void dark_init_game(void)
 {
    COMMANDS(drk_ui_keys,HK_GAME_MODE);
+#ifdef THIEF2_GAME
+   COMMANDS(thief_console_commands,HK_GAME_MODE);
+#endif
    DebugKeys();
 
    config_get_int("drkgame_overlay",&master_overlay);
@@ -680,10 +1371,10 @@ void dark_init_game(void)
    // set the memory allocation cap
    sAllocLimits allocLimits;
    AllocGetLimits(&allocLimits);
-   long memoryCap = (allocLimits.allocCap > DEFAULT_MEMORY_CAP) ? allocLimits.allocCap : DEFAULT_MEMORY_CAP;         // quick kids!  lets put on our memory caps!
+   int memoryCap = (int)((allocLimits.allocCap > DEFAULT_MEMORY_CAP) ? allocLimits.allocCap : DEFAULT_MEMORY_CAP);   // quick kids!  lets put on our memory caps!
    if (config_is_defined("memory_cap"))
       config_get_int( "memory_cap", &memoryCap );
-   AllocSetAllocCap( memoryCap );
+   AllocSetAllocCap( (size_t)memoryCap );
 
    ConstrainGameScreenMode(gamescreen_cb); 
 
@@ -737,6 +1428,8 @@ void dark_init_game(void)
    DarkBookInit(); 
    DarkVoiceOverInit(); 
    DarkMenusInit(); 
+   if (DarkContentShowPicker())
+      gPrimordialMode = (sLoopInstantiator*)DescribeContentMenuMode();
    DarkSaveGameInit(); 
    DarkSaveInitUI();
    DarkReportInit();

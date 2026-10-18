@@ -62,7 +62,7 @@ typedef struct Poly2
    (dest)->y = (src1)->y+(src2)->y; \
 }
 
-#define Vec2Mag(v) (sqrt((v)->x*(v)->x+(v)->y*(v)->y))
+#define Vec2Mag(v) (sqrtf((v)->x*(v)->x+(v)->y*(v)->y))
 // in case you want fast code
 #define Vec2MagSquared(v) ((v)->x*(v)->x+(v)->y*(v)->y)
 

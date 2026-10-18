@@ -5,8 +5,8 @@
 
 #include <tftype.h>
 
-extern void (*flat16_ulmap_setup_func[])();
-extern void (*flat16_lit_ulmap_setup_func[])();
+extern tmap_setup_func *flat16_ulmap_setup_func[];
+extern tmap_setup_func *flat16_lit_ulmap_setup_func[];
 #if 0
 void flat16_ulmap_setup(grs_bitmap *bm)
 {

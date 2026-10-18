@@ -82,7 +82,7 @@ struct sVantagePtProp
    {
       AssertMsg(sizeof(sVantagePtProp{}) == 8, "You need to update the constructor for sVantagePtProp");
       value = 0;
-      decay_speed = 0.8;
+      decay_speed = 0.8f;
    };
 
    int   value;
@@ -109,7 +109,7 @@ struct sCoverPtProp
       AssertMsg(sizeof(sCoverPtProp{}) == 12, "You need to update the constructor for sCoverPtProp");
 
       value = 0;
-      decay_speed = 0.8;
+      decay_speed = 0.8f;
       can_duck = FALSE;
    };
 

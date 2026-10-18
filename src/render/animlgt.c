@@ -54,7 +54,7 @@
 #include <sdesbase.h>
 #include <sdesedit.h>
 #include <sdesc.h>
-#include <sdesedst.h>
+#include <darklimit.h>
 
 #include <litprop.h> //zb
 #include <litdbg.h>
@@ -72,7 +72,7 @@ EXTERN mls_multi_light light_this[];
 
 // These are in Portal.c.  It's a little bit curious that we're
 // duplicating the constant.
-#define MAX_LIT_CELLS 512
+#define MAX_LIT_CELLS DARK_LIMIT_RUNTIME_LIGHT_CELLS
 EXTERN int lit_cell[MAX_LIT_CELLS];
 EXTERN int num_lit;
 EXTERN int num_culled;
@@ -83,7 +83,7 @@ sAnimLightToCell g_aAnimLightToCell[MAX_ANIM_LIGHT_TO_CELLS];
 // A RAND_COHERENT light changes up to some amount per frame, as a
 // fraction of the total range of intensities the light can assume.
 // (Actually, it changes +/- half this amount.)
-#define RAND_VARIATION .6
+#define RAND_VARIATION .6f
 
 /* ----- /-/-/-/-/-/-/-/-/ <<< (((((( /\ )))))) >>> \-\-\-\-\-\-\-\-\ ----- *\
 
@@ -279,7 +279,7 @@ void AnimLightSetCellList(sAnimLight *light, uint light_data_index)
    as having changed, so that the surfaces it reaches must be rebuilt.
 
 \* ----- \-\-\-\-\-\-\-\-\ <<< (((((( \/ )))))) >>> /-/-/-/-/-/-/-/-/ ----- */
-#define FLICKER_FACTOR  0.5
+#define FLICKER_FACTOR  0.5f
 BOOL AnimLightUpdateTimer(sAnimLight *light, long time_change)
 {
    float brightness, old_brightness, weight, range, change;
@@ -323,8 +323,8 @@ BOOL AnimLightUpdateTimer(sAnimLight *light, long time_change)
             interval = light->time_rising_ms;
          else
             interval = light->time_falling_ms;
-         randfactor = (1.0 - FLICKER_FACTOR) + ((FLICKER_FACTOR * 2) * (float)Rand() / (float) RAND_MAX);
-         interval = interval * randfactor;
+         randfactor = (1.0f - FLICKER_FACTOR) + ((FLICKER_FACTOR * 2) * (float)Rand() / (float) RAND_MAX);
+         interval = (int)(interval * randfactor);
          //mprintf("randfactor %f, interval %d\n",randfactor,interval);
          time += interval;
       }
@@ -339,6 +339,18 @@ BOOL AnimLightUpdateTimer(sAnimLight *light, long time_change)
 
    light->countdown_ms = time;
    old_brightness = light->brightness;
+
+   // Some Thief 1/Gold missions leave coherent-random lights at zero in the
+   // saved property even though their authored range is wholly above zero.
+   // Starting the random walk outside that range can leave a nominally lit
+   // fixture dark for a very long time.  Treat that state as uninitialized.
+   if (light->mode == ANIM_LIGHT_MODE_RAND_COHERENT
+    && (old_brightness < light->min_brightness
+     || old_brightness > light->max_brightness)) {
+      old_brightness = light->max_brightness;
+      light->brightness = old_brightness;
+      light->refresh = TRUE;
+   }
 
    switch (light->mode) {
       case ANIM_LIGHT_MODE_FLIP:
@@ -366,7 +378,7 @@ BOOL AnimLightUpdateTimer(sAnimLight *light, long time_change)
          if (changed_state) {
             range = light->max_brightness - light->min_brightness;
             brightness = light->min_brightness
-               + (float) Rand() * (1.0 / (float) RAND_MAX) * range;
+               + (float) Rand() * (1.0f / (float) RAND_MAX) * range;
          } else
             brightness = old_brightness;
          break;
@@ -387,14 +399,14 @@ BOOL AnimLightUpdateTimer(sAnimLight *light, long time_change)
          if (changed_state) {
             range = light->max_brightness - light->min_brightness;
 
-            change = (float) (Rand() - 16384) * (1.0 / (float) RAND_MAX)
+            change = (float) (Rand() - 16384) * (1.0f / (float) RAND_MAX)
                    * (range * RAND_VARIATION);
 
             brightness = old_brightness + change;
 
             if ((brightness > light->max_brightness && change > 0)
              || (brightness < light->min_brightness && change < 0))
-               brightness = old_brightness - (change * .5);
+               brightness = old_brightness - (change * .5f);
          } else
             brightness = old_brightness;
          break;

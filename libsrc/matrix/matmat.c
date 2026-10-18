@@ -127,9 +127,9 @@ bool mx_inv_mat(mxs_matrix *dest,const mxs_matrix *m)
    // Forward elimination
    // swap maximum to be pivot
    mi = 0;
-   mv = fabs(dest->el[0]);
-   if (fabs(dest->el[1]) > mv) {mi=1;mv=fabs(dest->el[1]);}
-   if (fabs(dest->el[2]) > mv) mi=2;
+   mv = fabsf(dest->el[0]);
+   if (fabsf(dest->el[1]) > mv) {mi=1;mv=fabsf(dest->el[1]);}
+   if (fabsf(dest->el[2]) > mv) mi=2;
 
  // swap max to pivot
    if (mi!=0) {
@@ -228,19 +228,19 @@ void mx_normroweq_mat(mxs_matrix *m)
 {
    mxs_real d;
    d = m->el[0]*m->el[0] + m->el[3]*m->el[3] + m->el[6]*m->el[6];
-   d = sqrt(d);
+   d = sqrtf(d);
    m->el[0] /= d;
    m->el[3] /= d;
    m->el[6] /= d;
 
    d = m->el[1]*m->el[1] + m->el[4]*m->el[4] + m->el[7]*m->el[7];
-   d = sqrt(d);
+   d = sqrtf(d);
    m->el[1] /= d;
    m->el[4] /= d;
    m->el[7] /= d;
 
    d = m->el[2]*m->el[2] + m->el[5]*m->el[5] + m->el[8]*m->el[8];
-   d = sqrt(d);
+   d = sqrtf(d);
    m->el[2] /= d;
    m->el[5] /= d;
    m->el[8] /= d;
@@ -258,8 +258,8 @@ bool mx_sanitize_mat(mxs_matrix *dest,const mxs_matrix *m,mxs_real tol)
 bool mx_sanitizeeq_mat(mxs_matrix *m,mxs_real tol)
 {
 
-   mxs_real ubound = 1.0 + tol;
-   mxs_real lbound = 1.0/(1.0 + tol);
+   mxs_real ubound = 1.0f + tol;
+   mxs_real lbound = 1.0f/(1.0f + tol);
    mxs_real orth[3];
    mxs_real mags[3];
    int i;
@@ -288,7 +288,7 @@ bool mx_sanitizeeq_mat(mxs_matrix *m,mxs_real tol)
    }
 
    for (i=0;i<3;++i) {
-      mx_diveq_vec(&m->vec[i],sqrt(mags[i]));
+      mx_diveq_vec(&m->vec[i],sqrtf(mags[i]));
    }
 
    // this will usually fix it

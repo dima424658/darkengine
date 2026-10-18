@@ -8,9 +8,8 @@
 #include <string.h>  // for fake load
 #include <stdlib.h>
 #include <fcntl.h>
-#include <io.h>
+#include <platform_io.h>
 
-//#include <malloc.h>
 
 #include <mprintf.h>
 
@@ -163,9 +162,9 @@ int fnt_load_from_style(void *style_ptr)
 
    // for now, we do mostly zany things 
    for (i=0; i<FNT_MAX_CHARS; i++)
-      _fnt_lists[hnd].wids[i]=gr_char_width(i);
-   _fnt_lists[hnd].wids[' ']=gr_char_width(' ');
-   _fnt_lists[hnd].height=f->h;
+      _fnt_lists[hnd].wids[i]=(uchar)gr_char_width(i);
+   _fnt_lists[hnd].wids[' ']=(uchar)gr_char_width(' ');
+   _fnt_lists[hnd].height=(uchar)f->h;
 
    _fnt_lists[hnd].f_color = psty->textColor;
    _fnt_lists[hnd].b_color = psty->backColor;

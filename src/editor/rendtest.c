@@ -10,7 +10,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <timer.h>
 #include <mprintf.h>
@@ -276,7 +276,7 @@ static BOOL rtP_update_position(void)
       if (tries<=0)                 // we failed, backup from hit
       {
          float mag=mx_mag_vec(&delta);
-         mx_scaleeq_vec(&delta,mag/2.0);
+         mx_scaleeq_vec(&delta,mag/2.0f);
          mx_addeq_vec(&delta,&ray_hit.vec);
          MakeHintedLocationFromVector(&ray_dest,&delta,&ray_hit);
       }

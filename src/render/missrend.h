@@ -32,6 +32,24 @@ struct sMissionRenderParams
 
 typedef struct sMissionRenderParams sMissionRenderParams; 
 
+// NewDark's LM_PARAM 0.1 block.  These are deliberately fixed-width disk
+// fields: the same block is the handoff contract for the KCTools sidecar.
+struct sMissionLightmapParams
+{
+   int data_size;
+   float attenuation;
+   float saturation;
+   uint shadow_type;
+   uint shadow_softness;
+   float center_weight;
+   uint shadow_depth;
+   BOOL lightmapped_water;
+   int lightmap_scale;
+   uint anim_light_cutoff;
+};
+
+typedef struct sMissionLightmapParams sMissionLightmapParams;
+
 //
 // Init/Term
 //
@@ -43,6 +61,8 @@ EXTERN void MissionRenderTerm();
 //
 EXTERN const sMissionRenderParams* GetMissionRenderParams(void); 
 EXTERN void SetMissionRenderParams(const sMissionRenderParams* params); 
+EXTERN const sMissionLightmapParams* GetMissionLightmapParams(void);
+EXTERN void SetMissionLightmapParams(const sMissionLightmapParams* params);
 
 
 //

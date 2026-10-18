@@ -16,12 +16,14 @@
 #include <r3ds.h>
 #include <md.h>
 
+#define MAX_FLOAT(a, b) ((a) > (b) ? (a) : (b))
+
 #undef rad2
 
 #ifndef SHIP
    #define TEST_VERSION(fname,model)   \
    do { \
-      if (model->ver!=MD_CUR_VER) { \
+      if (model->ver < MD_COMPATIBLE_VER || model->ver > MD_CUR_VER) { \
          char safename[10]; \
          strncpy(safename,model->name,8); \
          safename[8]='\0'; \
@@ -41,20 +43,20 @@ float radius_from_bbox(mxs_vector *bmin,mxs_vector *bmax)
    // greatest x
    mn2 = bmin->x*bmin->x;
    mx2 = bmax->x*bmax->x;
-   rad2 = max(mn2,mx2);
+   rad2 = MAX_FLOAT(mn2,mx2);
 
    // greatest y
    mn2 = bmin->y*bmin->y;
    mx2 = bmax->y*bmax->y;
-   rad2 += max(mn2,mx2);
+   rad2 += MAX_FLOAT(mn2,mx2);
 
    // greatest z
    mn2 = bmin->z*bmin->z;
    mx2 = bmax->z*bmax->z;
-   rad2 += max(mn2,mx2);
+   rad2 += MAX_FLOAT(mn2,mx2);
 
    // radius is dist from center to max point
-   return sqrt(rad2);
+   return sqrtf(rad2);
 }
 
 
@@ -214,6 +216,9 @@ mds_model *md_scale_model(mds_model *dst,mds_model *src,mxs_vector *s,bool light
       next += 2*pgon->num*sizeof(ushort);
       if ( ((pgon->type)&MD_PGON_PRIM_MASK)==MD_PGON_PRIM_TMAP) {
          next += pgon->num * sizeof(ushort);
+      }
+      if (dst->ver > 3) {
+         next += sizeof(mds_pgon_aux);
       }
       pgon = (mds_pgon *)next;
    }

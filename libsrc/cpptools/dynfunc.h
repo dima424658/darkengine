@@ -10,6 +10,8 @@
 #ifndef __DYNFUNC_H
 #define __DYNFUNC_H
 
+#include <types.h>
+
 #if defined(__SC__) || defined(__RCC__)
 #pragma once
 #endif
@@ -100,20 +102,16 @@ protected:
     void * pfnFunc;
     BOOL fTriedToLoad;
     void * pfnFail;
-    HINSTANCE hInstLib;
+    void * hInstLib;
     const char * pszLibName;
     const char * pszFuncSig;
     };
 
 ///////////////////////////////////////
 
-inline BOOL LoadedDLL(HINSTANCE hInstLib)
+inline BOOL LoadedDLL(void * hInstLib)
     {
-    #if !defined(_WIN32)
-    return (hInstLib > HINSTANCE_ERROR);
-    #else
     return hInstLib != 0;
-    #endif
     }
 
 ///////////////////////////////////////
@@ -122,25 +120,6 @@ inline cDynFunc::cDynFunc(const char * pszLibName, const char * pszFuncSig, void
     : pfnFunc(0), fTriedToLoad(FALSE), hInstLib(0),
       pszLibName(pszLibName), pszFuncSig(pszFuncSig), pfnFail(pfnFail)
     {
-    }
-
-///////////////////////////////////////
-
-inline cDynFunc::~cDynFunc()
-    {
-    if (LoadedDLL(hInstLib))
-        FreeLibrary(hInstLib);
-    }
-
-///////////////////////////////////////
-
-inline void cDynFunc::Unload()
-    {
-    pfnFunc = NULL;
-    fTriedToLoad = FALSE;
-    if (LoadedDLL(hInstLib))
-        FreeLibrary(hInstLib);
-    hInstLib = 0;
     }
 
 ///////////////////////////////////////

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E9ED119A-C28F-45FD-87FC-6B9676575539}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>osm32_entry_test</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType><UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset><CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(DarkPlatformOutputDir)</OutDir>
+    <IntDir>$(DarkIntermediateRoot)osm32_entry_test\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel><Optimization>MaxSpeed</Optimization>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)libsrc\script;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link><SubSystem>Console</SubSystem></Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="osm32_entry_test.cpp" />
+    <ClCompile Include="..\..\libsrc\script\osm_emu\osm32bridge.cpp" />
+    <ClCompile Include="..\..\libsrc\script\osm_emu\osm32cpu.cpp" />
+    <ClCompile Include="..\..\libsrc\script\osm_emu\osm32env.cpp" />
+    <ClCompile Include="..\..\libsrc\script\osm_emu\osm32img.cpp" />
+    <ClCompile Include="..\..\libsrc\script\osm_emu\osm32imports.cpp" />
+    <ClCompile Include="..\..\libsrc\script\osm_emu\osm32rt.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\libsrc\script\osm_emu\osm32bridge.h" />
+    <ClInclude Include="..\..\libsrc\script\osm_emu\osm32cpu.h" />
+    <ClInclude Include="..\..\libsrc\script\osm_emu\osm32env.h" />
+    <ClInclude Include="..\..\libsrc\script\osm_emu\osm32img.h" />
+    <ClInclude Include="..\..\libsrc\script\osm_emu\osm32imports.h" />
+    <ClInclude Include="..\..\libsrc\script\osm_emu\osm32rt.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

@@ -43,7 +43,7 @@ int cAIRangedWound::SuggestInterrupt(void)
    {
       sAIRangedWound* pWoundResponse = AIGetRangedWound(GetID());
       // drop out if damage below threshold
-      if (int(pEvent->m_pData)<pWoundResponse->m_woundThreshold)
+      if ((int)(intptr_t)pEvent->m_pData < pWoundResponse->m_woundThreshold)
          return 0;
       // drop out randomly
       if (AIRandom(0, 100)>pWoundResponse->m_responseChance)
@@ -68,7 +68,7 @@ cAIAction* cAIRangedWound::SuggestAction(void)
    sAIRangedCombatEvent* pEvent = m_pOwner->GetEvent(kAIRC_EventWounded);
 
    Assert_(pEvent); 
-   if (int(pEvent->m_pData)>AIGetRangedWound(GetID())->m_severeThreshold)
+   if ((int)(intptr_t)pEvent->m_pData > AIGetRangedWound(GetID())->m_severeThreshold)
       return CreateMotionAction("ReceiveWound 0, SevereWound 0");
    else
       return CreateMotionAction("ReceiveWound 0");

@@ -1335,7 +1335,7 @@ void cAI::UpdateAlertness()
    // If we're in maximum alert, we stay there for a period of time
    if (pHighestAwareness &&
        pAlertness->level == kAIAL_High &&
-       pHighestAwareness->TimeSinceContact() < g_AITimeMaxAlert)
+       pHighestAwareness->TimeSinceContact() < (tSimTime)g_AITimeMaxAlert)
    {
       targetLevel = kAIAL_High;
       source      = pHighestAwareness->object;
@@ -2498,7 +2498,7 @@ STDMETHODIMP_(BOOL) cAI::Save(ITagFile * pTagFile)
 
       AITagMove(pTagFile, &nAbilities);
 
-      for (int i = 0; i < nAbilities; i++)
+      for (unsigned i = 0; i < nAbilities; i++)
       {
          abilityNameStr = m_Abilities[i].pAbility->GetName();
          AITagMoveString(pTagFile, &abilityNameStr);
@@ -2606,7 +2606,7 @@ STDMETHODIMP_(BOOL) cAI::Load(ITagFile * pTagFile)
 
       BOOL found;
 
-      for (i = 0; i < nAbilities; i++)
+      for (i = 0; i < (int)nAbilities; i++)
       {
          found = FALSE;
          AITagMoveString(pTagFile, &loadAbilityName);

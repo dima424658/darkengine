@@ -8,7 +8,6 @@
 #ifndef __RESTHRED_H
 #define __RESTHRED_H
 
-#ifdef _WIN32
 EXTERN void _ResThreadLock();
 EXTERN void _ResThreadUnlock();
 #ifndef RES_THREAD_TRACE
@@ -33,11 +32,6 @@ EXTERN void _ResThreadUnlock();
     }
 
 #endif
-#else
-#define ResThreadLock()
-#define ResThreadUnlock()
-#endif
-
 #if defined(__cplusplus)
 
 class cAutoResThreadLock

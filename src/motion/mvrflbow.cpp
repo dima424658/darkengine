@@ -68,7 +68,8 @@ private:
 };
                          
 cFlexBowManeuverFactory g_FlexBowManeuverFactory;
-EXTERN cManeuverFactory *g_pFlexBowManeuverFactory=&g_FlexBowManeuverFactory;
+EXTERN cManeuverFactory *g_pFlexBowManeuverFactory;
+cManeuverFactory *g_pFlexBowManeuverFactory=&g_FlexBowManeuverFactory;
 
 
 cMotionPlan *cFlexBowManeuverFactory::CreatePlan(const cMotionSchema *pSchema,const sMcMotorState& motState, \

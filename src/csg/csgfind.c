@@ -62,13 +62,13 @@ void store_brush_bbox(int brushid, PortalPolyhedron *ph)
    BspVertex mn,mx;
    compute_ph_bbox(ph, &mn, &mx);
 
-   brush_min[brushid].x = mn.x;
-   brush_min[brushid].y = mn.y;
-   brush_min[brushid].z = mn.z;
+   brush_min[brushid].x = (mxs_real)mn.x;
+   brush_min[brushid].y = (mxs_real)mn.y;
+   brush_min[brushid].z = (mxs_real)mn.z;
 
-   brush_max[brushid].x = mx.x;
-   brush_max[brushid].y = mx.y;
-   brush_max[brushid].z = mx.z;
+   brush_max[brushid].x = (mxs_real)mx.x;
+   brush_max[brushid].y = (mxs_real)mx.y;
+   brush_max[brushid].z = (mxs_real)mx.z;
 }
 
 extern int PortalPolygonPlaneCompare(PortalPolygon *p, BspPlane *plane);
@@ -116,12 +116,12 @@ int find_brface_from_poly(PortalPolygon *poly)
 
    compute_poly_bbox(poly, &bmin, &bmax);
 
-   mn.x = bmin.x;
-   mn.y = bmin.y;
-   mn.z = bmin.z;
-   mx.x = bmax.x;
-   mx.y = bmax.y;
-   mx.z = bmax.z;
+   mn.x = (mxs_real)bmin.x;
+   mn.y = (mxs_real)bmin.y;
+   mn.z = (mxs_real)bmin.z;
+   mx.x = (mxs_real)bmax.x;
+   mx.y = (mxs_real)bmax.y;
+   mx.z = (mxs_real)bmax.z;
 
    for (i=0; i < csg_num_brushes; ++i) {
       if (CSG_BRUSH(i) && CB_TIMESTAMP(i) > best_tm &&

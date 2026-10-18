@@ -147,7 +147,7 @@ static bool check_sphere_pgon(mds_pgon *p, mds_sphere_hit_detect_info *hdi)
 }
 
 
-static mds_pgon *get_next(mds_pgon *p)
+static mds_pgon *get_next(mds_model *m, mds_pgon *p)
 {
    int offset, list_size;
 
@@ -157,6 +157,9 @@ static mds_pgon *get_next(mds_pgon *p)
 
    if ((p->type&MD_PGON_PRIM_MASK) == MD_PGON_PRIM_TMAP)
       offset += list_size;
+
+   if (m->ver > 3)
+      offset += sizeof(mds_pgon_aux);
 
    return (mds_pgon *)( ((uchar *)p) + offset );
 }
@@ -189,7 +192,7 @@ void md_segment_hit_detect(mds_model *m, mds_segment_hit_detect_info *hdi)
       check_pgon(p, hdi);
       if(hdi->hit && hdi->early_out) 
          return;
-      p = get_next(p);
+      p = get_next(m, p);
    }
 }
 
@@ -319,7 +322,7 @@ void md_sphere_hit_detect_old(mds_model *m, mds_sphere_hit_detect_info *hdi)
          hdi->polys[hdi->num] = i;
          hdi->num++;
       }
-      p = get_next(p);
+      p = get_next(m, p);
    }
 }
 

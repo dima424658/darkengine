@@ -113,23 +113,9 @@
 extern "C"  {
 #endif
 
-#ifndef _WIN32
+#include <platform_services.h>
 
-    #define RAW_TIME_VALUE     tm_get_millisec()
-
-    #ifndef _TIMER_H
-    #include <timer.h>
-    #endif
-
-#else
-
-    #define RAW_TIME_VALUE     timeGetTime()
-
-    #ifndef _INC_WINDOWS
-    __declspec(dllimport) DWORD __stdcall timeGetTime(void);
-    #endif
-
-#endif
+#define RAW_TIME_VALUE PlatformMilliseconds()
 
 #ifdef PROFILE_ON
 

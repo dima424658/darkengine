@@ -67,6 +67,7 @@
 */
 extern void IncParseFile(char *fileName);
 extern void SchemaParseFile(char *fileName, int (*parseFn)());
+extern void MschParseFile(char *schemaFile);
 
 #define mscherror mprintf
 
@@ -386,7 +387,7 @@ motinst: IDENT optmotparamlist
    {
       size=sizeof(g_aSchemaMotions[0].name);     
       strncpy(g_aSchemaMotions[g_nSchemaMotions].name.text,$1,size);
-      g_aSchemaMotions[g_nSchemaMotions].stuff.flags=NULL;
+      g_aSchemaMotions[g_nSchemaMotions].stuff.flags=0;
       if(g_NeckIsFixed)
          g_aSchemaMotions[g_nSchemaMotions].stuff.flags|=kMSF_NECK_IS_FIXED;
       g_aSchemaMotions[g_nSchemaMotions].stuff.blendLength=g_BlendLength;

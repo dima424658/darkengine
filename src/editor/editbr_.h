@@ -15,6 +15,7 @@
 #include <editbrs.h>
 #include <gridsnap.h>
 #include <fix.h>
+#include <darklimit.h>
 
 // _editbr.h
 //  internals for edit brush
@@ -24,7 +25,7 @@
 //  (we use it for the grid scale too, just for fun)
 
 // wacky support for zany pow2 integer to float scale stuff
-#define scale_pow2int_to_float(pow2i) (((float)(1<<pow2i))*(4.0/(float)(1<<16)))
+#define scale_pow2int_to_float(pow2i) (((float)(1<<pow2i))*(4.0f/(float)(1<<16)))
 
 #define TEXINFO_HACK_ALIGN 1  // for now, how you specify rotate to brush
 
@@ -47,7 +48,11 @@ enum eEditBrushFlags
    kEBF_BeingDeleted  = 0x01,
 };
 
-#define EDITBR_MAX_FACES 12
+// NewDark widened the on-disk brush record without changing the BRLIST 1.0
+// envelope.  Keep this capacity in the codec/runtime structure: the fixed
+// record prefix is unchanged because txs is the trailing variable-length
+// member, while NewDark missions may legally contain up to 28 face records.
+#define EDITBR_MAX_FACES DARK_LIMIT_RUNTIME_BRUSH_FACES
 
 struct _editBrush
 {

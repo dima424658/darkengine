@@ -49,25 +49,25 @@ void ff_cyl(float x0,float y0,float z0,float x1,float y1,float z1,float rad,long
    a.y = y1-y0;
    a.z = z1-z0;
 
-   ax = fabs(a.x);
-   ay = fabs(a.y);
-   az = fabs(a.z);
+   ax = fabsf(a.x);
+   ay = fabsf(a.y);
+   az = fabsf(a.z);
 
    // inverse magnitudes 
-   ma = 1.0/sqrt((a.x*a.x) + (a.y*a.y) + (a.z*a.z));
-   sqrt2 = 1.0/sqrt(2);
+   ma = 1.0f/sqrtf((a.x*a.x) + (a.y*a.y) + (a.z*a.z));
+   sqrt2 = 1.0f/sqrtf(2.0f);
 
    // One has to work okay without exploding
    if ( (ay > az) && (ay > ax) ) {
-      v[0].p.z = a.y*rad/sqrt(2*(a.y*a.y + (a.z+a.x)*(a.z+a.x)));
+      v[0].p.z = a.y*rad/sqrtf(2.0f*(a.y*a.y + (a.z+a.x)*(a.z+a.x)));
       v[0].p.x = v[0].p.z;
       v[0].p.y = -v[0].p.z*(a.z+a.x)/a.y;
    } else if ( az > ax) {
-      v[0].p.x = a.z*rad/sqrt(2*(a.z*a.z + (a.x+a.y)*(a.x+a.y)));
+      v[0].p.x = a.z*rad/sqrtf(2.0f*(a.z*a.z + (a.x+a.y)*(a.x+a.y)));
       v[0].p.y = v[0].p.x;
       v[0].p.z = -(v[0].p.x*(a.x+a.y)/a.z);
    } else {
-      v[0].p.y = a.x*rad/sqrt(2*(a.x*a.x + (a.y+a.z)*(a.y+a.z)));
+      v[0].p.y = a.x*rad/sqrtf(2.0f*(a.x*a.x + (a.y+a.z)*(a.y+a.z)));
       v[0].p.z = v[0].p.y;
       v[0].p.x = -v[0].p.y*(a.y+a.z)/a.x;
    }

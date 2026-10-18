@@ -94,6 +94,23 @@ static ulong g_aszDefaultMaterial[kMaxTextureSubst];
 // other
 static IResMan *g_pResMan;
 
+static void LogicalTextureName(char *logicalName, size_t logicalNameSize,
+                               const char *textureName)
+{
+   char *extension;
+   char *slash;
+
+   strncpy(logicalName, textureName, logicalNameSize - 1);
+   logicalName[logicalNameSize - 1] = '\0';
+   strlwr(logicalName);
+   extension = strrchr(logicalName, '.');
+   slash = strrchr(logicalName, '\\');
+   if (!slash)
+      slash = strrchr(logicalName, '/');
+   if (extension && (!slash || extension > slash) && extension != logicalName)
+      *extension = '\0';
+}
+
 
 /* --<<= -+-/-/-/=/=/\/- <<< ((( ((( / \ ))) ))) >>> -\/\=\=\-\-\-+- =>>-- *\
 
@@ -374,49 +391,46 @@ static Command g_aCommands[]
 // because it's the callers business whether the texture is needed.
 grs_bitmap *MeshTexGetBitmap(char *pszName)
 {
-   strlwr(pszName);
+   char logicalName[32];
+   LogicalTextureName(logicalName, sizeof(logicalName), pszName);
 
    // Do we already have this one?  We usually will.
    for (int i = 0; i < g_Textures.Size(); ++i)
-      if (!strcmp(g_Textures[i].m_aszName, pszName))
+      if (!strcmp(g_Textures[i].m_aszName, logicalName))
          return g_Textures[i].m_pBitmap;
 
-   IRes *pRes = g_pResMan->Bind(pszName, RESTYPE_IMAGE, MeshModelTexturesPath);
+   // MeshTex values name logical artwork.  Do not let an extension retained
+   // in a mission or gamesys force a lower-priority codec (or a missing
+   // resource) when a mod provides the same texture as TGA or PNG.
+   IRes *pRes = g_pResMan->Bind(logicalName, RESTYPE_IMAGE, MeshModelTexturesPath);
    if (!pRes)
       return 0;
 
-   // @HACK: This bit here where we distinguish regular textures
-   // from palletized ones is copied directly from objmodel, and
-   // duplicates the "txt16" path used there rather than relying
-   // on a constant shared by both modules.  Ain't I a bum.
-   IStore *pCanonStore = pRes->GetCanonStore();
-   if (!stricmp(pCanonStore->GetName(), "txt16\\")) {
-      // Okay. Get the palette...
-      IRes *pPallRes = g_pResMan->Retype(pRes, RESTYPE_PALETTE, 0);
-      if (pPallRes) {
-         void *pPall = pPallRes->Lock();
-         grs_bitmap *pbm = (grs_bitmap *) pRes->Lock();
+   // Modern texture upload expands palette indices to RGBA.  Keep the
+   // palette carried by every mesh texture instead of relying on mutable
+   // global slot zero; palette allocation deduplicates matching stock data.
+   IRes *pPallRes = g_pResMan->Retype(pRes, RESTYPE_PALETTE, 0);
+   if (pPallRes) {
+      void *pPall = pPallRes->Lock();
+      grs_bitmap *pbm = (grs_bitmap *) pRes->Lock();
 
-         uchar b = pbm->align;
-         pbm->align = palmgr_alloc_pal((uchar *) pPall);
-         if (b != pbm->align)
-            if ((g_tmgr != NULL) && (pbm->flags & BMF_LOADED)) {
-               lgd3d_unload_texture(pbm);
-               lgd3d_load_texture(pbm);
-            }
+      uchar b = pbm->align;
+      pbm->align = palmgr_alloc_pal((uchar *) pPall);
+      if (b != pbm->align)
+         if ((g_tmgr != NULL) && (pbm->flags & BMF_LOADED)) {
+            lgd3d_unload_texture(pbm);
+            lgd3d_load_texture(pbm);
+         }
 
-         pRes->Unlock();
-         pPallRes->Unlock();
-         // We're done with the palette; the palette manager will now
-         // take charge of it.  So we can drop it from memory.
-         pPallRes->Drop();
-         pPallRes->Release();
-      }
+      pRes->Unlock();
+      pPallRes->Unlock();
+      pPallRes->Drop();
+      pPallRes->Release();
    }
-   pCanonStore->Release();
 
    sResTexture NewPair;
-   strncpy(NewPair.m_aszName, pszName, 16);
+   strncpy(NewPair.m_aszName, logicalName, sizeof(NewPair.m_aszName) - 1);
+   NewPair.m_aszName[sizeof(NewPair.m_aszName) - 1] = '\0';
    NewPair.m_pRes = pRes;
    NewPair.m_pBitmap = (grs_bitmap *) pRes->Lock();
    g_Textures.Append(NewPair);
@@ -446,6 +460,8 @@ void MeshTexTerm()
 void MeshTexReset()
 {
    for (int i = 0; i < g_Textures.Size(); ++i) {
+      if (g_Textures[i].m_pBitmap->align != 0)
+         palmgr_release_slot(g_Textures[i].m_pBitmap->align);
       g_Textures[i].m_pRes->Unlock();
       g_Textures[i].m_pRes->Release();
    }
@@ -482,7 +498,7 @@ void MeshTexPrerender(ObjID Obj, mms_model *pModel)
       g_aszDefaultMaterial[i]
          = pMaterial[pTextureSubst[i].m_iMaterialIndex].handle;
       pMaterial[pTextureSubst[i].m_iMaterialIndex].handle
-         = (ulong) pTextureSubst[i].m_pBitmap;
+         = mm_register_texture(pTextureSubst[i].m_pBitmap);
    }
 
    FacePrerender(Obj, pModel);

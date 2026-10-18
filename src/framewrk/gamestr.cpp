@@ -453,7 +453,7 @@ sRelativeConstraint cGameStrings::gConstraints[] =
    { kNullConstraint }
 }; 
 
-void init_commands(); 
+static void init_commands();
 
 EXTERN void GameStringsCreate()
 {

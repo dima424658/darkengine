@@ -16,7 +16,7 @@
 void bank8_flat8_opaque_ubitmap (grs_bitmap *bm, int x, int y)
 {
    uchar *src;
-   long p;
+   uintptr_t p;
    int w = bm->w;
    int h = bm->h;
    int srow = bm->row;
@@ -25,7 +25,7 @@ void bank8_flat8_opaque_ubitmap (grs_bitmap *bm, int x, int y)
    int save_bank = gdd_save_bank;
 
    src = bm->bits;
-   p = ((long )grd_bm.bits) + drow*y + x;
+   p = (uintptr_t)grd_bm.bits + drow * y + x;
 
    gd_set_bank(p>>16);
 
@@ -37,7 +37,7 @@ void bank8_flat8_opaque_ubitmap (grs_bitmap *bm, int x, int y)
          gd_inc_bank();
          p -= 0x10000;
       }
-      delta = 0x10000-p;
+      delta = (int)(0x10000 - p);
       if (delta >= w) {
          memcpy (base+p, src, w);
       } else {
@@ -56,7 +56,7 @@ void bank8_flat8_opaque_ubitmap (grs_bitmap *bm, int x, int y)
 void bank8_flat8_trans_ubitmap (grs_bitmap *bm, int x, int y)
 {
    uchar *src;
-   long p;
+   uintptr_t p;
    int w = bm->w;
    int h = bm->h;
    int srow = bm->row;
@@ -65,7 +65,7 @@ void bank8_flat8_trans_ubitmap (grs_bitmap *bm, int x, int y)
    int save_bank = gdd_save_bank;
 
    src = bm->bits;
-   p = ((long )grd_bm.bits) + drow*y + x;
+   p = (uintptr_t)grd_bm.bits + drow * y + x;
 
    gd_set_bank(p>>16);
 
@@ -77,7 +77,7 @@ void bank8_flat8_trans_ubitmap (grs_bitmap *bm, int x, int y)
          gd_inc_bank();
          p -= 0x10000;
       }
-      delta = 0x10000-p;
+      delta = (int)(0x10000 - p);
       if (delta >= w) {
          for (i=0; i<w; i++) {
             uchar c=src[i];

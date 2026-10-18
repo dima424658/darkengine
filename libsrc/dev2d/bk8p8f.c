@@ -17,10 +17,13 @@
 #include <bk8pix.h>
 
 void (*bank8_upix8_func[FILL_TYPES])() =
+{ 0 };
+
+void init_bank8_upix8_func(void)
 {
-	[FILL_NORM] =	bank8_norm_upix8,
-	[FILL_XOR] =	bank8_xor_upix8,
-	[FILL_BLEND] =	bank8_tluc_upix8,
-	[FILL_CLUT] =	bank8_clut_upix8,
-	[FILL_SOLID] =	bank8_solid_upix8,
-};
+	bank8_upix8_func[FILL_NORM] = bank8_norm_upix8;
+	bank8_upix8_func[FILL_XOR] = bank8_xor_upix8;
+	bank8_upix8_func[FILL_BLEND] = bank8_tluc_upix8;
+	bank8_upix8_func[FILL_CLUT] = bank8_clut_upix8;
+	bank8_upix8_func[FILL_SOLID] = bank8_solid_upix8;
+}

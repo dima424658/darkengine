@@ -52,7 +52,7 @@ static eReactionResult LGAPI freezeReactionResult(sReactionEvent* pEvent, const 
       return kReactionAbort;
 //making time in milliseconds so that we can have finer control over freeze
 //times wrt strength of stim. AMSD
-   pAI->Freeze(pParam->duration*pEvent->stim->intensity);
+   pAI->Freeze((tSimTime)(pParam->duration * pEvent->stim->intensity));
    pAI->Release();
    return kReactionNormal; 
 }

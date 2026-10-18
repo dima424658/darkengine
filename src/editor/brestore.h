@@ -14,6 +14,7 @@
 
 EXTERN void SaveBrushSelection(void); 
 EXTERN void RestoreBrushSelection(void); 
+EXTERN void ScheduleBrushSelectionRestore(void);
 
 
 

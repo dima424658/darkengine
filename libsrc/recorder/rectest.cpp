@@ -7,7 +7,6 @@
 #include <ctype.h>
 #include <stdlib.h> // getenv
 
-#pragma off (unreference)
 
 DEFINE_LG_GUID(ID_RecGetChar, 0x1);
 

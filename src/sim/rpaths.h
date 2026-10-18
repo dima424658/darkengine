@@ -200,10 +200,10 @@ inline void cAIRoomDB::UseValidChecks(BOOL state)
 
 inline void cAIRoomDB::MarkRoomCells(short roomID)
 {
-   AssertMsg1(roomID < m_RoomCellList.Size(), "Attempt to mark from invalid room id 0\n", roomID);
+   AssertMsg1(roomID >= 0 && roomID < (int)m_RoomCellList.Size(), "Attempt to mark from invalid room id 0\n", roomID);
    AssertMsg(m_CellValidList.Size() > 0, "Attempt to mark unitialized valid cell list\n");
    
-   for (int i=0; i<m_RoomCellList[roomID].Size(); i++)
+   for (int i=0; i<(int)m_RoomCellList[roomID].Size(); i++)
       m_CellValidList[m_RoomCellList[roomID][i]] = TRUE;
 }
 
@@ -211,10 +211,10 @@ inline void cAIRoomDB::MarkRoomCells(short roomID)
 
 inline void cAIRoomDB::UnMarkRoomCells(short roomID)
 {
-   AssertMsg1(roomID < m_RoomCellList.Size(), "Attempt to unmark from invalid room id 0\n", roomID);
+   AssertMsg1(roomID >= 0 && roomID < (int)m_RoomCellList.Size(), "Attempt to unmark from invalid room id 0\n", roomID);
    AssertMsg(m_CellValidList.Size() > 0, "Attempt to mark unitialized valid cell list\n");
 
-   for (int i=0; i<m_RoomCellList[roomID].Size(); i++)
+   for (int i=0; i<(int)m_RoomCellList[roomID].Size(); i++)
       m_CellValidList[m_RoomCellList[roomID][i]] = FALSE;
 }
 
@@ -222,13 +222,13 @@ inline void cAIRoomDB::UnMarkRoomCells(short roomID)
 
 inline void cAIRoomDB::MarkAllRoomCells()
 {
-   for (int i=0; i<m_RoomCellList.Size(); i++)
+   for (int i=0; i<(int)m_RoomCellList.Size(); i++)
       MarkRoomCells(i);
 }
 
 inline void cAIRoomDB::UnMarkAllRoomCells()
 {
-   for (int i=0; i<m_RoomCellList.Size(); i++)
+   for (int i=0; i<(int)m_RoomCellList.Size(); i++)
       UnMarkRoomCells(i);
 }
 
@@ -236,7 +236,7 @@ inline void cAIRoomDB::UnMarkAllRoomCells()
 
 inline BOOL cAIRoomDB::IsCellValid(tAIPathCellID cellID)
 {
-   return ((m_UseValidChecks == FALSE) || (cellID < m_CellValidList.Size() && m_CellValidList[cellID]));
+      return ((m_UseValidChecks == FALSE) || (cellID < (tAIPathCellID)m_CellValidList.Size() && m_CellValidList[cellID]));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

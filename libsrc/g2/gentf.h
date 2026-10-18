@@ -3,11 +3,13 @@
 #ifndef __GENTF_H
 #define __GENTF_H
 
-extern void gen_flat8_ulmap_setup();
-extern void gen_flat8_lit_ulmap_setup();
-extern void gen_rsd8_ulmap_setup();
-extern void gen_rsd8_lit_ulmap_setup();
-extern void gen_flat16_ulmap_setup();
-extern void gen_flat16_lit_ulmap_setup();
+#include <tftype.h>
+
+extern tmap_setup_func gen_flat8_ulmap_setup;
+extern tmap_setup_func gen_flat8_lit_ulmap_setup;
+extern tmap_setup_func gen_rsd8_ulmap_setup;
+extern tmap_setup_func gen_rsd8_lit_ulmap_setup;
+extern tmap_setup_func gen_flat16_ulmap_setup;
+extern tmap_setup_func gen_flat16_lit_ulmap_setup;
 
 #endif

@@ -38,6 +38,11 @@ DECLARE_INTERFACE_(IDataOps, IUnknown)
 
    STDMETHOD_(int,Version)(THIS) PURE; 
 
+   // Highest on-disk value version this codec can read.  Version() remains
+   // the version emitted by Write(); accepting newer input must never change
+   // the writer's advertised format.
+   STDMETHOD_(int,ReadVersion)(THIS) { return Version(); }
+
    // Read a value of the specified version 
    // *dat may NOT have come from New()
    STDMETHOD(Read)(THIS_ sDatum* dat, IDataOpsFile* file, int version) PURE; 

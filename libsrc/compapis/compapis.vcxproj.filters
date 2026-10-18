@@ -84,10 +84,10 @@
     <ClInclude Include="thrmnapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wappapi.h">
+    <ClInclude Include="..\..\winsrc\appcore\wappapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wappguid.h">
+    <ClInclude Include="..\..\winsrc\appcore\wappguid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="2d.h">

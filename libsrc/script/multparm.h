@@ -211,7 +211,7 @@ public:
             result = o;
             break;
          case kMT_Float:
-            result = f;
+            result = static_cast<int>(f);
             break;
          case kMT_String:
             result = atoi(psz);
@@ -258,10 +258,10 @@ public:
             result = 0.0;
             break;
          case kMT_Int:
-            result = i;
+            result = static_cast<float>(i);
             break;
          case kMT_Obj:
-            result = o;
+            result = static_cast<float>(o);
             break;
          case kMT_Float:
             result = f;

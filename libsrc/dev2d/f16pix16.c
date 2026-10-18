@@ -60,7 +60,6 @@ void flat16_tluc_upix16 (int c16, int x, int y)
    *p = c16;
 }
 
-#pragma off (unreferenced)
 void flat16_solid_upix16 (int c16, int x, int y)
 {
    ushort *p;
@@ -68,4 +67,3 @@ void flat16_solid_upix16 (int c16, int x, int y)
    p = (ushort *)(grd_bm.bits + grd_bm.row*y + 2*x);
    *p = (ushort )grd_gc.fill_parm;
 }
-#pragma on (unreferenced)

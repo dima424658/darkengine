@@ -8,6 +8,7 @@
 #ifndef __RECORDER_H
 #define __RECORDER_H
 
+#include <stdint.h>
 #include <aggmemb.h>
 #include <comtools.h>
 #include <recapi.h>
@@ -129,9 +130,7 @@ class cRecorder : public IRecorder
     eRecSaveOption      m_fSaveOption;
 
     BOOL                m_fFirstAccess;           // @Note (toml 09-30-96): This variable may want to change to an enumerated "state"
-#ifdef _WIN32
-    ulong               m_ThreadRecordingId;
-#endif
+    uint64_t            m_ThreadRecordingId;
     const char *        m_pszLastStreamItem;
     size_t              m_sizeLastItem;
 };

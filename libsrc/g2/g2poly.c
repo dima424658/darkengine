@@ -28,18 +28,6 @@ static int do_poly(int c, int n, grs_vertex **vpl, int clip_type, g2up_func *f)
    return code;
 }
 
-int gr_poly(int c, int n, grs_vertex **vpl)
-{
-   return do_poly(c, n, vpl, G2C_CLIP_NONE,
-      gr_upoly_expose(c, n, vpl));
-}
-
-int gr_spoly(int c, int n, grs_vertex **vpl)
-{
-   return do_poly(c, n, vpl, G2C_CLIP_I,
-      gr_uspoly_expose(c, n, vpl));
-}
-
 int gr_cpoly(int c, int n, grs_vertex **vpl)
 {
    return do_poly(c, n, vpl, G2C_CLIP_RGB,

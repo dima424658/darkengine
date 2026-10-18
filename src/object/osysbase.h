@@ -11,6 +11,7 @@
 
 #include <objtype.h>
 #include <objdef.h>
+#include <darklimit.h>
 
 ////////////////////////////////////////////////////////////
 // OBJECT SYSTEM INTERNALS
@@ -44,9 +45,12 @@ EXTERN ubyte* BaseActiveArray; // Active array starting at the negative values
 //
 #define ObjExists(obj)  (BaseActiveElem(obj) & BaseActiveMask(obj))
 
-// This is for stupid static arrays that want an upper bound on the number of objects there could possibly be
-// @TODO: get rid of this.
-#define HACK_MAX_OBJ     4096
+// This is for static arrays that want an upper bound on the number of objects
+// there could possibly be.  NewDark-authored gamesys files commonly reserve
+// more than the retail 4096 concrete IDs (TFix 1.28 requests 8184), so keep
+// these legacy portal, physics, lighting, and reaction tables in step with the
+// extended object system range.
+#define HACK_MAX_OBJ     DARK_LIMIT_RUNTIME_CONCRETE_OBJECT_IDS
 
 
 

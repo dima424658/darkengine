@@ -33,19 +33,19 @@ static void AIDrawOneSuggestion(const mxs_vector & loc, const sAIMoveSuggestion 
 
    translate.x = 0;
    translate.y = 0;
-   translate.z = 0.2;
+   translate.z = 0.2f;
 
 //   r3_start_object(&translate);
 //   r3_start_block();
 
    if (suggestion.bias > 0)
    {
-      drawSize = suggestion.bias / 10.0;
+      drawSize = suggestion.bias / 10.0f;
       r3_set_color(good);
    }
    else
    {
-      drawSize = -suggestion.bias / 10.0;
+      drawSize = -suggestion.bias / 10.0f;
       r3_set_color(bad);
    }
 
@@ -91,7 +91,7 @@ STDMETHODIMP_(void) cAI::DebugDraw()
 
    translate.x = 0;
    translate.y = 0;
-   translate.z = 0.2;
+   translate.z = 0.2f;
 
    m_state.GetLocation(&atLocation);
 
@@ -147,8 +147,8 @@ STDMETHODIMP_(void) cAI::DebugDraw()
          100,                                    // kAIS_VeryFast
       };
 
-      x = cos(m_pDebugMoveGoal->dir.value) * speeds[m_pDebugMoveGoal->speed] / 10;
-      y = sin(m_pDebugMoveGoal->dir.value) * speeds[m_pDebugMoveGoal->speed] / 10;
+      x = cosf(m_pDebugMoveGoal->dir.value) * speeds[m_pDebugMoveGoal->speed] / 10;
+      y = sinf(m_pDebugMoveGoal->dir.value) * speeds[m_pDebugMoveGoal->speed] / 10;
 
       r3_set_color(moveColor);
 

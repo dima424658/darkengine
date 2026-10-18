@@ -40,7 +40,7 @@ const DWORD kJoyHatLeft = 27000;
 // this flag is undocumented, but seems to indicate data format elements which
 //  are optional - if you ask for a data element which the attached joystick
 //  doesn't generate, SetDataFormat will fail unless this bit is set
-#define WACKY_DI_FLAG 0x80000000
+#define WACKY_DI_FLAG 0x80000000UL
 
 #define COMMON_FLAGS        (DIDFT_ANYINSTANCE | WACKY_DI_FLAG)
  
@@ -53,8 +53,8 @@ static DIOBJECTDATAFORMAT g_joystickObjDataFormat[kJoystickObjsNum] =
    { &GUID_RzAxis, FIELD_OFFSET(sJoyState, rz), COMMON_FLAGS | DIDFT_AXIS, DIDOI_ASPECTPOSITION },
    { &GUID_Slider, FIELD_OFFSET(sJoyState, u), COMMON_FLAGS | DIDFT_AXIS, DIDOI_ASPECTPOSITION },
    { &GUID_Slider, FIELD_OFFSET(sJoyState, u), COMMON_FLAGS | DIDFT_AXIS, DIDOI_ASPECTPOSITION },
-   { &GUID_POV,    FIELD_OFFSET(sJoyState, POV[0]), COMMON_FLAGS | DIDFT_POV,  0 },
-   { &GUID_POV,    FIELD_OFFSET(sJoyState, POV[1]), COMMON_FLAGS | DIDFT_POV,  0 },
+   { &GUID_POV,    (DWORD)FIELD_OFFSET(sJoyState, POV[0]), COMMON_FLAGS | DIDFT_POV,  0 },
+   { &GUID_POV,    (DWORD)FIELD_OFFSET(sJoyState, POV[1]), COMMON_FLAGS | DIDFT_POV,  0 },
 };
 
 // have we set up the button object data yet?
@@ -211,7 +211,8 @@ cJoystick::cJoystick():
       for (i=0; i<kJoyButtonsMax; i++)
       {
          g_joystickObjDataFormat[kJoyBase+i].pguid = &GUID_Button;
-         g_joystickObjDataFormat[kJoyBase+i].dwOfs = (DWORD)&((sJoyState *)0)->buttons[i];
+         g_joystickObjDataFormat[kJoyBase+i].dwOfs =
+            (DWORD)(offsetof(sJoyState, buttons) + i);
          g_joystickObjDataFormat[kJoyBase+i].dwType = COMMON_FLAGS | DIDFT_BUTTON;
          g_joystickObjDataFormat[kJoyBase+i].dwFlags = 0;
       }

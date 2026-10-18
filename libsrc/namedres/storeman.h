@@ -22,6 +22,8 @@ public:
 	int STDMETHODCALLTYPE HeteroStoreExists(IStore* pParentStore, const char* pSubStoreName, char* pNameBuffer) override;
 
 	void InstallStorageType(const char* pExt, IStoreFactory* pFactory);
+	unsigned ContextVersion() const { return m_ContextVersion; }
+	ISearchPath* GlobalContext() const { return m_pGlobalContext; }
 
 private:
 	IStore* m_pRootStore;
@@ -29,4 +31,12 @@ private:
 	ISearchPath* m_pGlobalContext;
 	ISearchPath* m_pDefVariants;
 	cFactoryHashByExt* m_pFactoryTable;
+	unsigned m_ContextVersion;
 };
+
+// Search paths are intentionally handed the interface pointer, but every
+// path produced by this implementation belongs to cStorageManager. This
+// helper lets them cheaply invalidate their compiled storage list when the
+// global content context changes.
+unsigned StorageManagerContextVersion(IStoreManager* pStoreMan);
+ISearchPath* StorageManagerGlobalContext(IStoreManager* pStoreMan);

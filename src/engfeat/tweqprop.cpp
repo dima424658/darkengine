@@ -344,7 +344,7 @@ static sFieldDesc tweq_vector_state_fields [] =
 // joint
 
 #define SDESC_JOINT_ONLY(postfix,struct_name,joint_field) \
- { "    rate-low-high"##postfix, kFieldTypeVector, FieldLocation(struct_name,joint_field.limits) }
+ { "    rate-low-high" postfix, kFieldTypeVector, FieldLocation(struct_name,joint_field.limits) }
 
 #define SDESC_JOINT_DATA(postfix,axis_prefix,struct_name,joint_field) \
  SDESC_TWEQ_JOINT_BASE_CONFIG(axis_prefix,struct_name,joint_field.flags), \

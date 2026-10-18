@@ -12,6 +12,10 @@
 #include <prikind.h>
 #include <arqguid.h>
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4103)
+#endif
 #include <pshpack4.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,7 +77,7 @@ struct sARQRequest
     int                     priority;
 
     // Optional, client defined data values
-    DWORD                   dwData[6];
+    DWORD_PTR               dwData[6];
 
     // Optional tracing name for debug routines
     const char *            pszTrace;
@@ -434,5 +438,8 @@ DECLARE_INTERFACE_(IAsyncStreamer, IUnknown)
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <poppack.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif /* !__ARQAPI_H */

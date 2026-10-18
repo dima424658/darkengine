@@ -31,7 +31,7 @@ void floatang::set(const float sourceX, const float sourceY, const float endX, c
 
    if (dx != 0 || dy != 0)
    {
-      value = atan2(dy, dx); // OPTIMIZE
+      value = (float)atan2(dy, dx); // OPTIMIZE
 
       // atan 2 returns -pi to pi, so lets normalize
 

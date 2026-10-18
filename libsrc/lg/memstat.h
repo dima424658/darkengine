@@ -63,11 +63,6 @@ int MemStats(MemStat *pms);	// walk heap, fill in stats
 
 extern int   MemStatsFlags;
 
-// possible flag defines for the heapwalkers build
-// do we have ability to check for heap corruption/watchpointing
-#ifndef WIN32
-#define TARGET_BADNESS 
-#endif
 // verbalize mputs the status of heap to screen in a readable way
 #ifdef DBG_ON
 #define VERBALIZE
@@ -76,12 +71,6 @@ extern int   MemStatsFlags;
 //#define MEMORIZE 
 // are we set up to gather various stats
 #define GETSTAT
-
-#ifdef TARGET_BADNESS
-// final 0 must stay here
-extern short MemStats_targidx[8];  // ok, initially, no values
-extern short (*MemStats_watchset)(short watchid, void __far *watchloc);
-#endif
 
 #ifdef __cplusplus
 }

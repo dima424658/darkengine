@@ -8,8 +8,9 @@
 // really these want to all be DLL's or something
 
 #include <limits.h>
+#include <darklimit.h>
 #include <string.h>
-#include <io.h>
+#include <platform_io.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -34,8 +35,8 @@
 # endif
 #endif
 
-#define MAX_IMG_WIDTH  1024
-#define MAX_IMG_HEIGHT 1024
+#define MAX_IMG_WIDTH  DARK_LIMIT_RUNTIME_TEXTURE_DIMENSION
+#define MAX_IMG_HEIGHT DARK_LIMIT_RUNTIME_TEXTURE_DIMENSION
 
 typedef struct {
    char ext[5];     // file extension
@@ -134,6 +135,11 @@ void *_RN_ConvertImage(char *name)
          memcpy(psrc,g.bm.bits,g.bm.w*g.bm.h);
          w=g.bm.w; h=g.bm.h;
       }
+      if (!bm)
+      {
+         GfileFree(&g);
+         return NULL;
+      }
       if (_rn_secret_clut)    // clut psrc here if needed
          clut_my_memory_please(w*h,psrc,_rn_cnvrt_secret_image_clut);
       
@@ -171,7 +177,7 @@ void *_RN_ConvertRaw(char *name)
 {
    uchar *data;
    int hnd, len;
-   if ((hnd=open(name,O_RDONLY|O_BINARY))==-1)
+   if ((hnd=_open(name,O_RDONLY|O_BINARY))==-1)
       return NULL;
    len=lseek(hnd,0,SEEK_END);
    lseek(hnd,0,SEEK_SET);

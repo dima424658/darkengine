@@ -145,7 +145,7 @@ void cAIShootsThroughProp::RebuildConcrete(ObjID obj, BOOL fIsRelevant, uPropLis
 {
    BOOL shootsthrough=(BOOL)val.intval; //default value     
    
-   int objindex = m_AIShootsThroughObjects.BSearch((void *)obj,ShootSearch);
+   int objindex = m_AIShootsThroughObjects.BSearch((void *)(intptr_t)obj,ShootSearch);
 
    BOOL fHad = (objindex != BAD_INDEX);
 
@@ -199,9 +199,9 @@ static int ShootCompare(const ObjID *pLeft, const ObjID *pRight)
 
 static int ShootSearch(const void *pKey, const ObjID *pRight)
 {
-   if (((ObjID)(pKey)) < *pRight)
+   if ((ObjID)(intptr_t)pKey < *pRight)
       return -1;
-   else if (((ObjID)(pKey)) > *pRight)
+   else if ((ObjID)(intptr_t)pKey > *pRight)
       return 1;
    else
       return 0;
@@ -210,7 +210,7 @@ static int ShootSearch(const void *pKey, const ObjID *pRight)
 //just lookup the index
 static BOOL ObjectCanBeFiredThrough(ObjID object)
 {
-   int nIndex = m_AIShootsThroughObjects.BSearch((void *)object,ShootSearch);
+   int nIndex = m_AIShootsThroughObjects.BSearch((void *)(intptr_t)object,ShootSearch);
    return (nIndex != BAD_INDEX);
 }
 

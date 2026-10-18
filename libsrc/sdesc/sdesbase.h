@@ -7,6 +7,7 @@
 
 #ifndef SDESBASE_H
 #define SDESBASE_H
+#include <stddef.h>
 #include <sdestype.h>
 
 //
@@ -21,7 +22,7 @@
 #define FieldSize(type, field)      (sizeof(FieldSelect(type, field)))
 
 // expands to the byte offset of a field in a struct
-#define FieldOffset(type, field)    ((ulong) &FieldSelect(type, field))
+#define FieldOffset(type, field)    ((ulong)offsetof(type, field))
 
 // expands to the size and the offset of a field in a struct
 #define FieldLocation(type, field)  FieldSize(type, field), FieldOffset(type, field)

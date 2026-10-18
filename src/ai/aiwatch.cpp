@@ -458,7 +458,7 @@ BOOL cAIWatch::SeekTarget()
          // if the trigger fails, and the target is at least as far away as can be
          // travelled in a second (the defaultrefresh rate) delay until even
          // possible to trigger
-         float distOutside = sqrt(pCurrent->distSq) - (float)(pCurrent->radius);
+         float distOutside = sqrtf(pCurrent->distSq) - (float)(pCurrent->radius);
 
          unsigned minEntryTime = (unsigned)((distOutside / (float)(kMaxSpeed)) * 1000.0) + AIGetTime();
          if (minEntryTime > pCurrent->reuseTime)
@@ -545,7 +545,7 @@ BOOL cAIWatch::CheckTriggerForObj(sAIWatchPoint * pWatch, ObjID obj, ObjID sense
    GetObjLocation(obj, &objLoc);
    GetObjLocation(pWatch->object, &watchLoc);
 
-   if (AIInsideCylinder(objLoc, watchLoc, sq(pWatch->radius), pWatch->height / 2, &pWatch->distSq))
+      if (AIInsideCylinder(objLoc, watchLoc, pWatch->radius * (float)pWatch->radius, pWatch->height * 0.5f, &pWatch->distSq))
    {
       if (pWatch->awarenessRequired || pWatch->lineRequired > kAIWLR_None)
       {

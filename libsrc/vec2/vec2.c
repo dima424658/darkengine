@@ -382,10 +382,10 @@ bool Vec2IntersectLineAndCircle(Vec2 *pt1, Vec2 *pt2, Vec2 *centre, mxs_real r, 
    d = b*b-4*a*c;
    if (d<0)
       return FALSE;
-   s1 = -b+sqrt(d)/(2*a);
-   s2 = -b-sqrt(d)/(2*a);
-   *t1 = min(s1, s2);
-   *t2 = max(s1, s2);
+   s1 = -b+sqrtf(d)/(2.0f*a);
+   s2 = -b-sqrtf(d)/(2.0f*a);
+   *t1 = s1 < s2 ? s1 : s2;
+   *t2 = s1 > s2 ? s1 : s2;
    return TRUE;
 }
 

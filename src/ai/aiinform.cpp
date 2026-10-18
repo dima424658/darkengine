@@ -468,7 +468,7 @@ STDMETHODIMP_(void) cAIInform::OnActionProgress(IAIAction * pAction)
    if (m_Current.concept)
    {
       if (AIGetTime() > m_Current.expiration ||
-          m_Passes.Size() >= m_Current.maxPass)
+          (unsigned)m_Passes.Size() >= m_Current.maxPass)
       {
          AIWatch1(Inform, GetID(), "Done informing: %s", (AIGetTime() > m_Current.expiration) ? "expired" : "maximum passes");
          m_Current.concept = 0;
@@ -488,7 +488,7 @@ STDMETHODIMP_(void) cAIInform::OnActionProgress(IAIAction * pAction)
       {
          cAIAwareArray awarenesses;
          m_pAI->AccessSenses()->GetAllAwareness(&awarenesses);
-         float minInformDistSq = AIInformDist(GetID());
+         float minInformDistSq = (float)AIInformDist(GetID());
          minInformDistSq = sq(minInformDistSq);
 
          g_pAIForceImmediateInform->Delete(GetID());

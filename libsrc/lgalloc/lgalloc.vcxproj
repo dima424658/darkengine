@@ -150,6 +150,15 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  <!-- Both the game and DromEd load OSM modules built against the modern
+       MSVC runtime.  They must therefore expose the same CRT-backed allocator;
+       making this depend on BuildThief2 made the shared lgalloc.lib silently
+       change ABI according to whichever target happened to build it last. -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>DARKENGINE_MODERN_CRT_ALLOCATOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="allcguid.cpp" />
     <ClCompile Include="dbgalloc.cpp" />
@@ -164,15 +173,14 @@
     <ClCompile Include="pool.cpp" />
     <ClCompile Include="poolimp.cpp" />
     <ClCompile Include="primallc.cpp" />
-    <ClCompile Include="stdalloc.cpp" />
+    <ClCompile Include="..\..\winsrc\lgalloc\stdalloc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="allcguid.h" />
     <ClInclude Include="allocapi.h" />
-    <ClInclude Include="allocovr.h" />
+    <ClInclude Include="..\..\winsrc\lgalloc\allocovr.h" />
     <ClInclude Include="dbgalloc.h" />
     <ClInclude Include="dbmem.h" />
-    <ClInclude Include="fastmutx.h" />
     <ClInclude Include="heap.h" />
     <ClInclude Include="heaptool.h" />
     <ClInclude Include="mallocdb.h" />
@@ -187,7 +195,6 @@
     <ClInclude Include="primallc.h" />
     <ClInclude Include="stdalloc.h" />
     <ClInclude Include="undbmem.h" />
-    <ClInclude Include="virtmem.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="memcore.txt" />

@@ -109,8 +109,8 @@ bool BmpRead(GfileInfo *pgfi, FILE *fp)
 	pgfi->bm.type = BMT_FLAT8;
 	pgfi->bm.align = 0;
 	pgfi->bm.flags = 0;
-	pgfi->bm.w = bmpInfo.biWidth;
-	pgfi->bm.h = bmpInfo.biHeight;
+	pgfi->bm.w = (short)bmpInfo.biWidth;
+	pgfi->bm.h = (short)bmpInfo.biHeight;
 	pgfi->bm.row = pgfi->bm.w;
 	pgfi->bm.bits = Malloc((long) pgfi->bm.row * (long) pgfi->bm.h);
 	if (pgfi->bm.bits == NULL)

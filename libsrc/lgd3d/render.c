@@ -4,11 +4,8 @@
 
 #include <math.h>
 
-#include <windows.h>
 #include <memall.h>
 #include <tmpalloc.h>
-#include <d3d.h>
-#include <d3dmacs.h>
 #include <r3ds.h>
 #include <g2.h>
 #include <lgassert.h>
@@ -17,8 +14,13 @@
 #include <tdrv.h>
 #include <dbg.h>
 
-#include <setup.h>
 #include <texture.h>
+#include <render_backend.h>
+extern void *g_ModernTextures[LGD3D_MAX_TEXTURES];
+extern grs_bitmap *g_ModernBitmaps[LGD3D_MAX_TEXTURES];
+extern void *g_ModernWhiteTexture;
+extern int g_ModernTextureLevel;
+extern uchar *lgd3d_clut;
 
 #ifdef MONO_SPEW
 #define put_mono(c) \
@@ -41,17 +43,22 @@ do {                          \
 } while (0)
 
 
-typedef struct d3dval {
-   union {
-      D3DVALUE drVal;
-      DWORD    dwVal;
-   };
-} d3dval;
+typedef struct sLgd3dVertex {
+   float sx, sy, sz, rhw;
+   uint32 color, specular;
+   float tu, tv;
+} sLgd3dVertex;
+
+static uint32 PackColor(int r, int g, int b, int a)
+{
+   return ((uint32)(a & 0xff) << 24) | ((uint32)(r & 0xff) << 16) |
+          ((uint32)(g & 0xff) << 8) | (uint32)(b & 0xff);
+}
 
 BOOL lgd3d_save_poly;
 BOOL lgd3d_z_normal = TRUE;
 
-static d3dval fog_tabledensity;
+static float fog_tabledensity;
 
 typedef struct cliprect {
    float left, right, top, bot;
@@ -76,10 +83,13 @@ static double inv_z_far = 1.0 / 200.0;
 static double z1 = 200.0 / 199.0; // z_far / (z_far - z_near)
 static double z2 = 200.0 / 199.0; // z_near * z_far / (z_far - z_near)
 static double zbias = 0.0;
+static BOOL zbuffer;
+static BOOL zwrite;
+static BOOL zcompare;
 
 void lgd3d_clear_z_rect(int x0, int y0, int x1, int y1)
 {
-    // TODO
+   RenderBackendClearDepth();
 }
 
 void lgd3d_set_z(float z)
@@ -94,12 +104,12 @@ void lgd3d_set_z(float z)
 
 int lgd3d_is_zwrite_on(void)
 {
-    return 0; // TODO
+    return zwrite;
 }
 
 int lgd3d_is_zcompare_on(void)
 {
-    return 0; // TODO
+    return zcompare;
 }
 
 double lgd3d_set_zbias(double new_bias)
@@ -130,8 +140,8 @@ void lgd3d_set_znearfar(double znear, double zfar)
    z2 = znear * z1;
 }
 
-static float x_offset = 0.0;
-static float y_offset = 0.0;
+static float x_offset = 0.0f;
+static float y_offset = 0.0f;
 
 #define setxy(p, __sx, __sy) \
 do { \
@@ -151,23 +161,23 @@ do { \
 
 #define setz(_dest, z, w) \
 do { \
-   LPD3DTLVERTEX __dest = _dest; \
+   sLgd3dVertex *__dest = _dest; \
    if (zlinear) \
-      __dest->sz = z2d; \
+      __dest->sz = (float)z2d; \
    else if (lgd3d_z_normal) \
-      __dest->sz = z * inv_z_far; \
+      __dest->sz = (float)(z * inv_z_far); \
    else { \
-      __dest->sz = z1 - z2 * w; \
-      if (__dest->sz > 1.0) \
-         __dest->sz = 1.0;  \
-      else if (__dest->sz < 0.0) \
-         __dest->sz = 0.0;  }\
-   __dest->rhw = w;  \
+      __dest->sz = (float)(z1 - z2 * w); \
+      if (__dest->sz > 1.0f) \
+         __dest->sz = 1.0f;  \
+      else if (__dest->sz < 0.0f) \
+         __dest->sz = 0.0f;  }\
+   __dest->rhw = (float)(w);  \
 } while (0)
 
 #define setxyz(dest, src) \
 do { \
-   LPD3DTLVERTEX _dest = dest; \
+   sLgd3dVertex *_dest = dest; \
    r3s_point *_src = src;         \
    fix _sx = _src->grp.sx + 0x8000; \
    fix _sy = _src->grp.sy + 0x8000; \
@@ -186,8 +196,8 @@ do { \
 
 void lgd3d_set_offsets(int x, int y)
 {
-   x_offset = x;
-   y_offset = y;
+   x_offset = (float)x;
+   y_offset = (float)y;
 }
 
 //
@@ -207,15 +217,34 @@ do { \
 static BOOL lgd3d_blend = FALSE;
 static BOOL lgd3d_trans = BMF_TRANS;
 static int lgd3d_alpha = 255;
+static BOOL lgd3d_iterated_alpha = FALSE;
 
 void lgd3d_set_alpha(float alpha)
 {
-   lgd3d_alpha = alpha * 255;
+   lgd3d_alpha = (int)(alpha * 255.0f);
 
    if (lgd3d_alpha > 255)
       lgd3d_alpha = 255;
    if (lgd3d_alpha < 0)
       lgd3d_alpha = 0;
+}
+
+void lgd3d_set_iterated_alpha(BOOL enabled)
+{
+   lgd3d_iterated_alpha = enabled;
+}
+
+static int get_vertex_alpha(const g2s_point *point)
+{
+   float alpha = (float)lgd3d_alpha;
+
+   if (lgd3d_iterated_alpha)
+      alpha *= point->a;
+   if (alpha > 255.0)
+      return 255;
+   if (alpha < 0.0)
+      return 0;
+   return (int)alpha;
 }
 
 static BOOL use_palette = TRUE;
@@ -230,9 +259,9 @@ void lgd3d_enable_palette(void)
    use_palette = TRUE;
 }
 
-static D3DCOLOR get_color(void)
+static uint32 get_color(void)
 {
-   D3DCOLOR color;
+   uint32 color;
    if (use_palette) {
       int index = grd_gc.fcolor&0xff;
 
@@ -245,7 +274,7 @@ static D3DCOLOR get_color(void)
          index = ((uchar *)grd_gc.fill_parm)[index];
          break;
       case FILL_SOLID:
-         index = grd_gc.fill_parm;
+         index = (int)grd_gc.fill_parm;
       }
 
       // This hack effectively simulates the lighting table 
@@ -254,7 +283,8 @@ static D3DCOLOR get_color(void)
          index = lgd3d_clut[index];
 
       index *= 3;
-      color = RGBA_MAKE(grd_pal[index],grd_pal[index+1],grd_pal[index+2],lgd3d_alpha);
+      color = PackColor(grd_pal[index], grd_pal[index+1],
+                        grd_pal[index+2], lgd3d_alpha);
    } else {
       switch (grd_gc.fill_type) {
       default:
@@ -263,48 +293,22 @@ static D3DCOLOR get_color(void)
          color = grd_gc.fcolor;
          break;
       case FILL_SOLID:
-         color = grd_gc.fill_parm;
+         color = (uint32)grd_gc.fill_parm;
       }
       color = (color&0xffffff) + (lgd3d_alpha<<24);
    }
    return color;
 }
 
-#define d3d_device lpd3dDevice
-
-#ifdef USE_D3D2_API
-
-#ifndef SHIP
-#define SetRenderState(name, data) \
-do { \
-   HRESULT hres = d3d_device->lpVtbl->SetRenderState(d3d_device, name, data); \
-   AssertMsg1(!FAILED(hres), "SetRenderState failed: error %i", hres&0xffff); \
-} while (0)
-#define SetLightState(name, data) \
-do { \
-   HRESULT hres = d3d_device->lpVtbl->SetLightState(d3d_device, name, data); \
-   AssertMsg1(!FAILED(hres), "SetLightState failed: error %i", hres&0xffff); \
-} while (0)
-#else
-#define SetRenderState(name, data) \
-   d3d_device->lpVtbl->SetRenderState(d3d_device, name, data)
-#define SetLightState(name, data) \
-   d3d_device->lpVtbl->SetLightState(d3d_device, name, data)
-#endif
-
-#else
-#define SetRenderState(name,data)
-#define SetLightState(name,data)
-#endif
-
-static D3DCOLOR fog_specular = (D3DCOLOR )D3DRGBA(0.0, 0.0, 0.0, 1.0);
+static uint32 fog_specular = 0xff000000;
 
 void lgd3d_set_fog_level(float fl)
 {
-   fog_specular = D3DRGBA(0.0, 0.0, 0.0, 1.0 - fl);
+   fog_specular = PackColor(0, 0, 0, (int)((1.0f - fl) * 255.0f));
 }
 
-static D3DCOLOR fog_color = D3DRGB(0.8, 0.0, 0.0);
+static uint32 fog_color = 0x00cc0000;
+static BOOL fog_enabled = FALSE;
 
 void lgd3d_set_fog_color(int r, int g, int b)
 {
@@ -321,56 +325,16 @@ void lgd3d_set_fog_color(int r, int g, int b)
    else if (b <0)
       b = 0;
 
-   fog_color = RGB_MAKE(r, g, b);
+   // Fog color is part of queued draw state in the active rendering backend.  Submit
+   // primitives using the old color before changing it.
+   Flush();
+   fog_color = PackColor(r, g, b, 0);
    put_mono('a');
-   SetRenderState(D3DRENDERSTATE_FOGCOLOR, fog_color);
+   RenderBackendSetFog(fog_enabled, fog_color);
    put_mono('.');
 }
 
-#ifndef USE_D3D2_API
-static void *get_exebuf_data(int index, int *size)
-{
-   HRESULT hres;
-   D3DEXECUTEBUFFERDESC d3dExeBufDesc;
-   LPD3DIEXECUTEBUFFER  ExeBuf;
-
-   ExeBuf = index ? lpd3dExecuteBuffer2:lpd3dExecuteBuffer;
-   ZeroMemory(&d3dExeBufDesc, sizeof(d3dExeBufDesc));
-   d3dExeBufDesc.dwSize = sizeof(d3dExeBufDesc);
-   hres = ExeBuf->lpVtbl->Lock(ExeBuf, &d3dExeBufDesc);
-   *size = d3dExeBufDesc.dwBufferSize;
-   return d3dExeBufDesc.lpData;
-}
-
-static void execute(int index, int vertex_count, int inst_offset, int inst_length)
-{
-   HRESULT hres;
-   D3DEXECUTEDATA       d3dExecuteData;
-   LPD3DIEXECUTEBUFFER  ExeBuf;
-
-   ExeBuf = index ? lpd3dExecuteBuffer2:lpd3dExecuteBuffer;
-   hres = ExeBuf->lpVtbl->Unlock(ExeBuf);
-
-   ZeroMemory(&d3dExecuteData, sizeof(d3dExecuteData));
-   d3dExecuteData.dwSize = sizeof(d3dExecuteData);
-   d3dExecuteData.dwVertexCount       = vertex_count;
-   d3dExecuteData.dwInstructionOffset = inst_offset;
-   d3dExecuteData.dwInstructionLength = inst_length;
-
-   hres = ExeBuf->lpVtbl->SetExecuteData(ExeBuf, &d3dExecuteData);
-   AssertMsg1(!FAILED(hres), "SetExecuteData failed: error %i", hres&0xffff);
-
-   hres = d3d_device->lpVtbl->Execute(lpd3dDevice, ExeBuf,
-      lpd3dViewport, D3DEXECUTE_UNCLIPPED);
-   AssertMsg1(!FAILED(hres), "Execute failed: error %i", hres&0xffff);
-}
-#endif
-
 static void SetTransparent(int flags);
-
-static BOOL zbuffer;
-static BOOL zwrite;
-static BOOL zcompare;
 
 void lgd3d_set_zcompare(BOOL val)
 {
@@ -379,9 +343,9 @@ void lgd3d_set_zcompare(BOOL val)
 
    put_mono('b');
    Flush();
-   SetRenderState(D3DRENDERSTATE_ZFUNC, val?D3DCMP_LESSEQUAL:D3DCMP_ALWAYS);
    put_mono('.');
    zcompare = val;
+   RenderBackendSetDepth(zcompare, zwrite);
 }
 
 void lgd3d_set_zwrite(BOOL val)
@@ -391,37 +355,26 @@ void lgd3d_set_zwrite(BOOL val)
 
    put_mono('c');
    Flush();
-   SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, zwrite=val);
+   zwrite=val;
+   RenderBackendSetDepth(zcompare, zwrite);
    put_mono('.');
 }
 
 void lgd3d_zclear(void)
 {
-   Warning(("zclear not yet implemented"));
+   RenderBackendClearDepth();
 }
 
 void lgd3d_blend_normal(void)
 {
    Flush();
-   SetRenderState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
-   SetRenderState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   RenderBackendSetBlend(lgd3d_blend || lgd3d_trans ? kRenderBackendBlendAlpha : kRenderBackendBlendOpaque);
 }
 
 void lgd3d_blend_multiply(int blend_mode)
 {
-   static int table[4] = {
-       D3DBLEND_ZERO,
-       D3DBLEND_ONE,
-       D3DBLEND_SRCCOLOR,
-       D3DBLEND_DESTCOLOR
-   };
-   int state1,state2;
-   state1 = table[blend_mode & 3];
-   state2 = table[(blend_mode >> 2) & 3];
- 
    Flush();
-   SetRenderState(D3DRENDERSTATE_SRCBLEND, state1);
-   SetRenderState(D3DRENDERSTATE_DESTBLEND, state2);
+   RenderBackendSetBlend(blend_mode == BLEND_SRC_DEST ? kRenderBackendBlendMultiply : kRenderBackendBlendAdd);
 }
 
 //
@@ -433,94 +386,10 @@ void lgd3d_blend_multiply(int blend_mode)
 void lgd3d_render_init(lgd3ds_device_info *info)
 {
    zbuffer = info->flags&LGD3DF_ZBUFFER;
-   fog_tabledensity.drVal  = 0.025;
-
-#ifdef USE_D3D2_API
-   put_mono('d');
-   SetRenderState(D3DRENDERSTATE_TEXTUREMAPBLEND, D3DTBLEND_MODULATE);
-   SetRenderState(D3DRENDERSTATE_SHADEMODE, D3DSHADE_GOURAUD);
-   SetRenderState(D3DRENDERSTATE_SPECULARENABLE, FALSE);
-   SetRenderState(D3DRENDERSTATE_TEXTUREPERSPECTIVE, TRUE);
-   SetRenderState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
-   SetRenderState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   SetRenderState(D3DRENDERSTATE_WRAPU, FALSE);
-   SetRenderState(D3DRENDERSTATE_WRAPV, FALSE);
-   SetRenderState(D3DRENDERSTATE_ZENABLE, (info->flags & LGD3DF_ZBUFFER) ? TRUE : FALSE);
-   SetRenderState(D3DRENDERSTATE_ZWRITEENABLE, zwrite = FALSE);
-   SetRenderState(D3DRENDERSTATE_ZFUNC, D3DCMP_ALWAYS);
+   fog_tabledensity = 0.025f;
+   zwrite = FALSE;
    zcompare = FALSE;
-
-   // disable fogtable on @#$! powerVR!
-   if (info->device_desc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_ZBUFFERLESSHSR)
-      info->device_desc->dpcTriCaps.dwRasterCaps &= ~D3DPRASTERCAPS_FOGTABLE;
-   if (info->device_desc->dpcTriCaps.dwRasterCaps & D3DPRASTERCAPS_FOGTABLE)
-   {  // Setup table fog
-      SetRenderState(D3DRENDERSTATE_FOGTABLEMODE, D3DFOG_EXP);
-      SetRenderState(D3DRENDERSTATE_FOGTABLEDENSITY, fog_tabledensity.dwVal);
-      SetLightState(D3DLIGHTSTATE_FOGMODE, D3DFOG_EXP);
-      SetLightState(D3DLIGHTSTATE_FOGDENSITY, fog_tabledensity.dwVal);
-   } else
-   { // use vertex fog
-      SetRenderState(D3DRENDERSTATE_FOGTABLEMODE, D3DFOG_NONE);
-      SetLightState(D3DLIGHTSTATE_FOGMODE, D3DFOG_NONE);
-   }
-
-   put_mono('.');
-#else
-{
-   void *data, *start;
-   int length, size;
-
-   start = data = get_exebuf_data(0, &size);
-
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_FOGENABLE, TRUE, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_FOGCOLOR, fog_color, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_FOGTABLEMODE, D3DFOG_EXP, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_FOGTABLEDENSITY, fog_tabledensity.dwVal, data);
-
-   OP_STATE_LIGHT(1, data);
-      STATE_DATA(D3DLIGHTSTATE_FOGMODE, D3DFOG_EXP, data);
-   OP_STATE_LIGHT(1, data);
-      STATE_DATA(D3DLIGHTSTATE_FOGDENSITY, fog_tabledensity.dwVal, data);
-
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_TEXTUREMAPBLEND, D3DTBLEND_MODULATE, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_SHADEMODE, D3DSHADE_GOURAUD, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_SPECULARENABLE, TRUE, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_TEXTUREPERSPECTIVE, TRUE, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_COLORKEYENABLE, FALSE, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_BLENDENABLE, FALSE, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_ALPHABLENDENABLE, FALSE, data);
-   OP_STATE_RENDER(1, data);
-//      STATE_DATA(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA, data);
-      STATE_DATA(D3DRENDERSTATE_SRCBLEND, D3DBLEND_ONE, data);
-   OP_STATE_RENDER(1, data);
-//      STATE_DATA(D3DRENDERSTATE_DESTBLEND, D3DBLEND_INVSRCALPHA, data);
-      STATE_DATA(D3DRENDERSTATE_DESTBLEND, D3DBLEND_ZERO, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_WRAPU, FALSE, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_WRAPV, FALSE, data);
-   OP_EXIT(data);
-
-   length = (char *)data - (char *)start;
-   AssertMsg(length < size, "Yikes! out of exebuf space!");
-
-   memset(data, 0, size-length);
-
-   execute(0, 0, 0, length);
-}
-#endif
+   RenderBackendSetDepth(zcompare, zwrite);
 
    // force init
    lgd3d_trans = BMF_TRANS;
@@ -531,7 +400,8 @@ void lgd3d_set_fog_enable(BOOL enable)
 {
    put_mono('e');
    Flush();
-   SetRenderState(D3DRENDERSTATE_FOGENABLE, enable);
+   fog_enabled = enable;
+   RenderBackendSetFog(enable, fog_color);
    put_mono('.');
 }
 
@@ -561,18 +431,16 @@ void lgd3d_render_end_frame(void)
 
 void lgd3d_set_fog_density(float density)
 {
-   fog_tabledensity.drVal = density * z_far;
+   fog_tabledensity = (float)(density * z_far);
 
    put_mono('f');
    Flush();
-   SetRenderState(D3DRENDERSTATE_FOGTABLEDENSITY, fog_tabledensity.dwVal);
-   SetLightState(D3DLIGHTSTATE_FOGDENSITY, fog_tabledensity.dwVal);
    put_mono('.');
 }
 
 int lgd3d_is_fog_on(void)
 {
-    return 0; // TODO
+    return fog_enabled;
 }
 
 int lgd3d_use_linear_table_fog(int bUseIt)
@@ -588,7 +456,7 @@ void lgd3d_set_linear_fog_distance(float fDistance)
 
 void lgd3d_set_texture_level(int n)
 {
-    // TODO
+   g_ModernTextureLevel = (n != 0);
 }
 
 //
@@ -596,53 +464,52 @@ void lgd3d_set_texture_level(int n)
 //
 
 
-// can't bilinear filter and colorkey at the same time
-// (actually, we can; it just looks really stupid)
 static void SetTransparent(int trans)
 {
-   DWORD filter;
+   // BMF_TRANS is a binary color key. FILL_BLEND textures instead carry
+   // continuous alpha (cloud masks, water, overlays), so applying the
+   // color-key alpha test to them discards valid values below 0.5. Do this
+   // before the legacy state-cache early-out because fill type can change
+   // while the bitmap flags remain identical.
+   RenderBackendSetAlphaTest((trans & BMF_TRANS) != 0 &&
+                           gr_get_fill_type() != FILL_BLEND);
 
    if (lgd3d_trans == (int )trans)
       return;
 
    lgd3d_trans = trans;
-   filter = (trans&BMF_TRANS) ? D3DFILTER_NEAREST : D3DFILTER_LINEAR;
-
-#ifdef USE_D3D2_API
-   put_mono('g');
-   Flush();
-   SetRenderState(D3DRENDERSTATE_COLORKEYENABLE, trans&BMF_TRANS);
-   SetRenderState(D3DRENDERSTATE_BLENDENABLE, trans&BMF_TRANS);
-   SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, trans||lgd3d_blend);
-   SetRenderState(D3DRENDERSTATE_TEXTUREMAG, filter);
-   SetRenderState(D3DRENDERSTATE_TEXTUREMIN, filter);
-   put_mono('.');
-#else
-   void *data, *start;
-   int size, length;
-
-   data = start = get_exebuf_data(0, &size);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_TEXTUREMAG, filter, data);
-   OP_STATE_RENDER(1, data);
-      STATE_DATA(D3DRENDERSTATE_TEXTUREMIN, filter, data);
-   OP_EXIT(data);
-
-   length = (char *)data - (char *)start;
-
-   memset(data, 0, size - length);
-
-   execute(0, 0, 0, length);
-#endif
+   // The fixed-function renderers could not combine color-keying with useful
+   // bilinear filtering.  The modern backend converts the key to alpha and
+   // performs the alpha test in its shader, so point-sampling cutout foliage
+   // only creates severe crawling and hard silhouettes as the camera moves.
+   RenderBackendSetSampler(0,
+                         lgd3d_get_texture_wrapping(0),
+                         TRUE);
+   RenderBackendSetBlend((trans || lgd3d_blend) ? kRenderBackendBlendAlpha : kRenderBackendBlendOpaque);
 }
 
 
 static int next_id=TDRV_ID_INVALID;
+static int modern_next_id1=TDRV_ID_INVALID;
+static int modern_tex_id1=TDRV_ID_INVALID;
 
 #define SetPoly() next_id = TDRV_ID_SOLID
 
 void SetTextureId(int n)
 {
+   // The legacy manager exposes one callback bitmap globally.  Deferring a
+   // callback until draw time loses the first bitmap when both multitexture
+   // levels request a new upload before the draw.  Resolve it while the
+   // manager's callback bitmap still identifies this texture and retain the
+   // resulting concrete ID in the appropriate texture level.
+   if (n == TDRV_ID_CALLBACK) {
+      g_tmgr->set_texture_callback();
+      return;
+   }
+   if (g_ModernTextureLevel != 0) {
+      modern_next_id1 = n;
+      return;
+   }
    next_id = n;
 }
 
@@ -650,31 +517,25 @@ void SetTextureId(int n)
 
 static int tex_id=TDRV_ID_INVALID;
 
+void lgd3d_modern_reset_texture_state(void)
+{
+   next_id=tex_id=TDRV_ID_INVALID;
+   modern_next_id1=modern_tex_id1=TDRV_ID_INVALID;
+}
+
 static void doPolySetup(int n)
 {
-#ifdef USE_D3D2_API
-   int trans;
-
-   put_mono('h');
+   int trans = 0;
    Flush();
-   if (n==TDRV_ID_SOLID) {
-      put_mono('1');
-      SetLightState(D3DLIGHTSTATE_MATERIAL, hPolyMaterial);
-      put_mono('2');
-      SetRenderState(D3DRENDERSTATE_TEXTUREHANDLE, 0);
-      trans = 0;
+   if (n == TDRV_ID_SOLID) {
+      RenderBackendBindTexture(0, g_ModernWhiteTexture);
    } else {
-      AssertMsg1( (n>=0)&&(n<LGD3D_MAX_TEXTURES), "Invalid texture id: %i", n);
-      put_mono('3');
-      SetLightState(D3DLIGHTSTATE_MATERIAL, MaterialHandle[n]);
-      put_mono('4');
-      SetRenderState(D3DRENDERSTATE_TEXTUREHANDLE, TextureHandle[n]);
-      trans = TdrvBitmap[n]->flags & (BMF_TRANS|BMF_TLUC);
+      AssertMsg1((n>=0)&&(n<LGD3D_MAX_TEXTURES), "Invalid texture id: %i", n);
+      RenderBackendBindTexture(0, g_ModernTextures[n]);
+      if (g_ModernBitmaps[n] != NULL)
+         trans = g_ModernBitmaps[n]->flags & (BMF_TRANS|BMF_TLUC);
    }
-   put_mono('5');
    SetTransparent(trans);
-   put_mono('.');
-#endif
 }
 
 void UnsetTextureId(int n)
@@ -684,6 +545,12 @@ void UnsetTextureId(int n)
    if (n==tex_id) {
       doPolySetup(tex_id=TDRV_ID_SOLID);
       SynchD3D(); // flush it, cause the old handle's about to be released!
+   }
+   if (n==modern_tex_id1) {
+      Flush();
+      modern_tex_id1=TDRV_ID_SOLID;
+      modern_next_id1=TDRV_ID_SOLID;
+      RenderBackendBindTexture(1,g_ModernWhiteTexture);
    }
 }
 
@@ -703,47 +570,85 @@ static void prim_setup(void)
       doPolySetup(tex_id = next_id);
 }
 
-static void do_points(int n, LPD3DTLVERTEX vlist)
+static void modern_setup_second_texture(void)
 {
-   HRESULT hres;
-
-   if (lgd3d_punt_d3d)
+   int n;
+   if (modern_tex_id1 == modern_next_id1)
       return;
+   Flush();
+   n = modern_tex_id1 = modern_next_id1;
+   if (n == TDRV_ID_SOLID)
+      RenderBackendBindTexture(1, g_ModernWhiteTexture);
+   else {
+      AssertMsg1((n>=0)&&(n<LGD3D_MAX_TEXTURES), "Invalid lightmap id: %i", n);
+      RenderBackendBindTexture(1, g_ModernTextures[n]);
+   }
+   RenderBackendSetSampler(1, lgd3d_get_texture_wrapping(1), TRUE);
+}
 
-   prim_setup();
+static void ModernConvertVertex(sRenderBackendVertex *d, const sLgd3dVertex *s)
+{
+   d->x=s->sx; d->y=s->sy; d->z=s->sz; d->rhw=s->rhw;
+   d->r=((s->color>>16)&255)/255.0f;
+   d->g=((s->color>>8)&255)/255.0f;
+   d->b=(s->color&255)/255.0f;
+   d->a=((s->color>>24)&255)/255.0f;
+   d->fog=((s->specular>>24)&255)/255.0f;
+   d->u0=s->tu; d->v0=s->tv; d->u1=d->v1=0.0f;
+}
 
-   put_mono('i');
-   hres = d3d_device->lpVtbl->DrawPrimitive(d3d_device, D3DPT_POINTLIST, D3DVT_TLVERTEX,
-      (LPVOID)vlist, n, D3DDP_DONOTCLIP);
-   put_mono('.');
+static void ModernSubmitList(int primitive, int n, const sLgd3dVertex *src)
+{
+   int i;
+   sRenderBackendVertex *dst=(sRenderBackendVertex *)temp_malloc(n*sizeof(*dst));
+   for(i=0;i<n;++i) ModernConvertVertex(&dst[i],&src[i]);
+   RenderBackendDraw(primitive,dst,n,FALSE);
+   temp_free(dst);
+}
 
-   AssertMsg1(!FAILED(hres), "DrawPrimitive failed: error %i", hres&0xffff);
+static void ModernSubmitFan(int n, const sLgd3dVertex *src)
+{
+   int i,j=0,count=(n-2)*3;
+   sRenderBackendVertex *dst;
+   if(n<3)return;
+   dst=(sRenderBackendVertex *)temp_malloc(count*sizeof(*dst));
+   for(i=2;i<n;++i) {
+      ModernConvertVertex(&dst[j++],&src[0]);
+      ModernConvertVertex(&dst[j++],&src[i-1]);
+      ModernConvertVertex(&dst[j++],&src[i]);
+   }
+   RenderBackendDraw(kRenderBackendTriangles,dst,count,FALSE);
+   temp_free(dst);
+}
+
+static void ModernSubmitIndexed(int count,const ushort *indices,const sLgd3dVertex *src)
+{
+   int i;
+   sRenderBackendVertex *dst=(sRenderBackendVertex *)temp_malloc(count*sizeof(*dst));
+   for(i=0;i<count;++i)ModernConvertVertex(&dst[i],&src[indices[i]]);
+   RenderBackendDraw(kRenderBackendTriangles,dst,count,FALSE);
+   temp_free(dst);
+}
+
+static void do_points(int n, sLgd3dVertex *vlist)
+{
+   if (lgd3d_punt_d3d) return;
+   prim_setup(); ModernSubmitList(kRenderBackendPoints,n,vlist);
 }
 
 //
 // guts of all polygon drawing routines
 //
 
-static void do_trifan(int n, LPD3DTLVERTEX vlist)
+static void do_trifan(int n, sLgd3dVertex *vlist)
 {
-   HRESULT hres;
    AssertMsg(next_id>TDRV_ID_INVALID, "Current Texture is invalid!");
-
-   if (lgd3d_punt_d3d)
-      return;
-
-   prim_setup();
-
-   put_mono('j');
-   hres = d3d_device->lpVtbl->DrawPrimitive(d3d_device, D3DPT_TRIANGLEFAN, D3DVT_TLVERTEX,
-      (LPVOID)vlist, n, D3DDP_DONOTCLIP);
-   put_mono('.');
-
-   AssertMsg1(!FAILED(hres), "DrawPrimitive failed: error %i", hres&0xffff);
+   if (lgd3d_punt_d3d) return;
+   prim_setup(); ModernSubmitFan(n,vlist);
 }
 
 #define MAX_POLY_VERTS 50
-D3DTLVERTEX poly_vertex_buffer[MAX_POLY_VERTS];
+sLgd3dVertex poly_vertex_buffer[MAX_POLY_VERTS];
 ushort tri_index_buffer[3*MAX_POLY_VERTS];
 
 static void flush_polys(void)
@@ -752,21 +657,15 @@ static void flush_polys(void)
       return;
 
    if (!lgd3d_punt_d3d) {
-      HRESULT hres;
-      if (num_polys==1)
-         hres = d3d_device->lpVtbl->DrawPrimitive(d3d_device, D3DPT_TRIANGLEFAN, D3DVT_TLVERTEX,
-            (LPVOID)poly_vertex_buffer, num_poly_verts, D3DDP_DONOTCLIP);
-      else
-         hres = d3d_device->lpVtbl->DrawIndexedPrimitive(d3d_device, D3DPT_TRIANGLELIST, D3DVT_TLVERTEX,
-            (LPVOID)poly_vertex_buffer, num_poly_verts, tri_index_buffer, tri_index, D3DDP_DONOTCLIP);
-      AssertMsg1(!FAILED(hres), "DrawPrimitive failed: error %i", hres&0xffff);
+      if(num_polys==1)ModernSubmitFan(num_poly_verts,poly_vertex_buffer);
+      else ModernSubmitIndexed(tri_index,tri_index_buffer,poly_vertex_buffer);
    }
 
    num_polys = tri_index = num_poly_verts = 0;
 }
 
 #define MAX_POINTS 50
-D3DTLVERTEX point_buffer[MAX_POINTS];
+sLgd3dVertex point_buffer[MAX_POINTS];
 
 static void flush_points(void)
 {
@@ -774,10 +673,7 @@ static void flush_points(void)
       return;
 
    if (!lgd3d_punt_d3d) {
-      HRESULT hres;
-      hres = d3d_device->lpVtbl->DrawPrimitive(d3d_device, D3DPT_POINTLIST, D3DVT_TLVERTEX,
-         (LPVOID)point_buffer, num_points, D3DDP_DONOTCLIP);
-      AssertMsg1(!FAILED(hres), "DrawPrimitive failed: error %i", hres&0xffff);
+      ModernSubmitList(kRenderBackendPoints,num_points,point_buffer);
    }
    num_points = 0;
 }
@@ -789,14 +685,19 @@ static void flush_primitives(void)
    primitives_pending = FALSE;
 }
 
-
-static LPD3DTLVERTEX PolyMalloc(int n)
+void lgd3d_render_flush(void)
 {
-   LPD3DTLVERTEX retval;
+   Flush();
+}
+
+
+static sLgd3dVertex *PolyMalloc(int n)
+{
+   sLgd3dVertex *retval;
    int i;
 
    if (lgd3d_punt_buffer)
-      return (LPD3DTLVERTEX )temp_malloc(n*sizeof(D3DTLVERTEX));
+      return (sLgd3dVertex *)temp_malloc(n*sizeof(sLgd3dVertex));
 
    prim_setup();
 
@@ -827,7 +728,7 @@ static LPD3DTLVERTEX PolyMalloc(int n)
    return retval;
 }
 
-static void PolyFree(int n, LPD3DTLVERTEX vlist)
+static void PolyFree(int n, sLgd3dVertex *vlist)
 {
    if (!lgd3d_punt_buffer)
       return;
@@ -836,12 +737,12 @@ static void PolyFree(int n, LPD3DTLVERTEX vlist)
    temp_free(vlist);
 }
 
-static LPD3DTLVERTEX PointMalloc(int n)
+static sLgd3dVertex *PointMalloc(int n)
 {
-   LPD3DTLVERTEX retval;
+   sLgd3dVertex *retval;
 
    if (lgd3d_punt_buffer)
-      return (LPD3DTLVERTEX )temp_malloc(n*sizeof(D3DTLVERTEX));
+      return (sLgd3dVertex *)temp_malloc(n*sizeof(sLgd3dVertex));
 
    prim_setup();
    if (num_points + n > MAX_POINTS)
@@ -857,7 +758,7 @@ static LPD3DTLVERTEX PointMalloc(int n)
    return retval;
 }
 
-static void PointFree(int n, LPD3DTLVERTEX vlist)
+static void PointFree(int n, sLgd3dVertex *vlist)
 {
    if (!lgd3d_punt_buffer)
       return;
@@ -884,7 +785,7 @@ void lgd3d_set_blend(BOOL blend_enable)
    if (lgd3d_blend != blend_enable) {
       lgd3d_blend = blend_enable;
       Flush();
-      SetRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, blend_enable||lgd3d_trans);
+      RenderBackendSetBlend((blend_enable||lgd3d_trans) ? kRenderBackendBlendAlpha : kRenderBackendBlendOpaque);
    }
    put_mono('.');
 }
@@ -892,9 +793,9 @@ void lgd3d_set_blend(BOOL blend_enable)
 void lgd3d_draw_line(r3s_point *p0, r3s_point *p1)
 {
    fix x10, y10;
-   LPD3DTLVERTEX vlist;
+   sLgd3dVertex *vlist;
    int i, save_id;
-   D3DCOLOR c=get_color();
+   uint32 c=get_color();
    fix temp, left, right, top, bot;
    float x0, x1, y0, y1;
 
@@ -975,19 +876,19 @@ void lgd3d_draw_line(r3s_point *p0, r3s_point *p1)
    y1 = fix_float(temp)+y_offset;
 
    if (y10 > x10) {
-      vlist[0].sx = x0 - 0.5;
-      vlist[1].sx = x0 + 0.5;
-      vlist[2].sx = x1 + 0.5;
-      vlist[3].sx = x1 - 0.5;
+      vlist[0].sx = x0 - 0.5f;
+      vlist[1].sx = x0 + 0.5f;
+      vlist[2].sx = x1 + 0.5f;
+      vlist[3].sx = x1 - 0.5f;
       vlist[0].sy = y0;
       vlist[1].sy = y0;
       vlist[2].sy = y1;
       vlist[3].sy = y1;
    } else {
-      vlist[0].sy = y0 + 0.5;
-      vlist[1].sy = y0 - 0.5;
-      vlist[2].sy = y1 - 0.5;
-      vlist[3].sy = y1 + 0.5;
+      vlist[0].sy = y0 + 0.5f;
+      vlist[1].sy = y0 - 0.5f;
+      vlist[2].sy = y1 - 0.5f;
+      vlist[3].sy = y1 + 0.5f;
       vlist[0].sx = x0;
       vlist[1].sx = x0;
       vlist[2].sx = x1;
@@ -1024,12 +925,12 @@ static void init_hack_light_bm(void)
    bits = hack_light_bm->bits;
    for (i=0; i<32; i++) {
       for (j=0; j<32; j++) {
-         float alpha = 8.0 * 16.0 / ((i-15.5)*(i-15.5) + (j-15.5)*(j-15.5));
+         float alpha = 8.0f * 16.0f / ((i-15.5f)*(i-15.5f) + (j-15.5f)*(j-15.5f));
          uchar val;
-         if (alpha > 15.0)
+         if (alpha > 15.0f)
             val = 15;
          else {
-            val = alpha;
+            val = (uchar)alpha;
          }
          bits[j] = val;
       }
@@ -1044,8 +945,8 @@ static void do_quad_light(r3s_point *p, float r, grs_bitmap *bm)
    float y = fix_float(p->grp.sy)+y_offset;
    float x_right, x_left, y_top, y_bot;
    float u_right, u_left, v_top, v_bot;
-   LPD3DTLVERTEX vl;
-   D3DCOLOR c;
+   sLgd3dVertex *vl;
+   uint32 c;
 
    if ((x+r < lgd3d_clip.left) || (x-r > lgd3d_clip.right) ||
        (y+r < lgd3d_clip.top) || (y-r > lgd3d_clip.bot))
@@ -1059,7 +960,7 @@ static void do_quad_light(r3s_point *p, float r, grs_bitmap *bm)
 
    vl = PolyMalloc(4);
    x_right = x+r; x_left = x-r;
-   u_left = 0; u_right = 1.0;
+   u_left = 0; u_right = 1.0f;
    if (x_left < lgd3d_clip.left) {
       u_left = (lgd3d_clip.left - x_left) / (2*r);
       x_left = lgd3d_clip.left;
@@ -1069,13 +970,13 @@ static void do_quad_light(r3s_point *p, float r, grs_bitmap *bm)
       x_right = lgd3d_clip.right;
    }
    y_bot = y+r; y_top = y-r;
-   v_top = 0; v_bot = 1.0;
+   v_top = 0; v_bot = 1.0f;
    if (y_top < lgd3d_clip.top) {
       v_top = (lgd3d_clip.top - y_top) / (2*r);
       y_top = lgd3d_clip.top;
    }
    if (y_bot > lgd3d_clip.bot) {
-      v_bot = v_top + (1.0 - v_top)*(lgd3d_clip.bot - y_top) / (y_bot - y_top);
+      v_bot = v_top + (1.0f - v_top)*(lgd3d_clip.bot - y_top) / (y_bot - y_top);
       y_bot = lgd3d_clip.bot;
    }
 
@@ -1117,8 +1018,8 @@ int lgd3d_draw_point(r3s_point *p)
 {
    fix sx = p->grp.sx + 0x8000;
    fix sy = p->grp.sy + 0x8000;
-   LPD3DTLVERTEX vp;
-   D3DCOLOR c=get_color()|0xff000000;
+   sLgd3dVertex *vp;
+   uint32 c=get_color()|0xff000000;
    int save_id;
 
    if ((sx > grd_gc.clip.f.right) || (sx < grd_gc.clip.f.left) ||
@@ -1145,8 +1046,8 @@ int lgd3d_draw_point_alpha(r3s_point *p, float alpha)
 {
    fix sx = p->grp.sx + 0x8000;
    fix sy = p->grp.sy + 0x8000;
-   LPD3DTLVERTEX vp;
-   D3DCOLOR c=get_color()&0xffffff;
+   sLgd3dVertex *vp;
+   uint32 c=get_color()&0xffffff;
    int save_id;
 
    if ((sx > grd_gc.clip.f.right) || (sx < grd_gc.clip.f.left) ||
@@ -1189,7 +1090,7 @@ void lgd3d_hack_light_extra(r3s_point *p, float r, grs_bitmap *bm)
    if (r <= 1.0) {
       float alpha = r*r;
       // scale by the overall alpha for this guy: what a hack:
-      alpha *= bm->bits[bm->row*(bm->h>>1) + (bm->w>>1)] / 15.0;
+   alpha *= bm->bits[bm->row*(bm->h>>1) + (bm->w>>1)] / 15.0f;
       lgd3d_draw_point(p);
    } else
       do_quad_light(p,r,bm);
@@ -1201,9 +1102,9 @@ void lgd3d_hack_light_extra(r3s_point *p, float r, grs_bitmap *bm)
 
 static int lgd3d_poly(int n, r3s_point **ppl)
 {
-   LPD3DTLVERTEX vlist;
+   sLgd3dVertex *vlist;
    int j;
-   D3DCOLOR c = get_color();
+   uint32 c = get_color();
 
    vlist = PolyMalloc(n);
    for (j=0; j<n; j++) {
@@ -1219,9 +1120,9 @@ static int lgd3d_poly(int n, r3s_point **ppl)
 
 static int lgd3d_spoly(int n, r3s_point **ppl)
 {
-   LPD3DTLVERTEX vlist;
+   sLgd3dVertex *vlist;
    int j;
-   D3DCOLOR c0 = get_color();
+   uint32 c0 = get_color();
 
 //   if (grd_gc.fill_type == FILL_CLUT)
 //      Warning(("lgd3d_spoly in FILL_CLUT mode!\n"));
@@ -1244,9 +1145,9 @@ static int lgd3d_spoly(int n, r3s_point **ppl)
 
 static int lgd3d_rgb_poly(int n, r3s_point **ppl)
 {
-   LPD3DTLVERTEX vlist;
+   sLgd3dVertex *vlist;
    int j;
-   D3DCOLOR c0 = get_color();
+   uint32 c0 = get_color();
    int rc,gc,bc;
    rc = (c0 >> 16) & 255;
    gc = (c0 >>  8) & 255;
@@ -1257,10 +1158,10 @@ static int lgd3d_rgb_poly(int n, r3s_point **ppl)
    for (j=0; j<n; j++) {
       int r,g,b;
       g2s_point *g2p = (g2s_point *) &ppl[j]->grp;
-      r = rc*g2p->i; if (r>255) r = 255;
-      g = gc*g2p->h; if (g>255) g = 255;
-      b = bc*g2p->d; if (b>255) b = 255;
-      vlist[j].color = RGBA_MAKE(r,g,b,lgd3d_alpha);
+      r = (int)(rc*g2p->i); if (r>255) r = 255;
+      g = (int)(gc*g2p->h); if (g>255) g = 255;
+      b = (int)(bc*g2p->d); if (b>255) b = 255;
+      vlist[j].color = PackColor(r, g, b, get_vertex_alpha(g2p));
       vlist[j].specular = fog_specular;
       setxyz(&vlist[j], ppl[j]);
    }
@@ -1273,9 +1174,9 @@ static int lgd3d_rgb_poly(int n, r3s_point **ppl)
 
 int lgd3d_lit_trifan(int n, r3s_point **ppl)
 {
-   LPD3DTLVERTEX vlist;
+   sLgd3dVertex *vlist;
    int j;
-   D3DCOLOR c0 = (lgd3d_alpha << 24) + 0xffffff;
+   uint32 c0 = (lgd3d_alpha << 24) + 0xffffff;
 
    start("l");
    vlist = PolyMalloc(n);
@@ -1300,7 +1201,7 @@ int lgd3d_lit_trifan(int n, r3s_point **ppl)
 
 static int lgd3d_rgblit_trifan(int n, r3s_point **ppl)
 {
-   LPD3DTLVERTEX vlist;
+   sLgd3dVertex *vlist;
    int j;
 
    start("l");
@@ -1313,10 +1214,10 @@ static int lgd3d_rgblit_trifan(int n, r3s_point **ppl)
       v = ppl[j]->grp.v;
       vlist[j].tu = u; 
       vlist[j].tv = v;
-      r = 255*g2p->i; if (r>255) r = 255;
-      g = 255*g2p->h; if (g>255) g = 255;
-      b = 255*g2p->d; if (b>255) b = 255;
-      vlist[j].color = RGBA_MAKE(r,g,b,lgd3d_alpha);
+      r = (int)(255*g2p->i); if (r>255) r = 255; else if (r<0) r = 0;
+      g = (int)(255*g2p->h); if (g>255) g = 255; else if (g<0) g = 0;
+      b = (int)(255*g2p->d); if (b>255) b = 255; else if (b<0) b = 0;
+      vlist[j].color = PackColor(r, g, b, get_vertex_alpha(g2p));
       vlist[j].specular = fog_specular;
       setxyz(&vlist[j], ppl[j]);
    }
@@ -1329,8 +1230,8 @@ static int lgd3d_rgblit_trifan(int n, r3s_point **ppl)
 
 int lgd3d_trifan(int n, r3s_point **ppl)
 {
-   LPD3DTLVERTEX vlist;
-   D3DCOLOR c0 = (lgd3d_alpha << 24) + 0xffffff;
+   sLgd3dVertex *vlist;
+   uint32 c0 = (lgd3d_alpha << 24) + 0xffffff;
    int i;
 
    start("f");
@@ -1378,7 +1279,6 @@ void lgd3d_rgblit_tmap_setup(grs_bitmap *bm)
    lgd3d_draw_poly_func = lgd3d_rgblit_trifan;
 }
 
-#pragma off(unreferenced)
 void lgd3d_poly_setup(grs_bitmap *bm)
 {
    SetPoly();
@@ -1396,7 +1296,6 @@ void lgd3d_rgb_poly_setup(grs_bitmap *bm)
    SetPoly();
    lgd3d_draw_poly_func = lgd3d_rgb_poly;
 }
-#pragma on(unreferenced)
 
 
 //
@@ -1405,16 +1304,16 @@ void lgd3d_rgb_poly_setup(grs_bitmap *bm)
 
 int lgd3d_g2utrifan(int n, g2s_point **ppl)
 {
-   LPD3DTLVERTEX vlist;
-   D3DCOLOR c0 = (lgd3d_alpha << 24) + 0xffffff;
+   sLgd3dVertex *vlist;
+   uint32 c0 = (lgd3d_alpha << 24) + 0xffffff;
    int i;
 
    vlist = PolyMalloc(n);
    for (i=0; i<n; i++) {
       float j = ppl[i]->i;
       setxy(&vlist[i], ppl[i]->sx, ppl[i]->sy);
-      vlist[i].sz = z2d;
-      vlist[i].rhw = w2d;
+      vlist[i].sz = (float)z2d;
+      vlist[i].rhw = (float)w2d;
       make_scolor(&vlist[i].color, c0, j);
       vlist[i].specular = fog_specular;
       vlist[i].tu = ppl[i]->u;
@@ -1429,17 +1328,17 @@ int lgd3d_g2utrifan(int n, g2s_point **ppl)
 
 int lgd3d_g2upoly(int n, g2s_point **ppl)
 {
-   LPD3DTLVERTEX vlist;
+   sLgd3dVertex *vlist;
    int j;
-   D3DCOLOR c=get_color();
+   uint32 c=get_color();
 
    vlist = PolyMalloc(n);
    for (j=0; j<n; j++) {
       vlist[j].color = c;
       vlist[j].specular = fog_specular;
       setxy(&vlist[j], ppl[j]->sx, ppl[j]->sy);
-      vlist[j].sz = z2d;
-      vlist[j].rhw = w2d;
+      vlist[j].sz = (float)z2d;
+      vlist[j].rhw = (float)w2d;
 //      vlist[j].tu = vlist[j].tv = 0.0;
    }
 
@@ -1489,7 +1388,7 @@ int lgd3d_g2trifan(int n, g2s_point **ppl)
 
 void lgd3d_clear(int c)
 {
-   LPD3DTLVERTEX vlist;
+   sLgd3dVertex *vlist;
    float x0, y0, x1, y1;
    int i, save_id;
    int fc_save = gr_get_fcolor();
@@ -1512,8 +1411,8 @@ void lgd3d_clear(int c)
 
    for (i=0; i<4; i++)
       {
-      vlist[i].sz = z2d;
-      vlist[i].rhw = w2d;
+      vlist[i].sz = (float)z2d;
+      vlist[i].rhw = (float)w2d;
       vlist[i].color = c;
       vlist[i].specular = fog_specular;
       }
@@ -1532,81 +1431,38 @@ void lgd3d_clear(int c)
    next_id = save_id;
 }
 
-#ifdef OLD_AND_UNSUPPORTED
-extern int lgd3d_clip_poly(int n, LPD3DTLVERTEX *vpl, LPD3DTLVERTEX **cvpl);
-
-static void clip_poly_array(int n, LPD3DTLVERTEX vlist)
+int lgd3d_TrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **uv2)
 {
-   LPD3DTLVERTEX *vpl;
-   LPD3DTLVERTEX *cvpl=NULL;
-   int i, m;
-
-   vpl = (LPD3DTLVERTEX *)temp_malloc(n*sizeof(*vpl));
-
-   for (i=0; i<n; i++)
-      vpl[i] = &vlist[i];
-
-   m = lgd3d_clip_poly(n, vpl, &cvpl);
-
-   if (m<3) {
-      if (cvpl!=NULL)
-         temp_free(cvpl);
-      temp_free(vpl);
-      return;
+   int i,j=0,count;
+   sRenderBackendVertex *v;
+   if(n<3)return CLIP_ALL;
+   prim_setup();
+   modern_setup_second_texture();
+   count=(n-2)*3;
+   v=(sRenderBackendVertex *)temp_malloc(count*sizeof(*v));
+   for(i=2;i<n;++i) {
+      int k,indices[3]={0,i-1,i};
+      for(k=0;k<3;++k) {
+         r3s_point *p=ppl[indices[k]];
+         sLgd3dVertex old;
+         old.color=(lgd3d_alpha<<24)|0xffffff;
+         old.specular=fog_specular;
+         old.tu=p->grp.u;old.tv=p->grp.v;
+         setxyz(&old,p);
+         ModernConvertVertex(&v[j],&old);
+         v[j].u1=uv2[indices[k]]->u;
+         v[j].v1=uv2[indices[k]]->v;
+         ++j;
+      }
    }
-   if (cvpl!=vpl) {
-      LPD3DTLVERTEX poly = (LPD3DTLVERTEX )temp_malloc(m*sizeof(D3DTLVERTEX));
-      for (i=0; i<m; i++)
-         poly[i] = *cvpl[i];
-
-      do_trifan(m, poly);
-
-      temp_free(poly);
-      temp_free(cvpl);
-   } else
-      do_trifan(n, vlist);
-
-   temp_free(vpl);
+   RenderBackendDraw(kRenderBackendTriangles,v,count,TRUE);
+   temp_free(v);
+   return CLIP_NONE;
 }
 
-
-#ifdef FILTER_POLYS
-static int bad_poly = -1;
-static int test_poly = -1;
-static int poly = 0;
-
-void lgd3d_set_bad_poly(int i)
-{
-   bad_poly = i;
-   if (bad_poly >= 0)
-      mprintf("bad poly: %i\n", bad_poly);
-}
-
-void lgd3d_set_test_poly(int i)
-{
-   test_poly = i;
-   if (test_poly >= 0)
-      mprintf("test poly: %i\n", test_poly);
-}
-
-void ReadPoly(void)
-{
-   int n;
-   LPD3DTLVERTEX vlist;
-   static FILE *id = NULL;
-   if (id == NULL)
-      id = fopen("badpoly.bin", "rb");
-
-   if (feof(id))
-      return;
-
-   fread(&n, sizeof(n), 1, id);
-   vlist = (LPD3DTLVERTEX )temp_malloc(n * sizeof(*vlist));
-   fread(vlist, sizeof(*vlist), n, id);
-
-   do_trifan(n, vlist);
-   temp_free(vlist);
-}
-#endif
-#endif
+int lgd3d_LitTrifanMTD(int n,r3s_point **p,LGD3D_tex_coord **u){return lgd3d_TrifanMTD(n,p,u);}
+int lgd3d_RGBlitTrifanMTD(int n,r3s_point **p,LGD3D_tex_coord **u){return lgd3d_TrifanMTD(n,p,u);}
+int lgd3d_RGBAlitTrifanMTD(int n,r3s_point **p,LGD3D_tex_coord **u){return lgd3d_TrifanMTD(n,p,u);}
+int lgd3d_RGBAFoglitTrifanMTD(int n,r3s_point **p,LGD3D_tex_coord **u){return lgd3d_TrifanMTD(n,p,u);}
+int lgd3d_DiffuseSpecularMTD(int n,r3s_point **p,LGD3D_tex_coord **u){return lgd3d_TrifanMTD(n,p,u);}
 

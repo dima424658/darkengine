@@ -62,9 +62,9 @@ sAICombatTacticalRanges * AIGetTacticalRanges(ObjID id)
 
    if (default_dists.el[0] == 0.0)
    {
-      default_dists.el[0]  = 4.8;
-      default_dists.el[1]  = 7.4;
-      default_dists.el[2]  = 10.2;
+      default_dists.el[0]  = 4.8f;
+      default_dists.el[1]  = 7.4f;
+      default_dists.el[2]  = 10.2f;
    }
 
    mxs_vector *dists=&default_dists;
@@ -253,7 +253,7 @@ BOOL cAIMultiCombat::GatherTargetInfo()
          float zAI = AIGetZAtXYOnCell(*m_pAIState->GetPathLocation(), m_pAIState->GetPathCell());
 
          zTarg = AIGetZAtXYOnCell(m_pTargetInfo->loc, targetCell);
-         m_pTargetInfo->zLocNearFloor = min(zTarg + 3.0, m_pTargetInfo->loc.z);
+         m_pTargetInfo->zLocNearFloor = min(zTarg + 3.0f, m_pTargetInfo->loc.z);
 
          // wsf: added so AI's will get frustrated when player is too high on rope or ladder.
          // We're restricting this to *just* the player, and *only* when climbing, though
@@ -305,7 +305,7 @@ BOOL cAIMultiCombat::GatherTargetInfo()
          mx_sub_vec(&delta_pos, &ObjPosGet(GetID())->loc.vec, &ObjPosGet(m_pTargetInfo->id)->loc.vec);
          mx_normeq_vec(&delta_pos);
 
-         scaleVal = 1.0 + 0.09 * mx_dot_vec(&delta_pos, &targ_vel);
+         scaleVal = 1.0f + 0.09f * mx_dot_vec(&delta_pos, &targ_vel);
 
          if (m_pTargetInfo->distSq < sq(pRanges->Near * scaleVal))
             m_pTargetInfo->range = kAICR_Near;
@@ -326,8 +326,8 @@ BOOL cAIMultiCombat::GatherTargetInfo()
 //               m_pTargetInfo->range = kAICR_JustFar;
                // delta_pos is normalized vec from target to AI
                mxs_vector ZVec=  {0,0,1};
-               scaleVal = 1-fabs(mx_dot_vec(&delta_pos, &ZVec));
-               float fUseDist = pRanges->Ideal*scaleVal+0.1;
+               scaleVal = 1-fabsf(mx_dot_vec(&delta_pos, &ZVec));
+               float fUseDist = pRanges->Ideal*scaleVal+0.1f;
                if (fUseDist < 1) // if we have to be this close in order to strike, just forget it.
                {
                   if (bTargetIsClimbing) // Special way we talk to aicbhtoh.cpp about getting frustrated when player is climbing and out of range.
@@ -347,8 +347,8 @@ BOOL cAIMultiCombat::GatherTargetInfo()
          else
          {
             mxs_vector ZVec=  {0,0,1};
-            scaleVal = 1-fabs(mx_dot_vec(&delta_pos, &ZVec));
-            float fUseDist = pRanges->Ideal*scaleVal+0.1;
+            scaleVal = 1-fabsf(mx_dot_vec(&delta_pos, &ZVec));
+            float fUseDist = pRanges->Ideal*scaleVal+0.1f;
             if (fUseDist < 1) // if we have to be this close in order to strike, just forget it.
             {
                if (bTargetIsClimbing) // Special way we talk to aicbhtoh.cpp about getting frustrated when player is climbing and out of range.

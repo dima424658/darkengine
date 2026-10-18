@@ -10,12 +10,12 @@ static void vpl_to_ppl(grs_bitmap *bm, int n, grs_vertex **vpl, g2s_point **ppl)
 {
    int i;
    float inv_u_scale, inv_v_scale;
-   float inv_ltab_size = 1.0/grd_light_table_size;
+   float inv_ltab_size = 1.0f/grd_light_table_size;
    grs_point *pl = (grs_point *)(ppl + n);
 
    if (bm!=NULL) {
-      inv_u_scale = 1.0/bm->w;
-      inv_v_scale = 1.0/bm->h;
+      inv_u_scale = 1.0f/bm->w;
+      inv_v_scale = 1.0f/bm->h;
    }
 
    for (i=0; i<n; i++) {

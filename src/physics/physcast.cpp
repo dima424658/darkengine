@@ -135,17 +135,17 @@ int PhysRaycast(Location &start, Location &end, Location *hit, ObjID *hit_obj, m
          mx_sub_vec(&hit_delta, &min_hit, &start.vec);
          mx_sub_vec(&cast_delta, &end.vec, &start.vec);
 
-         min_hit_time = sqrt(mx_mag2_vec(&hit_delta) / mx_mag2_vec(&cast_delta));
+         min_hit_time = sqrtf(mx_mag2_vec(&hit_delta) / mx_mag2_vec(&cast_delta));
          min_hit_type = kCollideTerrain;
 
          if (PortalRaycastCell != -1)
          {
-            ubyte texture = WR_CELL(PortalRaycastCell)->render_list[PortalRaycastFindPolygon()].texture_id;
+            int texture = WR_CELL(PortalRaycastCell)->render_list[PortalRaycastFindPolygon()].texture_id;
             min_hit_obj = GetTextureObj(texture);
           
             used_end = l_hit;
 
-            hit_time_modifier = sqrt(mx_dist2_vec(&start.vec, &used_end.vec) / mx_dist2_vec(&start.vec, &end.vec)); 
+            hit_time_modifier = sqrtf(mx_dist2_vec(&start.vec, &used_end.vec) / mx_dist2_vec(&start.vec, &end.vec));
          }
          else
             min_hit_obj = OBJ_NULL;
@@ -299,7 +299,7 @@ BOOL RaycastVsSphereHat(cPhysModel *pModel, const mxs_vector &start, const mxs_v
    BOOL       eo;
 
    // assumes a 0.5r sphere hat edge length
-   sphere_radius = ((cPhysSphereModel *)pModel)->GetRadius(0) * 1.25;
+   sphere_radius = ((cPhysSphereModel *)pModel)->GetRadius(0) * 1.25f;
    mx_sub_vec(&delta, &end, &start);
 
    eo = !PhysSolveLnPtDist(&start, &delta, &pModel->GetLocationVec(), sphere_radius + radius, 1.0, &eo_hit_time);
@@ -330,7 +330,7 @@ BOOL RaycastVsSphereHat(cPhysModel *pModel, const mxs_vector &start, const mxs_v
          mxs_vector delta;
          mx_sub_vec(&delta, &end, &start);
 
-         hat_hit_time = face_start_dist / (fabs(face_start_dist - face_end_dist));
+         hat_hit_time = face_start_dist / (fabsf(face_start_dist - face_end_dist));
          mx_scale_add_vec(&hat_hit, &start, &delta, hat_hit_time);
    
          // Is this hit point on the surface of the hat?
@@ -486,7 +486,7 @@ BOOL RaycastVsOBB(cPhysModel *pModel, const mxs_vector &start, const mxs_vector 
 #define OBJ_WAS_ADDED(x)  (obj_added[(x) >> 3] & (1 << ((x) & 0x0007)))
 #define SET_OBJ_ADDED(x)  (obj_added[(x) >> 3] |= (1 << ((x) & 0x0007)))
 
-static bool obj_added[MAX_PHYSCAST_OBJIDS / 8];
+static uchar obj_added[MAX_PHYSCAST_OBJIDS / 8];
 
 void GatherPhysObjs(cPhysModel **pModelList, int *nModels, 
                     Location &start, Location &end, int filter)

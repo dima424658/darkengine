@@ -4,13 +4,6 @@
 * $Header: x:/prj/tech/libsrc/res/RCS/resmem.cpp 1.58 1998/01/07 10:46:14 TOML Exp $
 */
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#define max(x, y) ( ((x) > (y)) ? (x) : (y) )
-#define min(x, y) ( ((x) < (y)) ? (x) : (y) )
-#endif
-
 #include <lg.h>
 #include <comtools.h>
 #include <allocapi.h>
@@ -22,6 +15,7 @@
 #include <string.h>
 #include <mprintf.h>
 #include <initguid.h>
+#include <platform_services.h>
 
 #undef Malloc
 #undef Free
@@ -89,7 +83,7 @@ void ResCacheTouch(Id id)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ulong LGAPI ResPager(ulong size, sAllocLimits * pLimits);
+size_t LGAPI ResPager(size_t size, sAllocLimits * pLimits);
 
 // No longer used?  8/15/97 -JF
 //static bool resPushedAllocators;                 // did we push our allocators?
@@ -134,12 +128,16 @@ void ResMemTerm()
 
 void ResGetMemStats(sResMemStats * pStats)
 {
-#ifdef _WIN32
-    MEMORYSTATUS memoryStatus;
-    memoryStatus.dwLength = sizeof(memoryStatus);
-    GlobalMemoryStatus(&memoryStatus);
-    memcpy(pStats, &memoryStatus, sizeof(memoryStatus));
-#endif
+    sPlatformMemoryStatus memoryStatus;
+    PlatformGetMemoryStatus(&memoryStatus);
+    pStats->reserved = 0;
+    pStats->memoryLoad = memoryStatus.load_percent;
+    pStats->totalPhys = memoryStatus.total_physical_bytes;
+    pStats->availPhys = memoryStatus.available_physical_bytes;
+    pStats->totalPageFile = memoryStatus.total_page_file_bytes;
+    pStats->availPageFile = memoryStatus.available_page_file_bytes;
+    pStats->totalVirtual = memoryStatus.total_virtual_bytes;
+    pStats->availVirtual = memoryStatus.available_virtual_bytes;
 
     sCacheState state;
     sAllocLimits limits;
@@ -147,9 +145,9 @@ void ResGetMemStats(sResMemStats * pStats)
     g_pResSharedCache->GetState(&state);
     AllocGetLimits(&limits);
 
-    pStats->allocCap = limits.allocCap;
-    pStats->totalMalloc = limits.totalAlloc;
-    pStats->lockedMalloc = limits.totalAlloc - state.nBytes;
+    pStats->allocCap = (ulong)limits.allocCap;
+    pStats->totalMalloc = (ulong)limits.totalAlloc;
+    pStats->lockedMalloc = (ulong)(limits.totalAlloc - state.nBytes);
     pStats->cachedMalloc = state.nBytes;
 }
 
@@ -158,7 +156,7 @@ void ResGetMemStats(sResMemStats * pStats)
 #define ResInternalMalloc(n)     malloc(n)
 #define ResInternalFree(p)       free(p);
 #define ResInternalRealloc(p, n) realloc(p, n)
-#define ResInternalGetSize(p)    _msize(p)
+#define ResInternalGetSize(p)    PlatformAllocationSize(p)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -169,7 +167,7 @@ ulong ResPickAllocCap()
 
 ulong ResMemSetCap(ulong cap)
 {
-   return AllocSetAllocCap(cap);
+   return (ulong)AllocSetAllocCap(cap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,7 +185,7 @@ void ResCompact(void)
 {
     g_pResSharedCache->FlushAll();
     ResMemSetCap(ResPickAllocCap());
-    _heapmin();
+    PlatformHeapMinimize();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -252,7 +250,7 @@ void ResDumpLRU()
 //   replacement pager could then make use of this information in some
 //   magical way to decide who to throw out.
 
-ulong LGAPI ResPager(ulong size, sAllocLimits * pLimits)
+size_t LGAPI ResPager(size_t size, sAllocLimits * pLimits)
 {
    // If the game has explicitly disabled paging...
    if (!g_fResPage)
@@ -266,12 +264,12 @@ ulong LGAPI ResPager(ulong size, sAllocLimits * pLimits)
    #define     kResAllocCapMinIncrement (16 * 1024)
    #define     kResPageHighAllocLevel   (1024 * 1024 * 24)
 
-   long        nBytesFreed;
-   long        nBytesWanted;
-   long        nBytesExtra;
-   long        nBytesOverCap;
+   size_t      nBytesFreed;
+   size_t      nBytesWanted;
+   size_t      nBytesExtra;
+   size_t      nBytesOverCap;
 
-   static long triggerSkipped;
+   static size_t triggerSkipped;
 
    // If it's a really small block, don't bother paging (limiting the consecutive skipped paging requests)
    // We're intentionally allowing possibly less-correct (but safe) behavior by not holding on to any mutex
@@ -287,11 +285,11 @@ ulong LGAPI ResPager(ulong size, sAllocLimits * pLimits)
    ResThreadLock();
    CoreThreadLock();
 
-   const ulong allocCap = pLimits->allocCap;
-   const ulong totalAlloc = pLimits->totalAlloc;
+   const size_t allocCap = pLimits->allocCap;
+   const size_t totalAlloc = pLimits->totalAlloc;
 
 #ifndef SHIP
-   static ulong highWarnBytes = kResPageHighAllocLevel;
+   static size_t highWarnBytes = kResPageHighAllocLevel;
    if (totalAlloc > highWarnBytes)
    {
       mprintf("WARNING: Memory allocation suspiciously high (%d bytes)!\n", totalAlloc);
@@ -314,16 +312,20 @@ ulong LGAPI ResPager(ulong size, sAllocLimits * pLimits)
    nBytesOverCap  = (totalAlloc > allocCap) ? totalAlloc - allocCap : 0;
 
    nBytesExtra    = (size * kResPageExtraPct) / 100;
-   nBytesExtra    = max(kResPageMinExtra, min(kResPageMaxExtra, nBytesExtra));
+   if (nBytesExtra < kResPageMinExtra)
+      nBytesExtra = kResPageMinExtra;
+   else if (nBytesExtra > kResPageMaxExtra)
+      nBytesExtra = kResPageMaxExtra;
 
 // Aim to page down to cap, plus target size, plus extra bytes
    nBytesWanted   = nBytesOverCap + size + nBytesExtra;
-   nBytesWanted   = max(nBytesWanted, nBytesOverCap);
+   if (nBytesWanted < nBytesOverCap)
+      nBytesWanted = nBytesOverCap;
 
-   nBytesFreed = g_pResSharedCache->Purge(nBytesWanted);
+   nBytesFreed = g_pResSharedCache->Purge((ulong)nBytesWanted);
 
    // Calculate a new cap
-   long newTargetCap = 0;
+   size_t newTargetCap = 0;
 
    // If totally over the cap, loosen cap by 1/16 to reduce paging
    if (size > nBytesFreed)

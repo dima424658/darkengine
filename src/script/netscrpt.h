@@ -42,7 +42,7 @@ DECLARE_SCRIPT_SERVICE(Networking, 0x225)
    STDMETHOD(Broadcast)(const object& obj, 
                         const char *msg,
                         BOOL sendFromProxy = FALSE,
-                        const cMultiParm& data = NULL) PURE;
+                        const cMultiParm& data = cMultiParm()) PURE;
 
    // Send the specified message to the specified object on just the
    // specified player's machine. Should only be called by the machine
@@ -60,7 +60,7 @@ DECLARE_SCRIPT_SERVICE(Networking, 0x225)
    STDMETHOD(SendToProxy)(const object& toPlayer, 
                           const object& obj,
                           const char *msg,
-                          const cMultiParm& data = NULL) PURE;
+                          const cMultiParm& data = cMultiParm()) PURE;
 
    // Take control of the specified object. Does nothing if networking
    // isn't running. This should be used with care, and only if you

@@ -10,6 +10,8 @@
  *
  */
 
+#include <stdio.h>
+
 #include <grs.h>
 #include <mode.h>
 
@@ -203,6 +205,10 @@ const char * grd_mode_names[GRD_MODES] = {
    "512x384x32",
 };
 
+static int grd_mode_count = GRD_STATIC_MODES;
+static char grd_dynamic_mode_names[GRD_MODES - GRD_STATIC_MODES][24];
+static uchar grd_registered_modes[GRD_MODES];
+
 
 // Finds the first 2d mode with w,h, and bitdepth. Differs
 // from gr_find_mode() in that it doesn't care whether the
@@ -212,9 +218,126 @@ int gr_mode_from_info(int w, int h, int bitDepth)
    int i;
    grs_mode_info *info;
 
-   for (i = 0, info = grd_mode_info; i < GRD_MODES; i++, info++) {
+   for (i = 0, info = grd_mode_info; i < grd_mode_count; i++, info++) {
       if (info->w==w && info->h==h && info->bitDepth==bitDepth)
          return i;
+   }
+   return -1;
+}
+
+// Add a mode reported by DirectDraw to the engine's enumerated mode table.
+// Width, height, and scanline sizes are stored in 16-bit fields throughout
+// dev2d, so reject values that those structures cannot represent safely.
+int gr_register_mode(int w, int h, int bitDepth)
+{
+   int mode = gr_mode_from_info(w, h, bitDepth);
+   grs_mode_info *info;
+   char *name;
+
+   if (mode >= 0) {
+      if (bitDepth <= 16)
+         grd_mode_info[mode].flags |= GRM_IS_SUPPORTED;
+      grd_registered_modes[mode] = TRUE;
+      return mode;
+   }
+
+   if (w <= 0 || h <= 0 || w > 8191 || h > 8191)
+      return -1;
+
+   if (bitDepth != 8 && bitDepth != 15 && bitDepth != 16 &&
+       bitDepth != 24 && bitDepth != 32)
+      return -1;
+
+   if (grd_mode_count >= GRD_MODES)
+      return -1;
+
+   mode = grd_mode_count++;
+   info = &grd_mode_info[mode];
+   info->mode_2d = (short)mode;
+   info->mode_vesa = 0;
+   info->w = (short)w;
+   info->h = (short)h;
+   info->bitDepth = (uchar)bitDepth;
+   info->flags = (bitDepth <= 16) ? GRM_IS_SUPPORTED : 0;
+   info->bankShift = 0;
+
+   name = grd_dynamic_mode_names[mode - GRD_STATIC_MODES];
+   sprintf(name, "%dx%dx%d", w, h, bitDepth);
+   grd_mode_names[mode] = name;
+   grd_registered_modes[mode] = TRUE;
+   return mode;
+}
+
+int gr_find_closest_registered_mode(int w, int h, int bitDepth,
+                                    int *registeredWidth,
+                                    int *registeredHeight)
+{
+   int i;
+   int bestMode = -1;
+   double bestScore = 1000000.0;
+
+   if (w <= 0 || h <= 0)
+      return -1;
+
+   for (i = 0; i < grd_mode_count; ++i) {
+      grs_mode_info *info = &grd_mode_info[i];
+      double widthError;
+      double heightError;
+      double requestedAspect;
+      double candidateAspect;
+      double aspectError;
+      double score;
+
+      if (!grd_registered_modes[i] || info->bitDepth != bitDepth)
+         continue;
+
+      widthError = (double)(info->w > w ? info->w - w : w - info->w) / w;
+      heightError = (double)(info->h > h ? info->h - h : h - info->h) / h;
+      requestedAspect = (double)w / h;
+      candidateAspect = (double)info->w / info->h;
+      aspectError = candidateAspect > requestedAspect
+         ? candidateAspect / requestedAspect - 1.0
+         : requestedAspect / candidateAspect - 1.0;
+      score = widthError + heightError + (2.0 * aspectError);
+
+      if (score < bestScore) {
+         bestScore = score;
+         bestMode = i;
+      }
+   }
+
+   if (bestMode >= 0) {
+      if (registeredWidth != NULL)
+         *registeredWidth = grd_mode_info[bestMode].w;
+      if (registeredHeight != NULL)
+         *registeredHeight = grd_mode_info[bestMode].h;
+   }
+   return bestMode;
+}
+
+int gr_get_registered_mode_count(int bitDepth)
+{
+   int i;
+   int count = 0;
+   for (i = 0; i < grd_mode_count; ++i)
+      if (grd_registered_modes[i] && grd_mode_info[i].bitDepth == bitDepth)
+         ++count;
+   return count;
+}
+
+int gr_get_registered_mode(int ordinal, int bitDepth)
+{
+   int i;
+   if (ordinal < 0)
+      return -1;
+   for (i = 0; i < grd_mode_count; ++i)
+   {
+      if (grd_registered_modes[i] && grd_mode_info[i].bitDepth == bitDepth)
+      {
+         if (ordinal == 0)
+            return i;
+         --ordinal;
+      }
    }
    return -1;
 }
@@ -222,7 +345,7 @@ int gr_mode_from_info(int w, int h, int bitDepth)
 // Get a human-readable form of the mode name
 const char * gr_mode_name(int mode)
 {
-   if (mode < GRD_MODES)
+   if (mode >= 0 && mode < grd_mode_count && grd_mode_names[mode] != NULL)
       return grd_mode_names[mode];
    return "Unknown";
 }

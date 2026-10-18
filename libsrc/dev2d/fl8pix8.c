@@ -54,7 +54,6 @@ void flat8_tluc_upix8 (int color, int x, int y)
    }
 }
 
-#pragma off (unreferenced)
 void flat8_solid_upix8 (int color, int x, int y)
 {
    uchar *p;
@@ -62,4 +61,3 @@ void flat8_solid_upix8 (int color, int x, int y)
    p = grd_bm.bits + grd_bm.row*y + x;
    *p = (uchar )grd_gc.fill_parm;
 }
-#pragma on (unreferenced)

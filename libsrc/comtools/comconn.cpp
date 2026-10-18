@@ -8,6 +8,31 @@
 #include <lg.h>
 #include <comtools.h>
 #include <comconn.h>
+#include <unordered_map>
+
+static std::unordered_map<DWORD, IUnknown *> &ConnectionCookies()
+    {
+    // The aggregate is torn down from an atexit handler.  Keep this tiny
+    // process registry alive through that teardown instead of depending on
+    // cross-translation-unit static destruction order.
+    static std::unordered_map<DWORD, IUnknown *> * cookies =
+        new std::unordered_map<DWORD, IUnknown *>;
+    return *cookies;
+    }
+
+static DWORD AllocateConnectionCookie(IUnknown * p)
+    {
+    static DWORD nextCookie = 1;
+    std::unordered_map<DWORD, IUnknown *> &cookies = ConnectionCookies();
+    DWORD cookie;
+    do
+        {
+        cookie = nextCookie++;
+        }
+    while (cookie == 0 || cookies.find(cookie) != cookies.end());
+    cookies[cookie] = p;
+    return cookie;
+    }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -23,7 +48,7 @@ BOOL cCOMConnectionSetBase::Search(IUnknown * p)
     // Because these lists never get very long, and because
     // insertion/removal is an uncommon event relative
     // to iteration, we simply use a linear search
-    for (index_t i = 0; i < m_Connections.Size(); i++)
+    for (int i = 0; i < m_Connections.Size(); i++)
         {
         if (m_Connections[i].pSink == p)
             return TRUE;
@@ -47,7 +72,7 @@ BOOL cCOMConnectionSetBase::Insert(IUnknown * p, DWORD * pCookie)
     m_Connections.Append(connection);
 
     p->AddRef();
-    *pCookie = DWORD(p);
+    *pCookie = AllocateConnectionCookie(p);
 
     return TRUE;
     }
@@ -71,7 +96,7 @@ BOOL cCOMConnectionSetBase::Insert(IUnknown * p, int priority, DWORD * pCookie)
     m_Connections.Append(connection);
 
     p->AddRef();
-    *pCookie = DWORD(p);
+    *pCookie = AllocateConnectionCookie(p);
 
     return TRUE;
     }
@@ -80,12 +105,20 @@ BOOL cCOMConnectionSetBase::Insert(IUnknown * p, int priority, DWORD * pCookie)
 
 BOOL cCOMConnectionSetBase::Remove(DWORD cookie)
     {
-    IUnknown * p = (IUnknown *) cookie;
-    for (index_t i = 0; i < m_Connections.Size(); i++)
+    std::unordered_map<DWORD, IUnknown *> &cookies = ConnectionCookies();
+    std::unordered_map<DWORD, IUnknown *>::iterator found = cookies.find(cookie);
+    if (found == cookies.end())
+        {
+        CriticalMsg("Unknown notification sink");
+        return FALSE;
+        }
+    IUnknown * p = found->second;
+    for (int i = 0; i < m_Connections.Size(); i++)
         {
         if (m_Connections[i].pSink == p)
             {
             m_Connections.DeleteItem(i);
+            cookies.erase(found);
             p->Release();
             return TRUE;
             }
@@ -114,10 +147,10 @@ IUnknown * cCOMConnectionSetBase::GetFirst(tConnSetHandle & hIndex)
 
 IUnknown * cCOMConnectionSetBase::GetNext(tConnSetHandle & hIndex)
     {
-    const index_t index = (index_t)hIndex + 1;
-    if (index < m_Connections.Size())
+    const index_t index = (index_t)(uintptr_t)hIndex + 1;
+    if (index < (index_t)m_Connections.Size())
         {
-        hIndex = (tConnSetHandle)index;
+        hIndex = (tConnSetHandle)(uintptr_t)index;
         return m_Connections[index].pSink;
         }
     return NULL;

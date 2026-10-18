@@ -84,7 +84,7 @@ static int pnpOwners[NUM_OWNED];
 static editBrush *alignPnP_br;
 static int        xoff, yoff, scale, texture;
 static fixang     rot;
-static TexInfo   *alignTexInf=(TexInfo *)0xffffffff; // @HACK: try and make sure first use has to refresh this
+static TexInfo   *alignTexInf=(TexInfo *)(intptr_t)-1; // @HACK: try and make sure first use has to refresh this
 static bool       _local_align=FALSE;
 
 // for now, this is our PnP Set
@@ -163,7 +163,7 @@ static void alignPnP_setvars(editBrush *br, bool update)
 //   need Update Gadget From World (false), Update World From Gadget (true), and Initialize
 static void sneaky_hideshow_refresh(void)
 {
-   alignTexInf=(TexInfo *)0xffffffff; // @HACK: try and make sure first use has to refresh this
+   alignTexInf=(TexInfo *)(intptr_t)-1; // @HACK: try and make sure first use has to refresh this
    rot=0;
    alignPnP_setvars(alignPnP_br,FALSE);
    PnP_FullRedraw(&alignPnP);
@@ -171,13 +171,13 @@ static void sneaky_hideshow_refresh(void)
 
 // the idea here is that this just makes sure the globals are right
 // then calls setvars, which deals with making the brush consistent with the globals
-static void alignPnP_IntFrob(PnP_SliderOp op, Rect *where, int val, int data)
+static void alignPnP_IntFrob(PnP_SliderOp op, Rect *where, int val, intptr_t data)
 {
    if (op == PnP_SliderUpdateOp)
       alignPnP_setvars(NULL,TRUE);
 }
 
-static void alignPnP_FixangFrob(PnP_SliderOp op, Rect *where, fixang val, int data)
+static void alignPnP_FixangFrob(PnP_SliderOp op, Rect *where, fixang val, intptr_t data)
 {
    if (op == PnP_SliderUpdateOp)
       alignPnP_setvars(NULL,TRUE);
@@ -243,7 +243,6 @@ static void alignPnP_Picture(int data)
             gr_clear(0);
       }
 }
-#pragma on(unreferenced)
 
 #define MIN_SCALE 8
 #define MAX_SCALE 24

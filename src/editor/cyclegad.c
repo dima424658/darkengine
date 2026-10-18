@@ -26,7 +26,7 @@
 void UpdateCycleGadg(CycleGadg* gadg,bool redraw)
 {
    bool is_f=FALSE;
-   char* f = gadg->desc.format_string;
+   const char* f = gadg->desc.format_string;
    char* buf = LGadTextBoxText(&gadg->text);
 
    TriggerCycleGadg(gadg,CYCLE_MAKE_ACTION(kCycleActionUpdate,redraw),kCycleCenterPart);
@@ -59,7 +59,7 @@ void UpdateCycleGadg(CycleGadg* gadg,bool redraw)
    if (redraw)
    {
       //      LGadTextBoxSetFlag(&gadg->text,TEXTBOX_EDIT_BRANDNEW);
-      LGadTextBoxSetCursor(&gadg->text,strlen(buf));
+      LGadTextBoxSetCursor(&gadg->text,(int)strlen(buf));
       LGadUnfocusTextBox(&gadg->text);
       LGadDrawBox(VB(gadg),NULL);
    }
@@ -69,7 +69,7 @@ static char format[3] = "%d";
 
 void read_text_buf(CycleGadg* gadg)
 {
-   char* f = gadg->desc.format_string;
+   const char* f = gadg->desc.format_string;
 //   char* format = "%d";
    char* buf = LGadTextBoxText(&gadg->text);
    char last = f[strlen(f)-1];
@@ -85,7 +85,7 @@ void read_text_buf(CycleGadg* gadg)
       delta = 1;
    if (delta)
    {
-      int i;
+      size_t i;
       // remove the bogus leading sign
       for (i=0; i < strlen(buf) - 1; i++)
          buf[i] = buf[i+1];
@@ -303,7 +303,7 @@ CycleGadg* CreateCycleGadg(CycleGadg* gadg, LGadRoot* root, CycleGadgDesc* desc)
 
    {
       LGadTextBoxDesc tdesc;
-      bool edit = desc->flags & CYCLE_EDIT_FLAG;
+   bool edit = !!(desc->flags & CYCLE_EDIT_FLAG);
 
       memset(&tdesc,0,sizeof(tdesc));
       tdesc.bounds = editarea; 
@@ -325,7 +325,7 @@ CycleGadg* CreateCycleGadg(CycleGadg* gadg, LGadRoot* root, CycleGadgDesc* desc)
          else
             LGadTextBoxSetFlag(&gadg->text,TEXTBOX_EDIT_EDITABLE|TEXTBOX_EDIT_BRANDNEW);
       }
-      LGadTextBoxSetCursor(&gadg->text,strlen(tdesc.editbuf));
+   LGadTextBoxSetCursor(&gadg->text,(int)strlen(tdesc.editbuf));
    }
    UpdateCycleGadg(gadg,FALSE);
 
@@ -373,7 +373,7 @@ static void string_cycle_reparse(CycleGadg* gadg)
    data->buf[sizeof(data->buf)-1] = '\0';
 }
 
-void RedescribeStringCycleGadg(CycleGadg* gadg, char** strings, int num)
+void RedescribeStringCycleGadg(CycleGadg* gadg, const char * const *strings, int num)
 {
    string_cycle_data* data = (string_cycle_data*)gadg->desc.user_data;
    StringCycleGadgDesc* sdesc = (StringCycleGadgDesc*)&data->sdesc;
@@ -544,7 +544,7 @@ void string_cycle_popup_menu(CycleGadg* gadg, Point pos, int item)
    {
       ElementClear(&elems[i]);
       elems[i].draw_type = DRAWTYPE_TEXT;
-      elems[i].draw_data = sdesc->strings[i]; 
+      elems[i].draw_data = (void *)sdesc->strings[i];
    }
 
    ElementSize(&elems[0],&ew,&eh);   

@@ -38,7 +38,7 @@
 #endif
 
 #include <stdio.h>
-#include <io.h>
+#include <platform_io.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -262,8 +262,8 @@ static int   _rpt_buff_size=0;
 
 static void _buffer_setup(void)
 {
-   if (((int)_rpt_buffer)|_rpt_buff_size)
-      Warning(("Report buffer already exists in setup %x %d\n",_rpt_buffer,_rpt_buff_size));
+   if (_rpt_buffer || _rpt_buff_size)
+      Warning(("Report buffer already exists in setup %p %d\n", (void *)_rpt_buffer, _rpt_buff_size));
    _rpt_buffer=NULL; _rpt_buff_size=0;
 }
 
@@ -278,7 +278,7 @@ static void _buffer_clear(void)
 
 static void _buffer_add_to(const char *new_txt)
 {
-   int added_len=strlen(new_txt);
+   int added_len=(int)strlen(new_txt);
    if (added_len==0) return;
    if (_rpt_buff_size==0)
       _rpt_buffer=(char *)malloc(added_len+1);
@@ -307,7 +307,7 @@ static void _buffer_output(sReportConfig *report)
       if (use_fname)
       {
          int fd;
-         fd=open(use_fname,O_BINARY|O_WRONLY|O_CREAT|O_TRUNC,S_IREAD|S_IWRITE);
+         fd=_open(use_fname,O_BINARY|O_WRONLY|O_CREAT|O_TRUNC,S_IREAD|S_IWRITE);
          if (fd==-1)
             Warning(("Couldnt Open %s to write\n",use_fname));
          else

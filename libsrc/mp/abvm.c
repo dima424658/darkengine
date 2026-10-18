@@ -23,7 +23,7 @@ bool abp_head_track(multiped * mp, mps_motion_info * m, int frame, quat * rot,
 	v1.z = 0;
 	mx_normeq_vec(&v1);
 	mx_unit_vec(&v2, 0);
-	yaw = acos(mx_dot_vec(&v1, &v2));
+	yaw = acosf(mx_dot_vec(&v1, &v2));
 	if (v1.y < 0)
 	{
 		yaw = -yaw;
@@ -34,7 +34,7 @@ bool abp_head_track(multiped * mp, mps_motion_info * m, int frame, quat * rot,
 	mx_copy_vec(&v2, &v1);
 	v2.z = 0;
 	mx_normeq_vec(&v2);
-	pitch = acos(mx_dot_vec(&v1, &v2));
+	pitch = acosf(mx_dot_vec(&v1, &v2));
 	if (v1.z > 0)
 	{
 		pitch = -pitch;

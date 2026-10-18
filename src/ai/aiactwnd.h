@@ -82,9 +82,9 @@ private:
    float          m_MinRadius;
    float          m_MaxRadius;
    cTagSet        m_PauseMotionTags;
-   unsigned       m_OddsMotion;
+   int            m_OddsMotion;
    cAITimer       m_Timer;
-   unsigned       m_OddsRecenter;
+   int            m_OddsRecenter;
    float          m_MinFrontClearance;
    BOOL           m_fLastWasCenter;
 

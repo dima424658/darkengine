@@ -38,9 +38,7 @@ class cOLPTable : public cHashTable<ObjID, BOOL, cHashTableFunctions<ObjID> >
 {
 };
 
-#if defined(_MSC_VER)
-template cHashTable<ObjID, BOOL, cHashTableFunctions<ObjID> >;
-#endif
+template class cHashTable<ObjID, BOOL, cHashTableFunctions<ObjID> >;
 
 ///////////////////////////////////////////////////////////////////////////////
 //

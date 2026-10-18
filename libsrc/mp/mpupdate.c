@@ -43,7 +43,7 @@ extern mps_rot_filter_callback mp_rot_filter_callback;
 quat mp_rot[4][MAX_JOINTS];
 static quat mp_net_rot[MAX_JOINTS];
 static mxs_vector net_xlat;
-ulong g_lAppUpdateFlags=NULL;
+ulong g_lAppUpdateFlags=0;
 
 //
 
@@ -145,7 +145,7 @@ uint mp_update(multiped * mp, float dt,ulong app_flags)
    // Then build and evaluate motion stacks.
    if (mp_update_list(mp, NULL, &mp->main_motion, dt, &result))
    {
-      mp_evaluate_motions(mp, &mp->main_motion, &mp_rot[0], &net_xlat);
+      mp_evaluate_motions(mp, &mp->main_motion, mp_rot[0], &net_xlat);
       any_active = TRUE;
    }
    else
@@ -161,7 +161,7 @@ uint mp_update(multiped * mp, float dt,ulong app_flags)
       {
          if (mp_update_list(mp, ov, &ov->list, dt, &result))
          {
-            mp_evaluate_motions(mp, &ov->list, &mp_rot[i+1], &dummy);
+            mp_evaluate_motions(mp, &ov->list, mp_rot[i+1], &dummy);
             any_active = TRUE;
 
             // Update overlay transitions.
@@ -292,7 +292,7 @@ uint mp_update(multiped * mp, float dt,ulong app_flags)
                else
                {
                   // transitioning out of overlay.
-                  quat_slerp(dst, &mp_rot[0][i], &mp_rot[*map][i], 1.0 - blend);
+                  quat_slerp(dst, &mp_rot[0][i], &mp_rot[*map][i], 1.0f - blend);
                }
             }
             else
@@ -314,7 +314,7 @@ uint mp_update(multiped * mp, float dt,ulong app_flags)
 
    mp_dump_joint_map(mp);
 
-   g_lAppUpdateFlags=NULL;
+   g_lAppUpdateFlags=0;
 
    return result;
 }
@@ -400,10 +400,10 @@ BOOL mp_update_list(multiped * mp, mps_overlay * ov, mps_motion_list * list, flo
                   {
                      actualFreq /= m->params.duration_scalar;
                   }
-                  mp_make_callbacks(mp, m, (m->frame-(float)m->callback_frame)/actualFreq,NULL);
+                  mp_make_callbacks(mp, m, (m->frame-(float)m->callback_frame)/actualFreq, 0);
                } else
                {
-                  mp_make_callbacks(mp, m, 0, NULL);
+                  mp_make_callbacks(mp, m, 0, 0);
                }
             }
             // See if motion is over.
@@ -442,10 +442,10 @@ BOOL mp_update_list(multiped * mp, mps_overlay * ov, mps_motion_list * list, flo
                         actualFreq /= m->params.duration_scalar;
                      }
 
-                     mp_make_callbacks(mp, m, (m->frame-(motion->info.num_frames-0.5))/actualFreq, NULL);
+                     mp_make_callbacks(mp, m, (m->frame-(motion->info.num_frames-0.5f))/actualFreq, 0);
                   } else
                   {
-                     mp_make_callbacks(mp, m, 0, NULL);
+                     mp_make_callbacks(mp, m, 0, 0);
                   }
                }
 
@@ -618,7 +618,6 @@ void mp_apply_motion(multiped * mp, quat * rot, mxs_vector * trans, int stop_joi
          mx_mat_muleq_vec(&m, &v1);
 
          mx_add_vec(&mp->joints[l->joint_id[j+1]], &mp->joints[l->joint_id[j]], &v1);
-
          if (l->joint_id[j] == stop_joint)
          {
             goto mp_finished;
@@ -652,7 +651,7 @@ mp_finished:
 
 bool mp_get_motion_data(multiped * mp, 
                         mps_motion * m, 
-                        int frame, 
+                        float frame,
                         quat * rot, 
                         mxs_vector * trans)
 {
@@ -682,7 +681,7 @@ bool mp_get_motion_data(multiped * mp,
          break;
 
       case MT_VIRTUAL:
-         result = m->virtual_update(mp, &m->info, frame, rot, trans);
+         result = m->virtual_update(mp, &m->info, (int)frame, rot, trans);
          if (!result)
          {
             Spew(MP_SRC, ("Virtual update returned false. Flagging motion\n"));

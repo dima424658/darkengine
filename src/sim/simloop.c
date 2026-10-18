@@ -51,7 +51,6 @@ typedef struct _StateRecord
 // Here's where we do the dirty work.
 //
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -91,7 +90,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function. 
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -101,7 +99,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
    
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 ///////////////
 // DESCRIPTOR
@@ -116,7 +113,7 @@ sLoopClientDesc SimLoopClientDesc =
    // @INSTRUCTIONS: Change your priority as necessary (see prikind.h)
    kPriorityNormal,                    // PRIORITY          
    // @INSTRUCTIONS: Change the set of messages you want to receive (see looptype.h)
-   kMsgEnd | kMsgsMode | kMsgsFrameMid,   // INTERESTS      
+   (ulong)kMsgEnd | kMsgsMode | kMsgsFrameMid,   // INTERESTS
 
    kLCF_Callback,
    _CreateClient,

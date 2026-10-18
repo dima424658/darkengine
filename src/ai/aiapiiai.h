@@ -642,7 +642,7 @@ inline float cAIState::PitchTo(const mxs_vector & toLoc) const
    float dzsq = (toLoc.z-loc.z)*(toLoc.z-loc.z);
    float theta;
 
-   theta = atan(sqrt(dzsq/dsq));
+   theta = atanf(sqrtf(dzsq/dsq));
    if ((toLoc.z-loc.z)>0)
       return -theta;
    else

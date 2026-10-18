@@ -28,6 +28,7 @@
 #define __NETMSG_H
 
 #include <stdarg.h>
+#include <stdint.h>
 #include <comtools.h>
 #include <objtype.h>
 #include <nettypes.h>
@@ -188,11 +189,39 @@ typedef enum eNetMsgFlags {
 // parameters specified. (Optionally ending with the pClientData passed
 // in at startup.)
 //
-typedef void *tMsgHandlerFunc;
+class tMsgHandlerFunc
+{
+public:
+   typedef void (*tErasedHandler)();
+
+   tMsgHandlerFunc() : m_handler(NULL) {}
+   tMsgHandlerFunc(decltype(nullptr)) : m_handler(NULL) {}
+
+   template <class Return, class... Args>
+   tMsgHandlerFunc(Return (*handler)(Args...))
+      : m_handler(reinterpret_cast<tErasedHandler>(handler))
+   {
+   }
+
+   explicit operator bool() const { return m_handler != NULL; }
+
+   template <class Handler>
+   Handler As() const
+   {
+      return reinterpret_cast<Handler>(m_handler);
+   }
+
+private:
+   tErasedHandler m_handler;
+};
 
 //
 // The full descriptor of what this message looks like
 //
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4200) // Variable-size parameter list follows header.
+#endif
 struct sNetMsgDesc {
    // The general behaviour of this message (mask from eNetMsgFlags)
    ulong behaviour;
@@ -208,9 +237,15 @@ struct sNetMsgDesc {
    // If pClientData was passed in when the message was created, then that
    // will be sent as the final parameter.
    tMsgHandlerFunc msgHandler;
-   // An array of parameters, ending with kNMPT_End
-   sNetMsgParam params[];
+   // An array of parameters, ending with kNMPT_End. Dispatch supports at
+   // most eight arguments; keeping one extra slot for the terminator avoids
+   // the non-standard initialized flexible array previously accepted by MSVC
+   // and GCC but rejected by Android Clang.
+   sNetMsgParam params[9];
 };
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 //////////
 //
@@ -322,7 +357,7 @@ protected:
 
    // Get a specific parameter. (Zero-based.) The caller is responsible
    // for casting the value appropriately.
-   DWORD GetParam(int index);
+   uintptr_t GetParam(int index);
 
    // Send the message off to an outside handler
    void SendToHandler();
@@ -350,7 +385,10 @@ protected:
 
    // The unmarshalled parameters. You will generally get at these through
    // GetParam.
-   DWORD *m_ppParams;
+   // Parameters can contain pointers as well as 32-bit wire values.  DWORD
+   // was sufficient for the original x86 build but truncates loopback and
+   // unmarshalled pointers in a native 64-bit process.
+   uintptr_t *m_ppParams;
 
    // TRUE iff we should always spew this particular message:
    BOOL m_bSpewMe;
@@ -417,7 +455,7 @@ private:
 
 //////////
 
-inline DWORD cNetMsg::GetParam(int index)
+inline uintptr_t cNetMsg::GetParam(int index)
 {
    return m_ppParams[index];
 }

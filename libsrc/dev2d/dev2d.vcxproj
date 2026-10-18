@@ -54,7 +54,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -154,53 +153,25 @@
   <ItemGroup>
     <None Include="cpp.hint" />
     <None Include="cseg.inc" />
-    <MASM Include="cstring.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <None Include="cstring.asm" />
     <None Include="dseg.inc" />
-    <MASM Include="f16f16c.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="f16f16l.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="f16fl8il.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="f16il.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="f16set.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <None Include="f16f16c.asm" />
+    <None Include="f16f16l.asm" />
+    <None Include="f16fl8il.asm" />
+    <None Include="f16il.asm" />
+    <None Include="f16set.asm" />
     <ClCompile Include="fl8cnv.c">
       <FileType>CppCode</FileType>
     </ClCompile>
     <None Include="grs.inc" />
-    <MASM Include="light.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="rsdblt.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="rsdblt16.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="rsdblt8.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="rsdunpck.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="vesaasm.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="vgaasm.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="vgasmod.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <None Include="light.asm" />
+    <None Include="rsdblt.asm" />
+    <None Include="rsdblt16.asm" />
+    <None Include="rsdblt8.asm" />
+    <None Include="rsdunpck.asm" />
+    <None Include="vesaasm.asm" />
+    <None Include="vgaasm.asm" />
+    <None Include="vgasmod.asm" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="astring.c" />
@@ -311,6 +282,7 @@
     <ClCompile Include="nulldfcn.c" />
     <ClCompile Include="pal.c" />
     <ClCompile Include="pal16.c" />
+    <ClCompile Include="portable.c" />
     <ClCompile Include="rsdcvt.c" />
     <ClCompile Include="screen.c" />
     <ClCompile Include="sfoc.c" />
@@ -321,9 +293,7 @@
     <ClCompile Include="valloc.c" />
     <ClCompile Include="vesac.c" />
     <ClCompile Include="vgadtab.c" />
-    <ClCompile Include="vgastate.c" />
     <ClCompile Include="vsadtab.c" />
-    <ClCompile Include="vsastate.c" />
     <ClCompile Include="w32dtab.c" />
   </ItemGroup>
   <ItemGroup>
@@ -407,6 +377,5 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

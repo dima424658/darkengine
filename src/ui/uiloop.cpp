@@ -153,14 +153,12 @@ static void visual_message(uiStateRecord* state, DispatchData* data)
 
 ////////////////////////////////////////
 
-#pragma off(unreferenced)
 static BOOL hotkey_handler(uiEvent* ev, Region* reg, void* data)
 {
    uiCookedKeyEvent* kev = (uiCookedKeyEvent*)ev;
    hotkey_dispatch(kev->code);
    return TRUE;
 }
-#pragma on(unreferenced)
 
 ////////////////////////////////////////
 //
@@ -198,6 +196,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          //      case kMsgResumeMode: 
 
       case kMsgResumeMode: 
+         UiJoyResume();
          // resize the root region, in case resolution changed
          // if I were cooler I'd check the current dims to see
          // whether we need to bother.
@@ -215,6 +214,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
       case kMsgExitMode:
       {
+         UiJoySuspend();
          uiSlab* slab; 
          uiGetCurrentSlab(&slab); 
          if (slab == state->root.root_slab)
@@ -229,6 +229,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
       break; 
 
       case kMsgSuspendMode:
+         UiJoySuspend();
          uiHideMouse(NULL);
          uiSetCurrentSlab(state->old_slab);
          uiShowMouse(NULL);
@@ -240,6 +241,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          break;
 
       case kMsgEnd:
+         UiJoyTerm();
          Free(state);
          break;
       case kMsgVisual:
@@ -249,7 +251,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
    return result;
 }
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    uiStateRecord* state;
@@ -259,7 +260,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
    
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 sLoopClientDesc uiLoopClientDesc =
 {

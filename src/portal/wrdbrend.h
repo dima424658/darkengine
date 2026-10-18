@@ -30,13 +30,13 @@ struct st_PortalPolygonRenderInfo
 {
    mxs_vector tex_u, tex_v;
    ushort u_base,v_base;    // SFIX u&v values at the anchor vertex
-   uchar texture_id;        // which texture to paint
+   ushort texture_id;       // which texture to paint (WREXT supports 16-bit ids)
    uchar texture_anchor;    // which vertex to anchor the texture to
    short cached_surface;
 
    mxs_real texture_mag;    // used in finding MIP level
    mxs_vector center;       // also used in finding MIP level
-};  // 48 bytes
+};  // 52 bytes; legacy WR uses an explicit 48-byte disk record
 
 struct st_PortalLightMap {
    short base_u, base_v; // these can be negative, they indicate top

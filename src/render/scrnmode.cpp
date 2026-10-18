@@ -13,6 +13,7 @@
 
 #include <scrnman.h>
 #include <scrnguid.h>
+#include <render_backend.h>
 
 #include <2d.h>
 
@@ -112,7 +113,7 @@ static sScrnMode none = { 0 };  // mode with no valid fields
 #define MIN_3D_BITDEPTH 16
 
 // squeeze the target within constraints
-void constrain(sScrnMode* target, const sScrnMode* mmin, const sScrnMode* mmax);
+static void constrain(sScrnMode* target, const sScrnMode* mmin, const sScrnMode* mmax);
 
 
 BOOL ScrnModeSet(const sScrnMode* mmin, const sScrnMode* prefer, const sScrnMode* mmax)
@@ -224,11 +225,10 @@ static void constrain(sScrnMode* target, const sScrnMode* mmin, const sScrnMode*
 }
 
 
-EXTERN BOOL g_no_dx6;
 EXTERN BOOL g_lgd3d;
 EXTERN int g_lgd3d_device_index;
 
-void dump_screen_mode(const sScrnMode* mode);
+static void dump_screen_mode(const sScrnMode* mode);
 
 //
 // Raw screen mode setter
@@ -239,6 +239,11 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
     AssertMsg((mode->valid_fields & kScrnModeAllValid) == kScrnModeAllValid,"ScrnSetModeRaw: Not all fields are valid");
 
     g_lgd3d = FALSE;
+    RenderBackendTrace(
+        "screen-mode requested=%dx%dx%d flags=0x%lx windowed=%d hardware=%d",
+        mode->w, mode->h, mode->bitdepth, mode->flags,
+        !!(mode->flags & kScrnModeWindowed),
+        !!(mode->flags & kScrnMode3dDriver));
 
 #ifdef PLAYTEST
     if (config_is_defined("screen_mode_spew"))
@@ -251,10 +256,15 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
     // First, figure out our display
     GUID *pDD;
     int flags = 0;
-    int kind = (mode->flags & kScrnMode2dDriver) ? kDispFullScreen : kDispDebug;
+    int kind;
+    if (mode->flags & kScrnModeWindowed)
+        kind = kDispWindowed;
+    else
+        kind = (mode->flags & kScrnMode2dDriver) ? kDispFullScreen : kDispDebug;
     int modeflags = 0;
 
-    if (kind == kDispFullScreen && (mode->flags & kScrnMode3dDriver))
+    if ((kind == kDispFullScreen || kind == kDispWindowed) &&
+        (mode->flags & kScrnMode3dDriver))
     {
 
         //zb:
@@ -266,7 +276,7 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
         {
 
 
-            int num_devices = g_no_dx6 ? 0 : lgd3d_enumerate_devices();
+            int num_devices = lgd3d_enumerate_devices();
 
             if( (num_devices > 0) && (lgd3d_get_device_info(0)->flags & LGD3DF_CAN_DO_WINDOWED) )
             {
@@ -295,7 +305,7 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
         {
 #endif
             // @TODO: modularize this out when it comes time for OpenGL or other 3d APIs
-            int num_devices = g_no_dx6 ? 0 : lgd3d_enumerate_devices();
+            int num_devices = lgd3d_enumerate_devices();
             if (num_devices > 0)
             {
                 int idx = num_devices - 1;
@@ -309,12 +319,18 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
                     }
                 }
 
-                flags = kDispAttemptFlippable|kDispAttempt3D;
-                pDD = lgd3d_get_device_info(idx)->p_ddraw_guid;
+                flags = kDispAttempt3D;
+                if (kind == kDispFullScreen)
+                {
+                    flags |= kDispAttemptFlippable;
+                    pDD = NULL;
+                }
+                else
+                    pDD = NULL;
 
 #ifndef SHIP
                 if (config_is_defined("d3d_driver_index"))
-                    mprintf("Using D3D device: %s\n", lgd3d_get_device_info(idx)->p_ddraw_desc);
+                    mprintf("Using renderer: %s\n", lgd3d_get_device_info(idx)->name);
 #endif
 
                 g_lgd3d_device_index = idx;
@@ -348,6 +364,8 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
         }
 #endif
 
+        RenderBackendTrace("screen-display kind=%d display-flags=0x%x lgd3d=%d",
+                         kind, flags, g_lgd3d);
         BOOL match = (ScrnSetDisplay(kind,flags,pDD) == 0);
 
         //
@@ -361,8 +379,6 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
 
         //if (match)
             //return TRUE;
-
-        ScrnClear();
 
         //
         // Now find and set the mode
@@ -437,17 +453,25 @@ sScrnMode* ScrnModeGetConfig(sScrnMode* targ, const char* prefix)
       targ->valid_fields |= kScrnModeFlagsValid;
 
    BOOL flag = 0;
+   int fullScreenSetting = -1;
 
    // get separate fullscreen bit
    sprintf(var,"%sfull_screen",prefix);
    if (config_get_int(var,&flag))
    {
+      fullScreenSetting = !!flag;
       targ->valid_fields |= kScrnModeFlagsValid;
 
       if (flag)
+      {
+         targ->flags &= ~kScrnModeWindowed;
          targ->flags |= kScrnModeFullScreen|kScrnMode2dDriver;
+      }
       else
-         targ->flags &= ~(kScrnModeFullScreen|kScrnMode2dDriver);
+      {
+         targ->flags &= ~kScrnModeFullScreen;
+         targ->flags |= kScrnModeWindowed|kScrnMode2dDriver;
+      }
    }
 
    // get separate 3d bit
@@ -457,9 +481,17 @@ sScrnMode* ScrnModeGetConfig(sScrnMode* targ, const char* prefix)
       targ->valid_fields |= kScrnModeFlagsValid;
 
       if (flag)
-         targ->flags |= kScrnModeFullScreen|kScrnMode2dDriver|kScrnMode3dDriver;
+         targ->flags |= kScrnMode2dDriver|kScrnMode3dDriver;
       else
          targ->flags &= ~(kScrnMode3dDriver);
+   }
+
+   // D3D11 supports hardware rendering in either windowed or fullscreen
+   // presentation. Preserve the separately selected display mode.
+   if (fullScreenSetting == 0)
+   {
+      targ->flags &= ~kScrnModeFullScreen;
+      targ->flags |= kScrnModeWindowed|kScrnMode2dDriver;
    }
 
    return targ;
@@ -505,10 +537,11 @@ void ScrnModeValidate(sScrnMode* targ)
          targ->flags &= ~kScrnMode3dDriver;
    }
 
-   // If you want 3d, you need 16 bit and 2d and fullscreen
+   // The legacy canvas remains 16-bit, but D3D11 works in both windowed and
+   // fullscreen presentation modes.
    if (VALID(targ,Flags) && (targ->flags & kScrnMode3dDriver))
    {
-      targ->flags |= kScrnMode2dDriver|kScrnModeFullScreen;
+      targ->flags |= kScrnMode2dDriver;
       if (VALID(targ,BitDepth))
       {
          if (targ->bitdepth < MIN_3D_BITDEPTH)

@@ -157,7 +157,7 @@ void cRadiusPropagator::GenerateOneEvent(tStimTimeStamp t, StimSourceID srcid, c
    ObjPos* senspos = ObjPosGet(sensobj); 
 
 
-   float distsq = (srcpos && senspos) ? mx_dist2_vec(&srcpos->loc.vec,&senspos->loc.vec) : 1.0;  
+   float distsq = (srcpos && senspos) ? mx_dist2_vec(&srcpos->loc.vec,&senspos->loc.vec) : 1.0f;
    float radsq = shape.radius*shape.radius; 
    if (distsq > radsq)
       return; 
@@ -177,7 +177,7 @@ void cRadiusPropagator::GenerateOneEvent(tStimTimeStamp t, StimSourceID srcid, c
          evdata.intensity = desc->level; 
          break; 
       case kDisperseLinear:
-         evdata.intensity = desc->level - desc->level*sqrt(distsq)/shape.radius; 
+         evdata.intensity = desc->level - desc->level * sqrtf(distsq) / shape.radius;
          break;
       case kDisperseInvSquare:
       {

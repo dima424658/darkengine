@@ -28,7 +28,7 @@
  *
 */
 
-#include <io.h>
+#include <platform_io.h>
 #include <string.h>
 
 #include <res.h>
@@ -49,9 +49,9 @@ typedef struct
 
 BlockedBuffCtrl bbc;
 
-void LzwBlockedBuffDestCtrl(long buff, LzwCtrl ctrl);
-void LzwBlockedBuffDestPut(uchar byte);
-void ResGrabInBlocks(int fd, void *buff, long blockSize, long totSize,
+static void LzwBlockedBuffDestCtrl(tLzwLocation buff, LzwCtrl ctrl);
+static void LzwBlockedBuffDestPut(uchar byte);
+static void ResGrabInBlocks(int fd, void *buff, long blockSize, long totSize,
                       long (*f_ProcBlock) (void *buff, long blockSize, long iblock));
 //  ---------------------------------------------------------
 //
@@ -136,7 +136,7 @@ void ResExtractInBlocks(Id id, void *buff, long blockSize,
       bbc.blockSize = blockSize;
       bbc.f_ProcBlock = f_ProcBlock;
       LzwExpand(LzwFdSrcE(fd), LzwBlockedBuffDestCtrl,
-                LzwBlockedBuffDestPut, (long) buff, 0, 0);
+                LzwBlockedBuffDestPut, (tLzwLocation) buff, 0, 0);
    }
    ResThreadUnlock();
 }
@@ -226,7 +226,7 @@ void RefExtractInBlocks(RefTable * prt, Ref ref, void *buff, long blockSize,
       bbc.blockSize = blockSize;
       bbc.f_ProcBlock = f_ProcBlock;
       LzwExpand(LzwFdSrcE(fd), LzwBlockedBuffDestCtrl,
-                LzwBlockedBuffDestPut, (long) buff, skipAmt, refSize);
+                LzwBlockedBuffDestPut, (tLzwLocation) buff, skipAmt, refSize);
    }
    ResThreadUnlock();
 }
@@ -236,9 +236,8 @@ void RefExtractInBlocks(RefTable * prt, Ref ref, void *buff, long blockSize,
 //
 //  LzwBlockedBuffDestCtrl() is control routine for blocked extract.
 
-#pragma off(unreferenced);
 
-static void LzwBlockedBuffDestCtrl(long buff, LzwCtrl ctrl)
+static void LzwBlockedBuffDestCtrl(tLzwLocation buff, LzwCtrl ctrl)
 {
    if (ctrl == BEGIN)
    {
@@ -250,7 +249,6 @@ static void LzwBlockedBuffDestCtrl(long buff, LzwCtrl ctrl)
       bbc.blockSize = (bbc.blockSize > bbc.totalSize) ? bbc.totalSize : bbc.blockSize;
    }
 }
-#pragma on(unreferenced);
 
 //  ---------------------------------------------------------------
 //

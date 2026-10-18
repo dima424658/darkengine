@@ -42,7 +42,7 @@ struct sFrobMsg : public sScrMsg
 
    sFrobMsg(ObjID src, ObjID dest, ObjID frobber, eFrobLoc srcLoc, eFrobLoc dstLoc, int ms, char *type, BOOL abort)
       : sScrMsg(src,type), SrcObjId(src), DstObjId(dest), Frobber(frobber),
-                           SrcLoc(srcLoc), DstLoc(dstLoc), Sec(ms/1000.0), Abort(abort)
+                           SrcLoc(srcLoc), DstLoc(dstLoc), Sec(ms/1000.0f), Abort(abort)
    {
    }
 

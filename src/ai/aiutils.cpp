@@ -44,7 +44,7 @@
 
 // #define kInterEps 0.0002
 
-float kInterEps = 0.0006;
+float kInterEps = 0.0006f;
 
 int GetXYIntersection(const mxs_vector & line1a, const mxs_vector & line1b,
                       const mxs_vector & line2a, const mxs_vector & line2b,
@@ -224,7 +224,7 @@ void SetObjImpulse(ObjID obj, float x, float y, float z, float facing, BOOL rota
    mxs_vector phys_heading;
    mxs_angvec phys_facing;
 
-   mx_mk_vec(&phys_heading, 7.5*x, 7.5*y, 7.5*z);
+   mx_mk_vec(&phys_heading, 7.5f*x, 7.5f*y, 7.5f*z);
 
    if (!rotating)
    {
@@ -245,7 +245,7 @@ void SetObjImpulse(ObjID obj, float x, float y, float z, float facing, BOOL rota
       // We might want to smooth rather than slam this
 #if 1
       PhysGetModRotation(obj, &phys_facing);
-      phys_facing.tz += (facing * MX_ANG_PI / MX_REAL_PI);
+   phys_facing.tz += (mxs_ang)(facing * MX_ANG_PI / MX_REAL_PI);
 
       PhysSetModRotation(obj, &phys_facing);
 #else
@@ -366,7 +366,7 @@ static void GetFloorLoc(ObjID objID, const mxs_vector * pAltLoc, mxs_vector * pL
    AIRaycast(&start, &end, &hit, kAIR_NoHintWarn);
 
    *pLoc = hit.vec;
-   pLoc->z += 0.1;
+   pLoc->z += 0.1f;
 }
 
 ///////////////////////////////////////
@@ -375,7 +375,9 @@ extern BOOL AIPathExactOBB(ObjID object); // clean up properly after ship T2 (to
 
 BOOL AIGetObjFloorBBox(ObjID object, tAIFloorBBox * pBBox, const mxs_vector * pAltLoc, const mxs_angvec * pAltFac)
 {
+#ifndef THIEF2_GAME
    AssertMsg(!IsSimTimePassing(), "Calling function too slow for sim time!");
+#endif
    
    const ObjPos * pPos;
    mxs_vector     boxMinMax[2];
@@ -412,9 +414,9 @@ BOOL AIGetObjFloorBBox(ObjID object, tAIFloorBBox * pBBox, const mxs_vector * pA
       // this should be investigated post T2
       if (!AIPathExactOBB(object))
       {
-         #define kBoxGrow 0.020
-         mx_scaleeq_vec(&boxMinMax[0], 1.0 + kBoxGrow / 2);
-         mx_scaleeq_vec(&boxMinMax[1], 1.0 + kBoxGrow / 2);
+         #define kBoxGrow 0.020f
+         mx_scaleeq_vec(&boxMinMax[0], 1.0f + kBoxGrow / 2);
+         mx_scaleeq_vec(&boxMinMax[1], 1.0f + kBoxGrow / 2);
       }
 
       float z = max(floorLoc.z, loc.z + boxMinMax[0].z);
@@ -463,9 +465,9 @@ const cDynArray<sAIDoorInfo> & AIGetDoors()
 
 static int DoorSearch(const void * pKey, const sAIDoorInfo * pRight)
 {
-   if (((ObjID)(pKey)) < pRight->obj)
+   if ((ObjID)(intptr_t)pKey < pRight->obj)
       return -1;
-   else if (((ObjID)(pKey)) > pRight->obj)
+   else if ((ObjID)(intptr_t)pKey > pRight->obj)
       return 1;
    else
       return 0;
@@ -474,7 +476,7 @@ static int DoorSearch(const void * pKey, const sAIDoorInfo * pRight)
 
 BOOL DoorIsBig(ObjID door)
 {
-   int nIndex = _g_Doors.BSearch((void *)door, DoorSearch);
+   int nIndex = _g_Doors.BSearch((void *)(intptr_t)door, DoorSearch);
    return (nIndex != BAD_INDEX) && (_g_Doors[nIndex].flags & kAIDF_LargeDoor);
 }
 
@@ -762,10 +764,10 @@ void CalcArc(mxs_vector* pDir, float initVelocity, float gravity)
    // Compensate for gravity
    if (gravity > 0)
    {
-      mxs_real slipallowed = 0.05;
+      mxs_real slipallowed = 0.05f;
       mxs_real initpz = pDir->z;
       //downward gravity in feet/second/second
-      mxs_real gravfactor = gravity * kGravityDir.z * kGravityAmt/100.0;
+      mxs_real gravfactor = gravity * kGravityDir.z * kGravityAmt/100.0f;
       //height lost to gravity
       mxs_real gravloss;
       mxs_real timetotarget;
@@ -783,7 +785,7 @@ void CalcArc(mxs_vector* pDir, float initVelocity, float gravity)
          //t = r/v
          timetotarget = range/initVelocity;
          // (0.5)at^2
-         gravloss = (0.5) * gravfactor * sq(timetotarget);  
+         gravloss = (0.5f) * gravfactor * sq(timetotarget);
       }
       //if we still didn't get it, use the previous CalcArc method
       if (loopbreak == 20)
@@ -794,21 +796,21 @@ void CalcArc(mxs_vector* pDir, float initVelocity, float gravity)
 
          pDir->z = initpz;
          range = mx_mag_vec(pDir);
-         arcsin_val = (gravity * kGravityDir.z * kGravityAmt * range / 100.0) / sq(initVelocity);      
+         arcsin_val = (gravity * kGravityDir.z * kGravityAmt * range / 100.0f) / sq(initVelocity);
          
          if (abs(arcsin_val) >= 1.0)         
-            angle = 3.1416 / 4;      
+            angle = 3.1416f / 4;
          else         
-            angle = asin(arcsin_val) / 2;
+            angle = asinf(arcsin_val) / 2;
 
-         z_comp = tan(angle) * range * 1.5;
+         z_comp = tanf(angle) * range * 1.5f;
       
          if (pDir->z < 0)
             z_comp *= 1 + (-pDir->z / 25);      
          else         
             z_comp /= 1 + (pDir->z / 15);
          
-         pDir->z += fabs(z_comp);
+         pDir->z += fabsf(z_comp);
       }
 
    }

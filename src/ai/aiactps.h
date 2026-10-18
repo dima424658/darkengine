@@ -105,14 +105,14 @@ inline void cAIPsdScrAction::SetLink(ObjID source, ObjID dest)
 
 inline BOOL cAIPsdScrAction::IsDone() const
 {
-   return (m_iCurrent >= m_actions.Size());
+   return (m_iCurrent >= (int)m_actions.Size());
 }
 
 ///////////////////////////////////////
 
 inline BOOL cAIPsdScrAction::IsLast() const
 {
-   return (m_iCurrent >= m_actions.Size() - 1);
+   return (m_iCurrent >= (int)m_actions.Size() - 1);
 }
 
 ///////////////////////////////////////

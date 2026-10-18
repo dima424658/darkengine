@@ -6,6 +6,7 @@
 // LookingGlass Technologies 1993
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <types.h>
 #include <stdarg.h>
@@ -233,7 +234,7 @@ int lg_vsprintf(char *buf, const char *format, va_list arglist)
                newchars=1;
                break;
             case 'b': // bool
-               arg_bool=!!va_arg(arglist,bool);
+               arg_bool=!!va_arg(arglist,int);
                if(altform) {
                   buf[dest_ind]=boolstring[arg_bool][0];
                   newchars=1;
@@ -263,7 +264,7 @@ string_copy:
                      strncpy(buf+dest_ind,arg_str,precis);
                   else
                      strcpy(buf+dest_ind,arg_str);
-                  newchars=strlen(arg_str);
+                  newchars=(int)strlen(arg_str);
                   if(pspec && precis<newchars) newchars=precis;
                }
                break;
@@ -283,9 +284,9 @@ string_copy:
 #endif
                {
                   arg_double=va_arg(arglist,double);
-						gcvt(arg_double,8,buf+dest_ind);
+						sprintf(buf+dest_ind, "%.8g", arg_double);
                }
-               newchars=strlen(buf+dest_ind);
+               newchars=(int)strlen(buf+dest_ind);
                break;
             case 'Q':
             case 'q':

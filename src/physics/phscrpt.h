@@ -69,6 +69,11 @@ DECLARE_SCRIPT_SERVICE(Physics, 0x141)
    STDMETHOD(Activate)(const object obj) PURE;
 
    STDMETHOD_(BOOL, ValidPos)(const object obj) PURE;
+
+   // NewDark additions, appended to preserve the legacy service vtable.
+   STDMETHOD_(BOOL, IsRope)(const object obj) PURE;
+   STDMETHOD_(void, GetClimbingObject)(const object climber,
+                                       object &climbobj) PURE;
 };
 
 

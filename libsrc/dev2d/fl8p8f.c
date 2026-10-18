@@ -16,10 +16,13 @@
 #include <fl8pix.h>
 
 void (*flat8_upix8_func[FILL_TYPES])() =
+{ 0 };
+
+void init_flat8_upix8_func(void)
 {
-	[FILL_NORM] =	flat8_norm_upix8,
-	[FILL_XOR] =	flat8_xor_upix8,
-	[FILL_BLEND] =	flat8_tluc_upix8,
-	[FILL_CLUT] =	flat8_clut_upix8,
-	[FILL_SOLID] =	flat8_solid_upix8,
-};
+	flat8_upix8_func[FILL_NORM] = flat8_norm_upix8;
+	flat8_upix8_func[FILL_XOR] = flat8_xor_upix8;
+	flat8_upix8_func[FILL_BLEND] = flat8_tluc_upix8;
+	flat8_upix8_func[FILL_CLUT] = flat8_clut_upix8;
+	flat8_upix8_func[FILL_SOLID] = flat8_solid_upix8;
+}

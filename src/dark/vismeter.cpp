@@ -30,7 +30,7 @@ struct sVisMeterState
 {
    invRendState* rend; 
    int last_val; 
-   int last_time; 
+   ulong last_time;
 };
 
 static sVisMeterState gState = { NULL, 0, 0, }; 
@@ -44,7 +44,7 @@ static sVisMeterState gState = { NULL, 0, 0, };
 #define NUM_MODELS 16
 
 static int  vismeter_md_idxs[NUM_MODELS];
-static uint vismeter_cutoffs[NUM_MODELS];
+static int  vismeter_cutoffs[NUM_MODELS];
 static int  vismeter_refresh = 50; 
 static int  vismeter_frame_skip = 2; 
 
@@ -72,7 +72,7 @@ void VisMeterEnterMode()
 
    int zoom = 100; 
    config_get_int("vismeter_zoom",&zoom);
-   view.cam_dist *= 1.0*zoom/100; 
+   view.cam_dist *= (float)zoom / 100.0f;
    
    int ang[3] = { 0, 0, 0};
    int angcnt = 3;
@@ -173,8 +173,13 @@ static void recompute()
 
    ConfigSpew("vis_meter_spew",("Player vis level at %d, using model %d on the way to %d\n",level,gState.last_val,i)); 
 
-   sInvRenderType type = { kInvRenderModel }; 
-   sprintf(type.resource.text,VISMETER_MODELNAME,NUM_MODELS-gState.last_val); 
+   sInvRenderType type = { kInvRenderModel };
+   int model = NUM_MODELS-gState.last_val;
+   if (model < 1)
+      model = 1;
+   else if (model > NUM_MODELS)
+      model = NUM_MODELS;
+   snprintf(type.resource.text,sizeof(type.resource.text),VISMETER_MODELNAME,model);
    invRendSetType(gState.rend,&type); 
 }
 
@@ -183,7 +188,7 @@ void VisMeterUpdate(ulong time, const Rect* r)
    if (!PlayerObjectExists())
       return;
 
-   if (time - gState.last_time > vismeter_refresh  || gState.last_val == -1)
+   if (time - gState.last_time > (ulong)vismeter_refresh || gState.last_val == -1)
    {
       recompute(); 
       gState.last_time = time; 

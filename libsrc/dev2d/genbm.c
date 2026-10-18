@@ -17,7 +17,7 @@
 void gen_opaque_solid_ubitmap(grs_bitmap *bm, int x, int y)
 {
    int fc_save=gr_get_fcolor();
-   gr_set_fcolor(gr_get_fill_parm());
+   gr_set_fcolor((long)gr_get_fill_parm());
    gd_urect(x, y, x+bm->w, y+bm->h);
    gr_set_fcolor(fc_save);
 }

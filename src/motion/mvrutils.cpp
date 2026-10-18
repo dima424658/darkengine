@@ -71,7 +71,7 @@ EXTERN mxs_ang MvrGetHeadingAngle(mxs_vector *v)
 {
    mxs_ang angle;
 
-   angle=mx_rad2ang(acos(v->x));
+   angle=mx_rad2ang(acosf(v->x));
    if(angle>0)
    {
       if(v->y<0) // -pi/2 < actual angle < 0
@@ -136,7 +136,7 @@ BOOL MvrFindGroundHeight(ObjID obj, Location *loc, mxs_real *pHeight, ObjID *pGr
    ObjID    hitObj;
    BOOL     retval = TRUE;
 
-   MakeLocation(&toLoc, loc->vec.x, loc->vec.y, loc->vec.z - 100.0);
+   MakeLocation(&toLoc, loc->vec.x, loc->vec.y, loc->vec.z - 100.0f);
 
    PhysRaycastSetObjlist(standableObjectList, standableObjectList.Size());
 
@@ -330,8 +330,8 @@ BOOL MvrGetEndButtHeight(const IMotor *pMotor, int motionNum, float *pHeight)
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-#define NUDGE_FAC 0.001
-#define MAX_Z_NUDGE 0.1
+#define NUDGE_FAC 0.001f
+#define MAX_Z_NUDGE 0.1f
 
 // assume that first vector on ovel is main phys model.  nvel gets set to 
 // what new velocity for this model should be.
@@ -368,7 +368,7 @@ const mxs_vector *ovel, mxs_vector *nvel, ulong flags)
    // this is slow but hopefully infrequent
    // set new facing
    if(len>0.1)
-      mx_scaleeq_vec(&newdir,1.0/len);
+      mx_scaleeq_vec(&newdir,1.0f/len);
    else
       mx_zero_vec(&newdir);
 

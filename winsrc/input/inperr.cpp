@@ -1,6 +1,7 @@
 // $Header: x:/prj/tech/winsrc/input/RCS/inperr.cpp 1.1 1997/10/06 20:43:38 JON Exp $
 // DirectInput error spew
 
+#include <win32_platform.h>
 #include <dinput.h>
 #include <dbg.h>
 

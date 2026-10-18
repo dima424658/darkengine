@@ -1,6 +1,8 @@
 // $Header: r:/t2repos/thief2/src/sound/appsfx.cpp,v 1.127 2000/03/24 22:57:27 adurant Exp $
 // remedial sound system for DromEd/Dark/AIR/So on
 
+#include <string.h>
+
 #include <dynarray.h>
 #include <math.h>
 #include <arqapi.h>
@@ -107,15 +109,15 @@ static _sfx          fxlist[SFX_MAX_COUNT];
 static ISndMixer*    pSndMixer                  = NULL;
 static sfx_parm      def_parms                  = {0,0,0,0,0,-1,0,0,0,-1,NULL,NULL};
 static float         attenuation_factor         = 55;
-static float         pan_factor                 = 0.4;
+static float         pan_factor                 = 0.4f;
 static eSnd3DMethod  sfx3DMethod                = kSnd3DMethodSoftware;
 static int           max_simul_hardware_3d_snds = 0;  // @TODO: pick which ones we use less idiotically
 static BOOL          in_kill;
 static BOOL          sfxCheckChannels           = TRUE;
 static int           sgLastVolumeSetting        = 0; // So we can restore volume between close and init.
 static int           sgLastRoomType;
-static float         sgSourceReverbMix          = 0.6;
-static float         sgGainScale                = 1.0;
+static float         sgSourceReverbMix          = 0.6f;
+static float         sgGainScale                = 1.0f;
 static int           sgMixerTimeout             = -1;
 static BOOL          rev_stereo                 = FALSE;
 static char          dummy_sound[64]            = {'\0',};
@@ -168,7 +170,7 @@ uchar base_flags[3][3]=
 #define set_flags(fx,which,app) \
     (fx->flags=base_flags[which][fx->type]|(app&SFXFLG_APP_MASK))
  
-BOOL _sfx_priority_callback( ISndMixer    *pMixer,
+static BOOL _sfx_priority_callback( ISndMixer    *pMixer,
                              ISndSample   *pSample,
                              void         *pCBData );
 
@@ -180,7 +182,10 @@ void DbgCheckInUseChannels(void);  // check to make sure we are all cleaned up
 
 ISearchPath *pSoundPath = 0;
 
-static int  g_SFX_Device = SFXDEVICE_Software;
+// Positional audio is the modern default.  The legacy A3D device value is
+// retained in configuration files, but now means provider-backed 3D audio;
+// it no longer requests a physical sound-card buffer.
+static int  g_SFX_Device = SFXDEVICE_A3D;
 
 ///////////////////////////////////////
 // have some horror
@@ -195,7 +200,7 @@ static int sfx_time_index=0;
 #define IDEAL_MIN_FRAME_RATE    (16)
 #define IDEAL_MIN_FRAME_MS    (1000/IDEAL_MIN_FRAME_RATE)
 #define DYNAMIC_MODIFIER(fr)    ((IDEAL_MIN_FRAME_RATE-fr)/4)  // 0 - 3 channels 
-#endif DYNAMIC_CHANNELS
+#endif // DYNAMIC_CHANNELS
 
 ///////////////////////////////////////
 // startup/shutdown
@@ -319,7 +324,8 @@ BOOL SFXInit(void)
    int mixer_rate=22050;
    BOOL createOk;
    sSndEnvironment snd3DEnv;
-   char methodName[256];
+   char methodName[256] = {};
+   char backendName[32] = "auto";
 
    if (pSndMixer)
       return TRUE;
@@ -391,13 +397,10 @@ BOOL SFXInit(void)
    // pick 3D sound method - default is dark's built-in pan/vol
    //
    config_get_raw( "snd3d", methodName, sizeof(methodName) );
+   config_get_raw( "sfx_backend", backendName, sizeof(backendName) );
+   backendName[sizeof(backendName) - 1] = '\0';
    if ( ! strcmpi(methodName, "a3d") )
       g_SFX_Device = SFXDEVICE_A3D;
-
-#ifdef USE_QSOUND
-   else if ( ! strcmpi(methodName, "qmixer") )
-      g_SFX_Device = SFXDEVICE_QMIXER;
-#endif
 
    createOk = FALSE;
 
@@ -406,7 +409,7 @@ BOOL SFXInit(void)
       case SFXDEVICE_Software:
       {
          sfx3DMethod = kSnd3DMethodNone;
-         createOk = SndCreateMixer(&pSndMixer,NULL);
+         createOk = SndCreateMixerNamed(&pSndMixer, NULL, backendName);
          use2DHWmod = FALSE;
          use3DHWmod = FALSE;
          break;
@@ -414,11 +417,8 @@ BOOL SFXInit(void)
 
       case SFXDEVICE_A3D:
       {
-         sfx3DMethod = kSnd3DMethodHardware;
-         // this really just means "use 3d audio HW acceleration", not just
-         //   A3d devices
-         //createOk = SndCreateA3DMixer(&pSndMixer,NULL);
-         createOk = SndCreateMixer(&pSndMixer,NULL);
+         sfx3DMethod = kSnd3DMethodSoftware;
+         createOk = SndCreateMixerNamed(&pSndMixer, NULL, backendName);
          // factor in volume offsets which are used to balance volumes
          //  when hardware acceleration is enabled
          // Don't factor in these offsets.  Just tell the vol get to do it.
@@ -430,16 +430,17 @@ BOOL SFXInit(void)
          break;
       }
 
-#ifdef USE_QSOUND
-      case SFXDEVICE_QMIXER:
+      case SFXDEVICE_OBSOLETE_QSOUND:
       {
-         sfx3DMethod = kSnd3DMethodSoftware;
-         createOk = SndCreateQSMixer(&pSndMixer, NULL);
+         // Preserve old configuration files without retaining the dormant
+         // third-party QSound mixer.
+         g_SFX_Device = SFXDEVICE_Software;
+         sfx3DMethod = kSnd3DMethodNone;
+         createOk = SndCreateMixerNamed(&pSndMixer, NULL, backendName);
          use2DHWmod = FALSE;
          use3DHWmod = FALSE;
          break;
       }
-#endif
 
       default:
       {
@@ -450,7 +451,26 @@ BOOL SFXInit(void)
       }
    }
 
-   if ( createOk ) {
+   BOOL initialized = FALSE;
+   if (createOk) {
+      pSndMixer->Set3DMethod(sfx3DMethod);
+      initialized = pSndMixer->Init(NULL, sfx_use_channels + SFX_BONUSCHANNELS,
+                                    &attribs) == kSndOk;
+   }
+
+   // "auto" means the native provider first, then the portable provider if
+   // the native device cannot be initialized. OpenAL remains opt-in on a
+   // healthy Windows system and is loaded only at runtime.
+   if (!initialized && !strcmpi(backendName, "auto")) {
+      SafeRelease(pSndMixer);
+      if (SndCreateMixerNamed(&pSndMixer, NULL, "openal")) {
+         pSndMixer->Set3DMethod(sfx3DMethod);
+         initialized = pSndMixer->Init(NULL,
+            sfx_use_channels + SFX_BONUSCHANNELS, &attribs) == kSndOk;
+      }
+   }
+
+   if (initialized) {
       TIMELOG_INIT( 16384 );
       if (sgMixerTimeout != -1)
       {
@@ -463,9 +483,6 @@ BOOL SFXInit(void)
       SongEd_Init();
 #endif
 
-      pSndMixer->Set3DMethod(  sfx3DMethod );
-      if (pSndMixer->Init(NULL,sfx_use_channels + SFX_BONUSCHANNELS,&attribs)==kSndOk)
-      {
 #ifndef SHIP
          // Set config var to make sure mixer initializes to expected format.
          if (sgSpewMixerAttribs)
@@ -503,7 +520,7 @@ BOOL SFXInit(void)
             snd3DEnv.dopplerFactor = 1.0;
 
             // The sound library does meters, dark does feet
-            snd3DEnv.distanceFactor = 0.3048;
+            snd3DEnv.distanceFactor = 0.3048f;
 
             // We do our own attenuation for consistency between hw and sw.
             snd3DEnv.rolloffFactor = 0.0;
@@ -511,12 +528,11 @@ BOOL SFXInit(void)
             config_get_float( "snd3d_rolloff", &(snd3DEnv.rolloffFactor) );
             pSndMixer->Set3DEnvironment(  &snd3DEnv );
          }
-         return TRUE;      // seems to have worked
-      }
+      return TRUE;
    }
-   pSndMixer=NULL;
+   SafeRelease(pSndMixer);
    SFXClose();
-   Warning(("Sound failed to correctly init\n"));
+   mprintf("Sound initialization failed; continuing with audio disabled\n");
    return FALSE;
 }
 
@@ -720,11 +736,9 @@ static void _sfx_end_callback(ISndSample *pSample, void *pCBD)
 static void _sfx_loop_callback(ISndSource *pSndSource, uint32 *pCBD)
 {
    _sfx *fx;
-   long *pTmp;
 
    // skip first param (arg count), next param is sfx ptr
-   pTmp = (long *) pCBD;
-   fx = (_sfx *) pTmp[1];
+   memcpy(&fx, pCBD + 1, sizeof(fx));
 
    if (fx && fx->parm.loop_callback)
       fx->parm.loop_callback(fx->ID, fx->parm.user_data);
@@ -870,10 +884,11 @@ static bool _sfx_start_play(_sfx *fx, BOOL after_delay)
          if ( (fx->flags & SFXFLG_POS) && (sfx3DMethod != kSnd3DMethodNone) )
          {  // if we want 3D, make sure we arent using too many hardware channels
             eSnd3DMethod useMethod=sfx3DMethod;
-            if (sfx3DMethod==kSnd3DMethodHardware)
+            if (sfx3DMethod == kSnd3DMethodSoftware ||
+                sfx3DMethod == kSnd3DMethodHardware)
             {
-               long HW3dcnt=1;
-               if (sfxCheckChannels)
+               int32 HW3dcnt = 1;
+               if (sfx3DMethod == kSnd3DMethodHardware && sfxCheckChannels)
                   pSndMixer->FreeHWChannelCount(NULL, &HW3dcnt);
                if (HW3dcnt>0 &&
                    ( (max_simul_hardware_3d_snds==0) ||
@@ -900,7 +915,7 @@ static bool _sfx_start_play(_sfx *fx, BOOL after_delay)
          _sfx_update(fx,TRUE,tm_get_millisec_unrecorded());
          fx->flags |= SFXFLG_HAPPY;
          // give sample back ptr to us so it can clear happy if play fails
-         fx->pSnd->SetData((long) fx );
+         fx->pSnd->SetData((intptr_t)fx);
          fx->pSnd->SetGroup((uint32) fx->parm.group);
          fx->pSnd->Play();
 
@@ -952,7 +967,7 @@ static bool _sfx_start_play(_sfx *fx, BOOL after_delay)
 
 int SFX_Attenuate(int master_gain, int dist)
 {
-   return master_gain - (dist * attenuation_factor);
+   return (int)(master_gain - (dist * attenuation_factor));
 }
 
 int SFX_MaxDist(int gain)
@@ -1058,7 +1073,7 @@ static BOOL _sfx_update(_sfx *fx, BOOL init, ulong cur_time)
       if (fx->flags&SFXFLG_POS)
       {
          // Calculate gain.  Now same for both hardware and software.
-         float dist = fx->distance;
+         float dist = (float)fx->distance;
          int gain;
 
          if (dist < 0) {
@@ -1090,7 +1105,7 @@ static BOOL _sfx_update(_sfx *fx, BOOL init, ulong cur_time)
 
                // determine how directly facing the sound we are
                headon = mx_dot_vec(&delta, &locframe.vec[1]);
-               headon_abs = fabs(headon) * pan_factor;
+               headon_abs = fabsf(headon) * pan_factor;
                pan = ((int)(10000 - 10000 * cos(1.570796 * headon_abs)));
 
                // reverse if on other side
@@ -1157,25 +1172,24 @@ static BOOL _sfx_update(_sfx *fx, BOOL init, ulong cur_time)
       if (fx->pSnd->Get3DMethod() == kSnd3DMethodNone )
          fx->pSnd->SetPan(fx->parm.pan);
 
-      if ( (fx->flags & SFXFLG_POS) && (sfx3DMethod == kSnd3DMethodHardware) && pSndMixer->Have3DOcclusion() ) {
+      if ((fx->flags & SFXFLG_POS) && pSndMixer->Have3DOcclusion()) {
          // set the occlusion here
          long occlusionLevel;
          float modBF;   // modified blocking factor
-         static float bfBreakOut = 0.6;
+         const float bfBreakIn = 0.9f;
+         const float bfBreakOut = 0.5f;
 
          // do a simple two-piece linear mapping
          //  I do this because sounds become silent well before attenuation reaches kSndMinVolume
          //  0 ... BF_BREAK_IN ... 1    ->   0 ... bfBreakOut ... 1
-#define BF_BREAK_IN  0.9
-#define bfBreakOut  0.5
          modBF = fx->parm.blocking_factor;
-         if ( modBF < BF_BREAK_IN ) {
-            modBF *= (bfBreakOut / BF_BREAK_IN);
+         if ( modBF < bfBreakIn ) {
+            modBF *= (bfBreakOut / bfBreakIn);
          } else {
-            modBF = bfBreakOut + ( ((modBF - BF_BREAK_IN) / (1.0 - BF_BREAK_IN))
-                                       *  (1.0 - bfBreakOut) );
+            modBF = bfBreakOut + (((modBF - bfBreakIn) / (1.0f - bfBreakIn))
+                                  * (1.0f - bfBreakOut));
          }
-         occlusionLevel = modBF * (kSndMinVolume - net_gain);
+         occlusionLevel = (long)(modBF * (kSndMinVolume - net_gain));
          fx->pSnd->Set3DOcclusion( occlusionLevel );
       }
       return TRUE;
@@ -1318,7 +1332,11 @@ static void FinishAsynchOps(void)
    int i, start_time=tm_get_millisec_unrecorded();
    
    AutoAppIPtr(AsyncReadQueue);
-   pAsyncReadQueue->FulfillAll();
+   // The reconstructed ARQ component is currently a synchronous stub and
+   // does not publish IAsyncReadQueue. Resource loading already falls back
+   // to synchronous reads, so there is no queue to drain in that case.
+   if (!!pAsyncReadQueue)
+      pAsyncReadQueue->FulfillAll();
    
    for (i=0; i<SFX_MAX_COUNT; i++)
       if (fxlist[i].type!=SFX_NONE)
@@ -1434,7 +1452,17 @@ BOOL SFX_StereoReversed()
 
 void SFX_Slam_Dist(int hnd, int distance, BOOL force_update)
 {
-   AssertMsg(fxlist[hnd].distance >= 0, "Attempt to distance override on absolute sample");
+   if (distance < 0)
+   {
+      AssertMsg3(FALSE, "Attempt to set negative distance %d on sample %s (handle %d)",
+                 distance, fxlist[hnd].name ? fxlist[hnd].name : "(unnamed)", hnd);
+      return;
+   }
+
+   AssertMsg4(fxlist[hnd].distance >= 0,
+              "Attempt to override distance on sample %s (handle %d): stored %d, requested %d",
+              fxlist[hnd].name ? fxlist[hnd].name : "(unnamed)", hnd,
+              fxlist[hnd].distance, distance);
    fxlist[hnd].distance = distance;
    fxlist[hnd].parm.blocking_factor = 0.0;
 
@@ -1446,7 +1474,17 @@ void SFX_Slam_Dist(int hnd, int distance, BOOL force_update)
 
 void SFX_Slam_Dist_BF(int hnd, int distance, mxs_real blocking_factor, BOOL force_update)
 {
-   AssertMsg(fxlist[hnd].distance >= 0, "Attempt to distance override on absolute sample");
+   if (distance < 0)
+   {
+      AssertMsg3(FALSE, "Attempt to set negative distance %d on sample %s (handle %d)",
+                 distance, fxlist[hnd].name ? fxlist[hnd].name : "(unnamed)", hnd);
+      return;
+   }
+
+   AssertMsg4(fxlist[hnd].distance >= 0,
+              "Attempt to override distance on sample %s (handle %d): stored %d, requested %d",
+              fxlist[hnd].name ? fxlist[hnd].name : "(unnamed)", hnd,
+              fxlist[hnd].distance, distance);
    fxlist[hnd].distance = distance;
    fxlist[hnd].parm.blocking_factor = blocking_factor;
 
@@ -1690,7 +1728,7 @@ _sfx_priority_callback( ISndMixer    *pMixer,
 {
    _sfx  *pSFX;
 
-   pSFX = (_sfx *) pSample->GetData();
+   pSFX = (_sfx *)pSample->GetData();
    // signal that this sample couldn't be played
    pSFX->flags &= ~SFXFLG_HAPPY;
 
@@ -1761,7 +1799,7 @@ BOOL SFX_Use_Occlusion( int sfxHandle )
    _sfx *pSFX = &(fxlist[sfxHandle]);
 
    if ( (pSndMixer != NULL) && (pSFX != NULL) ) {
-      return (pSFX->flags & SFXFLG_POS) && (sfx3DMethod == kSnd3DMethodHardware) && pSndMixer->Have3DOcclusion();
+      return (pSFX->flags & SFXFLG_POS) && pSndMixer->Have3DOcclusion();
    }
 
    return FALSE;

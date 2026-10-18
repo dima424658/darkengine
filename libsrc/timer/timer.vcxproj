@@ -162,7 +162,7 @@
     <ClCompile Include="tmftab.c" />
     <ClCompile Include="tmlibt.c" />
     <ClCompile Include="tmrt.c" />
-    <ClCompile Include="tmwin32.c" />
+    <ClCompile Include="..\..\winsrc\timer\tmwin32.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="tmd.inc" />

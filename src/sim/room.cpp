@@ -241,7 +241,7 @@ BOOL cRoom::LineIntersect(const mxs_vector &from, const mxs_vector &to) const
       if ((from_dist < ON_PLANE_EPSILON) && (to_dist < ON_PLANE_EPSILON))
          continue;
 
-      loc = fabs(from_dist / (from_dist - to_dist));
+      loc = fabsf(from_dist / (from_dist - to_dist));
 
       if (from_dist > 0)
       {

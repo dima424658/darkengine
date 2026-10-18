@@ -22,23 +22,23 @@ typedef struct {
       type old_val;                                   \
       float scale;                                    \
       float extra;                                    \
-   } ##type##Slider;                                  \
-   EXTERN void *VSlider##type##Build(##type##Slider *s)
+   } type##Slider;                                    \
+   EXTERN void *VSlider##type##Build(type##Slider *s)
 
 // these really are only for use by the actual vslider thing itself
 #ifdef __VSLIDER_C
 #define GenerateVSliderBuild(type)                    \
-   void *VSlider##type##Build(##type##Slider *s)      \
+   void *VSlider##type##Build(type##Slider *s)        \
    {                                                  \
       s->parse=VSlider##type##Parse;                  \
-      s->scale=1.0;                                   \
-      s->extra=0.0;                                   \
+      s->scale=1.0f;                                  \
+      s->extra=0.0f;                                  \
       return s;                                       \
    }
 
 
 #define GenerateVSliderParse(type)                    \
-   bool VSlider##type##Parse(float delta, ##type##Slider *s, int action) \
+   bool VSlider##type##Parse(float delta, type##Slider *s, int action) \
    {                                                  \
       switch (action)                                 \
       {                                               \
@@ -52,16 +52,16 @@ typedef struct {
             if (s->lo==s->hi)    /* infinite range */ \
             {                                         \
                coeff = s->scale;                      \
-               *s->val+=delta*coeff + s->extra;       \
+               *s->val = (type)(*s->val + delta * coeff + s->extra); \
             }                                         \
             else                /* standard slider */ \
             {      /* 1/20 of range is sens 1 full */ \
-               coeff = 0.1*(s->hi-s->lo)*s->scale;    \
-               *s->val+=delta*coeff + s->extra;       \
-               if (*s->val<s->lo) *s->val=s->lo, coeff = 0.0;      \
-               else if (*s->val>s->hi) *s->val=s->hi, coeff = 0.0; \
+               coeff = 0.1f*(s->hi-s->lo)*s->scale;   \
+               *s->val = (type)(*s->val + delta * coeff + s->extra); \
+               if (*s->val<s->lo) *s->val=s->lo, coeff = 0.0f;      \
+               else if (*s->val>s->hi) *s->val=s->hi, coeff = 0.0f; \
             }                                         \
-            if (coeff == 0.0) s->extra = 0.0;          \
+            if (coeff == 0.0f) s->extra = 0.0f;        \
             else s->extra = delta*coeff + s->extra - (float)(*s->val - old); \
             return *s->val!=old;                      \
          }                                            \

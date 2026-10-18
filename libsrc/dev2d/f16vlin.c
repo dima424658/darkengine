@@ -21,13 +21,13 @@ void flat16_uvline_fill(ushort c16, int x, int y, int y1)
 
 void flat16_norm_uvline(int x, int y, int y1)
 {
-   ushort c = grd_gc.fcolor;
+   ushort c = (ushort)grd_gc.fcolor;
    flat16_uvline_fill(c, x, y, y1);
 }
 
 void flat16_clut_uvline(int x, int y, int y1)
 {
-   ushort c16 = grd_gc.fcolor;
+   ushort c16 = (ushort)grd_gc.fcolor;
    ushort *clut16 = (ushort *)grd_gc.fill_parm;
 
    c16 = clut16[c16&255] + clut16[256+(c16>>8)];
@@ -36,14 +36,14 @@ void flat16_clut_uvline(int x, int y, int y1)
 
 void flat16_solid_uvline(int x, int y, int y1)
 {
-   ushort c = grd_gc.fill_parm;
+   ushort c = (ushort)grd_gc.fill_parm;
    flat16_uvline_fill(c, x, y, y1);
 }
 
 void flat16_xor_uvline(int x, int y, int y1)
 {
    ushort *p;
-   ushort c16 = grd_gc.fcolor;
+   ushort c16 = (ushort)grd_gc.fcolor;
    int i, row;
 
    if (y1<y)
@@ -63,7 +63,7 @@ void flat16_tluc_uvline(int x, int y, int y1)
    ushort c16;
    ushort *clut16;
 
-   c16 = grd_gc.fcolor;
+   c16 = (ushort)grd_gc.fcolor;
    if (c16 <= 255) {
       clut16 = (ushort *)tluc8tab[c16];
       if (clut16!=NULL) {

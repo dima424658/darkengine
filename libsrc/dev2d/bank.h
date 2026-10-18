@@ -46,16 +46,17 @@ extern volatile int gdd_save_bank;
 
 #define gd_set_bank(b) \
    do {                         \
+      int bank__ = (int)(b);    \
       gdd_save_bank++;          \
       if (gdd_ignore_bank!=0) { \
-         gdd_bank = b;          \
-         gd_force_bank(b);      \
+         gdd_bank = bank__;     \
+         gd_force_bank(bank__); \
          break;                 \
       }                         \
-      if (gdd_bank != b) {      \
+      if (gdd_bank != bank__) { \
          gdd_ignore_bank++;     \
-         gdd_bank = b;          \
-         gd_force_bank(b);      \
+         gdd_bank = bank__;     \
+         gd_force_bank(bank__); \
          gdd_ignore_bank--;     \
       }                         \
    } while (0)

@@ -171,6 +171,8 @@ EXTERN int LGadEraseBox(LGadBox *vb, bool free_self);
 // Force a box to draw.  Data gets passed on to its draw callback. 
 // Will force a root to draw all its subordinate gadgets. 
 EXTERN int LGadDrawBox(LGadBox *vb, void *data);
+EXTERN int LGadDrawBoxCanvas(LGadBox *vb, void *data, grs_canvas *canvas,
+                             Point offset);
 
 // Register an LGadBox as needing to be checked for redraw in certain cases.
 EXTERN int LGadAddOverlap(LGadBox *vb);

@@ -165,7 +165,7 @@ inline mxs_real cPhysOBBModel::GetSize() const
    mxs_vector abs_vec;
 
    for (int i=0; i<3; i++)
-      abs_vec.el[i] = fabs(m_Offset.el[i]) + fabs(m_EdgeLen.el[i]);
+      abs_vec.el[i] = fabsf(m_Offset.el[i]) + fabsf(m_EdgeLen.el[i]);
 
    return mx_mag_vec(&abs_vec);
 }

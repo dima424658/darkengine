@@ -51,11 +51,13 @@ void STDMETHODCALLTYPE cSoundResourceType::EnumerateExts(tResEnumExtsCallback ca
 {
 	callback(".wav", this, pClientData);
 	callback(".voc", this, pClientData);
+	callback(".ogg", this, pClientData);
 }
 
 BOOL STDMETHODCALLTYPE cSoundResourceType::IsLegalExt(const char* pExt)
 {
-	return stricmp(pExt, ".wav") == 0 || stricmp(pExt, ".voc") == 0;
+	return stricmp(pExt, ".wav") == 0 || stricmp(pExt, ".voc") == 0 ||
+		stricmp(pExt, ".ogg") == 0;
 }
 
 IRes* STDMETHODCALLTYPE cSoundResourceType::CreateRes(IStore* pStore, const char* pName, const char* pExt, IResMemOverride** ppResMem)

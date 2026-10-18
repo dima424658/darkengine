@@ -49,8 +49,8 @@
 
 BOOL ValidateCellSpace(tAIPathCellID cell, float height)
 {
-   #define kVCS_EpsIn 0.005
-   #define kVCS_EpsUp 0.001
+   #define kVCS_EpsIn 0.005f
+   #define kVCS_EpsUp 0.001f
 
    // Collect the vertices and center
    int                   i, j;
@@ -110,11 +110,11 @@ void ValidateAllCellSpaces(float height, BOOL linkedOnly, cDynArray<tAIPathCellI
 
    if (linkedOnly)
    {
-      for (cell = 1; cell <= g_AIPathDB.m_nCells; cell++)
+      for (cell = 1; cell <= (int)g_AIPathDB.m_nCells; cell++)
       {
          // and gather arcs to all the cells it's connected to with centers within range
          tAIPathCellID i;
-         const int lastCell = g_AIPathDB.m_Cells[cell].firstCell + g_AIPathDB.m_Cells[cell].cellCount;
+         const tAIPathCell2CellLinkID lastCell = g_AIPathDB.m_Cells[cell].firstCell + g_AIPathDB.m_Cells[cell].cellCount;
 
          for (i = g_AIPathDB.m_Cells[cell].firstCell; i < lastCell; i++)
          {
@@ -124,7 +124,7 @@ void ValidateAllCellSpaces(float height, BOOL linkedOnly, cDynArray<tAIPathCellI
       }
    }
 
-   for (cell = 1; cell <= g_AIPathDB.m_nCells; cell++)
+   for (cell = 1; cell <= (int)g_AIPathDB.m_nCells; cell++)
    {
       if ((!linkedOnly || test[cell]) && !ValidateCellSpace(cell, height))
          pFailures->Append(cell);
@@ -206,7 +206,7 @@ void AIPathFindDrawPath(IAIPath * pPath)
 
    translate.x = 0;
    translate.y = 0;
-   translate.z = 0.2;
+   translate.z = 0.2f;
 
    if (pPath->Active())
    {
@@ -303,7 +303,7 @@ void AIDrawOnePathCell(tAIPathCellID cell, BOOL proxCull)
 
    translate.x = 0;
    translate.y = 0;
-   translate.z = 0.05;
+   translate.z = 0.05f;
 
    r3_start_object(&translate);
    r3_start_block();
@@ -401,7 +401,7 @@ void AIDrawOneCellsLinks(tAIPathCellID cell, BOOL proxCull)
 
    translate.x = 0;
    translate.y = 0;
-   translate.z = 0.05;
+   translate.z = 0.05f;
 
    // is the cell close enough to the current brush?
    cMxsVector cellCenter;
@@ -482,8 +482,10 @@ void AIDrawOneCellsLinks(tAIPathCellID cell, BOOL proxCull)
 
 
 // make extern so accessible from rendobj.c
-extern "C" BOOL g_AIPathDBDrawCellIds = FALSE;
-extern "C" BOOL g_AIPathDBDrawCells = FALSE;
+extern "C" BOOL g_AIPathDBDrawCellIds;
+extern "C" BOOL g_AIPathDBDrawCells;
+BOOL g_AIPathDBDrawCellIds = FALSE;
+BOOL g_AIPathDBDrawCells = FALSE;
 
 static BOOL g_AIPathDBDrawLinks;
 int  g_AIPathDBDrawZone = 0;
@@ -686,7 +688,7 @@ void AIPathFindSpewZones()
    }
 
    mprintf("Cell Zones:");
-   for (i=0; i<g_AIPathDB.m_nCells; i++)
+   for (i=0; i<(int)g_AIPathDB.m_nCells; i++)
    {
       mprintf("[%d] %d\n", i, g_AIPathDB.GetCellZone((eAIPathZoneType)g_AIPathDBDrawZoneType, i));
    }
@@ -808,11 +810,11 @@ void ValidateAllCellRooms(BOOL linkedOnly, cDynArray<tAIPathCellID> * pFailures)
 
    if (linkedOnly)
    {
-      for (cell = 1; cell <= g_AIPathDB.m_nCells; cell++)
+      for (cell = 1; cell <= (int)g_AIPathDB.m_nCells; cell++)
       {
          // and gather arcs to all the cells it's connected to with centers within range
          tAIPathCellID i;
-         const int lastCell = g_AIPathDB.m_Cells[cell].firstCell + g_AIPathDB.m_Cells[cell].cellCount;
+         const tAIPathCell2CellLinkID lastCell = g_AIPathDB.m_Cells[cell].firstCell + g_AIPathDB.m_Cells[cell].cellCount;
 
          for (i = g_AIPathDB.m_Cells[cell].firstCell; i < lastCell; i++)
          {
@@ -825,7 +827,7 @@ void ValidateAllCellRooms(BOOL linkedOnly, cDynArray<tAIPathCellID> * pFailures)
    g_pAIRoomDB->MarkAllRoomCells();
    g_pAIRoomDB->UseValidChecks(TRUE);
 
-   for (cell = 1; cell <= g_AIPathDB.m_nCells; cell++)
+   for (cell = 1; cell <= (int)g_AIPathDB.m_nCells; cell++)
    {
       if ((!linkedOnly || test[cell]) && !g_pAIRoomDB->IsCellValid(cell))
          pFailures->Append(cell);

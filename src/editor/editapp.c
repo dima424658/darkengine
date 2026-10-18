@@ -60,7 +60,6 @@ static int my_priority = kPriorityNormal;
 
 void edit_setup_commands(void);
 
-#pragma off(unreferenced)
 static STDMETHODIMP _InitFunc(IUnknown* goof)
 {
    extern void setup_gfh_commands(void);
@@ -78,13 +77,11 @@ static STDMETHODIMP _InitFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SHUTDOWN FUNC
 //
 
-#pragma off(unreferenced)
 static STDMETHODIMP _ShutdownFunc(IUnknown* goof)
 {
    vm_term();
@@ -94,7 +91,6 @@ static STDMETHODIMP _ShutdownFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 ////////////////////////////////////////////////////////////
 // CONSTRAINTS
@@ -142,18 +138,14 @@ void edit_setup_commands(void)
 // Nothing needs to change, unless you want to add postconnect stuff
 ////////////////////////////////////////////////////////////
 
-#pragma off(unreferenced)
 static STDMETHODIMP NullFunc(IUnknown* goof)
 {
    return kNoError;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 static void STDMETHODCALLTYPE FinalReleaseFunc(IUnknown* goof)
 {
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SysCreate()

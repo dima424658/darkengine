@@ -308,11 +308,10 @@ long HuffMakeFlashTables(HuffNode *htree, HuffNode *hroot, uchar *pFlashTab,
 
 //	Return table length
 
-	return(pftGrow - pftBase);
+	return (long)(pftGrow - pftBase);
 }
 
 #ifdef __WATCOMC__
-#pragma off(unreferenced);
 #endif
 
 void HuffGrowFlashTables(HuffNode *htree, HuffNode *hnode, ulong code,
@@ -345,7 +344,7 @@ void HuffGrowFlashTables(HuffNode *htree, HuffNode *hnode, ulong code,
 
 		if ((*pl & htokMask) == 0)
 			{
-			token = (pftGrow - pftBase) / htokSize;	// 0 nbits signifies continuation
+			token = (ulong)((pftGrow - pftBase) / htokSize);	// 0 nbits signifies continuation
 			memcpy(pl, &token, htokSize);
 			pftGrow += ((1 << hbitsSec) * htokSize);
 			if (pftGrow > (pftBase + pftLength))
@@ -376,7 +375,6 @@ void HuffGrowFlashTables(HuffNode *htree, HuffNode *hnode, ulong code,
 }
 
 #ifdef __WATCOMC__
-#pragma on(unreferenced);
 #endif
 
 //	-----------------------------------------------------------------
@@ -491,7 +489,7 @@ long HuffCompressFlashTables(uchar *pFlashTab, ulong length, int tokSize,
 
 //	Compute size & return it
 
-	return((pc - pcBuff) * sizeof(ulong));
+	return (long)((pc - pcBuff) * sizeof(ulong));
 }
 
 //	-------------------------------------------------------------

@@ -94,7 +94,7 @@ cAIGoal::~cAIGoal()
 {
    // good place for a breakpoint when looking for reference count problems...
    if (ownerData && (flags & kAIGF_FreeData))
-      delete ((void *)ownerData);
+      operator delete((void *)ownerData);
 }
 
 
@@ -145,7 +145,8 @@ void cAIGoal::Save(ITagFile * pTagFile)
    AITagMove(pTagFile, &flags);
    AITagMove(pTagFile, &pctComplete);
    AITagMove(pTagFile, &result);
-   AITagMove(pTagFile, &ownerData); // clients should resave this if fixup needed
+   uint32 savedOwnerData = (uint32)ownerData;
+   AITagMove(pTagFile, &savedOwnerData); // clients should resave this if fixup needed
 
    switch (type)
    {
@@ -171,7 +172,9 @@ void cAIGoal::Load(ITagFile * pTagFile)
    AITagMove(pTagFile, &flags);
    AITagMove(pTagFile, &pctComplete);
    AITagMove(pTagFile, &result);
-   AITagMove(pTagFile, &ownerData); // clients should reload this if fixup needed
+   uint32 savedOwnerData;
+   AITagMove(pTagFile, &savedOwnerData); // clients should reload this if fixup needed
+   ownerData = savedOwnerData;
 
    switch (type)
    {

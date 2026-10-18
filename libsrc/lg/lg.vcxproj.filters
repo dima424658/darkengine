@@ -30,9 +30,6 @@
     <ClInclude Include="dbgpp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="findfile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="hashfns.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -63,10 +60,10 @@
     <ClInclude Include="memstat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="stktrace.h">
+    <ClInclude Include="..\..\winsrc\lg\stktrace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="thrdtool.h">
+    <ClInclude Include="..\..\winsrc\lg\thrdtool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="timings.h">
@@ -75,13 +72,13 @@
     <ClInclude Include="tmpalloc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="breakkey.h">
+    <ClInclude Include="..\..\winsrc\lg\breakkey.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="bugtrak.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="codewrit.h">
+    <ClInclude Include="..\..\winsrc\lg\codewrit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="_lg.h">
@@ -110,9 +107,6 @@
     <ClCompile Include="exit.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="findfile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="hashfns.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -128,9 +122,6 @@
     <ClCompile Include="lgsprntf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="memgrow.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="memreq.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -140,10 +131,10 @@
     <ClCompile Include="stack.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="stktrace.cpp">
+    <ClCompile Include="..\..\winsrc\lg\stktrace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="thrdtool.cpp">
+    <ClCompile Include="..\..\winsrc\lg\thrdtool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="timings.cpp">
@@ -155,13 +146,13 @@
     <ClCompile Include="appagg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="breakkey.cpp">
+    <ClCompile Include="..\..\winsrc\lg\breakkey.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bugtrak.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="codewrit.cpp">
+    <ClCompile Include="..\..\winsrc\lg\codewrit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="coremutx.cpp">

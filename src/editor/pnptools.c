@@ -154,7 +154,7 @@ static void _PnP_PictureUpdate(void *g, void *data)
    pictureInfo *our_pi=LGadBoxGetUserData(VB(g));
    if (data!=NULL)
    {
-      our_pi->data=(int)data;
+      our_pi->data=(int)(intptr_t)data;
       LGadBoxSetUserData(VB(g),our_pi);
    }
    LGadDrawBox(VB(g),NULL);
@@ -172,7 +172,7 @@ void _pnp_textbox(Rect *space, char *text)
    draw.draw_data = text;
    // attempt to make textboxes clearly non-interactive
    //   draw.draw_flags = BORDER(DRAWFLAG_BORDER_OUTLINE);
-   draw.bcolor = guiStyleGetColor(NULL,StyleColorBG2);
+   draw.bcolor = (ushort)guiStyleGetColor(NULL,StyleColorBG2);
    
    gadg=LGadCreateButtonArgs(NULL,curPnP->_root,
       space->ul.x,space->ul.y,(short)RectWidth(space),(short)RectHeight(space),&draw,NULL,0);
@@ -224,7 +224,7 @@ static void toggle_update_elem(LGadToggle* gadg)
    }
    else 
    {
-      elem->fcolor = guiStyleGetColor(NULL,StyleColorHilite);
+      elem->fcolor = (ushort)guiStyleGetColor(NULL,StyleColorHilite);
    }
 }
 
@@ -268,7 +268,7 @@ int PnP_ButtonToggle(Rect *space, char *off, char *on, bool *var,
    if (draw.draw_data == NULL)
    {
       draw.draw_data = tog->strings[!*var];
-      draw.fcolor = guiStyleGetColor(NULL,StyleColorHilite);
+   draw.fcolor = (ushort)guiStyleGetColor(NULL,StyleColorHilite);
    }
    draw.draw_flags = BORDER(DRAWFLAG_BORDER_OUTLINE);
    
@@ -330,7 +330,7 @@ void _PnP_ButtonOneShot(Rect *space, const char *name, void (*shoot)(int data), 
    
    ElementClear(&draw);
    draw.draw_type = DRAWTYPE_TEXT;
-   draw.draw_data = name;
+   draw.draw_data = (void *)name;
    draw.draw_flags = BORDER(DRAWFLAG_BORDER_OUTLINE);
 
    gadg = LGadCreateButtonArgs(NULL,curPnP->_root,space->ul.x,space->ul.y,
@@ -404,7 +404,7 @@ void _pnp_vslider(Rect* area, const char* title, pnp_vslider_data* _data)
 
    ElementClear(&draw);
    draw.draw_type = DRAWTYPE_TEXT;
-   draw.draw_data = title;
+   draw.draw_data = (void *)title;
    draw.draw_flags = BORDER(DRAWFLAG_BORDER_OUTLINE);
 
    gadg=LGadCreateButtonArgs(NULL,curPnP->_root,

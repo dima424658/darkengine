@@ -17,7 +17,7 @@
 
 #include <fix.h>
 
-void fixgetab(char *p, int fracshift, int *a, int *b, int *sign);
+static void fixgetab(char *p, int fracshift, int *a, int *b, int *sign);
 
 //	----------------------------------------------------------
 //		CONVERSION ROUTINES

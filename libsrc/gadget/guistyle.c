@@ -20,13 +20,20 @@ static guiStyle* curr_style = NULL;
 
 int guiScreenColor(int color)
 {
-    // TODO
-    return 0;
+   if (guiIsRGB(color))
+      return gr_make_screen_fcolor(color & ~GUI_RGB_MASK);
+   return color;
 }
 
 void guiCompileStyleColors(guiStyle* targ, const guiStyle* src)
 {
-    // TODO
+   int i;
+
+   // Preserve the palette, font resource interfaces, and sound ids.  Only
+   // the portable RGB color values need conversion for the active mode.
+   *targ = *src;
+   for (i = 0; i < StyleNumColors; ++i)
+      targ->colors[i] = guiScreenColor(src->colors[i]);
 }
 
 void SetCurrentStyle(guiStyle* style)
@@ -61,9 +68,9 @@ static bool default_setpal_func(StylePalette palette)
       return FALSE;
    if (REFID(palette) == 0) // must be a resid
    {
-      PallInfo* pal = ResLock(palette);
+      PallInfo* pal = ResLock((Id)palette);
       gr_set_pal(pal->index,pal->numcols,pal->rgb);
-      ResUnlock(palette);
+      ResUnlock((Id)palette);
    }
    else
    {
@@ -75,10 +82,16 @@ static bool default_setpal_func(StylePalette palette)
 
 static bool default_setfont_func(StyleFont font)
 {
+   grs_font *locked;
+
    if (font == NULL)
       return FALSE;
 
-   gr_set_font((grs_font*)IDataSource_Lock(font));
+   locked = (grs_font*)IDataSource_Lock(font);
+   if (locked == NULL)
+      return FALSE;
+
+   gr_set_font(locked);
    return TRUE;
 }
 

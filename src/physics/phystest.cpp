@@ -121,7 +121,7 @@ void PhysicsLaunchSphere(mxs_real speed)
    PhysAxisSetVelocity(objID, 0, speed);
 
    PhysSetMass(objID, 20);
-   PhysSetDensity(objID, .9);
+   PhysSetDensity(objID, .9f);
    PhysSetElasticity(objID, 0);
 }
 
@@ -152,15 +152,15 @@ void PhysicsJoyride()
 
    if (status == TRUE)
    {
-      pModel->SetSpringTension(0, .8);
-      pModel->SetSpringDamping(0, .94);
+      pModel->SetSpringTension(0, .8f);
+      pModel->SetSpringDamping(0, .94f);
 
       status = FALSE;
    }
    else
    {
-      pModel->SetSpringTension(0, .4);
-      pModel->SetSpringDamping(0, .2);
+      pModel->SetSpringTension(0, .4f);
+      pModel->SetSpringDamping(0, .2f);
 
       status = TRUE;
    }

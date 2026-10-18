@@ -17,14 +17,14 @@
 
 ///////////////////////////////////////
 
-enum eMediaState
+typedef enum eMediaState
 {
    kMS_Invalid          = 0x0000,
    kMS_Air              = 0x0001,
    kMS_Liquid_Standing  = 0x0002,
    kMS_Liquid_Wading    = 0x0004,
    kMS_Liquid_Submerged = 0x0008,
-};
+} eMediaState;
 
 ////////////////////////////////////////
 

@@ -9,6 +9,8 @@
 #ifndef __DMGMODEL_H
 #define __DMGMODEL_H
 
+struct sChainedEvent;
+
 #include <comtools.h>
 #include <objtype.h>
 

@@ -23,7 +23,7 @@
 //////////////////////////
 // LOOK: Storage for the world rep
 
-PortalCell *wr_cell[MAX_REGIONS];
+PortalCell *wr_cell[MAX_REGIONS + 1]; // final slot is the transient sky cell
 int wr_num_cells;
 
 #ifndef SHIP
@@ -122,8 +122,8 @@ void wr_mono_stats(void)
    wr_stats(NULL);
 }
 
-#define SLIVER_3D 0.05
-#define SLIVER_2D 0.03
+#define SLIVER_3D 0.05f
+#define SLIVER_2D 0.03f
 #define SLIVER_1D 0.02
 
 // small in all 3d
@@ -146,7 +146,7 @@ static BOOL cell_small_2d(PortalCell *p, float tolerance)
          mxs_vector *v = &p->vpool[k];
          float dist = v->x*norm->x + v->y*norm->y + v->z*norm->z + d;
          if (fabs(dist) > max_dist) {
-            max_dist = fabs(dist);
+            max_dist = fabsf(dist);
             if (max_dist > tolerance)
                break;
          }
@@ -177,7 +177,7 @@ static BOOL cell_small_1d(PortalCell *p, float tolerance)
          mxs_vector *v = &p->vpool[k];
          float dist = v->x*norm->x + v->y*norm->y + v->z*norm->z + d;
          if (fabs(dist) > max_dist) {
-            max_dist = fabs(dist);
+            max_dist = fabsf(dist);
             if (max_dist > tolerance)
                break;
          }

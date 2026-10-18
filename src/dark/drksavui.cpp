@@ -16,12 +16,13 @@
 #include <tagfile.h>
 #include <gcompose.h>
 #include <scrnman.h>
-#include <direct.h>
+#include <platform_io.h>
 #include <simtime.h>
 #include <gen_bind.h>
 #include <keydefs.h>
 #include <metasnd.h>
 #include <diskfree.h>
+#include <contentctx.h>
 #include <drkdebrf.h>
 #include <mprintf.h>
 
@@ -58,11 +59,28 @@ public:
 
 const char* cDarkFilePanel::SlotFileName(int which)
 {
+   static char buf[DARK_CONTENT_MAX_PATH];
    if (which == kQuickSlot)
-      return SAVE_PATH "\\" QUICK_SAVE; 
-   static char buf[64]; 
-   sprintf(buf,"%s\\game%04d.sav",SAVE_PATH,which); 
+      DarkContentMakeSavePath(buf, sizeof(buf), QUICK_SAVE);
+   else
+   {
+      char name[32];
+      sprintf(name,"game%04d.sav",which);
+      DarkContentMakeSavePath(buf, sizeof(buf), name);
+   }
    return buf; 
+}
+
+static void MakeSlotLoadPath(char* buf, int size, int which)
+{
+   if (which == cFilePanel::kQuickSlot)
+      DarkContentMakeLoadPath(buf, size, QUICK_SAVE);
+   else
+   {
+      char name[32];
+      sprintf(name, "game%04d.sav", which);
+      DarkContentMakeLoadPath(buf, size, name);
+   }
 }
 
 //----------------------------------------
@@ -73,7 +91,9 @@ void cDarkFilePanel::ComputeSlot(int which)
    if (!(slot.flags & kNoCompute))
    {
       slot.flags = 0; 
-      ITagFile* file = TagFileOpen(SlotFileName(which),kTagOpenRead); 
+      char path[DARK_CONTENT_MAX_PATH];
+      MakeSlotLoadPath(path, sizeof(path), which);
+      ITagFile* file = TagFileOpen(path,kTagOpenRead);
       BOOL read = FALSE; 
       if (file)
          read = DarkLoadGameDescription(file,slot.buf,sizeof(slot.buf)); 
@@ -126,7 +146,8 @@ void cLoadPanel::DoFileOp(int which)
       return; 
    MessageNamed("loading"); 
 
-   const char* fname = SlotFileName(which); 
+   char fname[DARK_CONTENT_MAX_PATH];
+   MakeSlotLoadPath(fname, sizeof(fname), which);
 
    HRESULT result = DarkQuickLoadGameFile(fname); 
    if (FAILED(result))
@@ -235,8 +256,6 @@ void cSavePanel::DoFileOp(int which)
       return;
    }
 
-   mkdir(SAVE_PATH); 
-
    ITagFile* file = TagFileOpen(fname,kTagOpenWrite); 
    HRESULT retval = E_FAIL; 
    if (file)
@@ -325,7 +344,7 @@ void cSavePanel::OnSelect(int which)
          // I wonder if the compiler will optimize this math?
          sprintf(buf," %d:%02d:%02d",time/(60*60),(time/60)%60,time%60); 
 
-         int len = strlen(slot.buf); 
+   int len = (int)strlen(slot.buf);
          strncpy(slot.buf + len,buf,sizeof(slot.buf)-len); 
       }
    }
@@ -407,8 +426,10 @@ protected:
 
 const char* cLoadBndPanel::SlotFileName(int which)
 {
-   static char buf[64]; 
-   sprintf(buf,"%s\\cfg%04d.bnd",SAVE_PATH,which); 
+   static char buf[DARK_CONTENT_MAX_PATH];
+   char name[32];
+   sprintf(name,"cfg%04d.bnd",which);
+   DarkContentMakeLoadPath(buf, sizeof(buf), name);
    return buf; 
 }
 
@@ -529,8 +550,10 @@ protected:
 
 const char* cSaveBndPanel::SlotFileName(int which)
 {
-   static char buf[64]; 
-   sprintf(buf,"%s\\cfg%04d.bnd",SAVE_PATH,which); 
+   static char buf[DARK_CONTENT_MAX_PATH];
+   char name[32];
+   sprintf(name,"cfg%04d.bnd",which);
+   DarkContentMakeSavePath(buf, sizeof(buf), name);
    return buf; 
 }
 
@@ -543,7 +566,11 @@ void cSaveBndPanel::ComputeSlot(int which)
    {
       slot.flags = 0; 
       static char str[128], *p_str;
-      FILE *fp = fopen (SlotFileName (which), "rb");
+      char name[32];
+      char path[DARK_CONTENT_MAX_PATH];
+      sprintf(name,"cfg%04d.bnd",which);
+      DarkContentMakeLoadPath(path, sizeof(path), name);
+      FILE *fp = fopen (path, "rb");
       if (fp) {
          fgets (str, 127, fp);
          fclose (fp);
@@ -566,7 +593,6 @@ void cSaveBndPanel::DoFileOp(int which)
 {
    const char* fname = SlotFileName(which); 
 
-   mkdir(SAVE_PATH); 
    MessageNamed("saving"); 
 
    //get header
@@ -685,7 +711,7 @@ void SwitchToSaveBndMode(BOOL push)
 // Init/Term
 //
 
-void init_commands(); 
+static void init_commands();
 
 void DarkSaveInitUI()
 {

@@ -17,10 +17,13 @@
 #include <genlin.h>
 
 void (*modex_uvline_func[])() =
+{ 0 };
+
+void init_modex_uvline_func(void)
 {
-	[FILL_NORM] =	modex_norm_uvline,
-	[FILL_XOR] =	gen_uvline,
-	[FILL_BLEND] =	gen_uvline,
-	[FILL_CLUT] =	modex_clut_uvline,
-	[FILL_SOLID] =	modex_solid_uvline,
-};
+	modex_uvline_func[FILL_NORM] = modex_norm_uvline;
+	modex_uvline_func[FILL_XOR] = gen_uvline;
+	modex_uvline_func[FILL_BLEND] = gen_uvline;
+	modex_uvline_func[FILL_CLUT] = modex_clut_uvline;
+	modex_uvline_func[FILL_SOLID] = modex_solid_uvline;
+}

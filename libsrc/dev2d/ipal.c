@@ -23,11 +23,11 @@ static int gstride, rstride;
 static long x, xsqr, colormax;
 static int cindex;
 
-void inv_cmap_2(int colors, uchar *colormap[3],int bits,ulong *dist_buf, uchar *rgbmap );
-int _redloop();
-int _greenloop(int restart);
-int _blueloop(int restart);
-void _maxfill(ulong *buffer);
+static void inv_cmap_2(int colors, uchar *colormap[3],int bits,ulong *dist_buf, uchar *rgbmap );
+static int _redloop();
+static int _greenloop(int restart);
+static int _blueloop(int restart);
+static void _maxfill(ulong *buffer);
 
 /* The routines in this file operate on grs_rgb color values.  The color
    values are encoded so that each r,g, and b has 8 bits of integer, 2
@@ -314,7 +314,7 @@ static int _blueloop(int restart)
 			lim = max;
 		b <= lim;
 		b++, dp++, rgbp++, bdist += bxx, bxx += txsqr) {
-		if (*dp > bdist) {
+		if (*dp > (ulong)bdist) {
 			/* Remember new here and associated data! */
 			if (b>here) {
 				here = b;
@@ -332,8 +332,8 @@ static int _blueloop(int restart)
 	for (;
 		b <= lim;
 		b++, dp++, rgbp++, bdist += bxx, bxx += txsqr) {
-		if (*dp > bdist ) {
-			*dp = bdist;
+		if (*dp > (ulong)bdist ) {
+			*dp = (ulong)bdist;
 			*rgbp = i;
 		} else {
 			thismax = b - 1;
@@ -358,7 +358,7 @@ static int _blueloop(int restart)
 		for(;
 			b >= lim;
 			b--, dp--, rgbp--, bxx -= txsqr, bdist -= bxx) {
-			if ( *dp > bdist) {
+			if ( *dp > (ulong)bdist) {
 				/* Remember here! */
 				/* No test for b against here necessary because b <
 				 * here by definition.
@@ -377,8 +377,8 @@ static int _blueloop(int restart)
 	for (;
 			b>= lim;
 			b--, dp--, rgbp--, bxx -= txsqr, bdist -= bxx) {
-		if ( *dp > bdist) {
-			*dp = bdist;
+		if ( *dp > (ulong)bdist) {
+			*dp = (ulong)bdist;
 			*rgbp = i;
 		} else {
 			thismin = b + 1;

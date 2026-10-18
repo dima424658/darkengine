@@ -30,6 +30,11 @@
 F_DECLARE_INTERFACE(ITagFile);
 class cAIPath;
 
+BOOL AIPathFind(const cMxsVector & fromLocation, tAIPathCellID startCell,
+                const cMxsVector & toLocation, tAIPathCellID endCell,
+                cAIPath * pPath, tAIPathOkBits OkBits,
+                tAIPathOkBits okCondBits = 0);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 BOOL AIPathFindDBBuild();
@@ -212,7 +217,7 @@ private:
 
    friend BOOL AIPathFind(const cMxsVector & fromLocation, tAIPathCellID startCell,
                           const cMxsVector & toLocation, tAIPathCellID endCell,
-                          cAIPath * pPath, tAIPathOkBits OkBits, tAIPathOkBits okCondBits = 0);
+                          cAIPath * pPath, tAIPathOkBits OkBits, tAIPathOkBits okCondBits);
 
 public:
    // array of cells
@@ -478,9 +483,9 @@ inline BOOL cAIPathDB::GetMark(tAIPathCellID cell)
 
 inline void cAIPathDB::MarkEnd()
 {
-   register int                         i   = m_nMarkedCells;
-   register sbool * const               pm  = m_Marks.AsPointer();
-   register const tAIPathCellID * const pid = m_MarkedCells.AsPointer();
+   int                         i   = m_nMarkedCells;
+   sbool * const               pm  = m_Marks.AsPointer();
+   const tAIPathCellID * const pid = m_MarkedCells.AsPointer();
 
    while (--i >= 0)
       *(pm + *(pid + i)) = FALSE;
@@ -512,7 +517,7 @@ inline BOOL cAIPathDB::CanPathfindBetweenZones(eAIPathZoneType ZoneType, tAIPath
 
 inline tAIPathZone cAIPathDB::GetCellZone(eAIPathZoneType ZoneType, tAIPathCellID cell)
 {
-   if (cell < m_ZoneDatabases[ZoneType].m_CellZones.Size())
+   if (cell < (tAIPathCellID)m_ZoneDatabases[ZoneType].m_CellZones.Size())
       return m_ZoneDatabases[ZoneType].m_CellZones[cell];
    else
       return 0;

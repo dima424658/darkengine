@@ -12,6 +12,7 @@
  */
 
 #include <dev2d.h>
+extern void gd_use_com(void);
 extern int g2_init();
 
 int g2_com_init()

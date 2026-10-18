@@ -428,9 +428,9 @@ STDMETHODIMP cAIMoveEnactor::ResolveSuggestions(const cAIMoveSuggestions & sugge
    {
       pSuggestion = suggestions[iSuggestion];
 
-      ccw    = kMaxSolutionVectors * pSuggestion->dirArc.ccw.value / TWO_PI;
-      cw     = kMaxSolutionVectors * pSuggestion->dirArc.cw.value / TWO_PI;
-      center = kMaxSolutionVectors * pSuggestion->dirArc.center().value / TWO_PI;
+      ccw    = (int)(kMaxSolutionVectors * pSuggestion->dirArc.ccw.value / TWO_PI);
+      cw     = (int)(kMaxSolutionVectors * pSuggestion->dirArc.cw.value / TWO_PI);
+      center = (int)(kMaxSolutionVectors * pSuggestion->dirArc.center().value / TWO_PI);
 
       if (cw <= ccw)
       {
@@ -670,7 +670,7 @@ void cAIMoveEnactor::CalculateTargetVel(const sAIMoveGoal & goal, ulong deltaTim
    const cMxsVector &  loc = *m_pAIState->GetLocation();
    const tAIPathCellID cell = m_pAIState->GetPathCell();
 
-   static float goalSpeedVal[kAIS_Num] = { 0.0, 0.10, 0.20, 0.30, 0.65, 1.00 };
+   static float goalSpeedVal[kAIS_Num] = { 0.0f, 0.10f, 0.20f, 0.30f, 0.65f, 1.00f };
 
    mxs_vector dir;
 
@@ -701,7 +701,7 @@ void cAIMoveEnactor::CalculateTargetVel(const sAIMoveGoal & goal, ulong deltaTim
 #endif
 
    // i question AIGetMaxSpeed, i must admit...
-   mx_scaleeq_vec(&dir, AIGetMaxSpeed(GetID()) * goalSpeedVal[goal.speed] * 2.0);
+   mx_scaleeq_vec(&dir, AIGetMaxSpeed(GetID()) * goalSpeedVal[goal.speed] * 2.0f);
 
    pResult->vec = dir;
    pResult->facing = 0;
@@ -722,10 +722,10 @@ void cAIMoveEnactor::CalculateImpulse(const sAIMoveGoal & goal, ulong deltaTime,
    static float goalSpeedVal[kAIS_Num] =
    {
       0.0,
-      0.10,
-      0.20,
-      0.30,
-      0.65,
+      0.10f,
+      0.20f,
+      0.30f,
+      0.65f,
       1.00
    };
 
@@ -755,11 +755,11 @@ void cAIMoveEnactor::CalculateImpulse(const sAIMoveGoal & goal, ulong deltaTime,
          if (distanceFromGoal > sq(maxSpeed))
             speed = maxSpeed;
          else if (distanceFromGoal < sq(0.2))
-            speed = maxSpeed * 0.3;
+            speed = maxSpeed * 0.3f;
          else if (distanceFromGoal < sq(0.6))
-            speed = maxSpeed * 0.7;
+            speed = maxSpeed * 0.7f;
          else // > 0.6  < maxspeed
-            speed = maxSpeed * 0.5;
+            speed = maxSpeed * 0.5f;
       }
       else
          speed = maxSpeed;
@@ -771,13 +771,13 @@ void cAIMoveEnactor::CalculateImpulse(const sAIMoveGoal & goal, ulong deltaTime,
       if (SimStateCheckFlags(kSimPhysics))
       {
          facingRelMoveDir = goal.dir - currentFacing;
-         x = cos(facingRelMoveDir.value) * speed;
-         y = sin(facingRelMoveDir.value) * speed;
+         x = cosf(facingRelMoveDir.value) * speed;
+         y = sinf(facingRelMoveDir.value) * speed;
       }
       else
       {
-         x = cos(goal.dir.value) * speed;
-         y = sin(goal.dir.value) * speed;
+         x = cosf(goal.dir.value) * speed;
+         y = sinf(goal.dir.value) * speed;
       }
 
       if (cell)
@@ -788,9 +788,9 @@ void cAIMoveEnactor::CalculateImpulse(const sAIMoveGoal & goal, ulong deltaTime,
       if (ffabsf(loc.z-desiredZ) < 0.6)
          z = desiredZ-loc.z;
       else if (loc.z > desiredZ)
-         z = -0.6;
+         z = -0.6f;
       else        // (loc.z <= desiredZ - 0.6)
-         z = +0.6;
+         z = +0.6f;
 
       goalFacing = ComputeFacing(goal);
 
@@ -804,7 +804,7 @@ void cAIMoveEnactor::CalculateImpulse(const sAIMoveGoal & goal, ulong deltaTime,
 
       #define kTurnSlowAng DEGREES(60)
 
-      turnScale = (kTurnSlowAng - fabs(newFacing));
+      turnScale = (kTurnSlowAng - fabsf(newFacing));
       if (turnScale < 0)
       {
          // Big turn -- slow down by 1/3
@@ -815,13 +815,13 @@ void cAIMoveEnactor::CalculateImpulse(const sAIMoveGoal & goal, ulong deltaTime,
       else if (turnScale < kTurnSlowAng)
       {
          // Else, slow down by factor of 1/3 to 1
-         x = x * (0.33 + (turnScale / kTurnSlowAng) * 0.63);
-         y = y * (0.33 + (turnScale / kTurnSlowAng) * 0.63);
-         z = z * (0.33 + (turnScale / kTurnSlowAng) * 0.63);
+         x = x * (0.33f + (turnScale / kTurnSlowAng) * 0.63f);
+         y = y * (0.33f + (turnScale / kTurnSlowAng) * 0.63f);
+         z = z * (0.33f + (turnScale / kTurnSlowAng) * 0.63f);
       }
 
       // Constrain turn rate
-      maxTurn = AIGetTurnRate(GetID())*deltaTime;
+      maxTurn = (float)(AIGetTurnRate(GetID())*deltaTime);
       if (fabs(newFacing) > maxTurn)
       {
          if (newFacing < 0)
@@ -853,9 +853,9 @@ void cAIMoveEnactor::CalculateImpulse(const sAIMoveGoal & goal, ulong deltaTime,
       if (ffabsf(m_pAIState->GetLocation()->z-desiredZ) < 0.6)
          dir.z = desiredZ-m_pAIState->GetLocation()->z;
       else if (m_pAIState->GetLocation()->z > desiredZ)
-         dir.z = -0.6;
+         dir.z = -0.6f;
       else        // (loc.z <= desiredZ - 0.6)
-         dir.z = +0.6;
+         dir.z = +0.6f;
 
       mx_scaleeq_vec(&dir, AIGetMaxSpeed(GetID()) * goalSpeedVal[goal.speed]);
 

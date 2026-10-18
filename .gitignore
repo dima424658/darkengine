@@ -1,3 +1,4 @@
+AGENTS.md
 # Prerequisites
 *.d
 
@@ -44,5 +45,29 @@ Release
 *.tlog
 *.pdb
 *.rsp
+*.map
+*.zip
+*.dmp
+*.stackdump
+screen*.pcx
+ReleaseGame/
+.codex-build/
+build/
+.gradle/
+local.properties
+
+# Optional local source checkouts; keep external dependencies out of the
+# repository.
+/3rdparty/squirrel/
+/3rdparty/kctools/
+
+# Local game state and diagnostics. Retail Thief 2 data is never part of this
+# repository.
+cam.cfg
+user.bnd
+user2.bnd
+loc_hist.hst
+thief-console.log
+script-debug.log
 
 redist

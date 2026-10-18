@@ -137,7 +137,6 @@ static GfileType gftypes[] = {GFILE_PCX,GFILE_GIF,GFILE_CEL,GFILE_CEL,
 	fclose(fp);
 	return(ret);
 }
-
 //	-------------------------------------------------------
 //		ACCESS ROUTINES
 //	-------------------------------------------------------
@@ -442,9 +441,6 @@ int GfileFindAnchorRect(grs_bitmap *pbm, Rect *parea, uchar bordCol, Rect *panre
 
 	return(1);
 }
-
-
-
 //	--------------------------------------------------------
 //
 //	GfileFindParm() looks for an integer "parameter" for the image.
@@ -461,7 +457,6 @@ int GfileFindAnchorRect(grs_bitmap *pbm, Rect *parea, uchar bordCol, Rect *panre
 //		1 if parm found
 //		-1 if error 
 
-#pragma off(unreferenced)
 
 int GfileFindParm(grs_bitmap *pbm, Rect *parea, uchar bordCol, int* parm)
 {
@@ -471,5 +466,3 @@ int GfileFindParm(grs_bitmap *pbm, Rect *parea, uchar bordCol, int* parm)
    *parm = *p;
 	return(1);
 }
-
-#pragma on(unreferenced)

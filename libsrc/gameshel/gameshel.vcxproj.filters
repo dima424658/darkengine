@@ -15,40 +15,40 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="wgshelmt.cpp">
+    <ClCompile Include="..\..\winsrc\gameshel\wgshelmt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="winput.cpp">
+    <ClCompile Include="..\..\winsrc\gameshel\winput.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wgscreat.cpp">
+    <ClCompile Include="..\..\winsrc\gameshel\wgscreat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wgshell.cpp">
+    <ClCompile Include="..\..\winsrc\gameshel\wgshell.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="wgshelmt.h">
+    <ClInclude Include="..\..\winsrc\gameshel\wgshelmt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="winput.h">
+    <ClInclude Include="..\..\winsrc\gameshel\winput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="winshapi.h">
+    <ClInclude Include="..\..\winsrc\gameshel\winshapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wnshguid.h">
+    <ClInclude Include="..\..\winsrc\gameshel\wnshguid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="nec98.h">
+    <ClInclude Include="..\..\winsrc\gameshel\nec98.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wgshell.h">
+    <ClInclude Include="..\..\winsrc\gameshel\wgshell.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="winshell.txt" />
+    <Text Include="..\..\winsrc\gameshel\winshell.txt" />
   </ItemGroup>
 </Project>

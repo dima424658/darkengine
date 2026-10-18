@@ -146,7 +146,7 @@ BOOL cAIMoveToMarkerAction::Set(eAIMarkerType markerType, sMarkerParams &markerP
             mxs_real value_rating;
             mxs_real total_rating;
 
-            dist_ai_rating = -fabs(point_dist_target - markerParams.idealDistance) * markerParams.toTargetBias;
+            dist_ai_rating = -fabsf(point_dist_target - markerParams.idealDistance) * markerParams.toTargetBias;
             dist_targ_rating = -point_dist_ai * markerParams.toAIBias;
 
             // Check for a LOS

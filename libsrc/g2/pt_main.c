@@ -1,406 +1,238 @@
 /*
- *   $Header: x:/prj/tech/libsrc/g2/RCS/pt_main.c 1.8 1998/04/06 15:42:12 KEVIN Exp $
+ * Portable portal texture-mapper setup and span loops.
  *
- *  PORTAL texture mappers
- *
- *  Hooks and outer loops 
+ * The original implementation selected self-modifying x86 routines here.
+ * The modern hardware renderer normally owns 3D drawing, but these C loops
+ * retain the legacy software path for tools and fallback rendering.
  */
+
+#include <string.h>
 
 #include <lg.h>
 #include <fix.h>
-
+#include <dev2d.h>
 #include <tmapd.h>
-
-#include <pt_asm.h>
-#include <ptmap.h>
+#include "ptmap.h"
 #include <pt.h>
 
 uchar *g2pt_tmap_ptr;
-uchar *g2pt_clut, *g2pt_tluc_table;
-ulong g2pt_tmap_mask, g2pt_tmap_row;
+uchar *g2pt_clut;
+uchar *g2pt_tluc_table;
+ulong g2pt_tmap_mask;
+ulong g2pt_tmap_row;
 
-uchar g2pt_arb_size;
-int g2pt16_mask=0; // are we 16 bit?
-
-int g2pt_dither=0;
+int g2pt16_mask;
+int g2pt_dither;
 int g2pt_preload;
-fix g2pt_light, g2pt_dlight, g2pt_toggle;
-uchar g2pt_buffer[16], g2pt_lit_buffer[16];
-fix g2pt_step_table[2];
-int g2pt_row_table[65];
+fix g2pt_light;
+fix g2pt_dlight;
+fix g2pt_toggle;
 
-void (*g2pt_unlit_8_chain)(void);
-void (*g2pt_pallit_8_chain)(void);
-void (*g2pt_palflat_8_chain)(void);
-void (*g2pt_lit_8_chain)(void);
-void (*g2pt_clut_8_chain)(void);
-void (*g2pt_transp_8_chain)(void);
-void (*g2pt_tluc_8_chain)(void);
-void (*g2pt_generic_8_chain)(void);
-void (*g2pt_generic_8_2_chain)(void);
-
-void (*g2pt_clut_n_chain)(void);
-void (*g2pt_transp_n_chain)(void);
-void (*g2pt_tluc_n_chain)(void);
-
-void (*g2pt_func_8)(void);
-void (*g2pt_func_n)(void);
-void (*g2pt_func_8_flat)(void);
-void (*g2pt_func_n_flat)(void);
-void (*g2pt_func_perspective_core)(void);
-void (*g2pt_func_perspective_run)(void);
-
-
-#define RECIP_TABLE_SIZE 2048
-fix g2pt_reciprocal_table_24[RECIP_TABLE_SIZE+1];
+#define RECIP_TABLE_SIZE 8192
+fix g2pt_reciprocal_table_24[RECIP_TABLE_SIZE + 1];
 float g2pt_int_table[32];
 
+bool g2pt_span_clip = FALSE;
+bool g2pt_project_space = TRUE;
 
-bool g2pt_span_clip=FALSE;
-bool g2pt_project_space=TRUE;
+/* pt_map.c preserves the old ABI by writing fixed-point offsets here. */
+double g2pt_u_offset;
+double g2pt_v_offset;
+
+static grs_bitmap *g2pt_bitmap;
+static fix g2pt_du;
+static fix g2pt_dv;
+
+extern BOOL g2pt_poly_lit;
+extern double g2pt_fda, g2pt_fdb, g2pt_fdc;
+extern int g2pt_unlit_perspective_poly(int n, g2s_point **vp);
+extern int g2pt_lit_perspective_poly(int n, g2s_point **vp);
+
+static fix offset_fix(const double *offset)
+{
+   fix value;
+   memcpy(&value, offset, sizeof(value));
+   return value;
+}
+
+static int wrap_coord(fix value, int size)
+{
+   int coordinate;
+   if (size <= 1)
+      return 0;
+   coordinate = value >> 16;
+   coordinate %= size;
+   if (coordinate < 0)
+      coordinate += size;
+   return coordinate;
+}
+
+static uchar sample8(fix u, fix v)
+{
+   int x = wrap_coord(u + offset_fix(&g2pt_u_offset), g2pt_bitmap->w);
+   int y = wrap_coord(v + offset_fix(&g2pt_v_offset), g2pt_bitmap->h);
+   return g2pt_tmap_ptr[y * g2pt_bitmap->row + x];
+}
+
+static ushort sample16(fix u, fix v)
+{
+   int x = wrap_coord(u + offset_fix(&g2pt_u_offset), g2pt_bitmap->w);
+   int y = wrap_coord(v + offset_fix(&g2pt_v_offset), g2pt_bitmap->h);
+   return *(ushort *)(g2pt_tmap_ptr + y * g2pt_bitmap->row + 2 * x);
+}
+
+static int light_level(fix light)
+{
+   int level = fix_int(light);
+   if (level < 0)
+      level = 0;
+   if (level > grd_light_table_size)
+      level = grd_light_table_size;
+   return level;
+}
+
+static void draw_span(uchar *dest, int count, fix u, fix v,
+                      fix du, fix dv, bool lit)
+{
+   int i;
+
+   if (g2pt_bitmap == NULL || g2pt_tmap_ptr == NULL)
+      return;
+
+   if (grd_bm.type == BMT_FLAT16) {
+      ushort *dest16 = (ushort *)dest;
+      for (i = 0; i < count; ++i) {
+         if (g2pt_bitmap->type == BMT_FLAT8 ||
+             g2pt_bitmap->type == BMT_TLUC8) {
+            uchar source = sample8(u, v);
+            if (!(g2pt_bitmap->flags & BMF_TRANS) || source != 0) {
+               if (lit && grd_ltab816 != NULL)
+                  dest16[i] = grd_ltab816[(light_level(g2pt_light) << 8) + source];
+               else
+                  dest16[i] = ((ushort *)pixpal)[source];
+            }
+         } else {
+            ushort source = sample16(u, v);
+            if (!(g2pt_bitmap->flags & BMF_TRANS) || source != 0)
+               dest16[i] = source;
+         }
+         u += du;
+         v += dv;
+         g2pt_light += g2pt_dlight;
+      }
+   } else {
+      for (i = 0; i < count; ++i) {
+         uchar source = sample8(u, v);
+         if (g2pt_clut != NULL)
+            source = g2pt_clut[source];
+         if (!(g2pt_bitmap->flags & BMF_TRANS) || source != 0) {
+            if (lit && grd_light_table != NULL)
+               source = grd_light_table[(light_level(g2pt_light) << 8) + source];
+            if (g2pt_bitmap->type == BMT_TLUC8 && g2pt_tluc_table != NULL)
+               dest[i] = g2pt_tluc_table[((unsigned)source << 8) + dest[i]];
+            else
+               dest[i] = source;
+         }
+         u += du;
+         v += dv;
+         g2pt_light += g2pt_dlight;
+      }
+   }
+}
 
 void g2pt_init(void)
 {
    int i;
-   extern float g2pt_two_to_52_power;
-   extern double g2pt_u_offset;
-   extern double g2pt_v_offset;
-
-   g2pt_u_offset = g2pt_two_to_52_power;
-   g2pt_v_offset = g2pt_two_to_52_power;
-
+   g2pt_u_offset = 0.0;
+   g2pt_v_offset = 0.0;
    g2pt_reciprocal_table_24[0] = 0x7fffffff;
-
-   for (i=1; i <= RECIP_TABLE_SIZE; ++i)
-      g2pt_reciprocal_table_24[i] = fix_make(256,0) / i;
-
-   for (i=0; i < 32; ++i)
-      g2pt_int_table[i] = i;
-
+   for (i = 1; i <= RECIP_TABLE_SIZE; ++i)
+      g2pt_reciprocal_table_24[i] = fix_make(256, 0) / i;
+   for (i = 0; i < 32; ++i)
+      g2pt_int_table[i] = (float)i;
 }
-
-
-static void g2ptmap_unlit(grs_bitmap *bm)
-{
-   if (POW2(bm)) {
-      g2pt_func_n = g2pt_unlit_n_asm;
-      g2pt_unlit_n_setup(bm);
-      g2pt_func_8 = g2pt_unlit_8_asm;
-      g2pt_unlit_8_setup(bm);
-      g2pt_func_perspective_core = g2pt_unlit_perspective_core_asm;
-      g2pt_arb_size = 0;
-   }
-#ifdef ARB_SIZE_OK
-   else
-   {
-      g2pt_func_n = g2pt_unlit_arb_n_asm;
-      g2pt_func_8 = g2pt_unlit_arb_8_asm;
-      g2pt_tmap_row = bm->row;
-      g2pt_arb_size = 1;
-      {
-         int i;
-         int row = bm->row, cur=-(row*16);
-         for (i=32-16; i <= 32+16; ++i, cur+=row) {
-            g2pt_row_table[i] = cur;
-         }
-      }
-      g2pt_func_perspective_core = g2pt_unlit_perspective_core_asm;
-   }
-#else
-   else
-      CriticalMsg("Can't perspective map using non power of 2 texture.\n");
-#endif
-
-   if (g2pt_clut) {
-      g2pt_clut_n_chain = g2pt_func_n;
-      g2pt_func_n = g2pt_clut_n_asm;
-      g2pt_unlit_8_chain = g2pt_clut_8_asm;
-      g2pt_clut_8_chain = g2pt_generic_8_asm;
-      g2pt_func_perspective_core = g2pt_unlit_perspective_core_asm;
-   } else
-      g2pt_unlit_8_chain = g2pt_preload?g2pt_generic_preload_8_asm:g2pt_generic_8_asm;
-
-   g2pt_func_perspective_run  = g2pt_unlit_perspective_run_asm;
-}
-
-static void g2ptmap_lit(grs_bitmap *bm)
-{
-   if (POW2(bm)) {
-      g2pt_arb_size = 0;
-
-      g2pt_func_n = g2pt_lit_n_asm;
-
-      g2pt_func_8 = g2pt_lit_8_asm;
-      g2pt_lit_8_chain = g2pt_preload ? g2pt_generic_preload_8_asm : g2pt_generic_8_asm;
-
-      g2pt_lit_n_setup(bm);
-      g2pt_lit_8_setup(bm);
-   }
-   else
-      CriticalMsg("Can't perspective map using non power of 2 texture.\n");
-
-   g2pt_func_perspective_run = g2pt_lit_perspective_run_asm;
-   g2pt_func_perspective_core = g2pt_lit_perspective_core_asm;
-}
-
-
-static void g2ptmap_tluc8(grs_bitmap *bm)
-{
-   g2pt_arb_size = 0;
-
-   g2pt_func_n = g2pt_tluc_n_asm;
-   g2pt_tluc_n_chain = g2pt_unlit_n_asm;
-
-   g2pt_func_8 = g2pt_unlit_8_asm;
-   g2pt_unlit_8_chain = g2pt_tluc_8_asm;
-
-   g2pt_unlit_8_setup(bm);
-   g2pt_unlit_n_setup(bm);
-
-   g2pt_func_perspective_run = g2pt_unlit_perspective_run_asm;
-   g2pt_func_perspective_core = g2pt_unlit_perspective_core_asm;
-}
-
-static void g2ptmap_transp(grs_bitmap *bm)
-{
-   bool clut = FALSE;
-
-   g2pt_arb_size = 0;
-
-   g2pt_func_n = g2pt_transp_n_asm;
-   g2pt_transp_n_chain = clut ? g2pt_clut_n_asm : g2pt_unlit_n_asm;
-   g2pt_clut_n_chain = g2pt_unlit_n_asm;
- 
-   g2pt_func_8 = g2pt_unlit_8_asm;
-   if (clut) {
-      g2pt_unlit_8_chain = g2pt_clut_8_asm;
-      g2pt_clut_8_chain = g2pt_transp_8_asm;
-   } else {
-      g2pt_unlit_8_chain = g2pt_transp_8_asm;
-   }
-
-   g2pt_unlit_8_setup(bm);
-   g2pt_unlit_n_setup(bm);
-
-   g2pt_func_perspective_run = g2pt_unlit_perspective_run_asm;
-   g2pt_func_perspective_core = g2pt_unlit_perspective_core_asm;
-}
-
-#if 0
-void g2ptmap_pallit(void)
-{
-   g2pt_arb_size = 0;
-   if (!g2pt_clut)
-   {
-         g2pt_func_n = g2pt_pallit_n_asm;
-         g2pt_func_n_flat = g2pt_palflat_n_asm;
-
-         g2pt_func_8 = g2pt_unlit_8_asm;
-         g2pt_unlit_8_chain = g2pt_pallit_store_8_asm;
-
-         g2pt_func_8_flat = g2pt_palflat_8_asm;
-         g2pt_palflat_8_chain = g2pt_preload ? g2pt_generic_preload_8_asm : g2pt_generic_8_asm;
-
-         if (g2pt_dither)
-            g2pt_func_perspective_core = g2pt_lit_perspective_core_asm;
-         else
-            g2pt_func_perspective_core = g2pt_pallit_perspective_core_asm;
-         g2pt_func_perspective_run = g2pt_lit_perspective_run_asm;
-   }
-   else
-   {
-      g2pt_func_n = g2pt_clut_n_asm;
-      g2pt_clut_n_chain = g2pt_pallit_n_asm;
-
-      g2pt_func_8 = g2pt_unlit_8_asm;
-#if 0
-      g2pt_unlit_8_chain = g2pt_pallit_8_asm;
-      g2pt_pallit_8_chain = g2pt_clut_8_asm;
-      g2pt_clut_8_chain = g2pt_generic_8_asm;
-#else
-      g2pt_unlit_8_chain = g2pt_pallit_clut_store_8_asm;
-#endif
-
-      g2pt_func_perspective_core = g2pt_lit_perspective_core_asm;
-      g2pt_func_perspective_run = g2pt_lit_perspective_run_asm;
-   }
-
-   g2pt_pallit_n_setup();
-   g2pt_palflat_n_setup();
-
-   g2pt_unlit_8_setup();
-   g2pt_palflat_8_setup();
-}
-
-void g2ptmap_pallit_tluc8(void)
-{
-   g2pt_arb_size = 0;
-
-   g2pt_func_n = g2pt_tluc_n_asm;
-   g2pt_tluc_n_chain = g2pt_pallit_n_asm;
-
-   g2pt_func_8 = g2pt_unlit_8_asm;
-   g2pt_unlit_8_chain = g2pt_pallit_8_asm;
-   g2pt_pallit_8_chain = g2pt_tluc_8_asm;
-
-   g2pt_unlit_8_setup();
-   g2pt_pallit_n_setup();
-
-   g2pt_func_perspective_run  = g2pt_unlit_perspective_run_asm;
-   g2pt_func_perspective_core = g2pt_unlit_perspective_core_asm;
-}
-#endif
-
-static void g2ptmap_unlit16(grs_bitmap *bm)
-{
-   g2pt_func_perspective_core = g2pt_unlit_perspective_core_asm;
-   g2pt_func_perspective_run  = g2pt_unlit_perspective_run_asm;
-   g2pt_arb_size = 0;
-   g2pt16_mask = 0xffffffff;
-
-   if (bm->type == BMT_FLAT8) {
-      pixpal = (void *)grd_pal16_list[bm->align];
-
-      g2pt_func_8 = g2pt_unlit_8_asm;
-      g2pt_unlit_8_setup(bm);
-
-      if (bm->flags & BMF_TRANS) {
-         g2pt_unlit_8_chain = g2pt816_transp_8_asm;
-         g2pt_func_n = g2pt816_transp_n_asm;
-         g2pt_unlit_n_setup(bm);
-         g2pt_transp_n_chain = g2pt_unlit_n_asm;
-      } else {
-         g2pt_unlit_8_chain = g2pt_pal816_8_asm;
-         g2pt_func_n = g2pt816_unlit_n_asm;
-         g2pt816_unlit_n_setup(bm);
-      }
-   } else {
-      g2pt_func_n = g2pt16_unlit_n_asm;
-      g2pt_func_8 = g2pt16_unlit_8_asm;
-      g2pt_unlit_8_chain = g2pt16_generic_8_asm;
-
-      g2pt16_unlit_n_setup(bm);
-      g2pt16_unlit_8_setup(bm);
-   }
-}
-
-static void g2ptmap_lit16(grs_bitmap *bm)
-{
-   g2pt_func_n = g2pt16_lit_n_asm;
-   g2pt_func_8 = g2pt16_lit_8_asm;
-   g2pt_func_perspective_core = g2pt_lit_perspective_core_asm;
-   g2pt_lit_8_chain = g2pt16_generic_8_asm;
-
-   g2pt16_lit_n_setup(bm);
-   g2pt16_lit_8_setup(bm);
-
-   g2pt_func_perspective_run  = g2pt_lit_perspective_run_asm;
-   g2pt_arb_size = 0;
-   g2pt16_mask = 0xffffffff;
-}
-
-// The following are the "portal" interface to the perspective mappers.
-// These funcs are called when the client has already set up the gradients
-// for the poly and we just need to rasterize
-
-extern BOOL g2pt_poly_lit;
-static int g2ptmap_setup8(grs_bitmap *bm)
-{
-   if (bm->type == BMT_TLUC8)
-      g2ptmap_tluc8(bm);
-   else if (bm->flags & BMF_TRANS)
-      g2ptmap_transp(bm);
-   else if (g2pt_poly_lit)
-      g2ptmap_lit(bm);
-   else {
-      g2ptmap_unlit(bm);
-   }
-   g2pt16_mask = 0;
-   return G2PTC_OK;
-}
-
-static int g2ptmap_setup16(grs_bitmap *bm)
-{
-   if (g2pt_poly_lit) {
-      if (bm->type == BMT_FLAT8)
-         g2ptmap_lit16(bm);
-      else
-         return G2PTC_FAIL;
-   } else
-      g2ptmap_unlit16(bm);
-
-   return G2PTC_OK;
-}
-
 
 int g2ptmap_setup(grs_bitmap *bm)
 {
-   switch (grd_bm.type) {
-   case BMT_FLAT8:
-      return g2ptmap_setup8(bm);
-   case BMT_FLAT16:
-      return g2ptmap_setup16(bm);
-   default:
-      Warning(("portal mappers called with unsupported canvas_type"));
-   }
-   return G2PTC_FAIL;
+   if (bm == NULL)
+      return G2PTC_FAIL;
+   if (grd_bm.type != BMT_FLAT8 && grd_bm.type != BMT_FLAT16)
+      return G2PTC_FAIL;
+
+   g2pt_bitmap = bm;
+   g2pt_tmap_ptr = bm->bits;
+   g2pt_tmap_row = bm->row;
+   g2pt_tmap_mask = (bm->h - 1) * 256 + (bm->w - 1);
+   g2pt16_mask = grd_bm.type == BMT_FLAT16 ? -1 : 0;
+   if (grd_bm.type == BMT_FLAT16 && bm->type == BMT_FLAT8)
+      pixpal = (void *)grd_pal16_list[bm->align];
+   return G2PTC_OK;
 }
 
+void g2ptmap_affine_duv(fix du, fix dv)
+{
+   g2pt_du = du;
+   g2pt_dv = dv;
+}
 
+void g2ptmap_run(uchar *dest, int count, fix u, fix v)
+{
+   draw_span(dest, count, u, v, g2pt_du, g2pt_dv, FALSE);
+}
 
-// These are the regular g2 entry points.
+void g2ptmap_lit_run(uchar *dest, int count, fix u, fix v)
+{
+   draw_span(dest, count, u, v, g2pt_du, g2pt_dv, TRUE);
+}
 
-extern int g2pt_unlit_perspective_poly(int n, g2s_point **vp);
-extern int g2pt_lit_perspective_poly(int n, g2s_point **vp);
+void g2ptmap_perspective_run(int count, double *abc, uchar *dest)
+{
+   int i;
+   double a = abc[0];
+   double b = abc[1];
+   double c = abc[2];
+
+   for (i = 0; i < count; ++i) {
+      if (c != 0.0) {
+         fix u = (fix)(a / c);
+         fix v = (fix)(b / c);
+         draw_span(dest, 1, u, v, 0, 0, g2pt_poly_lit);
+      }
+      dest += grd_bm.type == BMT_FLAT16 ? 2 : 1;
+      a += g2pt_fda;
+      b += g2pt_fdb;
+      c += g2pt_fdc;
+   }
+}
 
 void g2ptmap_setup_unlit(grs_bitmap *bm)
 {
-   g2d_pp.u_scale = bm->w * 65536.0;
-   g2d_pp.v_scale = bm->h * 65536.0;
+   g2d_pp.u_scale = bm->w * 65536.0f;
+   g2d_pp.v_scale = bm->h * 65536.0f;
    g2d_pp.poly_func = g2pt_unlit_perspective_poly;
-
-   if (gr_get_fill_type()==FILL_CLUT)
-      g2pt_clut = (uchar *)gr_get_fill_parm();
-   else
-      g2pt_clut = NULL;
-
-   g2ptmap_unlit(bm);
-   g2pt16_mask = 0;
+   g2pt_poly_lit = FALSE;
+   g2pt_clut = gr_get_fill_type() == FILL_CLUT
+      ? (uchar *)gr_get_fill_parm() : NULL;
+   g2ptmap_setup(bm);
 }
 
 void g2ptmap_setup_lit(grs_bitmap *bm)
 {
-   g2d_pp.u_scale = bm->w * 65536.0;
-   g2d_pp.v_scale = bm->h * 65536.0;
+   g2d_pp.u_scale = bm->w * 65536.0f;
+   g2d_pp.v_scale = bm->h * 65536.0f;
    g2d_pp.poly_func = g2pt_lit_perspective_poly;
-
-//   if (gr_get_fill_type()==FILL_CLUT)
-//      g2pt_clut = (uchar *)gr_get_fill_parm();
-
-   g2ptmap_lit(bm);
-   g2pt16_mask = 0;
+   g2pt_poly_lit = TRUE;
+   g2ptmap_setup(bm);
 }
-
 
 void g2ptmap_setup_unlit16(grs_bitmap *bm)
 {
-   g2d_pp.u_scale = bm->w * 65536.0;
-   g2d_pp.v_scale = bm->h * 65536.0;
-   g2d_pp.poly_func = g2pt_unlit_perspective_poly;
-
    g2pt_clut = NULL;
-
-   g2ptmap_unlit16(bm);
+   g2ptmap_setup_unlit(bm);
 }
-
 
 void g2ptmap_setup_lit16(grs_bitmap *bm)
 {
-   g2d_pp.u_scale = bm->w * 65536.0;
-   g2d_pp.v_scale = bm->h * 65536.0;
-   g2d_pp.poly_func = g2pt_lit_perspective_poly;
-
    g2pt_clut = NULL;
-
-   g2ptmap_lit16(bm);
+   g2ptmap_setup_lit(bm);
 }

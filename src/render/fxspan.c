@@ -54,10 +54,10 @@ bool FXSpanClipToCanvas(sFXSpanSet *set, grs_canvas *canvas, fix x, fix y)
    // The bounds we're clipping to are in the coordinate system of the
    // span set.  So from here on in, our calculations won't bother
    // with the canvas' coordinate system.
-   int clip_left = max(0, canvas->gc.clip.i.left - int_x);
+   int clip_left = __max(0, canvas->gc.clip.i.left - int_x);
    int clip_right = canvas->gc.clip.i.right - int_x;
-   int clip_top = max(0, canvas->gc.clip.i.top - int_y);
-   int clip_bottom = min(canvas->gc.clip.i.bot - clip_top,
+   int clip_top = __max(0, canvas->gc.clip.i.top - int_y);
+   int clip_bottom = __min(canvas->gc.clip.i.bot - clip_top,
                          set->first_span_used + set->num_spans_used);
 
    // don't use spans above the top of the canvas
@@ -84,8 +84,8 @@ bool FXSpanClipToCanvas(sFXSpanSet *set, grs_canvas *canvas, fix x, fix y)
       if (left < clip_right || right > clip_left) {
          anything_left = TRUE;
 
-         span[i].left = max(left, clip_left);
-         span[i].length = min(right, clip_right) - span[i].left + 1;
+         span[i].left = __max(left, clip_left);
+         span[i].length = __min(right, clip_right) - span[i].left + 1;
 AssertMsg((span[i].length >= 1), "!!!!!");
       } else
          span[i].left = SPAN_NOT_USED;

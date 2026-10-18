@@ -12,8 +12,8 @@
 #include <tmapfcn.h>
 #include <dbg.h>
 
-extern void flat8_flat8_lit_opaque_p2_wrap_il();
-extern void flat8_flat8_lit_opaque_p2_wrap_dither_il();
+extern void flat8_flat8_lit_opaque_p2_wrap_il(int, int, fix, fix);
+extern void flat8_flat8_lit_opaque_p2_wrap_dither_il(int, int, fix, fix);
 
 extern uchar *g2d_ltab_dither0[];
 extern uchar *g2d_ltab_dither1[];
@@ -26,7 +26,7 @@ extern uchar g2d_o2wi_last_shift_v;
 extern uchar *g2d_o2wi_p_src[];
 extern uchar *g2d_o2wi_last_p_src;
 
-static uchar *last_ltab=(uchar *)0xdeadbeef;
+static uchar *last_ltab = (uchar *)(uintptr_t)0xdeadbeef;
 
 #define flat8_flat8_opaque_wrap_lit_ulmap flat8_flat8_opaque_lit_ulmap
 void flat8_flat8_opaque_wrap_lit_ulmap(grs_bitmap *bm, int n, grs_vertex **vpl)

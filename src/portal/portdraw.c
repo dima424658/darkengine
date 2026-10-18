@@ -19,6 +19,7 @@
 #include <mprintf.h>
 #include <lgd3d.h>
 #include <tmpalloc.h>
+#include <darklimit.h>
 
 #include <portwatr.h>
 #include <portal_.h>
@@ -61,9 +62,9 @@ PortalCellMotion portal_cell_motion[MAX_CELL_MOTION];
 // Higher means more texels.  Right now it only affects MIP mapping.
 // The expected range is 0.8-1.5; the default setting is just what looks
 // good to me without clobbering the frame rate.
-float portal_detail_level = 1.90;
+float portal_detail_level = 1.90f;
 
-float dot_clamp=0.6;
+float dot_clamp=0.6f;
 #define VISOBJ_NULL      (-1)
 
 
@@ -90,6 +91,8 @@ float dot_clamp=0.6;
 r3s_point   *cur_ph;    // list of pointers to r3s_points for current pool
 Vector      *cur_pool;  // list of untransformed vectors
 PortalCell  *cur_cell;
+float *portal_current_wrext_u_base;
+float *portal_current_wrext_v_base;
 ushort      *cur_anim_light_index_list;
 extern int   cur_cell_num;
 
@@ -176,7 +179,7 @@ float light_mapping[256];
 float light_mapping_dithered[256];
 #endif
 extern int dither;
-int max_draw_polys = 1024;
+int max_draw_polys = DARK_LIMIT_RUNTIME_DRAWN_TERRAIN_POLYS;
 
 extern grs_bitmap *get_cached_surface(PortalPolygonRenderInfo *render,
                                       PortalLightMap *lt, grs_bitmap *texture,
@@ -238,11 +241,11 @@ void draw_polygon_vertices(r3s_phandle *points, int num_points, uint color)
           // displace by at most 3, and at least len/2
 
           if (len/2 < fix_make(VERT_DIST,0)) {
-             temp.grp.sx = temp.grp.sx + dx/2;
-             temp.grp.sy = temp.grp.sy + dy/2;
+             temp.grp.sx = (fix)(temp.grp.sx + dx/2);
+             temp.grp.sy = (fix)(temp.grp.sy + dy/2);
           } else {
-             temp.grp.sx = temp.grp.sx + (dx/len) * fix_make(VERT_DIST,0);
-             temp.grp.sy = temp.grp.sy + (dy/len) * fix_make(VERT_DIST,0);
+             temp.grp.sx = (fix)(temp.grp.sx + (dx/len) * fix_make(VERT_DIST,0));
+             temp.grp.sy = (fix)(temp.grp.sy + (dy/len) * fix_make(VERT_DIST,0));
           }
 
           r3_draw_point(&temp);
@@ -498,12 +501,12 @@ void compute_tmapping(PortalPolygonRenderInfo *render, uchar not_light,
    mxs_vector u_vec, v_vec, pt;
    mxs_real usc, vsc;
 
-   usc = ((float) render->u_base) * 1.0 / (16.0*256.0); // u translation
-   vsc = ((float) render->v_base) * 1.0 / (16.0*256.0); // v translation
+   usc = ((float) render->u_base) * 1.0f / (16.0f*256.0f); // u translation
+   vsc = ((float) render->v_base) * 1.0f / (16.0f*256.0f); // v translation
 
    if (!not_light) {
-      usc -= ((float) lt->base_u) * 0.25;
-      vsc -= ((float) lt->base_v) * 0.25;
+      usc -= ((float) lt->base_u) * 0.25f;
+      vsc -= ((float) lt->base_v) * 0.25f;
    }
 
    get_cached_vector(&u_vec, &render->tex_u);
@@ -606,6 +609,7 @@ void draw_background_hack(int n, r3s_phandle *vlist)
 
 extern int portal_sky_id;
 extern int portal_sky_spans;
+extern bool portal_is_star_sky_texture(ushort texture_id);
 
 // returns FALSE if it was totally transparent; return TRUE if it was
 // non-transparent, even if not visible (e.g. clipped away)
@@ -620,10 +624,15 @@ bool draw_surface(PortalPolygonCore *poly, PortalPolygonRenderInfo *render,
    fix corner_u_offset, corner_v_offset;
    uchar not_light;
    bool position_from_motion = FALSE;
+   bool star_sky;
    r3s_phandle vlist[MAX_VERT], *valid3d, *final;
 
    // get the raw, unlit texture
    texture = portal_get_texture(render->texture_id);
+   star_sky = !bRenderNewSky &&
+      portal_is_star_sky_texture(render->texture_id);
+   if (star_sky && render->texture_id == 0)
+      texture = portal_get_texture(portal_sky_id);
    // It is our impression (wsf) that this only happens for the sky hack:
    if (!texture && !bRenderNewSky) {
       n = poly->num_vertices;
@@ -683,6 +692,23 @@ bool draw_surface(PortalPolygonCore *poly, PortalPolygonRenderInfo *render,
          ++mip_level;
          --desired_mip;
          ++texture;
+      }
+
+      // The software surface cache can only hold a 240x240 lit surface.
+      // Returning the raw texture when a lightmap is too large makes that
+      // polygon fullbright and causes lighting to pop as the selected mip
+      // changes with camera distance.  Prefer a coarser available mip whose
+      // generated surface fits the cache.
+      if (!g_lgd3d && !not_light) {
+         int pixels_per_lm = 64 >> (mip_level + 2);
+         while (pixels_per_lm > 0
+             && (((lt->w - 1) * pixels_per_lm > 256 - 16)
+              || ((lt->h - 1) * pixels_per_lm > 256 - 16))
+             && texture[1].w != 0) {
+            ++mip_level;
+            ++texture;
+            pixels_per_lm = 64 >> (mip_level + 2);
+         }
       }
       sc = 64 >> mip_level; // texture->w;
    }
@@ -747,7 +773,7 @@ bool draw_surface(PortalPolygonCore *poly, PortalPolygonRenderInfo *render,
    }
 
 
-   if ((render->texture_id == portal_sky_id) && !bRenderNewSky)
+   if (star_sky)
    {
       switch (ptsky_type) {
       case PTSKY_SPAN:
@@ -819,7 +845,7 @@ void draw_cell_wireframe(PortalCell *cell, uint color)
 
 ////  A hacked system for mapping distance in water to a clut id
 
-static water_clut[32] =
+static int water_clut[32] =
 {
    0,0,1,1, 2,2,3,3, 4,4,5,5, 5,6,6,6,
    7,7,7,8, 8,8,9,9, 9,10,10,10, 10,11,11,11
@@ -877,6 +903,8 @@ void portal_preload_lightmaps(int cell)
    cur_ph = POINTS(r);
    cur_pool = r->vpool;
    cur_cell = r;
+   portal_current_wrext_u_base = portal_wrext_u_base[cell];
+   portal_current_wrext_v_base = portal_wrext_v_base[cell];
    cur_anim_light_index_list = r->anim_light_index_list;
    r_vertex_list = r->vertex_list;
    light_bitmask = r->changed_anim_light_bitmask;
@@ -954,6 +982,8 @@ void draw_region(int cell)
    cur_ph = POINTS(r);
    cur_pool = r->vpool;
    cur_cell = r;
+   portal_current_wrext_u_base = portal_wrext_u_base[cell];
+   portal_current_wrext_v_base = portal_wrext_v_base[cell];
    cur_anim_light_index_list = r->anim_light_index_list;
    r_vertex_list = r->vertex_list;
 
@@ -1161,6 +1191,8 @@ void draw_region_lgd3d(int cell)
    cur_ph = POINTS(r);
    cur_pool = r->vpool;
    cur_cell = r;
+   portal_current_wrext_u_base = portal_wrext_u_base[cell];
+   portal_current_wrext_v_base = portal_wrext_v_base[cell];
    r_vertex_list = r->vertex_list;
 
    r_clip = CLIP_DATA(r);
@@ -1344,6 +1376,8 @@ void draw_region_lightmap_only(int cell)
    cur_ph = POINTS(r);
    cur_pool = r->vpool;
    cur_cell = r;
+   portal_current_wrext_u_base = portal_wrext_u_base[cell];
+   portal_current_wrext_v_base = portal_wrext_v_base[cell];
    cur_anim_light_index_list = r->anim_light_index_list;
    r_vertex_list = r->vertex_list;
 
@@ -1416,39 +1450,21 @@ typedef struct sBlockedBits
    ulong Bits[2];
 } sBlockedBits;
 
-// nByte !! yields 0 or 1:
-// nSetBit is nBit shifted by 32 if nByte is 1, else not shifted
-#define SetBlockedBit(bits, nBit) \
-      nByte = !!(nBit>>32); \
-      nSetBit = nBit>>(nByte<<5); \
-      bits.Bits[nByte] |= nSetBit
-
-// Assumes bit is set:
-#define ResetBlockedBit(bits, nBit) \
-      nByte = !!(nBit>>32); \
-      nSetBit = nBit>>(nByte<<5); \
-      bits.Bits[nByte] ^= nSetBit
-
-// Just stuff a 0 there.
-#define ZeroBlockedBit(bits, nBit) \
-      nByte = !!(nBit>>32); \
-      nSetBit = nBit>>(nByte<<5); \
-      bits.Bits[nByte] &= ~nSetBit
-
-// Returns last rvalue in sequence, and performs operations first to last:
-#define IsBitSet(bits, nBit) \
-      (nByte = !!(nBit>>32), \
-       nSetBit = nBit>>(nByte<<5), \
-       bits.Bits[nByte] & nSetBit)
+#define BlockedWord(index) ((unsigned)(index) >> 5)
+#define BlockedMask(index) (1UL << ((unsigned)(index) & 31))
+#define SetBlockedBit(bits, index) \
+      ((bits).Bits[BlockedWord(index)] |= BlockedMask(index))
+#define ResetBlockedBit(bits, index) \
+      ((bits).Bits[BlockedWord(index)] &= ~BlockedMask(index))
+#define ZeroBlockedBit(bits, index) ResetBlockedBit(bits, index)
+#define IsBitSet(bits, index) \
+      ((bits).Bits[BlockedWord(index)] & BlockedMask(index))
 
 void topological_sort(ObjVisibleID *obj_list, int n)
 {
 //   int x,y, i,j, b;
    int x,y, i,j;
 
-   ulong nByte; // Helper for macros
-   ulong nSetBit; // Helper for macros
-   ulong nVal;
    sBlockedBits blocked[MAX_SORTED_OBJS];
    sBlockedBits b;
 
@@ -1478,20 +1494,20 @@ void topological_sort(ObjVisibleID *obj_list, int n)
                                   vis_objs[obj_list[x]].obj)) {
             // check if they form a cycle
 //            if (y < x && (blocked[y] & (1 << x))) {
-            if (y < x && IsBitSet(blocked[y], (1<<x))) {
+            if (y < x && IsBitSet(blocked[y], x)) {
                // they do, so they're too close to each other...
                // compare their centers:   dist-x > dist-y  ???
                if (obj_compare(obj_list[x],obj_list[y]) > 0) {
                   // y is closer, so no x blocks y
-                  ResetBlockedBit(blocked[y],(1<<x));
-                  SetBlockedBit(b, (1<<y));
+                  ResetBlockedBit(blocked[y], x);
+                  SetBlockedBit(b, y);
 //                  blocked[y] ^= 1 << x;
 //                  b |= 1 << y;  // yes y blocks x
                }
                // else say x blocks y (already coded), and no y blocks x
             } else
                // no cycle, so y blocks x
-               SetBlockedBit(b, (1<<y));
+               SetBlockedBit(b, y);
                // b |= 1 << y;
          }
       }
@@ -1518,15 +1534,15 @@ void topological_sort(ObjVisibleID *obj_list, int n)
       Error(1, "Ran out of objects inside object sorter.");
 #endif
      use_j:
+      x = j;
       obj_list[i] = my_list[j];
       my_list[j] = VISOBJ_NULL;
       blocked[j].Bits[0] = blocked[j].Bits[1] = 0;
 //      blocked[j] = 0;
       // unblock anybody this guy blocked
-      nVal = 1 << j;
 //      b = 1 << j;
       for (j=0; j < n; ++j)
-         ZeroBlockedBit(blocked[j], nVal);
+         ZeroBlockedBit(blocked[j], x);
 //         if (blocked[j] & b)
 //            blocked[j] ^= b;
    }
@@ -1680,7 +1696,7 @@ void portal_push_clip_planes(
       p.x = pl->normal.x;
       p.y = pl->normal.y;
       p.z = pl->normal.z;
-      p.d = pl->plane_constant+0.002;
+      p.d = pl->plane_constant+0.002f;
       r3_push_clip_plane(&p);
    }
 }
@@ -1715,7 +1731,7 @@ static float rescale(float val, float *map)
    //    map[i] + where * (map[j] - map[i]) == val
 
    where = (val - map[i]) / (map[i+1] - map[i]);
-   return (where + i) / 32.0;
+   return (where + i) / 32.0f;
 }
 
 
@@ -1827,5 +1843,5 @@ mxs_real compute_portal_z(void)
      // compute the average
    z /= port_n;
 
-   return (z > 0.1 ? z : 0.1);
+   return (z > 0.1f ? z : 0.1f);
 }

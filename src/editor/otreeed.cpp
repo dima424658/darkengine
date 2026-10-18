@@ -5,9 +5,6 @@
 
 // $Header: r:/t2repos/thief2/src/editor/otreeed.cpp,v 1.9 2000/02/19 13:11:10 toml Exp $
 
-#include <wtypes.h>
-#include <dynfunc.h>
-
 #include <comtools.h>
 #include <appagg.h>
 #include <traitman.h>
@@ -132,26 +129,12 @@ sObjTreeEditorDesc room_edit_trees =
 };
 
 
-static void tree_woe(const sObjTreeEditorDesc* , ObjID )
-{
-   CriticalMsg("Could not load dialog!");
-}
-
-
-DeclDynFunc_(void, LGAPI, DoHierarchy, (const sObjTreeEditorDesc* , ObjID ));
-ImplDynFunc(DoHierarchy, "darkdlgs.dll", "_DoHierarchy@8", tree_woe);
-
-#define ObjTree (DynFunc(DoHierarchy).GetProcAddress())
-
-
 void EditObjHierarchyRoom(ObjID focus)
 {
-   ObjTree(&room_edit_trees, focus);
 }
 
 void EditObjHierarchy(ObjID focus)
 {
-   ObjTree(&edit_trees,focus); 
 }
 
 

@@ -99,7 +99,7 @@ inline int cRoomPortal::GetNumEdges(void) const
 
 inline const tPlane &cRoomPortal::GetEdgePlane(int planeNum) const
 {
-   AssertMsg2(planeNum < m_EdgePlane.Size(), "Attempt to get edge plane 0 of 0\n", planeNum, m_EdgePlane.Size());
+   AssertMsg2(planeNum >= 0 && planeNum < (int)m_EdgePlane.Size(), "Attempt to get edge plane 0 of 0\n", planeNum, m_EdgePlane.Size());
    return m_EdgePlane[planeNum];
 }
 

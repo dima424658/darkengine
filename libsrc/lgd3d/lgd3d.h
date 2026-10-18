@@ -22,14 +22,9 @@ extern "C" {
 
     typedef struct ILGSurface ILGSurface;
 
-    typedef struct _D3DDeviceDesc DevDesc;
-
     typedef struct lgd3ds_device_info {
-        GUID         device_guid;
-        GUID* p_ddraw_guid;
-        DevDesc* device_desc;
         short* supported_modes; // -1 terminated list 
-        char* p_ddraw_desc;
+        const char* name;
         ulong        flags;
     } lgd3ds_device_info;
 
@@ -138,6 +133,7 @@ extern "C" {
 
     extern void lgd3d_start_frame(int frame);  // frame count passed to texture manager
     extern void lgd3d_end_frame(void);
+    extern void lgd3d_scene_suspend(void);
 
     extern BOOL lgd3d_overlays_master_switch(BOOL bOverlaysOn);
 
@@ -188,6 +184,9 @@ extern "C" {
     extern int lgd3d_is_alpha_blending_on(void);
 
     extern void lgd3d_set_alpha(float alpha);             // 0.0 <= alpha <= 1.0
+    // Modulate the global alpha by the alpha stored in each g2s_point.  Most
+    // geometry does not initialize that field, so callers must opt in.
+    extern void lgd3d_set_iterated_alpha(BOOL enabled);
     extern void lgd3d_set_blend(BOOL do_blend);
     extern void lgd3d_blend_normal(void);
 
@@ -260,8 +259,8 @@ do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
     // texture wrapping
     //  TRUE == wrap the texture (texture is a torus), 
     //  FALSE == clamp the texture (texture is a closed rectangle)
-    extern BOOL lgd3d_get_texture_wrapping(DWORD dwLevel);
-    extern BOOL lgd3d_set_texture_wrapping(DWORD dwLevel, BOOL bSetSmooth);
+    extern BOOL lgd3d_get_texture_wrapping(uint level);
+    extern BOOL lgd3d_set_texture_wrapping(uint level, BOOL wrap);
 
 
     // palettes
@@ -315,8 +314,6 @@ do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
 
     extern int lgd3d_trifan(int n, r3s_point** vpl);
     extern int lgd3d_lit_trifan(int n, r3s_point** vpl);
-    extern int lgd3d_poly(int n, r3s_point** vpl);
-    extern int lgd3d_spoly(int n, r3s_point** vpl);
     extern int lgd3d_g2upoly(int n, g2s_point** vpl);
     extern int lgd3d_g2poly(int n, g2s_point** vpl);
     extern int lgd3d_g2utrifan(int n, g2s_point** vpl);
@@ -428,7 +425,7 @@ do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
 
 
 
-    BOOL lgd3d_get_error(DWORD* pdwCode, DWORD* phResult);
+    BOOL lgd3d_get_error(uint32* code, uint32* result);
 
 
 #ifdef __cplusplus

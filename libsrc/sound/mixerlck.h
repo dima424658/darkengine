@@ -11,7 +11,7 @@
 #ifndef __MIXERLCK_H
 #define __MIXERLCK_H
 
-#ifdef _WIN32
+#include <mutex>
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -24,11 +24,11 @@
 class cMixerAutoLock
 {
 public:
-    cMixerAutoLock(cThreadMutex & mutex);
+    cMixerAutoLock(std::recursive_mutex & mutex);
     ~cMixerAutoLock();
 
 private:
-    cThreadMutex & m_mutex;
+    std::recursive_mutex & m_mutex;
 
     // make copy constructor and assignment operator inaccessible
     cMixerAutoLock(const cMixerAutoLock &);
@@ -41,23 +41,10 @@ private:
 //
 
 inline
-cMixerAutoLock::cMixerAutoLock(cThreadMutex & mutex)
+cMixerAutoLock::cMixerAutoLock(std::recursive_mutex & mutex)
   : m_mutex(mutex)
 {
-#ifndef SHIP
-   DWORD hr=m_mutex.Wait();
-   switch (hr)
-   {
-      case WAIT_TIMEOUT:
-      case WAIT_ABANDONED:
-         CriticalMsg("AutoLock of Mutex Wait Infinite Timeout or Abandon");
-         break;
-      case WAIT_OBJECT_0:
-         break;
-   }
-#else
-   m_mutex.Wait();
-#endif    
+   m_mutex.lock();
 }
 
 ///////////////////////////////////////
@@ -65,9 +52,7 @@ cMixerAutoLock::cMixerAutoLock(cThreadMutex & mutex)
 inline
 cMixerAutoLock::~cMixerAutoLock()
 {
-    m_mutex.Release();
+    m_mutex.unlock();
 }
-
-#endif // _WIN32
 
 #endif /* !__MIXERLCK_H */

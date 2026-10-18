@@ -32,7 +32,7 @@ public:
 
 	tHashSetKey GetKey(tHashSetNode p) const override
 	{
-		return p ? (tHashSetKey)((cResourceName*)p)->m_pName : nullptr;
+		return p ? (tHashSetKey)((cResourceName*)p)->m_pName : 0;
 	}
 
 	cResourceData* FindResData(const char* pName, IStore* pStore, BOOL bCreate);
@@ -73,7 +73,7 @@ public:
 		if (((cResourceTypeData*)p)->m_pType != nullptr)
 			return (tHashSetKey)((cResourceTypeData*)p)->m_pType->GetName();
 		else
-			return nullptr;
+			return 0;
 	}
 };
 

@@ -137,7 +137,10 @@ Methods pnp_methods[] =
 #define NUM_PNPS (sizeof(pnp_methods)/sizeof(pnp_methods[0]))
 
 static Methodizer PNPizer[2] =
-{ { "PNP 1", NUM_PNPS, pnp_methods, NULL, -1}, { "PNP 2", NUM_PNPS, pnp_methods, NULL, -1} };
+{
+   { "PNP 1", NUM_PNPS, pnp_methods, { 0 }, -1 },
+   { "PNP 2", NUM_PNPS, pnp_methods, { 0 }, -1 }
+};
 
 int PnP_ForBrush(editBrush *brush)
 {
@@ -213,7 +216,7 @@ Methods swappable_methods[] =
 
 #define NUM_SWAPPABLES (sizeof(swappable_methods)/sizeof(swappable_methods[0]))
 
-static Methodizer Swapizer = { "Swappable", NUM_SWAPPABLES, swappable_methods,};
+static Methodizer Swapizer = { "Swappable", NUM_SWAPPABLES, swappable_methods, { 0 }, -1 };
 
 void GFHOpenSwappable(GFHSwapKind kind, LGadRoot* root, Rect* bounds, editBrush *brush)
 {

@@ -32,10 +32,10 @@ public:
     //
     // IMalloc functions
     //
-    STDMETHOD_(void *, Alloc)   (ULONG cb);
-    STDMETHOD_(void *, Realloc) (void * pv, ULONG cb);
+    STDMETHOD_(void *, Alloc)   (SIZE_T cb);
+    STDMETHOD_(void *, Realloc) (void * pv, SIZE_T cb);
     STDMETHOD_(void,   Free)    (void * pv);
-    STDMETHOD_(ULONG,  GetSize) (void * pv);
+    STDMETHOD_(SIZE_T, GetSize) (void * pv);
     STDMETHOD_(void,   HeapMinimize)();
 
 #ifndef SHIP
@@ -47,7 +47,7 @@ public:
 #endif
 
 private:
-    HANDLE m_hHeap;
+    void *m_hHeap;
 
 };
 

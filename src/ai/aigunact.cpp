@@ -163,7 +163,7 @@ void cAIGunAction::BroadcastShoot()
    AutoAppIPtr_(AINetManager, pAINetMan);
    AutoAppIPtr_(NetManager, pNetMan);
    sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),
-                           m_pAIState->GetID(),
+                           (NetObjID)m_pAIState->GetID(),
                            FALSE,
                            kAIAT_FireGun};
    sAINetMsg_ShockShoot netmsg;

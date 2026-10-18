@@ -7,6 +7,7 @@
 
 //dark binds processing
 #include <stdlib.h>
+#include <stdio.h>
 #include <comtools.h>
 #include <appagg.h>
 
@@ -41,8 +42,8 @@ EXTERN BOOL gNoMoveKeys; //shock movement lockout.  here hacked in for
 
 #define MINEYEZOOM 1.0
 #define MAXEYEZOOM 3.0
-#define EYEZOOMFACTOR 1.1
-#define DRUNKEYEZOOM 0.1
+#define EYEZOOMFACTOR 1.1f
+#define DRUNKEYEZOOM 0.1f
 
 static void GetStates ()
 {

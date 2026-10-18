@@ -9,9 +9,7 @@
  * This file is part of the input library.
  */
 
-#ifdef WIN32
-#include <windows.h>
-#endif
+#include <win32_platform.h>
 
 #include <lg.h>
 #include <error.h>
@@ -20,7 +18,6 @@
 #include <kbscan.h>
 #include <inputimp.h>
 
-#include <windows.h>
 #include <comtools.h>
 #include <appagg.h>
 #include <wappapi.h>

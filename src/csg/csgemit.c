@@ -131,9 +131,9 @@ void compute_3_linear_eq(mxs_vector *x, mxs_vector *M1,
    double divisor =
       mat_det(M1->x,M1->y,M1->z, M2->x,M2->y,M2->z, M3->x,M3->y,M3->z);
 
-   x->x = mat_det(bx,M1->y,M1->z, by,M2->y,M2->z, bz,M3->y,M3->z) / divisor;
-   x->y = mat_det(M1->x,bx,M1->z, M2->x,by,M2->z, M3->x,bz,M3->z) / divisor;
-   x->z = mat_det(M1->x,M1->y,bx, M2->x,M2->y,by, M3->x,M3->y,bz) / divisor;
+   x->x = (mxs_real)(mat_det(bx,M1->y,M1->z, by,M2->y,M2->z, bz,M3->y,M3->z) / divisor);
+   x->y = (mxs_real)(mat_det(M1->x,bx,M1->z, M2->x,by,M2->z, M3->x,bz,M3->z) / divisor);
+   x->z = (mxs_real)(mat_det(M1->x,M1->y,bx, M2->x,M2->y,by, M3->x,M3->y,bz) / divisor);
 }
 
 
@@ -197,12 +197,12 @@ static bool check_poly_reversed(int k)
    h = poly_nv[k]-1;
    norm.x = norm.y = norm.z = 0;
    for (i=0; i < poly_nv[k]; ++i) {
-      norm.x +=  (vpal[vertices[k][h]].y - vpal[vertices[k][i]].y)
-                *(vpal[vertices[k][h]].z + vpal[vertices[k][i]].z);
-      norm.y +=  (vpal[vertices[k][h]].z - vpal[vertices[k][i]].z)
-                *(vpal[vertices[k][h]].x + vpal[vertices[k][i]].x);
-      norm.z +=  (vpal[vertices[k][h]].x - vpal[vertices[k][i]].x)
-                *(vpal[vertices[k][h]].y + vpal[vertices[k][i]].y);
+      norm.x += (mxs_real)((vpal[vertices[k][h]].y - vpal[vertices[k][i]].y)
+                         *(vpal[vertices[k][h]].z + vpal[vertices[k][i]].z));
+      norm.y += (mxs_real)((vpal[vertices[k][h]].z - vpal[vertices[k][i]].z)
+                         *(vpal[vertices[k][h]].x + vpal[vertices[k][i]].x));
+      norm.z += (mxs_real)((vpal[vertices[k][h]].x - vpal[vertices[k][i]].x)
+                         *(vpal[vertices[k][h]].y + vpal[vertices[k][i]].y));
       h = i;
    }
    this_norm = norm;
@@ -311,9 +311,9 @@ void emit_polygon(int k, PortalCell *cell, PortalPolygonCore *pcore, int *vcount
    // now use that plane to determine whether or not to reverse
    // the original bsp plane
 
-   bnorm.x = poly_plane[k]->a;
-   bnorm.y = poly_plane[k]->b;
-   bnorm.z = poly_plane[k]->c;
+   bnorm.x = (mxs_real)poly_plane[k]->a;
+   bnorm.y = (mxs_real)poly_plane[k]->b;
+   bnorm.z = (mxs_real)poly_plane[k]->c;
    
    if (!reversed) {
       this_norm.x = -this_norm.x;
@@ -321,15 +321,15 @@ void emit_polygon(int k, PortalCell *cell, PortalPolygonCore *pcore, int *vcount
       this_norm.z = -this_norm.z;
    }
    if (mx_dot_vec(&this_norm, &bnorm) < 0) {
-      this_normal.x = -poly_plane[k]->a;
-      this_normal.y = -poly_plane[k]->b;
-      this_normal.z = -poly_plane[k]->c;
-      this_plane.plane_constant = -poly_plane[k]->d;
+      this_normal.x = (mxs_real)-poly_plane[k]->a;
+      this_normal.y = (mxs_real)-poly_plane[k]->b;
+      this_normal.z = (mxs_real)-poly_plane[k]->c;
+      this_plane.plane_constant = (mxs_real)-poly_plane[k]->d;
    } else {
-      this_normal.x = poly_plane[k]->a;
-      this_normal.y = poly_plane[k]->b;
-      this_normal.z = poly_plane[k]->c;
-      this_plane.plane_constant = poly_plane[k]->d;
+      this_normal.x = (mxs_real)poly_plane[k]->a;
+      this_normal.y = (mxs_real)poly_plane[k]->b;
+      this_normal.z = (mxs_real)poly_plane[k]->c;
+      this_plane.plane_constant = (mxs_real)poly_plane[k]->d;
    }
 
    // now see if this plane is coplanar to another plane
@@ -403,7 +403,7 @@ ushort compute_uv_align(mxs_vector *uv, Vertex *base,
      float tex_scale, float align)
 {
    mxs_real core_loc = mx_dot_vec(uv, base) / tex_scale + align;
-   return fmod(core_loc, 4) * (16*256);
+   return (ushort)(fmodf(core_loc, 4) * (16*256));
 }
 
 float compute_uv_at_loc(mxs_vector *uv, Vertex *loc, float tex_scale, float align)
@@ -535,9 +535,9 @@ void compute_poly_texture_info(mxs_vector *norm, int brush, int face)
 void compute_point_texture_info(BspVertex *vec, float *u, float *v)
 {
    mxs_vector pt;
-   pt.x = vec->x;
-   pt.y = vec->y;
-   pt.z = vec->z;
+   pt.x = (mxs_real)vec->x;
+   pt.y = (mxs_real)vec->y;
+   pt.z = (mxs_real)vec->z;
    *u = compute_uv_at_loc(&tex_axis[0], &pt, this_tex_scale, this_tex_align_u);
    *v = compute_uv_at_loc(&tex_axis[1], &pt, this_tex_scale, this_tex_align_v);
 }
@@ -575,15 +575,15 @@ void compute_poly_texture(PortalPolygonRenderInfo *render, Vertex *base,
 
    m1 = mx_mag_vec(&render->tex_u);
    m2 = mx_mag_vec(&render->tex_v);
-   render->texture_mag = m1 > m2 ? m1 : m2;
+   render->texture_mag = (mxs_real)(m1 > m2 ? m1 : m2);
 
    tex_axis[0] = render->tex_u;
    tex_axis[1] = render->tex_v;
    tex_origin.x = base->x;
    tex_origin.y = base->y;
    tex_origin.z = base->z;
-   mx_scale_addeq_vec(&tex_origin, &tex_axis[0], -(render->u_base / (16*256.0)));
-   mx_scale_addeq_vec(&tex_origin, &tex_axis[1], -(render->v_base / (16*256.0)));
+   mx_scale_addeq_vec(&tex_origin, &tex_axis[0], -(render->u_base / (16*256.0f)));
+   mx_scale_addeq_vec(&tex_origin, &tex_axis[1], -(render->v_base / (16*256.0f)));
 
    render->cached_surface = 0;
 
@@ -618,9 +618,9 @@ void reset_cell_lighting(PortalCell *p)
    b = rgb.z * 256;
    ambient = r + (g << 8) + (b << 16);
 #else // RGB_888
-   r = rgb.x * 32;
-   g = rgb.y * 32;
-   b = rgb.z * 32;
+   r = (int)(rgb.x * 32);
+   g = (int)(rgb.y * 32);
+   b = (int)(rgb.z * 32);
    ambient = r + (g << 5) + (b << 10);
 #endif // RGB_888
 
@@ -777,9 +777,9 @@ static void emit_cell(int cell, int medium)
    p->refs = 0;
 
    for (i=0; i < num_v; ++i) {
-      p->vpool[i].x = vpal[i].x;
-      p->vpool[i].y = vpal[i].y;
-      p->vpool[i].z = vpal[i].z;
+      p->vpool[i].x = (mxs_real)vpal[i].x;
+      p->vpool[i].y = (mxs_real)vpal[i].y;
+      p->vpool[i].z = (mxs_real)vpal[i].z;
    }
 
    vcount = 0;
@@ -969,8 +969,8 @@ static void subdivide_poly(PortalPolygon *poly)
    float min_u, max_u, min_v, max_v;
    PortalPolyEdge *edge = poly->edge;
 
-   min_u = min_v = 1e20;
-   max_u = max_v = -1e20;
+   min_u = min_v = 1e20f;
+   max_u = max_v = -1e20f;
 
    do {
       float u,v;
@@ -1096,18 +1096,18 @@ static void emit_portal_poly(PortalPolygon *poly, PortalPolyhedron *ph)
        CB_FACE_IS_SELF_LUMINOUS(poly_brface[cur_poly] >> 8, poly_brface[cur_poly] & 255)==0 &&
        CB_FACE_TEXTURE(poly_brface[cur_poly] >> 8, poly_brface[cur_poly] & 255) != 249) {
       mxs_vector norm, inside_vec;
-      norm.x = poly_plane[cur_poly]->a;
-      norm.y = poly_plane[cur_poly]->b;
-      norm.z = poly_plane[cur_poly]->c;
+      norm.x = (mxs_real)poly_plane[cur_poly]->a;
+      norm.y = (mxs_real)poly_plane[cur_poly]->b;
+      norm.z = (mxs_real)poly_plane[cur_poly]->c;
       // now the normal may be backfacing, damnit
       // so what we gotsta to do is check if it is,
       // and reverse it if so
       // sadly, this is a pain in the butt
       // compute vector from point on poly into thing
 
-      inside_vec.x = nnside.x - poly->edge->data->start.x;
-      inside_vec.y = nnside.y - poly->edge->data->start.y;
-      inside_vec.z = nnside.z - poly->edge->data->start.z;
+      inside_vec.x = (mxs_real)(nnside.x - poly->edge->data->start.x);
+      inside_vec.y = (mxs_real)(nnside.y - poly->edge->data->start.y);
+      inside_vec.z = (mxs_real)(nnside.z - poly->edge->data->start.z);
 
       if (mx_dot_vec(&inside_vec, &norm) < 0) {
          norm.x = -norm.x;
@@ -1189,8 +1189,8 @@ Warning(("Split large cell: %d polys, %d vertices\n", cur_poly, num_vertices));
 #define TJOINT_NORMAL_EPS   0.001
 #define TJOINT_PROJECT_EPS  0.001
 
-#define MAX_TJOINT_EDGES   65536     // jeez, have 1.5M of overhead
-#define MAX_TJOINT_DIRS    16384
+#define MAX_TJOINT_EDGES   DARK_LIMIT_RUNTIME_TJOINT_EDGES
+#define MAX_TJOINT_DIRS    DARK_LIMIT_RUNTIME_TJOINT_DIRS
 
 // direction an edge is pointing (normalized)
 static mxs_vector dirs[MAX_TJOINT_DIRS];
@@ -1292,7 +1292,7 @@ static int find_edge(mxs_vector *p0, mxs_vector *p1)
 
    dir = find_dir(&v);
    // now find projected point on plane through origin
-   val = dir_eval_point(dir, p0);
+   val = (float)dir_eval_point(dir, p0);
    mx_scale_add_vec(&v, p0, &v, -val);  // compute:  p - (p.n)*n
    return find_projected_dir(dir, &v);
 }

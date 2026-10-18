@@ -140,12 +140,12 @@ void gr_set_pal16(ushort *pal, int n) {
       return;
 
    if (grd_top_pal16 == NULL) {
-      grd_bot_pal16 = (uchar *)((((ulong )pal_bits)+256)&(~255));
+      grd_bot_pal16 = (uchar *)(((uintptr_t)pal_bits + 256) & ~(uintptr_t)255);
       grd_top_pal16 = grd_bot_pal16+256;
    }
    for (i=0; i<256; i++) {
       ushort entry=pal[i];
-      grd_bot_pal16[i] = entry;
+      grd_bot_pal16[i] = (uchar)entry;
       grd_top_pal16[i] = entry>>8;
    }
 }

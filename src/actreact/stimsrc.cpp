@@ -967,7 +967,7 @@ STDMETHODIMP cStimSources::DatabaseNotify(tStimDatabaseMsg msg, IUnknown* )
 
 STDMETHODIMP cStimSources::ObjectNotify(THIS_ eObjNotifyMsg msg, ObjNotifyData data)
 {
-   ObjID obj = (ObjID)data;
+   ObjID obj = (ObjID)(intptr_t)data;
    switch (NOTIFY_MSG(msg))
    {
       case kObjNotifyCreate:

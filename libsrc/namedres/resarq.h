@@ -32,7 +32,7 @@ public:
 	int Extract(IRes* pRes, int priority, void* buf, long bufSize);
 	int Preload(IRes* pRes);
 	int IsFulfilled(IRes* pRes);
-	long Kill(IRes* pRes);
-	long GetResult(IRes* pRes, void** ppResult);
+	HRESULT Kill(IRes* pRes);
+	HRESULT GetResult(IRes* pRes, void** ppResult);
 };
 #endif

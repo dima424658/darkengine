@@ -31,7 +31,7 @@ typedef struct _sndSegInternal {
    uint32            numBytes;      // bytes before next state change
    uint32            startSample;   // sample position of seg 1st sample
    uint32            endSample;     // sample position of seg last sample
-   uint32            extras[2];     // data for use of specialized splicers
+   uintptr_t         extras[2];     // data for use of specialized splicers
    BOOL              loopMe;        // TRUE if this is an infinite loop
 } sndSegInternal;
 

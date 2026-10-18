@@ -31,6 +31,7 @@ EXTERN float REAL_EPSILON;
 typedef void (*CSGReadWriteFunc) (void *buf, size_t elsize, size_t nelem);
 EXTERN void save_csg_internal_database(CSGReadWriteFunc func);
 EXTERN void load_csg_internal_database(CSGReadWriteFunc func);
+EXTERN void initialize_csg_internal_database_from_world(void);
 EXTERN void free_csg_internal_database();
 EXTERN void remap_csg_database(int* map);
 
@@ -40,6 +41,7 @@ EXTERN void default_csg_medium(int medium);
 EXTERN void cid_insert_brush(int brushid, void *geom);
 
 EXTERN void portalize_csg_internal_database(void);
+EXTERN void csg_set_world_size(float world_size);
 EXTERN void free_portal_database(void);
 EXTERN void reset_lighting(void);
 

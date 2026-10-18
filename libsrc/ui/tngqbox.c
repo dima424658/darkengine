@@ -1,5 +1,5 @@
 #include <fcntl.h>
-#include <io.h>
+#include <platform_io.h>
 #include <ctype.h>
 #include <math.h>
 
@@ -24,6 +24,16 @@ int _label_extent(TNG *ptng);
 int _total_extent(TNG *ptng);
 errtype _slot_rectangle(TNG *qb, int slot_num, Rect *slot_rect);
 
+static int quickbox_int_param(const void *param)
+{
+   return (int)(intptr_t)param;
+}
+
+static uint quickbox_uint_param(const void *param)
+{
+   return (uint)(uintptr_t)param;
+}
+
 errtype tng_increm_slot(TNG *ptng, int quan)
 {
    QuickboxSlot *pqs;
@@ -38,44 +48,44 @@ errtype tng_increm_slot(TNG *ptng, int quan)
    {
       val_i = (int *)(pqs->var);
       *val_i = *val_i + quan;
-      if ((pqs->options & QB_BOUNDED) && (*val_i > (int)pqs->p2))
-         *val_i = (int)pqs->p2;
-      if ((pqs->options & QB_CYCLE) && (*val_i > (int)pqs->p2))
-         *val_i = (int)pqs->p1;
-      if ((pqs->options & QB_STRINGSET) && (*val_i > (int)pqs->p2))
+      if ((pqs->options & QB_BOUNDED) && (*val_i > quickbox_int_param(pqs->p2)))
+         *val_i = quickbox_int_param(pqs->p2);
+      if ((pqs->options & QB_CYCLE) && (*val_i > quickbox_int_param(pqs->p2)))
+         *val_i = quickbox_int_param(pqs->p1);
+      if ((pqs->options & QB_STRINGSET) && (*val_i > quickbox_int_param(pqs->p2)))
          *val_i = (int)0;
    }
    if (pqs->vartype == QB_UINT_SLOT)
    {
       val_ui = (uint *)(pqs->var);
       *val_ui = *val_ui + quan;
-      if ((pqs->options & QB_BOUNDED) && (*val_ui > (uint)pqs->p2))
-         *val_ui = (uint)pqs->p2;
-      if ((pqs->options & QB_CYCLE) && (*val_ui > (uint)pqs->p2))
-         *val_ui = (uint)pqs->p1;
-      if ((pqs->options & QB_STRINGSET) && (*val_ui > (uint)pqs->p2))
+      if ((pqs->options & QB_BOUNDED) && (*val_ui > quickbox_uint_param(pqs->p2)))
+         *val_ui = quickbox_uint_param(pqs->p2);
+      if ((pqs->options & QB_CYCLE) && (*val_ui > quickbox_uint_param(pqs->p2)))
+         *val_ui = quickbox_uint_param(pqs->p1);
+      if ((pqs->options & QB_STRINGSET) && (*val_ui > quickbox_uint_param(pqs->p2)))
          *val_ui = (uint)0;
    }
    if (pqs->vartype == QB_SHORT_SLOT)
    {
       val_s = (short *)(pqs->var);
       *val_s = *val_s + (short)quan;
-      if ((pqs->options & QB_BOUNDED) && (*val_s > (int)pqs->p2))
-         *val_s = (short)pqs->p2;
-      if ((pqs->options & QB_CYCLE) && (*val_s > (int)pqs->p2))
-         *val_s = (short)pqs->p1;
-      if ((pqs->options & QB_STRINGSET) && (*val_s > (int)pqs->p2))
+      if ((pqs->options & QB_BOUNDED) && (*val_s > quickbox_int_param(pqs->p2)))
+         *val_s = (short)quickbox_int_param(pqs->p2);
+      if ((pqs->options & QB_CYCLE) && (*val_s > quickbox_int_param(pqs->p2)))
+         *val_s = (short)quickbox_int_param(pqs->p1);
+      if ((pqs->options & QB_STRINGSET) && (*val_s > quickbox_int_param(pqs->p2)))
          *val_s = (short)0;
    }
    if (pqs->vartype == QB_BYTE_SLOT)
    {
       val_by = (ubyte *)(pqs->var);
       *val_by = *val_by + (ubyte)quan;
-      if ((pqs->options & QB_BOUNDED) && (*val_by > (int)pqs->p2))
-         *val_by = (ubyte)pqs->p2;
-      if ((pqs->options & QB_CYCLE) && (*val_by > (int)pqs->p2))
-         *val_by = (ubyte)pqs->p1;
-      if ((pqs->options & QB_STRINGSET) && (*val_by > (int)pqs->p2))
+      if ((pqs->options & QB_BOUNDED) && (*val_by > quickbox_int_param(pqs->p2)))
+         *val_by = (ubyte)quickbox_int_param(pqs->p2);
+      if ((pqs->options & QB_CYCLE) && (*val_by > quickbox_int_param(pqs->p2)))
+         *val_by = (ubyte)quickbox_int_param(pqs->p1);
+      if ((pqs->options & QB_STRINGSET) && (*val_by > quickbox_int_param(pqs->p2)))
          *val_by = (ubyte)0;
    }
    if (pqs->vartype == QB_BOOL_SLOT)
@@ -105,45 +115,45 @@ errtype tng_decrem_slot(TNG *ptng, int quan)
    {
       val_i = (int *)(pqs->var);
       *val_i = *val_i - quan;
-      if ((pqs->options & QB_BOUNDED) && (*val_i < (int)pqs->p1))
-         *val_i = (int)pqs->p1;
-      if ((pqs->options & QB_CYCLE) && (*val_i < (int)pqs->p1))
-         *val_i = (int)pqs->p2;
+      if ((pqs->options & QB_BOUNDED) && (*val_i < quickbox_int_param(pqs->p1)))
+         *val_i = quickbox_int_param(pqs->p1);
+      if ((pqs->options & QB_CYCLE) && (*val_i < quickbox_int_param(pqs->p1)))
+         *val_i = quickbox_int_param(pqs->p2);
       if ((pqs->options & QB_STRINGSET) && (*val_i < 0))
-         *val_i = (int)pqs->p2;
+         *val_i = quickbox_int_param(pqs->p2);
    }
    if (pqs->vartype == QB_UINT_SLOT)
    {
       uint *orig = (uint *)(pqs->var);
       val_ui = (uint *)(pqs->var);
       *val_ui = *val_ui - quan;
-      if ((pqs->options & QB_BOUNDED) && (*val_ui < (uint)pqs->p1))
-         *val_ui = (uint)pqs->p1;
-      if ((pqs->options & QB_CYCLE) && (*val_ui < (uint)pqs->p1))
-         *val_ui = (uint)pqs->p2;
+      if ((pqs->options & QB_BOUNDED) && (*val_ui < quickbox_uint_param(pqs->p1)))
+         *val_ui = quickbox_uint_param(pqs->p1);
+      if ((pqs->options & QB_CYCLE) && (*val_ui < quickbox_uint_param(pqs->p1)))
+         *val_ui = quickbox_uint_param(pqs->p2);
       if ((pqs->options & QB_STRINGSET) && (*val_ui > *orig))
-         *val_ui = (uint)pqs->p2;
+         *val_ui = quickbox_uint_param(pqs->p2);
    }
    if (pqs->vartype == QB_SHORT_SLOT)
    {
       val_s = (short *)(pqs->var);
       *val_s = (*val_s) - (short)quan;
-      if ((pqs->options & QB_BOUNDED) && (*val_s < (int)pqs->p1))
-         *val_s = (short)pqs->p1;
-      if ((pqs->options & QB_CYCLE) && (*val_s < (int)pqs->p1))
-         *val_s = (short)pqs->p2;
+      if ((pqs->options & QB_BOUNDED) && (*val_s < quickbox_int_param(pqs->p1)))
+         *val_s = (short)quickbox_int_param(pqs->p1);
+      if ((pqs->options & QB_CYCLE) && (*val_s < quickbox_int_param(pqs->p1)))
+         *val_s = (short)quickbox_int_param(pqs->p2);
       if ((pqs->options & QB_STRINGSET) && (*val_s < 0))
-         *val_s = (short)pqs->p2;
+         *val_s = (short)quickbox_int_param(pqs->p2);
    }
    if (pqs->vartype == QB_BYTE_SLOT)
    {
       val_by = (ubyte *)(pqs->var);
-      if ((pqs->options & QB_BOUNDED) && (*val_by < (int)pqs->p1 + (ubyte)quan))
-         *val_by = (ubyte)pqs->p1;
-      else if ((pqs->options & QB_CYCLE) && (*val_by < (int)pqs->p1 + (ubyte)quan))
-         *val_by = (ubyte)pqs->p2;
+      if ((pqs->options & QB_BOUNDED) && (*val_by < quickbox_int_param(pqs->p1) + (ubyte)quan))
+         *val_by = (ubyte)quickbox_int_param(pqs->p1);
+      else if ((pqs->options & QB_CYCLE) && (*val_by < quickbox_int_param(pqs->p1) + (ubyte)quan))
+         *val_by = (ubyte)quickbox_int_param(pqs->p2);
       else if ((pqs->options & QB_STRINGSET) && (*val_by < (ubyte)quan))
-         *val_by = (ubyte)pqs->p2;
+         *val_by = (ubyte)quickbox_int_param(pqs->p2);
       else
          *val_by = *val_by - (ubyte)quan;
    }
@@ -194,60 +204,18 @@ bool quickbox_fix_text_changed(QuickboxSlot *qbs)
 bool quickbox_uint_text_changed(QuickboxSlot *qbs)
 {
    char *convstring;
-   uint atoival, newval;
-   short base,i,cap;
-   bool okay;
+   char *end;
+   uint atoival;
+   short base;
 
    base = 10;
    Spew(DSRC_UI_Quickbox, ("Hey, at top of parsing algorithm!\n"));
-   if (qbs->options & QB_HEX) {  base = 16; cap = 10; }
-   if (qbs->options & QB_OCTAL) {  base = 8; cap = 8; }
-   if (qbs->options & QB_BINARY) {   base = 2; cap = 2; }
+   if (qbs->options & QB_HEX) base = 16;
+   if (qbs->options & QB_OCTAL) base = 8;
+   if (qbs->options & QB_BINARY) base = 2;
    convstring = TNG_TX_GETLINE(qbs->aux_tng, 0);
-   atoival = 0;
-   okay = TRUE;
-   for (i=0; i<strlen(convstring); i++)
-   {
-      convstring[i] = toupper(convstring[i]);
-      switch(base)
-      {
-         case 16:
-            if ((convstring[i] < '0') || ((convstring[i] > '9') && (convstring[i] < 'A')) || (convstring[i] > 'F'))
-               okay = FALSE;
-            break;
-         case 8:
-            if ((convstring[i] < '0') || (convstring[i] > '7'))
-               okay = FALSE;
-            break;
-         case 2:
-            if ((convstring[i] < '0') || (convstring [i] > '1'))
-               okay = FALSE;
-            break;
-      }
-   }
-   if (okay)
-   {
-      Spew(DSRC_UI_Quickbox, ("convstring = %s base = %d\n", convstring,base));
-      for (i=0; i<strlen(convstring); i++)
-      {
-         Spew(DSRC_UI_Quickbox, ("i = %d  convstring[i] = %c(%d)\n",i,convstring[i],convstring[i]));
-         if ((convstring[i] - '0') < cap)
-         {
-            newval = pow(base,strlen(convstring)-1-i) * (convstring[i] - '0');
-            atoival += newval;
-            Spew(DSRC_UI_Quickbox, ("%d^%d * (%d) = %d * %d = %d\n",
-               base,strlen(convstring)-1-i,convstring[i]-'0',pow(base,strlen(convstring) - 1 - i),convstring[i]-'0',newval));
-         }
-         else if ((base == 16) && (convstring[i] >= 'A'))
-         {
-            newval = pow(16,strlen(convstring)-1-i) * (convstring[i] - 'A' + 10);
-            atoival += newval;
-            Spew(DSRC_UI_Quickbox, ("hex: 16^%d * (%d) = %d * %d = %d\n",
-               strlen(convstring)-1-i,convstring[i]-'A'+10,pow(16,strlen(convstring)-1-i),convstring[i]-'A'+10,newval));
-         }
-      }
-   }
-   else
+   atoival = (uint)strtoul(convstring, &end, base);
+   if (end == convstring || *end != '\0')
       atoival = 0;
    *((uint *)(qbs->var)) = atoival; 
 
@@ -258,9 +226,9 @@ bool tng_quickbox_text_changed(void *ui_data, void *user_data)
 {
    QuickboxSlot *qbs;
    TNG *ptng;
-   int atoival, base, i, cap,newval;
+   int atoival, base;
    char *convstring;
-   bool okay;
+   char *end;
 
 #ifndef NO_DUMMIES
    void *dummy; dummy = ui_data;
@@ -282,68 +250,19 @@ bool tng_quickbox_text_changed(void *ui_data, void *user_data)
    {
       base = 10;
       Spew(DSRC_UI_Quickbox, ("Hey, at top of parsing algorithm!\n"));
-      if (qbs->options & QB_HEX) {  base = 16; cap = 10; }
-      if (qbs->options & QB_OCTAL) {  base = 8; cap = 8; }
-      if (qbs->options & QB_BINARY) {   base = 2; cap = 2; }
+      if (qbs->options & QB_HEX) base = 16;
+      if (qbs->options & QB_OCTAL) base = 8;
+      if (qbs->options & QB_BINARY) base = 2;
       convstring = TNG_TX_GETLINE(qbs->aux_tng, 0);
-      if (base == 10)
-      {
-         atoival = atoi(convstring);
-      }
-      else
-      {
+      atoival = (int)strtol(convstring, &end, base);
+      if (end == convstring || *end != '\0')
          atoival = 0;
-         okay = TRUE;
-         for (i=0; i<strlen(convstring); i++)
-         {
-            convstring[i] = toupper(convstring[i]);
-            switch(base)
-            {
-               case 16:
-                  if ((convstring[i] < '0') || ((convstring[i] > '9') && (convstring[i] < 'A')) || (convstring[i] > 'F'))
-                     okay = FALSE;
-                  break;
-               case 8:
-                  if ((convstring[i] < '0') || (convstring[i] > '7'))
-                     okay = FALSE;
-                  break;
-               case 2:
-                  if ((convstring[i] < '0') || (convstring [i] > '1'))
-                     okay = FALSE;
-                  break;
-            }
-         }
-         if (okay)
-         {
-            Spew(DSRC_UI_Quickbox, ("convstring = %s base = %d\n", convstring,base));
-            for (i=0; i<strlen(convstring); i++)
-            {
-               Spew(DSRC_UI_Quickbox, ("i = %d  convstring[i] = %c(%d)\n",i,convstring[i],convstring[i]));
-               if ((convstring[i] - '0') < cap)
-               {
-                  newval = pow(base,strlen(convstring)-1-i) * (convstring[i] - '0');
-                  atoival += newval;
-                  Spew(DSRC_UI_Quickbox, ("%d^%d * (%d) = %d * %d = %d\n",
-                     base,strlen(convstring)-1-i,convstring[i]-'0',pow(base,strlen(convstring) - 1 - i),convstring[i]-'0',newval));
-               }
-               else if ((base == 16) && (convstring[i] >= 'A'))
-               {
-                  newval = pow(16,strlen(convstring)-1-i) * (convstring[i] - 'A' + 10);
-                  atoival += newval;
-                  Spew(DSRC_UI_Quickbox, ("hex: 16^%d * (%d) = %d * %d = %d\n",
-                     strlen(convstring)-1-i,convstring[i]-'A'+10,pow(16,strlen(convstring)-1-i),convstring[i]-'A'+10,newval));
-               }
-            }
-         }
-         else
-            atoival = 0;
-      }
       if ((qbs->options & QB_BOUNDED) || (qbs->options & QB_CYCLE))
       {
-         if (atoival < (int)qbs->p1)
-            atoival = (int)qbs->p1;
-         if (atoival > (int)qbs->p2)
-            atoival = (int)qbs->p2;
+         if (atoival < quickbox_int_param(qbs->p1))
+            atoival = quickbox_int_param(qbs->p1);
+         if (atoival > quickbox_int_param(qbs->p2))
+            atoival = quickbox_int_param(qbs->p2);
       }
       Spew(DSRC_UI_Quickbox, ("**** atoival = %d(%u) vs %d(%u)\n",atoival,atoival,(ubyte)atoival, (ubyte)atoival));
       switch (qbs->vartype)
@@ -433,11 +352,11 @@ errtype tng_draw_qb_int_slot(TNG *ptng, QuickboxSlot *curp, Rect r)
    if (curp->options & QB_ARROWS)
    {
       // Goofy arrows
-      if (TNG_QB(ptng)->left_id != NULL)
+      if (TNG_QB(ptng)->left_id != 0)
          argrect.ul.x += resource_bm_width(TNG_QB(ptng)->left_id);
       else
          argrect.ul.x += ptng->style->frobsize.x;
-      if (TNG_QB(ptng)->right_id != NULL)
+      if (TNG_QB(ptng)->right_id != 0)
          argrect.lr.x -= resource_bm_width(TNG_QB(ptng)->right_id);
       else
          argrect.lr.x -= ptng->style->frobsize.x;
@@ -509,7 +428,7 @@ errtype tng_draw_qb_int_slot(TNG *ptng, QuickboxSlot *curp, Rect r)
    // Draw in goofy arrows, if they are necessary
    if (curp->options & QB_ARROWS)
    {
-      if (TNG_QB(ptng)->left_id != NULL)
+      if (TNG_QB(ptng)->left_id != 0)
       {
          if (TNG_QB(ptng)->options & QB_ALIGNMENT)
             draw_resource_bm(TNG_QB(ptng)->left_id, r.ul.x + TNG_QB(ptng)->internal_margin + TNG_QB(ptng)->spacing.x, r.ul.y);
@@ -543,7 +462,7 @@ errtype tng_draw_qb_int_slot(TNG *ptng, QuickboxSlot *curp, Rect r)
          gr_int_line(p2.x, p2.y, p4.x, p4.y);
          gr_int_line(p3.x, p3.y, p4.x, p4.y);
       }
-      if (TNG_QB(ptng)->right_id != NULL)
+      if (TNG_QB(ptng)->right_id != 0)
          draw_resource_bm(TNG_QB(ptng)->right_id, r.lr.x - resource_bm_width(TNG_QB(ptng)->right_id), r.ul.y);
       else
       {
@@ -628,11 +547,11 @@ errtype tng_draw_qb_bool_slot(TNG *ptng, QuickboxSlot *curp, Rect r)
    if (curp->options & QB_ARROWS)
    {
       // Goofy arrows
-      if (TNG_QB(ptng)->left_id != NULL)
+      if (TNG_QB(ptng)->left_id != 0)
          argrect.ul.x += resource_bm_width(TNG_QB(ptng)->left_id);
       else
          argrect.ul.x += ptng->style->frobsize.x;
-      if (TNG_QB(ptng)->right_id != NULL)
+      if (TNG_QB(ptng)->right_id != 0)
          argrect.lr.x -= resource_bm_width(TNG_QB(ptng)->right_id);
       else
          argrect.lr.x -= ptng->style->frobsize.x;
@@ -652,7 +571,7 @@ errtype tng_draw_qb_bool_slot(TNG *ptng, QuickboxSlot *curp, Rect r)
    // Draw in goofy arrows, if they are necessary
    if (curp->options & QB_ARROWS)
    {
-      if (TNG_QB(ptng)->left_id != NULL)
+      if (TNG_QB(ptng)->left_id != 0)
       {
          if (TNG_QB(ptng)->options & QB_ALIGNMENT)
             draw_resource_bm(TNG_QB(ptng)->left_id, r.ul.x + TNG_QB(ptng)->internal_margin + TNG_QB(ptng)->spacing.x, r.ul.y);
@@ -686,7 +605,7 @@ errtype tng_draw_qb_bool_slot(TNG *ptng, QuickboxSlot *curp, Rect r)
          gr_int_line(p2.x, p2.y, p4.x, p4.y);
          gr_int_line(p3.x, p3.y, p4.x, p4.y);
       }
-      if (TNG_QB(ptng)->right_id != NULL)
+      if (TNG_QB(ptng)->right_id != 0)
          draw_resource_bm(TNG_QB(ptng)->right_id, r.lr.x - resource_bm_width(TNG_QB(ptng)->right_id), r.ul.y);
       else
       {
@@ -725,7 +644,6 @@ errtype tng_draw_qb_pb_slot(TNG *ptng, QuickboxSlot *curp, Rect r)
 }
 
 // assumes all appropriate setup has already been done!
-#pragma disable_message(202)
 errtype tng_quickbox_2d_draw(TNG *ptng, ushort partmask, Point loc)
 {
    TNG_quickbox *pqbtng;
@@ -757,7 +675,6 @@ errtype tng_quickbox_2d_draw(TNG *ptng, ushort partmask, Point loc)
 
    return(OK);
 }
-#pragma enable_message(202)
 
 // Fill in ppt with the size...
 errtype tng_quickbox_size(TNG *ptng, Point *ppt)
@@ -885,7 +802,7 @@ bool tng_quickbox_mousebutt(TNG *ptng, uchar type, Point loc)
                   tw = TNG_QB(ptng)->internal_margin;
                else
                   tw = _text_width(ptng, curp->label);
-               if ((pqbtng->left_id != NULL) &&
+         if ((pqbtng->left_id != 0) &&
                   (loc.x < resource_bm_width(pqbtng->left_id) + tw + pqbtng->border.x + (2 * pqbtng->spacing.x)))
                {
                   if (type == TNG_MOUSE_LDOWN)
@@ -900,7 +817,7 @@ bool tng_quickbox_mousebutt(TNG *ptng, uchar type, Point loc)
                   else
                      tng_decrem_slot(ptng, 10);
                }
-               if ((pqbtng->right_id != NULL) &&   
+         if ((pqbtng->right_id != 0) &&
                   (loc.x > pqbtng->size.x - pqbtng->border.x - resource_bm_width(pqbtng->right_id) - 2 ))
                {
                   if (type == TNG_MOUSE_LDOWN)
@@ -1032,7 +949,7 @@ errtype tng_quickbox_end()
       if (curp->options & QB_STRINGSET)
       {
          curp->options |= QB_ARROWS;
-         curp->p2 = (void *)((int)(curp->p2) -1);
+         curp->p2 = (void *)(intptr_t)(quickbox_int_param(curp->p2) - 1);
       }
       if ((curp->options & QB_SLIDER) ||
           (curp->vartype == QB_PUSHBUTTON_SLOT) ||
@@ -1072,8 +989,8 @@ errtype tng_quickbox_end()
             RECT_EXPAND_ARGS(sdim)));
          if (curp->options & QB_SLIDER)
          {
-            min = (int)curp->p1;
-            max = (int)curp->p2;
+            min = quickbox_int_param(curp->p1);
+            max = quickbox_int_param(curp->p2);
             Spew(DSRC_UI_Quickbox, ("About to create slider, sdim = (%d, %d) (%d, %d), max = %d, min = %d\n",
                RECT_EXPAND_ARGS(sdim), max, min));
             TNG_CREATE_SLIDER(current_tng->ui_data, sdim->ul, &(curp->aux_tng), current_tng->style, TNG_SL_HORIZONTAL,
@@ -1282,11 +1199,11 @@ int _total_extent(TNG *ptng)
             }
             if (qbs->options & QB_ARROWS)
             {
-               if (TNG_QB(ptng)->left_id == NULL)
+               if (TNG_QB(ptng)->left_id == 0)
                   v += ptng->style->frobsize.x;
                else
                   v += resource_bm_width(TNG_QB(ptng)->left_id);
-               if (TNG_QB(ptng)->right_id == NULL)
+               if (TNG_QB(ptng)->right_id == 0)
                   v += ptng->style->frobsize.x;
                else
                   v += resource_bm_width(TNG_QB(ptng)->right_id);
@@ -1309,11 +1226,11 @@ int _total_extent(TNG *ptng)
             }
             if (qbs->options & QB_ARROWS)
             {
-               if (TNG_QB(ptng)->left_id == NULL)
+               if (TNG_QB(ptng)->left_id == 0)
                   v += ptng->style->frobsize.x;
                else
                   v += resource_bm_width(TNG_QB(ptng)->left_id);
-               if (TNG_QB(ptng)->right_id == NULL)
+               if (TNG_QB(ptng)->right_id == 0)
                   v += ptng->style->frobsize.x;
                else
                   v += resource_bm_width(TNG_QB(ptng)->right_id);

@@ -39,7 +39,8 @@ class cApparitionCreatureFactory : public cCreatureFactory
 };
 
 static cApparitionCreatureFactory g_ApparitionCreatureFactory;
-EXTERN cCreatureFactory *g_pApparitionCreatureFactory=&g_ApparitionCreatureFactory;
+EXTERN cCreatureFactory *g_pApparitionCreatureFactory;
+cCreatureFactory *g_pApparitionCreatureFactory=&g_ApparitionCreatureFactory;
 
 // from crappa.c
 #define TOE       0

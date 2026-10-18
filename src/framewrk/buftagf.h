@@ -12,6 +12,7 @@
 #include <comtools.h>
 #include <hashset.h>
 #include <tagfile.h>
+#include <stdint.h>
 
 #ifndef __BUFTAGF_H
 #define __BUFTAGF_H
@@ -75,13 +76,13 @@ struct BufTagTableEntry
 {
    TagFileTag key;
    Offset   offset; 
-   long    size;
+   ulong   size;
 
-   BufTagTableEntry(const TagFileTag& k, Offset off,long sz = 0) :key(k),offset(off),size(sz) {} ;
-   BufTagTableEntry() :offset(BAD_OFFSET),size(-1) { key.label[0] = '\0';}; 
+   BufTagTableEntry(const TagFileTag& k, Offset off, ulong sz = 0) :key(k),offset(off),size(sz) {} ;
+   BufTagTableEntry() :offset(BAD_OFFSET),size(0) { key.label[0] = '\0';};
 
-   Offset Start() { return offset + sizeof(struct BufTagFileBlockHeader); } ; 
-   Offset End() { return Start() + size; } ; 
+   uint64_t Start() const { return (uint64_t)offset + sizeof(struct BufTagFileBlockHeader); } ;
+   uint64_t End() const { return Start() + (uint64_t)size; } ;
 };
 
 
@@ -97,7 +98,7 @@ public:
    virtual ~BufTagFileTable();
 
    void Write(VFILE* file);  // write to file 
-   void Read(VFILE* file);   // read from file
+   bool Read(VFILE* file, uint64_t fileSize, uint64_t tableOffset);
 }; 
 
 
@@ -114,9 +115,11 @@ protected:
    BufTagTableEntry* block;                  // current block
    VFILE * file;
    ulong blockptr;                        // file ptr within block
+   TagVersion blockVersion;               // version of the open read block
+   uint64_t fileSize;
 
 public:
-   BufTagFileBase() :file(NULL),block(NULL) {} ;
+   BufTagFileBase() :file(NULL),block(NULL),blockVersion{0,0},fileSize(0) {} ;
    BufTagFileBase(const char* fname, const char* mode);
    virtual ~BufTagFileBase();
 
@@ -138,10 +141,6 @@ protected:
    // Set the current block
    void SetCurBlock(const TagFileTag* tag);
 
-   // convert offset to absolute
-   // also check to see if a seek will step out of a box
-   //  < 0 if before start, > 0 if after end, == 0 if inside, magnitude = how far out
-   int PrepSeek(ulong& offset, TagFileSeekMode mode);  
 }; 
 
 

@@ -15,14 +15,14 @@
 
 void bank8_uhline_fill(uchar c, int x, int y, int x1)
 {
-   long p, p_last;
+   uintptr_t p, p_last;
    uchar *bank_p;
    int save_bank;
 
    if (x1<x)
       return;
 
-   p = ((long )grd_bm.bits) + grd_bm.row*y;
+   p = (uintptr_t)grd_bm.bits + grd_bm.row * y;
    p_last = p + x1;
    p += x;
    save_bank = gdd_bank;
@@ -40,7 +40,7 @@ void bank8_uhline_fill(uchar c, int x, int y, int x1)
 
 void bank8_norm_uhline(int x, int y, int x1)
 {
-   uchar c = grd_gc.fcolor;
+   uchar c = (uchar)grd_gc.fcolor;
    bank8_uhline_fill(c, x, y, x1);
 }
 
@@ -52,13 +52,13 @@ void bank8_clut_uhline(int x, int y, int x1)
 
 void bank8_solid_uhline(int x, int y, int x1)
 {
-   uchar c = grd_gc.fill_parm;
+   uchar c = (uchar)grd_gc.fill_parm;
    bank8_uhline_fill(c, x, y, x1);
 }
 
 void bank8_xor_uhline(int x, int y, int x1)
 {
-   long p, p_last;
+   uintptr_t p, p_last;
    uchar *bp, *bp_last;
    uchar c;
    int save_bank;
@@ -66,8 +66,8 @@ void bank8_xor_uhline(int x, int y, int x1)
    if (x1<x)
       return;
 
-   c=grd_gc.fcolor;
-   p = ((long )grd_bm.bits) + grd_bm.row*y;
+   c = (uchar)grd_gc.fcolor;
+   p = (uintptr_t)grd_bm.bits + grd_bm.row * y;
    p_last = p + x1;
    p += x;
    save_bank = gdd_bank;
@@ -92,7 +92,7 @@ void bank8_xor_uhline(int x, int y, int x1)
 void bank8_tluc_uhline(int x, int y, int x1)
 {
    uchar *clut;
-   long p, p_last;
+   uintptr_t p, p_last;
    uchar *bp, *bp_last;
    uchar c;
    int save_bank;
@@ -100,14 +100,14 @@ void bank8_tluc_uhline(int x, int y, int x1)
    if (x1<x)
       return;
 
-   c = grd_gc.fcolor;
+   c = (uchar)grd_gc.fcolor;
    clut = tluc8tab[c];
    if (clut==NULL) {
       bank8_uhline_fill(c, x, y, x1);
       return;
    }
 
-   p = ((long )grd_bm.bits) + grd_bm.row*y;
+   p = (uintptr_t)grd_bm.bits + grd_bm.row * y;
    p_last = p + x1;
    p += x;
    save_bank = gdd_bank;

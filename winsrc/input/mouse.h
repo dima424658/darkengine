@@ -86,7 +86,8 @@ typedef struct _lgMouseEvent
    uchar type; // Event mask, bits defined below
    ulong timestamp;
    uchar buttons;
-   char pad[6];  // pad to sixteen bytes
+   char wheel;   // signed wheel detents; zero for other mouse events
+   char pad[5];  // pad to sixteen bytes
 } lgMouseEvent;
 
 #if 0
@@ -105,6 +106,7 @@ typedef struct _lgMouseEvent mouse_event;
 #define MOUSE_RUP      16
 #define MOUSE_CDOWN    32
 #define MOUSE_CUP      64
+#define MOUSE_WHEEL   128
 
 
 // Mask of events that are allowed into the queue.
@@ -123,7 +125,7 @@ typedef void (*mouse_callfunc)(lgMouseEvent* e,void* data);
     (1 << b)
 
 #define MouseMakeButtons(l, c, r) \
-    (((!!l) << MOUSE_LBUTTON) | ((!!c) << MOUSE_CBUTTON) | ((!!r) << MOUSE_CBUTTON))
+    (((!!l) << MOUSE_LBUTTON) | ((!!c) << MOUSE_CBUTTON) | ((!!r) << MOUSE_RBUTTON))
 
 #define MouseIsButtonDown(buttons, which) \
     ((buttons >> which) & 0x01)
@@ -154,6 +156,20 @@ errtype mouse_get_xy(short* x, short* y);
 
 // Set the mouse position
 errtype mouse_put_xy(short x, short y);
+
+// Select relative pointer capture for contexts that bind mouse axes.  The
+// Windows input path already recenters through SetMousePos, so this is only a
+// platform-provider operation elsewhere.
+#ifdef _WIN32
+#define mouse_set_relative_mode(enabled) (OK)
+#define mouse_consume_relative_motion(x, y) (FALSE)
+#else
+errtype mouse_set_relative_mode(bool enabled);
+// Return and clear the platform's accumulated raw motion. Coordinates remain
+// available separately for absolute-pointer UI and are never synthesized from
+// these deltas.
+bool mouse_consume_relative_motion(int* x, int* y);
+#endif
 
 // Check the state of a mouse button
 errtype mouse_check_btn(int button, bool* result);

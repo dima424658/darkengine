@@ -10,6 +10,7 @@
 #include <lg.h>
 #include <appagg.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <config.h>
@@ -74,6 +75,7 @@ typedef struct ModelHandle
    ushort refs;       // # objects using the model, so we can free if nobody is
    short type;
    bool used;         // cant this be a flags field with the above, or something
+   bool bitmap_direct;// bitmap model uses mhandle as its sole texture
    uchar replace_idx; // index into the replace list array
 } ModelHandle;
 
@@ -82,7 +84,9 @@ typedef struct ModelHandle
 // replace_idx in the MH points into this, and it is inited to -1 on startup
 #define MAX_REPL_MODELS  (255)
 #define REPL_LIST_UNUSED (-1)
-static char g_aReplaceList[MAX_REPL_MODELS][MAX_REPL_TXT];
+// AArch64 uses unsigned plain char. Keep the -1 unused sentinel explicit so
+// the first replacement texture does not make every entry appear occupied.
+static signed char g_aReplaceList[MAX_REPL_MODELS][MAX_REPL_TXT];
 static ModelHandle g_aModelHandles[MAX_OBJMODELS];
 
 #ifndef SHIP         
@@ -122,11 +126,34 @@ static TextureLoadFunc g_afnTextureLoadFuncs[] =
 // other globals
 static grs_bitmap *g_pDummyObjTmap;
 
+extern void *g_ModernTextures[DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES];
+extern grs_bitmap *g_ModernBitmaps[DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES];
+
+BOOL objmodelIsDummyTexture(const grs_bitmap *bitmap)
+{
+   return bitmap == g_pDummyObjTmap;
+}
+
+static void FreeDummyObjTmap(void)
+{
+   if (g_pDummyObjTmap)
+   {
+      // A resident texture stores its texture-manager ID in bm->bits.  Unload
+      // it first so the manager restores the allocation returned by texmem.
+      if (g_pDummyObjTmap->flags & BMF_LOADED)
+         lgd3d_unload_texture(g_pDummyObjTmap);
+
+      Free(g_pDummyObjTmap->bits);
+      Free(g_pDummyObjTmap);
+      g_pDummyObjTmap = NULL;
+   }
+}
+
 //////////////
 // lets do some managing of the ReplaceList
 static void init_replace_list(void)
 {
-   memset(g_aReplaceList,REPL_LIST_UNUSED,MAX_REPL_MODELS*MAX_REPL_TXT);
+   memset(g_aReplaceList, REPL_LIST_UNUSED, sizeof(g_aReplaceList));
 }
 
 // find a free replace idx 
@@ -187,7 +214,28 @@ static void _objm_pal_callback(uchar *pal, uchar *bitmap)
 static IRes * _do_raw_load(ISearchPath *pPath, char *pName)
 {
    IResMan *pResMan = AppGetObj(IResMan);
-   IRes *pRes = IResMan_Bind(pResMan, pName, RESTYPE_IMAGE, pPath, NULL, 0);
+   char logicalName[64];
+   char *pExtension;
+   char *pSlash;
+   IRes *pRes;
+
+   // A model material names a logical texture, not a required image codec.
+   // NewDark-era assets commonly retain an old .gif/.pcx/.png spelling in
+   // the BIN while a higher-priority FM supplies the same texture in another
+   // supported format.  An explicit extension makes the resource manager
+   // search only that format, which either selects lower-priority retail art
+   // or produces the checkerboard fallback.  Bind extensionlessly so content
+   // root precedence is applied before the image type's extension preference.
+   strncpy(logicalName, pName, sizeof(logicalName) - 1);
+   logicalName[sizeof(logicalName) - 1] = '\0';
+   pExtension = strrchr(logicalName, '.');
+   pSlash = strrchr(logicalName, '\\');
+   if (!pSlash)
+      pSlash = strrchr(logicalName, '/');
+   if (pExtension && (!pSlash || pExtension > pSlash) && pExtension != logicalName)
+      *pExtension = '\0';
+
+   pRes = IResMan_Bind(pResMan, logicalName, RESTYPE_IMAGE, pPath, NULL, 0);
    SafeRelease(pResMan);
    if (pRes)
       IRes_Lock(pRes);
@@ -228,52 +276,44 @@ static void common_texture_load(ModelHandle *mh, ISearchPath *pPath,
 #endif      
       return;
    }
-   
-   // Some textures may have their own palettes, which need to be
-   // dealt with. Get the storage information about this texture, to
-   // figure out whether it comes from a "16 bit" storage, which are
-   // the ones that need their palettes loaded.
+
+   // Preserve the palette authored with every palettized object texture.
+   // The old hardware path only did this for txt16 and assumed ordinary txt
+   // assets always matched mutable global palette slot zero.  Expanding those
+   // indices to RGBA on a modern backend makes that assumption observable:
+   // a texture cached across a palette/mode transition acquires unrelated
+   // colours.  Palette allocation deduplicates identical palettes, so stock
+   // assets that match the mission palette still reuse slot zero.
    if (allow_16bit_obj_textures) {
-      IStore *pCanonStore = IRes_GetCanonStore(pRes);
-      // If the bottom of the storage's path matches TXT_PATH_16, then
-      // we need it:
-      if (!stricmp(IStore_GetName(pCanonStore), TXT_PATH_16)) {
-         // Okay. Get the palette...
-         IResMan *pResMan = AppGetObj(IResMan);
-         IRes *pPallRes = IResMan_Retype(pResMan, pRes, RESTYPE_PALETTE, 0);
-         if (pPallRes) {
-            void *pPall = IRes_Lock(pPallRes);
-            grs_bitmap *pbm = (grs_bitmap *) IRes_Lock(pRes);
-            {
-               uchar b = pbm->align;
-               pbm->align = palmgr_alloc_pal(pPall);
+      IResMan *pResMan = AppGetObj(IResMan);
+      IRes *pPallRes = IResMan_Retype(pResMan, pRes, RESTYPE_PALETTE, 0);
+      if (pPallRes) {
+         void *pPall = IRes_Lock(pPallRes);
+         grs_bitmap *pbm = (grs_bitmap *) IRes_Lock(pRes);
+         uchar b = pbm->align;
+         pbm->align = palmgr_alloc_pal(pPall);
 #ifdef DBG_ON
-               if ((pbm->align==0) && (config_is_defined("wastedpalettes")))
-                 mprintf("Object %s uses txt16, but is in game palette for %s.\n",objName,name);
+         if ((pbm->align==0) && (config_is_defined("wastedpalettes")))
+           mprintf("Object %s uses the game palette for %s.\n",objName,name);
 #endif
-               if( b != pbm->align )
-                  if( (g_tmgr!=NULL)&&(pbm->flags&BMF_LOADED)){
-                     lgd3d_unload_texture(pbm);
-                     lgd3d_load_texture(pbm);
-                  }
+         if( b != pbm->align )
+            if( (g_tmgr!=NULL)&&(pbm->flags&BMF_LOADED)){
+               lgd3d_unload_texture(pbm);
+               lgd3d_load_texture(pbm);
             }
-            //pbm->align = palmgr_alloc_pal(pPall);
-            IRes_Unlock(pRes);
-            IRes_Unlock(pPallRes);
-            // We're done with the palette; the palette manager will now
-            // take charge of it. So we can drop it from memory.
-            IRes_Drop(pPallRes);
-            SafeRelease(pPallRes);
-         }
-         SafeRelease(pResMan);
+         IRes_Unlock(pRes);
+         IRes_Unlock(pPallRes);
+         // The palette manager owns its copy after allocation.
+         IRes_Drop(pPallRes);
+         SafeRelease(pPallRes);
       }
-      SafeRelease(pCanonStore);
+      SafeRelease(pResMan);
    }
    
    // Now, check whether this is an animated texture, and load up the
    // frames if so:
    IRes_GetCanonPath(pRes, &pCanonPath);
-   ectsAnimTxtCheckLoad(pRes, using_portal_models, pCanonPath, NULL);
+   ectsAnimTxtCheckLoad(pRes, using_portal_models, pCanonPath, 0);
    if (pCanonPath)
       Free(pCanonPath);
 }
@@ -415,8 +455,17 @@ static void BitmapTextureLoad(ModelHandle *mh, char *objName)
       common_texture_load(mh, BitmapTexturesPath, 
                           name, i, objName);
       if (temp_load[i] == NULL)
-         if (i == 0) // illegal to fail to find first one, but okay for the rest:
-            Warning(("Couldn't load bitmap texture %s\n", name));
+         if (i == 0) {
+            // NewDark content may use a single image in bitmap\ directly
+            // instead of an animated bitmap\txt[16]\name00 sequence.  That
+            // image is already the model handle.  Do not bind it a second
+            // time: the resource app-data slot cannot represent two owning
+            // roles, and the duplicate lock/reference corrupts teardown.
+            temp_load[0] = mh->mhandle;
+            mh->bitmap_direct = TRUE;
+            i = 1;
+            break;
+         }
          else
             break;
    }
@@ -466,7 +515,7 @@ static sFXHandle g_aFXHandle[MAX_FX_TYPES]
 // This is case-insensitive.
 static bool has_prefix(char *candidate, char *prefix)
 {
-   int prefix_length = strlen(prefix);
+   int prefix_length = (int)strlen(prefix);
 
    if (!prefix_length)
       return FALSE;
@@ -574,6 +623,7 @@ static void InitModelHandle(ModelHandle *mh)
    mh->numtex = 0;
    mh->refs = 0;
    mh->used = FALSE;
+   mh->bitmap_direct = FALSE;
    mh->replace_idx= 0;
 }
 
@@ -598,13 +648,27 @@ static BOOL FreeModel(int idx, BOOL drop)
 
          if (mh->type!=OM_TYPE_SPARK)
          {
+            // A direct bitmap model and an animated texture frame can resolve
+            // to the same cached IRes.  Tear down texture animation while the
+            // owning model resource is still intact; dropping the model first
+            // leaves the shared resource object alive but without its data
+            // control, and ectsAnimTxtCheckFree then dereferences that shell.
+            if (mh->bitmap_direct)
+            {
+               Free(mh->texptr);
+               mh->texptr = NULL;
+               mh->numtex = 0;
+            }
+            else
+               FreeTextures(mh);
             IRes_Unlock(mh->mhandle);
             if (drop)
                if (!IRes_Drop(mh->mhandle))
                   dropped=FALSE;
             SafeRelease(mh->mhandle);
          }
-         FreeTextures(mh);
+         else
+            FreeTextures(mh);
       }
       else
       {  // Well, then, is it an effect without anything in ResName?
@@ -855,7 +919,12 @@ void objmodelInit(void)
 {
    int i;
 
-   allow_16bit_obj_textures=config_is_defined("ObjTextures16");
+   // NewDark uses MeshTextures16 for high-colour mesh texture variants;
+   // older configurations use ObjTextures16 for the same shared object-model
+   // search path.  Accept either spelling so FM mesh/txt16 assets are not
+   // silently replaced by lower-priority mesh/txt fallbacks.
+   allow_16bit_obj_textures=config_is_defined("ObjTextures16") ||
+                            config_is_defined("MeshTextures16");
 
    objmodelSetupRes();
    config_get_int("character_detail",&g_highpoly_characters);
@@ -906,11 +975,7 @@ void objmodelShutdown(void)
 
    objmodelFreePaths();
 
-   if (g_pDummyObjTmap)
-   {
-      Free(g_pDummyObjTmap->bits);
-      Free(g_pDummyObjTmap);
-   }
+   FreeDummyObjTmap();
 }
 
 void objmodelReset(void)
@@ -1098,10 +1163,7 @@ void objmodel_set_debug_tex(int type)
    extern BOOL g_bAllObjsUnlit; // from objlight.c
 
    if (type>=0&&type<(sizeof(f_table)/sizeof(*f_table))) {
-      if (g_pDummyObjTmap) {
-         Free(g_pDummyObjTmap->bits);
-         Free(g_pDummyObjTmap);
-      }
+      FreeDummyObjTmap();
       g_pDummyObjTmap=texmemBuildGradientTmap(8,f_table[type]);
       g_bTextureDebug=TRUE;
       g_bAllObjsUnlit=TRUE;
@@ -1190,6 +1252,261 @@ char *objmodelGetName(int idx)
    }
 
    return name;
+}
+
+static void audit_texture(FILE *log, int model_idx, const char *model_name,
+                          int slot, int material_num, const char *material,
+                          IRes *resource,
+                          BOOL used, int *missing, int *checkerboards)
+{
+   char *canonical = NULL;
+   grs_bitmap *bitmap = NULL;
+   grs_bitmap *frame = NULL;
+   BOOL placeholder = material && !strnicmp(material, "replace", 7);
+   BOOL checkerboard = FALSE;
+   BOOL checkerboard_fallback = FALSE;
+   uint32 pixel_hash = 2166136261u;
+   int unique_indices = -1;
+   int resident_id = -1;
+   int gpu_present = 0;
+   int gpu_owner_matches = 0;
+
+   if (resource)
+   {
+      IRes_GetCanonPathName(resource, &canonical);
+      bitmap = (grs_bitmap *)IRes_DataPeek(resource);
+      frame = (grs_bitmap *)ectsAnimTxtGetFrame(resource);
+      checkerboard = frame == g_pDummyObjTmap;
+      checkerboard_fallback = used && !placeholder && checkerboard;
+      if (frame && (frame->flags & BMF_LOADED))
+      {
+         resident_id = (int)(uintptr_t)frame->bits;
+         if (resident_id >= 0 &&
+             resident_id < DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES)
+         {
+            gpu_present = g_ModernTextures[resident_id] != NULL;
+            gpu_owner_matches = g_ModernBitmaps[resident_id] == frame;
+         }
+      }
+      if (frame && frame->type == BMT_FLAT8 &&
+          !(frame->flags & BMF_LOADED) && frame->bits)
+      {
+         BOOL seen[256] = { FALSE };
+         int x, y;
+         unique_indices = 0;
+         for (y = 0; y < frame->h; ++y)
+            for (x = 0; x < frame->w; ++x)
+            {
+               uchar value = frame->bits[y * frame->row + x];
+               pixel_hash = (pixel_hash ^ value) * 16777619u;
+               if (!seen[value])
+               {
+                  seen[value] = TRUE;
+                  ++unique_indices;
+               }
+            }
+      }
+   }
+   else if (used && !placeholder)
+   {
+      ++*missing;
+      checkerboard_fallback = TRUE;
+   }
+   if (checkerboard_fallback && checkerboards)
+      ++*checkerboards;
+
+   fprintf(log,
+           "OBJECT_TEXTURE model_handle=%d model=\"%s\" slot=%d "
+           "material_num=%d material=\"%s\" used=%d status=%s resource=\"%s\" "
+           "width=%d height=%d row=%u type=%u flags=0x%04x palette=%u "
+           "renderable=%d dummy=%d pixel_hash=0x%08x unique_indices=%d "
+           "resident_id=%d gpu_present=%d gpu_owner_matches=%d fallback=%s\n",
+           model_idx, model_name ? model_name : "(unnamed)", slot,
+           material_num,
+           material ? material : "(unknown)", used,
+           checkerboard ? "CHECKERBOARD" : resource ? "ok" : !used ? "unused" :
+              placeholder ? "replacement-placeholder" : "MISSING",
+           canonical ? canonical : "", bitmap ? bitmap->w : 0,
+           bitmap ? bitmap->h : 0, bitmap ? bitmap->row : 0,
+           bitmap ? bitmap->type : 0, bitmap ? bitmap->flags : 0,
+           bitmap ? bitmap->align : 0, frame != NULL,
+           checkerboard, pixel_hash, unique_indices,
+           resident_id, gpu_present, gpu_owner_matches,
+           checkerboard_fallback ? "CHECKERBOARD" : "none");
+   if (canonical)
+      Free(canonical);
+}
+
+int objmodelAuditTextures(FILE *log, int *checkerboards)
+{
+   int idx;
+   int missing = 0;
+
+   if (checkerboards)
+      *checkerboards = 0;
+
+   if (!log)
+      return 0;
+
+   for (idx = 0; idx < MAX_OBJMODELS; ++idx)
+   {
+      ModelHandle *mh = &g_aModelHandles[idx];
+      const char *model_name;
+      int texture_slot = 0;
+      int i;
+
+      if (!mh->used)
+         continue;
+      model_name = objmodelGetName(idx);
+      fprintf(log, "OBJECT_MODEL handle=%d model=\"%s\" type=%d textures=%u\n",
+              idx, model_name ? model_name : "(unnamed)", mh->type,
+              (unsigned)mh->numtex);
+
+      if (mh->type == OM_TYPE_MD && mh->mhandle)
+      {
+         mds_model *model = (mds_model *)IRes_DataPeek(mh->mhandle);
+         mds_mat *materials = md_mat_list(model);
+         BOOL used_material[256] = { FALSE };
+         mds_pgon *polygon = (mds_pgon *)((uchar *)model + model->pgon_off);
+         for (i = 0; i < model->pgons; ++i)
+         {
+            int primitive = polygon->type & MD_PGON_PRIM_MASK;
+            int words = polygon->num * (primitive == MD_PGON_PRIM_TMAP ? 3 : 2);
+            if (primitive == MD_PGON_PRIM_TMAP && polygon->data < 256)
+               used_material[polygon->data] = TRUE;
+            polygon = (mds_pgon *)((uchar *)polygon + sizeof(*polygon) +
+               words * sizeof(ushort) +
+               (model->ver > 3 ? sizeof(mds_pgon_aux) : 0));
+         }
+         for (i = 0; i < model->mats; ++i)
+            if (materials[i].type == MD_MAT_TMAP)
+            {
+               IRes *resource = texture_slot < mh->numtex && mh->texptr ?
+                                mh->texptr[texture_slot] : NULL;
+               audit_texture(log, idx, model_name, texture_slot,
+                             materials[i].num,
+                             materials[i].name, resource,
+                             used_material[materials[i].num],
+                             &missing, checkerboards);
+               ++texture_slot;
+            }
+      }
+      else if (mh->type == OM_TYPE_MESH && mh->mhandle)
+      {
+         mms_model *model = (mms_model *)IRes_DataPeek(mh->mhandle);
+         if (model->version == MM_CUR_VER)
+         {
+            mms_smatr *materials = mm_smatr_list(model);
+            BOOL used_material[256] = { FALSE };
+            mms_pgon *polygons = mm_pgon_list(model);
+            for (i = 0; i < model->pgons; ++i)
+               if (polygons[i].smatr_id < 256)
+                  used_material[polygons[i].smatr_id] = TRUE;
+            for (i = 0; i < model->smatrs; ++i)
+               if (materials[i].type == MM_MAT_TMAP)
+               {
+                  IRes *resource = texture_slot < mh->numtex && mh->texptr ?
+                                   mh->texptr[texture_slot] : NULL;
+                  audit_texture(log, idx, model_name, texture_slot, i,
+                                materials[i].name, resource, used_material[i],
+                                &missing, checkerboards);
+                  ++texture_slot;
+               }
+         }
+         else if (model->version == MM_ACCLD_VER)
+         {
+            mms_ssmatr *materials = (mms_ssmatr *)mm_smatr_list(model);
+            BOOL used_material[256] = { FALSE };
+            mms_pgon *polygons = mm_pgon_list(model);
+            for (i = 0; i < model->pgons; ++i)
+               if (polygons[i].smatr_id < 256)
+                  used_material[polygons[i].smatr_id] = TRUE;
+            for (i = 0; i < model->smatrs; ++i)
+               if (materials[i].type == MM_MAT_TMAP)
+               {
+                  IRes *resource = texture_slot < mh->numtex && mh->texptr ?
+                                   mh->texptr[texture_slot] : NULL;
+                  audit_texture(log, idx, model_name, texture_slot, i,
+                                materials[i].name, resource, used_material[i],
+                                &missing, checkerboards);
+                  ++texture_slot;
+               }
+         }
+      }
+      else
+      {
+         for (i = 0; i < mh->numtex; ++i)
+            audit_texture(log, idx, model_name, i, i, "(frame)",
+                          mh->texptr ? mh->texptr[i] : NULL, TRUE, &missing,
+                          checkerboards);
+      }
+   }
+   return missing;
+}
+
+int objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx,
+                                int *checkerboards)
+{
+   ModelHandle *mh;
+   IRes **replacements;
+   int replacement;
+   int missing = 0;
+
+   if (!log || !IS_VALID_MH_INDEX(idx) || !g_aModelHandles[idx].used)
+      return 0;
+   mh = &g_aModelHandles[idx];
+   if (!mh->replace_idx)
+      return 0;
+
+   replacements = ObjTxtReplaceForObj(obj);
+   for (replacement = 0; replacement < MAX_REPL_TXT; ++replacement)
+   {
+      IRes *resource;
+      IRes *fallback;
+      int texture_slot;
+      char *canonical = NULL;
+      grs_bitmap *bitmap = NULL;
+      grs_bitmap *frame = NULL;
+      BOOL checkerboard = FALSE;
+      BOOL checkerboard_fallback = FALSE;
+      texture_slot = g_aReplaceList[mh->replace_idx][replacement];
+      if (texture_slot == REPL_LIST_UNUSED)
+         continue;
+      resource = replacements ? replacements[replacement] : NULL;
+      fallback = texture_slot >= 0 && texture_slot < mh->numtex && mh->texptr ?
+                 mh->texptr[texture_slot] : NULL;
+      if (!resource)
+         resource = fallback;
+      if (resource)
+      {
+         IRes_GetCanonPathName(resource, &canonical);
+         bitmap = (grs_bitmap *)IRes_DataPeek(resource);
+         frame = (grs_bitmap *)ectsAnimTxtGetFrame(resource);
+         checkerboard = frame == g_pDummyObjTmap;
+         checkerboard_fallback = checkerboard;
+      }
+      else
+      {
+         ++missing;
+         checkerboard_fallback = TRUE;
+      }
+      if (checkerboard_fallback && checkerboards)
+         ++*checkerboards;
+      fprintf(log,
+              "OBJECT_REPLACEMENT object=%d model_handle=%d replace=%d "
+              "status=%s resource=\"%s\" width=%d height=%d "
+              "renderable=%d dummy=%d fallback=%s\n",
+              obj, idx, replacement,
+              checkerboard ? "CHECKERBOARD" :
+                 resource ? (resource == fallback ? "base-fallback" : "override") :
+                 "MISSING",
+              canonical ? canonical : "", bitmap ? bitmap->w : 0,
+              bitmap ? bitmap->h : 0, frame != NULL, checkerboard,
+              checkerboard_fallback ? "CHECKERBOARD" : "none");
+      if (canonical)
+         Free(canonical);
+   }
+   return missing;
 }
 
 
@@ -1293,14 +1610,14 @@ void objmodelSetupMeshTextures(ObjID obj, void *model, int idx)
 
    version = m->version;
    mats    = mm_smatr_list(m);
-   
+
    if( version == MM_CUR_VER )//zb
    {
        for (i = 0, j = 0; i < m->smatrs; ++i)   // get the textures in the table
            if (mats[i].type == MM_MAT_TMAP)
            {
                hateful_back_mapping[j]=i;  // this is too fucking horrible - dc // he, he you love it        
-               mats[i].handle=(ulong)_objmodelGetTexture(idx,j++);
+               mats[i].handle=mm_register_texture(_objmodelGetTexture(idx,j++));
            }
            if (rep_idx)
            {  // @HATEFUL: stay in synch with identical lines below      
@@ -1308,7 +1625,8 @@ void objmodelSetupMeshTextures(ObjID obj, void *model, int idx)
                if (RepTextures)
                    for (i=0; i<MAX_REPL_TXT; i++)  // make sure it is replaced, and we have one
                        if ((g_aReplaceList[rep_idx][i]!=REPL_LIST_UNUSED)&&RepTextures[i])
-                           mats[hateful_back_mapping[g_aReplaceList[rep_idx][i]]].handle=(ulong)IRes_DataPeek(RepTextures[i]);
+                           mats[hateful_back_mapping[g_aReplaceList[rep_idx][i]]].handle=
+                              mm_register_texture((r3s_texture)IRes_DataPeek(RepTextures[i]));
            }  
            
    }
@@ -1321,7 +1639,7 @@ void objmodelSetupMeshTextures(ObjID obj, void *model, int idx)
            if( pOlMat[i].type == MM_MAT_TMAP )
            {
                hateful_back_mapping[j] = i;  
-               pOlMat[i].handle        = (ulong)_objmodelGetTexture( idx, j++ );
+               pOlMat[i].handle = mm_register_texture(_objmodelGetTexture(idx, j++));
            }
        }
        
@@ -1333,8 +1651,8 @@ void objmodelSetupMeshTextures(ObjID obj, void *model, int idx)
                for( i = 0; i < MAX_REPL_TXT; i++ ) 
                {
                    if( (g_aReplaceList[rep_idx][i] != REPL_LIST_UNUSED ) && RepTextures[i] )
-                       mats[ hateful_back_mapping[ g_aReplaceList[rep_idx][i] ] ].handle 
-                       = (ulong) IRes_DataPeek( RepTextures[i] );
+                       pOlMat[hateful_back_mapping[g_aReplaceList[rep_idx][i]]].handle =
+                          mm_register_texture((r3s_texture)IRes_DataPeek(RepTextures[i]));
                }
            }
        }  
@@ -1354,6 +1672,12 @@ r3s_texture objmodelSetupBitmapTexture(int idx, int frame)
    r3s_texture tex;
    IRes *pRes;
 
+   if (!IS_VALID_MH_INDEX(idx) || frame < 0 ||
+       frame >= g_aModelHandles[idx].numtex ||
+       g_aModelHandles[idx].texptr == NULL ||
+       g_aModelHandles[idx].texptr[frame] == NULL)
+      return g_pDummyObjTmap;
+
    pRes = g_aModelHandles[idx].texptr[frame];
    tex = (r3s_texture) IRes_Lock(pRes);
 
@@ -1362,8 +1686,11 @@ r3s_texture objmodelSetupBitmapTexture(int idx, int frame)
 
 void objmodelReleaseBitmapTexture(int idx, int frame)
 {
-   IRes *pRes = g_aModelHandles[idx].texptr[frame];
-   IRes_Unlock(pRes);
+   if (IS_VALID_MH_INDEX(idx) && frame >= 0 &&
+       frame < g_aModelHandles[idx].numtex &&
+       g_aModelHandles[idx].texptr != NULL &&
+       g_aModelHandles[idx].texptr[frame] != NULL)
+      IRes_Unlock(g_aModelHandles[idx].texptr[frame]);
 }
 
 int objmodelBitmapNumFrames(int idx)

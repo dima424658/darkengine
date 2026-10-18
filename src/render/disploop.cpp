@@ -100,7 +100,7 @@ static void compute_kind(StateRecord* state)
          }
 
          flags = kDispAttemptFlippable|kDispAttempt3D;
-         pDDrawGuid = lgd3d_get_device_info(idx)->p_ddraw_guid;
+         pDDrawGuid = NULL;
 
          g_lgd3d_device_index = idx;
          g_lgd3d = TRUE; 
@@ -120,7 +120,6 @@ static void compute_kind(StateRecord* state)
 // Here's where we do the dirty work.
 //
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -184,7 +183,6 @@ static sLoopClientDesc _LoopDesc =
 // Loop client factory function. 
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(tLoopClientData data, void *unused)
 {
    sLoopClientDesc* desc = (sLoopClientDesc*)unused;
@@ -195,7 +193,6 @@ static ILoopClient* LGAPI _CreateClient(tLoopClientData data, void *unused)
    
    return CreateSimpleLoopClient(_LoopFunc,state,desc);
 }
-#pragma on(unreferenced)
 
 // 
 // The simple factory descriptor

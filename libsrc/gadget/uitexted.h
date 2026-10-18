@@ -93,7 +93,7 @@ typedef struct _TextGadg
 #define TEXTGADG_EDIT_NOSPACES   0x0008   // prohibit whitespace? 
 
 
-#define tgadg_edit_flg(t,flg)   (t->edit&TEXTGADG_EDIT_##flg##)
+#define tgadg_edit_flg(t,flg)   (t->edit&TEXTGADG_EDIT_##flg)
 
 //----------
 // Accessors

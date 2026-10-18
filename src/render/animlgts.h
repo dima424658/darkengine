@@ -35,15 +35,15 @@ typedef struct sAnimLight
 
    // control of fluctuation
    short mode;
-   long time_rising_ms; // how many milliseconds to reach max intensity?
-   long time_falling_ms;// milliseconds to reach min intensity?
+   int32 time_rising_ms; // how many milliseconds to reach max intensity?
+   int32 time_falling_ms;// milliseconds to reach min intensity?
    float min_brightness;
    float max_brightness;
 
    // current state
    float brightness;
    BOOL is_rising;
-   long countdown_ms;   // timer
+   int32 countdown_ms;   // timer
    BOOL inactive;       // if off, don't update countdown_ms or intensity
 } sAnimLight;
 

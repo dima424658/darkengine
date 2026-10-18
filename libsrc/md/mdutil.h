@@ -107,13 +107,6 @@ EXTERN int md_sizeof_mipmap_type(int *pNumLevels,int type,int w,int h);
 // Just like gr_bitmap, but shows you all the levels
 EXTERN void md_mipmap_render(r3s_texture tmap,int x,int y);
 
-// Like a bitmap alloc, but with mip maps, free the whole at once
-// Creates it all in one big block, copies srcbits
-// if pal is set, uses it, else uses the current ipal.
-// ignores if srcbits NULL
-// Uses pMem if non-null, else allocates on its own
-EXTERN r3s_texture md_mipmap_alloc(uchar *pMem,uchar *srcbits,int type,int flags,int w,int h,uchar *pal);
-
 // Used for the callback when you set
 // md_set_render_pgon_callback
 // hooks transparently onto models if you have the mip maps set

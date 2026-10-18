@@ -36,7 +36,8 @@ void* RNGCongruential::GetState(long* sz)
     result->Magic = CongruentialMagic;
     result->Seed = m_seed;
 
-    *sz = sizeof(State);
+    if (sz)
+        *sz = sizeof(State);
 
     return result;
 }
@@ -46,7 +47,7 @@ void RNGCongruential::SetState(void* rawState)
     auto state = reinterpret_cast<State*>(rawState);
 
     if (state->Magic != CongruentialMagic)
-        CriticalMsg("Invalid state for RNGCongruential::SetState", aXPrjTechLibsrc_1593, 33);
+        CriticalMsg("Invalid state for RNGCongruential::SetState");
 
     m_seed = state->Seed;
 }

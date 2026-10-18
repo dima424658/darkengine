@@ -235,7 +235,7 @@ struct
    ushort w, h;
    ushort mip_level;
    uchar active;
-   uchar texture_id;
+   ushort texture_id;
 } surf_cache[SURFACE_CACHE_ENTRIES];
 
 static int surf_first_free = 0;
@@ -289,7 +289,7 @@ void clear_surface_cache(void)
 
 // When we animate textures, we want to invalidate all surface cache
 // entries which have a particular texture id.
-void clear_surfaces_for_texture(uchar texture_id)
+void clear_surfaces_for_texture(ushort texture_id)
 {
    int i;
 
@@ -348,7 +348,7 @@ void free_slot_in_cache(void)
 }
 
 int cache_mem_this_frame;
-static int alloc_surface_cache(int x, int y, short *ptr, uchar texture_id)
+static int alloc_surface_cache(int x, int y, short *ptr, ushort texture_id)
 {
    int i, n, sz, w_bytes;
    uchar *bits;
@@ -497,9 +497,11 @@ void set_up_temp_lightmap(PortalLightMap *map)
 
 void add_to_temp_lightmap(LightmapEntry *source, uchar intensity)
 {
-   int r,g,b;
-   int i, j;
+   ulong r,g,b;
+   uint i, j;
+#if !defined(RGB_LIGHTING) || defined(RGB_888)
    uint v;
+#endif
    LightmapEntry *dest = &temp_lightmap_bits[0];
 
 #ifndef RGB_LIGHTING
@@ -541,7 +543,7 @@ void add_to_temp_lightmap(LightmapEntry *source, uchar intensity)
          r = ((((plus & pl_red_mask)>>RED_SHIFT)*intensity)>>8)<<RED_SHIFT;
          g = ((((plus & pl_green_mask)>>GREEN_SHIFT)*intensity)>>8)<<GREEN_SHIFT;
          b = ((((plus & pl_blue_mask)>>BLUE_SHIFT)*intensity)>>8)<<BLUE_SHIFT;
-         plus = r+g+b;
+          plus = (int)(r+g+b);
 
          sum = cur + plus;
 
@@ -560,11 +562,11 @@ void add_to_temp_lightmap(LightmapEntry *source, uchar intensity)
             if (r > pl_red_mask) r = pl_red_mask;
             if (g > pl_green_mask) g = pl_green_mask;
             if (b > pl_blue_mask) b = pl_blue_mask;
-            sum = r + g + b;
+             sum = (int)(r + g + b);
          }
 
          dest[j] = sum;
-#endif RGB_888
+#endif // RGB_888
       }
       source += _portal_lightmap_row;
       dest += _portal_lightmap_row;
@@ -710,7 +712,7 @@ ushort portal_color_convert(ushort color)
    r = (color & pl_red_mask) >> RED_SHIFT;
    g = (color & pl_green_mask) >> GREEN_SHIFT;
    b = (color & pl_blue_mask) >> BLUE_SHIFT;
-   return pl_red_convert[r] + pl_blue_convert[b] + pl_green_convert[g];
+   return (ushort)(pl_red_convert[r] + pl_blue_convert[b] + pl_green_convert[g]);
 }
 #endif // ~RGB_888
 #endif
@@ -761,6 +763,7 @@ grs_bitmap *get_cached_surface(PortalPolygonRenderInfo *render,
    bool cache;
    uchar *data, *bits;
    uchar log_bpp;
+
 #ifdef DO_DECALS
    void (*decal_build_func)();
 #endif
@@ -972,8 +975,17 @@ static void pt16_surfbuild(int slog)
    uchar *src;
    LightmapEntry *light;
    ushort *dest;
-   //int cl, cr, dcl, dcr, c, dc;
    int size, i,j;
+   int x0, x1, y0, y1;
+   int w00, w10, w01, w11, denom;
+   int red_shift, green_shift, blue_shift;
+   int red_max, green_max, blue_max;
+   ushort c00, c10, c01, c11;
+   ushort p00, p10, p01, p11;
+   uchar color00, color10, color01, color11;
+   ushort *clut00, *clut10, *clut01, *clut11;
+   grs_rgb_bitmask bmask;
+   extern uchar light_ipal[];
 
    dest  = (ushort *)_portal_surface_output;
    src   = _portal_surface_texture;
@@ -982,54 +994,73 @@ static void pt16_surfbuild(int slog)
    drow  = _portal_surface_output_row>>1;
    lrow  = _portal_surface_lightmap_row;
 
-   // light map pixels start out 4.4; we want c to be 4.8, so we shift by 4
-   // and shift deltas by the appropriate amount to compensate for size.
-
    size = 1<<slog;
-
-#if 0
-   cl = light[0];
-   cr = light[1];
-   dcl = (light[lrow] - cl)<<(4-slog);
-   dcr = (light[lrow+1] - cr)<<(4-slog);
-   cl <<= 4;
-   cr <<= 4;
-
-   for (j=0;j<size;j++)
-   {
-      c = cl;
-      dc = (cr-cl)>>slog;
-      for (i=0;i<size;i++) {
-         dest[i] = grd_ltab816[(c&0xff00) + src[i]];
-         c += dc;
-      }
-      cl += dcl;
-      cr += dcr;
-      dest += drow;
-      src += srow;
-   }
-#else // 0
-   // just use the tl color
-   {
-      extern uchar light_ipal[];
 #ifdef RGB_888
-      ushort n555 = (light[0].A[0] >> 3)
-                  + ((light[0].A[1] >> 3) << 5)
-                  + ((light[0].A[2] >> 3) << 10);
-      uchar color = light_ipal[n555];
+   c00 = (light[0].A[0] >> 3) | ((light[0].A[1] >> 3) << 5) | ((light[0].A[2] >> 3) << 10);
+   c10 = (light[1].A[0] >> 3) | ((light[1].A[1] >> 3) << 5) | ((light[1].A[2] >> 3) << 10);
+   c01 = (light[lrow].A[0] >> 3) | ((light[lrow].A[1] >> 3) << 5) | ((light[lrow].A[2] >> 3) << 10);
+   c11 = (light[lrow+1].A[0] >> 3) | ((light[lrow+1].A[1] >> 3) << 5) | ((light[lrow+1].A[2] >> 3) << 10);
 #else // RGB_888
-      uchar color = light_ipal[light[0]];
+   c00 = light[0];
+   c10 = light[1];
+   c01 = light[lrow];
+   c11 = light[lrow+1];
 #endif // RGB_888
-      ushort *clut = &grd_ltab816[(color+24) << 8];
-      for (j=0; j < size; ++j) {
-         for (i=0; i < size; ++i) {
-            dest[i] = clut[src[i]];
-         }
-         dest += drow;
-         src  += srow;
+
+   // Resolve each corner through the RGB lighting tables once, then bilinearly
+   // interpolate the resulting screen-format colors. Interpolating the light
+   // first and sending every pixel back through light_ipal quantizes broad
+   // areas to one entry and leaves visible square steps.
+   color00 = light_ipal[c00];
+   color10 = light_ipal[c10];
+   color01 = light_ipal[c01];
+   color11 = light_ipal[c11];
+   clut00 = &grd_ltab816[(color00 + 24) << 8];
+   clut10 = &grd_ltab816[(color10 + 24) << 8];
+   clut01 = &grd_ltab816[(color01 + 24) << 8];
+   clut11 = &grd_ltab816[(color11 + 24) << 8];
+
+   gr_get_screen_rgb_bitmask(&bmask);
+   red_shift = green_shift = blue_shift = 0;
+   while (((bmask.red >> red_shift) & 1) == 0) ++red_shift;
+   while (((bmask.green >> green_shift) & 1) == 0) ++green_shift;
+   while (((bmask.blue >> blue_shift) & 1) == 0) ++blue_shift;
+   red_max = bmask.red >> red_shift;
+   green_max = bmask.green >> green_shift;
+   blue_max = bmask.blue >> blue_shift;
+
+   denom = size * size;
+   for (j=0; j<size; ++j) {
+      y0 = size-j;
+      y1 = j;
+      for (i=0; i<size; ++i) {
+         x0 = size-i;
+         x1 = i;
+         w00 = x0*y0;
+         w10 = x1*y0;
+         w01 = x0*y1;
+         w11 = x1*y1;
+         p00 = clut00[src[i]];
+         p10 = clut10[src[i]];
+         p01 = clut01[src[i]];
+         p11 = clut11[src[i]];
+         dest[i] = (ushort)(
+            ((((((p00 & bmask.red) >> red_shift) * w00 +
+                 ((p10 & bmask.red) >> red_shift) * w10 +
+                 ((p01 & bmask.red) >> red_shift) * w01 +
+                 ((p11 & bmask.red) >> red_shift) * w11) / denom) & red_max) << red_shift) |
+            ((((((p00 & bmask.green) >> green_shift) * w00 +
+                 ((p10 & bmask.green) >> green_shift) * w10 +
+                 ((p01 & bmask.green) >> green_shift) * w01 +
+                 ((p11 & bmask.green) >> green_shift) * w11) / denom) & green_max) << green_shift) |
+            ((((((p00 & bmask.blue) >> blue_shift) * w00 +
+                 ((p10 & bmask.blue) >> blue_shift) * w10 +
+                 ((p01 & bmask.blue) >> blue_shift) * w01 +
+                 ((p11 & bmask.blue) >> blue_shift) * w11) / denom) & blue_max) << blue_shift));
       }
+      dest += drow;
+      src  += srow;
    }
-#endif // 0
 
 #endif // SOFTWARE_RGB
 }

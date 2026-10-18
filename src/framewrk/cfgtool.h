@@ -99,6 +99,7 @@ EXTERN void process_config_scripts(const char* prefix);
 //
 
 EXTERN BOOL find_file_in_config_path(char* targ, const char* filename, const char* path_var);
+EXTERN BOOL find_file_in_config_path_only(char* targ, const char* filename, const char* path_var);
 
 #endif // __CFGTOOL_H
 

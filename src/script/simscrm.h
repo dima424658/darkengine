@@ -32,7 +32,7 @@ struct sSimMsg : public sScrMsg
 #ifdef SCRIPT
 #define OnSim() SCRIPT_MESSAGE_HANDLER_SIGNATURE_(Sim,sSimMsg)
 #define DefaultOnSim() SCRIPT_CALL_BASE(Sim)
-#endif SCRIPT
+#endif // SCRIPT
 
 
 

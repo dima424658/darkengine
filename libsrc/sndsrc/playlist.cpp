@@ -30,22 +30,24 @@
 //
 // size of a playlist element, indexed by opcode
 //
-static int playlistOpSizes[] = {
+int playlistOpSizes[] = {
    0,                               // there is no element for opcode plNone
    sizeof( SSPLEndList ),
    sizeof( SSPLSilence ),
    sizeof( SSPLRezSingle ),
    sizeof( SSPLFileSingle ),
    sizeof( SSPLMemSingle ),
+   sizeof( SSPLRawMemSingle ),
+   sizeof( SSPLNRezSingle ),
    sizeof( SSPLRezDual ),
    sizeof( SSPLFileDual ),
    sizeof( SSPLMemDual ),
+   sizeof( SSPLRawMemDual ),
+   sizeof( SSPLNRezDual ),
    sizeof( SSPLCallback ),
    sizeof( SSPLLabel ),
    sizeof( SSPLBranch ),
-   sizeof( SSPLSetGate ),
-   sizeof( SSPLRawMemSingle ),
-   sizeof( SSPLRawMemDual )
+   sizeof( SSPLSetGate )
 };
 
 // the 2 format longwords in segment structs are used to hold attribute info:
@@ -94,10 +96,12 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
    SSPLFileSingle       *pFileSingle;
    SSPLMemSingle        *pMemSingle;
    SSPLRawMemSingle     *pRawMemSingle;
+   SSPLNRezSingle       *pNRezSingle;
    SSPLRezDual          *pRezDual;
    SSPLFileDual         *pFileDual;
    SSPLMemDual          *pMemDual;
    SSPLRawMemDual       *pRawMemDual;
+   SSPLNRezDual         *pNRezDual;
    SSPLLabel            *pLabel;
    SSPLBranch           *pBranch;
    SSPLSetGate          *pSetGate;
@@ -108,6 +112,7 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
    BOOL                 prevWasDual, isDual, notDone, blewIt;
    FILE                 *inFile;
    Id                   rezId;
+   IRes                 *pRes;
    int                  i;
 
    TLOG1( "SSrc::SetPlaylist [%d]\n", mSerialNum );
@@ -127,11 +132,12 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
    mpPlaylistBase = pList;
    mListBytesTotal = 0;
    mSegNum = 0;
+   mLastLabelPassed = (uint32) ~0;
 
-   for ( i = 0; i < SNDSRC_DEFAULT_MAX_LABELS; i++ ) {
+   for ( i = 0; i < (int) mMaxLabels; i++ ) {
       mpLabels[i] = NULL;
    }
-   for ( i = 0; i < SNDSRC_DEFAULT_MAX_GATES; i++ ) {
+   for ( i = 0; i < (int) mMaxGates; i++ ) {
       mGates[i] = 0;
    }
 
@@ -164,7 +170,7 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
                                         &pRawData, &rawDataLen,
                                         &(pRezSingle->nSamples), &attribs );
             assert( blewIt == FALSE );
-            pRezSingle->off = ((char *) pRawData) - tmpBuff;
+            pRezSingle->off = static_cast<uint32>(((char *) pRawData) - tmpBuff);
             setFormatWords( &(pRezSingle->format1), &attribs, &mAttribs );
             if ( prevWasDual ) {
                pRezDual = (SSPLRezDual *) pLastDataOp;
@@ -194,7 +200,7 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
                                         &pRawData, &rawDataLen,
                                         &(pFileSingle->nSamples), &attribs );
             assert( blewIt == FALSE );
-            pFileSingle->off = ((char *) pRawData) - tmpBuff;
+            pFileSingle->off = static_cast<uint32>(((char *) pRawData) - tmpBuff);
             setFormatWords( &(pFileSingle->format1), &attribs, &mAttribs );
             if ( prevWasDual ) {
                pFileDual = (SSPLFileDual *) pLastDataOp;
@@ -217,7 +223,7 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
                                         &pRawData, &rawDataLen,
                                         &(pMemSingle->nSamples), &attribs );
             assert( blewIt == FALSE );
-            pMemSingle->off = ((char *) pRawData) - ((char *) pMemSingle->pData);
+            pMemSingle->off = static_cast<uint32>(((char *) pRawData) - ((char *) pMemSingle->pData));
             setFormatWords( &(pMemSingle->format1), &attribs, &mAttribs );
             if ( prevWasDual ) {
                pMemDual = (SSPLMemDual *) pLastDataOp;
@@ -241,6 +247,32 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
             }
             pLastDataOp = pOp;
             samplesThisSegment = pRawMemSingle->nSamples;
+            break;
+
+         case plNRezSingle:
+            pNRezSingle = (SSPLNRezSingle *) pOp;
+            pRes = pNRezSingle->pRes;
+            assert( pRes != NULL );
+            len = pRes->GetSize();
+            bytesToRead = ( len < sizeof(tmpBuff) ) ? len : sizeof(tmpBuff);
+            pRes->ExtractPartial( 0, bytesToRead - 1, tmpBuff );
+            blewIt = SndCrackRezHeader( tmpBuff, bytesToRead,
+                                        &pRawData, &rawDataLen,
+                                        &(pNRezSingle->nSamples), &attribs );
+            assert( blewIt == FALSE );
+            pNRezSingle->off = static_cast<uint32>(((char *) pRawData) - tmpBuff);
+            setFormatWords( &(pNRezSingle->format1), &attribs, &mAttribs );
+            if ( prevWasDual ) {
+               pNRezDual = (SSPLNRezDual *) pLastDataOp;
+               assert( pNRezDual->nSamples < pNRezSingle->nSamples );
+               pNRezSingle->nSamples -= pNRezDual->nSamples;
+               pNRezDual->off = pNRezSingle->off;
+               pNRezDual->pRes = pRes;
+               pNRezDual->format1 = pNRezSingle->format1;
+               pNRezDual->format2 = pNRezSingle->format2;
+            }
+            pLastDataOp = pOp;
+            samplesThisSegment = pNRezSingle->nSamples;
             break;
 
          case plRezDual:
@@ -295,13 +327,23 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
             pLastDataOp = pOp;
             break;
 
+         case plNRezDual:
+            isDual = TRUE;
+            pNRezDual = (SSPLNRezDual *) pOp;
+            pNRezSingle = (SSPLNRezSingle *) pLastDataOp;
+            assert( pNRezDual->nSamples < pNRezSingle->nSamples );
+            pNRezSingle->nSamples -= pNRezDual->nSamples;
+            pLastDataOp = pOp;
+            break;
+
          case plCallback:
             break;
 
          case plLabel:
             pLabel = (SSPLLabel *) pOp;
-            if ( pLabel->labelNum < SNDSRC_DEFAULT_MAX_LABELS ) {
-               mpLabels[pLabel->labelNum] = (SndPlaylistElement *) ( ((uint32) pOp) + sizeof(SSPLLabel) );
+            if ( pLabel->labelNum < mMaxLabels ) {
+               mpLabels[pLabel->labelNum] =
+                  (SndPlaylistElement *)((uchar *)pOp + sizeof(SSPLLabel));
             } else {
                Warning( ("Playlist label number out of range!\n") );
             }
@@ -309,17 +351,17 @@ cSndSource::SetPlaylist( SndPlaylist   pList )
 
          case plBranch:
             pBranch = (SSPLBranch *) pOp;
-            if ( pBranch->labelNum >= SNDSRC_DEFAULT_MAX_LABELS ) {
+            if ( pBranch->labelNum >= mMaxLabels ) {
                Warning( ("Playlist branch label out of range!\n") );
             }
-            if ( pBranch->gateNum >= SNDSRC_DEFAULT_MAX_GATES ) {
+            if ( pBranch->gateNum >= mMaxGates ) {
                Warning( ("Playlist branch gate out of range!\n") );
             }
             break;
 
          case plSetGate:
             pSetGate = (SSPLSetGate *) pOp;
-            if ( pSetGate->gateNum >= SNDSRC_DEFAULT_MAX_GATES ) {
+            if ( pSetGate->gateNum >= mMaxGates ) {
                Warning( ("Playlist gate out of range!\n") );
             }
             break;
@@ -426,6 +468,7 @@ cSndSource::NextSegment( BOOL    createSegs )
       case plRezSingle:
       case plFileSingle:
       case plMemSingle:
+      case plNRezSingle:
          TLOG3( "SSrc::NextSegment [%d] rez/file/mem single id 0x%x, %d samples\n",
                mSerialNum, pDataOp->id, pDataOp->nSamples );
          mSegBytesLeft = pDataOp->nSamples * mBytesPerSample;
@@ -451,6 +494,7 @@ cSndSource::NextSegment( BOOL    createSegs )
       case plRezDual:
       case plFileDual:
       case plMemDual:
+      case plNRezDual:
          TLOG2( "SSrc::NextSegment [%d] rez/file/mem dual %d\n",
                mSerialNum, pDataOp->nSamples );
          mSegBytesLeft = pDataOp->nSamples * mBytesPerSample;
@@ -496,6 +540,8 @@ cSndSource::NextSegment( BOOL    createSegs )
       case plLabel:
          TLOG2( "SSrc::NextSegment [%d] label %d\n", mSerialNum, pDataOp->nSamples );
          mSegBytesLeft = 0;
+         if ( createSegs )
+            mLastLabelPassed = ((SSPLLabel *) mpPlaylist)->labelNum;
          break;
 
       case plBranch:
@@ -510,17 +556,17 @@ cSndSource::NextSegment( BOOL    createSegs )
             // figure out branch destination address
             labelNum = ~0;
             if ( pBranch->indirect ) {
-               if ( pBranch->labelNum < SNDSRC_DEFAULT_MAX_GATES ) {
+               if ( pBranch->labelNum < mMaxGates ) {
                   labelNum = mGates[ pBranch->labelNum ];
                }
             } else {
                labelNum = pBranch->labelNum;
             }
-            pBranchDest = ( labelNum < SNDSRC_DEFAULT_MAX_LABELS ) ?
+            pBranchDest = ( labelNum < mMaxLabels ) ?
                mpLabels[labelNum] : NULL;
 
             if ( (pBranchDest != NULL ) &&
-                 (pBranch->gateNum < SNDSRC_DEFAULT_MAX_GATES) ) {
+                 (pBranch->gateNum < mMaxGates) ) {
 
                gateValue = mGates[ pBranch->gateNum ];
                switch ( pBranch->branchType ) {
@@ -528,6 +574,7 @@ cSndSource::NextSegment( BOOL    createSegs )
                   case SSPLBTBranch:
                      TLOG2( "SSrc::NextSegment [%d] branch to %d\n", mSerialNum, pBranch->labelNum );
                      mpPlaylist = pBranchDest;
+                     mLastLabelPassed = labelNum;
                      break;
 
                   case SSPLBTBranchZero:
@@ -535,6 +582,7 @@ cSndSource::NextSegment( BOOL    createSegs )
                            mSerialNum, pBranch->labelNum, gateValue );
                      if ( gateValue == 0 ) {
                         mpPlaylist = pBranchDest;
+                        mLastLabelPassed = labelNum;
                      }
                      break;
 
@@ -543,6 +591,7 @@ cSndSource::NextSegment( BOOL    createSegs )
                            mSerialNum, pBranch->labelNum, gateValue );
                      if ( gateValue != 0 ) {
                         mpPlaylist = pBranchDest;
+                        mLastLabelPassed = labelNum;
                      }
                      break;
 
@@ -552,6 +601,7 @@ cSndSource::NextSegment( BOOL    createSegs )
                      mGates[ pBranch->gateNum ] = (--gateValue);
                      if ( gateValue != 0 ) {
                         mpPlaylist = pBranchDest;
+                        mLastLabelPassed = labelNum;
                      }
                      break;
                }
@@ -564,7 +614,7 @@ cSndSource::NextSegment( BOOL    createSegs )
          pSetGate = (SSPLSetGate *) mpPlaylist;
          TLOG3( "SSrc::NextSegment [%d] setGate %d to %d\n",
                mSerialNum, pSetGate->gateNum, pSetGate->gateValue );
-         if ( createSegs && (pSetGate->gateNum < SNDSRC_DEFAULT_MAX_GATES) ) {
+         if ( createSegs && (pSetGate->gateNum < mMaxGates) ) {
             mGates[ pSetGate->gateNum ] = pSetGate->gateValue;
          }
          break;
@@ -651,6 +701,7 @@ cSndSource::SetPosition( uint32     pos )
          case plFileSingle:
          case plMemSingle:
          case plRawMemSingle:
+         case plNRezSingle:
             if ( pOp2 == NULL ) {
                pOp1 = pOp;
                base1Pos = basePos;
@@ -666,6 +717,7 @@ cSndSource::SetPosition( uint32     pos )
          case plFileDual:
          case plMemDual:
          case plRawMemDual:
+         case plNRezDual:
             if ( pOp2 != NULL ) {
                pOp1 = pOp2;
                base1Pos = base2Pos;
@@ -740,16 +792,19 @@ cSndSource::CreateSegment( uint32   *pOp )
 {
    cSndSegment       *pSeg = NULL;
    cRezSegment       *pRezSeg = NULL;
+   cNRezSegment      *pNRezSeg = NULL;
    cFileSegment      *pFileSeg = NULL;
    cMemorySegment    *pMemSeg = NULL;
    SSPLRezSingle     *pRezSingle;
    SSPLFileSingle    *pFileSingle;
    SSPLMemSingle     *pMemSingle;
    SSPLRawMemSingle  *pRawMemSingle;
+   SSPLNRezSingle    *pNRezSingle;
    SSPLRezDual       *pRezDual;
    SSPLFileDual      *pFileDual;
    SSPLMemDual       *pMemDual;
    SSPLRawMemDual    *pRawMemDual;
+   SSPLNRezDual      *pNRezDual;
    sSndAttribs       attribs;
    BOOL              doDouble;
 
@@ -835,6 +890,24 @@ cSndSource::CreateSegment( uint32   *pOp )
          pSeg = pMemSeg;
          break;
 
+      case plNRezSingle:
+         pNRezSingle = (SSPLNRezSingle *) pOp;
+         pNRezSeg = new cNRezSegment;
+         if ( (pNRezSingle->format1 & 0xF) == kSndPlaylistFlagIMAADPCM ) {
+            attribs.dataType = kSndDataIMAADPCM;
+            attribs.bitsPerSample = 4;
+         }
+         doDouble = (pNRezSingle->format1 & kSndPlaylistFlagDoDouble) ? TRUE : FALSE;
+         if ( doDouble )
+            attribs.sampleRate <<= 1;
+         attribs.bytesPerBlock = pNRezSingle->format2 >> 16;
+         attribs.samplesPerBlock = pNRezSingle->format2 & 0xFFFF;
+         attribs.numSamples = pNRezSingle->nSamples;
+         pNRezSeg->Init( pNRezSingle->pRes, pNRezSingle->off,
+                         &attribs, doDouble );
+         pSeg = pNRezSeg;
+         break;
+
       case plRezDual:
          pRezDual = (SSPLRezDual *) pOp;
          pRezSeg = new cRezSegment;
@@ -908,6 +981,24 @@ cSndSource::CreateSegment( uint32   *pOp )
          attribs.numSamples = pRawMemDual->nSamples;
          pMemSeg->Init( pRawMemDual->pData, 0, &attribs, doDouble);
          pSeg = pMemSeg;
+         break;
+
+      case plNRezDual:
+         pNRezDual = (SSPLNRezDual *) pOp;
+         pNRezSeg = new cNRezSegment;
+         if ( (pNRezDual->format1 & 0xF) == kSndPlaylistFlagIMAADPCM ) {
+            attribs.dataType = kSndDataIMAADPCM;
+            attribs.bitsPerSample = 4;
+         }
+         doDouble = (pNRezDual->format1 & kSndPlaylistFlagDoDouble) ? TRUE : FALSE;
+         if ( doDouble )
+            attribs.sampleRate <<= 1;
+         attribs.bytesPerBlock = pNRezDual->format2 >> 16;
+         attribs.samplesPerBlock = pNRezDual->format2 & 0xFFFF;
+         attribs.numSamples = pNRezDual->nSamples;
+         pNRezSeg->Init( pNRezDual->pRes, pNRezDual->off,
+                         &attribs, doDouble );
+         pSeg = pNRezSeg;
          break;
 
       default:

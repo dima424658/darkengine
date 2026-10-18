@@ -20,6 +20,7 @@
  *
 */
 
+#include <stdint.h>
 #include <string.h>
 
 #include <res.h>
@@ -35,26 +36,10 @@ ResCumStat cumStatType[NUM_RESTYPENAMES];        // table of cum. stats by type
 void TruncName(char *dest, const char *src, int len);
 //  Macro to multiply two longs and divide, and return full long
 
-#ifdef __WATCOMC__
-ulong resstat_mul_div(long m0, ulong m1, ulong d);
-#pragma aux resstat_mul_div =\
-   "mul    edx"     \
-   "div    ebx"     \
-   parm [eax] [edx] [ebx]  \
-   modify [eax edx];
-#else
 __inline ulong resstat_mul_div(long m0, ulong m1, ulong d)
 {
-	__asm
-	{
-		mov	eax,m0
-		mov	edx,m1
-		mov	ebx,d
-		mul	edx
-		div	ebx
-	}
+   return (ulong)(((uint64_t)(ulong)m0 * (uint64_t)m1) / d);
 }
-#endif
 
 //  --------------------------------------------------------------
 //      CUMULATIVE STATS

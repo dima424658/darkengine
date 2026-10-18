@@ -45,10 +45,10 @@ public:
     //
     // IMalloc functions
     //
-    STDMETHOD_(void *, Alloc)   (ULONG cb);
-    STDMETHOD_(void *, Realloc) (void * pv, ULONG cb);
+    STDMETHOD_(void *, Alloc)   (SIZE_T cb);
+    STDMETHOD_(void *, Realloc) (void * pv, SIZE_T cb);
     STDMETHOD_(void,   Free)    (void * pv);
-    STDMETHOD_(ULONG,  GetSize) (void * pv);
+    STDMETHOD_(SIZE_T, GetSize) (void * pv);
     STDMETHOD_(int,    DidAlloc)(void * pv);
     STDMETHOD_(void,   HeapMinimize)();
 
@@ -56,8 +56,8 @@ public:
     //
     // IDebugMalloc extensions to IMalloc
     //
-    STDMETHOD_(void *, AllocEx)  (ULONG cb, const char * pszFile, int line);
-    STDMETHOD_(void *, ReallocEx)(void * pv, ULONG cb, const char * pszFile, int line);
+    STDMETHOD_(void *, AllocEx)  (SIZE_T cb, const char * pszFile, int line);
+    STDMETHOD_(void *, ReallocEx)(void * pv, SIZE_T cb, const char * pszFile, int line);
     STDMETHOD_(void,   FreeEx)   (void * pv, const char * pszFile, int line);
 
     STDMETHOD (VerifyAlloc)(void * pv);
@@ -90,10 +90,10 @@ private:
     sHDTraceInfo * TraceRemove(void * p);
 
     ulong m_nAllocs;
-    ulong m_nBytesAlloced;
-    ulong m_nMaxBytesAlloced;
-    ulong m_nRealBytesAlloced;
-    ulong m_nMaxRealBytesAlloced;
+    size_t m_nBytesAlloced;
+    size_t m_nMaxBytesAlloced;
+    size_t m_nRealBytesAlloced;
+    size_t m_nMaxRealBytesAlloced;
 
     //
     // monitoring source modules--each handles one filename

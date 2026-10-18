@@ -53,7 +53,7 @@ static eReactionResult LGAPI damage_func(sReactionEvent* event,
    float float_damage = event->stim->intensity*dmg->coeff; 
    
    // add a random fraction to stochastically preserve precision 
-   float_damage += RandRange(0,99)/100.0;  // should this really be a power of 2? 
+   float_damage += RandRange(0, 99) / 100.0f;  // should this really be a power of 2?
 
    damage.amount += (int)floor(float_damage); 
 
@@ -116,7 +116,7 @@ static eReactionResult LGAPI spoof_damage_func(sReactionEvent* event,
    float float_damage = event->stim->intensity*dmg->coeff; 
    
    // add a random fraction to stochastically preserve precision 
-   float_damage += RandRange(0,99)/100.0;  // should this really be a power of 2? 
+   float_damage += RandRange(0, 99) / 100.0f;  // should this really be a power of 2?
 
    damage.amount += (int)floor(float_damage); 
 

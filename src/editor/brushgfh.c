@@ -23,6 +23,7 @@
 #include <lgsprntf.h>
 #include <gcompose.h>
 #include <guistyle.h>
+#include <darklimit.h>
 
 #include <uiapp.h>
 #include <brushgfh.h>
@@ -140,7 +141,7 @@ void grab_brush_axis(editBrush* brush, int axis, float* val)
          break;
       case ROT_AXES:
          // here we are, do the angles
-         *val = brush->ang.el[mod3]*1.0*ANGLE_UNITS/(2*FIXANG_PI);
+         *val = brush->ang.el[mod3]*1.0f*ANGLE_UNITS/(2*FIXANG_PI);
          break;   
    }
    //   ConfigSpew("grabstuff",("grabbing %f from axis %d\n",(fix)((*val)*FIX_UNIT),axis));
@@ -167,7 +168,7 @@ CoordDef coord_defs[] =
    { "H", REF_RECT_GFHBrushTopM,},
 };
 
-#define COORD_DELTA (0.01)
+#define COORD_DELTA (0.01f)
 #define ANG_DELTA (1.00)
 #define AXIS_IS_ANG(axis) (axis>=6)
 
@@ -176,7 +177,7 @@ CoordDef coord_defs[] =
 static bool coord_cycle_call(CycleGadg* gadg, ulong action, eCyclePart part, void* var, CycleGadgDesc* desc)
 {
    float* pval = var; 
-   int axis = (int)desc->user_data;
+   int axis = (int)(intptr_t)desc->user_data;
 
    if (CYCLE_ACTION_KIND(action) == kCycleActionUpdate)
    {
@@ -230,7 +231,7 @@ void create_coord_cycler(LGadRoot* root, Rect* bounds, CycleGadg* gadg, int axis
    desc.flags = CYCLE_FOCUS_FLAG|CYCLE_EDIT_FLAG|CYCLE_NOSPACE_FLAG;
    desc.next = next;
    desc.prev = prev;
-   desc.user_data = (void*)axis;
+   desc.user_data = (void*)(intptr_t)axis;
    if (is_ang)
    {
       fdesc.delta = ANG_DELTA;
@@ -241,8 +242,8 @@ void create_coord_cycler(LGadRoot* root, Rect* bounds, CycleGadg* gadg, int axis
    else
    {
       fdesc.delta =  COORD_DELTA;
-      fdesc.min   = -1000.00;
-      fdesc.max   = +1000.00;
+      fdesc.min   = -DARK_LIMIT_RUNTIME_WORLD_EXTENT;
+      fdesc.max   = +DARK_LIMIT_RUNTIME_WORLD_EXTENT;
       fdesc.wrap  =  FALSE;
    }
    CreatefloatCycleGadg(gadg,root,&desc,&fdesc);
@@ -276,7 +277,7 @@ bool label_button_call(short action, void* data, LGadBox* vb)
    if (action & MOUSE_LDOWN)
    {
       editBrush* br = BrushGFH.brush;
-      int varnum = (int)LGadBoxGetUserData(vb);
+      int varnum = (int)(intptr_t)LGadBoxGetUserData(vb);
       int axis = varnum%NUM_SPATIAL_DIMS;
       fixangSlider angslider;
       floatSlider fslider;
@@ -331,7 +332,7 @@ static void create_label_button(LGadButton* butt, LGadRoot* root, Rect* bounds, 
                  (short)RectWidth(&area), (short)RectHeight(&area),
                  &draw, label_button_call,0);
    LGadButtonSetFlags(butt,LGADBUTT_FLAG_GETDOWNS);
-   LGadBoxSetUserData(VB(butt),(void*)axis);
+   LGadBoxSetUserData(VB(butt),(void*)(intptr_t)axis);
 }
 
 ////////////////////////////////////////
@@ -339,12 +340,10 @@ static void create_label_button(LGadButton* butt, LGadRoot* root, Rect* bounds, 
 //
 
 #ifdef ROOT_DRAW
-#pragma off(unrefereneced)
 static void root_draw_call(void* data, LGadBox* vb)
 {
    gr_clear(guiStyleGetColor(NULL,StyleColorBG));
 }
-#pragma on(unreferenced)
 #endif 
 
 ////////////////////////////////////////////////////////////
@@ -354,7 +353,7 @@ static void root_draw_call(void* data, LGadBox* vb)
 void brushGFH_OpenPnPs(int n);
 void brushGFH_ClosePnPs(void);
 void brushGFH_UpdatePnPs(GFHUpdateOp op, editBrush *brush);
-void set_pnp_mode(int n);
+static void set_pnp_mode(int n);
 
 static bool New_Brush_Hack=FALSE;     // so setcur sets it, update does it
 
@@ -648,14 +647,24 @@ static void set_swap_mode(int n)
    LGadDrawBox(VB(&BrushGFH.root),NULL);
 }
 
+static void deferred_set_pnp_mode(void *data)
+{
+   set_pnp_mode((int)(intptr_t)data);
+}
+
+static void deferred_set_swap_mode(void *data)
+{
+   set_swap_mode((int)(intptr_t)data);
+}
+
 static void do_pnp_mode(int n)
 {
-   uiDefer((deferfunc)set_pnp_mode,(void *)n);
+   uiDefer(deferred_set_pnp_mode,(void *)(intptr_t)n);
 }
 
 static void do_swap_mode(int n)
 {
-   uiDefer((deferfunc)set_swap_mode,(void *)n);
+   uiDefer(deferred_set_swap_mode,(void *)(intptr_t)n);
 }
 
 static void set_coord_mask(int n)

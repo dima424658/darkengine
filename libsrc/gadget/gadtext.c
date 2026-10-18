@@ -13,7 +13,7 @@
 
 
 
-static bool textbox_event_handler(uiEvent* ev, Region* reg, void* data)
+static BOOL textbox_event_handler(uiEvent* ev, Region* reg, void* data)
 {
    LGadTextBox* box = (LGadTextBox*)reg;
    TextGadgEvent* tev = (TextGadgEvent*)ev;

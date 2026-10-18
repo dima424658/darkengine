@@ -7,12 +7,12 @@
 #include "env.h"
 #else
 #include <stdlib.h>
-#include <sys\stat.h>
+#include <sys/stat.h>
 #endif
 #include "time.h"
 #include "array.h"
 #include <fcntl.h>
-#include <io.h>
+#include <platform_io.h>
 #include <string.h>
 
 errtype bugtrak_report_registration(int id);
@@ -53,7 +53,7 @@ errtype bugtrak_init(int bt_max_systems, char *fname, BugFunc bug_report_callbac
       numlen++;
    }
 //   mprintf ("After while: fname = %s subname = %s numlen = %d\n",fname,subname,numlen);
-	while ( (fp = open(fname,O_BINARY|O_RDONLY)) != -1) {
+	while ( (fp = _open(fname,O_BINARY|O_RDONLY)) != -1) {
 		/* Check next slot */
       close(fp);                       /* good idea to, like, close the opened file */
  		++num;
@@ -139,7 +139,7 @@ errtype bugtrak_report_registration(int id)
    char oput[50];
 
    lg_sprintf(oput, "REGISTERING FUNCTIONS TO ID %d\n",id);
-   write(bt_session_handle, oput, strlen(oput) * sizeof(char));
+   write(bt_session_handle, oput, (unsigned)strlen(oput));
    return(OK);
 }
 
@@ -148,15 +148,15 @@ errtype bugtrak_begin_session(char *bt_session_file)
    char oput[50];
    time_t t;
 
-   if ((bt_session_handle=open(bt_session_file,O_CREAT|O_WRONLY|O_TRUNC, S_IWRITE))==-1) {
+   if ((bt_session_handle=_open(bt_session_file,O_CREAT|O_WRONLY|O_TRUNC, S_IREAD|S_IWRITE))==-1) {
       Warning(("ARGH!!  OPEN FAILURE!!! %s %d\n",bt_session_file,bt_session_handle));
       return(ERR_NODEV);
    }
    lg_sprintf(oput, "NAME: %s\n", getenv("USER"));
-   write(bt_session_handle, oput, strlen(oput) * sizeof(char));
+   write(bt_session_handle, oput, (unsigned)strlen(oput));
    time(&t);
    lg_sprintf(oput, "STARTING SESSION AT: %s\n", ctime(&t));
-   write(bt_session_handle, oput, strlen(oput) * sizeof(char));
+   write(bt_session_handle, oput, (unsigned)strlen(oput));
    return(OK);
 }
 
@@ -167,8 +167,8 @@ errtype bugtrak_end_session(int status_code)
 
    time(&t);
    lg_sprintf(oput, "ENDING SESSION AT: %s\n", ctime(&t));
-   write(bt_session_handle, oput, strlen(oput) * sizeof(char));
+   write(bt_session_handle, oput, (unsigned)strlen(oput));
    lg_sprintf(oput, "STATUS = %d\n", status_code);
-   write(bt_session_handle, oput, strlen(oput) * sizeof(char));
+   write(bt_session_handle, oput, (unsigned)strlen(oput));
    return(OK);
 }

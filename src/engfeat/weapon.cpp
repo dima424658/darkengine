@@ -456,7 +456,7 @@ void  MakeAIWeaponNonPhysical(ObjID owner, ObjID weapon)
 {
    CreatureMakeWeaponNonPhysical(owner, weapon);
 
-   WeaponEvent(kEndAttack, owner, NULL);
+   WeaponEvent(kEndAttack, owner, OBJ_NULL);
 }
 
 

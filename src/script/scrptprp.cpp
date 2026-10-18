@@ -43,6 +43,7 @@
 // For script datapath
 #include <datapath.h>
 #include <config.h>
+#include <contentctx.h>
 
 // Command stuff
 #include <ctype.h>
@@ -264,7 +265,7 @@ STDMETHODIMP cScriptProp::Delete(ObjID obj)
 
 STDMETHODIMP_(void) cScriptProp::Notify(ePropertyNotifyMsg msg, PropNotifyData data)
 {
-   ObjID obj = (ObjID)data;
+   ObjID obj = (ObjID)(intptr_t)data;
 
    switch (NOTIFY_MSG(msg))
    {
@@ -323,7 +324,7 @@ static sFileMenuFilter scr_file_filters[] =
 // filename (also clobbers trailing whitespace)
 static void prune_path(char *str)
 {
-   int length = strlen(str);
+   int length = (int)strlen(str);
    for (char* s = str + length - 1; s >= str && isspace(*s); s--)
       *s = '\0';
 
@@ -423,6 +424,16 @@ static Datapath script_path;
 
 EXTERN void InitScriptReactions(); 
 
+void RefreshScriptModulePath(void)
+{
+   DatapathFree(&script_path);
+   DatapathAdd(&script_path, DarkContentSearchPath(kDarkContentScripts));
+   DatapathNoCurrent(&script_path);
+
+   AutoAppIPtr(ScriptMan);
+   pScriptMan->SetModuleDatapath(&script_path);
+}
+
 
 void CreateScriptProp(void)
 {
@@ -435,11 +446,7 @@ void CreateScriptProp(void)
    // @TODO: move this someplace appropriate
    InitScriptReactions(); 
 
-   // Set up the load path
-   char pathbuf[256] = "";
-   config_get_raw("script_module_path", pathbuf,sizeof(pathbuf));
-   DatapathAdd(&script_path,pathbuf);
-
-   AutoAppIPtr(ScriptMan);
-   pScriptMan->SetModuleDatapath(&script_path);
+   // The installation directory is already the final entry in the resolved
+   // content path. Do not let the implicit current directory bypass an FM.
+   RefreshScriptModulePath();
 }

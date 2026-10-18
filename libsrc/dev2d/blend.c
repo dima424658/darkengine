@@ -35,16 +35,16 @@ uint gr_blend_color_vector(uint c0, uint c1, alpha_vector *alpha, int format)
       return 0;
    }
 
-   blue = ((c0>>blue_shift) & blue_mask) * alpha->blue +
-          ((c1>>blue_shift) & blue_mask) * (1.0 - alpha->blue);
+   blue = (uint)(((c0>>blue_shift) & blue_mask) * alpha->blue +
+          ((c1>>blue_shift) & blue_mask) * (1.0f - alpha->blue));
    if (blue>blue_mask) blue = blue_mask;
 
-   green = ((c0>>green_shift) & green_mask) * alpha->green +
-           ((c1>>green_shift) & green_mask) * (1.0 - alpha->green);
+   green = (uint)(((c0>>green_shift) & green_mask) * alpha->green +
+           ((c1>>green_shift) & green_mask) * (1.0f - alpha->green));
    if (green>green_mask) green = green_mask;
 
-   red = ((c0>>red_shift) & red_mask) * alpha->red +
-         ((c1>>red_shift) & red_mask) * (1.0 - alpha->red);
+   red = (uint)(((c0>>red_shift) & red_mask) * alpha->red +
+         ((c1>>red_shift) & red_mask) * (1.0f - alpha->red));
    if (red>red_mask) red = red_mask;
 
    return (red<<red_shift)+(green<<green_shift)+(blue<<blue_shift);

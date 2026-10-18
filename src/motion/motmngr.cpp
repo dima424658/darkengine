@@ -102,13 +102,25 @@ void MotionManagerLoad()
    AUTO_TIMER(MOTMNGR_PF_LOAD);
    AutoAppIPtr(AIManager);
 
-   // first check current directory
-   ITagFile *pFile=TagFileOpen("motiondb.bin",kTagOpenRead);
+   // An active FM or mod may provide a root motion database.  Honor the
+   // published resource order before the retail working directory so an
+   // in-process content handoff has the same override semantics as startup.
+   // Vanilla configurations normally do not put the retail root in
+   // resname_base, so they continue through the legacy current-directory
+   // fallback below.
+   char fullname[256];
+   ITagFile *pFile = NULL;
+   if (find_file_in_config_path_only(fullname,"motiondb.bin","resname_base"))
+      pFile=TagFileOpen(fullname,kTagOpenRead);
+
+   if(!pFile)
+      pFile=TagFileOpen("motiondb.bin",kTagOpenRead);
 
    if(!pFile) // try resname path
    {
-      char fullname[80];
-
+      // find_file_in_config_path() writes up to 256 bytes.  The former
+      // 80-byte buffer corrupted the stack when an FM expanded the resource
+      // path beyond that legacy DOS-era assumption.
       if(!find_file_in_config_path(fullname,"mschema/motiondb.bin","resname_base"))
       {
          Warning(("Unable to load motion database\n"));

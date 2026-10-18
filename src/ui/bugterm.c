@@ -11,8 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>     // _MAX_PATH
 #include <fcntl.h>
-#include <io.h>
-#include <sys\stat.h>
+#include <platform_io.h>
+#include <sys/stat.h>
 #include <time.h>
 
 #include <kbcook.h>
@@ -70,7 +70,7 @@ FILE *FindFreeFile(char *buff,char *prefix,char *suffix)
    FILE *fp;
    int num=0;
    
-   ps = strlen(prefix);
+     ps = (int)strlen(prefix);
    strcpy(fname,prefix);
    strcat(fname,"000.");
    strcat(fname,suffix);
@@ -104,7 +104,7 @@ void WriteBugInfo(FILE *fp, char *bugtext)
    Position *player_pos;
    ObjID player;
    char curfile[128];
-   int i;
+   size_t i;
 
    // fixup bugterm to not have any illegal symbols like commas
    for (i=0; i < strlen(bugtext); i++)
@@ -155,7 +155,7 @@ static int move_cursor_into_command(char *cmd, int max_len)
    if (cmd)
    {
       char *space=strchr(cmd,' ');
-      int len=strlen(cmd);
+   int len=(int)strlen(cmd);
       if (len==0)
          return 0;
       else if ((space==NULL)&&(len<max_len))
@@ -164,7 +164,7 @@ static int move_cursor_into_command(char *cmd, int max_len)
          space=cmd+len;
       }
       while (*space==' ') space++;
-      return space-cmd;
+   return (int)(space-cmd);
    }
    return 0;
 }
@@ -186,11 +186,11 @@ static short speckeys[] =
 void ReportBug(char *buf)
 {
    FILE *fp;
-   char bugroot[255],bugdir[255];
+   char bugdir[255], bugroot[sizeof(bugdir) + sizeof("\\bugs.txt")];
 
    config_get_raw("bugrep_dir",bugdir,sizeof(bugdir));
    //sprintf(bugroot,"%s\\bug",bugdir);
-   sprintf(bugroot,"%s\\bugs.txt",bugdir);
+   snprintf(bugroot,sizeof(bugroot),"%s\\bugs.txt",bugdir);
    fp = fopen(bugroot,"at"); //FindFreeFile(NULL,bugroot,"txt");
    if (fp != NULL)
    {
@@ -198,7 +198,6 @@ void ReportBug(char *buf)
       fclose(fp);
    }
 }
-#pragma off(unreferenced)
 bool bugterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, void* data)
 {
    char* text = LGadTextBoxText(box);
@@ -207,7 +206,7 @@ bool bugterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
    if (event == TEXTBOX_SPECKEY)
    {
       char *tmp=NULL;
-      unsigned long context;
+      ulong context;
 
       switch(evdata)
       {
@@ -277,7 +276,6 @@ bool bugterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
    }
    return update;
 }
-#pragma on(unreferenced)
 
 #define TITLE_H 15
 
@@ -362,7 +360,7 @@ void bugterm_focus()
    char* buf = &bugterm.cmdbuf[0];
    int bufsiz = sizeof(bugterm.cmdbuf);
    int cursor_pos;
-   unsigned long context;
+   ulong context;
 
    if (!(bugterm.statebits & kStateInUse))
       return;

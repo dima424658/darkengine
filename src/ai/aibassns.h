@@ -21,7 +21,7 @@
 #pragma once
 #pragma pack(4)
 
-typedef long LinkID;
+typedef int32 LinkID;
 struct sAIVisionCone;
 struct sAIVisionDesc;
 struct sAIAwareCapacitor;  

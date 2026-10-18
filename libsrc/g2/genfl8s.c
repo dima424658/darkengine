@@ -10,6 +10,7 @@ void gen_flat8_uscale(grs_bitmap *bm, int x, int y, int w, int h)
    p.bm = bm;
    p.y = 0;
    p.dy = 1;
+   p.flags = 0;
    p.pix_func = gd_upix8_expose(0, 0, 0);
    p.inner_loop = gen_flat8_il;
    pixpal = (void *)(grd_pal16_list[bm->align]);
@@ -24,6 +25,7 @@ int gen_flat8_scale(grs_bitmap *bm, int x, int y, int w, int h)
    p.bm = bm;
    p.y = 0;
    p.dy = 1;
+   p.flags = 0;
    p.pix_func = gd_upix8_expose(0, 0, 0);
    p.inner_loop = gen_flat8_il;
    pixpal = (void *)(grd_pal16_list[bm->align]);

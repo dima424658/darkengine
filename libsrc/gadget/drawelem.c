@@ -9,6 +9,7 @@
 #include <drawelem.h>
 #include <2d.h>
 #include <res.h>
+#include <resapi.h>
 #include <lgsprntf.h>
 #include <rect.h>
 #include <string.h>
@@ -25,6 +26,16 @@ char *(*lgad_string_get)(int num, char *buf, int bufsize) = NULL;
 uchar elem_clut[256];
 
 static guiStyle* draw_style = NULL;
+
+static int elem_int_param(const void *param)
+{
+   return (int)(intptr_t)param;
+}
+
+static Ref elem_ref_param(const void *param)
+{
+   return (Ref)(uintptr_t)param;
+}
 
 void ElementSetStyle(guiStyle* style)
 {
@@ -56,7 +67,6 @@ static ulong elem_bcolor(DrawElement* d)
 is non-NULL, then that means to not actually draw, but instead fill in the Point with the width of thing
 as if it were going to draw.  This is primarily to prevent a lot of redundant code with the sizing functions. */
 
-#pragma off(unreferenced)
 // Boy, this is an exciting function!
 void ElementDrawNone(DrawElement *d, DrawElemState state, short x, short y, short w, short h, Point *size)
 {
@@ -78,10 +88,10 @@ void ElementDrawCallback(DrawElement *d, DrawElemState state, short x, short y, 
       grs_canvas canv;
       
       gr_init_sub_canvas(grd_canvas,&canv,x,y,w,h);
-      gr_cset_cliprect(&canv,max(grd_clip.left - x,0),
-                             max(grd_clip.top - y,0),
-                             min(grd_clip.right - x,w),
-                             min(grd_clip.bot - y,h));
+      gr_cset_cliprect(&canv,grd_clip.left - x > 0 ? grd_clip.left - x : 0,
+                             grd_clip.top - y > 0 ? grd_clip.top - y : 0,
+                             grd_clip.right - x < w ? grd_clip.right - x : w,
+                             grd_clip.bot - y < h ? grd_clip.bot - y : h);
       gr_push_canvas(&canv);
       dcb(d,state);
       gr_pop_canvas();
@@ -193,7 +203,9 @@ void ElementDrawText(DrawElement *d, DrawElemState state, short x, short y, shor
 {
    char s[DRAWELEM_STRLEN],s2[DRAWELEM_STRLEN];  // s carries the final string, some use s2 for formatting or
                                                  // other temporary string storage
-   Id font_id = guiStyleAvail(draw_style) ? guiStyleGetFont(draw_style,StyleFontNormal) : lgad_default_font;  // what font to use, can be overriden
+   Id font_id = lgad_default_font;  // legacy resource-id fallback/override
+   bool style_font = FALSE;
+   bool font_override = FALSE;
    short sw,sh; // size in width and height, used for centering and size-setting
    int *v; // variable contents
    int stylecol = textcols[state];
@@ -246,7 +258,7 @@ void ElementDrawText(DrawElement *d, DrawElemState state, short x, short y, shor
             if (lgad_string_get == NULL)
                Warning(("ElementDrawText: lgad_string_get is null!\n"));
             else
-               lgad_string_get((Ref)d->draw_data, s2, DRAWELEM_STRLEN);
+               lgad_string_get(elem_ref_param(d->draw_data), s2, DRAWELEM_STRLEN);
          }
          v = (int *)d->draw_data2;
          if (v == NULL)
@@ -259,9 +271,9 @@ void ElementDrawText(DrawElement *d, DrawElemState state, short x, short y, shor
          break;
       case DRAWTYPE_TEXTREF:
          if (lgad_string_get)
-            lgad_string_get((Ref)d->draw_data, s, DRAWELEM_STRLEN);
+            lgad_string_get(elem_ref_param(d->draw_data), s, DRAWELEM_STRLEN);
          else
-            strcpy(s,(char *)RefGet((Ref)d->draw_data));
+            strcpy(s,(char *)RefGet(elem_ref_param(d->draw_data)));
          break;
    }
 
@@ -271,13 +283,19 @@ void ElementDrawText(DrawElement *d, DrawElemState state, short x, short y, shor
       case DRAWTYPE_TEXT:
       case DRAWTYPE_TEXTREF:
          if (d->draw_data2 != NULL)
-            font_id = (Id)(d->draw_data2);
+         {
+            font_id = (Id)(uintptr_t)d->draw_data2;
+            font_override = TRUE;
+         }
          break;
    }
 
    // Actually do it
    gr_set_fcolor(color);
-   gr_set_font((grs_font *)ResLock(font_id));
+   if (!font_override && guiStyleAvail(draw_style))
+      style_font = guiStyleSetupFont(draw_style,StyleFontNormal);
+   if (!style_font)
+      gr_set_font((grs_font *)ResLock(font_id));
 
    format = (d->draw_flags & DRAWFLAG_FORMAT_BITS) >> DRAWFLAG_FORMAT_SHIFT;
 
@@ -325,13 +343,17 @@ void ElementDrawText(DrawElement *d, DrawElemState state, short x, short y, shor
             break;
       }
    }
-   ResUnlock(font_id);
+   if (style_font)
+      guiStyleCleanupFont(draw_style,StyleFontNormal);
+   else
+      ResUnlock(font_id);
 }
 
 
 void ElementDrawBitmap(DrawElement *d, DrawElemState state, short x, short y, short w, short h, Point *size)
 {
-   grs_bitmap *draw_me; // what we should actually draw
+   grs_bitmap *draw_me = NULL; // what we should actually draw
+   IRes *named_res = NULL;
    Ref draw_ref = 0; // What Ref we are drawing?
    int offs = 0;
 
@@ -345,24 +367,40 @@ void ElementDrawBitmap(DrawElement *d, DrawElemState state, short x, short y, sh
          break;
       case DRAWTYPE_BITMAPOFFSET:
       {
-         int limit = (int)d->draw_data2;
+         int limit = elem_int_param(d->draw_data2);
          if (limit == 0 || state < limit)
          {
             draw_me = *(((grs_bitmap**)d->draw_data) + state);
          }
          break;
       }
+      case DRAWTYPE_IRES:
+         named_res = (IRes *)d->draw_data;
+         if (named_res != NULL)
+            draw_me = (grs_bitmap *)IRes_Lock(named_res);
+         break;
+      case DRAWTYPE_IRESOFFSET:
+      {
+         int limit = elem_int_param(d->draw_data2);
+         if (limit == 0 || state < limit)
+         {
+            named_res = ((IRes **)d->draw_data)[state];
+            if (named_res != NULL)
+               draw_me = (grs_bitmap *)IRes_Lock(named_res);
+         }
+         break;
+      }
       case DRAWTYPE_RES:
          if (state == dsDEPRESSED && d->draw_data2 != 0)
-            draw_ref = (Ref)d->draw_data2; 
+            draw_ref = elem_ref_param(d->draw_data2);
          else
-            draw_ref = (Ref)d->draw_data;
+            draw_ref = elem_ref_param(d->draw_data);
          goto common_ref;
 
       case DRAWTYPE_RESOFFSET:
-         draw_ref = (Ref)d->draw_data;
+         draw_ref = elem_ref_param(d->draw_data);
          { 
-            int limit = (int)d->draw_data2;
+            int limit = elem_int_param(d->draw_data2);
             if (limit == 0 || state < limit)
             {
                Ref ref = draw_ref + state; 
@@ -412,11 +450,12 @@ void ElementDrawBitmap(DrawElement *d, DrawElemState state, short x, short y, sh
    }
    else
       gr_bitmap(draw_me,x,y);
-   if (draw_ref)
+   if (named_res)
+      IRes_Unlock(named_res);
+   else if (draw_ref)
       RefUnlock(draw_ref);
 }
 
-#pragma on(unreferenced)
 
 // Big lookup table for how we deal with each kind of element, with duplicate entries for
 // common functionality.
@@ -438,6 +477,8 @@ ElemDrawFunc elem_draw_funcs[] =
    ElementDrawCallback, 
    ElementDrawBitmap,
    ElementDrawText,
+   ElementDrawBitmap,
+   ElementDrawBitmap,
    ElementDrawBitmap
 };
 
@@ -485,7 +526,7 @@ void ElementDraw(DrawElement *d, DrawElemState state, short x, short y, short w,
    }
    d = elem;
 
-   elem_clut[MAGIC_ELEM_CLUT_COLOR] = elem_bcolor(d);
+   elem_clut[MAGIC_ELEM_CLUT_COLOR] = (uchar)elem_bcolor(d);
 
    // Draw the "outer" elements that are independant of the internal data, like "bevel" or "trek"
    switch((d->draw_flags & DRAWFLAG_BORDER_BITS) >> DRAWFLAG_BORDER_SHIFT)
@@ -542,9 +583,9 @@ void ElementDraw(DrawElement *d, DrawElemState state, short x, short y, short w,
             x = x + m; w = w - m;
             w = w - trek_bms[TREK_R]->w;
 
-            m = max(max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
+            m = __max(__max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
             y = y + m; h = h - m;
-            h = h - max(max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
+            h = h - __max(__max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
 
             // unlock all those refs
             for (i=0; i < NUM_TREK_BM; i++)
@@ -601,7 +642,7 @@ void ElementDraw(DrawElement *d, DrawElemState state, short x, short y, short w,
             // alter drawing area
             x = x + trek_int_bms[2]->w;
             w = w - trek_int_bms[2]->w;
-            m = max(trek_int_bms[0]->h,trek_int_bms[1]->h);
+            m = __max(trek_int_bms[0]->h,trek_int_bms[1]->h);
             y = y + m;
             h = h - m;
 
@@ -669,8 +710,8 @@ void ElementExtrasSize(DrawElement *d, short *pw, short *ph)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_btype_ids[which_btype],i));
             *pw = *pw + trek_bms[TREK_L]->w;
             *pw = *pw + trek_bms[TREK_R]->w;
-            *ph = *ph + max(max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
-            *ph = *ph + max(max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
+            *ph = *ph + __max(__max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
+            *ph = *ph + __max(__max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
             // unlock all those refs
             for (i=0; i < NUM_TREK_BM; i++)
             {
@@ -691,7 +732,7 @@ void ElementExtrasSize(DrawElement *d, short *pw, short *ph)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_internal_id,i));
 
             *pw = *pw + trek_bms[2]->w;
-            *ph = *ph + max(trek_bms[0]->h,trek_bms[1]->h);
+            *ph = *ph + __max(trek_bms[0]->h,trek_bms[1]->h);
 
             // unlock all our art
             for (i=0; i <= 2; i++)
@@ -702,7 +743,6 @@ void ElementExtrasSize(DrawElement *d, short *pw, short *ph)
 }
 
 // *** Needs to become real when internal drawing elements exist!!!!!
-#pragma off(unreferenced)
 
 // Figure out how far into the draw element the extra (internals, borders) bits go
 // for the upper and left
@@ -726,7 +766,7 @@ void ElementOffset(DrawElement *d, short *pw, short *ph)
             for (i=0; i < NUM_TREK_BM; i++)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_btype_ids[which_btype],i));
             *pw = *pw + trek_bms[TREK_L]->w;
-            *ph = *ph + max(max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
+            *ph = *ph + __max(__max(trek_bms[TREK_UL]->h,trek_bms[TREK_U]->h),trek_bms[TREK_UR]->h);
             // unlock all those refs
             for (i=0; i < NUM_TREK_BM; i++)
             {
@@ -746,7 +786,7 @@ void ElementOffset(DrawElement *d, short *pw, short *ph)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_internal_id,i));
 
             *pw = *pw + trek_bms[2]->w;
-            *ph = *ph + max(trek_bms[0]->h,trek_bms[1]->h);
+            *ph = *ph + __max(trek_bms[0]->h,trek_bms[1]->h);
 
             // unlock all our art
             for (i=0; i <= 2; i++)
@@ -778,7 +818,7 @@ void ElementOffsetAlternate(DrawElement *d, short *pw, short *ph)
             for (i=0; i < NUM_TREK_BM; i++)
                trek_bms[i] = UtilLockBitmapRef(MKREF(lgad_btype_ids[which_btype],i));
             *pw = *pw + trek_bms[TREK_R]->w;
-            *ph = *ph + max(max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
+            *ph = *ph + __max(__max(trek_bms[TREK_BL]->h,trek_bms[TREK_B]->h),trek_bms[TREK_BR]->h);
 
             // unlock all those refs
             for (i=0; i < NUM_TREK_BM; i++)
@@ -793,7 +833,6 @@ void ElementOffsetAlternate(DrawElement *d, short *pw, short *ph)
    // thus far, no internal elements affect the alternative offset.
 }
 
-#pragma on(unreferenced)
 
 void ElementClear(DrawElement *d)
 {

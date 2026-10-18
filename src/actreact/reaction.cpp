@@ -81,7 +81,7 @@ STDMETHODIMP_(ReactionID) cReactions::Add(sReactionDesc* desc, ReactionFunc func
    entry.data = data;
 
    ReactionID id = ByID.Append(entry);
-   if (id >= Names.Size())
+   if (id >= (ReactionID)Names.Size())
       Names.SetSize(id+1); 
    Names[id] = desc->name; 
    ByName.Insert(Names[id],id);
@@ -103,7 +103,7 @@ STDMETHODIMP_(ReactionID) cReactions::GetReactionNamed(const char* name)
 
 STDMETHODIMP_(const sReactionDesc*) cReactions::DescribeReaction(ReactionID id) 
 {
-   if (id < 0 || id >= ByID.Size())
+   if (id >= (ReactionID)ByID.Size())
       return NULL;
    else return &ByID[id].desc; 
 }
@@ -112,7 +112,7 @@ STDMETHODIMP_(const sReactionDesc*) cReactions::DescribeReaction(ReactionID id)
 
 STDMETHODIMP_(eReactionResult) cReactions::React(ReactionID id, sReactionEvent* event, const sReactionParam* param)
 {
-   if (id >= 0 && id < ByID.Size()) {
+   if (id >= 0 && id < (ReactionID)ByID.Size()) {
 #ifdef NEW_NETWORK_ENABLED
       if (!(ByID[id].desc.flags & kReactionWorkOnProxy)) {
          // The reaction hasn't told us that it works on proxy objects. *Is*

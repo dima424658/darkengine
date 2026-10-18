@@ -23,6 +23,7 @@
 
 #include <aiapi.h>     // ObjIsAI()
 
+#include <dynarray.h>
 #include <hshsttem.h>
 
 #include <dbmem.h>
@@ -177,21 +178,29 @@ void GhostListEmptyAndFree(void)
       Warning(("GhostRemoteHash still has %d members\n",count));
 #endif
 
-   tHashSetHandle local_iter;    // go through local ghosts
+   // Removing a hash entry invalidates its iterator chunk.  Snapshot the
+   // object IDs before running the normal removal paths.
+   cDynArray<ObjID> local_objs;
+   tHashSetHandle local_iter;
    sGhostLocal *pGL=gGhostLocals.GetFirst(local_iter);
    while (pGL)
    {
-      GhostRemLocal(pGL->obj);
+      local_objs.Append(pGL->obj);
       pGL=gGhostLocals.GetNext(local_iter);
    }
+   for (int i=0; i<local_objs.Size(); ++i)
+      GhostRemLocal(local_objs[i]);
 
-   tHashSetHandle remote_iter;   // go through remote ghosts
+   cDynArray<ObjID> remote_objs;
+   tHashSetHandle remote_iter;
    sGhostRemote *pGR=gGhostRemotes.GetFirst(remote_iter);
    while (pGR)
    {
-      GhostRemRemote(pGR->obj);
+      remote_objs.Append(pGR->obj);
       pGR=gGhostRemotes.GetNext(remote_iter);
    }
+   for (int i=0; i<remote_objs.Size(); ++i)
+      GhostRemRemote(remote_objs[i]);
 }
 
 ////////////////////////////////

@@ -134,7 +134,7 @@ void cPlayerMovement::LandOnGround(ObjID ground_obj)
    m_GroundObj = ground_obj;
 
    // Has there been enough time since our last landing?
-   if ((GetSimTime() - m_LastFootTime) > m_LandingMinMs)
+   if ((GetSimTime() - m_LastFootTime) > (ulong)m_LandingMinMs)
    {
       mxs_vector foot_loc;
       mxs_vector velocity;
@@ -152,7 +152,7 @@ void cPlayerMovement::LandOnGround(ObjID ground_obj)
 
          if (m_volume>0)
          {
-            int play_vol = m_LandingBaseVol - m_LandingVolMul * (m_LandingCutoffVel + velocity.z);
+            int play_vol = (int)(m_LandingBaseVol - m_LandingVolMul * (m_LandingCutoffVel + velocity.z));
             if (play_vol >= 0)
                play_vol = -1;
             g_pPlayerMode->DoLandingSound(play_vol, foot_loc);
@@ -186,7 +186,7 @@ void cPlayerMovement::Update()
    if (velocity_mag > 15.0)
       footstep_dist = 4.0;
    else
-      footstep_dist = 2.5 + 3.0 * ((velocity_mag - 5.0) / 10.0);
+      footstep_dist = 2.5f + 3.0f * ((velocity_mag - 5.0f) / 10.0f);
 
    mxs_vector foot_loc;
    PhysGetSubModLocation(PlayerObject(), PLAYER_FOOT, &foot_loc);
@@ -229,7 +229,7 @@ void cPlayerMovement::Update()
 
             if (m_volume>0)
             {
-               int play_vol = m_SteppingBaseVol + (m_SteppingVolMul * velocity_mag);
+               int play_vol = (int)(m_SteppingBaseVol + (m_SteppingVolMul * velocity_mag));
                if (play_vol >= 0)
                   play_vol = -1;
                
@@ -248,7 +248,7 @@ void cPlayerMovement::Update()
 
    // Have we stopped moving?      
    if (velocity_mag < 1.0)
-      m_LastFootTime = -1.0;
+      m_LastFootTime = -1;
 }
 
 ////////////////////////////////////////

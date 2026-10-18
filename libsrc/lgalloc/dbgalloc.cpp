@@ -5,7 +5,6 @@
 // $Revision: 1.9 $
 //
 
-#ifdef _WIN32
 #ifndef SHIP
 
 #include <lg.h>
@@ -13,15 +12,13 @@
 #include <memcore.h>
 #include <hashfns.h>
 #include <mprintf.h>
+#include <platform_services.h>
 
 #ifdef DBGALLOC_STACKWALK
 #include <stktrace.h>
 #endif
 
 #pragma code_seg("lgalloc")
-
-EXTERN __declspec(dllimport) BOOL __stdcall IsBadReadPtr(const void *, uint ucb);
-EXTERN __declspec(dllimport) unsigned long __stdcall timeGetTime   (void);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -65,7 +62,7 @@ static cHeapDebugLeakReporter g_HeapDebugLeakReporter;
 
 struct sHDHeader
 {
-    int         clientSize;
+    size_t      clientSize;
     sHDSentinel headSentinel;
 };
 
@@ -154,7 +151,7 @@ cHeapDebug::cHeapDebug()
     m_nMaxRealBytesAlloced = 0;
     
     m_HeapTestInterval = 0;
-    m_TimeTraceStart = timeGetTime();
+    m_TimeTraceStart = PlatformMilliseconds();
     m_TimeLeakTrackStart = 0;
     memset(m_TraceTable, 0, sizeof(m_TraceTable));
     memset(m_ModuleTable, 0, sizeof(m_ModuleTable));
@@ -185,14 +182,14 @@ inline void cHeapDebug::SetDebug(void * p, size_t clientSize)
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cHeapDebug::Alloc(ULONG size)
+STDMETHODIMP_(void *) cHeapDebug::Alloc(SIZE_T size)
 {
     return AllocEx(size, NULL, 0);
 }
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cHeapDebug::Realloc(void * pOld, ULONG newClientSize)
+STDMETHODIMP_(void *) cHeapDebug::Realloc(void * pOld, SIZE_T newClientSize)
 {
     return ReallocEx(pOld, newClientSize, NULL, 0);
 }
@@ -206,7 +203,7 @@ STDMETHODIMP_(void) cHeapDebug::Free(void * p)
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(ULONG) cHeapDebug::GetSize(void * p)
+STDMETHODIMP_(SIZE_T) cHeapDebug::GetSize(void * p)
 {
     if (VerifyAlloc(p) == S_OK)
         return SizeLessDebug(m_pNext->GetSize(ClientToDebug(p)));
@@ -229,7 +226,7 @@ STDMETHODIMP_(void) cHeapDebug::HeapMinimize()
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cHeapDebug::AllocEx(ulong size, const char * pszFile, 
+STDMETHODIMP_(void *) cHeapDebug::AllocEx(SIZE_T size, const char * pszFile,
                                           int line)
 {
     if (!size)
@@ -246,7 +243,7 @@ STDMETHODIMP_(void *) cHeapDebug::AllocEx(ulong size, const char * pszFile,
         SetDebug(p, size);
         memset(p, kMallocFill, size);
         TraceMalloc(p, size, pszFile, line);
-        AssertMsg((ulong)p % 2 == 0, "Odd allocation!");
+        AssertMsg((uintptr_t)p % 2 == 0, "Odd allocation!");
     }
     
     return p;
@@ -254,7 +251,7 @@ STDMETHODIMP_(void *) cHeapDebug::AllocEx(ulong size, const char * pszFile,
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cHeapDebug::ReallocEx(void * pOld, ULONG newClientSize, const char * pszFile, int line)
+STDMETHODIMP_(void *) cHeapDebug::ReallocEx(void * pOld, SIZE_T newClientSize, const char * pszFile, int line)
 {
     // Handle "exception" behaviors here...
     if (!pOld)
@@ -268,7 +265,7 @@ STDMETHODIMP_(void *) cHeapDebug::ReallocEx(void * pOld, ULONG newClientSize, co
 
     // We always return a different block to help trap stray
     // references to the old block
-    const int oldClientSize = GetSize(pOld);
+    const SIZE_T oldClientSize = GetSize(pOld);
     void * pNew;
 
     pNew = AllocEx(newClientSize, pszFile, line);
@@ -326,7 +323,8 @@ STDMETHODIMP cHeapDebug::VerifyAlloc(void * p)
         sHDSentinel * pHeadSentinel   = GetHeadSentinel(p);
         sHDSentinel * pTailSentinel   = GetTailSentinel(p);
 
-        if ((BYTE *)pTailSentinel - (BYTE *)p > m_pNext->GetSize(ClientToDebug(p)) ||
+        if (static_cast<size_t>((BYTE *)pTailSentinel - (BYTE *)p) >
+            m_pNext->GetSize(ClientToDebug(p)) ||
             memcmp(pHeadSentinel, &m_Sentinel, sizeof(sHDSentinel)) != 0)
         {
             pszFailureMessage = "\nPossible: \na) buffer underrun (most likely)\nb) wild pointer\nc) write after free, or\nd) double free (least likely)\n";
@@ -510,7 +508,7 @@ STDMETHODIMP_(void) cHeapDebug::PopCredit()
 
 void cHeapDebug::LeakTrackStart()
 {
-    m_TimeLeakTrackStart = timeGetTime() - m_TimeTraceStart;
+    m_TimeLeakTrackStart = PlatformMilliseconds() - m_TimeTraceStart;
 }
 
 ///////////////////////////////////////
@@ -539,7 +537,7 @@ void cHeapDebug::TraceMalloc(void * p, size_t clientSize, const char * pszFile, 
       pInfo->size = clientSize;
       pInfo->pszFile = pszFile;
       pInfo->line = line;
-      pInfo->time = timeGetTime() - m_TimeTraceStart;
+      pInfo->time = PlatformMilliseconds() - m_TimeTraceStart;
 
 #ifdef DBGALLOC_STACKWALK
       if (!pszFile)
@@ -557,7 +555,7 @@ void cHeapDebug::TraceMalloc(void * p, size_t clientSize, const char * pszFile, 
        // Update per-module info
        //
        sHDModuleInfo * pModuleInfo = ModuleInfoGet(pszFile);
-       int             realSize    = m_pNext->GetSize(ClientToDebug(p)) - kSizeofMemDebug;
+       size_t          realSize    = m_pNext->GetSize(ClientToDebug(p)) - kSizeofMemDebug;
        
        pModuleInfo->currentSize += clientSize;
        pModuleInfo->realSize += realSize;
@@ -600,7 +598,7 @@ void cHeapDebug::TraceFree(void * p, const char *, int)
 
    if (pInfo)
    {
-      int realSize = m_pNext->GetSize(ClientToDebug(p)) - kSizeofMemDebug;
+      size_t realSize = m_pNext->GetSize(ClientToDebug(p)) - kSizeofMemDebug;
       
       //
       // Update module info
@@ -734,5 +732,4 @@ sHDModuleInfo *cHeapDebug::ModuleInfoGet(const char *pszFileName)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif
 #endif

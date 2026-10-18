@@ -12,10 +12,6 @@
 // particular, one can't queue a request while another is being served -- silly.
 //
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <comtools.h>
 #include <appagg.h>
 #include <lg.h>
@@ -101,7 +97,7 @@ private:
 
         sResRequest(cResControlTable& owningControlTable,
             cResourceTypeData* id, IRes* pRes, int priority,
-            sResRequest::eRequestKind kind, void* pBuf, int bufSize)
+            sResRequest::eRequestKind kind, void* pBuf, long bufSize)
             :
             pControl{ nullptr },
             id{ id },
@@ -202,10 +198,7 @@ cResARQFulfiller::~cResARQFulfiller()
 
 void cResARQFulfiller::Init()
 {
-    #ifdef _WIN32
-    if (GetPrivateProfileInt("Res", "ARQ", TRUE, "lg.ini"))
-    #endif
-        m_pAsyncReadQueue = AppGetObj(IAsyncReadQueue);
+    m_pAsyncReadQueue = AppGetObj(IAsyncReadQueue);
 }
 
 ///////////////////////////////////////
@@ -222,6 +215,11 @@ bool cResARQFulfiller::IsFulfilled(IRes* pRes)
 {
     auto* pResourceTypeData = g_pResMan->GetResourceTypeData(pRes);
     auto* pResRequest = m_Controls.Search(pResourceTypeData);
+
+    // A synchronous preload is completed immediately and deliberately does
+    // not leave a control-table request behind.
+    if (!pResRequest && !IsAsynchronous())
+        return true;
 
     AssertMsg1(pResRequest, "Resource 0x%x was never queued", pResourceTypeData->GetName());
 
@@ -322,6 +320,16 @@ HRESULT cResARQFulfiller::GetResult(IRes* pRes, void ** ppResult)
 
         ResThreadUnlock();
         return retVal;
+    }
+
+    // Without an asynchronous queue, a caller may observe an immediately
+    // fulfilled request that has no control-table entry (notably after a
+    // synchronous preload).  Complete the lock directly in that case.
+    if (!IsAsynchronous())
+    {
+        *ppResult = g_pResMan->LockResource(pRes);
+        ResThreadUnlock();
+        return *ppResult ? S_OK : E_FAIL;
     }
 
     CriticalMsg("Tried to get the result of an unknown async request.");
@@ -455,8 +463,8 @@ bool cResARQFulfiller::QueueRequest(IRes* pRes, int priority,
         // ... or if we're not operating asynchronously just do it...
         if (pResourceTypeData->m_pData != nullptr || !IsAsynchronous())
         {
-            g_pResMan->LockResource(pResRequest->pResource);
-            g_pResMan->UnlockResource(pResRequest->pResource);
+            g_pResMan->LockResource(pRes);
+            g_pResMan->UnlockResource(pRes);
             return true;
         }
     }
@@ -475,7 +483,7 @@ bool cResARQFulfiller::QueueRequest(IRes* pRes, int priority,
             0,                                   // Queue
             priority,                            // Priority
             {
-                (DWORD) pResRequest,             // Custom data
+                (DWORD_PTR)pResRequest,           // Custom data
                 0, 0, 0
             },
             "Resource"                           // Trace name
@@ -584,12 +592,12 @@ int cResManARQ::IsFulfilled(IRes* pRes)
     return g_ResARQFulfiller.Preload(pRes);
 }
 
-long cResManARQ::Kill(IRes* pRes)
+HRESULT cResManARQ::Kill(IRes* pRes)
 {
     return g_ResARQFulfiller.Kill(pRes);
 }
 
-long cResManARQ::GetResult(IRes* pRes, void** ppResult)
+HRESULT cResManARQ::GetResult(IRes* pRes, void** ppResult)
 {
     return g_ResARQFulfiller.GetResult(pRes, ppResult);
 }

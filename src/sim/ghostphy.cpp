@@ -13,7 +13,6 @@
 #include <ghostapi.h> // for the extern of dereg
 #include <ghostwep.h> // so we can unequip on exit
 
-#include <minmax.h>   // duh
 
 #include <physapi.h>
 #include <phcore.h>
@@ -284,7 +283,7 @@ void _GhostFindValidLoc(ObjID ghost, mxs_vector *pDesired, mxs_vector *pLast, mx
    mxs_matrix ident;
    mx_identity_mat(&ident);
 
-   for (dist = 0.2; dist < 1.01; dist += 0.2)
+   for (dist = 0.2f; dist < 1.01f; dist += 0.2f)
    {
       for (x=0; x<2; x++)
       {
@@ -477,9 +476,9 @@ void _GhostBleedVelocity(ObjID obj, sGhostPos *pPred, int cfg_flags, int last_ti
    else
       return;
 
-   float bleed_amt = min(1.0, bleed_factor * (dt / 2));
+   float bleed_amt = __min(1.0f, bleed_factor * (dt / 2));
 
-   mx_scaleeq_vec(&pPred->pos.vel,1.0-bleed_amt);
+   mx_scaleeq_vec(&pPred->pos.vel,1.0f-bleed_amt);
 }
 
 BOOL _GhostTeleport(ObjID ghost, mxs_vector *delta, const mxs_vector *target)
@@ -530,7 +529,7 @@ void _GhostApproxPhys(ObjID obj, sGhostPos *netPos, sGhostPos *ghostPos, float d
    {  // this is where we do control vel, i guess?
       mxs_vector delta_v;
       mx_sub_vec(&delta_v,&netPos->pos.vel,&pPos->pos.vel); // delta to desired control velocity
-      float scale_fac=dt/0.150;
+      float scale_fac=dt/0.150f;
       if (scale_fac>=1.0) scale_fac=1.0;
       mx_scale_addeq_vec(&pPos->pos.vel,&delta_v,scale_fac);
    }

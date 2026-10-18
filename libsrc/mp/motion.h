@@ -191,7 +191,7 @@ extern motion_callback *mp_callbacks;
 
 // MotionSig is a bitfield defining which joints the motion affects.
 // If more than 32 joints are needed, this will get more complicated.
-typedef unsigned long MotionSig;
+typedef ulong MotionSig;
 
 // AllJointSig() evaluates to the signature affecting joints 0 to 
 // num_joints - 1.

@@ -31,10 +31,13 @@ struct PCXHEAD
 
 static_assert(sizeof(PCXHEAD) == 128, "Invalid size");
 
-static int16 readBuffIndex;
+static int readBuffIndex;
+static int readBuffValid;
+static int readRunRemaining;
+static uint8 readRunValue;
 static uint8* readBuff;
 
-bool PcxReadRow(IStoreStream* pStream, uint8* p, int16 npixels);
+bool PcxReadRow(IStoreStream* pStream, uint8* p, int npixels);
 bool PcxReadBody(IStoreStream* pStream, uint8* bits, uint8 type, int16 w, int16 h, uint16 row, int16 bpl);
 
 bool PcxReadHeader(IStoreStream* pStream, PCXHEAD* phead)
@@ -69,34 +72,53 @@ bool PcxReadHeader(IStoreStream* pStream, PCXHEAD* phead)
 	return true;
 }
 
-bool PcxReadRow(IStoreStream* pStream, uint8* p, int16 npixels)
+static bool PcxReadByte(IStoreStream* pStream, uint8* value)
 {
-	auto* pstart = p;
+	if (readBuffIndex >= readBuffValid)
+	{
+		readBuffValid = pStream->Read(4096, reinterpret_cast<char*>(readBuff));
+		readBuffIndex = 0;
+		if (readBuffValid <= 0)
+			return false;
+	}
+
+	*value = readBuff[readBuffIndex++];
+	return true;
+}
+
+bool PcxReadRow(IStoreStream* pStream, uint8* p, int npixels)
+{
 	auto* pend = &p[npixels];
 	while (p < pend)
 	{
-		if (readBuffIndex >= 4096)
+		if (readRunRemaining)
 		{
-			pStream->Read(4096, reinterpret_cast<char*>(readBuff));
-			readBuffIndex = 0;
+			const auto count = static_cast<int>(pend - p) < readRunRemaining ?
+				static_cast<int>(pend - p) : readRunRemaining;
+			memset(p, readRunValue, count);
+			p += count;
+			readRunRemaining -= count;
+			continue;
 		}
 
-		auto value = readBuff[readBuffIndex++];
+		uint8 value;
+		if (!PcxReadByte(pStream, &value))
+			return false;
 		if ((value & 0xC0) == 0xC0)
 		{
 			auto count = value & 0x3F;
-			if (readBuffIndex >= 4096)
+			uint8 valuea;
+			if (!count || !PcxReadByte(pStream, &valuea))
 			{
-				pStream->Read(4096, reinterpret_cast<char*>(readBuff));
-				readBuffIndex = 0;
+				Warning(("PCX decompression error\n"));
+				return false;
 			}
-
-			auto valuea = readBuff[readBuffIndex++];
-			if (&p[count] > pend)
-				CriticalMsg1("PCX decompression error, xpixel: %d\n", p - pstart);
-
-			memset(p, valuea, count);
-			p += count;
+			const auto available = static_cast<int>(pend - p);
+			const auto copied = count < available ? count : available;
+			memset(p, valuea, copied);
+			p += copied;
+			readRunValue = valuea;
+			readRunRemaining = count - copied;
 		}
 		else
 		{
@@ -111,62 +133,55 @@ bool PcxReadBody(IStoreStream* pStream, uint8* bits, uint8 type, int16 w, int16 
 {
 	pStream->SetPos(128);
 
-	uint8* buff24 = nullptr;
-	if (type == 5)
+	const int planes = type == BMT_FLAT8 ? 1 : 3;
+	auto* scanline = static_cast<uint8*>(malloc(planes * bpl));
+	if (!scanline)
 	{
-		buff24 = static_cast<uint8*>(malloc(3 * bpl));
-		if (!buff24)
-		{
-			Warning(("PCX reader can't alloc memory\n"));
-			return false;
-		}
+		Warning(("PCX reader can't alloc memory\n"));
+		return false;
 	}
 
+	bool result = true;
 	for (int y = 0; y < h; ++y)
 	{
-		if (type == 2)
+		for (int plane = 0; plane < planes; ++plane)
 		{
-			if (!PcxReadRow(pStream, bits, bpl))
+			if (!PcxReadRow(pStream, &scanline[bpl * plane], bpl))
 			{
 				Warning(("PCX decompression error on line: %d\n", y));
-				return false;
+				result = false;
+				break;
 			}
 		}
-		else if (type == 5)
-		{
-			for (int plane = 0; plane < 3; ++plane)
-			{
-				if (!PcxReadRow(pStream, &buff24[w * plane], bpl))
-				{
-					Warning(("PCX decompression error on line: %d\n", y));
-					return false;
-				}
-			}
+		if (!result)
+			break;
 
-			auto pd = bits;
+		if (type == BMT_FLAT8)
+			memcpy(bits, scanline, w);
+		else if (type == BMT_FLAT16)
+		{
+			auto* pd = reinterpret_cast<uint16*>(bits);
 			for (int i = 0; i < w; ++i)
 			{
-				*pd = buff24[i];
-				auto pda = pd + 1;
-				*pda++ = buff24[i + w];
-				*pda = buff24[2 * w + i];
-				pd = pda + 1;
-				++i;
+				const auto red = scanline[i];
+				const auto green = scanline[bpl + i];
+				const auto blue = scanline[2 * bpl + i];
+				*pd++ = static_cast<uint16>(((red >> 3) << 11) |
+					((green >> 2) << 5) | (blue >> 3));
 			}
 		}
 		else
 		{
 			Warning(("PCX file has %d planes!\n", type));
-			return false;
+			result = false;
+			break;
 		}
 
 		bits += row;
 	}
 
-	if (type == 5)
-		free(buff24);
-
-	return true;
+	free(scanline);
+	return result;
 }
 
 
@@ -178,22 +193,27 @@ grs_bitmap* ResPcxReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 
 	auto w = pcxHeader.xmax - pcxHeader.xmin + 1;
 	auto h = pcxHeader.ymax - pcxHeader.ymin + 1;
+	if (w <= 0 || h <= 0 || pcxHeader.bytes_per_line < w)
+	{
+		Warning(("Invalid PCX dimensions or scanline length\n"));
+		return nullptr;
+	}
 
 	uint8 type;
 	uint16 row;
-	int extra;
 
 	switch (pcxHeader.colour_planes)
 	{
 	case 1:
 		type = 2;
 		row = pcxHeader.xmax - pcxHeader.xmin + 1;
-		extra = pcxHeader.bytes_per_line - (uint16)w;
 		break;
 	case 3:
-		type = 5;
-		row = 3 * w;
-		extra = 3 * pcxHeader.bytes_per_line - (uint16)(3 * w);
+		// Dark's 2D blitters do not provide every BMT_FLAT24 source/dest
+		// combination used by menus.  Decode true-colour PCX art to the
+		// engine's native opaque 16-bit representation.
+		type = BMT_FLAT16;
+		row = 2 * w;
 		break;
 	default:
 		Warning(("PCX file has %d planes!\n", pcxHeader.colour_planes));
@@ -202,7 +222,8 @@ grs_bitmap* ResPcxReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 
 	LGALLOC_PUSH_CREDIT();
 
-	auto* pbm = reinterpret_cast<grs_bitmap*>(pResMem->ResMalloc(h * row + extra + sizeof(grs_bitmap)));
+	auto* pbm = reinterpret_cast<grs_bitmap*>(pResMem->ResMalloc(
+		static_cast<unsigned long>(h) * row + sizeof(grs_bitmap)));
 
 	LGALLOC_POP_CREDIT();
 
@@ -222,6 +243,8 @@ grs_bitmap* ResPcxReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 	}
 
 	readBuffIndex = 4096;
+	readBuffValid = 0;
+	readRunRemaining = 0;
 	if (!PcxReadBody(pStream, pImg, type, w, h, row, pcxHeader.bytes_per_line))
 	{
 		Warning(("Unable to read PCX file!\n"));
@@ -231,7 +254,8 @@ grs_bitmap* ResPcxReadImage(IStoreStream* pStream, IResMemOverride* pResMem)
 	}
 
 	free(readBuff);
-	gr_init_bitmap(pbm, pImg, type, 0, w, h);
+	gr_init_bitmap(pbm, pImg, type,
+		type == BMT_FLAT16 ? BMF_RGB_565 : 0, w, h);
 
 	return pbm;
 }
@@ -244,7 +268,7 @@ uint8* ResPcxReadPalette(IStoreStream* pStream, IResMemOverride* pResMem)
 	if (!PcxReadHeader(pStream, &pcxHeader))
 		return nullptr;
 
-	if (pcxHeader.colour_planes != 1)
+	if (pcxHeader.colour_planes != 1 && pcxHeader.colour_planes != 3)
 		return nullptr;
 
 	LGALLOC_PUSH_CREDIT();
@@ -259,6 +283,22 @@ uint8* ResPcxReadPalette(IStoreStream* pStream, IResMemOverride* pResMem)
 		return nullptr;
 	}
 
+	// True-colour PCX files have no indexed palette.  Screen modes still bind
+	// their background image as a palette resource, though, so provide the
+	// same stable fallback used by the true-colour TGA reader.  The palette is
+	// irrelevant to the decoded true-colour pixels but keeps a modded menu from
+	// turning an optional palette lookup into a fatal resource-load assertion.
+	if (pcxHeader.colour_planes == 3)
+	{
+		for (unsigned i = 0; i < 256; ++i)
+		{
+			pPall[i * 3] = static_cast<uint8>(i);
+			pPall[i * 3 + 1] = static_cast<uint8>(i);
+			pPall[i * 3 + 2] = static_cast<uint8>(i);
+		}
+		return pPall;
+	}
+
 	pStream->SetPos(pStream->GetSize() - PalleteSize - 1);
 
 	uint8 pallPresent = 0;
@@ -266,6 +306,7 @@ uint8* ResPcxReadPalette(IStoreStream* pStream, IResMemOverride* pResMem)
 	if (pallPresent != 12)
 	{
 		Warning(("Bad PCX trailer: pallette not found\n"));
+		pResMem->ResFree(pPall);
 		return nullptr;
 	}
 

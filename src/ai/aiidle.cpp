@@ -481,8 +481,8 @@ STDMETHODIMP cAIIdle::SuggestActions(cAIGoal * pGoal, const cAIActions & previou
 
          pGotoDefend->Set(pDefend->object,
                           (pDefend->returnSpeed) ? pDefend->returnSpeed : kAIS_Fast,
-                          sq(pDefend->ranges[pDefend->iActive].radius),
-                          pDefend->ranges[pDefend->iActive].height / 2);
+                          sq((float)pDefend->ranges[pDefend->iActive].radius),
+                          pDefend->ranges[pDefend->iActive].height * 0.5f);
 
          pAction = pGotoDefend;
          m_DefendTimer.Reset();

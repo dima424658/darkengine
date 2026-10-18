@@ -1,4 +1,5 @@
 //		Rnd.C		Random stream implementation
+#include <stdint.h>
 //		Rex E. Bradford (REX)
 //
 //	INTRODUCTION
@@ -125,7 +126,6 @@
 //	For gruesome interrupt routines, let 'em have their way:
 
 #ifdef __WATCOMC__
-#pragma off(check_stack);
 #endif
 
 // RndSeed() seeds a random stream
@@ -151,25 +151,10 @@ void RndSeed(RndStream *prs, ulong seed)
 //
 //	Returns: next random value scaled into range low->high, inclusive
 
-#ifdef __WATCOMC__
-ulong high_umpy(ulong a, ulong b);
-#pragma aux high_umpy =\
-   "mul    edx"      \
-	"mov    eax,edx"  \
-   parm [eax] [edx]  \
-   modify [eax edx];
-#else
-__inline ulong high_umpy(ulong a, ulong b)
+static __inline ulong high_umpy(ulong a, ulong b)
 {
-	__asm
-	{
-		mov		eax, a
-		mov		edx, b
-		mul		edx
-		mov		eax, edx
-	}
+   return (ulong)(((uint64_t)a * (uint64_t)b) >> 32);
 }
-#endif
 
 long RndRange(RndStream *prs, long low, long high)
 {
@@ -225,7 +210,7 @@ ulong RndGauss16(RndStream *prs)
 	int i;
 
 	gauss = 0;
-	rnum = prs->curr;						// prs->curr uses only low 16 bits
+	rnum = (ushort)prs->curr;				// prs->curr uses only low 16 bits
 
 	for (i = 0; i < 6; i++)				// add 6 rnums & subtract 6
 		{

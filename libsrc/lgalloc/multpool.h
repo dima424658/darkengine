@@ -35,10 +35,10 @@ public:
     //
     // Overriden IMalloc functions
     //
-    STDMETHOD_(void *, Alloc)   (ULONG cb);
-    STDMETHOD_(void *, Realloc) (void * pv, ULONG cb);
+    STDMETHOD_(void *, Alloc)   (SIZE_T cb);
+    STDMETHOD_(void *, Realloc) (void * pv, SIZE_T cb);
     STDMETHOD_(void,   Free)    (void * pv);
-    STDMETHOD_(ULONG,  GetSize) (void * pv);
+    STDMETHOD_(SIZE_T, GetSize) (void * pv);
 
     ///////////////////////////////////
     //
@@ -49,9 +49,9 @@ public:
 #endif
 
 private:
-    void * PoolAlloc(unsigned long);
-    void * AllocatorAlloc(unsigned long);
-    void   PoolFree(void *, unsigned long);
+    void * PoolAlloc(size_t);
+    void * AllocatorAlloc(size_t);
+    void   PoolFree(void *, size_t);
     void   AllocatorFree(void *);
     void * SelectAlloc(size_t);
     void   SelectFree(void *);

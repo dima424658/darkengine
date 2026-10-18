@@ -116,7 +116,6 @@ typedef struct State
 
 // @NOTE:  This code seems a bit weak.
 // When I figure out more of the codeflow, this should get rewritten. - Bodisafa
-#pragma off(unreferenced)
 eLoopMessageResult LGAPI DialogLoopFunc(void* statedata, eLoopMessage msg, tLoopMessageData hdata)
 {
    State* state = (State*)statedata;
@@ -202,12 +201,10 @@ eLoopMessageResult LGAPI DialogLoopFunc(void* statedata, eLoopMessage msg, tLoop
    return kLoopDispatchContinue;
 }
 
-#pragma off(unreferenced)
 ILoopClient* LGAPI CreateDialogClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    return CreateSimpleLoopClient(DialogLoopFunc,Malloc(sizeof(State)),&DialogLoopClientDesc);
 }
-#pragma on(unreferenced)
 
 sLoopClientDesc DialogLoopClientDesc =
 {

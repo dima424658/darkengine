@@ -35,7 +35,9 @@ struct sSphrContactData {
    ushort polygon_index;
    ushort vertex_offset;
    uchar vertex_in_poly;
-   char next;
+   // This is an array index with -1 as its end-of-list sentinel. Android's
+   // AArch64 ABI makes plain char unsigned, so keep the signedness explicit.
+   signed char next;
 };
 
 

@@ -17,10 +17,13 @@
 #include <genlin.h>
 
 void (*modex_uhline_func[])() =
+{ 0 };
+
+void init_modex_uhline_func(void)
 {
-	[FILL_NORM] =	modex_norm_uhline,
-	[FILL_XOR] =	gen_uhline,
-	[FILL_BLEND] =	gen_uhline,
-	[FILL_CLUT] =	modex_clut_uhline,
-	[FILL_SOLID] =	modex_solid_uhline,
-};
+	modex_uhline_func[FILL_NORM] = modex_norm_uhline;
+	modex_uhline_func[FILL_XOR] = gen_uhline;
+	modex_uhline_func[FILL_BLEND] = gen_uhline;
+	modex_uhline_func[FILL_CLUT] = modex_clut_uhline;
+	modex_uhline_func[FILL_SOLID] = modex_solid_uhline;
+}

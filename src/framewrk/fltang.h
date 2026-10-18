@@ -22,12 +22,12 @@
 #include <math.h>
 #include <fastflts.h>
 
-#define PI     3.141592653589793238
-#define TWO_PI 6.283185307178
+#define PI     3.141592653589793238f
+#define TWO_PI 6.283185307178f
 
 // To convert from degrees to radians
-#define DEGREES(x) ((((float)(x))*TWO_PI)/360.0)
-#define RADIANS(x) ((((float)(x))*360.0)/TWO_PI)
+#define DEGREES(x) ((((float)(x))*TWO_PI)/360.0f)
+#define RADIANS(x) ((((float)(x))*360.0f)/TWO_PI)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -241,7 +241,7 @@ inline floatang Delta(const floatang& a, const floatang& b)
 // the middle of the smaller angle created by the a & b.
 inline floatang floatang_middleOf2Angs(const floatang& a, const floatang& b)
 {
-   return (a + floatang_smallestDeltaOf2Angs(a, b) / 2); 
+   return (a + floatang_smallestDeltaOf2Angs(a, b) / 2.0f);
 }
 
 inline int floatang::between(const floatang& ccw, const floatang& cw) const
@@ -273,7 +273,7 @@ inline int operator!=(const floatarc& a, const floatarc& b)
 
 inline floatang floatarc::center() const
 {
-   return cw + (ccw - cw) / 2; // @Q (toml 09-11-97): couldn't we just normalize once here for the math ops?
+   return cw + (ccw - cw) / 2.0f; // @Q (toml 09-11-97): couldn't we just normalize once here for the math ops?
 }
 
 inline floatang floatarc::span() const
@@ -293,8 +293,8 @@ inline floatarc operator-(const floatarc& a, const floatarc& b)
 
 inline void floatarc::SetByCenterAndSpan(floatang arcCenter, floatang arcSpan)
 {
-   cw = arcCenter - (arcSpan / 2); // @Q (toml 09-11-97): couldn't we just normalize once here for the math ops?
-   ccw = arcCenter + (arcSpan / 2);
+   cw = arcCenter - (arcSpan / 2.0f); // @Q (toml 09-11-97): couldn't we just normalize once here for the math ops?
+   ccw = arcCenter + (arcSpan / 2.0f);
 }
 
 inline void floatarc::inverse()

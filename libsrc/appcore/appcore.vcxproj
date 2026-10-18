@@ -157,10 +157,10 @@
     <ClCompile Include="defcreat.cpp" />
     <ClCompile Include="defexit.cpp" />
     <ClCompile Include="definit.cpp" />
-    <ClCompile Include="wappcore.cpp" />
+    <ClCompile Include="..\..\winsrc\appcore\wappcore.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="wappcore.h" />
+    <ClInclude Include="..\..\winsrc\appcore\wappcore.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="appcore.txt" />

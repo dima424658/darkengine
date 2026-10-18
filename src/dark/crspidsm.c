@@ -79,14 +79,14 @@ static int g_aSpidJointMap[] =
    -1,
 };               
 
-#define SPIDER_LEG_PHYS_RADIUS 0.1
+#define SPIDER_LEG_PHYS_RADIUS 0.1f
 
 static sCrPhysModOffset g_SwordPhysOffsets[] = \
 {
-   {l1wrist, l1finger, 0.0, SPIDER_LEG_PHYS_RADIUS},
-   {l1wrist, l1finger, 0.8, SPIDER_LEG_PHYS_RADIUS},
-   {r1wrist, r1finger, 0.0, SPIDER_LEG_PHYS_RADIUS},
-   {r1wrist, r1finger, 0.8, SPIDER_LEG_PHYS_RADIUS},
+   {l1wrist, l1finger, 0.0f, SPIDER_LEG_PHYS_RADIUS},
+   {l1wrist, l1finger, 0.8f, SPIDER_LEG_PHYS_RADIUS},
+   {r1wrist, r1finger, 0.0f, SPIDER_LEG_PHYS_RADIUS},
+   {r1wrist, r1finger, 0.8f, SPIDER_LEG_PHYS_RADIUS},
 };
 
 static sCrPhysModOffsetTable g_WeaponPhysTable = \
@@ -96,9 +96,9 @@ static sCrPhysModOffsetTable g_WeaponPhysTable = \
 
 static sCrPhysModOffset g_aPhysModOffsets[] = 
 {
-   { base, base, 0.0, 0.3 },
-   { base, lmand, -2.6, 0.3 },
-   { base, rmand, -2.6, 0.3 },
+   { base, base, 0.0f, 0.3f },
+   { base, lmand, -2.6f, 0.3f },
+   { base, rmand, -2.6f, 0.3f },
 };
 
 

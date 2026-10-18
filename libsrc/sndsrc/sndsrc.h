@@ -44,8 +44,8 @@ extern "C"
 #endif
 
 	// A playlist is a sequence of longwords
-	typedef unsigned long SndPlaylistElement;
-	typedef unsigned long* SndPlaylist;
+	typedef uint32 SndPlaylistElement;
+	typedef uint32* SndPlaylist;
 
 	// Default number of gate variables
 #define SNDSRC_DEFAULT_MAX_GATES 8

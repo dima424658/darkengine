@@ -224,7 +224,7 @@ static BOOL get_face_vecs(mxs_vector *norm, mxs_vector *src_pt, mxs_vector *cent
    mx_zero_vec(center_pt);
    for (i=0; i<cnt; i++)
       mx_addeq_vec(center_pt,&pt_list[i]);
-   mx_scaleeq_vec(center_pt,1.0/(float)cnt);
+   mx_scaleeq_vec(center_pt,1.0f/(float)cnt);
    
    return TRUE;
 }
@@ -288,9 +288,9 @@ static BOOL build_straight_stairs(sStairParms *s)
        return FALSE;      // go find axis of the brushes
        
    // so, by symmetry arguments, we know h_total is -center_pt*2 and v_total is (center_pt-src_pt)*2
-   mx_scale_vec(&h_step,&center_pt,-2.0/(float)s->cnt);
+   mx_scale_vec(&h_step,&center_pt,-2.0f/(float)s->cnt);
    mx_sub_vec(&v_step,&center_pt,&src_pt);
-   mx_scaleeq_vec(&v_step,2.0/(float)s->cnt);
+   mx_scaleeq_vec(&v_step,2.0f/(float)s->cnt);
    h_axis=find_primary_axis(&h_step);   // go get the primary axis'
    v_axis=find_primary_axis(&v_step);   
    if ((h_axis==-1)||(v_axis==-1)) return FALSE;
@@ -311,17 +311,17 @@ static BOOL build_straight_stairs(sStairParms *s)
 //this code appears to do the right thing except for making sure size gets
 //abs value.  So I'm making it all use abs.  AMSD
          if (j==h_axis)
-            tmp->sz.el[j]=fabs(h_step.el[j]/2.0);
+            tmp->sz.el[j]=fabsf(h_step.el[j]/2.0f);
          else if (j==v_axis)
             if (s->slats)
                if (s->height>STAIR_EPS)              // 0.0 means use size based on step size
                   tmp->sz.el[j]=s->height; //guaranteed positive
                else
-                  tmp->sz.el[j]=fabs(v_step.el[j]/4.0);
+                  tmp->sz.el[j]=fabsf(v_step.el[j]/4.0f);
             else
-               tmp->sz.el[j]=fabs(cur_pos.el[j]-src_pt.el[j]);
+               tmp->sz.el[j]=fabsf(cur_pos.el[j]-src_pt.el[j]);
          else
-            tmp->sz.el[j]=fabs(s->br->sz.el[j]);
+            tmp->sz.el[j]=fabsf(s->br->sz.el[j]);
       }
       finalize_stair_brush(tmp,s);
       gedit_full_create_brush(tmp,NULL,GEDIT_CREATE_AT_END,GEDIT_DEFAULT_BRTYPE);
@@ -329,7 +329,7 @@ static BOOL build_straight_stairs(sStairParms *s)
       mx_addeq_vec(&cur_pos,&h_step);                // update cur_pos to next step
       mx_addeq_vec(&cur_pos,&v_step);
       if (!s->slats)
-         cur_pos.el[v_axis]-=v_step.el[v_axis]/2.0;  // downstep the base 
+         cur_pos.el[v_axis]-=v_step.el[v_axis]/2.0f;  // downstep the base
    }
    editUndoStoreBlock(FALSE);
    return TRUE;

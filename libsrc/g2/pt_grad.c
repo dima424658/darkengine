@@ -73,10 +73,10 @@ void g2pt_poly_setup(int n, g2s_point **ppl)
                float area;
                float x10, x20, y10, y20;
 
-               x10 = ppl[j]->sx - ppl[i]->sx;
-               x20 = ppl[k]->sx - ppl[i]->sx;
-               y10 = ppl[j]->sy - ppl[i]->sy;
-               y20 = ppl[k]->sy - ppl[i]->sy;
+               x10 = (float)(ppl[j]->sx - ppl[i]->sx);
+               x20 = (float)(ppl[k]->sx - ppl[i]->sx);
+               y10 = (float)(ppl[j]->sy - ppl[i]->sy);
+               y20 = (float)(ppl[k]->sy - ppl[i]->sy);
                area = y20*x10 - y10*x20;
                area *= area;
 

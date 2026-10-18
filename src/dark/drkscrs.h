@@ -9,7 +9,6 @@
 #define __DRKSCRS_H
 
 #include <scrptbas.h>
-#include <uigame.h>
 
 ////////////////////////////////////////////////////////////
 // DARK GAME SCRIPT SERVICE
@@ -49,6 +48,12 @@ DECLARE_SCRIPT_SERVICE(DarkGame,0x1b4)
    STDMETHOD_(BOOL, GetAutomapLocationVisited)(int page, int location) PURE;
 
    STDMETHOD(SetAutomapLocationVisited)(int page, int location) PURE;
+
+   // NewDark additions, appended to preserve the original service ABI.
+   STDMETHOD_(void, SetNextMission)(int mission) PURE;
+   STDMETHOD_(int, GetCurrentMission)() PURE;
+   STDMETHOD_(BOOL, RespawnPlayer)() PURE;
+   STDMETHOD(FadeIn)(float time) PURE;
 };
 
 

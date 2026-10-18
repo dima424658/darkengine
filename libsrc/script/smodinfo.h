@@ -24,7 +24,7 @@
 struct sScrModuleInfo
 {
    IScriptModule * pModule;
-   HANDLE          hModule;
+   void *          hModule;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

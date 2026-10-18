@@ -27,6 +27,7 @@
 #include <star.h>
 
 #include <starobj.h>
+#include <missiondiag.h>
 
 #include <skyrend.h>
 #include <memall.h>
@@ -44,12 +45,12 @@ extern "C" BOOL portal_fog_on;
 
 
 
-#define PI 3.14159265359
-#define fDeg90 (0.50000*PI)
+#define PI 3.14159265359f
+#define fDeg90 (0.50000f*PI)
 #define fDeg180 (PI)
-#define fDeg360 (2*PI)
+#define fDeg360 (2.0f*PI)
 
-#define DEG (PI/180)
+#define DEG (PI/180.0f)
 
 ////////////////////////////////////////////////////////
 // Mission Loading and Saving
@@ -110,7 +111,7 @@ static inline void SetDefaults()
    g_StarObj.bEnableFog = FALSE;
    g_StarObj.fDensity = 1;
    g_StarObj.fStarOffset = 0;
-   g_StarObj.fMaxIntensity = 0.4;
+   g_StarObj.fMaxIntensity = 0.4f;
 }
 
 
@@ -148,7 +149,7 @@ static g2s_point *g_aHWPt[4] = {&g_HWp[0], &g_HWp[1], &g_HWp[2], &g_HWp[3]};
 
 static BOOL bSpinStars = FALSE;
 static tSimTime nLastTimeTime;
-static const float fRadsPerSecond = 0.3490658503989; // 20 degrees
+   static const float fRadsPerSecond = 0.3490658503989f; // 20 degrees
 
 extern "C"
 {
@@ -176,15 +177,19 @@ static BOOL CalcStarData()
    float fDist;
    float fStarYAng = fDeg180;     // Winter, midnight
    float fStarXAng = 42.0*PI/180; // 42 degrees latitude.
-   float fMinZ = sin(fDeg90-SkyRendererGetHorizonDip()); // Angle is relative to pole, so normalize.
+   float fMinZ = sinf(fDeg90-SkyRendererGetHorizonDip()); // Angle is relative to pole, so normalize.
    float fIntensity;
    float fClipAng = SkyRendererGetClipLat()*DEG;
-   float fMaxZ = cos(fClipAng);
+   float fMaxZ = cosf(fClipAng);
 
    IResMan *pResMan = AppGetObj(IResMan);
    pStarRes = IResMan_Bind(pResMan, "stars.bin", RESTYPE_BINARY, NULL, "fam\\skyhw\\", 0);
    if (!pStarRes)
+   {
+      MissionDiagnosticsIssue("ERROR","sky",
+                              "Star field is enabled but fam\\skyhw\\stars.bin is missing");
       return FALSE;
+   }
    pRawStarData = (char *)pStarRes->Lock();
    if (!pRawStarData)
    {
@@ -235,7 +240,7 @@ static BOOL CalcStarData()
       // Base alpha on star's magnitude and intensity of sky:
       fIntensity = SkyRendererGetSkyIntensity(pStarPositions+nNumStars);
       fIntensity = __min(g_StarObj.fMaxIntensity, fIntensity)/g_StarObj.fMaxIntensity;
-      pStarColors[nNumStars] = STAR_ALPHA_MIN + (STAR_ALPHA_MAX-STAR_ALPHA_MIN)*fMag*(1-fIntensity);
+      pStarColors[nNumStars] = (uchar)(STAR_ALPHA_MIN + (STAR_ALPHA_MAX-STAR_ALPHA_MIN)*fMag*(1-fIntensity));
 
       // @TBD: set dist of stars based on sky dist minus a little? so stars will fog correctly.
       fDist = SkyRendererGetSkyDist(pStarPositions+nNumStars);
@@ -282,9 +287,9 @@ void cStars::Init()
    ushort nAlpha;
    for (int u = 0; u < 16; ++u)
       for (int v = 0; v < 16; ++v) {
-         fDist = sqrt((8 - u) * (8 - u) + (8 - v) * (8 - v));
-         fAlpha = 8.0 - (ushort) ((fDist > 8.0)? 8.0 : fDist);  // clamp
-         nAlpha = fAlpha * 15.0 / 8.0;
+         fDist = sqrtf((float)((8 - u) * (8 - u) + (8 - v) * (8 - v)));
+         fAlpha = 8.0f - (ushort) ((fDist > 8.0f)? 8.0f : fDist);  // clamp
+         nAlpha = (ushort)(fAlpha * 15.0f / 8.0f);
          g_aBitmapBits[u + 16 * v] = 0xfff | (nAlpha << 12);
       }
 
@@ -294,22 +299,22 @@ void cStars::Init()
    g_HWp[0].i = 1;
    g_HWp[0].u = 0;
    g_HWp[0].v = 0;
-   g_HWp[0].w = .00001;
+   g_HWp[0].w = .00001f;
 
    g_HWp[1].i = 1;
    g_HWp[1].u = 1;
    g_HWp[1].v = 0;
-   g_HWp[1].w = .00001;
+   g_HWp[1].w = .00001f;
 
    g_HWp[2].i = 1;
    g_HWp[2].u = 1;
    g_HWp[2].v = 1;
-   g_HWp[2].w = .00001;
+   g_HWp[2].w = .00001f;
 
    g_HWp[3].i = 1;
    g_HWp[3].u = 0;
    g_HWp[3].v = 1;
-   g_HWp[3].w = .00001;
+   g_HWp[3].w = .00001f;
 
    nLastTimeTime = 0;
    bDidGameInit = TRUE;

@@ -139,7 +139,8 @@ ObjID BuildOneTextureArchetype(int i)
 
 ObjID ForciblyRebuildOneTextureArchetype(int i)
 {
-   if (i >= BACKHACK_IDX) 
+   if (i < 0 || i >= TEXMEM_MAX ||
+       (i >= BACKHACK_IDX && i < TEXMEM_RESERVED_LIMIT))
       return OBJ_NULL; 
 
    if (OBJ_IS_CONCRETE(gArchMap[i]))
@@ -163,7 +164,8 @@ void BuildTextureArchetypes(void)
    gTexRoot = gpObjSys->GetObjectNamed(TEXROOT); 
 
    for (int i = 0; i < texmemGetMax(); i++)
-      BuildOneTextureArchetype(i); 
+      if (!TEXMEM_IS_RESERVED(i))
+         BuildOneTextureArchetype(i);
    BuildOneTextureArchetype(WATERIN_IDX); 
    BuildOneTextureArchetype(WATEROUT_IDX); 
 }
@@ -184,7 +186,8 @@ void RebuildTextureArchetypes(void)
    gTexRoot = gpObjSys->GetObjectNamed(TEXROOT); 
 
    for (int i = 0; i < n; i++)
-      rebuild_one_passively(i); 
+      if (!TEXMEM_IS_RESERVED(i))
+         rebuild_one_passively(i);
    rebuild_one_passively(WATERIN_IDX);
    rebuild_one_passively(WATEROUT_IDX);
 }
@@ -195,7 +198,8 @@ void RebuildTextureArchetypes(void)
 
 ObjID GetTextureObj(int idx)
 {
-   if (idx < 0 || idx >= BACKHACK_IDX)
+   if (idx < 0 || idx >= TEXMEM_MAX ||
+       (idx >= BACKHACK_IDX && idx < TEXMEM_RESERVED_LIMIT))
       return OBJ_NULL;
 
    if (gArchMap[idx] == OBJ_NULL)

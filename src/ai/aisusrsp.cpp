@@ -164,7 +164,7 @@ STDMETHODIMP_(void) cAISuspiciousResponse::OnFoundSuspicious(ObjID object)
   if (pResponse)
     {
       sAIPsdScrAct newacts[kAIMaxSuspiciousActs];
-      int i,j,k;
+      int i,j;
       char susptype[32];
       char suspid[32];
       if (!GetSuspiciousType(object,susptype,32))
@@ -181,7 +181,7 @@ STDMETHODIMP_(void) cAISuspiciousResponse::OnFoundSuspicious(ObjID object)
             result = newstring.Find(SUSPICIOUSOBJECTTYPE);
             if (result != -1) //found
             {
-               newstring.Remove(result,strlen(SUSPICIOUSOBJECTTYPE));
+      newstring.Remove(result,(int)strlen(SUSPICIOUSOBJECTTYPE));
                newstring.Insert(susptype,result);
                strcpy((char *)newacts[i].args[j],newstring);
             }
@@ -190,7 +190,7 @@ STDMETHODIMP_(void) cAISuspiciousResponse::OnFoundSuspicious(ObjID object)
             result = newstring.Find(SUSPICIOUSOBJECTID);
             if (result != -1) //found
             {
-               newstring.Remove(result,strlen(SUSPICIOUSOBJECTID));
+      newstring.Remove(result,(int)strlen(SUSPICIOUSOBJECTID));
                sprintf(suspid,"%d",object);
                newstring.Insert(suspid,result);
                strcpy((char *)newacts[i].args[j],newstring);

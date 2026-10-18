@@ -20,18 +20,18 @@
 #define kWH_Set2Start  4
 #define kWH_Set2Part2Start  6
 
-#define kWH_PlayerRadius   1.0
-#define kWH_PlayerOffset   1.3
-#define kWH_PlayerPushout  2.0
+#define kWH_PlayerRadius   1.0f
+#define kWH_PlayerOffset   1.3f
+#define kWH_PlayerPushout  2.0f
 
-#define kWH_PlayerRadius2   2.0
-#define kWH_PlayerOffset2   1.0
-#define kWH_PlayerPushout2  0.0
-#define kWH_PlayerSet2Offset -1.3
+#define kWH_PlayerRadius2   2.0f
+#define kWH_PlayerOffset2   1.0f
+#define kWH_PlayerPushout2  0.0f
+#define kWH_PlayerSet2Offset -1.3f
 
-#define kWH_AIRadius   1.4
-#define kWH_AIOffset   2.0
-#define kWH_AIPushout  3.0
+#define kWH_AIRadius   1.4f
+#define kWH_AIOffset   2.0f
+#define kWH_AIPushout  3.0f
 
 ////////////////////////////////////////
 

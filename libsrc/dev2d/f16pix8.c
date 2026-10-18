@@ -62,7 +62,6 @@ void flat16_tluc_upix8 (int c8, int x, int y)
    }
 }
 
-#pragma off (unreferenced)
 void flat16_solid_upix8 (int c8, int x, int y)
 {
    ushort *p;
@@ -70,4 +69,3 @@ void flat16_solid_upix8 (int c8, int x, int y)
    p = (ushort *)(grd_bm.bits + grd_bm.row*y + 2*x);
    *p = (ushort )grd_gc.fill_parm;
 }
-#pragma on (unreferenced)

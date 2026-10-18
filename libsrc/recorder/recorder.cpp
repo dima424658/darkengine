@@ -16,25 +16,18 @@
 
 #include <filepath.h>
 #include <fcntl.h>
-#include <io.h>
-#include <sys\stat.h>
-#include <sys\types.h>
+#include <platform_io.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>    // time, localtime
 #include <string.h>  // strncat
 #include <stdlib.h>  // getenv
 #include <str.h>
+#include <platform_services.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef _WIN32
-extern "C"
-{
-__declspec(dllimport) DWORD __stdcall GetCurrentThreadId(void);
-};
-#define AssertCorrectThread() AssertMsg(GetCurrentThreadId() == m_ThreadRecordingId, "Cannot record actions in multiple threads.");
-#else
-#define AssertCorrectThread()
-#endif
+#define AssertCorrectThread() AssertMsg(PlatformCurrentThreadId() == m_ThreadRecordingId, "Cannot record actions in multiple threads.");
 
 const unsigned kRecVersion = 3;
 
@@ -73,9 +66,7 @@ cRecorder::cRecorder(IUnknown * pOuterUnknown, eRecMode mode,
     m_RecFile(-1),
     m_fSaveOption(fSaveOption),
     m_fFirstAccess(TRUE)
-#ifdef _WIN32
-    , m_ThreadRecordingId(GetCurrentThreadId())
-#endif
+    , m_ThreadRecordingId(PlatformCurrentThreadId())
 {
     // Add internal components to outer aggregate...
     INIT_AGGREGATION_1( pOuterUnknown,
@@ -138,7 +129,7 @@ cRecorder::cRecorder(IUnknown * pOuterUnknown, eRecMode mode,
     else
         access |= _O_RDWR | _O_CREAT | _O_TRUNC;
 
-    m_RecFile = open(m_RecFileSpec.GetName(), access, S_IREAD | S_IWRITE);
+    m_RecFile = _open(m_RecFileSpec.GetName(), access, S_IREAD | S_IWRITE);
 
     if (m_RecFile == -1)
     {
@@ -205,7 +196,8 @@ inline BOOL cRecorder::WriteBlock(tRecBlockType type, uint8 dataInfo, const void
 {
     write(m_RecFile, &type, sizeof(type));
     write(m_RecFile, &dataInfo, sizeof(dataInfo));
-    return write(m_RecFile, pData, dataSize) == dataSize;
+    const unsigned count = static_cast<unsigned>(dataSize);
+    return write(m_RecFile, pData, count) == static_cast<int>(count);
 }
 
 ///////////////////////////////////////
@@ -219,7 +211,8 @@ inline BOOL cRecorder::ReadBlockHeader(sRecBlockHeader * pHeader)
 
 inline BOOL cRecorder::ReadBlockData(void * pReadTo, size_t size)
 {
-    return read(m_RecFile, pReadTo, size) == size;
+    const unsigned count = static_cast<unsigned>(size);
+    return read(m_RecFile, pReadTo, count) == static_cast<int>(count);
 }
 
 ///////////////////////////////////////

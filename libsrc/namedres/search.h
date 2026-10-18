@@ -32,6 +32,8 @@ public:
 	void STDMETHODCALLTYPE SetContext(ISearchPath* pContext) override;
 	void STDMETHODCALLTYPE SetVariants(ISearchPath* pVariants) override;
 	IStore* STDMETHODCALLTYPE Find(const char* pName, uint fFlags, IStore** ppCanonStore, const char* pRelPath) override;
+	IStore* FindAny(const char* const* ppNames, int nNames, uint fFlags,
+		IStore** ppCanonStore, const char* pRelPath, int* pFoundIndex);
 	void* STDMETHODCALLTYPE BeginContents(const char* pPattern, uint fFlags, const char* pRelPath) override;
 	BOOL STDMETHODCALLTYPE Next(void* pCookie, IStore** pFoundStore, char* pFoundName, IStore** ppFoundCanonStore) override;
 	void STDMETHODCALLTYPE EndContents(void* pCookie) override;
@@ -39,8 +41,10 @@ public:
 
 	void DoIterate(const char* pContext, tSearchPathIterateCallback callback, void* pClientData);
 	void SetupSingleStore(const char* pStorePath, int fRecurse);
+	void SetGlobalContextPath(ISearchPath* pContext);
 
 private:
+	void EnsureCurrentContext();
 	void ClearStorages();
 	void SetupStorages();
 	void DoAddStore(const char* pStoreName, int fRecurse);
@@ -54,4 +58,6 @@ private:
 	ISearchPath* m_pVariants;
 	PathStorageNode* m_pPathStorages;
 	PathStorageNode* m_pLastNode;
+	unsigned m_ContextVersion;
+	bool m_bUsesGlobalContext;
 };

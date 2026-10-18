@@ -143,7 +143,7 @@ void SwapListSelect(void* data,int sel)
    if (swaplist->desc.flags&BLIST_RADIO_FLAG)
       LGadRadioButtonSelect(&swaplist->list,sel);
    else
-      swaplist->desc.button_elems[sel].fcolor=guiStyleGetColor(NULL,StyleColorBright);
+      swaplist->desc.button_elems[sel].fcolor = (ushort)guiStyleGetColor(NULL, StyleColorBright);
 }
 
 void SwapListDeSelect(void* data,int sel)
@@ -152,5 +152,5 @@ void SwapListDeSelect(void* data,int sel)
    if (swaplist->desc.flags&BLIST_RADIO_FLAG)
       Warning(("Cant deselect a Radio button\n"));
    else
-      swaplist->desc.button_elems[sel].fcolor=guiStyleGetColor(NULL,StyleColorDim);
+      swaplist->desc.button_elems[sel].fcolor = (ushort)guiStyleGetColor(NULL, StyleColorDim);
 }

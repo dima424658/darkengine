@@ -41,7 +41,7 @@
 
 STDMETHODIMP_(float) cAIElemental::GetGroundOffset()
 {
-   return cAI::GetGroundOffset() + sin(((AIGetTime() % 4000) / 2000.0) * PI) * 0.5;
+   return cAI::GetGroundOffset() + sinf(((AIGetTime() % 4000) / 2000.0f) * PI) * 0.5f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

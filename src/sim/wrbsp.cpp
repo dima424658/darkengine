@@ -112,7 +112,7 @@ BOOL FindPortalPlaneRec(mxs_vector *plane_norm, mxs_real plane_const, BspNode *n
          mxs_real pconst;
 
          mx_scale_vec(&pnorm, plane_norm, -1.0);
-         pconst = plane_const * -1.0;
+         pconst = plane_const * -1.0f;
 
          if ((*pPlane = FindPlaneInCell(&pnorm, pconst, n->cell_id - 1)) != NULL)
          {
@@ -140,11 +140,11 @@ BOOL FindPortalPlane(BspNode *n, PortalPlane **pPlane, int *reversed)
 
    mxs_vector plane_norm;
    mxs_vector rev_plane_norm;
-   mxs_real   plane_const =  n->split_plane.d;
-   mxs_real   rev_plane_const = -n->split_plane.d;
+   mxs_real   plane_const = (mxs_real)n->split_plane.d;
+   mxs_real   rev_plane_const = (mxs_real)-n->split_plane.d;
 
-   mx_mk_vec(&plane_norm, n->split_plane.a, n->split_plane.b, n->split_plane.c);
-   mx_mk_vec(&rev_plane_norm, -n->split_plane.a, -n->split_plane.b, -n->split_plane.c);
+   mx_mk_vec(&plane_norm, (mxs_real)n->split_plane.a, (mxs_real)n->split_plane.b, (mxs_real)n->split_plane.c);
+   mx_mk_vec(&rev_plane_norm, (mxs_real)-n->split_plane.a, (mxs_real)-n->split_plane.b, (mxs_real)-n->split_plane.c);
 
    if (!FindPortalPlaneRec(&plane_norm, plane_const, n, pPlane, reversed))
    {
@@ -450,8 +450,8 @@ typedef struct
    int plane_id;
 } sCellPlane;
 
-typedef cHashTableFunctions<long> LongHashFunctions;
-typedef cHashTable<long, sCellPlane, LongHashFunctions> cCellPlaneTable;
+typedef cScalarHashFunctions<uintptr_t> PlaneHashFunctions;
+typedef cHashTable<uintptr_t, sCellPlane, PlaneHashFunctions> cCellPlaneTable;
 
 cCellPlaneTable gCellPlaneTable;
 
@@ -477,7 +477,7 @@ void wrBspTreeWrite(PortalReadWrite write)
          cellplane.cell_id = i;
          cellplane.plane_id = j;
 
-         gCellPlaneTable.Set((long)(&pCell->plane_list[j]), cellplane);
+         gCellPlaneTable.Set((uintptr_t)&pCell->plane_list[j], cellplane);
       }
    }
 
@@ -505,7 +505,7 @@ void wrBspTreeWrite(PortalReadWrite write)
 
       if (g_wrBspTree[i].plane)
       {
-         if (!gCellPlaneTable.Lookup((long)g_wrBspTree[i].plane, &cellplane))
+         if (!gCellPlaneTable.Lookup((uintptr_t)g_wrBspTree[i].plane, &cellplane))
          {
             // Must be an extra plane
             for (int j=0; j<gExtraPlaneList.Size(); j++)

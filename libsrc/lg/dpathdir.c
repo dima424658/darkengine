@@ -9,8 +9,6 @@
 #include <lg.h>
 #include <string.h>
 
-EXTERN int _dp_find_flags_tab[4];
-
 // stuffs current name
 char *DatapathDirGetName(DatapathDir *dpd)
 {
@@ -43,6 +41,7 @@ DatapathDir *DatapathOpenDir(Datapath *dpath, const char *name,int flags)
    DatapathDir *dpd;
 
    dpd = (DatapathDir *)Malloc(sizeof(DatapathDir));
+   memset(dpd, 0, sizeof(*dpd));
    
    // set data path and name
    dpd->dp = dpath;
@@ -71,23 +70,9 @@ char *DatapathReadDir(DatapathDir *dpd)
          }
 
          strcat(path,dpd->path);
-#if defined(__WATCOMC__) || defined(__SC__)
-         err = _dos_findfirst(path,_dp_find_flags_tab[dpd->dp->find_flags],&(dpd->find));
-#else
-         // old code was
-         // err = (dpd->findfp =_findfirst(path, &(dpd->find)) != -1)?0:1;
-         // which should have been
-         // err = ( (dpd->findfp =_findfirst(path, &(dpd->find))) != -1)?0:1;
-         // but we will write it to be readable
-         dpd->findfp =_findfirst(path, &(dpd->find));
-         err = dpd->findfp != -1 ? 0 : 1 ;
-#endif
+         err = PlatformFindFirst(path, &dpd->find) ? 0 : 1;
       } else {
-#if defined(__WATCOMC__) || defined(__SC__)
-         err = _dos_findnext(&(dpd->find));
-#else
-         err = _findnext(dpd->findfp,&(dpd->find));
-#endif
+         err = PlatformFindNext(&dpd->find) ? 0 : 1;
       }
 
       // if there was not a read error
@@ -100,11 +85,7 @@ char *DatapathReadDir(DatapathDir *dpd)
          break;            // break out, since we have found a real file
       }
 
-#if defined(__WATCOMC__) || defined(__SC__)
-      _dos_findclose(&(dpd->find));
-#else
-      _findclose(dpd->findfp);
-#endif
+      PlatformFindClose(&dpd->find);
       dpd->curp++;
       dpd->cur=0;
    }
@@ -116,11 +97,7 @@ char *DatapathReadDir(DatapathDir *dpd)
 void DatapathCloseDir(DatapathDir *dpd)
 {
    if (dpd->cur!=0) {
-#if defined(__WATCOMC__) || defined(__SC__)
-      _dos_findclose(&dpd->find);
-#else
-      _findclose(dpd->findfp);
-#endif
+      PlatformFindClose(&dpd->find);
    }
 
    Free(dpd);

@@ -29,7 +29,7 @@
 #define gr_clut_scale_bitmap(bm, x, y, w, h, clut) \
 do {                                      \
    if (gr_get_fill_type() == FILL_NORM) { \
-      int __fp = gr_get_fill_parm();      \
+      intptr_t __fp = gr_get_fill_parm(); \
       gr_set_fill_type(FILL_CLUT);        \
       gr_set_fill_parm(clut);             \
       gr_scale_bitmap(bm, x, y, w, h);    \

@@ -79,7 +79,7 @@ void mp_compute_ep(multiped * mp, mps_motion_node * m)
 		}
 	}
 
-	mp_solve_limb(mp, ep, &mp_rot[1]);
+	mp_solve_limb(mp, ep, mp_rot[1]);
 
 	if (ep->stick)
 	{
@@ -91,7 +91,7 @@ void mp_compute_ep(multiped * mp, mps_motion_node * m)
 								  l->joint_id[l->num_segments]);
 		}
 
-		mp_solve_limb(mp, ep, &mp_rot[2]);
+		mp_solve_limb(mp, ep, mp_rot[2]);
 
 	// Alloc targets for rotations 1 and 2, copy.
 		m->targets = (quat *) mp_alloc(sizeof(quat) * ep->l->num_segments * 2, __FILE__, __LINE__);
@@ -127,7 +127,7 @@ void mp_get_config_at_time(multiped * mp, mps_motion_node * m, float time,
 						   int stop_joint)
 {
 	mps_motion * motion = mp_motion_list + m->handle;
-	float fo = motion->info.freq / 1000.0 * time;
+	float fo = motion->info.freq / 1000.0f * time;
 	mxs_vector v;
 	float save_frame;
 
@@ -141,8 +141,8 @@ void mp_get_config_at_time(multiped * mp, mps_motion_node * m, float time,
 	m->frame += fo;
 	m->frame = __min(m->frame, motion->info.num_frames - 1);
 
-	mp_evaluate_motion(mp, m, &mp_rot[0], &v);
-	mp_apply_motion(mp, &mp_rot[0], &v, stop_joint);
+	mp_evaluate_motion(mp, m, mp_rot[0], &v);
+	mp_apply_motion(mp, mp_rot[0], &v, stop_joint);
 
 	m->frame = save_frame;
 }
@@ -158,8 +158,8 @@ void mp_get_config_at_frame(multiped * mp, mps_motion_node * m, float frame_offs
 	m->frame += frame_offset;
 	m->frame = __min(m->frame, motion->info.num_frames - 1);
 
-	mp_evaluate_motion(mp, m, &mp_rot[0], &v);
-	mp_apply_motion(mp, &mp_rot[0], &v, -1);
+	mp_evaluate_motion(mp, m, mp_rot[0], &v);
+	mp_apply_motion(mp, mp_rot[0], &v, -1);
 
 	m->frame = save_frame;
 }
@@ -247,14 +247,14 @@ void mp_compute_limb_pos(mxs_vector * mid, limb * l, mxs_vector * end, mxs_vecto
 
 	dist_squared = dist * dist;
 	r3 = upper * upper - lower * lower;
-	r4 = ((r3 / dist_squared) + 1.0) / 2.0;
+	r4 = ((r3 / dist_squared) + 1.0f) / 2.0f;
 
 	mx_scale_vec(&v2, &v1, r4);
 	mx_copy_vec(mid, &v2);
 
 	mx_cross_vec(&v3, normal, &v1);
-	r4 = (r3 / dist + dist) / 2.0;
-	r4 = sqrt(upper * upper - r4 * r4) / dist;
+	r4 = (r3 / dist + dist) / 2.0f;
+	r4 = sqrtf(upper * upper - r4 * r4) / dist;
 	if (bend)
 	{
 		r4 = -r4;

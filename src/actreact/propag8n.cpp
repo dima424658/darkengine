@@ -10,7 +10,7 @@
 
 #include <stimtype.h>
 #include <stimbase.h>
-#include <stimuli.H>
+#include <stimuli.h>
 
 #include <ssrctype.h>
 #include <ssrcbase.h>
@@ -174,7 +174,7 @@ STDMETHODIMP_(BOOL) cPropagation::SupportsStimulus(PropagatorID id, StimID stim)
 STDMETHODIMP_(IPropagator*) cPropagation::GetPropagator(PropagatorID id)
 {
    IPropagator* result; 
-   if (id < 0 || id >= ByID.Size())
+   if (id >= (PropagatorID)ByID.Size())
       result = &NullGator;
    else 
       result = ByID[id];
@@ -253,7 +253,7 @@ STDMETHODIMP cPropagation::SourceEvent(sStimSourceEvent* event)
 
    PropagatorID id = event->desc->propagator;
 
-   Assert_(id >= 0 && id < ByID.Size());
+   Assert_(id < (PropagatorID)ByID.Size());
    ByID[id]->SourceEvent(event);
 
    return S_OK;

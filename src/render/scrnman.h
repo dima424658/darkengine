@@ -67,6 +67,7 @@ EXTERN int ScrnSetDisplay(int kind, int flags, GUID *pDDrawGuid);
 // palette or not
 // returns TRUE for success
 EXTERN BOOL ScrnSetRes(ScrnMode mode,ulong flags);
+EXTERN const char* ScrnGetLastSetResError(void);
 
 EXTERN void ScrnUnsetRes(void); 
 
@@ -98,6 +99,10 @@ EXTERN void ScrnClear(void);
 
 // call the background callback if present
 EXTERN void ScrnStartFrame(void);
+
+// Clear the software overlay at the beginning of an actual hardware-rendered
+// scene. Ordinary menu frames intentionally do not call this.
+EXTERN void ScrnClearHardwareOverlay(void);
 
 // blit or page flip, transparently, woo woo.
 EXTERN void ScrnEndFrame(void);

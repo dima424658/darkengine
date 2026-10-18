@@ -45,7 +45,7 @@ static TagVersion g_TagVersion = { 1, 2 };
 static int SaveLoadTagFile(void *pContext, void *pBuff, size_t size)
 {
    ITagFile *pTag = (ITagFile *) pContext;
-   return ITagFile_Move(pTag, (char*) pBuff, size);
+   return ITagFile_Move(pTag, (char *)pBuff, (int)size);
 }
 
 

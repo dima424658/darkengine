@@ -71,7 +71,7 @@ int expmod(int b, int e, uint m)
 
 bool is_fermat_prime(uint n, uint numtests)
 {
-   int i;
+   uint i;
    if (n < 3) return FALSE;
    for (i = 0; i < numtests; i++)
    {
@@ -90,7 +90,7 @@ static bool is_prime(uint n)
       return is_fermat_prime(n,NUM_FERMAT_TESTS);
    else
    {
-      int i;
+      uint i;
       for (i = 2; i*i <= n; i++)
          if ((n/i)*i == n)
             return FALSE;

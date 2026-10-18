@@ -3,6 +3,7 @@
 #include <storeapi.h>
 #include <resthred.h>
 #include <mprintf.h>
+#include <dbg.h>
 
 void cResMan::InstallResourceType(const char* pExt, IResType* pType)
 {
@@ -130,7 +131,9 @@ cResourceTypeData* cResMan::GetResourceTypeData(IRes* pRes)
 
 		if (manData == NO_RES_APP_DATA) // TODO: nullptr
 		{
+			#ifdef WARN_ON
 			DbgReportWarning("Resource without any Manager Data!\n");
+			#endif
 			return nullptr;
 		}
 
@@ -185,7 +188,7 @@ void cResMan::MungePaths(const char* pPathName, const char* pExpRelPath, char** 
 	*ppName = nullptr;
 	*pOldSlash = '\0';
 
-	auto nNameSize = strlen(pPathName);
+	int nNameSize = static_cast<int>(strlen(pPathName));
 
 	int i;
 	for (i = nNameSize - 1; i >= 0 && pPathName[i] != '\\' && pPathName[i] != '/'; --i)
@@ -306,7 +309,7 @@ IRes* cResMan::CreateResource(IStore* pStorage, const char* pName, const char* p
 		IResControl* pResControl;
 		if (SUCCEEDED(pResource->QueryInterface(IID_IResControl, (void**)&pResControl)))
 		{
-			pResControl->SetManData(reinterpret_cast<DWORD>(pTypeData));
+			pResControl->SetManData(reinterpret_cast<DWORD_PTR>(pTypeData));
 			pResControl->Release();
 		}
 	}

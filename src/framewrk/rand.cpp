@@ -17,6 +17,7 @@
 #include <rnd.h>
 #include <rand.h>
 #include <hashfns.h>
+#include <platform_services.h>
 
 // Must be last header 
 #include <dbmem.h>
@@ -56,9 +57,6 @@ unsigned g_R250Index2 = 103;
 unsigned g_R250Table[250];
 
 ///////////////////////////////////////////////////////////////////////////////
-
-extern "C"
-__declspec(dllimport) DWORD __stdcall timeGetTime(void);
 
 static BOOL g_fRandInited;
 static RNDSTREAM_STD(g_CoreRandStream);
@@ -124,7 +122,7 @@ void Rand250Seed(int seed)
 
 void AppRandInit()
 {
-   long seed = timeGetTime();
+   long seed = PlatformMilliseconds();
    
    IRecorder * pRecorder = AppGetObj(IRecorder);
    RecStreamAddOrExtract(pRecorder, &seed, sizeof(ulong), "DarkRandSeed");
@@ -166,7 +164,7 @@ int UnrecordedRand(void)
    static BOOL fInited;
    if (!fInited)
    {
-      srand(timeGetTime());
+      srand(PlatformMilliseconds());
       fInited = TRUE;
    }
    OneMoreRand();

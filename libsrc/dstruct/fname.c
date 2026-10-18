@@ -58,7 +58,7 @@ int FnameExtract(Fname *fname, char *str)
 		--p;
 		}
 	i = 0;
-	len = (p + 1) - str;
+	len = (int)((p + 1) - str);
 	if (len >= sizeof(fname->path))
 		{
 		len = sizeof(fname->path) - 1;
@@ -73,7 +73,7 @@ int FnameExtract(Fname *fname, char *str)
 	p = strchr(str, '.');
 	if (p == NULL)
 		p = str + strlen(str);
-	len = p - str;
+	len = (int)(p - str);
 	if (len >= sizeof(fname->name))
 		{
 		len = sizeof(fname->name) - 1;
@@ -93,7 +93,7 @@ int FnameExtract(Fname *fname, char *str)
 	else
 		{
 		++str;
-		len = strlen(str);
+		len = (int)strlen(str);
 		if (len >= sizeof(fname->ext))
 			{
 			len = sizeof(fname->ext) - 1;

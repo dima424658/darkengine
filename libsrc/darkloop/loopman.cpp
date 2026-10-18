@@ -25,30 +25,30 @@ cLoopManager::cLoopManager(IUnknown* pOuterUnknown, unsigned nMaxModes)
 		nullptr);
 }
 
-HRESULT cLoopManager::AddClient(ILoopClient* pClient, ulong* pCookie)
+HRESULT cLoopManager::AddClient(ILoopClient* pClient, tLoopClientCookie* pCookie)
 {
 	sLoopClientDesc* pClientDesc = (sLoopClientDesc*)pClient->GetDescription();
 	if (m_Factory.m_ClientDescs.Search(pClientDesc->pID))
 		CriticalMsg("Double add of loop client");
 
-	*pCookie = reinterpret_cast<ulong>(pClientDesc->pID); // TODO: make cookie void**
+	*pCookie = reinterpret_cast<tLoopClientCookie>(pClientDesc->pID);
 
 	return m_Factory.AddClient(pClientDesc);
 }
 
-HRESULT cLoopManager::RemoveClient(ulong cookie)
+HRESULT cLoopManager::RemoveClient(tLoopClientCookie cookie)
 {
 	return m_Factory.RemoveClient(cookie);
 }
 
-HRESULT cLoopManager::AddClientFactory(ILoopClientFactory* pFactory, ulong* pCookie)
+HRESULT cLoopManager::AddClientFactory(ILoopClientFactory* pFactory, tLoopClientCookie* pCookie)
 {
-	*pCookie = reinterpret_cast<ulong>(pFactory);
+	*pCookie = reinterpret_cast<tLoopClientCookie>(pFactory);
 
 	return m_Factory.AddInnerFactory(pFactory);
 }
 
-HRESULT cLoopManager::RemoveClientFactory(ulong cookie)
+HRESULT cLoopManager::RemoveClientFactory(tLoopClientCookie cookie)
 {
 	return m_Factory.RemoveInnerFactory(reinterpret_cast<ILoopClientFactory*>(cookie));
 }

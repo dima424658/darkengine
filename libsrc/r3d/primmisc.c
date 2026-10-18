@@ -33,7 +33,6 @@ int r3_draw_line(r3s_phandle p0, r3s_phandle p1)
    return r3_2d_line_func(p0, p1);
 }
 
-#pragma off(unreferenced)
 int r3_bitmap (r3s_texture bm, r3s_phandle p)
 {
    return 0;
@@ -43,4 +42,3 @@ int r3_make_bitmap_poly(r3s_texture bm, r3s_phandle p, r3s_phandle *dest)
 {
    return 0;
 }
-#pragma on(unreferenced)

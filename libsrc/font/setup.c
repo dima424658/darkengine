@@ -38,7 +38,7 @@ void font_setup(grs_font_info *fi, grs_font *f)
       fi->blitter = gd_ubitmap_expose(&fi->bm, 0, 0);
    fi->bm.row = f->w;
    fi->bits = ((uchar *)f) + f->buf;
-   fi->off_tab = &(f->off_tab);
+   fi->off_tab = f->off_tab;
    fi->range = f->max - f->min;
 }
 

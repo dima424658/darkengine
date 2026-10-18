@@ -138,7 +138,7 @@ BOOL cPropertyManager::AddPropertyBase (IProperty * prop)
 // Stuffs a unique ID into *id
 //
 
-void sort_props(const PropArray& in, PropIDArray& out);
+static void sort_props(const PropArray& in, PropIDArray& out);
 
 BOOL cPropertyManager::AddProperty (IProperty * prop,  PropertyID *id)
 {  

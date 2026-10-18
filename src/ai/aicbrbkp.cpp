@@ -63,8 +63,8 @@ BOOL cAIRangedBackup::CheckPreconditions(void)
    float backang=GetState()->GetFacingAng().value;
    // @TODO: somehow, these numbers need to be derived from the motion
    // or at least, a property
-   destVec.x=-kAIRangedBackupDist*cos(backang);  
-   destVec.y=-kAIRangedBackupDist*sin(backang);  
+   destVec.x=-kAIRangedBackupDist*cosf(backang);
+   destVec.y=-kAIRangedBackupDist*sinf(backang);
    destVec.z=0;
    mx_addeq_vec(&destVec, GetState()->GetLocation());
    MakeHintedLocationFromVector(&destLoc, &destVec, GetState()->GetPortalLocation());

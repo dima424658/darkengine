@@ -45,7 +45,7 @@ class cIStore;
 //
 inline int SafeStrlen(const char *psz)
     {
-    return psz ? strlen(psz) : 0;
+    return psz ? (int)strlen(psz) : 0;
     }
 
 ////////////////////////////////////////////////////////////
@@ -513,7 +513,7 @@ inline void cAnsiStr::ReleaseBuffer(int nNewLength)
 
 inline void cAnsiStr::ReleaseBuffer()
     {
-    m_nDataLength = strlen(m_pchData);
+    m_nDataLength = (int)strlen(m_pchData);
     // Caller must not call ReleaseBuffer(n) with n > requested length.
     AssertMsg(m_nDataLength <= m_nAllocLength, "Invalid length");
     // If the caller passes nNewLength > the length requested by GetBuffer()

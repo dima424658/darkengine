@@ -1,4 +1,5 @@
 #include <dynarsrv.h>
+#include <stdlib.h>
 #include <lgassert.h>
 
 BOOL cDABaseSrvFns::DoResize(void **ppItems, unsigned nItemSize, unsigned nNewSlots)

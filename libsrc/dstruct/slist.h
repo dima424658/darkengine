@@ -28,7 +28,7 @@ extern "C"  {
 //	--------------------------------------------------------------
 
 //	Slist node
-#if !defined(__SC__) && !defined(__cplusplus)
+#if defined(_MSC_VER) && !defined(__cplusplus)
 
 typedef struct _slist {
 	struct _slist *psnext;	// ptr to next node or NULL if last one
@@ -38,7 +38,7 @@ typedef struct _slist {
 #else
 
 typedef struct __slist {
-	struct _slist *psnext;	// ptr to next node or NULL if last one
+	struct __slist *psnext;	// ptr to next node or NULL if last one
 									// real data follows, here
 } slist;
 
@@ -50,7 +50,7 @@ typedef struct __slist {
 #endif
 
 //	Slist header
-#if !defined(__SC__) && !defined(__cplusplus)
+#if defined(_MSC_VER) && !defined(__cplusplus)
 
 typedef struct _slist_head {
 	struct _slist;				// ptr to 1st item in list

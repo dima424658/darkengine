@@ -511,6 +511,20 @@ static bool PlayAndRememberSound(const char *SoundName,
       return TRUE;
    } else {
       sndSpew(("Script on %s failed to play sound %s\n", ObjWarnName(CallObjID), SoundName));
+
+      // Scripts use SoundDone as part of their control flow.  If the sound
+      // system is unavailable, retain those timing semantics instead of
+      // leaving the script waiting forever.  A loop has no natural end, so
+      // it remains pending just as it would with working audio.
+      if (!SFXActive() && Special != kSoundLoop)
+      {
+         sSoundDoneMsg *pMsg = new sSoundDoneMsg(CallObjID, TargObjID,
+                                                 *pCoord, SoundLabel.text);
+         pScriptMan->PostMessage(pMsg);
+         SafeRelease(pMsg);
+         return TRUE;
+      }
+
       return FALSE;
    }
 }
@@ -560,6 +574,20 @@ static bool PlayAndRememberSchema(ObjID SchemaID,
    } else {
       sndSpew(("Script on %s failed to play schema %s\n", 
                ObjWarnName(CallObjID), SchemaLabel.text)); 
+
+      // SchemaDone is also a script synchronization primitive.  In a
+      // soundless build (or after audio initialization fails), post the
+      // completion asynchronously so conversations and mission machinery
+      // can continue rather than retrying indefinitely.
+      if (!SFXActive())
+      {
+         sSchemaDoneMsg *pMsg = new sSchemaDoneMsg(CallObjID, TargObjID,
+                                                   *pCoord, SchemaLabel.text);
+         pScriptMan->PostMessage(pMsg);
+         SafeRelease(pMsg);
+         return TRUE;
+      }
+
       return FALSE;
    }
 }
@@ -611,7 +639,9 @@ static bool PlayAndRememberEnvSchema(ObjID CallObjID,
       {
          cStr tmpStr;
          pTagSet->ToString(&tmpStr);
-         sndSpew(("Script on %s failed to play env schema (tags %s)\n", ObjWarnName(CallObjID), tmpStr));
+         sndSpew(("Script on %s failed to play env schema (tags %s)\n",
+                  ObjWarnName(CallObjID),
+                  static_cast<const char *>(tmpStr)));
       }
       else
          sndSpew(("Script on %s failed to play env schema\n", ObjWarnName(CallObjID)));         

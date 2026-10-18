@@ -34,5 +34,6 @@ EXTERN sLoopInstantiator* gPrimordialMode;
 EXTERN tResult LGAPI CoreEngineCreateObjects(int argc, const char* argv[]);
 EXTERN tResult LGAPI CoreEngineAppExit(void);
 EXTERN tResult LGAPI CoreEngineAppInit(void);
+EXTERN void LGAPI CoreEngineSaveVideoSettings(void);
 
 #endif // __INIT_H

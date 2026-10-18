@@ -20,6 +20,7 @@
 
 #include <propdef.h>
 #include <tagfile.h>
+#include <matrixs.h>
 
 
 ///////////////////////////////////////////////
@@ -56,5 +57,31 @@ EXTERN void WeatherSetAllowed(BOOL allow);
 EXTERN void WeatherSave(ITagFile *pFile);
 EXTERN void WeatherLoad(ITagFile *pFile);
 EXTERN void WeatherFrame(ulong nMillisec);
+
+// Script-facing snapshot of the mission weather file variable.  Keep this
+// separate from the persisted structure so the script ABI can evolve without
+// changing the on-disk WEATHERVAR layout.
+#define WEATHER_SCRIPT_TEXTURE_MAX 32
+typedef struct sWeatherScriptParams
+{
+   int precipType;
+   float precipFrequency;
+   float precipSpeed;
+   float visibleDistance;
+   float renderRadius;
+   float alpha;
+   float brightness;
+   float snowJitter;
+   float rainLength;
+   float splashFrequency;
+   float splashRadius;
+   float splashHeight;
+   float splashDuration;
+   char texture[WEATHER_SCRIPT_TEXTURE_MAX];
+   mxs_vector wind;
+} sWeatherScriptParams;
+
+EXTERN void WeatherGetScriptParams(sWeatherScriptParams *params);
+EXTERN void WeatherSetScriptParams(const sWeatherScriptParams *params);
 
 #endif // ~_WEATHER_H_

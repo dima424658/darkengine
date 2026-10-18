@@ -1,0 +1,87 @@
+plugins {
+    id "com.android.application"
+}
+
+dependencies {
+    // Retail Thief movies are AVI files encoded with legacy codecs (usually
+    // Indeo 5), which Android's platform MediaPlayer does not decode. LibVLC
+    // supplies the demuxer and software decoder while the engine remains in
+    // its normal synchronous movie mode.
+    implementation "org.videolan.android:libvlc-all:3.6.5"
+}
+
+def repositoryRoot = file("../..").canonicalFile
+def sdlRoot = new File(repositoryRoot, ".codex-build/android-deps/SDL2-2.32.10")
+def openalRoot = new File(repositoryRoot, ".codex-build/android-deps/openal-soft-1.25.2")
+def pngRoot = new File(repositoryRoot, ".codex-build/android-deps/libpng-1.6.59")
+def oggRoot = new File(repositoryRoot, ".codex-build/android-deps/ogg-1.3.5")
+def vorbisRoot = new File(repositoryRoot, ".codex-build/android-deps/vorbis-1.3.7")
+def squirrelRoot = new File(repositoryRoot, "../../darkengine-deps/squirrel").canonicalFile
+def nativeArguments = [
+    "-DDARK_BUILD_ENGINE=ON",
+    "-DDARK_BUILD_THIEF2=ON",
+    "-DDARK_OPENGL_ES=ON",
+    "-DDARK_SDL2_SOURCE=${sdlRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_OPENAL_SOFT_SOURCE=${openalRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_PNG_SOURCE=${pngRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_OGG_SOURCE=${oggRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_VORBIS_SOURCE=${vorbisRoot.absolutePath.replace('\\', '/')}",
+    "-DDARK_SQUIRREL_SOURCE=${squirrelRoot.absolutePath.replace('\\', '/')}",
+    "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
+]
+
+android {
+    namespace = "io.github.inkmakerdroid.darkengine"
+    compileSdk = 36
+    ndkVersion = "30.0.16248370"
+
+    defaultConfig {
+        applicationId = "io.github.inkmakerdroid.darkengine"
+        minSdk = 26
+        targetSdk = 36
+        versionCode = 1
+        versionName = "0.1.0"
+
+        externalNativeBuild {
+            cmake {
+                arguments.addAll(nativeArguments)
+                abiFilters.add("arm64-v8a")
+                targets.add("thief2")
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDir(new File(sdlRoot,
+                "android-project/app/src/main/java"))
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = new File(repositoryRoot, "CMakeLists.txt")
+            version = "3.31.6"
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable = true
+        }
+        release {
+            minifyEnabled = false
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
+    lint {
+        abortOnError = true
+        lintConfig = file("lint.xml")
+    }
+}

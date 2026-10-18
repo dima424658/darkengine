@@ -74,7 +74,7 @@ void CollisionSoundObjects(ObjID obj1ID, ObjID obj2ID, int collisionResult, floa
          schema_params.volume = 0;
       else
       {
-         schema_params.volume = -(3000 - mag);
+         schema_params.volume = (int)-(3000 - mag);
 
          if (schema_params.volume < -2500)
             schema_params.volume = -2500;
@@ -124,7 +124,7 @@ static int GetTxtIdNearAndUnder(const mxs_vector *pos, const Location *old_loc, 
          Warning(("GetTxtIdNearAndUnder: out of level?\n"));
 
       *snd_loc = ray_hit.vec;
-      snd_loc->z += 0.2;
+      snd_loc->z += 0.2f;
    }
 
    return txt_id;

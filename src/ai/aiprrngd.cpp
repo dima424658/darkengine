@@ -415,7 +415,7 @@ static sStructDesc ai_ranged_combat_sdesc = StructDescBuild(sAIRangedCombatProp,
 
 ////////////////////////////////////////
 
-sAIRangedCombatProp g_defaultRangedCombatProp = {10, 40, 0., 2, 0.8, FALSE, FALSE,};
+sAIRangedCombatProp g_defaultRangedCombatProp = {10, 40, 0.f, 2, 0.8f, FALSE, FALSE,};
 
 class cAIRangedCombatProp: public sAIRangedCombatProp
 {

@@ -137,7 +137,7 @@ STDMETHODIMP cLinkEditTrait::Unparse(ObjID obj, char* buf, int buflen)
    {
       int len;
       // append prefix
-      len = strlen(prefix);
+            len = (int)strlen(prefix);
       if (len + 1 > buflen)
          goto too_long;
          
@@ -152,7 +152,7 @@ STDMETHODIMP cLinkEditTrait::Unparse(ObjID obj, char* buf, int buflen)
       sLink link;
       pQuery->Link(&link);
       const char* name = pTools->ObjName(link.dest); 
-      len = strlen(name);
+            len = (int)strlen(name);
       if (len + 1 > buflen)
          goto too_long;
       strcpy(buf,name);

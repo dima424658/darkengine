@@ -359,7 +359,7 @@ static char *	incgetState INC_ARGS((int));
 #endif
 
 
-incparse()
+int incparse(void)
 {
 	register short		inci, *incp;	/* for table lookup */
 	register short		*incps;		/* top of state stack */
@@ -568,6 +568,7 @@ case INCr13: {	/* define_complex :  DEFINE IDENT not_int opt_other */
 	if (incdebug)
 		INC_TRACE(incShowGoto)
 #endif
+	if (0) goto incerrlabel;
 	goto incStack;
 
 incerrlabel:	;		/* come here from INCERROR	*/

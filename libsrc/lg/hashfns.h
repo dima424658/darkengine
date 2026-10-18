@@ -10,6 +10,8 @@
 #ifndef __HASHFNS_H
 #define __HASHFNS_H
 
+#include <stdint.h>
+
 //
 // Hash a string
 //
@@ -35,12 +37,12 @@ EXTERN unsigned LGAPI HashPtr(const void *);
 //
 // Hash a long
 //
-#define HashLong(i) HashPtr((void *)(i))
+#define HashLong(i) HashPtr((const void *)(uintptr_t)(i))
 
 //
 // Other integer variants
 //
-#define HashIntegerValue(i) HashPtr((void *)(i))
+#define HashIntegerValue(i) HashPtr((const void *)(uintptr_t)(i))
 
 //
 // Hash an thing of the given size

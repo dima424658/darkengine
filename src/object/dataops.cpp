@@ -24,6 +24,17 @@
 
 STDMETHODIMP_(long) cDataOpsTagFile::Read(void* buf, int len)
 {
+   if (len < 0)
+      return -1;
+   if (Bounded)
+   {
+      const ulong cursor = File->Tell();
+      if (cursor < BoundStart || cursor > BoundEnd)
+         return -1;
+      const ulong remaining = BoundEnd - cursor;
+      if ((ulong)len > remaining)
+         len = (int)remaining;
+   }
    return File->Read((char*)buf,len); 
 }   
 
@@ -35,6 +46,22 @@ STDMETHODIMP_(long) cDataOpsTagFile::Write(const void* buf, int len)
 STDMETHODIMP cDataOpsTagFile::Seek(eDataOpSeek seek, ulong where)
 {
    static TagFileSeekMode seek_map[] = { kTagSeekFromStart, kTagSeekFromHere, kTagSeekFromEnd } ; 
+
+   if (seek < kDataOpSeekFromStart || seek > kDataOpSeekFromEnd)
+      return E_INVALIDARG;
+   if (Bounded)
+   {
+      uint64_t target = 0;
+      if (seek == kDataOpSeekFromStart)
+         target = where;
+      else if (seek == kDataOpSeekFromHere)
+         target = (uint64_t)File->Tell() + where;
+      else
+         target = (uint64_t)BoundEnd + where;
+      if (target < BoundStart || target > BoundEnd)
+         return E_FAIL;
+      return File->Seek((ulong)target,kTagSeekFromStart);
+   }
 
    return File->Seek(where,seek_map[seek]); 
 }
@@ -69,9 +96,9 @@ cDataOpsMemFile::~cDataOpsMemFile(void)
 
 STDMETHODIMP_(long)cDataOpsMemFile::Read(void* buf, int len) 
 { 
-   long length = min(len, mUsedSize - mCursor);
+   long length = (long)((len > 0) ? min((ulong)len, mUsedSize - mCursor) : 0);
    memcpy(buf, mBuffer + mCursor, length);
-   mCursor += len;
+   mCursor += length;
    return length;
 }
 

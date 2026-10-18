@@ -13,13 +13,13 @@
 
 #include <dbmem.h> // must be last included header
 
-#define SWORD_PHYS_RADIUS 0.15
+#define SWORD_PHYS_RADIUS 0.15f
 
 static sCrPhysModOffset g_SwordPhysOffsets[4] =  \
 {
-   { 3, 4, 0.50, SWORD_PHYS_RADIUS},
-   { 3, 4, 0.67,  SWORD_PHYS_RADIUS},
-   { 3, 4, 0.84, SWORD_PHYS_RADIUS},
+   { 3, 4, 0.50f, SWORD_PHYS_RADIUS},
+   { 3, 4, 0.67f,  SWORD_PHYS_RADIUS},
+   { 3, 4, 0.84f, SWORD_PHYS_RADIUS},
    { 4, 4, 0,    SWORD_PHYS_RADIUS},
 };
 

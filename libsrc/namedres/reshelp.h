@@ -82,7 +82,7 @@ DECLARE_INTERFACE_(IResManHelper, IUnknown)
    //
    STDMETHOD_(void, UnregisterResource) (THIS_ 
                                          IRes *pRes,
-                                         DWORD ResManData) PURE;
+                                         DWORD_PTR ResManData) PURE;
 
    //
    // Lock (that is, read in and get the data for) the given resource 

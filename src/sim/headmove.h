@@ -11,6 +11,8 @@
 
 #include <objtype.h>
 
+struct Camera;
+
 #define RELAX_MODE_INSTANT   1
 #define RELAX_MODE_ONMOVE    2
 #define RELAX_MODE_NEVER     3
@@ -25,6 +27,10 @@ EXTERN void headmoveInit(void);
 //sets the relative movement of the mouse for use by the headmove code
 EXTERN void headmoveSetRelPosX (float x);
 EXTERN void headmoveSetRelPosY (float y);
+
+// Gamepad axes are continuous angular rates measured in turns per second.
+EXTERN void headmoveSetGamepadTurn(float turns_per_second);
+EXTERN void headmoveSetGamepadLook(float turns_per_second);
 
 //sets the current turn state as controlled by the keyboard
 EXTERN void headmoveSetKeyboardInput(float turn_rate);

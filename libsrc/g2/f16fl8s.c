@@ -14,7 +14,7 @@
 #include <ilfunc.h>
 #include <scale.h>
 
-extern void flat16_flat8_trans_np2_nowrap_il();
+extern void flat16_flat8_trans_np2_nowrap_il(int, int, fix, fix);
 void flat16_flat8_norm_trans_uscale(grs_bitmap *bm, int x, int y, int w, int h)
 {
    g2s_tmap_info *ti;
@@ -37,7 +37,7 @@ int flat16_flat8_norm_trans_scale(grs_bitmap *bm, int x, int y, int w, int h)
    return scale_shell(x, y, w, h);
 }
 
-extern void flat16_flat8_opaque_np2_nowrap_il();
+extern void flat16_flat8_opaque_np2_nowrap_il(int, int, fix, fix);
 void flat16_flat8_norm_opaque_uscale(grs_bitmap *bm, int x, int y, int w, int h)
 {
    g2s_tmap_info *ti;
@@ -61,7 +61,7 @@ int flat16_flat8_norm_opaque_scale(grs_bitmap *bm, int x, int y, int w, int h)
 }
 
 extern uchar *g2d_tnni_clut[];
-extern void flat16_flat8_clut_trans_np2_nowrap_il();
+extern void flat16_flat8_clut_trans_np2_nowrap_il(int, int, fix, fix);
 void flat16_flat8_clut_trans_uscale(grs_bitmap *bm, int x, int y, int w, int h)
 {
    g2s_tmap_info *ti;
@@ -87,7 +87,7 @@ int flat16_flat8_clut_trans_scale(grs_bitmap *bm, int x, int y, int w, int h)
 }
 
 extern uchar *g2d_onni_clut[];
-extern void flat16_flat8_clut_opaque_np2_nowrap_il();
+extern void flat16_flat8_clut_opaque_np2_nowrap_il(int, int, fix, fix);
 void flat16_flat8_clut_opaque_uscale(grs_bitmap *bm, int x, int y, int w, int h)
 {
    g2s_tmap_info *ti;

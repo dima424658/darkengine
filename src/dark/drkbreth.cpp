@@ -31,6 +31,9 @@
 #include <objedit.h>
 #include <physapi.h>
 #include <phmoapi.h>
+#include <simman.h>
+#include <simdef.h>
+#include <dspchdef.h>
 
 // Include these last 
 #include <dbmem.h>
@@ -181,6 +184,23 @@ int GetObjAirSupply(ObjID obj)
 
 IDamageModel* gpDamageModel = NULL; 
 IObjectSystem* gpObjSys = NULL; 
+static BOOL gInitPlayerAir = FALSE;
+
+static void breath_sim_msg(const sDispatchMsg* msg,
+                           const sDispatchListenerDesc*)
+{
+   if (msg->kind == kSimInit)
+      gInitPlayerAir = TRUE;
+   else if (msg->kind == kSimTerm)
+      gInitPlayerAir = FALSE;
+}
+
+static sDispatchListenerDesc breath_sim_listen =
+{
+   &IID_IBreathProperty,
+   kSimInit | kSimTerm,
+   breath_sim_msg,
+};
 
 void BreathSimInit()
 {  
@@ -188,6 +208,9 @@ void BreathSimInit()
    init_air_prop(); 
    gpDamageModel = AppGetObj(IDamageModel); 
    gpObjSys = AppGetObj(IObjectSystem); 
+
+   AutoAppIPtr(SimManager);
+   pSimManager->Listen(&breath_sim_listen);
 
 }
 
@@ -205,6 +228,25 @@ void BreathSimTerm()
 
 void BreathSimUpdateFrame(int ms)
 {
+   if (gInitPlayerAir)
+   {
+      ObjID player = PlayerObject();
+      sBreathConfig* cfg = NULL;
+
+      if (player != OBJ_NULL && gpBreathProp->Get(player, &cfg))
+      {
+         int air;
+         // Gold missions instantiate AirSupply at the integer property's
+         // zero/default value.  Starting the recovery simulation there makes
+         // the HUD show an oxygen bar filling while the player is in air.
+         // Preserve any meaningful authored value, but treat a missing or
+         // default supply as a fresh mission with full lungs.
+         if (!gpAirProp->Get(player, &air) || air <= 1)
+            gpAirProp->Set(player, cfg->max_air);
+         gInitPlayerAir = FALSE;
+      }
+   }
+
    ObjID waterstim = gpObjSys->GetObjectNamed("WaterStim"); 
    sPropertyObjIter iter; 
    ObjID obj; 

@@ -31,6 +31,12 @@ EXTERN void InvUIRender(ulong msec);
 // abort all frobs that are going on
 EXTERN void InvUIAbortAllFrobs(void);
 
+// Shared native gamepad radial.  Stick 0 selects weapons and stick 1 selects
+// inventory items while the radial is held.
+EXTERN BOOL InvUIRadialActive(void);
+EXTERN void InvUIRadialSetActive(BOOL active);
+EXTERN void InvUIRadialSetStick(int stick, float x, float y);
+
 // Is it ok to give this particular object world focus
 EXTERN BOOL ValidWorldFocusTarget(ObjID obj); 
 

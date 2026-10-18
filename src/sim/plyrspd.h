@@ -17,15 +17,15 @@ EXTERN float g_PlayerSlewSpeedScale;
 EXTERN float g_PlayerRotateSpeedScale;
 
 // misc magic numbers
-#define RAW_SLEW_SPEED   11.0
-#define RAW_ROTATE_SPEED 3.14    // 360 degrees/sec
-#define RAW_JUMP_SPEED   14.0
+#define RAW_SLEW_SPEED   11.0f
+#define RAW_ROTATE_SPEED 3.14f    // 360 degrees/sec
+#define RAW_JUMP_SPEED   14.0f
 
 #define MOVE_SPEED      (RAW_SLEW_SPEED)
 #define SLOW_MOVE_SPEED (MOVE_SPEED / 2)
 #define FAST_MOVE_SPEED (MOVE_SPEED * 2)
 
-#define SIDESTEP_SPEED      (MOVE_SPEED * 0.7)
+#define SIDESTEP_SPEED      (MOVE_SPEED * 0.7f)
 #define SLOW_SIDESTEP_SPEED (SIDESTEP_SPEED / 2)
 
 #define BACK_SPEED       -(MOVE_SPEED / 2)

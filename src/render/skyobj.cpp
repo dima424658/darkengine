@@ -50,12 +50,12 @@ static r3s_phandle *vlist = 0; // Point transforming/rendering
 
 static float *pSkyLats = 0;
 
-#define PI 3.14159265359
-#define fDeg90 (0.50000*PI)
+#define PI 3.14159265359f
+#define fDeg90 (0.50000f*PI)
 #define fDeg180 (PI)
-#define fDeg360 (2*PI)
+#define fDeg360 (2.0f*PI)
 
-#define DEG (PI/180)
+#define DEG (PI/180.0f)
 
 
 #ifndef SHIP
@@ -192,11 +192,11 @@ static inline void SetDefaults()
    g_SkyObj.fHorizonDipAng = 100; // 10 degrees under horizon.
 
    // One at pole, one at 45 degree lat, one at 70 degree lat, one at 90.
-   mx_mk_vec(&g_SkyObj.ControlPointColors[0], 0.8, 0.5, 0.1); // Pole
-   mx_mk_vec(&g_SkyObj.ControlPointColors[1], 0.9, 0.6, 0.2); // 45
-   mx_mk_vec(&g_SkyObj.ControlPointColors[2], 0.8, 0.6, 0.4); // 70
-   mx_mk_vec(&g_SkyObj.ControlPointColors[3], 0.6, 0.3, 0.1); // 90
-   mx_mk_vec(&g_SkyObj.ControlPointColors[4], 0.6, 0.2, 0.05); // 90
+   mx_mk_vec(&g_SkyObj.ControlPointColors[0], 0.8f, 0.5f, 0.1f); // Pole
+   mx_mk_vec(&g_SkyObj.ControlPointColors[1], 0.9f, 0.6f, 0.2f); // 45
+   mx_mk_vec(&g_SkyObj.ControlPointColors[2], 0.8f, 0.6f, 0.4f); // 70
+   mx_mk_vec(&g_SkyObj.ControlPointColors[3], 0.6f, 0.3f, 0.1f); // 90
+   mx_mk_vec(&g_SkyObj.ControlPointColors[4], 0.6f, 0.2f, 0.05f); // 90
 
    memset(&g_SkyObj.GlowColor, 0, sizeof(mxs_vector));
    g_SkyObj.fGlowLat = 0;
@@ -239,7 +239,7 @@ static inline float ComputeSkyPointVec(mxs_vector *pVec, float fLatAng, float fL
    fCosTheta = Temp.z;
 
    fVal = g_SkyObj.fCenterOffset*fSinTheta;
-   fMag = sqrt(g_SkyObj.fRadius*g_SkyObj.fRadius - fVal*fVal) - g_SkyObj.fCenterOffset*fCosTheta;
+   fMag = sqrtf(g_SkyObj.fRadius*g_SkyObj.fRadius - fVal*fVal) - g_SkyObj.fCenterOffset*fCosTheta;
 
    mx_scale_vec(pVec, &Temp, fMag);
    return fMag;
@@ -280,7 +280,7 @@ static inline void ComputeSkyPointColor(mxs_vector *pSkyPointColor, float fLatAn
    mx_rot_z_vec(&GlowDirection, &Temp, mx_rad2ang(g_SkyObj.fGlowLong*DEG));
 
    float fGlowDegree = mx_dot_vec(&GlowDirection, &DirVec);
-   float fGlowCos = cos(g_SkyObj.fGlowAng*DEG/2);
+   float fGlowCos = cosf(g_SkyObj.fGlowAng*DEG/2);
 
    if (fGlowDegree < fGlowCos) // no glow here
       return;
@@ -496,11 +496,11 @@ float cSky::GetSkyIntensity(mxs_vector *pDir)
    float fLongAng;
 
    if (pDir->z > 0)
-      fLatAng = acos(pDir->z);
+      fLatAng = acosf(pDir->z);
    else
-      fLatAng = fDeg180-acos(-pDir->z);
+      fLatAng = fDeg180-acosf(-pDir->z);
 
-   fLongAng = atan2(pDir->y, pDir->x);
+   fLongAng = atan2f(pDir->y, pDir->x);
 
    ComputeSkyPointColor(&Color, fLatAng, fLongAng);
    return __max(__max(Color.x, Color.y), Color.z);
@@ -515,9 +515,9 @@ float cSky::GetSkyDist(mxs_vector *pDir)
    float fLatAng;
 
    if (pDir->z > 0)
-      fLatAng = acos(pDir->z);
+      fLatAng = acosf(pDir->z);
    else
-      fLatAng = fDeg180-acos(-pDir->z);
+      fLatAng = fDeg180-acosf(-pDir->z);
 
    return ComputeSkyPointVec(&Vec, fLatAng, 0);
 }
@@ -721,7 +721,7 @@ static void SetDebugLat(int nIx)
 
 static void DumpStats()
 {
-   int nTotalMemory = 0;
+   size_t nTotalMemory = 0;
    nTotalMemory = MSize(pSkyPoints)+MSize(pSkyPointVecs)+MSize(pSkyPointColors)+MSize(vlist)+MSize(pSkyLats);
 
    mprintf("There %d sky points using %g kbytes\n", nTotalPoints, nTotalMemory/1024.000);

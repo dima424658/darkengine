@@ -23,7 +23,7 @@ void flat8_flat8_opaque_ubitmap (grs_bitmap *bm, int x, int y)
 
    if (bm->flags&BMF_DEVICE_VIDMEM) {
       if ((grd_bm.flags&BMF_DEVICE_VIDMEM) &&
-          (((long )src)&3!=((long )dst)&3)) {
+          (((uintptr_t)src) & 3) != (((uintptr_t)dst) & 3)) {
          memcpy_func = memcpy_by_byte;
       } else {
          memcpy_func = memcpy_align_src;

@@ -46,7 +46,7 @@ static BOOL phoenix_rising=FALSE;
 static void textpal_draw_cb(DrawElement* elem, DrawElemState state)
 {
    extern BOOL drawTexturetoCanvas(int mt, editBrush *br, BOOL active);
-   int n=(int)elem->draw_data2;
+   int n=(int)(intptr_t)elem->draw_data2;
 
    if ((n >= 0)&&(n<TextPal.numbutts-TP_EXTRA_BUTTONS))
       drawTexturetoCanvas(n,NULL,state==dsDEPRESSED);
@@ -56,7 +56,6 @@ static void textpal_draw_cb(DrawElement* elem, DrawElemState state)
 
 ////////////////////////////////////////
 
-#pragma off(unreferenced)
 static void destroy_me(void* arg)
 {
    DestroyTexturePalette();
@@ -77,7 +76,6 @@ static bool textpal_button_cb(ushort action, int button, void* data, LGadBox* vb
       uiDefer(destroy_me,NULL);
    return TRUE;
 }
-#pragma on(unreferenced)
 
 ////////////////////////////////////////
 
@@ -112,7 +110,7 @@ void CreateTexturePalette(TexturePalCall update)
       {
          elem->draw_type  = DRAWTYPE_CALLBACK;
          elem->draw_data  = textpal_draw_cb;
-         elem->draw_data2 = (void*)i;
+   elem->draw_data2 = (void*)(intptr_t)i;
          pal->xtra[i]=i;
       }
       else

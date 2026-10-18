@@ -49,6 +49,7 @@ EXTERN void EditModeSetGameSpecClient(const GUID* clientID);
 // or use defaults if there was no last time.
 //
 EXTERN struct sLoopInstantiator* DescribeEditMode(EditMinorMode minorMode, EditModeDesc* desc);
+EXTERN void enter_edit_mode(char* args);
 
 // 
 // Context data for starting the editor mode

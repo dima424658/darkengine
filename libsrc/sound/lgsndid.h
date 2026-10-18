@@ -15,13 +15,6 @@ DEFINE_GUID(IID_ISndSample,
 
 DEFINE_LG_GUID(IID_ISndSample,      0x10);
 DEFINE_LG_GUID(IID_ISndMixer,       0x11);
-DEFINE_LG_GUID(IID_IMidiSequencer,  0x12);
-DEFINE_LG_GUID(IID_IMidiSequence,   0x13);
-// spare GUIDs for the sound library:
-//DEFINE_LG_GUID(UUID_IDENTIFIER, 0x14);
-//DEFINE_LG_GUID(UUID_IDENTIFIER, 0x15);
-//DEFINE_LG_GUID(UUID_IDENTIFIER, 0x16);
-// guid 0x17 used by CrowdSnd
 
 #endif
 

@@ -1,4 +1,5 @@
 #include <growblk.h>
+#include <string.h>
 
 #ifndef NO_DB_MEM
 // Must be last header

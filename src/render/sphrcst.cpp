@@ -54,7 +54,7 @@
 
 
 // weirdness
-#define SPHR_EPSILON 0.001
+#define SPHR_EPSILON 0.001f
 #define PARALLEL_EPSILON 0.0001   // um, why not
 
 #define FLOAT_WITHIN_EPSILON(f1, f2) \
@@ -65,7 +65,7 @@
    { (dv)->x = (v)->x; (dv)->y = (v)->y; (dv)->z = (v)->z; }
 
 #define TO_MXS_VECTOR(v, dv) \
-   { (v)->x = (dv)->x; (v)->y = (dv)->y; (v)->z = (dv)->z; }
+   { (v)->x = (mxs_real)(dv)->x; (v)->y = (mxs_real)(dv)->y; (v)->z = (mxs_real)(dv)->z; }
 
 
 // These are set by SphrSpherecast.  Which fields are valid depends
@@ -855,10 +855,10 @@ static bool TestEdgesInPlane(int cell_index, int current_plane_index,
                                       &mxs_in_world, &mxs_on_ray,
                                       cell_index, polygon_index,
                                       vertex_offset, start,
-                                      contact_time))
+                                      (mxs_real)contact_time))
                      return TRUE;
                } else
-                  AddCellToList(polygon->destination, contact_time,
+                  AddCellToList(polygon->destination, (float)contact_time,
                                 cell_output, cell_count);
             }
          next_edge:
@@ -979,7 +979,7 @@ static void TestVerticesInPlane(int cell_index, int current_plane_index,
                   // from the base plane to the sphere (at the radius
                   // of the point).  Eh?
                   mxs_real sphere_overlap
-                     = sqrt(radius_squared - ray_dist_squared);
+                     = sqrtf(radius_squared - ray_dist_squared);
                   mxs_real contact_distance = base_dist - sphere_overlap;
                   mxs_real contact_time = contact_distance / cast_length;
                   mx_scale_add_vec(&contact_on_ray, 
@@ -1180,7 +1180,7 @@ static bool FindMatchingEdgeContact(int contact_index)
 static bool PointNearPlane(mxs_vector *point, mxs_vector *norm,
                            mxs_real constant)
 {
-   mxs_real dist = fabs(mx_dot_vec(point, norm) + constant);
+   mxs_real dist = fabsf(mx_dot_vec(point, norm) + constant);
 
    if (dist < -SPHR_EPSILON || dist > SPHR_EPSILON)
       return FALSE;
@@ -1407,10 +1407,10 @@ static bool FindMatchingVertexContacts(int contact_index)
 static int FindPolygonWithVertexContact(sSphrContactData *contact_data,
                                         mxs_vector *point)
 {
-   uint polygon_index;
-   uint vertex_index;
-   uint polygon_vertex_index;
-   uint num_vertices_in_polygon;
+   int polygon_index;
+   int vertex_index;
+   int polygon_vertex_index;
+   int num_vertices_in_polygon;
    int cell_index = contact_data->cell_index;
    PortalCell *cell = WR_CELL(cell_index);
    PortalPolygonCore *polygon = cell->poly_list;
@@ -1737,7 +1737,7 @@ int SphrSpherecast(Location *start_loc, Location *end_loc,
             TO_MXDS_VECTOR(&mxds_start_point, &start_point);
 
             epsilon = SPHR_EPSILON / cast_length;
-            earliest_time = NO_CONTACT - epsilon;
+            earliest_time = (mxs_real)(NO_CONTACT - epsilon);
 
             radius_squared = radius * radius;
             gSphrContactDataCount = 0;

@@ -39,14 +39,14 @@ grs_screen *gr_alloc_screen(int w, int h)
    grs_screen *s;
    grs_canvas *c;
    uchar *p;
-#ifndef WIN32
+#ifndef _WIN32
    uchar *b;
 #endif
 
    w = gr_set_width(w);
    if ((w < grd_cap->w) || (h < grd_cap->h))
       return NULL;
-#ifndef WIN32
+#ifndef _WIN32
    if (h > grd_screen_max_height)
       return NULL;
 #endif
@@ -66,7 +66,7 @@ grs_screen *gr_alloc_screen(int w, int h)
    s->y = 0;
    s->c = c;
 
-#ifndef WIN32
+#ifndef _WIN32
    if (vAlloc(&b, w, h))
       vUnmonitor(&b);   //presumably, b won't move around until after we're done with it
    if (b == (uchar *)-1)
@@ -116,7 +116,7 @@ void gr_free_screen(grs_screen *s)
    gr_close_canvas(c);
    gr_close_canvas(c+1);
 
-#ifndef WIN32
+#ifndef _WIN32
    vFree (&s->bm.bits);
 #endif
 

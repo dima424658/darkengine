@@ -25,18 +25,13 @@
 #include <objtype.h>
 #include <wrtype.h>
 #include <phlistyp.h>
-
-#ifdef __cplusplus
-enum eMediaState;
-#else
-typedef int eMediaState;
-#endif
+#include <objmedia.h>
 
 #define PHYSICS_HIGH_MODEL_PROP_NAME "PhysicsHighDetail"
 #define PHYSICS_LOW_MODEL_PROP_NAME  "PhysicsLowDetail"
 
-#define PLAYER_RADIUS (1.2)
-#define PLAYER_HEIGHT (6.0)
+#define PLAYER_RADIUS (1.2f)
+#define PLAYER_HEIGHT (6.0f)
 
 #define PLAYER_HEAD (0)
 #define PLAYER_FOOT (1)
@@ -47,11 +42,11 @@ typedef int eMediaState;
 #define PLAYER_HEAD_POS  ((PLAYER_HEIGHT / 2) - PLAYER_RADIUS)
 #define PLAYER_FOOT_POS  (-(PLAYER_HEIGHT / 2))
 #define PLAYER_BODY_POS  ((PLAYER_HEIGHT / 2) - (PLAYER_RADIUS * 3))
-#define PLAYER_KNEE_POS  (-(PLAYER_HEIGHT * (13.0 / 30.0)))
-#define PLAYER_SHIN_POS  (-(PLAYER_HEIGHT * (11.0 / 30.0)))
+#define PLAYER_KNEE_POS  (-(PLAYER_HEIGHT * (13.0f / 30.0f)))
+#define PLAYER_SHIN_POS  (-(PLAYER_HEIGHT * (11.0f / 30.0f)))
 
-#define DEFAULT_SPRING_TENSION (0.6)
-#define DEFAULT_SPRING_DAMPING (0.02)
+#define DEFAULT_SPRING_TENSION (0.6f)
+#define DEFAULT_SPRING_DAMPING (0.02f)
 
 #ifdef SHIP
 #define ResetObjectWarnings()
@@ -186,6 +181,11 @@ EXTERN BOOL PhysObjOnGround(ObjID objID);
 EXTERN BOOL PhysObjOnPlatform(ObjID objID);
 
 EXTERN void PhysSetFlag(ObjID objID, int flag, BOOL state);
+
+// Disable only the player's collision handling. Other world physics remains
+// active so this can be used as a reversible noclip/free-flight mode.
+EXTERN void PhysSetPlayerPhysicsEnabled(BOOL enabled);
+EXTERN BOOL PhysPlayerPhysicsEnabled(void);
 
 EXTERN eMediaState PhysGetObjMediaState(ObjID objID);
 EXTERN BOOL PhysObjInWater(ObjID objID);

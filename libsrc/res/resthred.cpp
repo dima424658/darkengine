@@ -5,13 +5,23 @@
 // $Revision: 1.4 $
 //
 
-#ifdef _WIN32
-#include <windows.h>
 #include <lg.h>
-#include <thrdtool.h>
+#include <platform_services.h>
 #include <resthred.h>
 
-cThreadLock g_ResThreadLock;
+class cResourceThreadLock
+{
+public:
+   cResourceThreadLock() { Verify(PlatformMutexInit(&m_Mutex)); }
+   ~cResourceThreadLock() { PlatformMutexTerm(&m_Mutex); }
+   void Lock() { PlatformMutexLock(&m_Mutex); }
+   void Unlock() { PlatformMutexUnlock(&m_Mutex); }
+
+private:
+   sPlatformMutex m_Mutex;
+};
+
+static cResourceThreadLock g_ResThreadLock;
 #ifdef RES_THREAD_TRACE
 static int g_iLock;
 #endif
@@ -34,4 +44,3 @@ void _ResThreadUnlock()
 #endif
    g_ResThreadLock.Unlock();
 }
-#endif

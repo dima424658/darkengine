@@ -249,7 +249,7 @@ refillSplicedStream( ISndSample  *pSample,
             //
             // just get bytes from a sound rez and copy them to ring buffer
             //
-            if ( bytesNeeded < bytesAvail ) {
+            if ( bytesNeeded < (uint32)bytesAvail ) {
                bytesXfer = bytesNeeded;
             } else {
                bytesXfer = bytesAvail;
@@ -275,12 +275,12 @@ refillSplicedStream( ISndSample  *pSample,
                   state = kSpliceDual;
                   bytesAvail = (-endGap);
                   pInfo->seg2Offset = pSeg[1].offset;
-                  LOG3( "splice single->dual seg[%d], %d bytesAvail, %d endGap",
+                  TLOG3( "splice single->dual seg[%d], %d bytesAvail, %d endGap",
                         pSeg - pInfo->pSeg0, bytesAvail, endGap );
                } else {
                   state = kSpliceSilence;
                   bytesAvail = endGap;
-                  LOG3( "splice single->silence seg[%d], %d bytesAvail, %d endGap",
+                  TLOG3( "splice single->silence seg[%d], %d bytesAvail, %d endGap",
                         pSeg - pInfo->pSeg0, bytesAvail, endGap );
                }
             }
@@ -290,7 +290,7 @@ refillSplicedStream( ISndSample  *pSample,
             //
             // get data from 2 sound resources, mix them and write them to ring buffer
             //
-            if ( bytesNeeded < bytesAvail ) {
+            if ( bytesNeeded < (uint32)bytesAvail ) {
                bytesXfer = bytesNeeded;
             } else {
                bytesXfer = bytesAvail;
@@ -323,7 +323,7 @@ refillSplicedStream( ISndSample  *pSample,
                   // decrease bytes available by size of splice just completed
                   bytesAvail = pSeg->numBytes + oldEndGap;
                }
-               LOG3( "splice dual->single seg[%d], %d bytesAvail, %d endGap",
+               TLOG3( "splice dual->single seg[%d], %d bytesAvail, %d endGap",
                      pSeg - pInfo->pSeg0, bytesAvail, endGap );
             }
             break;
@@ -332,7 +332,7 @@ refillSplicedStream( ISndSample  *pSample,
             //
             // add silence to ring buffer
             //
-            if ( bytesNeeded < bytesAvail ) {
+            if ( bytesNeeded < (uint32)bytesAvail ) {
                bytesXfer = bytesNeeded;
             } else {
                bytesXfer = bytesAvail;
@@ -340,7 +340,7 @@ refillSplicedStream( ISndSample  *pSample,
                // tell data read function we are done with segment
                pInfo->getData( pSeg, NULL, 0, 0 );
                pSeg++;
-               LOG3( "splice silence->empty seg[%d], %d bytesAvail, %d endGap",
+               TLOG3( "splice silence->empty seg[%d], %d bytesAvail, %d endGap",
                      pSeg - pInfo->pSeg0, bytesAvail, endGap );
             }
             // fill portion of ring buffer with silence
@@ -492,7 +492,7 @@ CreateSoundSplicer( ISndMixer          *pMixer,
          }
          if ( i == 0 ) {
             bytesPerMilliSecond = (float) (attribs.sampleRate * (attribs.bitsPerSample >> 3))
-               / 1000.0;
+               / 1000.0f;
          }
       }
 
@@ -512,13 +512,13 @@ CreateSoundSplicer( ISndMixer          *pMixer,
          pSeg->loopMe = TRUE;
          pSeg->offset = 0;
       } else {
-         pSeg->endGap = bytesPerMilliSecond * pSeg->offset;
+         pSeg->endGap = (int32)(bytesPerMilliSecond * pSeg->offset);
          pSeg->loopMe = FALSE;
       }
 
       // after this point, offset means offset into sound resource, not
       //   the size of the gap/overlap at end of sample
-      pSeg->offset = (long) pRawData - (long) pBuffer;
+      pSeg->offset = (int32)((uint8 *)pRawData - (uint8 *)pBuffer);
       if ( attribs.bitsPerSample == 16 ) {
          // force gap length to be integral # of 16-bit samples
          pSeg->endGap &= ~1;
@@ -535,7 +535,7 @@ CreateSoundSplicer( ISndMixer          *pMixer,
       // not correspond with the end of segment data if end offset is not 0
       pSeg->endSample = segStartSample - 1;
 
-      LOG3("segment offset %ld, numBytes %ld, endGap %ld", pSeg->offset,
+      TLOG3("segment offset %ld, numBytes %ld, endGap %ld", pSeg->offset,
            pSeg->numBytes, pSeg->endGap );
       pSeg++;
 

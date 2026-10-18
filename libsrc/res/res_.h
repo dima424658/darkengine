@@ -101,17 +101,8 @@ BOOL DoResDrop(Id id);
 //  New validation
 #ifndef SHIP
 
-// Watcom debugger has trouble with these, so they are off by default
-__declspec(dllimport) BOOL __stdcall IsBadReadPtr(const void *lp, unsigned ucb);
-__declspec(dllimport) BOOL __stdcall IsBadWritePtr(void *lp, unsigned ucb);
-
-#ifdef VALIDATE_POINTERS
-#define ResIsBadReadPtr(p, s) IsBadReadPtr(p, s)
-#define ResIsBadWritePtr(p, s) IsBadWritePtr(p, s)
-#else
 #define ResIsBadReadPtr(p, s) FALSE
 #define ResIsBadWritePtr(p, s) FALSE
-#endif
 
 #define ValidateRes(id) \
     do \

@@ -313,7 +313,7 @@ void finishNewBrush(int xtra_axis, mxs_vector *p0, mxs_vector *p1)
       }
       else
       {
-         tmp->sz.el[i]=fabs(p0->el[i]-p1->el[i])/2.0;
+         tmp->sz.el[i]=fabsf(p0->el[i]-p1->el[i])/2.0f;
          tmp->pos.el[i]=(p0->el[i]+p1->el[i])/2;
       }
    gedit_full_create_brush(tmp,us,GEDIT_CREATE_AT_END,new_type);
@@ -435,8 +435,8 @@ void *brushVSsetupPos(floatSlider *s, editBrush *us, int axis, float scale)
    else
    {
       // ok, these need to be constrained to keep the val in them
-      s->lo=us->pos.el[axis]-128*fabs(scale);  // should pick based on current zoom
-      s->hi=us->pos.el[axis]+128*fabs(scale);
+      s->lo=us->pos.el[axis]-128*fabsf(scale);  // should pick based on current zoom
+      s->hi=us->pos.el[axis]+128*fabsf(scale);
       s->scale*=6*scale;
       keep_val_in_range(s);
    }
@@ -456,8 +456,8 @@ void *brushVSsetupSz(floatSlider *s, editBrush *us, int axis, float scale)
    else
    {
       s->lo=0.0;
-      s->hi=128*fabs(scale);
-      s->scale*=6*fabs(scale);
+      s->hi=128*fabsf(scale);
+      s->scale*=6*fabsf(scale);
       keep_val_in_range(s);
    }
    return (void *)s;

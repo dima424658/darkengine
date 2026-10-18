@@ -15,10 +15,10 @@
 class IPlayerLimbHandler
 {
 public:
-   virtual BOOL Equip(ObjID item) = NULL;
-   virtual void UnEquip(ObjID item) = NULL;
-   virtual void StartUse(void) = NULL;
-   virtual void FinishUse(void) = NULL;
+   virtual BOOL Equip(ObjID item) = 0;
+   virtual void UnEquip(ObjID item) = 0;
+   virtual void StartUse(void) = 0;
+   virtual void FinishUse(void) = 0;
 };
 
 EXTERN void PlayerHandlersInit(int nPlayerModes);

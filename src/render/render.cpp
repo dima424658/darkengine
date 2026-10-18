@@ -8,6 +8,7 @@
 #include <wrtype.h>
 #include <portal.h>
 #include <lgd3d.h>
+#include <render_backend.h>
 #include <render.h>
 #include <simstate.h>
 #include <simflags.h>
@@ -16,7 +17,7 @@
 #include <rendprop.h>
 #include <config.h>
 #include <texmem.h>
-#include <scrnman.H>
+#include <scrnman.h>
 #include <math.h>
 #include <mipmap.h>
 #include <palmgr.h>
@@ -70,11 +71,11 @@ void SetZNearFar(double z_near, double z_far)
    zfar = z_far;
    lgd3d_set_znearfar(z_near, z_far);
    portal_set_znearfar(z_near, z_far);
-   starfield_set_z(z_far*0.95);
+   starfield_set_z((float)(z_far*0.95));
 }
 
 r3s_texture texture_lookup(int n);
-void init_color_tables(void);
+static void init_color_tables(void);
 
 static bool new_gamma = FALSE;
 static float gamma_level = 1.0;
@@ -98,6 +99,17 @@ EXTERN void set_hardware_gamma_level(float level)
 {
    new_gamma = TRUE;
    gamma_level = level;
+
+   // The old renderer deferred hardware-ramp changes while simulation was
+   // rendering to avoid crashing early D3D devices.  D3D11 gamma is only a
+   // composite-shader constant, so changing it is safe at any time.  Apply it
+   // immediately so a paused/in-game options menu responds while its slider
+   // is moving instead of waiting for gameplay rendering to resume.
+   if (RenderBackendAvailable())
+   {
+      do_set_gamma();
+      return;
+   }
 
    // if we're rendering, wait until the right moment so we don't
    // crash the @#$%%!@ riva128
@@ -168,7 +180,7 @@ static void toggle_multitexture(void)
 
 static void set_obj_zbias(int n)
 {
-   g_obj_zbias = n * (1.0 / 65536.0);
+   g_obj_zbias = n * (1.0f / 65536.0f);
 }
 
 //zb:
@@ -222,7 +234,7 @@ static Command all_keys[]=
 };
 #endif
 
-void register_sky_mode();
+static void register_sky_mode();
 
 void RendererInit()
 {
@@ -263,6 +275,15 @@ void RendererReset()
 void RendererPalChange()
 {
    init_color_tables();
+#ifdef SOFTWARE_RGB
+   // init_color_tables builds light_pal/light_ipal.  Rebuild the 16-bit
+   // palette tables afterwards so their extended software-RGB rows use the
+   // initialized lighting palette rather than the startup zeroes.
+   if (!g_lgd3d && grd_bpp >= 15) {
+      palmgr_update_pal_slot(0);
+      palmgr_recompute_all();
+   }
+#endif
 }
 ////////////////////////////////////////////////////////////
 // THIS STUFF HERE WAS CUT OUT OF EDITGEOM
@@ -283,7 +304,11 @@ r3s_texture texture_lookup(int n)
 
    // @OPTIMIZE: THIS MUST GO, extra if per texture lookup = ~10000 per second?
    //  or at least bias it towards the expected jump (ie. not backhack)
-   if (((GetSkyMode() == kSkyModeStars) && (n==BACKHACK_IDX)) && !SkyRendererUseEnhanced())
+   // NewDark WREXT worlds use texture zero for the same sky portal that
+   // legacy worlds store in BACKHACK_IDX.  Both must arm the deferred star
+   // pass when the mission selects the non-enhanced star sky.
+   if ((GetSkyMode() == kSkyModeStars) &&
+       (n == BACKHACK_IDX || n == 0) && !SkyRendererUseEnhanced())
    any_stars=TRUE;
 
    return texmemGetTexture(n);
@@ -291,19 +316,19 @@ r3s_texture texture_lookup(int n)
 
 static float _RGBDistSquared(mxs_vector *c, uchar *pal)
 {
-   return (double)(c->x-pal[0])*(c->x-pal[0]) +
-          (double)(c->y-pal[1])*(c->y-pal[1]) +
-          (double)(c->z-pal[2])*(c->z-pal[2]);
+   return (c->x-pal[0])*(c->x-pal[0]) +
+          (c->y-pal[1])*(c->y-pal[1]) +
+          (c->z-pal[2])*(c->z-pal[2]);
 }
 
 static float _RGBDistLinear(mxs_vector *c, uchar *pal)
 {
-   return fabs((double)(c->x-pal[0])) +
-          fabs((double)(c->y-pal[1])) +
-          fabs((double)(c->z-pal[2]));
+   return fabsf(c->x-pal[0]) +
+          fabsf(c->y-pal[1]) +
+          fabsf(c->z-pal[2]);
 }
 
-#define BuildIntensity(r,g,b) (((r)*0.3)+((g)*0.55)+((b)*0.15))
+#define BuildIntensity(r,g,b) (((r)*0.3f)+((g)*0.55f)+((b)*0.15f))
 static float _RGBDist_wIntensity(mxs_vector *c, uchar *pal)
 {
    float dist = _RGBDistSquared(c,pal);
@@ -375,9 +400,9 @@ uchar compute_color_mix(int a, int r, int g, int b, fix weight)
    {
       float fweight=fix_float(weight);
       mxs_vector c;
-      c.x = (grd_pal[a*3+0] * (1.0 - fweight) + r * fweight);
-      c.y = (grd_pal[a*3+1] * (1.0 - fweight) + g * fweight);
-      c.z = (grd_pal[a*3+2] * (1.0 - fweight) + b * fweight);
+      c.x = (grd_pal[a*3+0] * (1.0f - fweight) + r * fweight);
+      c.y = (grd_pal[a*3+1] * (1.0f - fweight) + g * fweight);
+      c.z = (grd_pal[a*3+2] * (1.0f - fweight) + b * fweight);
       return ShadClosestCol(&c,grd_pal,FALSE);
    }
 }
@@ -394,8 +419,10 @@ uchar compute_color_mix(int a, int r, int g, int b, fix weight)
 #define MAX_B      (NUM_B-1)
 #define MAX_SHADES (NUM_SHADES-1)
 
-EXTERN uchar light_pal[768] = { 0 };
-EXTERN uchar light_ipal[32768] = { 0 };
+EXTERN uchar light_pal[768];
+EXTERN uchar light_ipal[32768];
+uchar light_pal[768] = { 0 };
+uchar light_ipal[32768] = { 0 };
 
 EXTERN void calc_ipal(uchar *pal_data, uchar *ipal);
 void init_lighting_palette(void)

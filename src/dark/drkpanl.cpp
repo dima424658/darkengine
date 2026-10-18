@@ -11,13 +11,14 @@
 
 #include <scrnmode.h>
 #include <scrnman.h>
+#include <gamescrn.h>
 
 #include <panlmode.h>
 #include <loopapi.h>
 #include <loopmsg.h>
 #include <panlguid.h>
 
-#include <dispapi.H>
+#include <dispapi.h>
 
 #include <drkuires.h>
 #include <imgsrc.h>
@@ -64,7 +65,7 @@ static void make_font_table(void)
 {
    for (int shadIndex = 0; shadIndex < FONT_ROWS; shadIndex++)
    {
-      float shadLevel = 1.0 - (float)shadIndex/((float)(FONT_ROWS-1));
+      float shadLevel = 1.0f - (float)shadIndex/((float)(FONT_ROWS-1));
 
       ushort* Ptr = pFontTable[shadIndex]; 
 
@@ -266,7 +267,7 @@ sLoopClientDesc cDarkPanel::Descriptor =
    kMsgEnd | kMsgsMode | kMsgsFrame,
 
    kLCF_None,
-   NULL,
+   nullptr,
    
    NO_LC_DATA,
 
@@ -328,7 +329,7 @@ IDataSource* cDarkPanel::CursorPalette()
 //
 
 cDarkPanel::cDarkPanel(const sDarkPanelDesc* desc, const char* respath)
-   : cModalButtonPanel(&sTempDesc(desc), &Descriptor), 
+   : cModalButtonPanel(sTempDesc(desc), &Descriptor),
      mpFontRes(NULL),
      sDarkPanelDesc(*desc)
 {
@@ -340,6 +341,23 @@ cDarkPanel::~cDarkPanel()
    sPanelModeDesc pdesc = *mpPanelMode->Describe();
    delete [] (char*) pdesc.pal; 
    SafeRelease(mpFontRes); 
+}
+
+IPanelMode* cDarkPanel::GetPanelMode()
+{
+   // The legacy panel description deliberately fixes only the logical canvas
+   // dimensions.  Supplying no flags made the first menu inherit the
+   // bootstrap/default display kind, so game_full_screen did not take effect
+   // until gameplay entered.  Keep the 640x480 canvas, but present every Dark
+   // panel through the currently configured game backend and window mode.
+   ScrnModeCopy(&scrnmode_desc, GetGameScreenMode(), kScrnModeFlagsValid);
+
+   // Dark constructs most menu objects before the startup content picker is
+   // entered. Their backgrounds therefore still refer to the original
+   // resource context after an FM is selected. Other panel resources are
+   // loaded by InitUI on entry; rebind the cached background here as well.
+   ReloadBackground();
+   return cModalButtonPanel::GetPanelMode();
 }
 
 //
@@ -357,6 +375,11 @@ void cDarkPanel::SetResPath(const char* path)
    pdesc.pal = p;  // from our desc 
    mpPanelMode->SetDescription(&pdesc); 
 
+   ReloadBackground();
+}
+
+void cDarkPanel::ReloadBackground()
+{
    char backname[32];
    sprintf(backname,"%sb",panel_name);
    IImageSource* bg = FetchUIImage(backname,mResPath); 

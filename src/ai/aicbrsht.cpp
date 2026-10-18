@@ -186,7 +186,7 @@ cAIAction* cAIRangedShoot::SuggestAction(void)
    pObjSys->Unlock();
 
 #define kRandVar 15
-   float randVar = 1.0 + (AIRandom(0, kRandVar * 2) - kRandVar) / 100.0;
+   float randVar = 1.0f + (AIRandom(0, kRandVar * 2) - kRandVar) / 100.0f;
    m_pOwner->m_FiringDelay.Set((eAITimerPeriod)(unsigned)(GetRangedCombatProp()->firing_delay * 1000 * randVar));
 
    return pAttackAction;

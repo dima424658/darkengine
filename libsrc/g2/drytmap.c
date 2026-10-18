@@ -46,7 +46,7 @@ void g2_dry_umap(grs_bitmap *bm, int n, g2s_point **vpl)
    tp.canvas_row = grd_bm.row;
 
    tp.bm = bm;
-   tp.d_scale = g2d_dryness_table_size;
+   tp.d_scale = (float)g2d_dryness_table_size;
    tp.u_scale = bm->w;
    tp.v_scale = bm->h;
    tp.inner_loop = dry_tmap_inner_loop;

@@ -3,7 +3,7 @@
 #include <lgassert.h>
 #include <str.h>
 
-#include <io.h>
+#include <platform_io.h>
 #include <cstdio>
 
 #ifndef NO_DB_MEM
@@ -165,9 +165,9 @@ long cFileStream::ReadAbs(long nStartPos, long nEndPos, char* pBuf)
 		return -1;
 
 	auto pos = fread(pBuf, 1u, nEndPos - nStartPos + 1, m_pFile);
-	m_nLastPos = pos + nStartPos;
+	m_nLastPos = static_cast<long>(pos) + nStartPos;
 
-	return pos;
+	return static_cast<long>(pos);
 }
 
 ///////////////////////////////////////
@@ -205,9 +205,9 @@ long cFileStream::Read(long nNumBytes, char* pBuf)
 		return -1;
 
 	auto pos = fread(pBuf, 1, nNumBytes, m_pFile);
-	m_nLastPos += pos;
+	m_nLastPos += static_cast<long>(pos);
 
-	return pos;
+	return static_cast<long>(pos);
 }
 
 ///////////////////////////////////////
@@ -230,25 +230,25 @@ void cFileStream::ReadBlocks(void* pBuf, long nSize, tStoreStreamBlockCallback c
 		return;
 
 	auto bDone = false;
-	auto nRead = 0;
+	size_t nRead = 0;
 	auto nBlockIx = 0;
 
 	while (!bDone)
 	{
 		nRead = fread(pBuf, 1u, nSize, m_pFile);
-		if (nRead < nSize)
+		if (nRead < static_cast<size_t>(nSize))
 			bDone = true;
 
 		if (callback)
 		{
-			nSize = callback(pBuf, nRead, nBlockIx, pCallbackData);
+			nSize = callback(pBuf, static_cast<long>(nRead), nBlockIx, pCallbackData);
 			if (nSize < 1)
 				bDone = true;
 		}
 
 		++nBlockIx;
 	}
-	m_nLastPos += nRead;
+	m_nLastPos += static_cast<long>(nRead);
 }
 
 ///////////////////////////////////////

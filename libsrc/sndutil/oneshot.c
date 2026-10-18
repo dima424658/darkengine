@@ -118,7 +118,7 @@ CreateSoundOneShot( ISndMixer          *pMixer,
       Free( pInfo );
    } else {
 
-      pInfo->playOffset = (long) pRawData - (long) headerBuffer;
+      pInfo->playOffset = (uint32)((uint8 *)pRawData - (uint8 *)headerBuffer);
       pInfo->dataOffset = pInfo->playOffset;
       pInfo->endOffset = pInfo->playOffset + rawDataLen;
       pInfo->bytesPerSample = attribs.bitsPerSample >> 3;

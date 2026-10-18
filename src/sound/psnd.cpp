@@ -223,7 +223,11 @@ int cPropSnd::GenerateSoundHandle(int handle, ObjID objID, ObjID schemaID, const
    m_PropAgent.SetFunctions(m_SoundInstance);
    m_PropAgent.PropagateBF(ObjPosGet(objID)->loc.vec, g_pRooms->GetObjRoom(objID));
 
-   if ((flags & kGSF_WantHandle) && !m_NoSound)
+   // A configured no-sound run and a mixer whose platform backend failed to
+   // initialize are both intentional silent modes.  Do not propagate every
+   // schema down to SFX in the latter case: SFX has no mixer and would turn a
+   // single device error into an unbounded stream of per-sample failures.
+   if ((flags & kGSF_WantHandle) && !m_NoSound && SFXActive())
    {
       cPlayerSoundList* pPlayerList = GeneratePlayerSoundList(handle);
       if (pPlayerList == NULL)
@@ -247,7 +251,7 @@ int cPropSnd::GenerateSoundHandle(int handle, ObjID objID, ObjID schemaID, const
 
             parms->distance = -1;
             parms->end_callback = EndSampleCallback;
-            parms->user_data = (void *)handle;
+      parms->user_data = (void *)(intptr_t)handle;
 
             // TODO : Fill with real values?
             parms->pri = 128;
@@ -409,7 +413,7 @@ int cPropSnd::GenerateSoundHandle(int handle, mxs_vector &vec, ObjID src_obj, Ob
    m_PropAgent.SetFunctions(m_SoundInstance);
    m_PropAgent.PropagateBF(vec, start_room);
 
-   if ((flags & kGSF_WantHandle) && !m_NoSound)
+   if ((flags & kGSF_WantHandle) && !m_NoSound && SFXActive())
    {
       cPlayerSoundList* pPlayerList = GeneratePlayerSoundList(handle);
       if (pPlayerList == NULL)
@@ -433,7 +437,7 @@ int cPropSnd::GenerateSoundHandle(int handle, mxs_vector &vec, ObjID src_obj, Ob
 
             parms->distance = -1;
             parms->end_callback = EndSampleCallback;
-            parms->user_data = (void *)handle;
+      parms->user_data = (void *)(intptr_t)handle;
 
             // TODO : Fill with real values?
             parms->pri = 128;
@@ -516,6 +520,9 @@ int cPropSnd::GenerateSound(const char *sampleName, sfx_parm *parms)
    AUTO_TIMER(GenSnd);
    AUTO_TIMER(GenSndStatic);
 
+   if (m_NoSound || !SFXActive())
+      return kPSndFail;
+
    cPlayerSoundList *pPlayerList;
    cSoundInfo       *pSoundInfo;
 
@@ -548,7 +555,7 @@ int cPropSnd::GenerateSound(const char *sampleName, sfx_parm *parms)
 
    parms->distance = -1;
    parms->end_callback = EndSampleCallback;
-   parms->user_data = (void *)handle;
+      parms->user_data = (void *)(intptr_t)handle;
 
    pSoundInfo->Object = PlayerObject();
    pSoundInfo->Handle = handle;
@@ -1171,7 +1178,7 @@ int cPropSnd::EffectivePriority(const cPlayerSoundList* pPlayerList)
       else
       {
          fMinPri = ((float)priority - (float) SCH_PRIORITY_NORMAL) / (float) SCH_PRIORITY_NORMAL;
-         fPriRange = 1.0 - fMinPri;
+         fPriRange = 1.0f - fMinPri;
       }
 
       fNormalizedEP = ((float) (volume + 10000)) * (1.0F / 10000.0F) *            // Normalize to [0..1]

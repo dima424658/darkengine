@@ -30,6 +30,7 @@ int dmp_pcx_dump_screen(int fp);
 // needs no buffer, writes out 8 bit or 24 bit bmp
 // return -1 if unsuccessful
 int dmp_bmp_dump_screen(int fp);
+int dmp_bmp_dump_file(const char *filename);
 
 
 /* Finds the free file in a sequence like

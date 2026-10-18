@@ -25,6 +25,7 @@
 #include <lg.h>
 #include <mprintf.h>
 #include <portclip.h>
+#include <darklimit.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -305,7 +306,7 @@ ClipData *PortalClipRectangle(int l, int t, int r, int b)
    return d;
 }
 
-#define MAX_CLIP_REGIONS     2048
+#define MAX_CLIP_REGIONS     DARK_LIMIT_RUNTIME_PORTAL_CLIP_REGIONS
 
 ClipData clip_raw[MAX_CLIP_REGIONS]; // 32K
 int clip_first_free=-1, clip_init=0;
@@ -342,7 +343,7 @@ ClipData *ClipAlloc(void)
 void PortalClipFree(ClipData *c)
 {
    c->l = clip_first_free;
-   clip_first_free = c - clip_raw;
+   clip_first_free = (int)(c - clip_raw);
 }
 
 //////////////////////////////////////////////////////////////
@@ -448,8 +449,8 @@ void clip2d_intersect(fix x, fix *dx, fix *dy, fix x1, fix y1, fix x2, fix y2, f
    }
 
    *dx = x;
-#ifdef WIN32
-   *dy = y1 + (double) (y2-y1) * (x-x1) / (x2-x1);
+#ifdef _WIN32
+   *dy = (fix)(y1 + (double)(y2-y1) * (x-x1) / (x2-x1));
 #else
    *dy = y1 + fix_mul_div(y2-y1, x-x1, x2-x1);
 #endif
@@ -462,20 +463,20 @@ void clip2d_intersect_uv(fix x, fix *dx, fix *dy, fix x1, fix y1, fix x2, fix y2
    if (x1 < x2) {
       double interp = (double) (x - x1) / (x2 - x1);
       *dx = x;
-      *dy = y1 + (y2-y1) * interp;
+      *dy = (fix)(y1 + (y2-y1) * interp);
       if (clip_lighting)
-         dest->p->grp.i  = p1->p->grp.i + (p2->p->grp.i - p1->p->grp.i)*interp;
+         dest->p->grp.i = (mxs_real)(p1->p->grp.i + (p2->p->grp.i - p1->p->grp.i)*interp);
 
-      dest->p->grp.w = p1->p->grp.w + (p2->p->grp.w - p1->p->grp.w) * interp;
+      dest->p->grp.w = (mxs_real)(p1->p->grp.w + (p2->p->grp.w - p1->p->grp.w) * interp);
       dest->p->p.z = 1 / dest->p->grp.w;
    } else {
       double interp = (double) (x - x2) / (x1 - x2);
       *dx = x;
-      *dy = y2 + (y1-y2) * interp;
+      *dy = (fix)(y2 + (y1-y2) * interp);
       if (clip_lighting)
-         dest->p->grp.i  = p2->p->grp.i + (p1->p->grp.i - p2->p->grp.i)*interp;
+         dest->p->grp.i = (mxs_real)(p2->p->grp.i + (p1->p->grp.i - p2->p->grp.i)*interp);
 
-      dest->p->grp.w = p2->p->grp.w + (p1->p->grp.w - p2->p->grp.w) * interp;
+      dest->p->grp.w = (mxs_real)(p2->p->grp.w + (p1->p->grp.w - p2->p->grp.w) * interp);
       dest->p->p.z = 1 / dest->p->grp.w;
    }
 }
@@ -692,7 +693,7 @@ int portclip_clip_polygon(int n, r3s_phandle *p, r3s_phandle **q, ClipData *c)
             }
             if (c_and) return 0;
 #ifdef DBG_ON
-#ifndef WIN32 // allow for floating pt slop
+#ifndef _WIN32 // allow for floating pt slop
             if (c_or & i)        // did we clip it ok?
                Error(1, "portclip_clip_poly: clip %x failed\n", i);
             if (c_or & (i - 1))  // did we screw up old clipping?

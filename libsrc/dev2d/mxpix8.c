@@ -85,7 +85,6 @@ void modex_tluc_upix8 (int color, int x, int y)
    rlatch_restore(rs);
 }
 
-#pragma off (unreferenced)
 void modex_solid_upix8 (int color, int x, int y)
 {
    uchar *p;
@@ -99,4 +98,3 @@ void modex_solid_upix8 (int color, int x, int y)
    *p = (uchar )grd_gc.fill_parm;
    wlatch_restore(ws);
 }
-#pragma on (unreferenced)

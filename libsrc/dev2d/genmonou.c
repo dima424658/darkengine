@@ -22,7 +22,7 @@ void gen_mono_trans_ubitmap (grs_bitmap *bm, int x0, int y0)
    uchar *p_src;     /* pointer to source byte */
    int p_src_delta;
 
-   fc = grd_gc.fcolor;
+   fc = (char)grd_gc.fcolor;
    p_src = bm->bits;
    p_src_delta = bm->row - ((bm->align + bm->w)>>3);
    bm0 = (1 << (7-(bm->align&7)));
@@ -55,7 +55,7 @@ void gen_mono_opaque_ubitmap (grs_bitmap *bm, int x0, int y0)
    uchar *p_src;     /* pointer to source byte */
    int p_src_delta;
 
-   fc = grd_gc.fcolor, bc=grd_gc.bcolor;
+   fc = (char)grd_gc.fcolor, bc=(char)grd_gc.bcolor;
    p_src = bm->bits;
    p_src_delta = bm->row - ((bm->align + bm->w)>>3);
    bm0 = (1 << (7-(bm->align&7)));

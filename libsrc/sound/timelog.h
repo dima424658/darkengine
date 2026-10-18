@@ -60,7 +60,7 @@ typedef struct {
 EXTERN long logIntMask;
 EXTERN logHistory logA;
 EXTERN logHistory logB;
-EXTERN DWORD logTimeOrigin;
+EXTERN uint32 logTimeOrigin;
 
 // LOG_INT_START should be done at the beginning of an interrupt handler and
 // LOG_INT_END should be done at the end of that handler
@@ -72,7 +72,7 @@ EXTERN void emptyLog();
 EXTERN void initLog( int nEntries );
 EXTERN void useCircularLogging( BOOL useRing );
 EXTERN void dumpLog( char *fName );
-EXTERN DWORD getLogTime();
+EXTERN uint32 getLogTime();
 
 #ifdef DO_TIME_LOGGING
 

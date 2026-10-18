@@ -1,17 +1,18 @@
 #include "rng.h"
 
-#include <memory>
-#include <cmath>
+#include <cstring>
 
 #include <lgassert.h>
 
 class RNGFibonacci : public RNG
 {
 private:
-    static constexpr int CongruentialMagic = 23479589;
+    static constexpr int StateMagic = 21796;
+    static constexpr int StateSize = 55;
+    static constexpr int Lag = 31;
     struct State
     {
-        int Seed1, Seed2, Seeds[55];
+        int Magic, Position, Seeds[StateSize];
     };
 
 public:
@@ -26,19 +27,20 @@ public:
 private:
     int m_seed1;
     int m_seed2;
-    int m_seeds[55];
+    int m_seeds[StateSize];
 };
 
 RNGFibonacci::RNGFibonacci()
-    : m_seed1{reinterpret_cast<int>(this) + 3}, m_seed2{m_seed1 + 124}, m_seeds{} { }
+    : m_seed1{0}, m_seed2{Lag}, m_seeds{} { }
 
 void* RNGFibonacci::GetState(long* sz)
 {
-    *sz = sizeof(State);
+    if (sz)
+        *sz = sizeof(State);
     auto state = new State();
     
-    state->Seed1 = 21796;
-    state->Seed2 = (m_seed2 - (reinterpret_cast<int>(this) + 3)) >> 2;
+    state->Magic = StateMagic;
+    state->Position = m_seed2;
   
     std::memcpy(state->Seeds, m_seeds, sizeof(m_seeds));
 
@@ -49,14 +51,11 @@ void RNGFibonacci::SetState(void* rawState)
 {
     auto state = reinterpret_cast<State*>(rawState);
     
-    if (state->Seed1  != 21796 || state->Seed2 >= 55)
+    if (state->Magic != StateMagic || state->Position < 0 || state->Position >= StateSize)
         CriticalMsg("Invalid state for RNGFibonacci::SetState");
 
-    m_seed1 = state->Seed2 + 3;
-    m_seed2 = m_seed1 + 124;
-
-    if (((m_seed2 - (reinterpret_cast<int>(this) + 3)) >> 2) > 55)
-        m_seed2 -= 220;
+    m_seed2 = state->Position;
+    m_seed1 = (m_seed2 + StateSize - Lag) % StateSize;
 
     std::memcpy(m_seeds, state->Seeds, sizeof(m_seeds));
 }
@@ -67,7 +66,7 @@ void RNGFibonacci::Seed(long seed)
     RNGCongruential->Seed(seed);
     
     m_seeds[0] = 0x7FFFFFFF;
-    for (int i = 1; i < 55; ++i)
+    for (int i = 1; i < StateSize; ++i)
         m_seeds[i] = RNGCongruential->GetLong();
     
     for (int j = 0; j < 1000; ++j)
@@ -76,17 +75,11 @@ void RNGFibonacci::Seed(long seed)
 
 long RNGFibonacci::GetLong()
 {
-    m_seed1 += 4;
-    if (m_seed1 >= (unsigned int)(this + 58))
-        m_seed1 = reinterpret_cast<int>(this + 3);
+    m_seed1 = (m_seed1 + 1) % StateSize;
+    m_seed2 = (m_seed2 + 1) % StateSize;
+    m_seeds[m_seed1] ^= m_seeds[m_seed2];
 
-    m_seed2 += 4;
-    if (m_seed2 >= (unsigned int)(this + 58))
-        m_seed2 = reinterpret_cast<int>(this + 3);
-
-    m_seed1 ^= m_seed2;
-
-    return m_seed1;
+    return m_seeds[m_seed1];
 }
 
 RNG* CreateRNGFibonacci()

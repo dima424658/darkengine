@@ -34,21 +34,20 @@
  *
 */
 
-#include <io.h>
+#include <platform_io.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <res.h>
 #include <res_.h>
 #include <lzw.h>
-#include <pkzip.h>
 
 #define CTRL_Z 26       // make sure comment ends with one, so can type a file
 
 //  Internal prototypes
 
 bool ResEraseIfInFile(Id id);                    // erase item from file
-void ResCopyBytes(int fd, long writePos, long readPos, long size);
+static void ResCopyBytes(int fd, long writePos, long readPos, long size);
 #undef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -186,10 +185,15 @@ int ResWrite(Id id)
       }
       else
          pcompbuff = (void *) restemp_buffer;
-      if (pDirEntry->flags & RDF_LZW)
-          compsize = LzwCompressBuff2Buff(p, size, pcompbuff, size);
-      else
-          compsize = PkImplodeMemToMem(p, size, pcompbuff, size);
+      // Read compatibility with the PKWARE stream remains, but newly saved
+      // resources use the engine's existing LZW codec instead of the obsolete
+      // external PKWARE encoder.
+      if (pDirEntry->flags & RDF_PKZIP)
+      {
+         pDirEntry->flags &= ~RDF_PKZIP;
+         pDirEntry->flags |= RDF_LZW;
+      }
+      compsize = LzwCompressBuff2Buff(p, size, pcompbuff, size);
       if (compsize < 0)
       {
          pDirEntry->flags &= ~(RDF_LZW | RDF_PKZIP);
@@ -350,7 +354,8 @@ long ResPack(int filenum)
       }
       pDirEntry++;
    }
-   prf->pedit->pdir->numEntries -= numReclaimed;
+   prf->pedit->pdir->numEntries =
+      (ushort)(prf->pedit->pdir->numEntries - numReclaimed);
 
 //  Set new current data offset
 

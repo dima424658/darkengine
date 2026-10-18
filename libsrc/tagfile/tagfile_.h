@@ -7,6 +7,7 @@
 
 #include <hashset.h>
 #include <cstdio>
+#include <stdint.h>
 
 #include <tagfile.h>
 
@@ -44,6 +45,11 @@ struct TagFileBlockHeader
    TagFileBlockHeader() { memset(this,0,sizeof(*this));};
 };
 
+static_assert(sizeof(TagFileHeader) == 272,
+   "TagFileHeader must retain its 32-bit on-disk layout");
+static_assert(sizeof(TagFileBlockHeader) == 24,
+   "TagFileBlockHeader must retain its 32-bit on-disk layout");
+
 
 //============================================================
 // TAG TABLE CLASS
@@ -67,14 +73,17 @@ struct TagTableEntry
 {
    TagFileTag key;
    Offset   offset; 
-   long    size;
+   slong   size;
 
-   TagTableEntry(const TagFileTag& k, Offset off,long sz = 0) :key(k),offset(off),size(sz) {} ;
+   TagTableEntry(const TagFileTag& k, Offset off,slong sz = 0) :key(k),offset(off),size(sz) {} ;
    TagTableEntry() :offset(BAD_OFFSET),size(-1) { key.label[0] = '\0';}; 
 
-   Offset Start() { return offset + sizeof(struct TagFileBlockHeader); } ; 
-   Offset End() { return Start() + size; } ; 
+   uint64_t Start() const { return (uint64_t)offset + sizeof(struct TagFileBlockHeader); } ;
+   uint64_t End() const { return Start() + (uint64_t)size; } ;
 };
+
+static_assert(sizeof(TagTableEntry) == 20,
+   "TagTableEntry must retain its 32-bit on-disk layout");
 
 
 //
@@ -89,7 +98,7 @@ public:
    virtual ~TagFileTable();
 
    void Write(FILE* file);  // write to file 
-   void Read(FILE* file);   // read from file
+   bool Read(FILE* file, uint64_t fileSize, uint64_t tableOffset);
 }; 
 
 
@@ -106,11 +115,13 @@ protected:
    FILE* file;                            // file 
    TagTableEntry* block;                  // current block
    ulong blockptr;                        // file ptr within block
+   TagVersion blockVersion;               // version of the open read block
+   uint64_t fileSize;                      // validated physical file length
 
 public:
-   TagFileBase(FILE* f = NULL) :file(f),block(NULL) {} ;
+   TagFileBase(FILE* f = NULL) :file(f),block(NULL),blockVersion{0,0},fileSize(0) {} ;
    TagFileBase(const char* fname, const char* mode)
-      : file(fopen(fname,mode)),block(NULL) {} ; 
+      : file(fopen(fname,mode)),block(NULL),blockVersion{0,0},fileSize(0) {} ;
    virtual ~TagFileBase();
 
    static ITagFile* Open(const char* filename, TagFileOpenMode mode);
@@ -131,10 +142,6 @@ protected:
    // Set the current block
    void SetCurBlock(const TagFileTag* tag);
 
-   // convert offset to absolute
-   // also check to see if a seek will step out of a box
-   //  < 0 if before start, > 0 if after end, == 0 if inside, magnitude = how far out
-   int PrepSeek(ulong& offset, TagFileSeekMode mode);  
 }; 
 
 

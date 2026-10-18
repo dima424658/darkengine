@@ -6,6 +6,7 @@
 #include <xformseg.h>
 #include <r3d.h>
 #include <mmd.h>
+#include <string.h>
 
 // global variables
 int current_smatr_id=-1;
@@ -31,6 +32,7 @@ mxs_vector  *mmd_vert_vecs;   // vertex list
 mms_pgon    *mmd_pgons;       // pgon list
 mxs_vector  *mmd_norms;       // pgon normal list
 mms_weight  *mmd_weights;     // weight list
+static ulong mmd_model_version = MM_CUR_VER;
 
 // something like the above pointers, only passed in from the app rather
 // than coming from the model
@@ -47,6 +49,151 @@ mxs_trans   *mmd_buff_attach_trans;  // attachments are oriented by segment
 // Texture
 ulong       mmd_tmap_mode=R3_PL_TEXTURE;  // default to perspective
 
+// A mesh material's handle is part of the legacy on-disk format and must stay
+// 32 bits wide.  It used to contain a bitmap pointer, which is not viable in a
+// 64-bit process.  These tables give the field an architecture-neutral token
+// while retaining constant-time lookup in both directions.
+typedef struct _mms_texture_entry
+{
+   r3s_texture texture;
+   ulong handle;
+} mms_texture_entry;
+
+static mms_texture_entry *mmd_texture_hash;
+static uint mmd_texture_hash_capacity;
+static uint mmd_texture_hash_count;
+static r3s_texture *mmd_textures_by_handle;
+static uint mmd_texture_handle_capacity;
+static uint mmd_texture_handle_count;
+
+static uint mm_texture_hash(r3s_texture texture)
+{
+   size_t value = (size_t) texture;
+
+   value ^= value >> 4;
+   value ^= value >> 9;
+   value ^= value >> 17;
+   return (uint) value;
+}
+
+static BOOL mm_grow_texture_hash(uint new_capacity)
+{
+   mms_texture_entry *new_hash;
+   uint i;
+
+   new_hash = (mms_texture_entry *) Malloc(new_capacity * sizeof(*new_hash));
+   if (!new_hash)
+      return FALSE;
+   memset(new_hash, 0, new_capacity * sizeof(*new_hash));
+
+   for (i = 0; i < mmd_texture_hash_capacity; ++i)
+   {
+      mms_texture_entry entry = mmd_texture_hash[i];
+      uint slot;
+
+      if (!entry.texture)
+         continue;
+      slot = mm_texture_hash(entry.texture) & (new_capacity - 1);
+      while (new_hash[slot].texture)
+         slot = (slot + 1) & (new_capacity - 1);
+      new_hash[slot] = entry;
+   }
+
+   if (mmd_texture_hash)
+      Free(mmd_texture_hash);
+   mmd_texture_hash = new_hash;
+   mmd_texture_hash_capacity = new_capacity;
+   return TRUE;
+}
+
+static BOOL mm_grow_texture_handles(uint new_capacity)
+{
+   r3s_texture *new_handles;
+
+   new_handles = (r3s_texture *) Malloc(new_capacity * sizeof(*new_handles));
+   if (!new_handles)
+      return FALSE;
+   if (mmd_texture_handle_count)
+      memcpy(new_handles, mmd_textures_by_handle,
+             mmd_texture_handle_count * sizeof(*new_handles));
+   if (mmd_textures_by_handle)
+      Free(mmd_textures_by_handle);
+   mmd_textures_by_handle = new_handles;
+   mmd_texture_handle_capacity = new_capacity;
+   return TRUE;
+}
+
+ulong mm_register_texture(r3s_texture texture)
+{
+   uint slot;
+   ulong handle;
+
+   if (!texture)
+      return 0;
+
+   if (!mmd_texture_hash_capacity && !mm_grow_texture_hash(256))
+   {
+      CriticalMsg("Could not allocate mesh texture token table");
+      return 0;
+   }
+   if ((mmd_texture_hash_count + 1) * 4 >= mmd_texture_hash_capacity * 3
+       && !mm_grow_texture_hash(mmd_texture_hash_capacity * 2))
+   {
+      CriticalMsg("Could not grow mesh texture token table");
+      return 0;
+   }
+
+   slot = mm_texture_hash(texture) & (mmd_texture_hash_capacity - 1);
+   while (mmd_texture_hash[slot].texture)
+   {
+      if (mmd_texture_hash[slot].texture == texture)
+         return mmd_texture_hash[slot].handle;
+      slot = (slot + 1) & (mmd_texture_hash_capacity - 1);
+   }
+
+   if (mmd_texture_handle_count == mmd_texture_handle_capacity)
+   {
+      uint new_capacity = mmd_texture_handle_capacity
+                        ? mmd_texture_handle_capacity * 2 : 256;
+      if (!mm_grow_texture_handles(new_capacity))
+      {
+         CriticalMsg("Could not grow mesh texture handle table");
+         return 0;
+      }
+   }
+
+   handle = (ulong) ++mmd_texture_handle_count;
+   mmd_textures_by_handle[handle - 1] = texture;
+   mmd_texture_hash[slot].texture = texture;
+   mmd_texture_hash[slot].handle = handle;
+   ++mmd_texture_hash_count;
+   return handle;
+}
+
+r3s_texture mm_resolve_texture(ulong handle)
+{
+   if (!handle || handle > mmd_texture_handle_count)
+   {
+      Warning(("Invalid mesh texture token %lu\n", handle));
+      return NULL;
+   }
+   return mmd_textures_by_handle[handle - 1];
+}
+
+static void mm_clear_texture_handles(void)
+{
+   if (mmd_texture_hash)
+      Free(mmd_texture_hash);
+   if (mmd_textures_by_handle)
+      Free(mmd_textures_by_handle);
+   mmd_texture_hash = NULL;
+   mmd_texture_hash_capacity = 0;
+   mmd_texture_hash_count = 0;
+   mmd_textures_by_handle = NULL;
+   mmd_texture_handle_capacity = 0;
+   mmd_texture_handle_count = 0;
+}
+
 // internal for knowing where stuff is
 static int buff_norm_off;  // where the norm values are start
 static int buff_spgon_off; // where sorted polygons start
@@ -61,17 +208,17 @@ bool mmd_rgb_lighting;
 // predeclarations are grouped by pipeline
 
 // polygon pipeline
-void _mm_poly_transform(mms_model *m, ulong flags);
-void _mm_poly_sort(mms_model *m, ulong flags);
-void _mm_poly_render(mms_model *m);
-int _mm_poly_buffsize(mms_model *m, mms_custom_data *d);
-void _mm_poly_set_buff(mms_model *m, mms_custom_data *d, void *buff);
+static void _mm_poly_transform(mms_model *m, ulong flags);
+static void _mm_poly_sort(mms_model *m, ulong flags);
+static void _mm_poly_render(mms_model *m);
+static int _mm_poly_buffsize(mms_model *m, mms_custom_data *d);
+static void _mm_poly_set_buff(mms_model *m, mms_custom_data *d, void *buff);
 
 // hardware pipeline (uses poly transform func)
-void _mm_hardware_sort(mms_model *m, ulong flags);
-void _mm_hardware_render(mms_model *m);
-int _mm_hardware_buffsize(mms_model *m, mms_custom_data *d);
-void _mm_hardware_set_buff(mms_model *m, mms_custom_data *d, void *buff);
+static void _mm_hardware_sort(mms_model *m, ulong flags);
+static void _mm_hardware_render(mms_model *m);
+static int _mm_hardware_buffsize(mms_model *m, mms_custom_data *d);
+static void _mm_hardware_set_buff(mms_model *m, mms_custom_data *d, void *buff);
 
 typedef void(*mmf_transform_func)(mms_model *m, ulong flags);
 typedef void(*mmf_sort_func)(mms_model *m, ulong flags);
@@ -176,8 +323,8 @@ BOOL mm_punt_xform;
 #ifndef SHIP
    #define TEST_VERSION(fname,model)   \
    do { \
-      if (model->version!=MM_CUR_VER) { \
-         CriticalMsg2("%s: model is old version %d",fname,model->version); \
+      if (model->version < MM_ACCLD_VER || model->version > MM_CUR_VER) { \
+         CriticalMsg2("%s: unsupported model version %d",fname,model->version); \
          return; \
       } \
    } while(0)
@@ -191,18 +338,18 @@ BOOL mm_punt_xform;
 quat dum_quat;
 mxs_trans dum_trans;
 
-void dummy_stretchy_joint_cback(mms_model *m,int joint_id, mxs_trans *t,quat *q)
+void dummy_stretchy_joint_cback(const mms_model *m,int joint_id, mxs_trans *t,quat *q)
 {
    mx_identity_trans(t);
    quat_identity(q);
 }
 
-void dummy_joint_pos_cback(mms_model *m,int joint_id, mxs_trans *t)
+void dummy_joint_pos_cback(const mms_model *m,int joint_id, mxs_trans *t)
 {
    mx_identity_trans(t);
 }
 
-void dummy_light_cback(int num,void *tpts,mms_uvn *uvns,mxs_vector *pts)
+void dummy_light_cback(int num,float *tpts,mms_uvn *uvns,mxs_vector *pts)
 {
    float *pptr=tpts;
 
@@ -233,6 +380,7 @@ void mm_init()
 
 void mm_close()
 {
+   mm_clear_texture_handles();
 }
 
 // returns previous one
@@ -302,6 +450,7 @@ void mm_debug_toggle()
 static void _mm_set_globals(mms_model *m, mms_custom_data *d)
 {
    mmd_model=m;
+   mmd_model_version=m->version;
    mmd_smatrs=mm_smatr_list(m);
    mmd_segs=mm_segment_list(m);
    mmd_smatsegs=mm_smatseg_list(m);
@@ -589,13 +738,33 @@ static void _mm_hardware_set_buff(mms_model *m, mms_custom_data *d,
 // currently assumes always gouraud shaded.
 static void mm_setup_material(int index)
 {
-   mms_smatr *r=&mmd_smatrs[index];
+   ulong handle;
+   mme_mat type;
    int gouraud = mmd_rgb_lighting ? R3_PL_RGB_GOURAUD : R3_PL_GOURAUD;
 
-   if(r->type==MM_MAT_TMAP)
+   // Gold's stock creature meshes use the version-1 material record.  The
+   // rest of the mesh layout is shared with version 2, but the v2 material
+   // inserts alpha/self-illumination fields before the texture handle.  Read
+   // the record with the layout declared by the model instead of indexing it
+   // as the larger v2 structure.
+   if (mmd_model_version == MM_ACCLD_VER)
    {
+      mms_ssmatr *r = &((mms_ssmatr *)mmd_smatrs)[index];
+      handle = r->handle;
+      type = r->type;
+   }
+   else
+   {
+      mms_smatr *r = &mmd_smatrs[index];
+      handle = r->handle;
+      type = r->type;
+   }
+
+   if(type==MM_MAT_TMAP)
+   {
+      r3s_texture texture = mm_resolve_texture(handle);
       r3_set_polygon_context(gouraud | R3_PL_POLYGON | mmd_tmap_mode);
-      r3_set_texture((r3s_texture)r->handle);
+      r3_set_texture(texture);
    } else
    {
       r3_set_polygon_context(gouraud | R3_PL_POLYGON);
@@ -846,7 +1015,7 @@ static bool test_ray_against_segment(mms_segment *segment,
 }
 
 
-static ray_sphere_test(mms_ray_hit_detect_info *detect_info)
+static int ray_sphere_test(mms_ray_hit_detect_info *detect_info)
 {
    float proj, center_to_ray_2;
    mxs_vector center_to_start;

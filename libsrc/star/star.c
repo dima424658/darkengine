@@ -61,7 +61,7 @@
 // pointer to list of stars
 // and color list of stars, and number
 // of them
-#define STAR_MAX_Z 1.0e16
+#define STAR_MAX_Z 1.0e16f
 
 mxs_vector  *std_vec;
 uchar    *std_col;
@@ -87,6 +87,11 @@ static float std_min_z;
 static float std_max_rad2; // maximum radius squared
 
 static BOOL check_bkgnd = TRUE;
+
+// Enhanced sky installs a renderer here so each projected star can be drawn
+// as its textured, alpha-blended quad.  The old pixel renderer remains the
+// fallback used by the classic sky.
+static tStarRenderCallback star_render_callback = NULL;
 
 // gpix_func is NULL when check_bkgnd is FALSE;
 // i.e., when we want to skip the check.
@@ -117,7 +122,7 @@ void StarSetCheckBkgnd(BOOL check)
 
 void StarSetStarRenderCallback(tStarRenderCallback callback)
 {
-    // TODO
+   star_render_callback = callback;
 }
 
 // sets global pointers in the star library
@@ -168,7 +173,7 @@ extern   int   star_num_projected;
 void StarPoly(int n,r3s_phandle *vp)
 {
    int i;
-   fix m;
+   float m;
    r3s_phandle *p;
 
    // draw star poly in color zero.  This part very
@@ -291,14 +296,14 @@ void star_init_alias_table(void)
           // set a to the "black" color
       a = std_color_dark-1; 
           // set b to the number of colors in the bank + black
-      b = (std_color_bright - std_color_dark) + 2;
+      b = (float)((std_color_bright - std_color_dark) + 2);
    } else {
       a = std_color_dark+1;   // "black"
-      b = (std_color_bright - std_color_dark) - 2;
+      b = (float)((std_color_bright - std_color_dark) - 2);
    }
 
    for (i=0; i < 256; ++i) {
-      int c = floor(b * pow((float)i/256.0,star_gamma));
+      int c = (int)floor(b * pow((float)i/256.0,star_gamma));
       if (c != 0)
          std_alias_color_table[i] = a + c;
       else
@@ -371,7 +376,7 @@ void StarRender(void)
    // forward to this value and going from there... hmmmm.
    // hmmm... move plane forward
 
-   std_min_z /= sqrt(std_max_rad2);
+   std_min_z /= sqrtf(std_max_rad2);
 
    old_near_z = r3_get_near_plane();
    r3_set_near_plane(std_min_z);
@@ -385,6 +390,19 @@ void StarRender(void)
  
       // If on screen and z is big enough go for it
       if ((s.p.z > std_min_z) && (s.ccodes == 0)) {
+         if (star_render_callback != NULL) {
+            struct sStarRenderCallbackData callback_data;
+            callback_data.pVec = &std_vec[i];
+            callback_data.pPoint = &s;
+            callback_data.color = std_col[i];
+
+            // FALSE means the callback fully rendered the star. TRUE lets
+            // the legacy pixel path run as well, which preserves the API's
+            // original handler/fallback convention.
+            if (!star_render_callback(&callback_data))
+               continue;
+         }
+
          if (std_size <= 1)
          {
             if (anti_alias)
@@ -467,9 +485,9 @@ void StarRand(uchar col,uchar range)
    for (i=0;i<std_num;++i) {
       s = &std_vec[i];
 
-      v.x = (rand()%4000 - 2000);
-      v.y = (rand()%4000 - 2000);
-      v.z = (rand()%4000 - 2000);
+      v.x = (mxs_real)(rand()%4000 - 2000);
+      v.y = (mxs_real)(rand()%4000 - 2000);
+      v.z = (mxs_real)(rand()%4000 - 2000);
 
       mx_norm_vec(s,&v);
 

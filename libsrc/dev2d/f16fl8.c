@@ -100,7 +100,7 @@ void flat16_flat8_trans_clut_ubitmap (grs_bitmap *bm, int x, int y)
 
 static void flat16_flat8_trans_solid_inner_loop(uchar *dst, uchar *src, int count)
 {
-   ushort c = grd_gc.fill_parm;
+   ushort c = (ushort)grd_gc.fill_parm;
    ushort *d16 = (ushort *)dst;
    int i;
 

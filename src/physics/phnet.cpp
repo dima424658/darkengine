@@ -45,9 +45,9 @@
 tNetMsgHandlerID gPhysNetID;
 
 // The Network Manager:
-INetManager *g_pNetMan;
+static INetManager *g_pNetMan;
 // Object Networking:
-IObjectNetworking *g_pObjNet;
+static IObjectNetworking *g_pObjNet;
 
 // The position property, so we don't have to keep fetching it:
 IPositionProperty *g_PosProp;
@@ -714,7 +714,7 @@ public:
           ObjHasRefs(obj))
       {
          // Okay, give it to him
-         g_pObjNet->ObjGiveTo(obj, fromPlayer, GetParam(1));
+         g_pObjNet->ObjGiveTo(obj, fromPlayer, (ObjID)GetParam(1));
          g_pPermitTakeOverMsg->Send(fromPlayer, obj, (uchar) TRUE);
       } else {
          // Nope, don't let him have it

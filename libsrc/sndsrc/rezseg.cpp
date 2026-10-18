@@ -47,3 +47,33 @@ cRezSegment::GetRawData( void    *pDst,
    return pDst;
 }
 
+cNRezSegment::cNRezSegment()
+   : mpRes( NULL )
+{
+}
+
+cNRezSegment::~cNRezSegment()
+{
+}
+
+void
+cNRezSegment::Init( IRes          *pRes,
+                    uint32        offset,
+                    sSndAttribs   *pAttribs,
+                    BOOL          doDouble )
+{
+   assert( pRes != NULL );
+   mpRes = pRes;
+   InitBase( offset, pAttribs, doDouble );
+}
+
+void *
+cNRezSegment::GetRawData( void    *pDst,
+                          uint32  nBytes )
+{
+   assert( mpRes != NULL );
+   if ( nBytes != 0 )
+      mpRes->ExtractPartial( mSrcOffset, mSrcOffset + nBytes - 1, pDst );
+   return pDst;
+}
+

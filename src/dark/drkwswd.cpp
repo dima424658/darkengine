@@ -16,6 +16,7 @@
 #include <plyrmode.h>
 #include <plyrvmot.h>
 #include <config.h>
+#include <stdio.h>
 #include <matrixs.h>
 #include <objtype.h>
 #include <command.h>
@@ -251,6 +252,16 @@ typedef struct
 static sWeaponInfo gWeaponInfo = {0, 0, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, -1, FALSE, FALSE, FALSE,
                                   0, 0, 0, 0, 0, 0};
 
+static ObjID WeaponObjFromData(const void *data)
+{
+   return (ObjID)(intptr_t)data;
+}
+
+static void *WeaponDataFromObj(ObjID obj)
+{
+   return (void *)(intptr_t)obj;
+}
+
 void  WeaponAbilityCallback(int mode, cPlayerAbility **pAbility, void *data)
 {
    *pAbility=&g_SwordAbility;
@@ -266,7 +277,7 @@ void  WeaponModeEnterCallback(int mode, void *data)
       gWeaponInfo.equipped = TRUE;
 
       // Attach the weapon to the creature
-      CreatureAttachWeapon(PlayerArm(), (int)data, weapon_type);
+      CreatureAttachWeapon(PlayerArm(), WeaponObjFromData(data), weapon_type);
    }
 }
 
@@ -278,7 +289,7 @@ void WeaponModeExitCallback(int mode, void *data)
       gWeaponInfo.equipped = FALSE;
 
       // Detach the weapon from the creature
-      CreatureDetachWeapon(PlayerArm(), (int)data);
+      CreatureDetachWeapon(PlayerArm(), WeaponObjFromData(data));
    }
 }
 
@@ -297,13 +308,13 @@ void WeaponIdleCallback(int mode, void *data)
    if (gWeaponInfo.swinging || gWeaponInfo.blocking)
    {
       // Make the sword non-physical
-      CreatureMakeWeaponNonPhysical(PlayerArm(), (int)data);
+      CreatureMakeWeaponNonPhysical(PlayerArm(), WeaponObjFromData(data));
 
       // Clear the weapon's current damage
-      ClearWeaponDamageFactor((int)data);
+      ClearWeaponDamageFactor(WeaponObjFromData(data));
 
       // Announce that we're finishing our action
-      ObjID owner = GetWeaponOwnerObjID((int)data);
+      ObjID owner = GetWeaponOwnerObjID(WeaponObjFromData(data));
       if (owner != OBJ_NULL)
       {
          if (gWeaponInfo.blocking)
@@ -364,17 +375,17 @@ void UpdateArmWobble(ulong dt, float magnitude)
    {
       // need to init our wobbling
       g_Wobbling = TRUE;
-      g_WobbleTime = 0.0;
+      g_WobbleTime = 0.0f;
 
       SetPlayerArmFilter(WobbleArmFilter);
 
-      g_WobbleRate = 0.002;
+      g_WobbleRate = 0.002f;
    }
 
    float time = g_WobbleTime;
 
    g_WobbleTime += dt;
-   g_Wobble = (sin(g_WobbleRate * g_WobbleTime)) * 0.02 * magnitude;
+   g_Wobble = sinf(g_WobbleRate * g_WobbleTime) * 0.02f * magnitude;
 }
 
 BOOL WeaponFrameCallback(ulong dt, void *data)
@@ -394,7 +405,7 @@ BOOL WeaponFrameCallback(ulong dt, void *data)
       ulong prev_time = gWeaponInfo.powering_time;
       gWeaponInfo.powering_time+=dt;
 
-      if ((prev_time < gWeaponInfo.swing_small_time) &&
+      if ((prev_time < (ulong)gWeaponInfo.swing_small_time) &&
           (gWeaponInfo.powering_time >= gWeaponInfo.swing_small_time))
       {
          const Label garsword = {"garsword"};
@@ -454,7 +465,7 @@ BOOL WeaponFrameCallback(ulong dt, void *data)
    }
    else
    {
-      UpdateArmWobble(dt * 0.6, 2.0);
+      UpdateArmWobble(dt * 3 / 5, 2.0f);
    }
 
    return FALSE;
@@ -464,6 +475,9 @@ BOOL WeaponFrameCallback(ulong dt, void *data)
 
 BOOL  EquipWeapon(ObjID owner, ObjID weapon, int type)
 {
+   if (getenv("DARK_PLAYER_TRACE"))
+      fprintf(stderr, "Player weapon equip owner=%d weapon=%d type=%d mode=%d next=%d\n",
+              owner, weapon, type, PlayerGetMode(), PlayerGetNextMode());
    // Set as the active weapon
    SetWeapon(owner, weapon, kWeaponModeMelee);
 
@@ -476,21 +490,24 @@ BOOL  EquipWeapon(ObjID owner, ObjID weapon, int type)
    }
    g_SwordAbility.SetWeaponType(type);
 
-   PlayerHandlerSetAbilityCallback(kPlayerModeSword, WeaponAbilityCallback, (void *)weapon);
+   PlayerHandlerSetAbilityCallback(kPlayerModeSword, WeaponAbilityCallback, WeaponDataFromObj(weapon));
 
    // Set the callback for when it's done equipping
-   PlayerHandlerSetEnterModeCallback(kPlayerModeSword, WeaponModeEnterCallback, (void *)weapon);
+   PlayerHandlerSetEnterModeCallback(kPlayerModeSword, WeaponModeEnterCallback, WeaponDataFromObj(weapon));
    gWeaponInfo.equip_pending = TRUE;
    gWeaponInfo.unequip_pending = FALSE;
 
    // Set the callback for when it's idling
-   PlayerHandlerSetIdleModeCallback(kPlayerModeSword, WeaponIdleCallback, (void *)weapon);
+   PlayerHandlerSetIdleModeCallback(kPlayerModeSword, WeaponIdleCallback, WeaponDataFromObj(weapon));
 
    // Set the frame callback
-   PlayerHandlerSetFrameCallback(kPlayerModeSword, WeaponFrameCallback, (void *)weapon);
+   PlayerHandlerSetFrameCallback(kPlayerModeSword, WeaponFrameCallback, WeaponDataFromObj(weapon));
 
    // Tell the cerebellum to switch modes
    PlayerSwitchMode(kPlayerModeSword);
+   if (getenv("DARK_PLAYER_TRACE"))
+      fprintf(stderr, "Player weapon switch requested mode=%d next=%d limb=%s\n",
+              PlayerGetMode(), PlayerGetNextMode(), pName ? pName->text : "<default>");
 
    gWeaponInfo.swing_to_overhead_ms = 1200;
    gWeaponInfo.swing_force_finish_ms = 8000;
@@ -518,14 +535,14 @@ BOOL  EquipWeapon(ObjID owner, ObjID weapon, int type)
 BOOL  UnEquipWeapon(ObjID owner, ObjID weapon)
 {
    // do the making non-physical etc that would happen when reaching idle
-   WeaponIdleCallback(kPlayerModeSword, (void *)weapon);
+   WeaponIdleCallback(kPlayerModeSword, WeaponDataFromObj(weapon));
 
    // Unset as the active weapon
    if (GetWeaponObjID(owner) == weapon)
       UnSetWeapon(owner);
 
    // Set the callback for when it's done unequipping
-   PlayerHandlerSetLeaveModeCallback(kPlayerModeSword, WeaponModeExitCallback, (void *)weapon);
+   PlayerHandlerSetLeaveModeCallback(kPlayerModeSword, WeaponModeExitCallback, WeaponDataFromObj(weapon));
    gWeaponInfo.equip_pending = FALSE;
    gWeaponInfo.unequip_pending = TRUE;
 

@@ -127,14 +127,14 @@ bool ParticlesAdd(ObjID arch, mxs_vector pos)
    ang.tz = (fixang) (Rand() << 1);
 
    // velocity between -4.0 and 4.0
-   vel.x = ((Rand() % 80) - 40) / 10.0;
-   vel.y = ((Rand() % 80) - 40) / 10.0;
-   vel.z = ((Rand() % 80) - 40) / 10.0;
+   vel.x = ((Rand() % 80) - 40) / 10.0f;
+   vel.y = ((Rand() % 80) - 40) / 10.0f;
+   vel.z = ((Rand() % 80) - 40) / 10.0f;
 
    // angular velocity between -pi/2 and pi/2 (-90 and 90 degrees)
-   angvel.x = ((Rand() % 314) - 157) / 100.0;
-   angvel.y = ((Rand() % 314) - 157) / 100.0;
-   angvel.z = ((Rand() % 314) - 157) / 100.0;
+   angvel.x = ((Rand() % 314) - 157) / 100.0f;
+   angvel.y = ((Rand() % 314) - 157) / 100.0f;
+   angvel.z = ((Rand() % 314) - 157) / 100.0f;
 
    AutoAppIPtr_(ObjectSystem,pObjSys); 
 

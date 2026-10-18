@@ -10,6 +10,8 @@
 #ifndef __DRKPWUPS_H
 #define __DRKPWUPS_H
 
+struct sESndEvent;
+
 #include <objtype.h>
 
 /////////////////

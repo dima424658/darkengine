@@ -256,7 +256,7 @@ ObjID launchProjectile(ObjID launcher, ObjID proj_arch, float power, int flags, 
       if (pDimsProp->radius[0] == 0.0)
       {
          if (PhysRaycast(start, end, &hit, &hit_obj, 0.0) != kCollideNone)
-            mx_interpolate_vec(&pos, &start.vec, &hit.vec, 0.95);
+            mx_interpolate_vec(&pos, &start.vec, &hit.vec, 0.95f);
          else
             mx_copy_vec(&pos, &end.vec);
       }
@@ -280,7 +280,7 @@ ObjID launchProjectile(ObjID launcher, ObjID proj_arch, float power, int flags, 
                      pContact = &gaSphrContact[j];
                }
 
-               hit_time = pContact->time * 0.95;
+               hit_time = pContact->time * 0.95f;
             }
          }
          else
@@ -296,7 +296,7 @@ ObjID launchProjectile(ObjID launcher, ObjID proj_arch, float power, int flags, 
                mx_sub_vec(&full, &end.vec, &start.vec);
                mx_sub_vec(&partial, &hit.vec, &start.vec);
 
-               our_hit_time = 0.95 * sqrt(mx_mag2_vec(&partial) / mx_mag2_vec(&full));
+               our_hit_time = 0.95f * sqrtf(mx_mag2_vec(&partial) / mx_mag2_vec(&full));
 
                if ((hit_time < 0) || (our_hit_time < hit_time))
                   hit_time = our_hit_time;

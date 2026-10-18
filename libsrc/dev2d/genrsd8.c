@@ -193,7 +193,6 @@ void gen_rsd8_ubitmap (grs_bitmap *bm, int x, int y)
    dbm = dbm_save;
 }
 
-#pragma off(unreferenced)
 void gen_rsd8_bitmap (grs_bitmap *bm, int x, int y, int code, gdubm_func *ubm_func)
 {
    if (grd_bm.type==BMT_FLAT8)
@@ -201,4 +200,3 @@ void gen_rsd8_bitmap (grs_bitmap *bm, int x, int y, int code, gdubm_func *ubm_fu
    else      
       gen_rsd8_ubitmap(bm, x, y);
 }
-#pragma on(unreferenced)

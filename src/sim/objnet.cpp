@@ -231,7 +231,7 @@ void cObjectNetworking::RebuildProxyTable()
 
 F_DECLARE_INTERFACE(IObjectNetworking);
 
-cObjectNetworking *g_pObjNet;
+static cObjectNetworking *g_pObjNet;
 
 //------------------------------------------------------------
 // Construction/Deconstruction 
@@ -1707,7 +1707,7 @@ STDMETHODIMP_(void) cObjectNetworking::ResolveRemappings
          }
 
          // Okay, now delete the old table entry, if there is one:
-         sHostObjID oldHostObjID = {playerID, pPending->m_oldObjID};
+         sHostObjID oldHostObjID = {playerID, (NetObjID)pPending->m_oldObjID};
          ObjID result;
          if (mpProxyTable->Lookup(&oldHostObjID, &result) &&
              (result == localObjID))

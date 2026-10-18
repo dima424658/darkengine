@@ -15,6 +15,7 @@
 #include <matrixs.h>
 #include <wrtype.h>
 #include <mlight.h>
+#include <darklimit.h>
 
 // objID of object to be highlighted in the world
 EXTERN ObjID highlit_obj;
@@ -57,8 +58,8 @@ EXTERN void ObjShadowInit(void);
 EXTERN void ObjShadowTerm(void);
 EXTERN void ObjShadowClearCache(void);
 
-#define MAX_STATIC   768
-#define MAX_DYNAMIC  32
+#define MAX_STATIC   DARK_LIMIT_RUNTIME_TOTAL_LIGHT_SLOTS
+#define MAX_DYNAMIC  DARK_LIMIT_RUNTIME_DYNAMIC_LIGHTS
 
 // if you want to see what is lighting a given object (listed on the mono)
 #ifndef SHIP

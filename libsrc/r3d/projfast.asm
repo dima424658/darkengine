@@ -96,10 +96,15 @@ _FUNCDEF r3_transform_block_proj_noclip, 4
         fstp   y_off
 
 r3_tbpn_top:
-        ; we rely on the fact that the following
-        ; function doesn't change any registers;
-        ; this is only true of the asm implementation
+        ; The original matrix library supplied this function in assembly and
+        ; preserved eax/edx.  The modern project builds its C implementation,
+        ; where both registers are volatile, so preserve our destination and
+        ; transform pointers explicitly.
+        push   eax
+        push   edx
         _CALLFUNC   mx_trans_mul_vec, 3
+        pop    edx
+        pop    eax
 
         ; w = 1.0 / dst->p.z;
         fld1
@@ -196,10 +201,12 @@ _FUNCDEF r3_transform_block_proj_clip, 4
         fstp   y_off
 
 r3_tbpc_top:
-        ; we rely on the fact that the following
-        ; function doesn't change any registers
-        ; this is only true of the asm implementation
+        ; See the noclip loop above: the C matrix routine may clobber eax/edx.
+        push   eax
+        push   edx
         _CALLFUNC   mx_trans_mul_vec, 3
+        pop    edx
+        pop    eax
 
         ; w = 1.0 / dst->p.z;
         fld1

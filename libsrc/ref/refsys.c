@@ -396,7 +396,7 @@ BOOL ObjDelRefs (ObjID obj)
    RefSystemID sys;
    BOOL ok;
 
-   for (sys = 0; sys < mNumRefSystems; sys++)
+   for (sys = 0; sys < (RefSystemID)mNumRefSystems; sys++)
       if (!(ok = ObjDelRefsOfSystem (obj, sys))) return FALSE;
 
    return TRUE;
@@ -436,7 +436,7 @@ BOOL ObjUpdateLocs (ObjID obj)
    gBoundingPrismFunc (obj, pos, &prism);
 
    bins = Malloc (OBJ_BINS_SPACE);
-   for (sys = 0; sys < mNumRefSystems; sys++)
+   for (sys = 0; sys < (RefSystemID)mNumRefSystems; sys++)
    {
       num_bins = mRefSystems[sys].bin_compute_func (obj, &prism, bins);
       mRefSystems[sys].bin_update_func (obj, sys, bins, num_bins);

@@ -460,7 +460,7 @@ void cAIRoomDB::InitValidCellList()
 {
    m_CellValidList.SetSize(g_AIPathDB.NumCells() + 2);
 
-   for (int i=0; i<=g_AIPathDB.NumCells(); i++)
+   for (int i=0; i<=(int)g_AIPathDB.NumCells(); i++)
       m_CellValidList[i] = FALSE;
 }
 
@@ -521,7 +521,7 @@ void cAIRoomDB::BuildRoomCellLists()
          }
       }
 
-      for (j=1; j<=g_AIPathDB.NumCells(); j++)
+      for (j=1; j<=(int)g_AIPathDB.NumCells(); j++)
       {
          num_vertices = g_AIPathDB.GetCell(j)->vertexCount;
 
@@ -566,7 +566,7 @@ void cAIRoomDB::BuildRoomCellLists()
                MakeLocationFromVector(&start, vertex);
                MakeLocationFromVector(&end, &proj_vertex);
 
-               start.vec.z += 0.001;
+               start.vec.z += 0.001f;
                ComputeCellForLocation(&start);
                if (start.cell != CELL_INVALID)
                {

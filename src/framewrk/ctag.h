@@ -136,7 +136,7 @@ public:
 
    int GetFlags() const
    {
-      cTagRecord *pRecord = gm_RecordList[m_iTypeToken];
+      cTagRecord *pRecord = RecordList()[m_iTypeToken];
       return pRecord->m_iFlags;
    }
 
@@ -165,11 +165,11 @@ public:
    // use of tag networking...
    static int GetNumTags()
    {
-      return gm_RecordList.Size();
+      return RecordList().Size();
    }
    static cTagRecord *GetTagRecord(int index)
    {
-      return gm_RecordList[index];
+      return RecordList()[index];
    }
    static cTagRecord *GetOrMakeRecord(const char *pszTypeName, int iFlags);
    static int GetOrMakeEnum(cTagRecord *pRecord, const char *pszValueName);
@@ -184,8 +184,8 @@ private:
    int m_iTypeToken;
    int m_iValue;        // could be an int, could be named, depending on type
 
-   static cDynArray<cTagRecord *> gm_RecordList;
-   static cTagRecordHash gm_RecordHash;
+   static cDynArray<cTagRecord *> &RecordList();
+   static cTagRecordHash &RecordHash();
 };
 
 #endif // ~_CTAG_H_

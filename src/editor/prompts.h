@@ -11,10 +11,10 @@
 #define __PROMPTS_H
 
 // basic "get this value for me" prompts - all modal
-EXTERN BOOL   prompt_bool(char *def);
-EXTERN int    prompt_int(char *def);
-EXTERN double prompt_double(char *def);
-EXTERN char  *prompt_string(char *def, char *buf);
+EXTERN BOOL   prompt_bool(const char *def);
+EXTERN int    prompt_int(const char *def);
+EXTERN double prompt_double(const char *def);
+EXTERN char  *prompt_string(const char *def, char *buf);
 
 // for prompt strings
 #define PROMPT_STR_LEN 128

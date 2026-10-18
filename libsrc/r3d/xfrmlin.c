@@ -50,7 +50,7 @@ void r3_rotate_block_lin(int n,r3s_point *dst,mxs_vector *src)
 void r3_project_block_lin(int n,r3s_point *p_list)
 {
    uchar *cur, *last;
-   double w;
+   mxs_real w;
 
    TEST_IN_BLOCK("r3_project_block_lin");
 

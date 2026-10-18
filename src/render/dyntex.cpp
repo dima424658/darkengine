@@ -71,7 +71,7 @@ public:
       float rad;
 
       if (!gTextureRadiusProp->Get(objid,&rad))
-         rad = 0.1; // ?? 
+         rad = 0.1f; // ??
       return(ChangeTexture(&pos->loc, rad, id1, id2));
    }
 

@@ -112,11 +112,11 @@
 #define _HD                              "AIHTHWatch %d: "
 #define _HD_P                            GetID()
 #define _HTHWatchObj()                   (AIIsWatched(Cbt, GetID()))
-#define _HTHWatchPrint(str)              do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P); } while (0)
-#define _HTHWatchPrint1(str,v1)          do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P,v1); } while (0)
-#define _HTHWatchPrint2(str,v1,v2)       do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P,v1,v2); } while (0)
-#define _HTHWatchPrint3(str,v1,v2,v3)    do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P,v1,v2,v3); } while (0)
-#define _HTHWatchPrint4(str,v1,v2,v3,v4) do { if (_HTHWatchObj()) mprintf(_HD##str,_HD_P,v1,v2,v3,v4); } while (0)
+#define _HTHWatchPrint(str)              do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P); } while (0)
+#define _HTHWatchPrint1(str,v1)          do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P,v1); } while (0)
+#define _HTHWatchPrint2(str,v1,v2)       do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P,v1,v2); } while (0)
+#define _HTHWatchPrint3(str,v1,v2,v3)    do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P,v1,v2,v3); } while (0)
+#define _HTHWatchPrint4(str,v1,v2,v3,v4) do { if (_HTHWatchObj()) mprintf(_HD str,_HD_P,v1,v2,v3,v4); } while (0)
 #define _HTHAddScreenString(str)         // AddScreenString(str)
 #define _HTHModeName(mode)               g_AIAtkModeNames[ModeGetBase(mode)]
 const char * g_AIAtkModeNames[] =
@@ -134,15 +134,15 @@ const char * g_AIAtkModeNames[] =
 #define _HTHModeName(mode)
 #endif
 
-#define _HTHWatchInterrupts(str)       _HTHWatchPrint("_intr_ "str)
+#define _HTHWatchInterrupts(str)       _HTHWatchPrint("_intr_ " str)
 
 //////////////////////////////////////////////////////////////////////////////
 
-#define YA_PI (3.14159265358979323846) // yet another pi
+#define YA_PI (3.14159265358979323846f) // yet another pi
 
 //////////////////////////////////////////////////////////////////////////////
 
-static int overall_last_speech_time=0;
+static tSimTime overall_last_speech_time=0;
 
 static mxs_vector default_audio;
 static mxs_vector default_motion;
@@ -179,7 +179,7 @@ BOOL AIInitCombatHtoHAbility(IAIManager *)
 
    // i think i cant locally static init arrays, so i do them here once
    default_audio.el[0]  = 1.5; default_audio.el[1]  = 7.0; default_audio.el[2]  = 1.5;
-   default_motion.el[0] = 3.7; default_motion.el[1] = 7.0; default_motion.el[2] = 1.6;
+   default_motion.el[0] = 3.7f; default_motion.el[1] = 7.0f; default_motion.el[2] = 1.6f;
 
    return TRUE;
 }
@@ -330,7 +330,7 @@ STDMETHODIMP_(BOOL) cAIHtoHSubcombat::Load(ITagFile * pTagFile)
 ////////////////////////////
 // various rating interpretation/usage defines
 
-#define RatingFltPercentage(rating) ((rating*0.2)-0.1)
+#define RatingFltPercentage(rating) ((rating*0.2f)-0.1f)
 #define RatingIdleTime(rating)      (100+(200*rating))
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -339,13 +339,13 @@ BOOL cAIHtoHSubcombat::CheckStat(eAIRating stat, eActPriority pri, float fac)
 {
    if (stat==kAIRT_Null)
       return FALSE;
-   float chance=RatingFltPercentage(stat)*fac*256.0;
+   float chance=RatingFltPercentage(stat)*fac*256.0f;
    switch (pri)
    {  // @TODO: this is dumb, need stats to be able to max things out much easier
       case kRnd:  chance*=((Rand()&0x7)+2)/5;
-      case kLow:  chance/=1.8; break;
+      case kLow:  chance/=1.8f; break;
       case kNorm: break;
-      case kHigh: chance*=1.8; break;            // just use the base
+      case kHigh: chance*=1.8f; break;            // just use the base
       case kMust: return TRUE;
    }
 #ifdef LISTEN_LOUD
@@ -358,14 +358,14 @@ BOOL cAIHtoHSubcombat::CheckStat(eAIRating stat, eActPriority pri, float fac)
 }
 
 #define CheckVerbosity(pri) (CheckStat(AIGetVerbosity(GetID()),pri,0.5))
-#define CheckAptitude(pri)  (CheckStat(AIGetAptitude(GetID()),pri,1.2))
+#define CheckAptitude(pri)  (CheckStat(AIGetAptitude(GetID()),pri,1.2f))
 
 ///////////////////////////////////////
 // check for our magic "halo code has told us to block in a direction"
 STDMETHODIMP_(void) cAIHtoHSubcombat::OnGameEvent(void *magic)
 {
    enum eMTagDirectionValues dir_tags[]={kMTV_high,kMTV_right,kMTV_low,kMTV_left};
-   int phys_dir=(int)magic;
+   int phys_dir=(int)(intptr_t)magic;
 
    if (phys_dir<(sizeof(dir_tags)/sizeof(dir_tags[0])))
    {
@@ -426,8 +426,8 @@ STDMETHODIMP_(void) cAIHtoHSubcombat::OnDamage(const sDamageMsg *pMsg, ObjID rea
    g_pAIHtoHMotionResponse->Get(GetID(),&motion);
 
    // add random
-   float dmg=ouch->amount, var;
-   var=((2.0*Rand()-RAND_MAX)/(RAND_MAX+1))*audio->el[2];
+      float dmg=(float)ouch->amount, var;
+   var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1.0f))*audio->el[2];
    dmg+=var;
    _HTHWatchPrint4("AudioResponse raw %g use %g parms %g %g\n",(float)ouch->amount,dmg,audio->el[0],audio->el[1]);
    if (dmg>audio->el[0])
@@ -442,8 +442,8 @@ STDMETHODIMP_(void) cAIHtoHSubcombat::OnDamage(const sDamageMsg *pMsg, ObjID rea
          PlayCombatSound(kAISC_CombatHitNoDam,TRUE);
       }
    }
-   dmg=ouch->amount;
-   var=((2.0*Rand()-RAND_MAX)/(RAND_MAX+1))*motion->el[2];
+         dmg=(float)ouch->amount;
+   var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1.0f))*motion->el[2];
    dmg+=var;
    _HTHWatchPrint4("MotionResponse raw %g use %g parms %g %g\n",(float)ouch->amount,dmg,motion->el[0],motion->el[1]);
    if (dmg>motion->el[0])
@@ -713,7 +713,7 @@ eMode cAIHtoHSubcombat::ChooseNewAttackMode(ObjID target, const cMxsVector & tar
 
    ObjPos    *  TargetPos = ObjPosGet(target);
    floatang ang(targetLoc.x,targetLoc.y,m_pAIState->GetLocation()->x,m_pAIState->GetLocation()->y);
-   floatang plyfac(TargetPos->fac.tz*2*YA_PI/65536.0);
+   floatang plyfac(TargetPos->fac.tz*2*YA_PI/65536.0f);
    float ang_diff=Delta(plyfac,ang).value;
    imBehindTarget=(ang_diff>(YA_PI/1.8));  // in the back quadrant
 
@@ -769,7 +769,7 @@ float cAIHtoHSubcombat::StatWeightMode(sModeSelection *choice)
       use_rating=AIGetAggression(GetID());
       if (!ModeTest(m_mode,kTypeAttack))
          if (use_rating>=kAIRT_Avg)
-            modifier*=1.2;  // more likely to attack after not-attack
+            modifier*=1.2f;  // more likely to attack after not-attack
 
       if (ModeTest(m_mode,kTypeTargetHigh) && ModeTest(choice->mode,kTypeTargetHigh))
          modifier *= 10; // we definitely want to go for a high swing.
@@ -783,9 +783,9 @@ float cAIHtoHSubcombat::StatWeightMode(sModeSelection *choice)
    if (use_rating==kAIRT_Null) return 0.0;
 
    // work on the modifier some
-   if (m_mode==choice->mode) modifier*=0.8;  // reduce chance of picking same mode twice
+   if (m_mode==choice->mode) modifier*=0.8f;  // reduce chance of picking same mode twice
    if ((m_mode&kModeTypeMask)==(choice->mode&kModeTypeMask))
-      modifier*=0.8;  // if the new mode is the same type as last mode, bias against
+      modifier*=0.8f;  // if the new mode is the same type as last mode, bias against
    return 2*RatingFltPercentage(use_rating)*choice->wgt*modifier;
 }     // returns 0-1.0, so double, so 1.0 is "basic" value
 
@@ -821,7 +821,7 @@ sModeSelection *cAIHtoHSubcombat::SolveResponse(sModeSelections &selections)
       pick=Rand()%((int)(total*10.0));
    for (total=0.0, i=0; i<nChoices; i++)
    {
-      total+=(10.0*StatWeightMode(&Choices[i]));
+      total+=(10.0f*StatWeightMode(&Choices[i]));
       if (pick<total)
          break;
    }
@@ -1249,8 +1249,8 @@ HRESULT cAIHtoHSubcombat::SuggestActionsForMode(cAIGoal * pGoal, const cAIAction
          m_BackoffCount++;
          mxs_vector backoffSpot;
          float backang=m_pAIState->GetFacingAng().value;
-         backoffSpot.x=-4.9*cos(backang);  // which is which   - use hip ang point dist thing
-         backoffSpot.y=-4.9*sin(backang);  // what sign is what
+         backoffSpot.x=-4.9f*cosf(backang);  // which is which   - use hip ang point dist thing
+         backoffSpot.y=-4.9f*sinf(backang);  // what sign is what
          backoffSpot.z=0;
          mx_addeq_vec(&backoffSpot,m_pAIState->GetLocation());
          if (!m_pAI->AccessPathfinder()->Pathcast(backoffSpot))
@@ -1529,7 +1529,7 @@ HRESULT cAIHtoHSubcombat::SuggestActionsForMode(cAIGoal * pGoal, const cAIAction
                float distKeepFreshSense = pLocoAction->ComputePathDist()  - g_H2HNoFreshenRange;
 
                if (distKeepFreshSense > 0.0)
-                  m_pAI->AccessSenses()->KeepFresh(GetTargetInfo()->id, (distKeepFreshSense / g_H2HSpeed) * 1000.0);
+         m_pAI->AccessSenses()->KeepFresh(GetTargetInfo()->id, (unsigned)((distKeepFreshSense / g_H2HSpeed) * 1000.0f));
             }
             pAction = pLocoAction;
          }

@@ -79,7 +79,7 @@ struct sPeriodicLifeCycleFire
 
       // convert period to freq so we don't have to divide twice
       // @NOTE: possible precision issue.
-      float freq = 1.0/life.period; 
+      float freq = 1.0f / life.period;
 
       if (last < start) last = start; 
       if (now < start) 
@@ -90,8 +90,8 @@ struct sPeriodicLifeCycleFire
       }
 
       // how many times we've already fired.  
-      int fired = (last - start) * freq; 
-      to_fire = (now - start) * freq; 
+      int fired = (int)((last - start) * freq);
+      to_fire = (int)((now - start) * freq);
       
       // special case: send an event at the first firing
       if (!initial)

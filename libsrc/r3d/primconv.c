@@ -14,7 +14,6 @@ void r3_phandle_to_vertex_list(int n, r3s_phandle *src, grs_point **vp)
       vp[i] = r3_phandle_to_vertex(src[i]);
 }
 
-#pragma off(unreferenced)
 
   // reverse 2d vertex list by hand
 void r3_reverse_vertex_list(int n, grs_point **src)
@@ -25,6 +24,3 @@ void r3_reverse_vertex_list(int n, grs_point **src)
 void r3_maybe_reverse_vertex_list(int n, grs_point **src)
 {
 }
-
-#pragma on(unreferenced)
-

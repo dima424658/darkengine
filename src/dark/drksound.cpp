@@ -101,7 +101,7 @@ static BOOL         listenTrack  = FALSE;
 #endif
 
 // table of actual values
-#define DELTA_IGNORE (0xdeadbeef)
+#define DELTA_IGNORE ((int)0xdeadbeef)
 
 // else this is the volume to set
 static int volume_deltas[][DARK_SOUND_GROUPS]=
@@ -257,7 +257,7 @@ static float hist_diffs[HIST_DEPTH][2], cur_diffs[2];
 
 // control of state and tolerances
 static int   curMsWrong     = 0;
-static float listenVelTol   =  0.8;
+static float listenVelTol   =  0.8f;
 static float listenAngTol   = 14.0;
 static int   listenMsCap[2] = { 1500, 200 };
 
@@ -286,14 +286,14 @@ void DrkSoundFrame(void)
    {
       int ang_del=((int)cur_angpos.el[i]-(int)last_angpos.el[i]+0x10000)&0xffff;
       if (ang_del>0x8000) ang_del=0x10000-ang_del;
-      d_pos[1].el[i]=(ang_del*180.0)/((float)0x8000);
+      d_pos[1].el[i]=(ang_del*180.0f)/((float)0x8000);
    }
    last_pos=cur_pos;
    last_angpos=cur_angpos;
    for (i=0; i<2; i++)
    {
       cur_diffs[i]-=hist_diffs[hist_ptr][i];
-      hist_diffs[hist_ptr][i]=mx_mag2_vec(&d_pos[i])*1000.0/(float)ms;
+      hist_diffs[hist_ptr][i]=mx_mag2_vec(&d_pos[i])*1000.0f/(float)ms;
       cur_diffs[i]+=hist_diffs[hist_ptr][i];
       hist_ptr=(hist_ptr+1)%HIST_DEPTH;
    }

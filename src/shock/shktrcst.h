@@ -9,7 +9,7 @@
 #ifndef __SHKTRCST_H
 #define __SHKTRCST_H
 
-typedef enum eTrait {
+enum eTrait {
    kTraitEmpty,      // 00
 
    // 01

@@ -42,17 +42,17 @@ static void code_y(lgd3ds_point *v)
 
 static void clip_func(lgd3ds_point *v0, lgd3ds_point *v1, float r)
 {
-   float da = v1->a - v0->a;
-   float dr = v1->r - v0->r;
-   float dg = v1->g - v0->g;
-   float db = v1->b - v0->b;
+   float da = (float)v1->a - v0->a;
+   float dr = (float)v1->r - v0->r;
+   float dg = (float)v1->g - v0->g;
+   float db = (float)v1->b - v0->b;
    float du = v1->u - v0->u;
    float dv = v1->v - v0->v;
 
-   tmp->a = v0->a + da*r;
-   tmp->r = v0->r + dr*r;
-   tmp->g = v0->g + dg*r;
-   tmp->b = v0->b + db*r;
+   tmp->a = (uchar)(v0->a + da*r);
+   tmp->r = (uchar)(v0->r + dr*r);
+   tmp->g = (uchar)(v0->g + dg*r);
+   tmp->b = (uchar)(v0->b + db*r);
    tmp->u = v0->u + du*r;
    tmp->v = v0->v + dv*r;
    tmp->rhw = v0->rhw;

@@ -23,7 +23,7 @@ void flat8_mono_trans_ubitmap (grs_bitmap *bm, int x, int y)
    uchar *p_dst;
    int p_src_delta, p_dst_delta;
 
-   fc = grd_gc.fcolor;
+   fc = (char)grd_gc.fcolor;
    h = bm->h;
    p_src = bm->bits;
    p_dst = grd_bm.bits + y*grd_bm.row + x;
@@ -61,8 +61,8 @@ void flat8_mono_opaque_ubitmap (grs_bitmap *bm, int x, int y)
    uchar *p_dst;
    int p_src_delta, p_dst_delta;
 
-   fc = grd_gc.fcolor;
-   bc = grd_gc.bcolor;
+   fc = (char)grd_gc.fcolor;
+   bc = (char)grd_gc.bcolor;
    h = bm->h;
    p_src = bm->bits;
    p_dst = grd_bm.bits + y*grd_bm.row + x;
@@ -121,7 +121,7 @@ void flat8_mono_trans_solid_ubitmap (grs_bitmap *bm, int x, int y)
 {
    int fc_save = grd_gc.fcolor;
 
-   grd_gc.fcolor = grd_gc.fill_parm;
+   grd_gc.fcolor = (long)grd_gc.fill_parm;
 
    flat8_mono_trans_ubitmap(bm, x, y);
 

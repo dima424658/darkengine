@@ -18,6 +18,7 @@
 
 #include <aitype.h>
 #include <aipthtyp.h>
+#include <darklimit.h>
 
 #pragma pack(1)
 #pragma once
@@ -43,7 +44,7 @@ public:
 
 struct sZoneOkBitsMap
 {
-   long key;
+   int32 key;
    tAIPathOkBits okBits;
    char pad[2];
 
@@ -90,7 +91,8 @@ class cAICellDoorTable : public cHashSet<sAICellDoor *, tAIPathCellID, cHashFunc
 // Pathfind Database (very private!)
 //
 
-#define MAX_CELLS                (0xfffe)       // in g_AIPathDB.m_Cells array
+#define MAX_AI_PATH_CELLS       DARK_LIMIT_RUNTIME_AIPATH_INDEX
+#define MAX_CELLS               DARK_LIMIT_RUNTIME_AIPATH_SLOTS
 
 #define PATH_EDGE_OPEN  0
 #define PATH_EDGE_WALL  1
@@ -173,32 +175,36 @@ struct sAIMovableCell // 28 bytes
 
 #define IDWRAP_Cell2Cell 0x01
 
-struct sAIPathCell // 32 bytes
+// Runtime path cells use native-width indices.  The 3.3 and older codecs
+// explicitly pack these into their historical 16-bit disk records; NewDark
+// 3.4 can therefore be decoded without wrapping large cell-vertex tables.
+struct sAIPathCell // 48 bytes
 {
                                  // what vertices am I made of?
                                  // what other cells am I connected to?
                                  // normal of path cell
                                  // pathfinding data
 
-/* 0*/   tAIPathCell2VertexLinkIDPacked firstVertex; // in pathCell2VertexLink array
+/* 0*/   tAIPathCell2VertexLinkID firstVertex; // in pathCell2VertexLink array
 
-/* 2*/   tAIPathCell2CellLinkIDPacked firstCell;   // in pathCell2CellLink array
+/* 4*/   tAIPathCell2CellLinkID firstCell;   // in pathCell2CellLink array
 
-/* 4*/   tAIPathCellIDPacked plane;
+/* 8*/   tAIPathCellID plane;
 
-/* 6*/   tAIPathCellIDPacked  next;            // in the A* search open list
-/* 8*/   tAIPathCellIDPacked  bestNeighbor;    // bestNeighbor yet found during the search, index in g_AIPathDB.m_Cells
-/*10*/   tAIPathCell2CellLinkIDPacked  linkFromNeighbor;// link used to connect neighbor to me
+/*12*/   tAIPathCellID next;            // in the A* search open list
+/*16*/   tAIPathCellID bestNeighbor;    // bestNeighbor yet found during the search, index in g_AIPathDB.m_Cells
+/*20*/   tAIPathCell2CellLinkID linkFromNeighbor;// link used to connect neighbor to me
 
-/*12*/   uchar vertexCount; // in pathCell2VertexLink array
+/*24*/   ushort vertexCount; // in pathCell2VertexLink array
 
-/*13*/   BYTE pathFlags;
+/*26*/   BYTE pathFlags;
 
-/*14*/   uchar cellCount;   // in pathCell2CellLink array
+/*27*/   uchar cellCount;   // in pathCell2CellLink array
 
-/*15*/   uchar wrapFlags; // set if any ID's have wrapped. Only used in processing, not in game!
+/*28*/   uchar wrapFlags; // legacy editor-build bookkeeping; normalized to zero on load
+         uchar runtimePad[3];
 
-/*16*/   cMxsVector center;
+/*32*/   cMxsVector center;
 
          // extra info needed for each cell, to help decide what motions to
          // play & whatever; all handled in terms of bits
@@ -212,20 +218,20 @@ struct sAIPathCell // 32 bytes
          uint m_LightLevel : 4;
          uint m_IsRamp : 1;    // Is it slanted?
          uint m_IsStair : 1;   // Are nearby surfaces a little lower?
-/*28*/   uint m_StairSize : 2;
+/*44*/   uint m_StairSize : 2;
 
          uint m_Volume : 3;
          uint m_CeilingHeight : 3;
          uint m_Doorway : 1;
-/*29*/   uint m_Corner : 1;
+/*45*/   uint m_Corner : 1;
 
          uint m_CliffEdge : 1;
          uint m_Water : 1;
-/*30*/   uint pad30_2 : 6;
+/*46*/   uint pad30_2 : 6;
 
-/*31*/   uint pad31 : 8;
+/*47*/   uint pad31 : 8;
 
-/*END 32*/
+/*END 48*/
 };
 
 #define AIAddrCellInfo(p)  (((uchar *)(&((p)->center))) + sizeof((p)->center))
@@ -235,14 +241,15 @@ struct sAIPathCell // 32 bytes
 
 // link data is precalculated data to pass from one to cell to
 // another.  Data is directional in nature.
-struct sAIPathCellLink // 8 bytes
+struct sAIPathCellLink // 16 bytes
 {
-/* 0*/   tAIPathCellIDPacked   dest;     // who does the link point to?
-/* 2*/   tAIPathVertexIDPacked vertex_1,
-/* 4*/                         vertex_2; // what vertices do I head towards to reach the other cell (index in g_AIPathDB.m_Vertices array)
-/* 6*/   tAIPathOkBits         okBits;   // which AIs can use the link?
-/* 7*/   uchar                 cost;     // how expensive is it?
-/*END 8*/
+/* 0*/   tAIPathCellID   dest;     // who does the link point to?
+/* 4*/   tAIPathVertexID vertex_1,
+/* 8*/                   vertex_2; // what vertices do I head towards to reach the other cell
+/*12*/   tAIPathOkBits   okBits;   // which AIs can use the link?
+/*13*/   uchar           runtimePad;
+/*14*/   ushort          cost;     // how expensive is it?
+/*END 16*/
 };
 
 ///////////////////////////////////////////////////////////////////////////////

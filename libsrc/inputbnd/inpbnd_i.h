@@ -43,12 +43,14 @@ typedef BOOL (*tTrapBindFilter) (char *pControl, const char *pCmd, void *pUserDa
 // whether or not the control was bound to the command.
 typedef void (*tTrapBindPostFunc) (BOOL bBound);
 
+struct _intrnl_var_channel;
+
 // Accepts an array of pointers to all channels of a var,
 // the number of channels in the array, and a char buffer
 // of IB_VARSTRMAX length, for which to stuff the prevailing
 // value of the conflicting channels. Should also return
 // TRUE if conflict was resolved.
-typedef BOOL CDECL (*tBindAggCallback) (struct _intrnl_var_channel **ppChannels, long iNum, char *pBuf);
+typedef BOOL (CDECL *tBindAggCallback) (struct _intrnl_var_channel **ppChannels, long iNum, char *pBuf);
 
 // Accepts variable name, value in string form, and 
 // whether or not the control was already down.
@@ -285,9 +287,9 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    // For setting and getting out current context. This should be a bitmask.
    // Also, do we want to poll when changing to a different context?
    //
-   STDMETHOD_(BOOL, SetContext) (THIS_ unsigned long iContext, BOOL bPoll) PURE;
+   STDMETHOD_(BOOL, SetContext) (THIS_ ulong iContext, BOOL bPoll) PURE;
    // Stuffs it
-   STDMETHOD_(void, GetContext) (THIS_ unsigned long *pContext) PURE;
+   STDMETHOD_(void, GetContext) (THIS_ ulong *pContext) PURE;
 
    //
    // Set globally master agg callback.
@@ -328,6 +330,15 @@ DECLARE_INTERFACE_(IInputBinder, IUnknown)
    //
    STDMETHOD_(void, Reset)(THIS) PURE;
 };
+
+// Visits every binding in the input binder's current context.  This keeps
+// diagnostic and help UIs from having to save and re-parse a temporary .bnd
+// file just to display the active controls.
+typedef BOOL (LGAPI *tInputBindingIterCallback)(const char *pControl,
+                                                const char *pCommand,
+                                                void *pData);
+EXTERN void LGAPI InputBinderForEachBinding(tInputBindingIterCallback callback,
+                                             void *pData);
 
 
 

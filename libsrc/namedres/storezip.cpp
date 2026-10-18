@@ -55,9 +55,10 @@ cZipSubstorage::~cZipSubstorage()
 
 	if (m_pStreamTable)
 	{
-		tHashSetHandle h;
-		for (auto* pEntry = m_pStreamTable->GetFirst(h); pEntry != nullptr; m_pStreamTable->GetNext(h))
+		while (!m_pStreamTable->IsEmpty())
 		{
+			tHashSetHandle h;
+			auto* pEntry = m_pStreamTable->GetFirst(h);
 			m_pStreamTable->Remove(pEntry);
 			delete pEntry;
 		}
@@ -199,9 +200,10 @@ IStore* cZipSubstorage::GetSubstorage(const char* pSubPath, BOOL bCreate)
 	if (!pSubPath || !strlen(pSubPath))
 		return nullptr;
 
-	char topPathLevel[32];
+	char topPathLevel[MAX_STORENAME];
 	const char* pathRest;
-	GetPathTop(pSubPath, topPathLevel, &pathRest);
+	if (!GetPathTop(pSubPath, topPathLevel, sizeof(topPathLevel), &pathRest))
+		return nullptr;
 
 	IStore* pSubstorage = nullptr;
 
@@ -230,7 +232,7 @@ IStore* cZipSubstorage::GetSubstorage(const char* pSubPath, BOOL bCreate)
 		}
 		else
 		{
-			char nameBuffer[32];
+			char nameBuffer[MAX_STORENAME];
 			if (!m_pStoreManager->HeteroStoreExists(this, topPathLevel, nameBuffer))
 				return 0;
 
@@ -494,7 +496,7 @@ void cZipSubstorage::RegisterSubstorage(IStore* pSubstore, const char* pName)
 	m_pSubstorageTable->Insert(pStoreEntry);
 
 	IStoreHierarchy* pSubstoreHier = nullptr;
-	if (SUCCEEDED(pSubstore->QueryInterface(IID_IStoreHierarchy, reinterpret_cast<void**>(pSubstoreHier))))
+	if (SUCCEEDED(pSubstore->QueryInterface(IID_IStoreHierarchy, reinterpret_cast<void**>(&pSubstoreHier))))
 	{
 		pSubstoreHier->SetParent(this);
 		pSubstoreHier->Release();
@@ -525,13 +527,14 @@ void cZipSubstorage::Close()
 	if (!m_pSubstorageTable)
 		return;
 
-	tHashSetHandle h;
-	for (auto* pEntry = m_pSubstorageTable->GetFirst(h); pEntry != nullptr; m_pSubstorageTable->GetNext(h))
+	while (!m_pSubstorageTable->IsEmpty())
 	{
+		tHashSetHandle h;
+		auto* pEntry = m_pSubstorageTable->GetFirst(h);
 		m_pSubstorageTable->Remove(pEntry);
 
 		IStoreHierarchy* pHier = nullptr;
-		if (SUCCEEDED(pEntry->m_pStore->QueryInterface(IID_IStoreHierarchy, reinterpret_cast<void**>(pHier))))
+		if (SUCCEEDED(pEntry->m_pStore->QueryInterface(IID_IStoreHierarchy, reinterpret_cast<void**>(&pHier))))
 		{
 			pHier->Close();
 			pHier->Release();
@@ -603,9 +606,10 @@ cZipSubstorage* cZipSubstorage::MakeSubstorage(const char* pSubPath)
 	if (strlen(pSubPath) == 0)
 		CriticalMsg("cZipStorage::MakeSubstorage -- empty subpath");
 
-	char topPathLevel[32];
+	char topPathLevel[MAX_STORENAME];
 	const char* pathRest;
-	GetPathTop(pSubPath, topPathLevel, &pathRest);
+	if (!GetPathTop(pSubPath, topPathLevel, sizeof(topPathLevel), &pathRest))
+		return nullptr;
 
 	cZipSubstorage* pSubstorage = nullptr;
 
@@ -700,16 +704,33 @@ cZipStorage::cZipStorage(IStore* pParent, IStoreStream* pZipStream, const char* 
 
 		m_pZipStream->SetPos(dirRecord.CommentLen + dirRecord.ExtraLen + m_pZipStream->GetPos());
 
+		// FM archives commonly retain their install-relative top directory:
+		// snd.zip contains snd/special/foo.ogg, for example.  The archive is
+		// already mounted as the "snd" substorage, so keeping that component
+		// would make the resource visible only as snd/snd/special/foo.ogg.
+		// CRFs traditionally omit the redundant component and are unchanged.
+		const char* pEntryName = pFilename;
+		const size_t rootLen = strlen(pName);
+		if (dirRecord.FilenameLen > rootLen &&
+			_strnicmp(pEntryName, pName, rootLen) == 0 &&
+			(pEntryName[rootLen] == '/' || pEntryName[rootLen] == '\\'))
+			pEntryName += rootLen + 1;
+		if (!*pEntryName)
+		{
+			Free(pFilename);
+			continue;
+		}
+
 		if (dirRecord.ExternalAttributes & 0x10)
 		{
-			auto* pSubstore = MakeSubstorage(pFilename);
+			auto* pSubstore = MakeSubstorage(pEntryName);
 			pSubstore->Release();
 		}
 		else
 		{
 			char pPath[512]{};
-			char pFileRoot[32]{};
-			if (PathAndName(pFilename, pPath, pFileRoot))
+			char pFileRoot[MAX_STORENAME]{};
+			if (PathAndName(pEntryName, pPath, pFileRoot))
 			{
 				auto* pSubstore = MakeSubstorage(pPath);
 				if (!pSubstore)

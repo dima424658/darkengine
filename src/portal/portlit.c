@@ -97,16 +97,16 @@ LightmapEntry rgb_sub_clamp(LightmapEntry cur, int add)
 // for each light we process, we write out the following tables
 // so we can compute things fast
 ulong pl_red_color[256], pl_green_color[256], pl_blue_color[256];
-ulong pl_red_mask, pl_green_mask, pl_blue_mask;
+extern ulong pl_red_mask, pl_green_mask, pl_blue_mask;
 LightmapEntry rgb_add_clamp(LightmapEntry cur, int add)
 {
-   int r = pl_red_color[add] + (cur & pl_red_mask);
-   int g = pl_green_color[add] + (cur & pl_green_mask);
-   int b = pl_blue_color[add] + (cur & pl_blue_mask);
+   ulong r = pl_red_color[add] + (cur & pl_red_mask);
+   ulong g = pl_green_color[add] + (cur & pl_green_mask);
+   ulong b = pl_blue_color[add] + (cur & pl_blue_mask);
    if (r > pl_red_mask) r = pl_red_mask; else r &= pl_red_mask;
    if (g > pl_green_mask) g = pl_green_mask; else g &= pl_green_mask;
    if (b > pl_blue_mask) b = pl_blue_mask; else b &= pl_blue_mask;
-   return r | g | b;
+   return (LightmapEntry)(r | g | b);
 }
 
 LightmapEntry rgb_sub_clamp(LightmapEntry cur, int add)
@@ -291,7 +291,7 @@ float compute_light_at_point(mxs_vector *pt, mxs_vector *norm, mxs_vector *lt)
    len = mx_mag_vec(&lvec);
    if (max_dist != 0.0 && len > max_dist)
       return 0.0;
-   result = (result/len/2 + 0.5);
+   result = (result/len/2 + 0.5f);
 
       // copy quake's angle remapping
      // bright * result / length(vec)^2 / 2, bright / length(vec)
@@ -382,7 +382,7 @@ void portal_light_poly(int r, int p)
       voff += poly++->num_vertices;
 }
 
-#define LIGHT_MAP_SIZE  0.25
+#define LIGHT_MAP_SIZE  0.25f
 
 bool record_movement;
 
@@ -396,7 +396,7 @@ void (*lightmap_point_callback)(mxs_vector *loc, bool lit);
 void (*lightmap_callback)(PortalLightMap *lightmap);
 
 
-#define DIST_IN_FROM_POLYGON .025
+#define DIST_IN_FROM_POLYGON .025f
 
 
 #ifdef EDITOR
@@ -427,7 +427,7 @@ static int portal_illumination_from_light(Location *point_being_lit,
       if (ObjRaycastC(light, point_being_lit, &dummy, TRUE,
                      g_pObjCastList, g_ObjCastListSize, 0, FALSE) == kObjCastNone)
       {
-         return compute_light_at_point(&point_being_lit->vec,
+         return (int)compute_light_at_point(&point_being_lit->vec,
                   &cell->plane_list[cell->poly_list[polygon_index].planeid].normal,
                   &light->vec);
       }
@@ -439,7 +439,7 @@ static int portal_illumination_from_light(Location *point_being_lit,
          point_being_lit = &dest;
       if (PortalRaycast(light, point_being_lit, &dummy, 0))
       {
-         return compute_light_at_point(&point_being_lit->vec,
+         return (int)compute_light_at_point(&point_being_lit->vec,
                   &cell->plane_list[cell->poly_list[polygon_index].planeid].normal,
                   &light->vec);
       }
@@ -563,7 +563,7 @@ static int portal_illumination_from_sunlight(Location *point_being_lit,
             break;
          case kObjCastTerrain:
             if (TouchedTheSky())
-               return compute_sunlight_at_point(&cell->plane_list[cell->poly_list[polygon_index].planeid].normal);
+               return (int)compute_sunlight_at_point(&cell->plane_list[cell->poly_list[polygon_index].planeid].normal);
          case kObjCastMD:
          case kObjCastMesh:
             break;
@@ -578,7 +578,7 @@ static int portal_illumination_from_sunlight(Location *point_being_lit,
       }
 
       if (TouchedTheSky())
-         return compute_sunlight_at_point(&cell->plane_list[cell->poly_list[polygon_index].planeid].normal);
+         return (int)compute_sunlight_at_point(&cell->plane_list[cell->poly_list[polygon_index].planeid].normal);
    }
 
    return 0;
@@ -624,9 +624,9 @@ void portal_raycast_light_poly_lightmap(PortalCell *r, int s, int vc,
    // we want base to be at (0,0)
 
    mx_scale_add_vec(&src, base,
-      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0));
+      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0f));
    mx_scale_addeq_vec(&src,
-      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0));
+      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0f));
    mx_scale_addeq_vec(&src,
                       &r->plane_list[r->poly_list[s].planeid].normal,
                       DIST_IN_FROM_POLYGON);
@@ -690,9 +690,9 @@ void portal_raycast_light_poly_lightmap(PortalCell *r, int s, int vc,
             lux = portal_illumination_from_light(&dest, lt, &source, r, s, objcast);
 
          if (lux && portal_spotlight) {
-            lux *= portal_evaluate_spotlight(&where,
+            lux = (int)(lux * portal_evaluate_spotlight(&where,
                       &portal_spotlight_loc, &portal_spotlight_dir,
-                      portal_spotlight_inner, portal_spotlight_outer);
+                      portal_spotlight_inner, portal_spotlight_outer));
          }
 
          light_point = &(bits[j * r->light_list[s].pixel_row + i]);
@@ -732,9 +732,9 @@ void portal_raycast_sunlight_poly_lightmap(PortalCell *r, int s, int vc,
    // we want base to be at (0,0)
 
    mx_scale_add_vec(&src, base,
-      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0));
+      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0f));
    mx_scale_addeq_vec(&src,
-      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0));
+      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0f));
    mx_scale_addeq_vec(&src, &r->plane_list[r->poly_list[s].planeid].normal,
                       DIST_IN_FROM_POLYGON);
 
@@ -828,9 +828,9 @@ void portal_light_poly_lightmap(PortalCell *r, int s, int vc, Location *lt,
    // we want base to be at (0,0)
 
    mx_scale_add_vec(&src, base,
-      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0));
+      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0f));
    mx_scale_addeq_vec(&src,
-      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0));
+      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0f));
 
    dist = fast_precompute_light(&src,
         &r->plane_list[r->poly_list[s].planeid].normal, &lt->vec);
@@ -852,11 +852,11 @@ void portal_light_poly_lightmap(PortalCell *r, int s, int vc, Location *lt,
       mx_scale_vec(&step, &r->render_list[s].tex_u, LIGHT_MAP_SIZE);
 
       for (i=0; i < r->light_list[s].w; ++i) {
-         int amt = compute_light_at_point(&where, norm, &lt->vec);
+         int amt = (int)compute_light_at_point(&where, norm, &lt->vec);
          if (amt && portal_spotlight) {
-            amt *= portal_evaluate_spotlight(&where,
+            amt = (int)(amt * portal_evaluate_spotlight(&where,
                       &portal_spotlight_loc, &portal_spotlight_dir,
-                      portal_spotlight_inner, portal_spotlight_outer);
+                      portal_spotlight_inner, portal_spotlight_outer));
          }
 
          if (amt > 1) {
@@ -894,9 +894,9 @@ void portal_dynamic_light_lightmap(PortalCell *r, int s, int vc, Location *lt,
    // we want base to be at (0,0)
 
    mx_scale_add_vec(&src, base,
-      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0));
+      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0f));
    mx_scale_addeq_vec(&src,
-      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0));
+      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0f));
 
    dist = fast_precompute_light(&src,
         &r->plane_list[r->poly_list[s].planeid].normal, &lt->vec);
@@ -932,7 +932,7 @@ void portal_dynamic_light_lightmap(PortalCell *r, int s, int vc, Location *lt,
       mx_scale_vec(&step, &r->render_list[s].tex_u, LIGHT_MAP_SIZE);
 
       for (i=0; i < r->light_list[s].w; ++i) {
-         int amt = fast_compute_dynamic_light_at_point(&where, &lt->vec, dist);
+         int amt = (int)fast_compute_dynamic_light_at_point(&where, &lt->vec, dist);
 #ifndef RGB_LIGHTING
          if (amt > 8) {
             amt += *output;
@@ -973,9 +973,9 @@ void portal_dynamic_dark_lightmap(PortalCell *r, int s, int vc, Location *lt,
    // we want base to be at (0,0)
 
    mx_scale_add_vec(&src, base,
-      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0));
+      &r->render_list[s].tex_u, -r->render_list[s].u_base / (16*256.0f));
    mx_scale_addeq_vec(&src,
-      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0));
+      &r->render_list[s].tex_v, -r->render_list[s].v_base / (16*256.0f));
 
    dist = fast_precompute_light(&src,
         &r->plane_list[r->poly_list[s].planeid].normal, &lt->vec);
@@ -1011,7 +1011,7 @@ void portal_dynamic_dark_lightmap(PortalCell *r, int s, int vc, Location *lt,
       mx_scale_vec(&step, &r->render_list[s].tex_u, LIGHT_MAP_SIZE);
 
       for (i=0; i < r->light_list[s].w; ++i) {
-         int amt = fast_compute_dynamic_light_at_point(&where, &lt->vec, dist);
+         int amt = (int)fast_compute_dynamic_light_at_point(&where, &lt->vec, dist);
 #ifndef RGB_LIGHTING
          if (amt > 52) {
             amt = *output - amt;

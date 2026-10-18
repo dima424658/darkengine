@@ -4,7 +4,7 @@
 #include <filepath.h>
 
 
-#pragma pack(1)
+#pragma pack(push, 1)
 struct sDirEndRecord
 {
 	uint32 Signature;
@@ -16,7 +16,7 @@ struct sDirEndRecord
 	uint32 DirOffset;
 	uint16 CommentLen;
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 static_assert(sizeof(sDirEndRecord) == 22, "Invalid sDirEndRecord size");
 

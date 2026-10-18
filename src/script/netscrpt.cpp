@@ -230,7 +230,7 @@ public:
       AutoAppIPtr(ScriptMan);
       timer_handle result = 
          (timer_handle) pScriptMan->SetTimedMessage(pMsg, 
-                                                    (time*1000), 
+                                                    (ulong)(time * 1000.0f),
                                                     kSTM_OneShot);
       pMsg->Release();
       return result;

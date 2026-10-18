@@ -38,7 +38,7 @@ static IRes *ovls[SCRNOVLS_MAX_ELEM];
 static Point ovls_pos[SCRNOVLS_MAX_ELEM];
 static int ovls_on[SCRNOVLS_MAX_ELEM];
 
-static float light_min=0.3, light_mul=2.0;
+static float light_min=0.3f, light_mul=2.0f;
 
 void ScreenOverlaysInit(void)
 {
@@ -100,9 +100,9 @@ void ScreenOverlaysInit(void)
    }
 
    if (config_get_int("light_min",&i))
-      light_min=i/100.0;
+      light_min=i/100.0f;
    if (config_get_int("light_mul",&i))
-      light_mul=i;
+      light_mul=(float)i;
 }
 
 // free the resources!
@@ -134,7 +134,7 @@ void ScreenOverlaysUpdate(void)
 
                l_level*=light_mul; 
                if (l_level<light_min) l_level=light_min; else if (l_level>1.0) l_level=1.0;
-               cl_lvl=l_level*16; if (cl_lvl>=16) cl_lvl=15;
+               cl_lvl=(int)(l_level*16); if (cl_lvl>=16) cl_lvl=15;
                gr_clut_bitmap(bm, ovls_pos[i].x, ovls_pos[i].y, use_clut+(cl_lvl*256));
             }
             else

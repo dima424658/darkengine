@@ -145,9 +145,9 @@ struct sAIAwareness
       return !(lastPos.x == FLT_MAX && lastPos.y == FLT_MAX && lastPos.z == FLT_MAX);
    }
 
-   ulong TimeSinceContact() const
+   tSimTime TimeSinceContact() const
    {
-      return AIGetTime() - lastContact;
+      return AIGetTime() - (tSimTime)lastContact;
    }
 
    // Of what the awareness pertains

@@ -16,7 +16,6 @@
 extern void (*flat8_uhline_func[])();
 extern void (*flat8_uvline_func[])();
 
-#pragma off(unreferenced)
 gdulin_func *flat8_uhline_expose(int x, int y, int x1)
 {
    return (gdulin_func *)flat8_uhline_func[grd_gc.fill_type];
@@ -26,7 +25,6 @@ gdulin_func *flat8_uvline_expose(int x, int y, int y1)
 {
    return (gdulin_func *)flat8_uvline_func[grd_gc.fill_type];
 }
-#pragma on(unreferenced)
 
 void flat8_uhline(int x, int y, int x1)
 {

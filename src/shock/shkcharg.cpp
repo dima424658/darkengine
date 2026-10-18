@@ -34,7 +34,6 @@ extern "C" {
 
 #include <shkcharg.h>
 #include <shkplayr.h>
-#include <shkmusic.h>
 
 #include <appsfx.h>
 #include <memall.h>
@@ -408,7 +407,6 @@ void CCharGenerator::FreeBitmaps(void)
 #endif
 }
 
-#pragma off(unreferenced)
 
 /* ------------------------------------------------------------ */
 bool CCharGenerator::KeyHandler(uiEvent *ev, Region *reg, void *data)
@@ -495,7 +493,6 @@ static bool summary_plusminus_cb(ushort action, int button, void* data, LGadBox*
    else
       return(FALSE);
 }
-#pragma on(unreferenced)
 /* ------------------------------------------------------------ */
 // note fullwise the stupid hackery
 char *service_texts[3] = {
@@ -1194,8 +1191,6 @@ void CCharGenerator::ContinueGuts(void)
          ILoop* looper = AppGetObj(ILoop);
          ILoop_EndMode(looper, 0);  // This is to "pop" the loopmode
          SafeRelease(looper);    
-         // cd music hack
-         CDStopPlay();
       }
       else
          ChangeState(KGenCharSummary);

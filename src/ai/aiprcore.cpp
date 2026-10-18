@@ -457,7 +457,8 @@ int _AIGetTeam(ObjID obj)
 // Whether the AI should play the stand motion
 //
 
-EXTERN const char * g_pszAIDefStandTags = "Stand 0";
+EXTERN const char * g_pszAIDefStandTags;
+const char * g_pszAIDefStandTags = "Stand 0";
 
 static sPropertyDesc _g_AIStandTagsPropertyDesc =
 {

@@ -9,10 +9,11 @@
 #define __FAMILY__H
 
 #include <resapi.h>
+#include <darklimit.h>
 
 //////////////////
 // types and such for the family controls
-#define MAX_FAMILIES 16
+#define MAX_FAMILIES DARK_LIMIT_RUNTIME_TEXTURE_FAMILIES
 #define FAM_NAME_LEN 24
 
 typedef struct {

@@ -17,7 +17,6 @@
 #include <simtime.h>
 #include <rand.h>
 
-#include <minmax.h> 
 
 #include <objpos.h>
 #include <physapi.h>
@@ -308,8 +307,8 @@ void _SmoothHeadingNonPhysical(ObjID ghost, sGhostHeartbeat *pHeart, float dt)
    if (delta==0) return;  // since we assume we set this last?
    
    const short rot_sign  = (delta>0)?1:-1;  // which way...
-   const int   max_rot = dt*0xC000, min_rot = dt*0x1000; // slower than this is criminal
-   short       cmp_rot   = delta * dt * 8;  // base computed from delta - x by who knows...
+   const int   max_rot = (int)(dt*0xC000), min_rot = (int)(dt*0x1000); // slower than this is criminal
+   short       cmp_rot = (short)(delta * dt * 8);  // base computed from delta - x by who knows...
 
 #ifdef TRY_PACKET_ROT   
    if ((pHeart->flags&kGhostHBFullAngs)==0)
@@ -577,9 +576,9 @@ void _AnalyzeVelocity(sGhostRemote *pGR, eGhostMotionSpeed *spd, int *dir)
    {  // if moving, compare facing to velocity vector, choose quadrant we are pointing at
       mxs_angvec angvec;
       PhysGetModRotation(pGR->obj, &angvec);
-      float vel_ang=atan2(ovel.y,ovel.x);
-      if (vel_ang<0) vel_ang+=MX_REAL_2PI;
-      fixang vel_fixang=(vel_ang*MX_ANG_PI)/MX_REAL_PI;
+      float vel_ang=atan2f(ovel.y,ovel.x);
+      if (vel_ang<0) vel_ang += (float)MX_REAL_2PI;
+      fixang vel_fixang=(fixang)((vel_ang*MX_ANG_PI)/MX_REAL_PI);
 
       static int result_dir[]={3,3,3,2,2,4,4,4,4,4,4,1,1,3,3,3};
       // check for sides and back, left=1, right=2, back=4 (front is 3, go figure)

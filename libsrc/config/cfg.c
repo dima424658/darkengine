@@ -9,12 +9,10 @@
 #include <config.h>
 #include <cfg.h>
 
-#pragma off(unreferenced)
 uint real_simple_readfunc(char* var)
 {
    return 0xFFFFFFFE;
 }
-#pragma on(unreferenced)
 
 errtype config_load(const char* fn)
 {

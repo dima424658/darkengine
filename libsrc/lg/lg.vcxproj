@@ -151,15 +151,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="breakkey.h" />
+    <ClInclude Include="..\..\winsrc\lg\breakkey.h" />
     <ClInclude Include="bugtrak.h" />
-    <ClInclude Include="codewrit.h" />
+    <ClInclude Include="..\..\winsrc\lg\codewrit.h" />
     <ClInclude Include="coremutx.h" />
     <ClInclude Include="crc32.h" />
     <ClInclude Include="datapath.h" />
     <ClInclude Include="dbg.h" />
     <ClInclude Include="dbgpp.h" />
-    <ClInclude Include="findfile.h" />
     <ClInclude Include="hashfns.h" />
     <ClInclude Include="lg.h" />
     <ClInclude Include="lgalt.h" />
@@ -170,17 +169,17 @@
     <ClInclude Include="lgsprntf.h" />
     <ClInclude Include="memreq.h" />
     <ClInclude Include="memstat.h" />
-    <ClInclude Include="stktrace.h" />
-    <ClInclude Include="thrdtool.h" />
+    <ClInclude Include="..\..\winsrc\lg\stktrace.h" />
+    <ClInclude Include="..\..\winsrc\lg\thrdtool.h" />
     <ClInclude Include="timings.h" />
     <ClInclude Include="tmpalloc.h" />
     <ClInclude Include="_lg.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="appagg.cpp" />
-    <ClCompile Include="breakkey.cpp" />
+    <ClCompile Include="..\..\winsrc\lg\breakkey.cpp" />
     <ClCompile Include="bugtrak.c" />
-    <ClCompile Include="codewrit.cpp" />
+    <ClCompile Include="..\..\winsrc\lg\codewrit.cpp" />
     <ClCompile Include="coremutx.cpp" />
     <ClCompile Include="crc32.cpp" />
     <ClCompile Include="datapath.cpp" />
@@ -189,18 +188,16 @@
     <ClCompile Include="dbgpp.cc" />
     <ClCompile Include="dpathdir.c" />
     <ClCompile Include="exit.c" />
-    <ClCompile Include="findfile.cpp" />
     <ClCompile Include="hashfns.cpp" />
     <ClCompile Include="lgassert.cpp" />
     <ClCompile Include="lglog.cpp" />
     <ClCompile Include="lgprntf.c" />
     <ClCompile Include="lgsprntf.c" />
-    <ClCompile Include="memgrow.c" />
     <ClCompile Include="memreq.cpp" />
     <ClCompile Include="memstat.c" />
     <ClCompile Include="stack.c" />
-    <ClCompile Include="stktrace.cpp" />
-    <ClCompile Include="thrdtool.cpp" />
+    <ClCompile Include="..\..\winsrc\lg\stktrace.cpp" />
+    <ClCompile Include="..\..\winsrc\lg\thrdtool.cpp" />
     <ClCompile Include="timings.cpp" />
     <ClCompile Include="tmpalloc.c" />
   </ItemGroup>

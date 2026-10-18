@@ -12,10 +12,11 @@
 
 #define __CPPTOOLSAPI
 
+#include <stdint.h>
 #include <pool.h>
 
-DECLARE_HANDLE(tHashSetKey);
-DECLARE_HANDLE(tHashSetNode);
+typedef uintptr_t tHashSetKey;
+typedef uintptr_t tHashSetNode;
 
 class cHashSetBase;
 

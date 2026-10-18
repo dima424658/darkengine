@@ -39,7 +39,7 @@ static BOOL g_fIgnoreOBBs;
 static IAIPathfindControl * g_pControl;
 
 // our epsilon for growing the segments which represent our links
-#define kEpsilon 0.0007
+#define kEpsilon 0.0007f
 
 // helper for AIPathCast--finds a cell which intersects our cast
 // returns:
@@ -113,7 +113,7 @@ static int FindNextCell(tAIPathCellID cellID, BOOL fAllowBlockedOBBs)
       // Our edge overlaps our cast on the relative x?  Ok.  Find the
       // y coordinate of our intersection, still in cast space.
       startRatio = xEnd / (xEnd - xStart);
-      endRatio = 1.0 - startRatio;
+      endRatio = 1.0f - startRatio;
       interceptRel.x = edgeStartRel.x * startRatio + edgeEndRel.x * endRatio;
       interceptRel.y = edgeStartRel.y * startRatio + edgeEndRel.y * endRatio;
 

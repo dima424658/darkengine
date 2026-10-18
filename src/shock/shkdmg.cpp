@@ -69,7 +69,6 @@
 // must be last header
 #include <dbmem.h>
 
-#pragma off(unreferenced)
 
 ////////////////////////////////////////
 //
@@ -479,5 +478,3 @@ void ShockDamageShutDown(void)
    SafeRelease(g_pMissSpangs);
    delete g_pShowDmgMsg;
 }
-
-#pragma on(unreferenced)

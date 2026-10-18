@@ -105,27 +105,24 @@
 //    HEADER SECTION
 //  ------------------------------------------------------------
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include <thrdtool.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <lg.h>
 #ifndef __LZW_H
 #include <lzw.h>
 #endif
 
-#include <thrdtool.h>
-
 // ----------------------------------------------------------
 // Profiling tool
 //
 #ifdef TIME_LZW
 #include <mprintf.h>
+#include <tmdecl.h>
 
 struct sLZWTimer
 {
@@ -133,12 +130,12 @@ struct sLZWTimer
     {
         sumTime = 0;
         sumBytes = 0;
-        totalTime = timeGetTime();
+        totalTime = tm_get_millisec_unrecorded();
     }
 
     ~sLZWTimer()
     {
-        double totalTimeInSecs = (double) (timeGetTime() - totalTime)  / 1000.0;
+        double totalTimeInSecs = (double) (tm_get_millisec_unrecorded() - totalTime)  / 1000.0;
         double sumTimeInSecs = (double) sumTime / 1000.0;
         double sumMBytes = (double) sumBytes / (1024.0 * 1024.0);
         char buf[256];
@@ -152,24 +149,24 @@ struct sLZWTimer
 
     void Start()
     {
-        startThisTime = timeGetTime();
+        startThisTime = tm_get_millisec_unrecorded();
     }
 
-    void Stop(DWORD bytes)
+    void Stop(uint32 bytes)
     {
-        DWORD t = sumTime;
-        sumTime += timeGetTime() - startThisTime;
+        uint32 t = sumTime;
+        sumTime += tm_get_millisec_unrecorded() - startThisTime;
         //Assert_(sumTime >= t);
 
-        DWORD s = sumBytes;
+        uint32 s = sumBytes;
         sumBytes += bytes;
         //Assert_(sumBytes >= s);
     }
 
-    DWORD sumTime;
-    DWORD sumBytes;
-    DWORD totalTime;
-    DWORD startThisTime;
+    uint32 sumTime;
+    uint32 sumBytes;
+    uint32 totalTime;
+    uint32 startThisTime;
 };
 
 sLZWTimer g_LzwExpandTimer;
@@ -180,16 +177,6 @@ sLZWTimer g_LzwExpandTimer;
 #define LZWTimerStart()
 #define LZWTimerStop(bytes)
 #endif
-
-// ----------------------------------------------------------
-// The Watcom C++ parser is verbose in warning of possible integral
-// truncation, even in cases where for the given native word size
-// there is no problem (i.e., assigning longs to  ints).  Here, we
-// quiet the warnings, although it wouldn't be bad for someone to
-// evaluate them. (toml 09-14-96)
-//
-#pragma warning 389 9
-
 
 //  Important constants
 
@@ -384,11 +371,11 @@ LzwC lzwc;                                                   // current compress
 
 long LzwCompress( tLzwCompressCtrlFunc f_SrcCtrl,// func to control source
                         tLzwCompressSrcGetFunc f_SrcGet,          // func to get bytes from source
-                        long srcLoc,                         // source "location" (ptr, FILE *, etc.)
+                        tLzwLocation srcLoc,                 // source "location" (ptr, FILE *, etc.)
                         long srcSize,                        // size of source in bytes
-                        void (*f_DestCtrl) (long destLoc, LzwCtrl ctrl),        // func to control dest
+                        tLzwCompressCtrlFunc f_DestCtrl,      // func to control dest
                         void (*f_DestPut) (uchar b),     // func to put bytes to dest
-                        long destLoc,                        // dest "location" (ptr, FILE *, etc.)
+                        tLzwLocation destLoc,                // dest "location" (ptr, FILE *, etc.)
                         long destSizeMax                     // max size of dest (or LZW_MAXSIZE)
                      )
 {
@@ -549,10 +536,10 @@ static unsigned int LzwInputCodeGeneric(tLzwCompressSrcGetFunc f_SrcGet, LzwE * 
 
 static long LzwExpandGeneric(tLzwCompressCtrlFunc f_SrcCtrl,   // func to control source
                              tLzwCompressSrcGetFunc f_SrcGet,  // func to get bytes from source
-                             long srcLoc,                      // source "location" (ptr, FILE *, etc.)
+                             tLzwLocation srcLoc,              // source "location" (ptr, FILE *, etc.)
                              tLzwCompressCtrlFunc f_DestCtrl,  // func to control dest
                              tLzwCompressDestPutFunc f_DestPut,// func to put bytes to dest
-                             long destLoc                     // dest "location" (ptr, FILE *, etc.)
+                             tLzwLocation destLoc             // dest "location" (ptr, FILE *, etc.)
                             )
 {
 //  Notify the control routines
@@ -653,8 +640,8 @@ static int lzwReadBuffIndex;
 static unsigned int LzwInputCodeFileToMemory()
 {
    unsigned int return_value;
-   register ulong c;
-   register ulong temp;
+   ulong c;
+   ulong temp;
    while (lzwe.lzwInputBitCount <= 24)
    {
       if (lzwReadBuffIndex != LZW_FD_TO_MEM_READ_BUFF_SIZE)
@@ -668,7 +655,8 @@ static unsigned int LzwInputCodeFileToMemory()
       else
       {
          //LZWTimerStop(0);
-         read(lzwFdSrc, lzwFdReadBuff, LZW_FD_TO_MEM_READ_BUFF_SIZE);
+         Verify(read(lzwFdSrc, lzwFdReadBuff, LZW_FD_TO_MEM_READ_BUFF_SIZE)
+                == LZW_FD_TO_MEM_READ_BUFF_SIZE);
          //LZWTimerStart();
          lzwReadBuffIndex = 0;
       }
@@ -683,7 +671,7 @@ static unsigned int LzwInputCodeFileToMemory()
 
 ///////////////////////////////////////
 
-static long LzwExpandFileToMemory(long srcLoc, long destLoc)
+static long LzwExpandFileToMemory(tLzwLocation srcLoc, tLzwLocation destLoc)
 {
 
     lzwFdSrc = (int) srcLoc;
@@ -782,10 +770,10 @@ DONE_EXPAND:
 
 long LzwExpand(  tLzwCompressCtrlFunc f_SrcCtrl,   // func to control source
                  tLzwCompressSrcGetFunc f_SrcGet,  // func to get bytes from source
-                 long srcLoc,                      // source "location" (ptr, FILE *, etc.)
+                 tLzwLocation srcLoc,              // source "location" (ptr, FILE *, etc.)
                  tLzwCompressCtrlFunc f_DestCtrl,  // func to control dest
                  tLzwCompressDestPutFunc f_DestPut,// func to put bytes to dest
-                 long destLoc,                     // dest "location" (ptr, FILE *, etc.)
+                 tLzwLocation destLoc,             // dest "location" (ptr, FILE *, etc.)
                  long destSkip,                    // # dest bytes to skip over (or 0)
                  long destSize                     // # dest bytes to capture (if 0, all)
                )
@@ -831,13 +819,12 @@ long LzwExpand(  tLzwCompressCtrlFunc f_SrcCtrl,   // func to control source
 // Okay, clearly there is a lot of code overlay between this and LzwExpand but for
 // performance reasons in LzwExpand I didn't want to attempt to make them wholly
 // integrated -- Xemu 5/1/96
-#pragma off(unreferenced)
 long LzwExpandPartial( tLzwCompressCtrlFunc f_SrcCtrl,  // func to control source
                               tLzwCompressSrcGetFunc f_SrcGet, // func to get bytes from source
-                              long srcLoc,                   // source "location" (ptr, FILE *, etc.)
+                               tLzwLocation srcLoc,           // source "location" (ptr, FILE *, etc.)
                               tLzwCompressCtrlFunc f_DestCtrl, // func to control dest
                               tLzwCompressDestPutFunc f_DestPut,         // func to put bytes to dest
-                              long destLoc,              // dest "location" (ptr, FILE *, etc.)
+                               tLzwLocation destLoc,      // dest "location" (ptr, FILE *, etc.)
                               long destSkip,                 // # dest bytes to skip over (or 0)
                               long destSize,                 // # dest bytes to capture (if 0, all)
                               void *state,                   // internal state structure
@@ -851,8 +838,8 @@ long LzwExpandPartial( tLzwCompressCtrlFunc f_SrcCtrl,  // func to control sourc
     LzwSetBufferPointers(plzwe->curr_buffer);
 
     // notify IO installables
-    (*f_SrcCtrl) ((long) plzwe, RESUME);
-    (*f_DestCtrl) ((long) plzwe, RESUME);
+    (*f_SrcCtrl) ((tLzwLocation) plzwe, RESUME);
+    (*f_DestCtrl) ((tLzwLocation) plzwe, RESUME);
 
 //  This is the expansion loop. It reads in codes from the source until
 //  it sees the special end-of-data code.
@@ -928,8 +915,8 @@ LOOP_BOTTOM:
         // we jumped down to DONE_EXPAND
     {
         // notify IO installables so that we can restore again later
-        (*f_SrcCtrl) ((long) plzwe, SUSPEND);
-        (*f_DestCtrl) ((long) plzwe, SUSPEND);
+        (*f_SrcCtrl) ((tLzwLocation) plzwe, SUSPEND);
+        (*f_DestCtrl) ((tLzwLocation) plzwe, SUSPEND);
         LzwSetBufferPointers(plzwe->last_buffer);
         return (0);
     }
@@ -945,15 +932,14 @@ DONE_EXPAND:
 
     return (plzwe->outputSize);
 }
-#pragma on(unreferenced)
 
 void LzwExpandPartialStart(
                                      tLzwCompressCtrlFunc f_SrcCtrl,         // func to control source
                                      tLzwCompressSrcGetFunc f_SrcGet,    // func to get bytes from source
-                                     long srcLoc,            // source "location" (ptr, FILE *, etc.)
+                                     tLzwLocation srcLoc,    // source "location" (ptr, FILE *, etc.)
                                      tLzwCompressCtrlFunc f_DestCtrl,    // func to control dest
                                      tLzwCompressDestPutFunc f_DestPut,  // func to put bytes to dest
-                                     long destLoc,           // dest "location" (ptr, FILE *, etc.)
+                                     tLzwLocation destLoc,   // dest "location" (ptr, FILE *, etc.)
                                      long destSkip,      // # dest bytes to skip over (or 0)
                                      long destSize,      // # dest bytes to capture (if 0, all)
                                      void *state,            // internal state structure
@@ -1001,8 +987,8 @@ void LzwExpandPartialStart(
         plzwe->outputSize++;
     }
 
-    (*f_SrcCtrl) ((long) plzwe, SUSPEND);
-    (*f_DestCtrl) ((long) plzwe, SUSPEND);
+    (*f_SrcCtrl) ((tLzwLocation) plzwe, SUSPEND);
+    (*f_DestCtrl) ((tLzwLocation) plzwe, SUSPEND);
 
     LzwSetBufferPointers(plzwe->last_buffer);
 }
@@ -1015,7 +1001,7 @@ void LzwExpandPartialStart(
 
 static uchar *lzwBuffSrcPtr;
 
-void LzwBuffSrcCtrl(long srcLoc, LzwCtrl ctrl)
+void LzwBuffSrcCtrl(tLzwLocation srcLoc, LzwCtrl ctrl)
 {
     LzwE *lzwep;
     if (ctrl == BEGIN)
@@ -1041,7 +1027,7 @@ uchar LzwBuffSrcGet()
 //  LzwFdSrcCtrl() and LzwFdSrcGet() implement a file-descriptor
 //  source (fd = open()) for lzw compression and expansion.
 
-void LzwFdSrcCtrl(long srcLoc, LzwCtrl ctrl)
+void LzwFdSrcCtrl(tLzwLocation srcLoc, LzwCtrl ctrl)
 {
     if (ctrl == BEGIN)
     {
@@ -1055,7 +1041,8 @@ uchar LzwFdSrcGet()
     if (lzwReadBuffIndex == LZW_FD_READ_BUFF_SIZE)
     {
         //LZWTimerStop(0);
-        read(lzwFdSrc, lzwFdReadBuff, LZW_FD_READ_BUFF_SIZE);
+        Verify(read(lzwFdSrc, lzwFdReadBuff, LZW_FD_READ_BUFF_SIZE)
+               == LZW_FD_READ_BUFF_SIZE);
         //LZWTimerStart();
         lzwReadBuffIndex = 0;
     }
@@ -1068,7 +1055,7 @@ uchar LzwFdSrcGet()
 
 static FILE *lzwFpSrc;
 
-void LzwFpSrcCtrl(long srcLoc, LzwCtrl ctrl)
+void LzwFpSrcCtrl(tLzwLocation srcLoc, LzwCtrl ctrl)
 {
     if (ctrl == BEGIN)
         lzwFpSrc = (FILE *) srcLoc;
@@ -1085,7 +1072,7 @@ uchar LzwFpSrcGet()
 //  LzwBuffDestCtrl() and LzwBuffDestPut() implement a memory
 //  buffer destination for lzw compression and expansion.
 
-void LzwBuffDestCtrl(long destLoc, LzwCtrl ctrl)
+void LzwBuffDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl)
 {
     LzwE *lzwep;
     if (ctrl == BEGIN)
@@ -1115,7 +1102,7 @@ void LzwBuffDestPut(uchar b)
 static int lzwFdDest;
 static int lzwWriteBuffIndex;
 
-void LzwFdDestCtrl(long destLoc, LzwCtrl ctrl)
+void LzwFdDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl)
 {
     if (ctrl == BEGIN)
     {
@@ -1125,7 +1112,8 @@ void LzwFdDestCtrl(long destLoc, LzwCtrl ctrl)
     else if (ctrl == END)
     {
         if (lzwWriteBuffIndex)
-            write(lzwFdDest, lzwFdWriteBuff, lzwWriteBuffIndex);
+            Verify(write(lzwFdDest, lzwFdWriteBuff, lzwWriteBuffIndex)
+                   == lzwWriteBuffIndex);
     }
 }
 
@@ -1134,7 +1122,8 @@ void LzwFdDestPut(uchar b)
     lzwFdWriteBuff[lzwWriteBuffIndex++] = b;
     if (lzwWriteBuffIndex == LZW_FD_WRITE_BUFF_SIZE)
     {
-        write(lzwFdDest, lzwFdWriteBuff, LZW_FD_WRITE_BUFF_SIZE);
+        Verify(write(lzwFdDest, lzwFdWriteBuff, LZW_FD_WRITE_BUFF_SIZE)
+               == LZW_FD_WRITE_BUFF_SIZE);
         lzwWriteBuffIndex = 0;
     }
 }
@@ -1145,7 +1134,7 @@ void LzwFdDestPut(uchar b)
 
 static FILE *lzwFpDest;
 
-void LzwFpDestCtrl(long destLoc, LzwCtrl ctrl)
+void LzwFpDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl)
 {
     if (ctrl == BEGIN)
         lzwFpDest = (FILE *) destLoc;
@@ -1161,16 +1150,14 @@ void LzwFpDestPut(uchar b)
 //  destination for lzw compression and expansion.  Used to size
 //  results of compression or expansion.
 
-#pragma off(unreferenced);
 
-void LzwNullDestCtrl(long destLoc, LzwCtrl ctrl)
+void LzwNullDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl)
 {
 }
 
 void LzwNullDestPut(uchar b)
 {
 }
-#pragma on(unreferenced);
 
 //  -----------------------------------------------------------
 //    INTERNAL ROUTINES - COMPRESSION

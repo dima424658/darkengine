@@ -7,7 +7,7 @@
  * no-floats baby printf.
  */
 
-#include <io.h>
+#include <platform_io.h>
 #include <stdarg.h>
 #include <dbg.h>
 #include <lgsprntf.h>
@@ -43,7 +43,7 @@ int lg_vprintf(char *fmt,va_list arg)
       Warning(("lg_vprintf: string buffer overflow"));
    /* copy string to stdout, free buffer. */
 
-   r=printf(s);
+   r=printf("%s",s);
    TempFree(s);
    return r;      /* return #of chars or -1 if error */
 }

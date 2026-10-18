@@ -344,7 +344,7 @@ static IAIPath * AIPathfindNearInternal(const mxs_vector & fromLocation, tAIPath
                      IAIPathfindControl * pControl, eAIPathZoneType ZoneType)
 {
    AUTO_TIMER(AI_PF);
-   #define MAX_PATH_COST 10000.0
+    #define MAX_PATH_COST 10000UL
 
    static BOOL recursing;
 
@@ -459,9 +459,9 @@ static IAIPath * AIPathfindNearInternal(const mxs_vector & fromLocation, tAIPath
       tAIPathCellID bestNode = 0;          // best in open list to expand
       tAIPathCellID bestNodesPrevious;     // who's head of best in the list to expand
       tAIPathCellID newNode;               // new node being added to the open list
-      float      totalCost;             // best cost to reach plus heuristic cost
-      float      bestTotalCost;
-      float      costToReachNewNode;
+      ulong      totalCost;             // best cost to reach plus heuristic cost
+      ulong      bestTotalCost;
+      ulong      costToReachNewNode;
       cMxsVector    center;
       tAIPathOkBits nUseHighStrike; // do this for the immediate neighbors of endCell only.
 
@@ -520,7 +520,7 @@ static IAIPath * AIPathfindNearInternal(const mxs_vector & fromLocation, tAIPath
          pCell = g_AIPathDB.AccessCell(bestNode);
 
          sAIPathCellLink * pLink;
-         const int lastCell = pCell->firstCell + pCell->cellCount;
+         const tAIPathCell2CellLinkID lastCell = pCell->firstCell + pCell->cellCount;
          for (i = pCell->firstCell; i < lastCell; i++)
          {
             pLink = &g_AIPathDB.m_Links[i];
@@ -563,7 +563,7 @@ static IAIPath * AIPathfindNearInternal(const mxs_vector & fromLocation, tAIPath
                         // update pts of this node to bestNode so we can remember
                         // the path eventually.
 
-                        g_AIPathDB.m_BestCostToReach[newNode] = costToReachNewNode;
+                        g_AIPathDB.m_BestCostToReach[newNode] = (ushort)costToReachNewNode;
                         pNewCell->bestNeighbor     = (tAIPathCellIDPacked) bestNode;
                         pNewCell->linkFromNeighbor = (tAIPathCell2CellLinkIDPacked) i;
                      }
@@ -690,7 +690,7 @@ static IAIPath * AIPathfindInternal(const mxs_vector & fromLocation, tAIPathCell
                      IAIPathfindControl * pControl, eAIPathZoneType ZoneType)
 {
    AUTO_TIMER(AI_PF);
-   #define MAX_PATH_COST 10000.0
+    #define MAX_PATH_COST 10000UL
 
    static BOOL recursing;
 
@@ -810,9 +810,9 @@ static IAIPath * AIPathfindInternal(const mxs_vector & fromLocation, tAIPathCell
       tAIPathCellID bestNode = 0;          // best in open list to expand
       tAIPathCellID bestNodesPrevious;     // who's head of best in the list to expand
       tAIPathCellID newNode;               // new node being added to the open list
-      float      totalCost;             // best cost to reach plus heuristic cost
-      float      bestTotalCost;
-      float      costToReachNewNode;
+      ulong      totalCost;             // best cost to reach plus heuristic cost
+      ulong      bestTotalCost;
+      ulong      costToReachNewNode;
       cMxsVector    center;
 
       // create the open list, with the start cell
@@ -870,7 +870,7 @@ static IAIPath * AIPathfindInternal(const mxs_vector & fromLocation, tAIPathCell
          pCell = g_AIPathDB.AccessCell(bestNode);
 
          sAIPathCellLink * pLink;
-         const int lastCell = pCell->firstCell + pCell->cellCount;
+         const tAIPathCell2CellLinkID lastCell = pCell->firstCell + pCell->cellCount;
          for (i = pCell->firstCell; i < lastCell; i++)
          {
             pLink = &g_AIPathDB.m_Links[i];
@@ -905,7 +905,7 @@ static IAIPath * AIPathfindInternal(const mxs_vector & fromLocation, tAIPathCell
                      // update pts of this node to bestNode so we can remember
                      // the path eventually.
 
-                     g_AIPathDB.m_BestCostToReach[newNode] = costToReachNewNode;
+                     g_AIPathDB.m_BestCostToReach[newNode] = (ushort)costToReachNewNode;
                      pNewCell->bestNeighbor     = (tAIPathCellIDPacked) bestNode;
                      pNewCell->linkFromNeighbor = (tAIPathCell2CellLinkIDPacked) i;
                   }

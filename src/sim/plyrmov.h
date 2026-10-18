@@ -15,6 +15,7 @@
 
 #include <matrixs.h>
 #include <objtype.h>
+#include <simtime.h>
 
 class cPlayerMovement;
 
@@ -45,7 +46,7 @@ public:
    void  SetGroundObj(ObjID ground_obj);
    ObjID GetGroundObj() const;
 
-   void SetLastFoot(const mxs_vector &last_foot_loc, mxs_real foot_time);
+   void SetLastFoot(const mxs_vector &last_foot_loc, tSimTime foot_time);
 
    // only 0 or 1 supported currently
    void SetVolume(float volume);
@@ -85,10 +86,10 @@ inline ObjID cPlayerMovement::GetGroundObj() const
    return m_GroundObj;
 }
 
-inline void cPlayerMovement::SetLastFoot(const mxs_vector &last_foot_loc, mxs_real foot_time)
+inline void cPlayerMovement::SetLastFoot(const mxs_vector &last_foot_loc, tSimTime foot_time)
 {
    m_LastFootLoc = last_foot_loc;
-   m_LastFootTime = foot_time;
+   m_LastFootTime = (int)foot_time;
 }
 
 inline void cPlayerMovement::SetVolume(float volume)

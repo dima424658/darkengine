@@ -5,7 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/framewrk/backup.cpp,v 1.11 1998/09/28 13:25:03 CMONTER Exp $ 
 #include <backup.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <dbfile.h>
 #include <dbasemsg.h>
@@ -15,7 +15,7 @@
 #include <texsave.h>
 
 #include <tagfile.h>
-#include <tFileFac.h>
+#include <tfilefac.h>
 #include <memtfile.h>
 
 #include <dbmem.h>

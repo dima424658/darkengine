@@ -15,13 +15,11 @@
 #include <indexmac.h>
 extern void (*bank8_ubitmap_func[])();
 
-#pragma off(unreferenced)
 gdubm_func *bank8_ubitmap_expose(grs_bitmap *bm, int x, int y)
 {
    int i = make_index_bmt_fill_bmf(bm);
    return (gdubm_func *)bank8_ubitmap_func[i];
 }
-#pragma on(unreferenced)
 
 void bank8_ubitmap(grs_bitmap *bm, int x, int y)
 {

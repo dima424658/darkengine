@@ -63,4 +63,4 @@ inline cAIShockCombatRanged::cAIShockCombatRanged()
 ///////////////////////////////////////////////////////////////////////////////
 
 
-#endif __SHKAICBR_H
+#endif // __SHKAICBR_H

@@ -4,16 +4,19 @@
 */
 
 // $Header: r:/t2repos/thief2/src/framewrk/buftagf.cpp,v 2.2 2000/03/07 19:56:48 toml Exp $
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <stdio.h>
-#include <io.h>
+#include <platform_io.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <fcntl.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <limits.h>
+#include <string.h>
 #include <cfgdbg.h>
+#include <platform_services.h>
+#include <dataguard.h>
 
 #include <lg.h>
 #include <vernum.h>
@@ -43,6 +46,7 @@ struct VFILE
    BYTE * pBuf;
    BYTE * pReadLoc;
    BYTE * pLimit;
+   uint64_t length;
 };
 
 ///////////////////////////////////////
@@ -59,44 +63,47 @@ VFILE * vfopen(const char * file, const char * mode)
    memset(pVFile,0, sizeof(*pVFile));
 
    pVFile->file = f;
+   if (DarkFileSeek64(f,0,SEEK_END) != 0)
+   {
+      fclose(f);
+      delete pVFile;
+      return NULL;
+   }
+   int64_t physicalSize = DarkFileTell64(f);
+   if (physicalSize < 0 || DarkFileSeek64(f,0,SEEK_SET) != 0)
+   {
+      fclose(f);
+      delete pVFile;
+      return NULL;
+   }
+   pVFile->length = (uint64_t)physicalSize;
 
    static int fHaveMem = -1;
    if (fHaveMem == -1)
    {
-      MEMORYSTATUS memoryStatus;
-      memoryStatus.dwLength = sizeof(memoryStatus);
-      GlobalMemoryStatus(&memoryStatus);
+      sPlatformMemoryStatus memoryStatus;
+      PlatformGetMemoryStatus(&memoryStatus);
       
-      fHaveMem = (memoryStatus.dwTotalPhys >= kMinSysMem);
+      fHaveMem = (memoryStatus.total_physical_bytes >= kMinSysMem);
    }
       
    if (fHaveMem && *mode == 'r' && config_is_defined("large_read_buffers"))
    {
-      struct _stat s;
-      if (_fstat(_fileno(pVFile->file), &s) != -1)
+      size_t bufferedSize = 0;
+      if (pVFile->length > kMinSize &&
+          DarkCheckedSizeT(pVFile->length,&bufferedSize))
       {
-         if (s.st_size > kMinSize)
+         pVFile->pBuf = (BYTE *)malloc(bufferedSize);
+         if (pVFile->pBuf)
          {
-#ifdef DEBUG_BUFTAGF
-            pVFile->pBuf = (BYTE *)malloc(s.st_size);
-#else
-            pVFile->pBuf = (BYTE *)VirtualAlloc(NULL, s.st_size, MEM_COMMIT, PAGE_READWRITE);
-#endif
-            if (pVFile->pBuf)
+            size_t got = fread(pVFile->pBuf,1,bufferedSize,pVFile->file);
+            if (got != bufferedSize)
             {
-               fread(pVFile->pBuf, s.st_size, 1, pVFile->file);
-               if (ferror(pVFile->file) != 0)
-               {
-#ifdef DEBUG_BUFTAGF
-                  free(pVFile->pBuf);
-#else
-                  VirtualFree(pVFile->pBuf, 0, MEM_RELEASE);
-#endif
-                  pVFile->pBuf = NULL;
-               }
-               pVFile->pReadLoc = pVFile->pBuf;
-               pVFile->pLimit = pVFile->pBuf + s.st_size;
+               free(pVFile->pBuf);
+               pVFile->pBuf = NULL;
             }
+            pVFile->pReadLoc = pVFile->pBuf;
+            pVFile->pLimit = pVFile->pBuf ? pVFile->pBuf + bufferedSize : NULL;
          }
       }
    }
@@ -110,12 +117,17 @@ size_t vfread(void * pTo, size_t s, size_t n, VFILE * pVFile)
 {
    if (pVFile->pBuf)
    {
-      int sz = s * n;
+      uint64_t requested = 0;
+      size_t sz = 0;
+      if (!DarkCheckedMulU64(s,n,&requested) ||
+          !DarkCheckedSizeT(requested,&sz) || s == 0)
+         return 0;
       
       if (pVFile->pReadLoc >= pVFile->pLimit)
          return 0;
-      if (pVFile->pReadLoc + sz > pVFile->pLimit)
-         sz -= (pVFile->pReadLoc + sz) - pVFile->pLimit;
+      size_t available = (size_t)(pVFile->pLimit - pVFile->pReadLoc);
+      if (sz > available)
+         sz = available;
          
       memcpy(pTo, pVFile->pReadLoc, sz);
       pVFile->pReadLoc += sz;
@@ -136,33 +148,34 @@ size_t vfwrite(const void * pFrom, size_t s, size_t n, VFILE * pVFile)
 
 ///////////////////////////////////////
 
-int vfseek(VFILE * pVFile, long offset, int type)
+static int vfseek64(VFILE * pVFile, int64_t offset, int type)
 {
    if (pVFile->pBuf)
    {
+      int64_t base = 0;
       switch (type)
       {
-         case SEEK_SET:
-         {
-            pVFile->pReadLoc = pVFile->pBuf;
-            // fall through...
-         }
-         case SEEK_CUR:
-         {
-            pVFile->pReadLoc += offset;
-            break;
-         }
-         case SEEK_END:
-         {
-            Assert_(offset == 0);
-            pVFile->pReadLoc = pVFile->pLimit;
-            break;
-         }
+         case SEEK_SET: base = 0; break;
+         case SEEK_CUR: base = pVFile->pReadLoc - pVFile->pBuf; break;
+         case SEEK_END: base = (int64_t)pVFile->length; break;
+         default: return -1;
       }
+      if ((offset < 0 && (offset == INT64_MIN || base < -offset)) ||
+          (offset > 0 && base > INT64_MAX - offset))
+         return -1;
+      int64_t target = base + offset;
+      if (target < 0 || (uint64_t)target > pVFile->length)
+         return -1;
+      pVFile->pReadLoc = pVFile->pBuf + (size_t)target;
       return 0;
    }
 
-   return fseek(pVFile->file, offset, type);
+   return DarkFileSeek64(pVFile->file,offset,type);
+}
+
+int vfseek(VFILE * pVFile, long offset, int type)
+{
+   return vfseek64(pVFile,(int64_t)offset,type);
 }
 
 ///////////////////////////////////////
@@ -170,9 +183,17 @@ int vfseek(VFILE * pVFile, long offset, int type)
 long vftell(VFILE * pVFile)
 {
    if (pVFile->pBuf)
-      return pVFile->pReadLoc - pVFile->pBuf;
+   return (long)(pVFile->pReadLoc - pVFile->pBuf);
    
-   return ftell(pVFile->file);
+   int64_t result = DarkFileTell64(pVFile->file);
+   return result >= 0 && result <= LONG_MAX ? (long)result : -1;
+}
+
+static int64_t vftell64(VFILE *pVFile)
+{
+   if (pVFile->pBuf)
+      return (int64_t)(pVFile->pReadLoc - pVFile->pBuf);
+   return DarkFileTell64(pVFile->file);
 }
 
 ///////////////////////////////////////
@@ -186,11 +207,7 @@ int vfclose(VFILE * pVFile)
 
    if (pVFile->pBuf)
    {
-#ifdef DEBUG_BUFTAGF
       free(pVFile->pBuf);
-#else
-      VirtualFree(pVFile->pBuf, 0, MEM_RELEASE);
-#endif
    }
 
    delete pVFile;
@@ -256,18 +273,54 @@ BufTagFileTable::~BufTagFileTable()
 
 ////////////////////////////////////////
 
-#define READ(file,x) Verify(vfread(&(x),sizeof(x),1,file) == 1)
-
-void BufTagFileTable::Read(VFILE* file)
+template <typename T>
+static bool vfread_exact(VFILE *file, T& value)
 {
-   ulong items;
-   READ(file,items);
-   for (int i = 0; i < items; i++)
+   return vfread(&value,sizeof(value),1,file) == 1;
+}
+
+bool BufTagFileTable::Read(VFILE* file, uint64_t fileSize,
+                           uint64_t tableOffset)
+{
+   ulong items = 0;
+   if (!vfread_exact(file,items))
+      return false;
+   uint64_t directoryStart = 0;
+   uint64_t directoryBytes = 0;
+   if (!DarkCheckedAddU64(tableOffset,sizeof(items),&directoryStart) ||
+       items > 1024U * 1024U ||
+       !DarkCheckedMulU64(items,sizeof(BufTagTableEntry),&directoryBytes) ||
+       !DarkRangeWithinU64(directoryStart,directoryBytes,fileSize))
+      return false;
+
+   for (ulong i = 0; i < items; i++)
    {
       BufTagTableEntry e;
-      READ(file,e);
-      Insert(new BufTagTableEntry(e));
+      if (!vfread_exact(file,e) ||
+          !DarkBufferHasNull(e.key.label,sizeof(e.key.label)) ||
+          e.offset < sizeof(BufTagFileHeader) ||
+          !DarkRangeWithinU64(e.offset,sizeof(BufTagFileBlockHeader),tableOffset) ||
+          !DarkRangeWithinU64(e.Start(),e.size,tableOffset) ||
+          Search(&e.key) != NULL)
+         return false;
+
+      int64_t directoryPosition = vftell64(file);
+      BufTagFileBlockHeader header;
+      if (directoryPosition < 0 || vfseek64(file,e.offset,SEEK_SET) != 0 ||
+          !vfread_exact(file,header) ||
+          !DarkBufferHasNull(header.tag.label,sizeof(header.tag.label)) ||
+          memcmp(&header.tag,&e.key,sizeof(e.key)) != 0 ||
+          vfseek64(file,directoryPosition,SEEK_SET) != 0)
+         return false;
+
+      BufTagTableEntry *entry = new BufTagTableEntry(e);
+      if (!Insert(entry))
+      {
+         delete entry;
+         return false;
+      }
    }
+   return true;
 }
 
 ////////////////////////////////////////////////////////////
@@ -278,13 +331,18 @@ IMPLEMENT_UNAGGREGATABLE_SELF_DELETE(BufTagFileBase,ITagFile);
 
 
 BufTagFileBase::BufTagFileBase(const char* fname, const char* mode)
- : file(vfopen(fname,mode)),block(NULL) {} ; 
+ : file(vfopen(fname,mode)),block(NULL),blockVersion{0,0},fileSize(0) {} ;
 
 ////////////////////////////////////////
 
 BufTagFileBase::~BufTagFileBase()
 {
-   AssertMsg(block == NULL,"Tag file closing with a block still open");
+   if (block != NULL)
+   {
+      Warning(("Buffered tag file closing with block %s still open\n",
+               block->key.label));
+      SetCurBlock(NULL);
+   }
    if (file != NULL)
       vfclose(file);
    file = NULL;
@@ -329,39 +387,6 @@ void BufTagFileBase::SetCurBlock(const TagFileTag* tag)
 
 ////////////////////////////////////////
 
-int BufTagFileBase::PrepSeek(ulong& offset, TagFileSeekMode mode)
-{
-   if (block == NULL)
-      return FALSE;
-
-   // convert offset to absolute
-   switch (mode)
-   {
-      case kTagSeekFromStart:
-         offset += block->Start();
-         break;
-      case kTagSeekFromHere:
-         offset += vftell(file);
-         break;
-      case kTagSeekFromEnd:
-         offset += block->End();
-         break;
-   }
-
-   if (offset < block->Start()) 
-      return block->offset - block->Start();
-   if (offset > block->End())
-      return offset - block->End();
-
-   return 0;
-}
-
-////////////////////////////////////////
-
-#define max(x,y) ((x) > (y) ? (x) : (y))
-#define min(x,y) ((x) < (y) ? (x) : (y))
-
-
 STDMETHODIMP BufTagFileBase::Seek(ulong offset, TagFileSeekMode mode)
 {
    if (block == NULL)
@@ -370,21 +395,37 @@ STDMETHODIMP BufTagFileBase::Seek(ulong offset, TagFileSeekMode mode)
       return E_FAIL;
    }
 
-   int check = PrepSeek(offset,mode);
-
-   // if out of bounds, fail.
-   if (check < 0 || (check > 0 && OpenMode() == kTagOpenRead)) 
+   uint64_t base = 0;
+   switch (mode)
+   {
+      case kTagSeekFromStart: base = block->Start(); break;
+      case kTagSeekFromHere:
+      {
+         int64_t current = vftell64(file);
+         if (current < 0) return E_FAIL;
+         base = (uint64_t)current;
+         break;
+      }
+      case kTagSeekFromEnd: base = block->End(); break;
+      default: return E_FAIL;
+   }
+   uint64_t absolute = 0;
+   if (!DarkCheckedAddU64(base,offset,&absolute) ||
+       absolute < block->Start() ||
+       (OpenMode() == kTagOpenRead && absolute > block->End()) ||
+       absolute > INT64_MAX)
    {
       Warning(("Seeking outside of tag file block\n"));
       return E_FAIL;
    }
-   // @TBD: change logic so that SEEK_CUR is preserved for performance
-   vfseek(file,offset,SEEK_SET);
-   blockptr = offset - block->Start();
+   if (vfseek64(file,(int64_t)absolute,SEEK_SET) != 0)
+      return E_FAIL;
+   blockptr = (ulong)(absolute - block->Start());
 
    if (OpenMode() == kTagOpenWrite)
    {
-      block->size = max(block->size,blockptr);
+      if (blockptr > block->size)
+         block->size = blockptr;
    }
 
    return S_OK;
@@ -405,7 +446,7 @@ STDMETHODIMP_(ulong) BufTagFileBase::TellFromEnd()
 {
    if (block == NULL)
       return 0; 
-   return block->size - blockptr;
+   return blockptr <= block->size ? block->size - blockptr : 0;
 }
 
 //------------------------------------------------------------
@@ -525,7 +566,7 @@ STDMETHODIMP BufTagFileWrite::OpenBlock(const TagFileTag* tag, TagVersion* versi
 
    SetCurBlock(tag);
 
-   int len = vfwrite(&header,1,sizeof(header),file);
+   int len = (int)vfwrite(&header,1,sizeof(header),file);
    if (len != sizeof(header))
    {
       Warning(("BufTagFileWrite::NewBlock(): wrote only %d out of %d bytes\n",len,sizeof(header)));
@@ -574,17 +615,18 @@ STDMETHODIMP_(long) BufTagFileWrite::Write(const char* buf, int buflen)
    if (file == NULL)
       return -1;
 
-   long len = vfwrite(buf,1,buflen,file);
+   long len = (long)vfwrite(buf,1,buflen,file);
    blockptr += len; 
    
-   block->size = max(blockptr,block->size);
+   if (blockptr > block->size)
+      block->size = blockptr;
 
    return len;
 }
 
 ////////////////////////////////////////
 
-STDMETHODIMP BufTagFileWrite::Move(char* buf , int len)
+STDMETHODIMP_(long) BufTagFileWrite::Move(char* buf, int len)
 {
    return Write(buf,len);
 }
@@ -608,15 +650,29 @@ BufTagFileRead::BufTagFileRead(const char* filename)
       ConfigSpew("TagFileTrace",("BufTagFileRead: opening %s for reading failed\n",filename));
       return;
    }
+   fileSize = file->length;
+   if (fileSize < sizeof(BufTagFileHeader) ||
+       vfseek64(file,0,SEEK_SET) != 0)
+   {
+      TagFileNotifyError(this,NULL,"header",
+                         "file is shorter than the tag-file header");
+      vfclose(file); file = NULL; return;
+   }
+
    // read in header
    BufTagFileHeader header;
-   READ(file,header);
+   if (!vfread_exact(file,header))
+   {
+      TagFileNotifyError(this,NULL,"header","truncated tag-file header");
+      vfclose(file); file = NULL; return;
+   }
 
    // verify header.
 
    if (memcmp(header.deadbeef,Deadbeef,sizeof(header.deadbeef)) != 0)
    {
       Warning(("Tag file %s is corrupt!\n",filename));
+      TagFileNotifyError(this,NULL,"header","invalid tag-file signature");
       vfclose (file);
       file = NULL;
       return; 
@@ -632,20 +688,21 @@ BufTagFileRead::BufTagFileRead(const char* filename)
       Warning(("Tag file %s is not current version.\nOld: %s, New: %s\n",
                filename,VersionNum2String(&header.version),buf));
 #endif 
-      // if it's NEWER, then discard
-      if (delta < 0)
-      {
-         Warning(("Version in file is new.  Discarding tag\n"));
-         vfclose (file);
-         file = NULL;
-         return; 
-      }
+      // Do not discard a newer container. Individual block codecs decide
+      // compatibility after the complete directory has been inventoried.
    }
 
 
-   // read in tag table
-   vfseek(file,header.table,SEEK_SET);
-   table.Read(file);
+   // Read and validate the complete directory before any codec sees it.
+   if (header.table < sizeof(BufTagFileHeader) ||
+       !DarkRangeWithinU64(header.table,sizeof(ulong),fileSize) ||
+       vfseek64(file,header.table,SEEK_SET) != 0 ||
+       !table.Read(file,fileSize,header.table))
+   {
+      TagFileNotifyError(this,NULL,"directory",
+         "invalid count, duplicate tag, block range, or block header");
+      vfclose(file); file = NULL; return;
+   }
    
 }
 
@@ -670,18 +727,33 @@ STDMETHODIMP BufTagFileRead::OpenBlock(const TagFileTag* tag, TagVersion* versio
       ConfigSpew("tagfile_spew", ("Tag %s not in tag file\n", tag->label));
       return E_FAIL;
    }
-   vfseek(file,block->offset,SEEK_SET);
+   if (vfseek64(file,block->offset,SEEK_SET) != 0)
+   {
+      TagFileNotifyError(this,tag,"open block","block offset is not seekable");
+      SetCurBlock(NULL);
+      return E_FAIL;
+   }
 
    BufTagFileBlockHeader header;
-   int len = vfread(&header,1,sizeof(header),file);
+   int len = (int)vfread(&header,1,sizeof(header),file);
    if (len != sizeof(header))
    { 
       Warning(("BufTagFileRead::OpenBlock(): read only %d of %d bytes\n",len,sizeof(header)));
+      TagFileNotifyError(this,tag,"open block","truncated block header");
+      SetCurBlock(NULL);
+      return E_FAIL;
+   }
+   if (!DarkBufferHasNull(header.tag.label,sizeof(header.tag.label)) ||
+       memcmp(&header.tag,&block->key,sizeof(header.tag)) != 0)
+   {
+      TagFileNotifyError(this,tag,"open block",
+                         "block header disagrees with directory");
       SetCurBlock(NULL);
       return E_FAIL;
    }
    
-   // compare versons
+   // The caller supplies its read ceiling.  A wildcard ceiling is used only
+   // by inventory code; normal codecs remain fail-closed for newer blocks.
    int delta = VersionNumsCompare(version,&header.version);
    if (delta != 0)
    {
@@ -691,18 +763,19 @@ STDMETHODIMP BufTagFileRead::OpenBlock(const TagFileTag* tag, TagVersion* versio
       ConfigSpew("tagfile_spew",("Tag data %s is not current version.\nOld: %s, New: %s\n",
                tag->label,VersionNum2String(&header.version),buf));
 #endif 
-
-      // if it's NEWER, then discard
       if (delta < 0)
       {
-         ConfigSpew("tagfile_spew",("Version in file is newer.  Discarding tag\n"));
+         ConfigSpew("tagfile_spew",("Version in file is newer than the codec read ceiling.\n"));
          SetCurBlock(NULL);
          return E_FAIL;
       }
    }
    
    *version = header.version;
+   blockVersion = header.version;
    blockptr = 0;
+   TagFileNotifyBlockObserver(this, &block->key, &blockVersion,
+                              block->size, 0, FALSE);
 
    return S_OK;
 }
@@ -716,6 +789,8 @@ STDMETHODIMP BufTagFileRead::CloseBlock()
       Warning(("BufTagFileRead::CloseBlock() No Block to Close\n"));
       return E_FAIL;
    }
+   TagFileNotifyBlockObserver(this, &block->key, &blockVersion,
+                              block->size, blockptr, TRUE);
    SetCurBlock(NULL);
    return S_OK;
 }
@@ -733,12 +808,23 @@ STDMETHODIMP_(long) BufTagFileRead::Read(char* buf, int buflen)
       return -1;
    }
 
-   ulong bytesleft = block->size - blockptr; 
-   if (buflen > bytesleft)
-      buflen = max(bytesleft,0);
+   if (buflen < 0)
+      return -1;
+   if (blockptr > block->size)
+   {
+      TagFileNotifyError(this,&block->key,"read",
+                         "block cursor is outside the validated range");
+      return -1;
+   }
+   ulong bytesleft = block->size - blockptr;
+   if ((ulong)buflen > bytesleft)
+      buflen = (int)bytesleft;
    
-   int len = vfread(buf,1,buflen,file);
+   int len = (int)vfread(buf,1,buflen,file);
    blockptr += len;
+   if (len != buflen)
+      TagFileNotifyError(this,&block->key,"read",
+                         "physical file ended inside a block");
    return len;
 }
 
@@ -752,7 +838,7 @@ STDMETHODIMP_(long) BufTagFileRead::Write(const char* , int )
 
 ////////////////////////////////////////
 
-STDMETHODIMP BufTagFileRead::Move(char* buf, int buflen)
+STDMETHODIMP_(long) BufTagFileRead::Move(char* buf, int buflen)
 {
    return Read(buf,buflen);
 }

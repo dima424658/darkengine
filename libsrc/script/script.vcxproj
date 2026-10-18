@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SquirrelIncludePath)$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SquirrelIncludePath)$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SquirrelIncludePath)$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)src/script;$(SolutionDir)src/ai;$(SolutionDir)src/dark;$(SolutionDir)src/object;$(SolutionDir)h;$(SolutionDir)libsrc/compapis;$(SolutionDir)libsrc/comtools;$(SolutionDir)libsrc/config;$(SolutionDir)libsrc/cpptools;$(SolutionDir)libsrc/lg;$(SolutionDir)libsrc/lgalloc;$(SolutionDir)libsrc/matrix;$(SolutionDir)libsrc/mprintf;$(SquirrelIncludePath)$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -153,16 +153,35 @@
   <ItemGroup>
     <ClCompile Include="multparm.cpp" />
     <ClCompile Include="nullsrv.cpp" />
+    <ClCompile Include="osm_emu\osm32abi.cpp" />
+    <ClCompile Include="osm_emu\osm32bridge.cpp" />
+    <ClCompile Include="osm_emu\osm32cpu.cpp" />
+    <ClCompile Include="osm_emu\osm32env.cpp" />
+    <ClCompile Include="osm_emu\osm32img.cpp" />
+    <ClCompile Include="osm_emu\osm32imports.cpp" />
+    <ClCompile Include="osm_emu\osm32mod.cpp" />
+    <ClCompile Include="osm_emu\osm32rt.cpp" />
     <ClCompile Include="persist.cpp" />
     <ClCompile Include="scrobj.cpp" />
     <ClCompile Include="scrptman.cpp" />
-    <ClCompile Include="scrptmod.cpp" />
+    <ClCompile Include="squirrel\squirrelhost.cpp">
+      <AdditionalIncludeDirectories>$(SolutionDir)src\physics;$(SolutionDir)src\engfeat;$(SolutionDir)src\sim;$(SolutionDir)src\render;$(SolutionDir)src\ai;$(SolutionDir)src\framewrk;$(SolutionDir)src\portal;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\namedres;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\winsrc\script\scrptmod.cpp" />
     <ClCompile Include="scrptmsg.cpp" />
     <ClCompile Include="smodinfo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="multparm.h" />
     <ClInclude Include="nullsrv.h" />
+    <ClInclude Include="osm_emu\osm32abi.h" />
+    <ClInclude Include="osm_emu\osm32bridge.h" />
+    <ClInclude Include="osm_emu\osm32cpu.h" />
+    <ClInclude Include="osm_emu\osm32env.h" />
+    <ClInclude Include="osm_emu\osm32img.h" />
+    <ClInclude Include="osm_emu\osm32imports.h" />
+    <ClInclude Include="osm_emu\osm32mod.h" />
+    <ClInclude Include="osm_emu\osm32rt.h" />
     <ClInclude Include="persist.h" />
     <ClInclude Include="scrguid.h" />
     <ClInclude Include="scrobj.h" />
@@ -175,9 +194,16 @@
     <ClInclude Include="scrptmsg.h" />
     <ClInclude Include="scrptnet.h" />
     <ClInclude Include="scrptobj.h" />
+    <ClInclude Include="squirrel\squirrelhost.h" />
     <ClInclude Include="scrptsrv.h" />
     <ClInclude Include="scrpttyp.h" />
     <ClInclude Include="smodinfo.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\squirrel\squirrel.vcxproj" Condition="'$(EnableSquirrel)' == 'true'">
+      <Project>{4AB7A069-9AAF-4B26-A81E-F31B408441AD}</Project>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

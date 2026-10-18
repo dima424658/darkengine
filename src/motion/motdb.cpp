@@ -230,7 +230,7 @@ BOOL cMotionDatabase::Load(ITagFile *pFile)
    // load schemas
    ITagFile_Read(pFile, (char *)&num, sizeof(num));
    m_SchemaSet.SetSize(num);
-   for(i=0;i<num;i++)
+   for(i = 0; i < (int)num; i++)
    {
       m_SchemaSet[i].Load(pFile,&m_NameMap);      
    }
@@ -259,7 +259,7 @@ BOOL cMotionDatabase::Save(ITagFile *pFile)
    // Save schemas
    num=m_SchemaSet.Size();
    ITagFile_Write(pFile, (char *)&num, sizeof(num));
-   for(i=0;i<num;i++)
+   for(i = 0; i < (int)num; i++)
    {
       m_SchemaSet[i].Save(pFile);      
    }

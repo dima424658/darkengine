@@ -17,6 +17,8 @@
 #include <string.h>
 
 #include <namemap.h>
+#include <dbfile.h>
+#include <stdint.h>
 
 // must be last header
 #include <dbmem.h>
@@ -193,19 +195,53 @@ void cNameMap::Load(ITagFile *pFile)
 
    Clear();
 
-   ITagFile_Read(pFile, (char *) &m_iUpperBound, sizeof(m_iUpperBound));
-   ITagFile_Read(pFile, (char *) &m_iLowerBound, sizeof(m_iLowerBound));
-   ITagFile_Read(pFile, (char *) &iSize, sizeof(iSize));
+   if (ITagFile_Read(pFile, (char *) &m_iUpperBound, sizeof(m_iUpperBound)) != sizeof(m_iUpperBound) ||
+       ITagFile_Read(pFile, (char *) &m_iLowerBound, sizeof(m_iLowerBound)) != sizeof(m_iLowerBound) ||
+       ITagFile_Read(pFile, (char *) &iSize, sizeof(iSize)) != sizeof(iSize))
+   {
+      dbLoadReportFailure("name-map-reader","Name map header is truncated");
+      Clear();
+      return;
+   }
+
+   const int64_t expectedSize =
+      (int64_t)m_iUpperBound - (int64_t)m_iLowerBound + 1;
+   const long remaining = pFile->TellFromEnd();
+   if (iSize < 0 || iSize > 1048576 ||
+       (iSize != 0 && expectedSize != iSize) ||
+       remaining < 0 || (uint64_t)iSize > (uint64_t)remaining)
+   {
+      dbLoadReportFailure("name-map-reader","Name map bounds or count are invalid");
+      Clear();
+      return;
+   }
    m_IntToName.SetSize(iSize);
 
    for (i = 0; i < iSize; ++i) {
-      ITagFile_Read(pFile, (char *) &cLabelTest, 1);
+      if (ITagFile_Read(pFile, (char *) &cLabelTest, 1) != 1)
+      {
+         dbLoadReportFailure("name-map-reader","Name map entry is truncated");
+         Clear();
+         return;
+      }
       if (cLabelTest == '+') {
-         ITagFile_Read(pFile, (char *) &TempLabel, 16);
+         if (ITagFile_Read(pFile, (char *) &TempLabel, 16) != 16 ||
+             memchr(TempLabel.text,'\0',sizeof(TempLabel.text)) == NULL)
+         {
+            dbLoadReportFailure("name-map-reader","Name map label is malformed");
+            Clear();
+            return;
+         }
          m_IntToName[i] = new cNameMapEntry(&TempLabel);
          CrossIndex(i);
-      } else
+      } else if (cLabelTest == '-')
          m_IntToName[i] = 0;
+      else
+      {
+         dbLoadReportFailure("name-map-reader","Name map entry marker is invalid");
+         Clear();
+         return;
+      }
    }
 }
 

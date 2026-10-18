@@ -16,8 +16,9 @@ static int pgon_compare(const void *a, const void *b)
    mms_pgon *pA=(mms_pgon *)a;
    mms_pgon *pB=(mms_pgon *)b;
 
-   return (Z_DEPTH(pB->v[0])+Z_DEPTH(pB->v[1])+Z_DEPTH(pB->v[2])) - \
-      (Z_DEPTH(pA->v[0])+Z_DEPTH(pA->v[1])+Z_DEPTH(pA->v[2])) ;
+   mxs_real depthA = Z_DEPTH(pA->v[0])+Z_DEPTH(pA->v[1])+Z_DEPTH(pA->v[2]);
+   mxs_real depthB = Z_DEPTH(pB->v[0])+Z_DEPTH(pB->v[1])+Z_DEPTH(pB->v[2]);
+   return (depthB > depthA) - (depthB < depthA);
 
 #if 0
    return (Z_DEPTH(pA->v[0])+Z_DEPTH(pA->v[1])+Z_DEPTH(pA->v[2])) - \

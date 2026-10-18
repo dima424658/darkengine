@@ -277,14 +277,14 @@ void SpeechEndCallback(int hSchema, ObjID schemaID, void *data)
 {
    sSpeech *pSpeech;
 
-   if (pSpeechProperty->Get((ObjID)data, &pSpeech))
+   if (pSpeechProperty->Get((ObjID)(intptr_t)data, &pSpeech))
       pSpeech->flags &= ~SPEECH_SPEAKING;
 
-   sCallbackHashEntry *pEntry = g_speechEndCallbackHash.Search((ObjID)data);
+      sCallbackHashEntry *pEntry = g_speechEndCallbackHash.Search((ObjID)(intptr_t)data);
    if (pEntry)
       for (int i = 0; i < kCallbackEntryMax; ++i)
          if (pEntry->m_aCallbackList[i])
-            pEntry->m_aCallbackList[i]((ObjID)data, hSchema, schemaID);
+         pEntry->m_aCallbackList[i]((ObjID)(intptr_t)data, hSchema, schemaID);
          else
             break;
 }
@@ -338,7 +338,7 @@ BOOL SpeechInRange(ObjID AIObjID)
 float SpeakerMinDist(ObjID voiceID, ObjID AIObjID)
 {
    ILinkQuery *pQuery = pVoiceRelation->Query(LINKOBJ_WILDCARD, voiceID);
-   float minDist = 999999999.0;
+   float minDist = 999999999.0f;
    float dist;
    sLink link;
 
@@ -534,7 +534,7 @@ int SpeechSpeak(ObjID SpeakerObjID, const Label *pConcept,
    sCallParams.sourceID = SpeakerObjID;
    sCallParams.callback = SpeechEndCallback;
 
-   sCallParams.pData = (void*)SpeakerObjID;
+   sCallParams.pData = (void *)(intptr_t)SpeakerObjID;
 
    iSchemaHandle = SchemaIDPlay(SchemaID, &sCallParams, pData);
    pSpeech->hSchemaPlay = iSchemaHandle;
@@ -954,7 +954,7 @@ extern "C" void SpeechSchemaNewStart(const Label *pSchemaName,
                              iWeight, &pConceptName->text,
                              SpeechVoiceIndexFromName(pVoiceName)));
 
-   sTagDBData Data(SchemaObjID, iWeight);
+   sTagDBData Data(SchemaObjID, (float)iWeight);
    g_pCurrentVoice->AddDataStart(Data, pConceptName);
 }
 

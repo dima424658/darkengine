@@ -75,7 +75,7 @@ cAILocoAction * cAIWanderAction::PickLoco()
 
       for (int i = 0; i < 8; i++)
       {
-         distance = ((m_MaxRadius - m_MinRadius) * (AIRandom(1, 100) / 100.0)) + m_MinRadius;
+         distance = ((m_MaxRadius - m_MinRadius) * (AIRandom(1, 100) / 100.0f)) + m_MinRadius;
          if (i % 2)
             angle.value = angToAI.value + (DEGREES(AIRandom(30, 60)) * ((Rand() % 2) ? -1 : 1));
          else
@@ -92,7 +92,7 @@ cAILocoAction * cAIWanderAction::PickLoco()
             ProjectFromLocationOnZPlane(aiLoc, distance, angle, &target);
             pPathfinder->Pathcast(target, &destCell);
             Assert_(destCell);
-            target.z = g_AIPathDB.GetZAtXY(destCell, target) + 3.0;
+            target.z = g_AIPathDB.GetZAtXY(destCell, target) + 3.0f;
 
             m_fLastWasCenter = FALSE;
             found = TRUE;

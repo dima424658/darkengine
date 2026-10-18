@@ -18,26 +18,26 @@
  * time logging system
  * This assumes that there are only 2 execution levels, main & interrupt
  */
-#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 //#include <unix.h>
 #include <memory.h>
 #include <timelog.h>
+#include <sndplatform.h>
 
 
 logHistory logA;
 logHistory logB;
 // long logIntMask;
 static int noLogging;
-DWORD logTimeOrigin;
+uint32 logTimeOrigin;
 
 
 // return system time in milliseconds
-DWORD
+uint32
 getLogTime()
 {
-   return timeGetTime();
+   return SndTimeMs();
 }
 
 // init log entry buffer to empty

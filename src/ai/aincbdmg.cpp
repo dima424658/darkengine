@@ -134,7 +134,7 @@ STDMETHODIMP_(void) cAINonCombatDamageResponse::OnDamage(const sDamageMsg * pMsg
       if (pMsg->data.damage->amount<pResponse->woundThreshold)
          return;
       // drop out randomly
-      if (int((float(Rand())/float(RAND_MAX+1))*100)>pResponse->responseChance)
+      if (int((float(Rand()) / (float(RAND_MAX) + 1.0f)) * 100) > pResponse->responseChance)
          return;
       m_severe = (pMsg->data.damage->amount>pResponse->severeThreshold);
    }

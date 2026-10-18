@@ -67,7 +67,7 @@ TagVersion TexturePatchVersion = { 0, 1 };
 static ITagFile* tagfile = NULL;
 static long movefunc(void *buf, size_t elsize, size_t nelem)
 {
-   return ITagFile_Move(tagfile,(char*)buf,elsize*nelem);
+   return ITagFile_Move(tagfile,(char*)buf,(int)(elsize*nelem));
 }
 
 static BOOL setup_tagfile(ITagFile* file, TagFileTag *tag,
@@ -207,7 +207,6 @@ static void db_message(DispatchData* msg)
 // Here's where we do the dirty work.
 //
  
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -241,7 +240,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function. 
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -251,7 +249,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
    
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 
 ///////////////

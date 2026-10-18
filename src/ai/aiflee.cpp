@@ -796,7 +796,7 @@ BOOL cAIFlee::RunAway(cAIActions *pNew, ObjID object, BOOL freshen)
          float distKeepFreshSense = pLocoAction->ComputePathDist()  - g_FleeNoFreshenRange;
 
          if (distKeepFreshSense > 0.0)
-            pSenses->KeepFresh(fleeSource, (distKeepFreshSense / g_FleeSpeed) * 1000.0);
+      pSenses->KeepFresh(fleeSource, (unsigned)((distKeepFreshSense / g_FleeSpeed) * 1000.0f));
       }
       pNew->Append(pLocoAction);
    }
@@ -905,7 +905,7 @@ BOOL cAIFlee::CheckFriendsNotFlee(const sAIFleeConditions * pConditions)
    // Nearby friends
    cAIAwareArray awarenesses;
    #define kFriendClosenessSq sq(20.0)
-   unsigned      nFriends = 0;
+   int           nFriends = 0;
 
    m_pAI->AccessSenses()->GetAllAwareness(&awarenesses);
    for (int i = 0; i < awarenesses.Size(); i++)
@@ -976,8 +976,8 @@ void cAIFlee::MarkUnpathable(ObjID Obj)
 ///////////////////////////////////////
 
 
-#define ZBIAS 4.000
-#define ZBIAS_THREASHHOLD 10.0
+#define ZBIAS 4.000f
+#define ZBIAS_THREASHHOLD 10.0f
 
 //
 // We use a "threashhold" so that small differences in Z won't factor in. For example,
@@ -991,17 +991,17 @@ static inline float zbiased_dist2(mxs_vector *pVec1, mxs_vector *pVec2)
    float fYDiff = pVec1->y-pVec2->y;
    float fZDiff = pVec1->z-pVec2->z;
 
-   if (fabs(fZDiff) < ZBIAS_THREASHHOLD)
+   if (fabsf(fZDiff) < ZBIAS_THREASHHOLD)
       return fXDiff*fXDiff+fYDiff*fYDiff;
    else
    {
-      fZDiff = fabs(fZDiff);
+      fZDiff = fabsf(fZDiff);
       return fXDiff*fXDiff+fYDiff*fYDiff+ZBIAS*fZDiff*fZDiff;
    }
 }
 
 
-#define kFleeSourceExclusionRadiusSq sq(20.0)
+#define kFleeSourceExclusionRadiusSq sq(20.0f)
 
 static int nState = -1;
 
@@ -1228,7 +1228,7 @@ ObjID cAIFlee::PickFleePoint(ObjID source)
          mx_sub_vec(&iterPointRel, &iterPoint, &curLoc);
          mx_sub_vec(&sourceLocRel, &sourceLoc, &curLoc);
          if (mx_dot_vec(&sourceLocRel, &iterPointRel) > 0) // In direction of source, so weight against it.
-            weight *= 0.2;
+      weight = (int)(weight * 0.2f);
 
          fDist2 /= weight;
 

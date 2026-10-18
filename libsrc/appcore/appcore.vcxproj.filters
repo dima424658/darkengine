@@ -18,7 +18,7 @@
     <ClCompile Include="definit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wappcore.cpp">
+    <ClCompile Include="..\..\winsrc\appcore\wappcore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="appcore.cpp">
@@ -38,7 +38,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="wappcore.h">
+    <ClInclude Include="..\..\winsrc\appcore\wappcore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

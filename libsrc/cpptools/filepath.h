@@ -20,48 +20,19 @@
 #include <str.h>
 #include <fnamutil.h>
 
-#if defined(_WIN32)
-
 // @TBD (toml 03-22-96): Make export/importable
 #define __CPPTOOLSAPI
-
-#ifndef _WINNT_
-typedef void * HANDLE;
-#endif
 
 struct __CPPTOOLSAPI sFileFind
     {
     sFileFind();
-    HANDLE hContext;
+    void *hContext;
     };
 
 inline sFileFind::sFileFind()
     : hContext(0)
     {
     }
-
-
-#else
-
-// FROM <dos.h>
-struct sFileFind
-    {
-    char reserved[21];
-
-    // attribute found (FA_XXXX)
-    char attrib;
-
-    // file's last write
-    unsigned short wr_time,wr_date;
-
-    // file's size
-    unsigned long size;
-
-    // filename followed by 0 byte
-    char name[13];
-    };
-
-#endif
 
 class cIStore;
 class cOStore;

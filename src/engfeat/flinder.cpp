@@ -92,7 +92,7 @@ void CreateFlinders(ObjID victim, ObjID flinder, int count, BOOL scatter, float 
 
          for (j=0; j<3; j++)
          {
-            mxs_real rand_amt = ((float)(Rand() % 1024) / 1024.0);
+            mxs_real rand_amt = ((float)(Rand() % 1024) / 1024.0f);
             flinder_loc.el[j] = ((bmax.el[j] - bmin.el[j]) * rand_amt) + bmin.el[j];
          }
 
@@ -106,7 +106,7 @@ void CreateFlinders(ObjID victim, ObjID flinder, int count, BOOL scatter, float 
             Location hit;
 
             if (!PortalRaycast(&start, &end, &hit, FALSE))
-               mx_interpolate_vec(&flinder_loc, &start.vec, &hit.vec, 0.95);
+               mx_interpolate_vec(&flinder_loc, &start.vec, &hit.vec, 0.95f);
             else
                flinder_loc = end.vec;
          }
@@ -123,7 +123,7 @@ void CreateFlinders(ObjID victim, ObjID flinder, int count, BOOL scatter, float 
                      pContact = &gaSphrContact[j];
                }
 
-               mx_interpolate_vec(&flinder_loc, &start.vec, &pContact->point_on_ray, 0.95);
+               mx_interpolate_vec(&flinder_loc, &start.vec, &pContact->point_on_ray, 0.95f);
             }
             else
                flinder_loc = end.vec;
@@ -143,16 +143,16 @@ void CreateFlinders(ObjID victim, ObjID flinder, int count, BOOL scatter, float 
       if (mx_mag2_vec(&velocity) > 0.0001)
          mx_normeq_vec(&velocity);
 
-      obj_impulse = impulse + (((float)(Rand() % 1024) / 1024.0) * impulse * 0.5) - impulse * 0.25;
+      obj_impulse = impulse + (((float)(Rand() % 1024) / 1024.0f) * impulse * 0.5f) - impulse * 0.25f;
 
       mx_scaleeq_vec(&velocity, impulse); 
       PhysSetVelocity(flinder_obj, &velocity);
 
       // apply a rotational velocity, too
       for (j=0; j<3; j++)
-         rot_velocity.el[j] = ((float)(Rand() % 1024) / 512.0) - 1.0;
+         rot_velocity.el[j] = ((float)(Rand() % 1024) / 512.0f) - 1.0f;
 
-      mx_scaleeq_vec(&rot_velocity, impulse * 0.6);
+      mx_scaleeq_vec(&rot_velocity, impulse * 0.6f);
       PhysSetRotationalVelocity(flinder_obj, &rot_velocity);
    }
 }

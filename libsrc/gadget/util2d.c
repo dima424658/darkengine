@@ -405,7 +405,7 @@ int UtilSetColor(short r, short g, short b)
 }
 
 // Draws a string in a given font and palette to a 16 bit canvas
-int UtilStringWrap16(char *s, short x, short y, char pal, short color, Id font, short width)
+int UtilStringWrap16(char *s, short x, short y, char pal, short color, IDataSource *pFont, short width)
 {
    short w, h; // size of string when drawn
    uchar *bits; // temp memory
@@ -414,7 +414,7 @@ int UtilStringWrap16(char *s, short x, short y, char pal, short color, Id font, 
    grs_font *f; // the font we are using
 
    // do some setup of font, the canvas, etc
-   f = (grs_font *)ResLock(font);
+   f = (grs_font *)IDataSource_Lock(pFont);
 
    // need to wrap?
    if (width != 0)
@@ -450,7 +450,7 @@ int UtilStringWrap16(char *s, short x, short y, char pal, short color, Id font, 
       lgad_free((char *)bits);
    else
       Free(bits);
-   ResUnlock(font);
+   IDataSource_Unlock(pFont);
 
    return(0);
 }

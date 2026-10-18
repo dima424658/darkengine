@@ -14,8 +14,11 @@
 
 #pragma once
 
+#ifdef __cplusplus
+#include <new>
+#endif
+
 #if defined(__WATCOMC__)
-   #pragma off (unreferenced)
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,7 +206,6 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined(__WATCOMC__)
-   #pragma on (unreferenced)
 #endif
 
 #endif /* !__DYNARSRV_H */

@@ -19,7 +19,7 @@ typedef struct _sndOneShotStuff {
    uint32            endOffset;        // offset into resource of end of data
    SndEndCallback    endCB;            // app end-of-sample callback
    void              *pEndCBData;      // app end-of-sample callback data
-   uint32            extras[4];        // stuff for specialized streamers to use
+   uintptr_t         extras[4];        // stuff for specialized streamers to use
    SndLoadFunction   getData;          // routine for actually getting data from source
    uint32            dataOffset;       // offset of start of audio data
    int               bytesPerSample;   // data bytes per sample

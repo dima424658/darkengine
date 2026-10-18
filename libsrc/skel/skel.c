@@ -16,8 +16,8 @@
 #include <mprintf.h>
 
 
-skt_vcall_func skd_joint_call_tab[MAX_VCALLS];
-skt_vcall_func skd_seg_call_tab[MAX_VCALLS];
+sks_call_slot skd_joint_call_tab[MAX_VCALLS];
+sks_call_slot skd_seg_call_tab[MAX_VCALLS];
 uchar          skd_joint_call_joint[MAX_VCALLS];
 mxs_vector     skd_seg_call_vecs[MAX_VCALLS];
 mxs_vector     skd_vhot_vecs[MAX_VCALLS];
@@ -164,7 +164,7 @@ void sk_set_joint_call(int seg_id,skt_vcall_func v_func,int j)
       return;
    }
 
-   skd_joint_call_tab[seg_id] = v_func;
+   skd_joint_call_tab[seg_id].func = v_func;
    skd_joint_call_joint[seg_id] = j;
 }
 
@@ -175,11 +175,11 @@ void sk_set_seg_call(int seg_id,skt_vcall_func v_func,fix xoff,fix yoff,fix zoff
       return;
    }
 
-   skd_seg_call_tab[seg_id] = v_func;  
+   skd_seg_call_tab[seg_id].func = v_func;
 
-   skd_seg_call_vecs[seg_id].x = xoff;
-   skd_seg_call_vecs[seg_id].y = yoff;
-   skd_seg_call_vecs[seg_id].z = zoff;
+   skd_seg_call_vecs[seg_id].x = fix_float(xoff);
+   skd_seg_call_vecs[seg_id].y = fix_float(yoff);
+   skd_seg_call_vecs[seg_id].z = fix_float(zoff);
 }
 
 void sk_set_joint_vhot(int seg_id,int vhot_num,int j)
@@ -189,7 +189,7 @@ void sk_set_joint_vhot(int seg_id,int vhot_num,int j)
       return;
    }
 
-   skd_joint_call_tab[seg_id] = (skt_vcall_func)(vhot_num+1);
+   skd_joint_call_tab[seg_id].vhot = vhot_num + 1;
    skd_joint_call_joint[seg_id] = j;
 }
 
@@ -200,11 +200,11 @@ void sk_set_seg_vhot(int seg_id,int vhot_num,fix xoff,fix yoff,fix zoff)
       return;
    }
 
-   skd_seg_call_tab[seg_id] = (skt_vcall_func)(vhot_num+1);
+   skd_seg_call_tab[seg_id].vhot = vhot_num + 1;
 
-   skd_seg_call_vecs[seg_id].x = xoff;
-   skd_seg_call_vecs[seg_id].y = yoff;
-   skd_seg_call_vecs[seg_id].z = zoff;
+   skd_seg_call_vecs[seg_id].x = fix_float(xoff);
+   skd_seg_call_vecs[seg_id].y = fix_float(yoff);
+   skd_seg_call_vecs[seg_id].z = fix_float(zoff);
 }
 
 
@@ -213,8 +213,8 @@ void sk_init(void)
 {
    int i;
    for (i=0;i<MAX_VCALLS;++i) {
-      skd_joint_call_tab[i] = NULL;
-      skd_seg_call_tab[i] = NULL;
+      skd_joint_call_tab[i].func = NULL;
+      skd_seg_call_tab[i].func = NULL;
    }
    for (i=0;i<256;++i) {
       skd_dumb_clut[i] = i;

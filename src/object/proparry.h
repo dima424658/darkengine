@@ -16,7 +16,7 @@
 #include <dataops.h>
 #include <dataops_.h>
 #include <packflag.h>
-#include <ObjArray.h>
+#include <objarray.h>
 
 #include <dbmem.h>
 

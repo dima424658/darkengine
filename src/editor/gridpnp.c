@@ -100,7 +100,7 @@ void gridPnP_OneShots(int lid)
 }
 
 #ifdef WORKED
-void gridPnP_Update(PnP_SliderOp op, Rect *where, int val, int data)
+void gridPnP_Update(PnP_SliderOp op, Rect *where, int val, intptr_t data)
 {
    extern void grid_pow2_scale(int pow2);
    if (op != PnP_SliderUpdateOp)
@@ -111,17 +111,17 @@ void gridPnP_Update(PnP_SliderOp op, Rect *where, int val, int data)
    }
 }
 
-void gridPnP_Update_1(PnP_SliderOp op, Rect *where, float val, int data)
+void gridPnP_Update_1(PnP_SliderOp op, Rect *where, float val, intptr_t data)
 {
    mprintf("at %d\n",data);
 }
 
-void gridPnP_Update_2(PnP_SliderOp op, Rect *where, fixang val, int data)
+void gridPnP_Update_2(PnP_SliderOp op, Rect *where, fixang val, intptr_t data)
 {
    mprintf("at %d (%x)\n",data,val);
 }
 
-void gridPnP_Update_3(PnP_SliderOp op, Rect *where, short val, int data)
+void gridPnP_Update_3(PnP_SliderOp op, Rect *where, short val, intptr_t data)
 {
    mprintf("at %d (%d)\n",data,val);
 }

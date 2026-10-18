@@ -6,8 +6,6 @@
  *
  */
 
-#ifdef WIN32
-
 #include <grc.h>
 #include <grd.h>
 #include <mode.h>
@@ -108,5 +106,3 @@ int gd_com_init(IDisplayDevice *dev, int descFlags)
 }
 
 */
-
-#endif

@@ -258,6 +258,22 @@ typedef struct
 
 } PortalCell;   // 84 bytes
 
+// WREXT can build denser lightmaps by scaling the serialized projection
+// coordinate space.  Base textures undo that scale; lightmap coordinates keep
+// it.  Legacy WR/WRRGB worlds leave this at 1.
+EXTERN float portal_worldrep_texture_scale;
+
+// WREXT stores texture bases as floats.  Keep those authored values beside
+// the legacy render records: reducing them to the 12.4 wrapping fields loses
+// whole texture periods which the non-wrapping lightmap transform still
+// needs.  Entries are null for legacy WR/WRRGB cells.
+EXTERN float *portal_wrext_u_base[];
+EXTERN float *portal_wrext_v_base[];
+
+// NewDark packs the ambient-light zone into the high nibble of the WREXT
+// per-cell zone byte. Legacy worlds and invalid cells use zone zero.
+EXTERN int portal_cell_ambient_zone(int cell);
+
 
 // for that axis field, below--gives the axis not considered
 #define MEDIUM_AXIS_X 0

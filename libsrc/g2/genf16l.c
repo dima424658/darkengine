@@ -10,7 +10,6 @@ extern g2il_func gen_flat16_il_wrap;
 extern g2il_func gen_flat16_lit_il;
 extern g2il_func gen_flat16_lit_il_wrap;
 
-#pragma off(unreferenced)
 void gen_flat16_ulmap_setup(grs_bitmap *bm, void (*caller)(grs_bitmap *))
 {
    pixpal = (void *)(grd_pal16_list[bm->align]);
@@ -45,4 +44,3 @@ void gen_flat16_lit_ulmap_setup(grs_bitmap *bm, void (*caller)(grs_bitmap *))
    g2d_pp.right_edge_func = gen_right_edge;
    g2d_pp.grad_func = gen_triangle_gradients;
 }
-#pragma on(unreferenced)

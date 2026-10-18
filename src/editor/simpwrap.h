@@ -4,7 +4,7 @@
 */
 
 // $Header: r:/t2repos/thief2/src/editor/simpwrap.h,v 1.2 2000/01/29 13:13:12 adurant Exp $
-// wrappers around darkdlgs dll "simple" menus and other ui tools
+// Compatibility wrapper for the retired simple-list dialog.
 #pragma once
 
 #ifndef __SIMPWRAP_H

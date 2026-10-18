@@ -169,9 +169,9 @@ struct sMxVector : mxs_vector
    { mx_maxeq_vec(this,&v); return *this;}
 
    sMxVector &Abs(const sMxVector &v)
-   { x=fabs(v.x);y=fabs(v.y);z=fabs(v.z); return *this;}
+    { x=fabsf(v.x);y=fabsf(v.y);z=fabsf(v.z); return *this;}
    sMxVector &AbsEq()
-   { x=fabs(x);y=fabs(y);z=fabs(z); return *this;}
+    { x=fabsf(x);y=fabsf(y);z=fabsf(z); return *this;}
 
    // Returns TRUE if all element deltas within eps
    bool IsIdentical(const sMxVector &v,float eps)

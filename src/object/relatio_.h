@@ -44,7 +44,7 @@ public:
    cBaseRelation(const sRelationDesc& desc, const sRelationDataDesc& datadesc) 
       : Desc(desc), DataDesc(datadesc)
    { ID = LinkMan()->AddRelation(this);};
-   ~cBaseRelation() { delete DataDesc.data_ops; };
+   ~cBaseRelation();
 
    //
    // IRelation Methods

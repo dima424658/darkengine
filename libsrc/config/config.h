@@ -168,7 +168,7 @@ void config_get_raw_all(ConfigIterFunc ifunc, char* buf, int bufsize);
 
 // Useful macros
 
-#define config_set_int(varname,val)      config_set_single_value(varname,CONFIG_INT_TYPE,(config_valtype)(val))
+#define config_set_int(varname,val)      config_set_single_value(varname,CONFIG_INT_TYPE,(config_valtype)(intptr_t)(val))
 #define config_set_string(varname,val)   config_set_single_value(varname,CONFIG_STRING_TYPE,(config_valtype)(val))
 #define config_set_float(varname,val)    config_set_single_value(varname,CONFIG_FLOAT_TYPE,(config_valtype)(val))
 #define config_get_int(varname,valptr)   config_get_single_value(varname,CONFIG_INT_TYPE,(config_valtype)(valptr))

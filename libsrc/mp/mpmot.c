@@ -150,7 +150,7 @@ mps_motion_node * mp_alloc_motion(multiped * mp, mps_start_info * info)
 	m->time = 0;
 	m->handle = info->motion_num;
 	m->start_frame = info->start_frame;
-	m->frame = info->start_frame;
+	m->frame = (float)info->start_frame;
 	m->callback = info->callback;
         m->callback_num = info->callback_num;
 	if (m->callback || m->callback_num)
@@ -206,7 +206,13 @@ void mp_setup_motion(multiped * mp, mps_motion_node *m, ulong flags)
 		}
 	
    	// Set motion's start position & orient
-      if(mp->frame_of_reference==MFRT_GLOBAL)
+      // Player-arm virtual motions (camSynch/bowFlex) already return an
+      // absolute camera-relative world position.  Giving a newly-started
+      // virtual motion the arm's current position as a relative base adds the
+      // camera position again at every maneuver transition and sends the
+      // viewmodel progressively away from the player.
+      if(mp->frame_of_reference==MFRT_GLOBAL ||
+         (mp->frame_of_reference==MFRT_ARM && motion->info.type==MT_VIRTUAL))
       {
          mx_zero_vec(&m->base_pos);
          quat_identity(&m->base_orient);
@@ -428,7 +434,7 @@ void mp_get_xlat_at_frame(mxs_vector * xlat, int motion, int frame)
 	mps_comp_motion * cm = m->components;
 	if (cm->type == CM_TRANS)
 	{
-      mp_capture_component_xlat_func(NULL,&m->info,cm,frame,xlat);
+      mp_capture_component_xlat_func(NULL,&m->info,cm,(float)frame,xlat);
 	}
 	else
 	{

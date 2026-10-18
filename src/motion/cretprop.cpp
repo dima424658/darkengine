@@ -228,7 +228,7 @@ public:
 // wsf: Additional note. It is now apparent that this fix for the rope bug creates a new bug -
 //      creting a new creature results in it having no skeleton. Damn. Will find another solution.
 #ifndef FIX_ROPE_BUG
-      ObjID obj = ObjID(data);
+      ObjID obj = (ObjID)(intptr_t)data;
       sCreatureHandle* pHandle;
 
       switch (msg)
@@ -257,7 +257,6 @@ public:
 };
 
 
-#pragma off(unreferenced)
 
 static cCreatureProp *pCreatureProp;
 

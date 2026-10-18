@@ -73,7 +73,7 @@ cAIJointRotateAction::cAIJointRotateAction(IAI *pAI, void *pMsg):
       sObjListenerDesc desc = {AIJointRotateObjListener, (void*)this};
       m_listener = pObjectSystem->Listen(&desc);
    } else {
-      m_listener = NULL;
+      m_listener = 0;
    }
 
    // Since it has no pOwner ability, the cAIAction constructor didn't init m_pAI.
@@ -99,7 +99,7 @@ void cAIJointRotateAction::BroadcastAction(ulong deltaTime)
       ConfigSpew("net_ai_spew", ("NET AI: Send joint rotate for %d\n", m_pAIState->GetID()));
       AutoAppIPtr_(AINetManager, pAINetMan);
       AutoAppIPtr_(NetManager, pNetMan);
-      sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),m_pAIState->GetID(),FALSE,kAIAT_JointRotate};
+   sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),(NetObjID)m_pAIState->GetID(),FALSE,kAIAT_JointRotate};
       sAINetMsg_JointRotate_NG netmsg;
       netmsg.aihdr = hdr;
       netmsg.deltaTime = deltaTime;
@@ -165,7 +165,7 @@ void cAIJointSlideAction::BroadcastAction(ulong deltaTime)
       ConfigSpew("net_ai_spew", ("NET AI: Send joint slide for %d\n", m_pAIState->GetID()));
       AutoAppIPtr_(AINetManager, pAINetMan);
       AutoAppIPtr_(NetManager, pNetMan);
-      sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),m_pAIState->GetID(),FALSE,kAIAT_JointSlide};
+   sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),(NetObjID)m_pAIState->GetID(),FALSE,kAIAT_JointSlide};
       sAINetMsg_JointSlide_NG netmsg;
       netmsg.aihdr = hdr;
       netmsg.deltaTime = deltaTime;
@@ -204,7 +204,7 @@ void cAIJointScanAction::BroadcastHalt()
    AutoAppIPtr_(AINetManager, pAINetMan);
    if (pNetMan->Networking() && pObjNet->ObjHostedHere(m_pAIState->GetID()))
    {
-      sAINetMsg_Header netmsg = {pAINetMan->NetMsgHandlerID(),m_pAIState->GetID(),TRUE,kAIAT_JointScan};
+   sAINetMsg_Header netmsg = {pAINetMan->NetMsgHandlerID(),(NetObjID)m_pAIState->GetID(),TRUE,kAIAT_JointScan};
       pNetMan->Broadcast((void *)&netmsg, sizeof(netmsg), FALSE);
    }
 #endif
@@ -218,7 +218,7 @@ void cAIJointScanAction::BroadcastAction(ulong deltaTime)
    ConfigSpew("net_ai_spew", ("NET AI: Send joint scan for %d\n", m_pAIState->GetID()));
    AutoAppIPtr_(AINetManager, pAINetMan);
    AutoAppIPtr_(NetManager, pNetMan);
-   sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),m_pAIState->GetID(),FALSE,kAIAT_JointScan};
+   sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),(NetObjID)m_pAIState->GetID(),FALSE,kAIAT_JointScan};
    sAINetMsg_JointScan_NG netmsg;
    netmsg.aihdr = hdr;
    netmsg.justSwitchDirections = FALSE;
@@ -285,7 +285,7 @@ void cAIJointScanAction::BroadcastSwitchDirections()
    ConfigSpew("net_scan_spew", ("NET AI: Sending joint scan synch for %d\n", m_pAIState->GetID()));
    AutoAppIPtr_(NetManager, pNetMan);
    AutoAppIPtr_(AINetManager, pAINetMan);
-   sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),m_pAIState->GetID(),FALSE,kAIAT_JointScan};
+   sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),(NetObjID)m_pAIState->GetID(),FALSE,kAIAT_JointScan};
    sAINetMsg_JointScan_NG netmsg;
    netmsg.aihdr = hdr;
 
@@ -370,7 +370,7 @@ void cAILaunchAction::BroadcastAction(mxs_vector start_loc, mxs_vector dir)
    {
       AutoAppIPtr_(AINetManager, pAINetMan);
       sAINetMsg_Header hdr = {pAINetMan->NetMsgHandlerID(),
-                              m_pAIState->GetID(),
+                              (NetObjID)m_pAIState->GetID(),
                               FALSE,
                               kAIAT_Launch};
       sAINetMsg_Launch netmsg;

@@ -270,7 +270,7 @@ STDMETHODIMP cAIInvestigate::SuggestGoal(cAIGoal * pPrevious, cAIGoal ** ppNew)
    //
    const sAIAwareness * pAwareness = m_pAI->GetAwareness(GetAlertnessSource());
 
-   if (!pAwareness->ValidLastPos() || pAwareness->TimeSinceContact() > g_AITimeBreakInvestigation)
+   if (!pAwareness->ValidLastPos() || pAwareness->TimeSinceContact() > (tSimTime)g_AITimeBreakInvestigation)
    {
       *ppNew = NULL;
       SetAlertnessSource(OBJ_NULL);
@@ -349,7 +349,7 @@ STDMETHODIMP cAIInvestigate::SuggestActions(cAIGoal * pGoal, const cAIActions & 
       float distKeepFreshSense = pAction->ComputePathDist() - g_InvestNoFreshenRange;
 
       if (distKeepFreshSense > 0.0)
-         pSenses->KeepFresh(source, (distKeepFreshSense / g_InvestSpeed) * 1000.0);
+      pSenses->KeepFresh(source, (unsigned)((distKeepFreshSense / g_InvestSpeed) * 1000.0f));
    }
 
    pNew->Append(pAction);

@@ -18,12 +18,10 @@
 #include <grd.h>
 extern void (*bank8_upix8_func[])();
 
-#pragma off(unreferenced)
 gdupix_func *bank8_upix8_expose(int c, int x, int y)
 {
    return (gdupix_func *)bank8_upix8_func[grd_gc.fill_type];
 }
-#pragma on(unreferenced)
 
 void bank8_upix8(int c, int x, int y)
 {

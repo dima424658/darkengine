@@ -205,7 +205,7 @@ STDMETHODIMP cAIFollow::SuggestActions(cAIGoal * pGoal, const cAIActions & previ
    for (int i = 0; i < kAIF_MaxVectors; i++)
    {
       if (m_Current.vectors[i].distance)
-         pAction->AddVector(DEGREES(m_Current.vectors[i].angle), m_Current.vectors[i].distance);
+         pAction->AddVector(DEGREES(m_Current.vectors[i].angle), (float)m_Current.vectors[i].distance);
    }
 
    pNew->Append(pAction);

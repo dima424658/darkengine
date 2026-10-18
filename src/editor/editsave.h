@@ -10,10 +10,24 @@
 #ifndef __EDITSAVE_H
 #define __EDITSAVE_H
 
+#include <tagfile.h>
+#include <objtype.h>
+
 // save out the editor components of a Cow
 EXTERN BOOL editor_SaveCow(ITagFile *file);
 EXTERN BOOL editor_LoadCow(ITagFile *file);
 EXTERN BOOL editor_PostLoadCow(void); 
+
+// A retail .MIS normally has its source brush blocks stripped after
+// portalization.  Keep that distinct from an intentionally empty editor map
+// so views can offer an honest, display-only compiled-geometry fallback.
+EXTERN BOOL editor_BrushDataPresent(void);
+EXTERN void editor_ResetBrushDataState(void);
+EXTERN ulong editor_BrushDataGeneration(void);
+// Object brushes are serialized in BRLIST even though their transforms are
+// rebuilt from the object database.  This membership test preserves the
+// author's deliberate HasBrush exclusions when reconstructing that view.
+EXTERN BOOL editor_ObjectHasSourceBrush(ObjID object);
 
 // save out minibrush (ie. multibrush brush only) info
 EXTERN BOOL editor_SaveMiniBrush(char *fname, int group);

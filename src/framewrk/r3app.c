@@ -25,7 +25,6 @@ r3s_context *sim_context;
 // INIT FUNC
 //
 
-#pragma off(unreferenced)
 static STDMETHODIMP _InitFunc(IUnknown* goof)
 {
    r3_init_defaults(-1,12,-1,-1,-1);
@@ -34,13 +33,11 @@ static STDMETHODIMP _InitFunc(IUnknown* goof)
    mm_init();
    return kNoError;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SHUTDOWN FUNC
 //
 
-#pragma off(unreferenced)
 static STDMETHODIMP _ShutdownFunc(IUnknown* goof)
 {
    mm_close();
@@ -48,21 +45,16 @@ static STDMETHODIMP _ShutdownFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 
-#pragma off(unreferenced)
 static STDMETHODIMP NullFunc(IUnknown* goof)
 {
    return kNoError;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 static void STDMETHODCALLTYPE FinalReleaseFunc(IUnknown* goof)
 {
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // uiSysSysCreate()

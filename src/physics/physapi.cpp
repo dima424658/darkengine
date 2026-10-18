@@ -19,6 +19,7 @@
 #include <command.h>
 #include <config.h>
 #include <rand.h>
+#include <dbfile.h>
 
 #include <autolink.h>
 #include <objnotif.h>
@@ -369,7 +370,7 @@ void ExplodeMe(mxs_real magnitude, mxs_real radius_squared)
 
 void RopeHit(ObjID objID)
 {
-   float mag = ((float)RandRange(0, 40));
+   int mag = RandRange(0, 40);
 
    PhysHitRope(objID, mag);
 }
@@ -709,7 +710,7 @@ void PhysInit()
    SafeRelease(PosProp);
 
    // Set up friction
-   kFrictionFactor = 0.03;
+   kFrictionFactor = 0.03f;
    config_get_float("friction", &kFrictionFactor);
 
    kMaxFrameLen = 80;
@@ -875,10 +876,10 @@ void PhysPostLoad()
 void PhysRead(PhysReadWrite func, eObjPartition part)
 {
    func(&g_PhysVersion, sizeof(int), 1);
-
    if (g_PhysVersion < 5)
    {
-      AssertMsg(FALSE, "Attempt to load outdated physics data.  Ignoring.");
+      dbLoadReportFailure("physics-reader",
+                          "Physics data version is too old to load safely");
       g_PhysVersion = g_PhysCurrentVersion;
       return;
    }
@@ -1319,7 +1320,7 @@ void PhysControlVelocity(ObjID objID, mxs_vector *velocity)
    if (g_pNetMan->Networking() && ShouldBroadcastControlFor(objID))
    {
       mxs_vector cur = pCtrl->GetControlVelocity();
-      if (!mx_is_identical(&cur,velocity,0.01))
+      if (!mx_is_identical(&cur,velocity,0.01f))
           PhysBroadcastControlVelocity(objID, velocity);
    }
 #endif
@@ -1393,7 +1394,7 @@ void PhysAxisControlRotationalVelocity(ObjID objID, int axis, mxs_real speed)
    if (g_pNetMan->Networking() && ShouldBroadcastControlFor(objID))
    {
       mxs_vector cur = pCtrl->GetControlRotationalVelocity();
-      if (!mx_is_identical(&cur,&rot,0.01))
+      if (!mx_is_identical(&cur,&rot,0.01f))
           PhysBroadcastControlRotationalVelocity(objID, &rot);
    }
 #endif
@@ -1434,7 +1435,7 @@ void PhysControlRotationalVelocity(ObjID objID, mxs_vector *velocity)
    if (g_pNetMan->Networking() && ShouldBroadcastControlFor(objID))
    {
       mxs_vector cur = pCtrl->GetControlRotationalVelocity();
-      if (!mx_is_identical(&cur,velocity,0.01))
+      if (!mx_is_identical(&cur,velocity,0.01f))
           PhysBroadcastControlRotationalVelocity(objID, velocity);
    }
 #endif
@@ -1813,7 +1814,7 @@ BOOL PhysObjValidPos(ObjID objID, mxs_vector *delta)
    {
       float radius = ((cPhysSphereModel *)pModel)->GetRadius(0);
 
-      return SphrSphereInWorld(&new_loc, (radius > 1.0) ? 1.0 : radius, 0);
+      return SphrSphereInWorld(&new_loc, (radius > 1.0f) ? 1.0f : radius, 0);
    }
 
    for (int i=0; i<pModel->NumSubModels(); i++)
@@ -1973,7 +1974,8 @@ BOOL PhysObjOnGround(ObjID objID)
          pEdgeContact = pEdgeContactList->GetFirst();
          while (pEdgeContact != NULL)
          {
-            if (mx_dot_vec(&pEdgeContact->GetNormal(pModel->GetLocationVec(i)), &kGravityDir) < 0.0)
+            mxs_vector normal = pEdgeContact->GetNormal(pModel->GetLocationVec(i));
+            if (mx_dot_vec(&normal, &kGravityDir) < 0.0)
                return TRUE;
 
             pEdgeContact = pEdgeContact->GetNext();
@@ -1987,7 +1989,8 @@ BOOL PhysObjOnGround(ObjID objID)
          pVertexContact = pVertexContactList->GetFirst();
          while (pVertexContact != NULL)
          {
-            if (mx_dot_vec(&pVertexContact->GetNormal(pModel->GetLocationVec(i)), &kGravityDir) < 0.0)
+            mxs_vector normal = pVertexContact->GetNormal(pModel->GetLocationVec(i));
+            if (mx_dot_vec(&normal, &kGravityDir) < 0.0)
                return TRUE;
 
             pVertexContact = pVertexContact->GetNext();
@@ -2084,6 +2087,38 @@ void PhysSetFlag(ObjID objID, int flag, BOOL state)
       Warning(("PhysSetFlag: %s has no physics\n", ObjWarnName(objID)));
 }      
 
+void PhysSetPlayerPhysicsEnabled(BOOL enabled)
+{
+   cPhysModel *pModel;
+   int i;
+
+   g_PhysicsOn = enabled;
+   if (!PlayerObjectExists())
+      return;
+
+   pModel = g_PhysModels.Get(PlayerObject());
+   if (!pModel)
+      return;
+
+   // Remove contacts and pending collisions immediately. Otherwise an old
+   // contact can continue constraining the player after collision checks stop.
+   RemoveObjectCollisions(PlayerObject());
+   pModel->ClearConstraints();
+   if (!enabled)
+   {
+      for (i = 0; i < pModel->NumSubModels(); ++i)
+      {
+         pModel->DestroyAllTerrainContacts(i);
+         DestroyAllObjectContacts(PlayerObject(), i, pModel);
+      }
+   }
+}
+
+BOOL PhysPlayerPhysicsEnabled(void)
+{
+   return g_PhysicsOn;
+}
+
 
 //
 // Get the media state of an object
@@ -2113,7 +2148,8 @@ BOOL PhysObjInWater(ObjID objID)
 
       Location cog_loc;
 
-      MakeHintedLocationFromVector(&cog_loc, &pModel->GetCOG(), &pModel->GetLocation(PLAYER_BODY));
+      mxs_vector cog = pModel->GetCOG();
+      MakeHintedLocationFromVector(&cog_loc, &cog, &pModel->GetLocation(PLAYER_BODY));
       if (CellFromLoc(&cog_loc) == CELL_INVALID)
          return FALSE;
 
@@ -2186,7 +2222,7 @@ void PhysGetAABBox(ObjID objID, mxs_vector *minvec, mxs_vector *maxvec)
             mx_copy_vec(&submod_min, &pModel->GetLocationVec(i));
             mx_copy_vec(&submod_max, &pModel->GetLocationVec(i));
 
-            radius = ((cPhysSphereModel *)pModel)->GetRadius(i) * (pModel->IsCreature() ? 1.1 : 1.0);
+            radius = ((cPhysSphereModel *)pModel)->GetRadius(i) * (pModel->IsCreature() ? 1.1f : 1.0f);
             mx_mk_vec(&sphere_bbox, radius, radius, radius);
             mx_addeq_vec(&submod_max, &sphere_bbox);
             mx_subeq_vec(&submod_min, &sphere_bbox);
@@ -2280,7 +2316,7 @@ void PhysGetAABBox(ObjID objID, mxs_vector *minvec, mxs_vector *maxvec)
          mx_copy_vec(minvec, &pModel->GetLocationVec());
          mx_copy_vec(maxvec, &pModel->GetLocationVec());
 
-         mxs_real radius = ((cPhysSphereModel *)pModel)->GetRadius(0) * 1.3;
+         mxs_real radius = ((cPhysSphereModel *)pModel)->GetRadius(0) * 1.3f;
          mx_mk_vec(&sphere_bbox, radius, radius, radius);
          mx_add_vec(&submod_max, maxvec, &sphere_bbox);
          mx_sub_vec(&submod_min, minvec, &sphere_bbox);
@@ -2644,12 +2680,12 @@ void PhysExplode(mxs_vector *location, mxs_real magnitude, mxs_real radius_squar
          {
             if (pModel->GetRotAxes() & (1 << i))
             {
-               add_rot_vel.el[i] = power * ((float)(RandRange(0, explode_torque) - (explode_torque / 2))) / explode_torque;
+               add_rot_vel.el[i] = power * ((float)(RandRange(0, (int)explode_torque) - ((int)explode_torque / 2))) / explode_torque;
                if (add_rot_vel.el[i] > 4 * MX_REAL_2PI)
-                  add_rot_vel.el[i] = 4 * MX_REAL_2PI;
+                  add_rot_vel.el[i] = (mxs_real)(4 * MX_REAL_2PI);
                else
                   if (add_rot_vel.el[i] < -4 * MX_REAL_2PI)
-                     add_rot_vel.el[i] = -4 * MX_REAL_2PI;
+                     add_rot_vel.el[i] = (mxs_real)(-4 * MX_REAL_2PI);
             }
             else
                add_rot_vel.el[i] = 0;
@@ -2724,7 +2760,7 @@ void PhysCreateDefaultPlayer(ObjID objID)
    pModel->GetDynamics()->SetMass(180);
 
    // Set density
-   pModel->GetDynamics()->SetDensity(0.9);
+   pModel->GetDynamics()->SetDensity(0.9f);
 
    // Set head springiness
    pModel->SetSpringTension(PLAYER_HEAD, DEFAULT_SPRING_TENSION);
@@ -2905,7 +2941,8 @@ BOOL PhysGetFriction(ObjID objID, mxs_real *friction)
          {
             mxs_real friction_pct;
 
-            friction_pct = -min(0, mx_dot_vec(&pEdgeContact->GetNormal(pModel->GetLocationVec(i)), &kGravityDir));
+            mxs_vector normal = pEdgeContact->GetNormal(pModel->GetLocationVec(i));
+            friction_pct = -__min(0, mx_dot_vec(&normal, &kGravityDir));
             *friction += kFrictionFactor * friction_pct * kGravityAmt;
 
             pEdgeContact = pEdgeContact->GetNext();
@@ -2921,7 +2958,8 @@ BOOL PhysGetFriction(ObjID objID, mxs_real *friction)
          {
             mxs_real friction_pct;
 
-            friction_pct = -min(0, mx_dot_vec(&pVertexContact->GetNormal(pModel->GetLocationVec(i)), &kGravityDir));
+            mxs_vector normal = pVertexContact->GetNormal(pModel->GetLocationVec(i));
+            friction_pct = -__min(0, mx_dot_vec(&normal, &kGravityDir));
             *friction += kFrictionFactor * friction_pct * kGravityAmt;
 
             pVertexContact = pVertexContact->GetNext();
@@ -3036,7 +3074,7 @@ void PhysPlayerJump(ObjID player, mxs_real jump_speed)
 
       mx_scale_vec(&grav_comp, &kGravityDir, mx_dot_vec(&kGravityDir, &velocity));
       mx_subeq_vec(&velocity, &grav_comp);
-      mx_scaleeq_vec(&velocity, 1.05);
+      mx_scaleeq_vec(&velocity, 1.05f);
       mx_scale_addeq_vec(&velocity, &kGravityDir, -jump_speed);
 
       if (friction <= 1.0)
@@ -3194,7 +3232,7 @@ BOOL PhysObjMoveDir(ObjID objID, Location *start, Location *end, Location *hit)
             }
 
             mx_sub_vec(&cur_offset, &pContact->point_on_ray, &submod_start.vec);
-            mx_scaleeq_vec(&cur_offset, 0.95);
+            mx_scaleeq_vec(&cur_offset, 0.95f);
 
             if (mx_mag2_vec(&cur_offset) < mx_mag2_vec(&smallest_offset))
                mx_copy_vec(&smallest_offset, &cur_offset);
@@ -3208,7 +3246,7 @@ BOOL PhysObjMoveDir(ObjID objID, Location *start, Location *end, Location *hit)
          if (!PortalRaycast(&submod_start, &submod_end, &rc_hit, 1))
          {
             mx_sub_vec(&cur_offset, &rc_hit.vec, &submod_start.vec);
-            mx_scaleeq_vec(&cur_offset, 0.99);
+            mx_scaleeq_vec(&cur_offset, 0.99f);
 
             if (mx_mag2_vec(&cur_offset) < mx_mag2_vec(&smallest_offset))
                mx_copy_vec(&smallest_offset, &cur_offset);

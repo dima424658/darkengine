@@ -14,6 +14,7 @@
 #include <config.h>
 #include <cfg.h>
 #include <mprintf.h>
+#include <darklimit.h>
 
 #include <command.h>
 #include <status.h>
@@ -29,7 +30,7 @@ void set_config_cmd(char* arg)
    int n;
    char var[64],*val;
    sscanf(arg,"%s %n",var,&n);
-   if (n >= 0 && n < strlen(arg))
+   if (n >= 0 && (size_t)n < strlen(arg))
       for (val = arg + n; *val != '\0' && isspace(*val); val++)
          ;
    else
@@ -193,11 +194,29 @@ void process_config_scripts(const char* prefix)
 BOOL find_file_in_config_path(char* targ, const char* filename, const char* path_var)
 {
    Datapath path;
-   char pathbuf[256] = "";
+   char pathbuf[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS] = "";
    BOOL result;
    DatapathClear(&path);
    config_get_raw(path_var, pathbuf, sizeof(pathbuf));
    DatapathAdd(&path,pathbuf);
+   result = DatapathFind(&path,filename,targ,256);
+   DatapathFree(&path);
+   return result;
+}
+
+// Search only the directories named by the config variable.  The ordinary
+// helper retains Dark's legacy current-directory-first behavior, which is
+// useful to old callers but defeats an explicitly ordered content path when
+// the retail working directory contains a file with the same name.
+BOOL find_file_in_config_path_only(char* targ, const char* filename, const char* path_var)
+{
+   Datapath path;
+   char pathbuf[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS] = "";
+   BOOL result;
+   DatapathClear(&path);
+   config_get_raw(path_var, pathbuf, sizeof(pathbuf));
+   DatapathAdd(&path,pathbuf);
+   DatapathNoCurrent(&path);
    result = DatapathFind(&path,filename,targ,256);
    DatapathFree(&path);
    return result;

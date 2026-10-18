@@ -19,10 +19,10 @@
 
 // This needs both types to define the copy constructors
 inline sMxVector::sMxVector(const sMxdVector &v) 
-{x=v.x;y=v.y;z=v.z;}
+{x=(float)v.x;y=(float)v.y;z=(float)v.z;}
 
 inline sMxVector &sMxVector::operator=(const sMxdVector &v) 
-{x=v.x;y=v.y;z=v.z; return *this; }
+{x=(float)v.x;y=(float)v.y;z=(float)v.z; return *this; }
 
 // Vector Matrix functions:
 // dest = M x v

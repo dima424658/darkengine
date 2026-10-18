@@ -329,7 +329,7 @@ STDMETHODIMP_(void) cAIConversationManager::Load(ITagFile *pTagFile)
    ObjID convObj;
 
    AITagMove(pTagFile, &nConversations);
-   for (int i = 0; i < nConversations; i++)
+   for (unsigned i = 0; i < nConversations; i++)
    {
       AITagMove(pTagFile, &convObj);
       // If this conversation object does not already have a conversation going,

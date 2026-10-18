@@ -81,6 +81,12 @@ class cPPlateOps : public cClassDataOps<sPhysPPlateProp>
 {
 public:
    STDMETHOD_(int,Version)() { return 1000; };
+   STDMETHOD(Read)(sDatum* pdat, IDataOpsFile* file, int)
+   {
+      // 1000 is this property's schema revision, not its serialized size.
+      return cClassDataOps<sPhysPPlateProp>::Read(
+         pdat,file,sizeof(sPhysPPlateProp));
+   }
 };
 
 typedef cHashPropertyStore<cPPlateOps> cPhysPPlateStore;
@@ -258,10 +264,10 @@ BOOL DeployRope(ObjID objID)
    Location end, hit;
 
    MakeLocationFromVector(&end, &base_loc);
-   end.vec.z -= pRopeProp->desired_length + 1.0;
+   end.vec.z -= pRopeProp->desired_length + 1.0f;
 
    if (!PortalRaycast(&start, &end, &hit, TRUE))
-      true_length = (start.vec.z - hit.vec.z) - 1.0;
+      true_length = (start.vec.z - hit.vec.z) - 1.0f;
    else
       true_length = pRopeProp->desired_length;
 
@@ -290,8 +296,8 @@ BOOL DeployRope(ObjID objID)
 
       for (i=0; i<8; i++)
       {
-         submod_dir.x = (((mxs_real)RandRange(0, 2000)) / 1000) - 1.0;  
-         submod_dir.y = (((mxs_real)RandRange(0, 2000)) / 1000) - 1.0;
+         submod_dir.x = (((mxs_real)RandRange(0, 2000)) / 1000) - 1.0f;
+         submod_dir.y = (((mxs_real)RandRange(0, 2000)) / 1000) - 1.0f;
          submod_dir.z = 0;
         
          mx_normeq_vec(&submod_dir);
@@ -312,7 +318,7 @@ BOOL DeployRope(ObjID objID)
 
       for (i=0; i<8; i++)
       {
-         mx_scale_vec(&submod_loc, &submod_dir, ((float)i) / 8.0);
+         mx_scale_vec(&submod_loc, &submod_dir, ((float)i) / 8.0f);
          mx_addeq_vec(&submod_loc, &base_loc);
 
          PhysSetSubModLocation(objID, i, &submod_loc);
@@ -350,7 +356,7 @@ void LGAPI PhysRopeListener(sPropertyListenMsg * msg, PropListenerData data)
   
             for (i=1; i<8; i++)
             {
-               PhysSetSubModSpringTension(msg->obj, i, DEFAULT_SPRING_TENSION / sqrt((mxs_real)i));
+               PhysSetSubModSpringTension(msg->obj, i, DEFAULT_SPRING_TENSION / sqrtf((mxs_real)i));
                PhysSetSubModSpringDamping(msg->obj, i, 1.0); 
             }
          }

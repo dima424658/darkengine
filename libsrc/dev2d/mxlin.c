@@ -16,7 +16,6 @@
 extern void (*modex_uhline_func[])();
 extern void (*modex_uvline_func[])();
 
-#pragma off(unreferenced)
 gdulin_func *modex_uhline_expose(int x, int y, int x1)
 {
    return (gdulin_func *)modex_uhline_func[grd_gc.fill_type];
@@ -26,7 +25,6 @@ gdulin_func *modex_uvline_expose(int x, int y, int y1)
 {
    return (gdulin_func *)modex_uvline_func[grd_gc.fill_type];
 }
-#pragma on(unreferenced)
 
 void modex_uhline(int x, int y, int x1)
 {

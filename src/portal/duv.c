@@ -72,8 +72,8 @@ extern bool project_space;
 
 void duv_set_size(int w, int h)
 {
-   xsci = w/2.0;
-   ysci = h/2.0;
+   xsci = w/2.0f;
+   ysci = h/2.0f;
 
    xsc = 2.0 / w;
    ysc = 2.0 / h;

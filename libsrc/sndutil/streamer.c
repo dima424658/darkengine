@@ -310,7 +310,7 @@ CreateSoundStreamer( ISndMixer         *pMixer,
       pInfo->getData = getData;
       pInfo->pBuffer = (useExternalBuffer) ? NULL : pBuffer;
       pInfo->bufferLen = bufferLen;
-      pInfo->playOffset = (long) pRawData - (long) (pInData);
+      pInfo->playOffset = (uint32)((uint8 *)pRawData - (uint8 *)pInData);
       pInfo->dataOffset = pInfo->playOffset;
       pInfo->endOffset = pInfo->playOffset + rawDataLen;
       pInfo->numSamples = nSamples;

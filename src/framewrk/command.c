@@ -28,8 +28,8 @@ static Command *command_list[MAX_COMMAND_SETS];
 static int command_count[MAX_COMMAND_SETS];
 static int command_list_size;
 
-unsigned long  command_context = 0xffffffff;
-unsigned long *command_context_ptr = &command_context;
+ulong  command_context = 0xffffffff;
+ulong *command_context_ptr = &command_context;
 
 void CommandRegister(Command *cmd_set, int count, ulong contexts)
 {
@@ -79,7 +79,20 @@ Command *CommandFind(const char *s, int n)
 
 Command *CommandFindString(const char *s)
 {
-   return CommandFind(s, strlen(s));
+   return CommandFind(s, (int)strlen(s));
+}
+
+void CommandForEach(CommandIterateCallback callback, void *data)
+{
+   int i, j;
+
+   if (!callback)
+      return;
+
+   for (j=0; j < command_list_size; ++j)
+      for (i=0; i < command_count[j]; ++i)
+         if (!callback(&command_list[j][i], data))
+            return;
 }
 
 bool CommandParse(const char *inp, Command **res_1, const char **res_2)
@@ -98,7 +111,7 @@ bool CommandParse(const char *inp, Command **res_1, const char **res_2)
    s = inp;
    while (*s && !isspace(*s)) ++s;
 
-   n = s - inp;
+   n = (int)(s - inp);
 
    cmd = CommandFind(inp, n);
 
@@ -110,16 +123,21 @@ bool CommandParse(const char *inp, Command **res_1, const char **res_2)
    return TRUE;
 }
 
-static const char *fail_return = "No such Command";
+static char fail_return[] = "No such Command";
+static char context_fail_return[] = "Command is not available in this mode";
 char *CommandExecute(const char *inp)
 {
    // parse out to the first blank
-   char *s;
+   const char *s;
    Command *cmd;
 
    if ((inp==NULL)||(inp[0]=='\0')||(inp[0]==';'))
       return fail_return;  // bonus null command fun
    if (CommandParse(inp, &cmd, &s)) {
+      if (!(cmd->contexts & *command_context_ptr)) {
+         Warning(("CommandExecute: Invalid context for '%s'\n", cmd->name));
+         return context_fail_return;
+      }
       CommandExecuteParsed(cmd, s);
       return NULL;
    } else {
@@ -128,10 +146,14 @@ char *CommandExecute(const char *inp)
    }
 }
 
-bool CommandExecuteParam(const char *inp, char *parm)
+bool CommandExecuteParam(const char *inp, const char *parm)
 {
    Command *cmd = CommandFindString(inp);
    if (cmd) {
+      if (!(cmd->contexts & *command_context_ptr)) {
+         Warning(("CommandExecuteParam: Invalid context for '%s'\n", cmd->name));
+         return FALSE;
+      }
       CommandExecuteParsed(cmd, parm);
       return TRUE;
    } else {
@@ -140,11 +162,16 @@ bool CommandExecuteParam(const char *inp, char *parm)
    }
 }
 
-bool atobool(char *s)
+bool atobool(const char *s)
 {
    if (!stricmp(s, "false")) return FALSE;
    if (!stricmp(s, "true" )) return TRUE;
    return atoi(s);
+}
+
+static float atofloat(const char *s)
+{
+   return strtof(s, NULL);
 }
 
 //////////////////
@@ -196,7 +223,9 @@ void CommandExecuteParsed(Command *cmd, const char *s)
       {
          void (*func)(float);
          func = (void (*)(float)) cmd->val;
-         get_val_and_exec(func,s,atof,prompt_double,0.0);
+         if (do_prompt) func((float)prompt_double(s));
+         else if ((s)&&(*s)) func(atofloat(s));
+         else func(0.0f);
          break;
       }
       case FUNC_DOUBLE:
@@ -220,7 +249,7 @@ void CommandExecuteParsed(Command *cmd, const char *s)
             Free(tmp);
          }
          else //  if ((s)&&(*s)) - since for strings both elses are the same, ie call with s
-            func(s);
+            func((char *)s);
          break;
       }
       case VAR_BOOL:
@@ -262,7 +291,7 @@ void CommandExecuteParsed(Command *cmd, const char *s)
       {
          float *var = (float *) cmd->val;
          if (*s)
-            *var = atof(s);
+            *var = strtof(s,NULL);
          else
             mprintf("%s=%g\n", cmd->name, (float) *var);
          break;
@@ -314,12 +343,250 @@ static const char *type_name[] =
    "integer toggle"
 };
 
+static bool help_text_contains(const char *text, const char *query,
+                               int query_len)
+{
+   int text_len;
+   int i;
+
+   if (!text || !query || query_len <= 0)
+      return FALSE;
+      text_len = (int)strlen(text);
+   if (query_len > text_len)
+      return FALSE;
+
+   for (i = 0; i <= text_len - query_len; ++i)
+      if (!strnicmp(text + i, query, query_len))
+         return TRUE;
+   return FALSE;
+}
+
+enum eHelpGroupMask
+{
+   kHelpMission     = 1 << 0,
+   kHelpPlayer      = 1 << 1,
+   kHelpRender      = 1 << 2,
+   kHelpAI          = 1 << 3,
+   kHelpObjects     = 1 << 4,
+   kHelpPhysics     = 1 << 5,
+   kHelpScripts     = 1 << 6,
+   kHelpAudio       = 1 << 7,
+   kHelpSimulation  = 1 << 8,
+   kHelpNetwork     = 1 << 9,
+   kHelpDiagnostics = 1 << 10,
+   kHelpSystem      = 1 << 11
+};
+
+typedef struct sHelpGroup
+{
+   const char *name;
+   const char *description;
+   uint mask;
+} sHelpGroup;
+
+static const sHelpGroup help_groups[] =
+{
+   { "mission", "mission selection, loading, saving, and objectives", kHelpMission },
+   { "player", "player state, movement, inventory, weapons, and HUD", kHelpPlayer },
+   { "render", "rendering, lighting, textures, portals, sky, and display", kHelpRender },
+   { "ai", "AI state, senses, pathfinding, and behavior", kHelpAI },
+   { "objects", "objects, properties, links, traits, and containment", kHelpObjects },
+   { "physics", "physics, gravity, velocity, and collision", kHelpPhysics },
+   { "scripts", "scripts, messages, OSMs, and Squirrel", kHelpScripts },
+   { "audio", "sounds, schemas, music, and ambient audio", kHelpAudio },
+   { "simulation", "simulation, time, difficulty, and quest state", kHelpSimulation },
+   { "network", "networking and ghost state", kHelpNetwork },
+   { "debug", "diagnostics, reports, dumps, tests, and visualization", kHelpDiagnostics },
+   { "system", "console, bindings, configuration, history, and process control", kHelpSystem },
+   { "other", "uncategorized legacy commands", 0 }
+};
+
+static bool help_query_is(const char *query, int query_len, const char *text)
+{
+   int text_len = (int)strlen(text);
+   return query_len == text_len && !strnicmp(query, text, query_len);
+}
+
+static bool help_name_contains(const Command *cmd, const char *text)
+{
+   return help_text_contains(cmd->name, text, (int)strlen(text));
+}
+
+static uint help_command_group_mask(const Command *cmd)
+{
+   uint mask = 0;
+
+   if (help_name_contains(cmd, "mission") || help_name_contains(cmd, "miss_") ||
+       help_name_contains(cmd, "objective") || help_name_contains(cmd, "campaign") ||
+       help_name_contains(cmd, "save_game") || help_name_contains(cmd, "load_game"))
+      mask |= kHelpMission;
+   if (help_name_contains(cmd, "player") || help_name_contains(cmd, "plyr") ||
+       help_name_contains(cmd, "immunity") || help_name_contains(cmd, "flying") ||
+       help_name_contains(cmd, "invisible") || help_name_contains(cmd, "weapon") ||
+       help_name_contains(cmd, "inventory") || help_name_contains(cmd, "hud") ||
+       help_name_contains(cmd, "reticle") || help_name_contains(cmd, "frob"))
+      mask |= kHelpPlayer;
+   if (help_name_contains(cmd, "render") || help_name_contains(cmd, "rend_") ||
+       help_name_contains(cmd, "draw") || help_name_contains(cmd, "fog_") ||
+       help_name_contains(cmd, "light_") || help_name_contains(cmd, "texture") ||
+       help_name_contains(cmd, "tex_") || help_name_contains(cmd, "portal") ||
+       help_name_contains(cmd, "cell") || help_name_contains(cmd, "poly") ||
+       help_name_contains(cmd, "mip") || help_name_contains(cmd, "sky") ||
+       help_name_contains(cmd, "gamma") || help_name_contains(cmd, "screen"))
+      mask |= kHelpRender;
+   if (!strnicmp(cmd->name, "ai", 2) || help_name_contains(cmd, "_ai") ||
+       help_name_contains(cmd, "pathfind"))
+      mask |= kHelpAI;
+   if (help_name_contains(cmd, "obj") || help_name_contains(cmd, "prop") ||
+       help_name_contains(cmd, "link") || help_name_contains(cmd, "trait") ||
+       help_name_contains(cmd, "archetype") || help_name_contains(cmd, "metaprop") ||
+       help_name_contains(cmd, "contain"))
+      mask |= kHelpObjects;
+   if (help_name_contains(cmd, "phys") || help_name_contains(cmd, "gravity") ||
+       help_name_contains(cmd, "velocity") || help_name_contains(cmd, "collision"))
+      mask |= kHelpPhysics;
+   if (help_name_contains(cmd, "script") || help_name_contains(cmd, "scr_") ||
+       help_name_contains(cmd, "osm") || help_name_contains(cmd, "squirrel"))
+      mask |= kHelpScripts;
+   if (help_name_contains(cmd, "sound") || help_name_contains(cmd, "snd_") ||
+       help_name_contains(cmd, "schema") || help_name_contains(cmd, "music") ||
+       help_name_contains(cmd, "ambient"))
+      mask |= kHelpAudio;
+   if (help_name_contains(cmd, "sim_") || help_name_contains(cmd, "time") ||
+       help_name_contains(cmd, "clock") || help_name_contains(cmd, "difficulty") ||
+       help_name_contains(cmd, "quest"))
+      mask |= kHelpSimulation;
+   if (help_name_contains(cmd, "net_") || help_name_contains(cmd, "network") ||
+       help_name_contains(cmd, "ghost"))
+      mask |= kHelpNetwork;
+   if (help_name_contains(cmd, "debug") || help_name_contains(cmd, "dump") ||
+       help_name_contains(cmd, "spew") || help_name_contains(cmd, "stats") ||
+       help_name_contains(cmd, "report") || help_name_contains(cmd, "watch") ||
+       help_name_contains(cmd, "test") || help_name_contains(cmd, "show_"))
+      mask |= kHelpDiagnostics;
+   if (help_name_contains(cmd, "console") || help_name_contains(cmd, "help") ||
+       help_name_contains(cmd, "bind") || help_name_contains(cmd, "config") ||
+       help_name_contains(cmd, "history") || help_name_contains(cmd, "gamepad") ||
+       help_query_is(cmd->name, (int)strlen(cmd->name), "run") ||
+       help_query_is(cmd->name, (int)strlen(cmd->name), "quit") ||
+       help_query_is(cmd->name, (int)strlen(cmd->name), "exit"))
+      mask |= kHelpSystem;
+
+   return mask;
+}
+
+static const sHelpGroup *help_find_group(const char *query, int query_len)
+{
+   int i;
+   for (i = 0; i < (int)(sizeof(help_groups) / sizeof(help_groups[0])); ++i)
+      if (help_query_is(query, query_len, help_groups[i].name))
+         return &help_groups[i];
+
+   if (help_query_is(query, query_len, "rendering"))
+      return &help_groups[2];
+   if (help_query_is(query, query_len, "object"))
+      return &help_groups[4];
+   if (help_query_is(query, query_len, "script"))
+      return &help_groups[6];
+   if (help_query_is(query, query_len, "sound"))
+      return &help_groups[7];
+   if (help_query_is(query, query_len, "sim"))
+      return &help_groups[8];
+   return NULL;
+}
+
+static const char *help_command_type(const Command *cmd)
+{
+   return (cmd->type >= FUNC_VOID && cmd->type <= TOGGLE_INT)
+        ? type_name[cmd->type] : "unknown";
+}
+
+static void help_print_command(const Command *cmd)
+{
+   const char *type = help_command_type(cmd);
+   if (cmd->comment)
+      mprintf("%s (%s): %s\n", cmd->name, type, cmd->comment);
+   else
+      mprintf("%s (%s)\n", cmd->name, type);
+}
+
 static void help_commands(const char *s)
 {
-   if (s && *s) 
-   {
-      int j;
+   int matches = 0;
+   int j;
+   const char *query = s;
+   const char *query_end;
+   const sHelpGroup *group;
+   int query_len;
 
+   while (query && *query && isspace((unsigned char)*query))
+      ++query;
+   query_end = query ? query + strlen(query) : query;
+   while (query_end && query_end > query &&
+          isspace((unsigned char)query_end[-1]))
+      --query_end;
+   query_len = query_end && query ? (int)(query_end - query) : 0;
+
+#ifdef EDITOR
+   // DromEd registers thousands of commands. Its existing searchable command
+   // reference is more useful than streaming the entire registry into the
+   // embedded console. A filtered query remains available in the console.
+   if (!query_len)
+   {
+      Command *window_help = CommandFindString("show_command_help");
+      if (window_help && (window_help->contexts & *command_context_ptr))
+      {
+         CommandExecute("show_command_help");
+         return;
+      }
+   }
+#endif
+
+   if (!query_len)
+   {
+      int i;
+      mprintf("Command groups:\n");
+      for (i = 0; i < (int)(sizeof(help_groups) / sizeof(help_groups[0])); ++i)
+         mprintf("  %-12s %s\n", help_groups[i].name,
+                 help_groups[i].description);
+      mprintf("Use help <group> to list that group.\n");
+      mprintf("Use help <keyword> to search names and descriptions.\n");
+      mprintf("Use help all only when you want the complete registry.\n");
+      return;
+   }
+
+   group = help_find_group(query, query_len);
+   if (group || help_query_is(query, query_len, "all"))
+   {
+      bool all = help_query_is(query, query_len, "all");
+      if (all)
+         mprintf("All commands available in this mode:\n");
+      else
+         mprintf("%s commands:\n", group->name);
+
+      for (j = 0; j < command_list_size; ++j)
+      {
+         int i;
+         for (i = 0; i < command_count[j]; ++i)
+         {
+            Command *cmd = &command_list[j][i];
+            uint mask;
+            if (!(cmd->contexts & *command_context_ptr))
+               continue;
+            mask = help_command_group_mask(cmd);
+            if (!all && ((group->mask && !(mask & group->mask)) ||
+                         (!group->mask && mask)))
+               continue;
+            ++matches;
+            help_print_command(cmd);
+         }
+      }
+      mprintf("%d matching commands.\n", matches);
+      return;
+   }
+
+   if (query_len)
+   {
       for (j=0; j < command_list_size; ++j) 
       {
          Command* set = command_list[j];
@@ -328,44 +595,23 @@ static void help_commands(const char *s)
 
          for (i=0; i < count; ++i)
          {
-            int k;
-            int len = strlen(set[i].name);
-            int n = strlen(s);
-            for(k = 0; k <= len - n; k++)
-               if (strnicmp(set[i].name+k,s,n) == 0)
-               {
-                  Command *cmd = &set[i];
-                  mprintf("%s ",set[i].name);
-                  if (cmd->comment)
-                     mprintf("(%s): %s\n", type_name[cmd->type], cmd->comment);
-                  else
-                     mprintf("(%s)\n", type_name[cmd->type]);
-               }
+            Command *cmd = &set[i];
+            if (!(set[i].contexts & *command_context_ptr))
+               continue;
+            if (!help_text_contains(cmd->name, query, query_len) &&
+                !help_text_contains(cmd->comment, query, query_len) &&
+                !help_text_contains(help_command_type(cmd), query, query_len))
+               continue;
 
+            ++matches;
+            help_print_command(cmd);
          }
 
       }
-   }  
-   else 
-   {
-      int j,i,cnt=0;
-      char holding_pen[21];
-      holding_pen[19]='\0';
-      holding_pen[20]='\0';
-      for (j=0; j < command_list_size; ++j)
-         for (i=0; i < command_count[j]; ++i)
-         {
-            strncpy(holding_pen,command_list[j][i].name,19);
-            if ((++cnt)&3)  // ie line 0,1,2...
-               mprintf("%020s", holding_pen);
-            else
-            {
-               holding_pen[18]='\0';  // replace final char with a \n for monolog
-               mprintf("%019s\n", holding_pen);
-            }
-         }
-      if (cnt&3) mprintf("\n"); // clean up with a return
    }
+
+   if (!matches)
+      mprintf("No matching commands are available in this mode.\n");
 }
 
 // track command finds
@@ -377,13 +623,15 @@ const char *command_find(const char *prefix, BOOL restart)
    BOOL found_us=FALSE;
 
    if (restart) which_list=which_cmd=0;
-   if (prefix)  match_len=strlen(prefix);
+      if (prefix)  match_len=(int)strlen(prefix);
 
    for (; which_list < command_list_size; which_list++, which_cmd=0)
    {
       Command *set=command_list[which_list];
       for (; which_cmd < command_count[which_list]; which_cmd++)
       {
+         if (!(set[which_cmd].contexts & *command_context_ptr))
+            continue;
          if (match_len)
          {
             if (strnicmp(set[which_cmd].name,prefix,match_len)==0)

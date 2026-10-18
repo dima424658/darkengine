@@ -24,8 +24,8 @@ EXTERN void gamma_update(void);
 EXTERN void gamma_load(void);
 
 // reasonable limits for options panel to use
-#define MIN_GAMMA 0.5
+#define MIN_GAMMA 0.5f
 #define DEFAULT_GAMMA 1.0
-#define MAX_GAMMA 1.5
+#define MAX_GAMMA 1.5f
 
 #endif

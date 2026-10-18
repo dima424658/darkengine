@@ -5,8 +5,7 @@
 
 #include <limits.h>
 #include <stdio.h>
-#include <windows.h>
-#include <direct.h>
+#include <platform_services.h>
 #include <config.h>
 #include <mprintf.h>
 #include <filepath.h>
@@ -869,38 +868,7 @@ void DPCLoadFull(const char *fileroot)
 // Copies all files matching the filespec from one dir to the other
 bool DPCCopyFiles(char *filespec, char *fromdir, char *todir)
 {
-   char curgame[_MAX_PATH];
-   HANDLE hand;
-   char oldfile[_MAX_PATH];
-   char newfile[_MAX_PATH];
-   WIN32_FIND_DATA filedata;
-   bool fileiter = TRUE;
-   bool retval = TRUE;
-
-   sprintf(curgame,"%s\\%s",fromdir,filespec);
-   hand = FindFirstFile(curgame,&filedata);
-   if (hand == INVALID_HANDLE_VALUE)
-      fileiter = FALSE;
-
-   while (fileiter)
-   {
-      //GetShortPathName(filedata.cFileName, fileroot, _MAX_PATH);
-      sprintf(oldfile,"%s\\%s",fromdir,filedata.cFileName);
-      sprintf(newfile,"%s\\%s",todir,filedata.cFileName);
-      CopyFile(oldfile,newfile,FALSE);
-
-      if (FindNextFile(hand, &filedata) == 0)
-      {
-         if (GetLastError() != ERROR_NO_MORE_FILES)
-         {
-            Warning(("DPCCopyFiles: file iteration abnormally terminated!"));
-            retval = FALSE;
-         }
-         fileiter = FALSE; 
-      }
-   }
-   FindClose(&filedata);
-   return(retval);
+   return PlatformCopyFiles(filespec, fromdir, todir);
 }
 
 // Does a full actual "save" of the game
@@ -987,7 +955,7 @@ HRESULT DoDPCSaveGame(int slot, char *savedesc)
       pNetManager->SynchFlush(NULL, NULL);
    }
 
-   getcwd(curdir,_MAX_PATH);
+   PlatformGetCurrentDirectory(curdir, _MAX_PATH);
 
    if (slot != -1)
    {
@@ -995,7 +963,7 @@ HRESULT DoDPCSaveGame(int slot, char *savedesc)
       DPCGetSaveDir(slot, savedir);
       //sprintf(savedir,"%s%d",SAVEROOT,slot);
    //   if (_chdir(savedir))
-      if (chdir(savedir))
+      if (_chdir(savedir))
       {
          // dir does not exist, create it
          if (mkdir(savedir) != 0)
@@ -1003,7 +971,7 @@ HRESULT DoDPCSaveGame(int slot, char *savedesc)
             Warning(("DPCSaveGame: Could not create directory %d!\n",savedir));
          }
       }
-      chdir(curdir);
+      _chdir(curdir);
    }
 
    // Save out the current state of the game to the current directory
@@ -1183,7 +1151,7 @@ static HRESULT doDPCLoadGame(int slot)
    DPCOverlayAddText(temp, DEFAULT_MSG_TIME);
    */
 
-   getcwd(curdir,_MAX_PATH);
+   PlatformGetCurrentDirectory(curdir, _MAX_PATH);
 
    if (slot != -1)
    {
@@ -1551,7 +1519,7 @@ void DPCBeginGame()
    // clear out the "current" directory
    char curdir[_MAX_PATH];
    char temp[_MAX_PATH];
-   getcwd(curdir,_MAX_PATH);
+   PlatformGetCurrentDirectory(curdir, _MAX_PATH);
    sprintf(temp,"%s\\%s",curdir,CURGAME_DIR);
    DPCEraseDirectory(temp);
 }

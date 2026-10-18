@@ -53,7 +53,7 @@
 #include <dbmem.h>   // must be last header!
 
 
-#define PI 3.14159265
+#define PI 3.14159265f
 #define TWOPI (2*PI)
 
 extern "C" BOOL g_lgd3d;
@@ -307,10 +307,10 @@ void cFrostedEdgesEffect::ComputePolys()
       // aspect is w/h
       fAspect = fix_float(grd_mode_cap.aspect);
 
-      nOuterHeight = fOuterCircleSize*nHeight*0.50000;
-      nInnerHeight = fInnerCircleSize*nHeight*0.50000;
-      nOuterWidth = fOuterCircleSize*nHeight*0.50000/fAspect;
-      nInnerWidth = fInnerCircleSize*nHeight*0.50000/fAspect;
+      nOuterHeight = (int)(fOuterCircleSize*nHeight*0.5f);
+      nInnerHeight = (int)(fInnerCircleSize*nHeight*0.5f);
+      nOuterWidth = (int)(fOuterCircleSize*nHeight*0.5f/fAspect);
+      nInnerWidth = (int)(fInnerCircleSize*nHeight*0.5f/fAspect);
 
       nNumPoints = (nPointsPerQuad+2)*4*3-12; // corner points are shared.
       nNumPolygons = (nPointsPerQuad+1)*4*2;
@@ -332,20 +332,20 @@ void cFrostedEdgesEffect::ComputePolys()
       nQuad = 0;
       for (i = 0; i < nPointsPerSide; i++)
       {
-         nX = (i/(float)nPointsPerSide)*nWidth-DUMB_ADJUST;
-         fTheta = atan2((nHeight/2),(nX-nMidX));
+         nX = (int)((i/(float)nPointsPerSide)*nWidth-DUMB_ADJUST);
+         fTheta = atan2f((float)(nHeight/2), (float)(nX-nMidX));
 
          // Outer points (along edge of screen)
          SetupPoint(nQuad*nQuadPoints+i*3, nX, 0-DUMB_ADJUST, 1);
 
          // Mid Points (given outer radius)
-         nX = nMidX+cos(fTheta)*nOuterWidth;
-         nY = nMidY-sin(fTheta)*nOuterHeight;
+         nX = (int)(nMidX+cosf(fTheta)*nOuterWidth);
+         nY = (int)(nMidY-sinf(fTheta)*nOuterHeight);
          SetupPoint(nQuad*nQuadPoints+i*3+1, nX, nY, 1);
 
          // Inner Points (given inner radius)
-         nX = nMidX+cos(fTheta)*nInnerWidth;
-         nY = nMidY-sin(fTheta)*nInnerHeight;
+         nX = (int)(nMidX+cosf(fTheta)*nInnerWidth);
+         nY = (int)(nMidY-sinf(fTheta)*nInnerHeight);
          SetupPoint(nQuad*nQuadPoints+i*3+2, nX, nY, 0);
       }
 
@@ -353,20 +353,20 @@ void cFrostedEdgesEffect::ComputePolys()
       nQuad = 1;
       for (i = 0; i < nPointsPerSide; i++)
       {
-         nY = (i/(float)nPointsPerSide)*nHeight - DUMB_ADJUST;
-         fTheta = atan2((nMidY-nY),(nWidth/2));
+         nY = (int)((i/(float)nPointsPerSide)*nHeight - DUMB_ADJUST);
+         fTheta = atan2f((float)(nMidY-nY), (float)(nWidth/2));
 
          // Outer points (along edge of screen)
          SetupPoint(nQuad*nQuadPoints+i*3, nWidth, nY, 1);
 
          // Mid Points (given outer radius)
-         nX = nMidX+cos(fTheta)*nOuterWidth;
-         nY = nMidY-sin(fTheta)*nOuterHeight;
+         nX = (int)(nMidX+cosf(fTheta)*nOuterWidth);
+         nY = (int)(nMidY-sinf(fTheta)*nOuterHeight);
          SetupPoint(nQuad*nQuadPoints+i*3+1, nX, nY, 1);
 
          // Inner Points (given inner radius)
-         nX = nMidX+cos(fTheta)*nInnerWidth;
-         nY = nMidY-sin(fTheta)*nInnerHeight;
+         nX = (int)(nMidX+cosf(fTheta)*nInnerWidth);
+         nY = (int)(nMidY-sinf(fTheta)*nInnerHeight);
          SetupPoint(nQuad*nQuadPoints+i*3+2, nX, nY, 0);
       }
 
@@ -375,20 +375,20 @@ void cFrostedEdgesEffect::ComputePolys()
       nQuad = 2;
       for (i = 0; i < nPointsPerSide; i++)
       {
-         nX = nWidth-(i/(float)nPointsPerSide)*nWidth;
-         fTheta = atan2((-nHeight/2),(nX-nMidX));
+         nX = (int)(nWidth-(i/(float)nPointsPerSide)*nWidth);
+         fTheta = atan2f((float)(-nHeight/2), (float)(nX-nMidX));
 
          // Outer points (along edge of screen)
          SetupPoint(nQuad*nQuadPoints+i*3, nX, nHeight, 1);
 
          // Mid Points (given outer radius)
-         nX = nMidX+cos(fTheta)*nOuterWidth;
-         nY = nMidY-sin(fTheta)*nOuterHeight;
+         nX = (int)(nMidX+cosf(fTheta)*nOuterWidth);
+         nY = (int)(nMidY-sinf(fTheta)*nOuterHeight);
          SetupPoint(nQuad*nQuadPoints+i*3+1, nX, nY, 1);
 
          // Inner Points (given inner radius)
-         nX = nMidX+cos(fTheta)*nInnerWidth;
-         nY = nMidY-sin(fTheta)*nInnerHeight;
+         nX = (int)(nMidX+cosf(fTheta)*nInnerWidth);
+         nY = (int)(nMidY-sinf(fTheta)*nInnerHeight);
          SetupPoint(nQuad*nQuadPoints+i*3+2, nX, nY, 0);
       }
 
@@ -397,20 +397,20 @@ void cFrostedEdgesEffect::ComputePolys()
       nQuad = 3;
       for (i = 0; i < nPointsPerSide; i++)
       {
-         nY = nHeight-(i/(float)nPointsPerSide)*nHeight;
-         fTheta = atan2((nMidY-nY),(-nWidth/2));
+         nY = (int)(nHeight-(i/(float)nPointsPerSide)*nHeight);
+         fTheta = atan2f((float)(nMidY-nY), (float)(-nWidth/2));
 
          // Outer points (along edge of screen)
          SetupPoint(nQuad*nQuadPoints+i*3, 0-DUMB_ADJUST, nY, 1);
 
          // Mid Points (given outer radius)
-         nX = nMidX+cos(fTheta)*nOuterWidth;
-         nY = nMidY-sin(fTheta)*nOuterHeight;
+         nX = (int)(nMidX+cosf(fTheta)*nOuterWidth);
+         nY = (int)(nMidY-sinf(fTheta)*nOuterHeight);
          SetupPoint(nQuad*nQuadPoints+i*3+1, nX, nY, 1);
 
          // Inner Points (given inner radius)
-         nX = nMidX+cos(fTheta)*nInnerWidth;
-         nY = nMidY-sin(fTheta)*nInnerHeight;
+         nX = (int)(nMidX+cosf(fTheta)*nInnerWidth);
+         nY = (int)(nMidY-sinf(fTheta)*nInnerHeight);
          SetupPoint(nQuad*nQuadPoints+i*3+2, nX, nY, 0);
       }
 
@@ -457,6 +457,7 @@ void cFrostedEdgesEffect::Render(BOOL bIsScreenLocked)
 
    lgd3d_set_fog_enable(FALSE);
    lgd3d_set_blend(TRUE);
+   lgd3d_set_iterated_alpha(bCardSupportsIteratedAlpha);
 
    r3_set_clipmode(R3_NO_CLIP);
    r3_set_clip_flags(R3_CLIP_RGB);
@@ -491,6 +492,7 @@ void cFrostedEdgesEffect::Render(BOOL bIsScreenLocked)
    lgd3d_set_zcompare(bRestoreZCompare);
 
    lgd3d_set_blend(FALSE);
+   lgd3d_set_iterated_alpha(FALSE);
 }
 
 
@@ -723,12 +725,12 @@ void cSmudgesEffect::ComputeSmudgeData()
          continue;
       }
 
-      Corners[0].x = -pSmudges[i].fXScale*0.50000;
-      Corners[0].y = -pSmudges[i].fYScale*0.50000;
-      Corners[1].x = pSmudges[i].fXScale*0.50000;
+      Corners[0].x = -pSmudges[i].fXScale*0.5f;
+      Corners[0].y = -pSmudges[i].fYScale*0.5f;
+      Corners[1].x = pSmudges[i].fXScale*0.5f;
       Corners[1].y = Corners[0].y;
       Corners[2].x = Corners[1].x;
-      Corners[2].y = pSmudges[i].fYScale*0.50000;
+      Corners[2].y = pSmudges[i].fYScale*0.5f;
       Corners[3].x = Corners[0].x;
       Corners[3].y = Corners[2].y;
 
@@ -738,9 +740,9 @@ void cSmudgesEffect::ComputeSmudgeData()
       for (j = 0; j < 4; j++)
       {
          mx_rot_z_vec(RotCorners+j, Corners+j, mx_rad2ang(pSmudges[i].fRotation));
-         nPosX = fCenterX+RotCorners[j].x*nWidth;
+         nPosX = (int)(fCenterX+RotCorners[j].x*nWidth);
          nPosX = __max(__min(nPosX, nWidth), 0);
-         nPosY = fCenterY+RotCorners[j].y*nHeight;
+         nPosY = (int)(fCenterY+RotCorners[j].y*nHeight);
          nPosY = __max(__min(nPosY, nHeight), 0);
          pSmudges[i].Points[j].grp.sx = fix_make(nPosX, 0);
          pSmudges[i].Points[j].grp.sy = fix_make(nPosY, 0);
@@ -923,7 +925,7 @@ void cSmudgesEffect::Render(BOOL bIsScreenLocked)
    lgd3d_enable_palette();
    gr_set_fill_type(FILL_NORM);
    r3_set_prim();
-   r3d_glob.cur_stride = nStride;
+   r3d_glob.cur_stride = (int)nStride;
 }
 
 
@@ -1147,8 +1149,8 @@ static const sChipDot ChipPart[CHIP_PART_SIZE] =
    {0,-0.156250},
    {0,-0.125000},
    {0,-0.093750},
-   {0,-0.006250},
-   {0,-0.003125},
+   {0,-0.006250f},
+   {0,-0.003125f},
 };
 
 
@@ -1165,19 +1167,19 @@ void cChipsEffect::ComputeChipBits(int ix, float fStartAng, float fStopAng)
    // First copy over from main chip directly:
       for (i = 0; i < CHIP_SIZE; i++) // For each column
       {
-         fCenterX = CHIP_PART_SIZE - ((CHIP_SIZE-1) - i + 0.5);
+         fCenterX = CHIP_PART_SIZE - ((CHIP_SIZE-1) - i + 0.5f);
          for (j = 0; j < CHIP_SIZE; j++) // For each row
          {
-            fCenterY = CHIP_PART_SIZE - ((CHIP_SIZE-1) - j + 0.5);
-            fAng = atan2(fCenterY,fCenterX);
+            fCenterY = CHIP_PART_SIZE - ((CHIP_SIZE-1) - j + 0.5f);
+            fAng = atan2f(fCenterY,fCenterX);
             // Make sure it's positive
             fAng = fAng+TWOPI;
 
             // We expect ang to be clockwise from noon, so convert screen ang to this:
-            fAng = (TWOPI-fAng)+PI*0.50000;
+            fAng = (TWOPI-fAng)+PI*0.5f;
 
             // normalize it:
-            fAng = fmod(fAng, TWOPI);
+            fAng = fmodf(fAng, TWOPI);
 
             if (fStopAng < TWOPI)
             {
@@ -1225,8 +1227,8 @@ void cChipsEffect::ComputeChipBits(int ix, float fStartAng, float fStopAng)
       }
 
    // Then determine screen coords, making sure we don't go off screen:
-   pChips[ix].nXUpperLeft = pChips[ix].fXPos*nWidth;
-   pChips[ix].nYUpperLeft = pChips[ix].fYPos*nHeight;
+   pChips[ix].nXUpperLeft = (int)(pChips[ix].fXPos*nWidth);
+   pChips[ix].nYUpperLeft = (int)(pChips[ix].fYPos*nHeight);
 
    if ((pChips[ix].nXUpperLeft+CHIP_SIZE) >= nWidth)
       pChips[ix].nXUpperLeft = nWidth-1-CHIP_SIZE;
@@ -1280,15 +1282,15 @@ void cChipsEffect::ComputeChipData()
 
    // We are given leftmost vertical strip in upper right quad. Generate rest of upper right quad:
 
-      fMaxDist = sqrt((CHIP_PART_SIZE-0.5)*(CHIP_PART_SIZE-0.5)+0.25);
+      fMaxDist = sqrtf((CHIP_PART_SIZE-0.5f)*(CHIP_PART_SIZE-0.5f)+0.25f);
 
       for (i = 0; i < CHIP_PART_SIZE; i++) // For each column
       {
-         fCenterX = i + 0.5;
+         fCenterX = i + 0.5f;
          for (j = 0; j < CHIP_PART_SIZE; j++) // For each row
          {
-            fCenterY = (CHIP_PART_SIZE-1) - j + 0.5;
-            fDist = sqrt(fCenterX*fCenterX+fCenterY*fCenterY);
+            fCenterY = (CHIP_PART_SIZE-1) - j + 0.5f;
+            fDist = sqrtf(fCenterX*fCenterX+fCenterY*fCenterY);
             if (fDist > fMaxDist) // too far, it's 0.
             {
                MainChip[j*CHIP_SIZE + CHIP_PART_SIZE + i].fXOffset = 0;
@@ -1298,8 +1300,8 @@ void cChipsEffect::ComputeChipData()
 
             // OK, we need to calc rotate value for this element.
             // First grab nearest strip elements, and do weighted average based on distance
-            nHighIx = ceil(fDist-0.5);
-            nLowIx = floor(fDist-0.5);
+            nHighIx = (int)ceilf(fDist-0.5f);
+            nLowIx = (int)floorf(fDist-0.5f);
             if (nHighIx < 0)
                nHighIx = 0;
             if (nLowIx < 0)
@@ -1310,7 +1312,7 @@ void cChipsEffect::ComputeChipData()
                nLowIx = CHIP_PART_SIZE-1;
 
             // A weight of 0 is all HighIx, a weight of 1 is all LowIx
-            fWeight = (nHighIx+0.5)-fDist;
+            fWeight = (nHighIx+0.5f)-fDist;
 
             // Apply weight to make new offsets
             fXOffLow = ChipPart[CHIP_PART_SIZE-1-nLowIx].fXOffset;
@@ -1322,7 +1324,7 @@ void cChipsEffect::ComputeChipData()
             fYOff = fYOffHigh + (fYOffHigh-fYOffLow)*fWeight;
 
             // OK, now rotate these based on element's angle around center, relative to vertical strip (y axis).
-            fAngle = -(PI/2-atan2(fCenterY, fCenterX));
+            fAngle = -(PI/2-atan2f(fCenterY, fCenterX));
 
             OffsetVec.x = fXOff;
             OffsetVec.y = fYOff;
@@ -1381,18 +1383,18 @@ for (i = 0; i < CHIP_SIZE; i++)
 
       if (pChips[i].nProfile < 8) // octants
       {
-         fStartAng = 45*pChips[i].nProfile;
-         fStopAng = fStartAng+45;
+         fStartAng = 45.0f*pChips[i].nProfile;
+         fStopAng = fStartAng+45.0f;
       }
       else if (pChips[i].nProfile < 16) // quarters
       {
-         fStartAng = 45*(pChips[i].nProfile-8);
-         fStopAng = fStartAng+90;
+         fStartAng = 45.0f*(pChips[i].nProfile-8);
+         fStopAng = fStartAng+90.0f;
       }
       else if (pChips[i].nProfile < 24) // halves
       {
-         fStartAng = 45*(pChips[i].nProfile-16);
-         fStopAng = fStartAng+180;
+         fStartAng = 45.0f*(pChips[i].nProfile-16);
+         fStopAng = fStartAng+180.0f;
       }
       else // is whole chip
       {

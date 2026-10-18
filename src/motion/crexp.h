@@ -16,5 +16,5 @@
 
 extern void CreatureExplodeInit(void);
 
-#endif __CREXP_H
+#endif // __CREXP_H
 

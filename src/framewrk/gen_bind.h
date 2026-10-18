@@ -22,4 +22,7 @@ EXTERN void SetGameIBVarsFunc (void (*)());
 
 EXTERN BOOL g_joystickActive;
 
+// Per-frame maintenance for stateful gamepad movement modes.
+EXTERN void GamepadBindingFrame(void);
+
 #endif

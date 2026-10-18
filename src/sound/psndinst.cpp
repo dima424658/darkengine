@@ -156,13 +156,13 @@ void cPropSndInst::Init(int handle, ObjID objID, const mxs_vector &loc, ObjID sc
 
    if (parms->radius > 0)
    {
-      m_MaxDistance = parms->radius;
-      m_ScaleDistance = SFX_MaxDist(parms->gain);
+      m_MaxDistance = (mxs_real)parms->radius;
+      m_ScaleDistance = (mxs_real)SFX_MaxDist(parms->gain);
    }
    else
    {
-      m_MaxDistance   = SFX_MaxDist(parms->gain) * atten_factor;
-      m_ScaleDistance = parms->radius;
+      m_MaxDistance   = (mxs_real)SFX_MaxDist(parms->gain) * atten_factor;
+      m_ScaleDistance = (mxs_real)parms->radius;
    }
 
    sDoorProp *pDoorProp;
@@ -303,7 +303,7 @@ void cPropSndInst::SetupPlayerSoundListCallbacks(cPlayerSoundList *pCurPlayerLis
    // Point our params to us
    pSoundInfo->AppsfxParms.end_callback  = EndSampleCallback;
    pSoundInfo->AppsfxParms.loop_callback  = LoopSampleCallback;
-   pSoundInfo->AppsfxParms.user_data = (void *) (pSoundInfo->Handle);
+   pSoundInfo->AppsfxParms.user_data = (void *)(intptr_t)pSoundInfo->Handle;
    //   pSoundInfo->AppsfxParms.user_data = (void *)handle;
 }
 
@@ -391,7 +391,7 @@ void EndSampleCallback(int hSound, void *data)
 {
    cPlayerSoundList *pPlayerSoundList;
    cSoundInfo       *pSoundInfo;
-   int handle = (int)data;
+   int handle = (int)(intptr_t)data;
 
    if (g_pPropSnd == NULL)
       return;
@@ -451,7 +451,7 @@ void LoopSampleCallback(int hSound, void *data)
 {
    cPlayerSoundList *pPlayerSoundList;
    cSoundInfo       *pSoundInfo;
-   int handle = (int)data;
+   int handle = (int)(intptr_t)data;
 
    if (g_pPropSnd == NULL)
       return;
@@ -1018,7 +1018,7 @@ void cPropSndInst::UpdateActiveSounds()
                   min_dist = new_dist;
             }
 
-            pSoundInfo->FramesUntilUpdate = min_dist / 10.0;
+            pSoundInfo->FramesUntilUpdate = (int)(min_dist / 10.0f);
 
             if (pSoundInfo->FramesUntilUpdate > kMinUpdateFrequency)
                pSoundInfo->FramesUntilUpdate = kMinUpdateFrequency;
@@ -1217,7 +1217,7 @@ void cPropSndInst::ResolveActiveSounds(ObjID hearingObj)
 
                   pActiveSound->Distance = pSoundInfo->Distance;
                   // Note: SFX_Attenuate does NOT reuqire an SFX channel.
-                  pActiveSound->Volume = SFX_Attenuate(pActiveSound->AppsfxParms.gain, pActiveSound->Distance);
+                  pActiveSound->Volume = SFX_Attenuate(pActiveSound->AppsfxParms.gain, (int)pActiveSound->Distance);
 
                   #ifndef SHIP
                   if (m_SoundFullSpew)
@@ -1632,7 +1632,7 @@ void cPropSndInst::FindSoundPath(const mxs_vector &src_pt, const mxs_vector &hea
          if (g_pLoudRoomProperty->Get(pTheRoom->GetObjID(), &fTransmission))
             blocking *= fTransmission;
 
-         blocking *= (1.0 - g_pPropSnd->GetBlockingFactor(cur_room, room_table[cur_room].GetPreviousRoom()));
+         blocking *= (1.0f - g_pPropSnd->GetBlockingFactor(cur_room, room_table[cur_room].GetPreviousRoom()));
       }
 
       portal_list_size++;
@@ -1779,7 +1779,7 @@ void cPropSndInst::FindSoundPath(const mxs_vector &src_pt, const mxs_vector &hea
    }
 
    *realDist = *dist;
-   blocking = 1.0 - blocking;
+   blocking = 1.0f - blocking;
    // blocking of 0 means no blocking, 1 means completely blocked
 
    if (*dist < m_MaxDistance)
@@ -1841,7 +1841,7 @@ BOOL cPropSndInstHigh::EnterCallback(const cRoom *room, const cRoomPortal *enter
          if (m_pParms->flag & SFXFLG_SHARP)
          {
             mxs_real scale_pct = obj_dist / m_MaxDistance;
-            obj_dist = pow(scale_pct, 4) * m_ScaleDistance;
+            obj_dist = powf(scale_pct, 4) * m_ScaleDistance;
          }
          else
             obj_dist = (obj_dist / m_MaxDistance) * m_ScaleDistance;
@@ -1849,16 +1849,23 @@ BOOL cPropSndInstHigh::EnterCallback(const cRoom *room, const cRoomPortal *enter
 
       obj_dist /= m_attenFactor;
 
-      real_dist *= (obj_dist / old_obj_dist);
+      // A source can coincide with its listener, notably for sounds emitted
+      // as the player enters water.  Scaling that zero-length path as 0 / 0
+      // produces NaN; the occlusion path later converts it to a negative SFX
+      // distance and poisons the next distance update.
+      if (old_obj_dist > 0.0f)
+         real_dist *= (obj_dist / old_obj_dist);
+      else
+         real_dist = 0.0f;
 
       if (PlayerObjectExists() &&
           (*obj_list == PlayerObject()) &&
           (PhysGetObjMediaState(*obj_list) == kMS_Liquid_Submerged))
       {
          if (m_ScaleDistance > 0)
-            obj_dist += (m_ScaleDistance - obj_dist) * 0.5;
+            obj_dist += (m_ScaleDistance - obj_dist) * 0.5f;
          else
-            obj_dist += (m_MaxDistance - obj_dist) * 0.5;
+            obj_dist += (m_MaxDistance - obj_dist) * 0.5f;
       }
 
       // Create the sound structure
@@ -1879,7 +1886,7 @@ BOOL cPropSndInstHigh::EnterCallback(const cRoom *room, const cRoomPortal *enter
       pSoundInfo->SrcPoint = m_SrcPoint;
 
       pSoundInfo->Distance = obj_dist;
-      pSoundInfo->Volume = SFX_Attenuate(m_pParms->gain, pSoundInfo->Distance);
+      pSoundInfo->Volume = SFX_Attenuate(m_pParms->gain, (int)pSoundInfo->Distance);
       pSoundInfo->BlockingFactor = blocking_factor;
       pSoundInfo->RealDistance = real_dist;
 

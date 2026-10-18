@@ -11,7 +11,8 @@
 // actually do.
 
 
-#include <windows.h>    // for DebugBreak
+#include <stdio.h>
+#include <stdlib.h>
 #include <filespec.h>
 #include <scrptman.h>
 #include <scrptsrv.h>
@@ -42,6 +43,57 @@ cScrStr NULL_STRING;
 
 cScriptMan * g_pScriptMan;
 
+static BOOL g_ScriptDebugEnabled = FALSE;
+static FILE* g_ScriptDebugFile = NULL;
+
+void ScriptDebugSetEnabled(BOOL enabled)
+{
+   if (enabled && !g_ScriptDebugEnabled)
+   {
+      g_ScriptDebugFile = fopen("script-debug.log", "w");
+      if (!g_ScriptDebugFile)
+         return;
+      fprintf(g_ScriptDebugFile,
+              "time\tfrom\tto\tscript\tmessage\n");
+      fflush(g_ScriptDebugFile);
+      g_ScriptDebugEnabled = TRUE;
+   }
+   else if (!enabled && g_ScriptDebugEnabled)
+   {
+      fclose(g_ScriptDebugFile);
+      g_ScriptDebugFile = NULL;
+      g_ScriptDebugEnabled = FALSE;
+   }
+}
+
+BOOL ScriptDebugIsEnabled(void)
+{
+   return g_ScriptDebugEnabled;
+}
+
+void ScriptDebugLogDispatch(IScript* script, const sScrMsg* message)
+{
+   if (!script || !message)
+      return;
+
+   if (getenv("DARK_OSM32_TRACE"))
+   {
+      fprintf(stderr, "Script dispatch %s.%s object=%d\n",
+              script->GetClassName() ? script->GetClassName() : "(unknown)",
+              message->message ? message->message : "(none)", message->to);
+      fflush(stderr);
+   }
+
+   if (!g_ScriptDebugEnabled || !g_ScriptDebugFile)
+      return;
+
+   fprintf(g_ScriptDebugFile, "%u\t%d\t%d\t%s\t%s\n",
+           (unsigned)message->time, message->from, message->to,
+           script->GetClassName() ? script->GetClassName() : "(unknown)",
+           message->message ? message->message : "(none)");
+   fflush(g_ScriptDebugFile);
+}
+
 ///////////////////////////////////////
 
 EXTERN tResult LGAPI
@@ -67,7 +119,13 @@ template cHashSet <sServiceTableEntry *, const GUID *, cHashFunctions>;
 // CLASS: cScrServiceTable
 //
 
-cDynArray<sScrSrvRegData *> g_ScrSrvRegData;
+cDynArray<sScrSrvRegData *> &ScrSrvRegData()
+{
+   // Script-service registrars live in many translation units.  A local
+   // static avoids losing registrations to cross-unit initialization order.
+   static cDynArray<sScrSrvRegData *> services;
+   return services;
+}
 
 cScrServiceTable::~cScrServiceTable()
 {
@@ -103,17 +161,27 @@ cScriptMan::cScriptMan(IUnknown * pOuter, tScrTimeFunc pfnTime,
 
 cScriptMan::~cScriptMan()
 {
+   ScriptDebugSetEnabled(FALSE);
 }
 
 ///////////////////////////////////////
 
 STDMETHODIMP cScriptMan::GameInit()
 {
-   for (int i = 0; i < g_ScrSrvRegData.Size(); i++)
+   NullScriptServiceForceLink();
+   cDynArray<sScrSrvRegData *> &services = ScrSrvRegData();
+
+   // Make the complete service table visible before initializing any one
+   // service.  Service initialization can dispatch BeginScript recursively;
+   // interleaving registration and initialization made those early messages
+   // fail whenever they reached a service later in the registration array.
+   for (int i = 0; i < services.Size(); i++)
+      ExposeService(services[i]->pService, services[i]->pGuid);
+
+   for (int i = 0; i < services.Size(); i++)
    {
-      ExposeService(g_ScrSrvRegData[i]->pService, g_ScrSrvRegData[i]->pGuid);
-      g_ScrSrvRegData[i]->pService->Init();
-      g_ScrSrvRegData[i]->pService->Release();
+      services[i]->pService->Init();
+      services[i]->pService->Release();
    }
 
    // If the application has defined a networking interface, go get it:
@@ -126,10 +194,11 @@ STDMETHODIMP cScriptMan::GameInit()
 
 STDMETHODIMP cScriptMan::GameEnd()
 {
-   for (int i = 0; i < g_ScrSrvRegData.Size(); i++)
+   cDynArray<sScrSrvRegData *> &services = ScrSrvRegData();
+   for (int i = 0; i < services.Size(); i++)
    {
-      g_ScrSrvRegData[i]->pService->End();
-      g_ScrSrvRegData[i]->pService->Release();
+      services[i]->pService->End();
+      services[i]->pService->Release();
    }
 
    SafeRelease(m_pScriptNet);
@@ -157,17 +226,26 @@ void cScriptMan::LoadClasses()
 {
    tScrIter              iter;
    const sScrClassDesc * pDesc;
+   const BOOL traceModules = getenv("DARK_OSM32_TRACE") != NULL;
 
    for (int i = 0; i < m_Modules.Size(); i++)
    {
       IScriptModule * pModule = m_Modules[i].pModule;
+      int classCount = 0;
 
       pDesc = pModule->GetFirstClass(&iter);
       while (pDesc)
       {
          m_ClassDescs.RemoveByKey(pDesc->pszClass);
          m_ClassDescs.Insert(pDesc);
+         ++classCount;
          pDesc = pModule->GetNextClass(&iter);
+      }
+      if (traceModules)
+      {
+         fprintf(stderr, "Script module '%s' registered %d classes\n",
+                 pModule->GetName(), classCount);
+         fflush(stderr);
       }
    }
 }
@@ -298,6 +376,15 @@ STDMETHODIMP cScriptMan::ExposeService(IUnknown * pService, const GUID * pGuid)
 STDMETHODIMP_(IUnknown *) cScriptMan::GetService(const GUID * pGuid)
 {
    sServiceTableEntry * pEntry = m_Services.Search(pGuid);
+
+   if (getenv("DARK_OSM32_TRACE"))
+   {
+      fprintf(stderr,
+              "Script service request %08lx-%04x-%04x: %s\n",
+              (unsigned long)pGuid->Data1, pGuid->Data2, pGuid->Data3,
+              pEntry ? "available" : "null fallback");
+      fflush(stderr);
+   }
 
    if (pEntry)
    {
@@ -457,7 +544,7 @@ HRESULT cScriptMan::DoForgetObj(cScrObj * pScrObj)
          }
       }
 
-      for (i = 0; i < m_PostedMsgs.Size(); i++)
+      for (i = m_PostedMsgs.Size() - 1; i >= 0; i--)
       {
          if (m_PostedMsgs[i].pMsg->to == pScrObj->GetObjID())
          {
@@ -529,15 +616,28 @@ STDMETHODIMP cScriptMan::ForgetAllObjs()
       return S_OK;
    }
 
-   tHashSetHandle iter;
-
-   cScrObj * pScrObj = m_ActiveObjs.GetFirst(iter);
-
-   while (pScrObj)
+   while (!m_ActiveObjs.IsEmpty())
    {
-      DoForgetObj(pScrObj);
-      pScrObj = m_ActiveObjs.GetNext(iter);
+      tHashSetHandle iter;
+      DoForgetObj(m_ActiveObjs.GetFirst(iter));
    }
+
+   // A database reset must not leave work addressed to pseudo objects,
+   // objects without an active script aggregate, or an object removed while
+   // adjacent posted messages were queued.  SaveLoad() also relies on these
+   // containers being empty before it restores checkpoint state.
+   for (int i = m_TimedMsgs.Size() - 1; i >= 0; --i)
+   {
+      m_TimedMsgs[i]->pMsg->Release();
+      m_TimedMsgs[i]->Release();
+   }
+   m_TimedMsgs.SetSize(0);
+
+   for (int i = m_PostedMsgs.Size() - 1; i >= 0; --i)
+      m_PostedMsgs[i].pMsg->Release();
+   m_PostedMsgs.SetSize(0);
+
+   m_ScriptsData.DestroyAll();
 
    // recycle timer ids 
    m_NextTimerID = 1; 
@@ -736,7 +836,7 @@ STDMETHODIMP_(void) cScriptMan::KillTimedMessage(tScrTimer timer)
    {
       if (!m_TimedMsgs[i])
          continue; 
-      if (m_TimedMsgs[i]->id == (ulong)timer)
+      if (m_TimedMsgs[i]->id == timer)
       {
          m_TimedMsgs[i]->pMsg->Release();
          m_TimedMsgs[i]->Release();
@@ -990,12 +1090,13 @@ HRESULT cScriptMan::ClearScriptData(ObjID objId, const char * pszClass)
 
    while (pDatum)
    {
+      sScrDatum * pNext = m_ScriptsData.GetNext(iter);
       if (pDatum->objId == objId
        && (!pszClass || strcmp(pszClass, pDatum->pszClass) == 0))
       {
          delete m_ScriptsData.Remove(pDatum);
       }
-      pDatum = m_ScriptsData.GetNext(iter);
+      pDatum = pNext;
    }
    return S_OK;
 }

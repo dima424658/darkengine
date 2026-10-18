@@ -118,7 +118,8 @@ inline void cGroundLocoManeuver::NotifyAboutBeingStuck()
 }
 
 cGroundLocoManeuverFactory g_GroundLocoManeuverFactory;
-EXTERN cManeuverFactory *g_pGroundLocoManeuverFactory=&g_GroundLocoManeuverFactory;
+EXTERN cManeuverFactory *g_pGroundLocoManeuverFactory;
+cManeuverFactory *g_pGroundLocoManeuverFactory=&g_GroundLocoManeuverFactory;
 
 
 cMotionPlan *cGroundLocoManeuverFactory::CreatePlan(const cMotionSchema *pSchema,const sMcMotorState& motState, \
@@ -263,7 +264,7 @@ cGroundLocoManeuver::cGroundLocoManeuver(IMotor *pMotor, cMotionCoordinator *pCo
    if(m_pGaitData->noise)
    {
       float noise=(2*m_pGaitData->noise*Rand())/RAND_MAX;
-      timeWarp=(1.0-m_pGaitData->noise+noise)*timeWarp; // since 0<=noise<=2*m_pGaitData->noise;
+      timeWarp=(1.0f-m_pGaitData->noise+noise)*timeWarp; // since 0<=noise<=2*m_pGaitData->noise;
    }
 
    int off=-1;
@@ -425,7 +426,7 @@ cGroundLocoManeuver::cGroundLocoManeuver(IMotor *pMotor, cMotionCoordinator *pCo
          if(frac<1.0) // shrink the motion
          {
             // take sqrt to get accurate frac
-            frac=sqrt(frac);
+            frac=sqrtf(frac);
 
             m_UseBend=FALSE; // since want to hit point exactly
             ConfigSpew("MnvrTrace",("shrink %d by %g\n",m_MotionNum,frac));
@@ -486,7 +487,7 @@ cGroundLocoManeuver::cGroundLocoManeuver(IMotor *pMotor, cMotionCoordinator *pCo
       // distance that we want covered.
       float desiredDist=params.exactSpeed*duration;
       float actualDist=phys.distance;
-      float frac=(actualDist>0.1)?(desiredDist/actualDist):1.0;
+      float frac=(actualDist>0.1f)?(desiredDist/actualDist):1.0f;
 
       mx_scale_vec(&m_StrideXlat,&xlat,frac);
       m_MotionParam.flags|=MP_STRETCH;
@@ -512,7 +513,7 @@ void cGroundLocoManeuver::GetExpectedEndMoveState(sMcMoveState &moveState)
 }
 
 #define kVerticalTolerance 0.2 // feet
-#define kGroundRaycastOffset 1.5 // feet
+#define kGroundRaycastOffset 1.5f // feet
 
 #ifndef min
 #define min(x,y) ((x)<(y)?(x):(y))
@@ -537,7 +538,7 @@ void cGroundLocoManeuver::Execute()
          m_MotionParam.flags|=MP_BEND;
          if(m_RotAng>MX_ANG_PI)
          {
-            m_MotionParam.bend=(mx_ang2rad(m_RotAng)-2*MX_REAL_PI)/2;
+            m_MotionParam.bend = (mx_ang2rad(m_RotAng) - 2.0f * (float)MX_REAL_PI) / 2.0f;
          } else
          {
             m_MotionParam.bend=mx_ang2rad(m_RotAng/2);
@@ -613,7 +614,7 @@ void cGroundLocoManeuver::Execute()
       {
          // find ground height at just before terrain collision
          // XXX this should not really be fractional, but 'tis simpler
-         mx_interpolate_vec(&newLoc.vec,&curLoc.vec,&hitLoc.vec,0.95);
+         mx_interpolate_vec(&newLoc.vec,&curLoc.vec,&hitLoc.vec,0.95f);
          foundGround=MvrFindGroundHeight(m_pMotor->GetObjID(),&newLoc,&groundHeight,&hitObj);
       }
 

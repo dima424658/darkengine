@@ -243,7 +243,7 @@ cFaceContact::cFaceContact(int cellID, int polyID)
    mx_zero_vec(&center);
    for (i=0; i<pgon->num_vertices; i++)
       mx_addeq_vec(&center, &cell->vpool[cell->vertex_list[start_vertex + i]]);
-   mx_scaleeq_vec(&center, 1.0 / pgon->num_vertices);
+   mx_scaleeq_vec(&center, 1.0f / pgon->num_vertices);
 
    // Build an edge for each vertex pair
    for (i=0; i<pgon->num_vertices; i++)
@@ -314,7 +314,7 @@ cFaceContact::cFaceContact(cPhysOBBModel *pModel, int side, BOOL endLoc)
    mx_mat_mul_vec(&pFacePoly->normal, &obb_frame, &unit);
 
    // Find point on normal
-   edge_len = fabs(mx_dot_vec(&pModel->GetEdgeLengths(), &unit)) / 2;
+   edge_len = fabsf(mx_dot_vec(&pModel->GetEdgeLengths(), &unit)) / 2;
    mx_scale_add_vec(&pt_on, &obb_loc, &pFacePoly->normal, edge_len);
 
    // Find plane constant
@@ -340,7 +340,7 @@ cFaceContact::cFaceContact(cPhysOBBModel *pModel, int side, BOOL endLoc)
       mx_mat_mul_vec(&pEdgePoly->normal, &obb_frame, &unit);
 
       // Find point on normal
-      edge_len = fabs(mx_dot_vec(&pModel->GetEdgeLengths(), &unit)) / 2;
+      edge_len = fabsf(mx_dot_vec(&pModel->GetEdgeLengths(), &unit)) / 2;
       mx_scale_add_vec(&pt_on, &obb_loc, &pEdgePoly->normal, edge_len);
 
       // Find plane constant
@@ -393,9 +393,9 @@ cFaceContact::cFaceContact(cPhysSphereModel *pModel, mxs_real radius, BOOL endLo
          mx_scaleeq_vec(&pEdgePoly->normal, -1.0);
 
       if (endLoc)
-         mx_scale_add_vec(&pt_on, &pModel->GetEndLocationVec(), &pEdgePoly->normal, radius * 0.9);
+         mx_scale_add_vec(&pt_on, &pModel->GetEndLocationVec(), &pEdgePoly->normal, radius * 0.9f);
       else
-         mx_scale_add_vec(&pt_on, &pModel->GetLocationVec(), &pEdgePoly->normal, radius * 0.9);
+         mx_scale_add_vec(&pt_on, &pModel->GetLocationVec(), &pEdgePoly->normal, radius * 0.9f);
 
       pEdgePoly->d = mx_dot_vec(&pEdgePoly->normal, &pt_on);
 
@@ -448,7 +448,7 @@ mxs_real cEdgeContact::GetDist(const mxs_vector &pt) const
    // the height, or the distance of the point from the line.  Neat-o.
    mx_cross_vec(&edge_norm, &v1c, &edge);
    
-   return sqrt(mx_mag2_vec(&edge_norm) / mx_mag2_vec(&edge));
+   return sqrtf(mx_mag2_vec(&edge_norm) / mx_mag2_vec(&edge));
 }
 
 ////////////////////////////////////////
@@ -617,7 +617,7 @@ cPhysObjContactLinks::~cPhysObjContactLinks(void)
 
 static void WriteFaceContact(PhysReadWrite func, ObjID objID, int i, cFaceContact *pFaceContact) 
 {
-   func((void *)&kFaceContactCode, sizeof(long), 1);
+   func((void *)&kFaceContactCode, sizeof(kFaceContactCode), 1);
    func(&objID, sizeof(ObjID), 1);
    func(&i, sizeof(int), 1);
 
@@ -648,7 +648,7 @@ static void WriteFaceContact(PhysReadWrite func, ObjID objID, int i, cFaceContac
 
 static void WriteEdgeContact(PhysReadWrite func, ObjID objID, int i, cEdgeContact *pEdgeContact) 
 {
-   func((void *)&kEdgeContactCode, sizeof(long), 1);
+   func((void *)&kEdgeContactCode, sizeof(kEdgeContactCode), 1);
    func(&objID, sizeof(ObjID), 1);
    func(&i, sizeof(int), 1);
 
@@ -658,7 +658,7 @@ static void WriteEdgeContact(PhysReadWrite func, ObjID objID, int i, cEdgeContac
 
 static void WriteVertexContact(PhysReadWrite func, ObjID objID, int i, cVertexContact *pVertexContact) 
 {
-   func((void *)&kVertexContactCode, sizeof(long), 1);
+   func((void *)&kVertexContactCode, sizeof(kVertexContactCode), 1);
    func(&objID, sizeof(ObjID), 1);
    func(&i, sizeof(int), 1);
 
@@ -667,7 +667,7 @@ static void WriteVertexContact(PhysReadWrite func, ObjID objID, int i, cVertexCo
 
 static void WriteObjectContact(PhysReadWrite func, ObjID objID, int i, cPhysSubModelInst *pObjContact)
 {
-   func((void *)&kObjectContactCode, sizeof(long), 1);
+   func((void *)&kObjectContactCode, sizeof(kObjectContactCode), 1);
    func(&objID, sizeof(ObjID), 1);
    func(&i, sizeof(int), 1);
 
@@ -1094,13 +1094,13 @@ void cPhysContactLinks::Read(PhysReadWrite func)
 {
    ObjID objID;
    int submod;
-   long code;
+   int32 code;
 
    AutoAppIPtr_(ObjectSystem, pObjSys);
 
    while (TRUE)
    {
-      func(&code, sizeof(long), 1);
+      func(&code, sizeof(code), 1);
 
       if (code == kDoneContactCode)
          return;
@@ -1288,7 +1288,7 @@ void cPhysContactLinks::Write(PhysReadWrite func) const
 void cPhysContactLinks::WriteDone(PhysReadWrite func) const
 {
    // we're done
-   func((void *)&kDoneContactCode, sizeof(long), 1);
+   func((void *)&kDoneContactCode, sizeof(kDoneContactCode), 1);
 }
 
 

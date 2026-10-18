@@ -35,6 +35,7 @@
 #include <status.h>
 
 #include <timings.h>
+#include <platform_services.h>
 
 #include <mprintf.h>
 
@@ -81,7 +82,7 @@ static tSimTime clamp_frame_time(tSimTime ftime)
    }
 
    if (gParams.scaleFrameTime > 0.0)
-      ftime *= gParams.scaleFrameTime;
+      ftime = (tSimTime)(ftime * gParams.scaleFrameTime);
 
    return ftime;
 }
@@ -303,16 +304,23 @@ typedef struct _StateRecord
 
 static void SlowFrame(long nMilliseconds)
 {
-   long nStart = timeGetTime();
-   while ((timeGetTime()-nStart) < nMilliseconds)
+   uint32 nStart = PlatformMilliseconds();
+   while ((PlatformMilliseconds()-nStart) < (uint32)nMilliseconds)
    {}
 }
 
 
+#ifdef THIEF2_GAME
+// The original simulation clamps very short frames to 10 ms.  Running the
+// recovered executable uncapped on a modern machine therefore advances game
+// time faster than wall time.  Keep the playtest build near the cadence the
+// game was authored for; an explicit SlowFrame setting can still override it.
+static int nSlowFrameTime = 16;
+#else
 static int nSlowFrameTime = 0;
+#endif
 static long nLastRealFrameTime = 0;
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -335,7 +343,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          // Check whether this is a multi-player game whenever we enter the mode
          gpNetMan = AppGetObj(INetManager);
 
-         nLastRealFrameTime = timeGetTime(); // tm_get_millisec_unrecorded();
+         nLastRealFrameTime = PlatformMilliseconds();
          break;
       }
       case kMsgBeginFrame:
@@ -353,11 +361,11 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          if (nSlowFrameTime > 0)
          {
 //            nCurrentRealFrameTime = tm_get_millisec_unrecorded();
-            nCurrentRealFrameTime = timeGetTime();
+            nCurrentRealFrameTime = PlatformMilliseconds();
             nRealTimeDelta = nCurrentRealFrameTime-nLastRealFrameTime;
             if (nRealTimeDelta < nSlowFrameTime)
                SlowFrame(nSlowFrameTime-nRealTimeDelta);
-            nLastRealFrameTime = timeGetTime();
+            nLastRealFrameTime = PlatformMilliseconds();
          }
          break;
 
@@ -392,7 +400,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function.
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -402,7 +409,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
 
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 ///////////////
 // DESCRIPTOR

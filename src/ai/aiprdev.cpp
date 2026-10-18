@@ -34,9 +34,9 @@ const sAIDeviceParams g_AIDefaultDeviceParams =
    0,    // activate joint num
    0,    // inactive posn
    2,    // active posn
-   0.1,  // activate speed
+   0.1f,  // activate speed
    1,    // rotational joint
-   0.1,  // facing epsilon
+   0.1f,  // facing epsilon
    0,    // raise / rotate on activate
 };
 
@@ -105,7 +105,7 @@ IAITurretProperty *     g_pAITurretProperty;
 
 const sAITurretParams g_AIDefaultTurretParams =
 {
-   0.1,  // fire epsilon
+   0.1f,  // fire epsilon
    0,    // fire pause
    10,   // pitch epsilon
    100,  // max range
@@ -175,7 +175,7 @@ const sAICameraParams g_AIDefaultCameraParams =
 {
    -180, // scan angle 1
    180,  // scan angle 2
-   0.05,  // scan rate (deg/msec)
+   0.05f,  // scan rate (deg/msec)
 };
 
 ///////////////////////////////////////////////////////////////////////////////

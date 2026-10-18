@@ -14,8 +14,12 @@
 #include <skel.h>
 
 #define MAX_VCALLS 32
-EXTERN skt_vcall_func skd_joint_call_tab[];
-EXTERN skt_vcall_func skd_seg_call_tab[];
+typedef union sks_call_slot {
+   skt_vcall_func func;
+   int vhot;
+} sks_call_slot;
+EXTERN sks_call_slot skd_joint_call_tab[];
+EXTERN sks_call_slot skd_seg_call_tab[];
 EXTERN uchar       skd_joint_call_joint[];
 EXTERN mxs_vector skd_seg_call_vecs[];
 EXTERN mxs_vector skd_vhot_vecs[];

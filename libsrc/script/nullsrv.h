@@ -34,4 +34,9 @@ DECLARE_SCRIPT_SERVICE(Null, 0xf2)
    STDMETHOD_(void, Null20)() PURE;
 };
 
+// The null service lives in the script static library.  Referencing this
+// symbol from the manager keeps the registrar translation unit from being
+// discarded by passive library linking.
+EXTERN void NullScriptServiceForceLink(void);
+
 #endif /* !__NULLSRV_H */

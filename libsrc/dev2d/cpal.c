@@ -59,21 +59,21 @@ static int _ContrastValue(float val)
    float del;
 
    if (val>_about) {
-      float k = 255.5 - _about;
+      float k = 255.5f - _about;
       // Transform, scale, then transform back
-      del = (val-_about)*(k/(255.5-val));
+      del = (val-_about)*(k/(255.5f-val));
       del *= _scale;
-      val = ((255.5*del)+(k*_about))/(k+del);
+      val = ((255.5f*del)+(k*_about))/(k+del);
    } else {
-      float k = -.5 - _about;
+      float k = -.5f - _about;
       // Transform, scale, then transform back
-      del = (val-_about)*(k/(-.5-val));
+      del = (val-_about)*(k/(-.5f-val));
       del *= _scale;
-      val = ((-.5*del)+(k*_about))/(k+del);
+      val = ((-.5f*del)+(k*_about))/(k+del);
    }
 
-   val = floor(val + .5);
-   return val;
+   val = floorf(val + .5f);
+   return (int)val;
 }
 
 
@@ -87,7 +87,7 @@ extern void gr_set_contrast_value(float about,float scale)
       _about=about;
       _scale=scale;
       for (i=0;i<256;i++) {
-         _table[i]=(uchar)_ContrastValue(i);
+         _table[i]=(uchar)_ContrastValue((float)i);
       }
    }
 }

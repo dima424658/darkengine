@@ -307,7 +307,6 @@ void SliderDraw(void *data, LGadBox *vb)
    uiShowMouse(r);
 
 }
-#pragma on(unreferenced)
 void LGadInitSlider(LGadSlider *vs)
 {
    memset(vs,0,sizeof(LGadSlider));

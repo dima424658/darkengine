@@ -51,7 +51,6 @@ typedef struct _StateRecord
 // Here's where we do the dirty work.
 //
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    eLoopMessageResult result = kLoopDispatchContinue;
@@ -107,7 +106,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function.
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -117,7 +115,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
 
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 ///////////////
 // DESCRIPTOR
@@ -128,7 +125,7 @@ sLoopClientDesc SchemaLoopClientDesc =
    &MY_GUID,                           // GUID
    "Schema Client",                    // NAME
    kPriorityNormal,                    // PRIORITY
-   kMsgEnd | kMsgDatabase | kMsgsMode | kMsgsFrameMid | kMsgsAppOuter,  // INTERESTS
+   (ulong)kMsgEnd | kMsgDatabase | kMsgsMode | kMsgsFrameMid | kMsgsAppOuter,  // INTERESTS
 
    kLCF_Callback,
    _CreateClient,

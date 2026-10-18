@@ -402,7 +402,10 @@ ulong ResMemSetCap(ulong cap);
 // ARQ Helper Functions
 //---------------------------------------------------------
 
-typedef long HRESULT;
+#ifndef _HRESULT_DEFINED
+#define _HRESULT_DEFINED
+typedef int32 HRESULT;
+#endif
 
 EXTERN BOOL    LGAPI ResAsyncLock(Id id, int priority);
 EXTERN BOOL    LGAPI ResAsyncExtract(Id id, int priority, void *buf, long bufSize);

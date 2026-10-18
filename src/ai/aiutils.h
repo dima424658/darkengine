@@ -27,8 +27,8 @@ F_DECLARE_INTERFACE(ITagFile);
 
 inline void ProjectFromLocationOnZPlane(const mxs_vector & startLoc, float distance, floatang angle, mxs_vector * pResult)
 {
-   pResult->x = startLoc.x + cos(angle.value) * distance;
-   pResult->y = startLoc.y + sin(angle.value) * distance;
+   pResult->x = startLoc.x + cosf(angle.value) * distance;
+   pResult->y = startLoc.y + sinf(angle.value) * distance;
    pResult->z = startLoc.z;
 }
 
@@ -189,7 +189,7 @@ tOption * _AIDecide(tOption **     ppOptions,
    }
 
    // If we have equal options, pick one at random
-   int range = ppLastBest - ppFirstBest;
+   int range = (int)(ppLastBest - ppFirstBest);
 
    if (range == 0)
       return *ppLastBest;

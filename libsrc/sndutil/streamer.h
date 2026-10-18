@@ -28,7 +28,7 @@ typedef struct _sndStreamStuff {
    SndEndCallback    endCB;            // app end-of-sample callback
    void              *pEndCBData;      // app end-of-sample callback data
    SndLoadFunction   getData;          // gets data from resource/file/memory
-   uint32            extras[4];        // stuff for specialized streamers to use
+   uintptr_t         extras[4];        // stuff for specialized streamers to use
    uint32            outBytesLeft;     // bytes of output left
    sSndAttribs       attribs;          // attributes of sound data
    char              *pInData;         // input buffer for decompression

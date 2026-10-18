@@ -72,7 +72,7 @@ void g2_spoly_setup(grs_bitmap *bm)
    g2d_pp.clip_type = G2C_CLIP_I;
    g2d_pp.poly_func = g2_map;
    g2d_pp.flags = PPF_I;
-   g2d_pp.i_scale = grd_light_table_size;
+   g2d_pp.i_scale = (float)grd_light_table_size;
    spoly_setup(bm);
 }
 
@@ -81,7 +81,7 @@ void g2_uspoly_setup(grs_bitmap *bm)
    CHECK_PUNT(uspoly);
    g2d_pp.poly_func = g2_umap;
    g2d_pp.flags = PPF_I;
-   g2d_pp.i_scale = grd_light_table_size;
+   g2d_pp.i_scale = (float)grd_light_table_size;
    spoly_setup(bm);
 }
 
@@ -117,7 +117,7 @@ void g2_lit_lin_map_setup(grs_bitmap *bm)
    g2d_pp.flags = PPF_IUV;
    g2d_pp.clip_type = G2C_CLIP_UVI;
    g2d_pp.poly_func = g2_map;
-   g2d_pp.i_scale = grd_light_table_size;
+   g2d_pp.i_scale = (float)grd_light_table_size;
    lit_tmap_setup(bm);
 }
 
@@ -134,7 +134,7 @@ void g2_lit_lin_umap_setup(grs_bitmap *bm)
    set_bitmap_params(bm);
    g2d_pp.flags = PPF_IUV;
    g2d_pp.poly_func = g2_umap;
-   g2d_pp.i_scale = grd_light_table_size;
+   g2d_pp.i_scale = (float)grd_light_table_size;
    lit_tmap_setup(bm);
 }
 
@@ -153,7 +153,7 @@ void g2_lit_per_map_setup(grs_bitmap *bm)
    g2d_pp.flags = PPF_IUV;
    g2d_pp.clip_type = G2C_CLIP_UVWI;
    g2d_pp.poly_func = g2_per_map;
-   g2d_pp.i_scale = grd_light_table_size;
+   g2d_pp.i_scale = (float)grd_light_table_size;
    lit_tmap_setup(bm);
 }
 
@@ -177,7 +177,7 @@ void gen_lit_upmap_setup(grs_bitmap *bm)
    g2d_pp.flags = PPF_IUV;
    g2d_pp.clip_type = G2C_CLIP_UVWI;
    g2d_pp.poly_func = g2_per_umap;
-   g2d_pp.i_scale = grd_light_table_size;
+   g2d_pp.i_scale = (float)grd_light_table_size;
    lit_tmap_setup(bm);
 }
 

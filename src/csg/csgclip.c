@@ -151,13 +151,13 @@ static bool colinear(BspVertex *e1, BspVertex *e2, BspVertex *f2)
    // and check the resultant length.
 
    // e1 matches f1, so build e1->e2, f2->f1
-   a.x = e2->x - e1->x;
-   a.y = e2->y - e1->y;
-   a.z = e2->z - e1->z;
+   a.x = (mxs_real)(e2->x - e1->x);
+   a.y = (mxs_real)(e2->y - e1->y);
+   a.z = (mxs_real)(e2->z - e1->z);
 
-   b.x = e1->x - f2->x;
-   b.y = e1->y - f2->y;
-   b.z = e1->z - f2->z;
+   b.x = (mxs_real)(e1->x - f2->x);
+   b.y = (mxs_real)(e1->y - f2->y);
+   b.z = (mxs_real)(e1->z - f2->z);
 
    mx_normeq_vec(&a);
    mx_normeq_vec(&b);

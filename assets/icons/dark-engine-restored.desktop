@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Dark Engine Restored
+Comment=Portable restoration of the Dark Engine
+Exec=thief-runner
+TryExec=thief-runner
+Icon=dark-engine-restored
+Terminal=false
+Categories=Game;ActionGame;

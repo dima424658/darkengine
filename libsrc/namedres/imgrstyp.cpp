@@ -20,10 +20,13 @@ struct sExtMap
 
 static sExtMap extMaps[] =
 {
-  { ".pcx", eImgKind::kImgPCX },
+  // Enhanced replacement art must win extensionless binds over retail PCX.
+  { ".dds", eImgKind::kImgDDS },
+  { ".png", eImgKind::kImgPNG },
   { ".tga", eImgKind::kImgTGA },
-  { ".cel", eImgKind::kImgCEL },
   { ".gif", eImgKind::kImgGIF },
+  { ".pcx", eImgKind::kImgPCX },
+  { ".cel", eImgKind::kImgCEL },
   { ".bmp", eImgKind::kImgBMP }
 };
 

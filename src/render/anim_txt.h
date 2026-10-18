@@ -10,6 +10,8 @@
 #pragma once
 #define __ANIM_TXT_H
 
+struct sAnimTexProp;
+
 #include <comtools.h>
 
 F_DECLARE_INTERFACE(IRes); 

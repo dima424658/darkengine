@@ -273,7 +273,7 @@ public:
 
    STDMETHOD_(int,Version)() { return kVerCurrent;};
 
-   STDMETHOD_(long,Write)(sDatum dat, IDataOpsFile* file)
+   STDMETHOD(Write)(sDatum dat, IDataOpsFile* file)
    {
       const sReceptron* tron = (const sReceptron*)dat.value;
 
@@ -322,7 +322,7 @@ public:
          // add a dummy reaction with that name
          sReactionDesc dummy = { "" , NO_REACTION_PARAM, };
          strncpy(dummy.name,react.name,sizeof(dummy.name));
-         dummy.name[sizeof(dummy.name)] = '\0';
+         dummy.name[sizeof(dummy.name) - 1] = '\0';
 
          tron->effect.kind = Reactions->Add(&dummy,DummyReaction,NULL);
       }
@@ -451,8 +451,8 @@ public:
       // Remap the link id
       if (SUCCEEDED(result))
       {
-         LinkID id = (LinkID)dat->value; 
-         dat->value = (void*)mpLinkMan->RemapOnLoad(id); 
+         LinkID id = (LinkID)(intptr_t)dat->value;
+         dat->value = (void*)(intptr_t)mpLinkMan->RemapOnLoad(id);
       }
       return result; 
    }
@@ -1023,7 +1023,7 @@ STDMETHODIMP cStimSensors::DatabaseNotify(tStimDatabaseMsg msg, IUnknown* )
 
 STDMETHODIMP cStimSensors::ObjectNotify(THIS_ eObjNotifyMsg msg, ObjNotifyData data)
 {
-   ObjID obj = (ObjID)data;
+   ObjID obj = (ObjID)(intptr_t)data;
    switch (NOTIFY_MSG(msg))
    {
       case kObjNotifyCreate:

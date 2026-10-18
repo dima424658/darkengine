@@ -154,7 +154,7 @@ void cPhysListeners::Write(PhysReadWrite writeFunc)
    for (int i=0; i<m_listeners.Size(); i++)
    {
       pName = m_listeners[i]->GetName();
-      nameLen = strlen(pName)+1;
+      nameLen = (int)strlen(pName) + 1;
       writeFunc((void*)&nameLen, sizeof(int), 1);
       writeFunc((void*)pName, sizeof(char), nameLen);
       m_listeners[i]->WriteSubscriptions(writeFunc);

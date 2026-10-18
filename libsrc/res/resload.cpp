@@ -54,7 +54,7 @@
  *
 */
 
-#include <io.h>
+#include <platform_io.h>
 
 #include <res.h>
 #include <res_.h>

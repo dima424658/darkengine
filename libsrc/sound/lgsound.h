@@ -41,9 +41,8 @@ extern "C" {
 	// the single most important call here!!
 	// How to create the mixer in the first place
 	BOOL SndCreateMixer(ISndMixer** ppMixer, IUnknown* pOuter);
+	BOOL SndCreateMixerNamed(ISndMixer** ppMixer, IUnknown* pOuter, const char* backend);
 #define SndCreateDSMixer SndCreateMixer
-	BOOL SndCreateQSMixer(ISndMixer** ppMixer, IUnknown* pOuter);
-	BOOL SndCreateA3DMixer(ISndMixer** ppMixer, IUnknown* pOuter);
 
 	// the errors we want to return
 	typedef enum _eSndError {
@@ -167,6 +166,15 @@ extern "C" {
 		kSnd3DMethodHardware = 4
 	} eSnd3DMethod;
 
+	// Features are independent: a backend may provide positional playback even
+	// when environmental effects are unavailable on the selected device.
+	typedef enum {
+		kSndCapPositional = 1 << 0,
+		kSndCapReverb = 1 << 1,
+		kSndCapOcclusion = 1 << 2,
+		kSndCapHrtf = 1 << 3
+	} eSndCapability;
+
 	//
 	// these are the 3D modes that can be applied on a sample-by-sample basis
 	//
@@ -265,7 +273,7 @@ extern "C" {
 	typedef struct ReverbSettings
 	{
 		//   eReverbType type;
-		DWORD flags;
+		uint32 flags;
 		int type;
 		float level;
 		float decay;
@@ -394,6 +402,8 @@ extern "C" {
 		STDMETHOD_(BOOL, Set3DReverbSettings)(THIS_ ReverbSettings * pReverbSettings) PURE;
 		STDMETHOD_(BOOL, Get3DReverbSettings)(THIS_ ReverbSettings * pReverbSettings) PURE;
 		STDMETHOD_(BOOL, Have3DOcclusion)(THIS) PURE;
+		STDMETHOD_(const char*, GetBackendName)(THIS) PURE;
+		STDMETHOD_(uint32, GetCapabilities)(THIS) PURE;
 		STDMETHOD_(int32, Kludge)(THIS_ int kludgeSelector, void* pKludgeStruct, int32 sizeKludgeStruct) PURE;
 	};
 
@@ -446,6 +456,8 @@ extern "C" {
 #define ISndMixer_Set3DReverbSettings(p, a)        COMCall1(p, Set3DReverbSettings, a)
 #define ISndMixer_Get3DReverbSettings(p, a)        COMCall1(p, Get3DReverbSettings, a)
 #define ISndMixer_Have3DOcclusion(p)               COMCall0(p)
+#define ISndMixer_GetBackendName(p)                 COMCall0(p)
+#define ISndMixer_GetCapabilities(p)                COMCall0(p)
 #define ISndMixer_Kludge(p, a, b, c)               COMCall3(p, Kludge, a, b, c)
 
 #undef INTERFACE
@@ -469,7 +481,7 @@ extern "C" {
 		STDMETHOD_(void, SetVolume)(THIS_ int32 vol) PURE;
 		STDMETHOD_(void, SetPan)(THIS_ int32 pan) PURE;
 		STDMETHOD_(void, SetFrequency)(THIS_ uint32 freq) PURE;
-		STDMETHOD_(void, SetData)(THIS_ int32 data) PURE;
+		STDMETHOD_(void, SetData)(THIS_ intptr_t data) PURE;
 		STDMETHOD_(void, SetPriority)(THIS_ int32 pri) PURE;
 		STDMETHOD_(void, SetSuperInfo)(THIS_ void* pInfo) PURE;
 		STDMETHOD_(void, SetPosition)(THIS_ uint32 pos) PURE;
@@ -478,7 +490,7 @@ extern "C" {
 		STDMETHOD_(int32, GetVolume)(THIS) PURE;
 		STDMETHOD_(int32, GetPan)(THIS) PURE;
 		STDMETHOD_(uint32, GetFrequency)(THIS) PURE;
-		STDMETHOD_(int32, GetData)(THIS) PURE;
+		STDMETHOD_(intptr_t, GetData)(THIS) PURE;
 		STDMETHOD_(int32, GetPriority)(THIS) PURE;
 		STDMETHOD_(void*, GetSuperInfo)(THIS) PURE;
 		STDMETHOD_(uint32, GetPosition)(THIS) PURE;

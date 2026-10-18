@@ -766,7 +766,7 @@ private:
    int              m_ropeSegment;
    mxs_real         m_ropePct;
 
-   long             m_lastSquishTime;
+   int32            m_lastSquishTime;
 
    ePhysModelType * m_pType;
 
@@ -913,8 +913,10 @@ inline const mxs_vector &cPhysModel::GetSubModOffset(tPhysSubModId subModId) con
 inline void cPhysModel::SetSubModOffset(tPhysSubModId subModId, const mxs_vector & offset)
 {
 #ifdef PLAYTEST
-   if (mx_mag2_vec(&offset) > 10000.0)
+   if (mx_mag2_vec(&offset) > 10000.0f)
+   {
       Warning((" has weirded physics offsets\n", ObjWarnName(GetObjID())));
+   }
 #endif
    mx_copy_vec(&m_Offset[subModId], &offset);
 }

@@ -21,7 +21,7 @@ static void alloc_buffer(int size)
 {
    grd_unpack_buf = Malloc(size);
    grd_unpack_buf_size = size;
-   if (unpack_buf_cap < grd_unpack_buf_size)
+   if (unpack_buf_cap < (int)grd_unpack_buf_size)
       Warning(("gd_rsd8_convert(): unpack_buf_cap %i exceeded. unpack_buf_size %i\n",
          unpack_buf_cap, grd_unpack_buf_size));
 }
@@ -68,7 +68,7 @@ int gd_rsd8_convert(grs_bitmap *sbm, grs_bitmap *dbm)
       }
       alloc_buffer(size);
    }
-   else if (grd_unpack_buf_size<size) {
+   else if (grd_unpack_buf_size < (uint)size) {
       if (!(unpack_flags&RCF_ALLOCATE)) {
          CriticalMsg4("%sgrd_unpack_buf_size:%i, sbm->row: %i, sbm->h:%i\n",
             "gd_rsd8_convert(): grd_unpack_buf too small\n!",
@@ -151,7 +151,7 @@ int gd_rsd8_convert(grs_bitmap *sbm, grs_bitmap *dbm)
       }
    }
 rsd_done:
-   if ((over_run=(dbm->bits+dbm->row*dbm->h)-p_dst)!=0)
+   if ((over_run=(int)((dbm->bits+dbm->row*dbm->h)-p_dst))!=0)
       memset (p_dst, 0, over_run);
    return GR_UNPACK_RSD8_OK;
 }

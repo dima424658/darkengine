@@ -10,7 +10,6 @@ GUID IID_IKeyScriptService = { 218104077u, 31629u, 4828u, { 131u, 72u, 0u, 170u,
 GUID IID_ILockedScriptService = { 4211081467u, 31611u, 4810u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
 GUID IID_IAnimTextureScriptService = { 1795162474u, 31722u, 4921u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
 GUID IID_IActReactScriptService = { 4093640948u, 31604u, 4803u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
-DEFINE_LG_GUID(IID_ICDScriptService,0x226);
 GUID IID_ICameraScriptService = { 1090519360u, 31680u, 4879u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
 GUID IID_IDataScriptService = { 2701132192u, 31776u, 4975u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
 GUID IID_IDamageScriptService = { 4261413118u, 31614u, 4813u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
@@ -20,6 +19,8 @@ GUID IID_ILinkScriptService = { 3992977646u, 31598u, 4797u, { 131u, 72u, 0u, 170
 GUID IID_ILinkToolsScriptService = { 4009754863u, 31599u, 4798u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
 GUID IID_ILightScriptService = { 1828716908u, 31724u, 4923u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
 GUID IID_INetworkingScriptService = { 654311973u, 31909u, 5108u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
+GUID IID_IVersionScriptService = { 0x2a000228u, 0x7ca8u, 0x13f7u, { 0x83u, 0x48u, 0x00u, 0xaau, 0x00u, 0xa8u, 0x2bu, 0x51u } };
+GUID IID_IEngineScriptService = { 0x2b000229u, 0x7ca9u, 0x13f8u, { 0x83u, 0x48u, 0x00u, 0xaau, 0x00u, 0xa8u, 0x2bu, 0x51u } };
 GUID IID_IObjectScriptService = { 3741319391u, 31583u, 4782u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
 GUID IID_IPropertyScriptService = { 3657433306u, 31578u, 4777u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };
 GUID IID_IPuppetScriptService = { 4244635901u, 31613u, 4812u, { 131u, 72u, 0u, 170u, 0u, 168u, 43u, 81u } };

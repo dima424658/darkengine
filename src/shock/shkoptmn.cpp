@@ -603,10 +603,10 @@ protected:
       }
       InitDrawElem(&mButtDrawElem[SLIDER_BMPRES]); 
       mButtDrawElem[SLIDER_BMPRES].draw_data = (void *)mButtBmpRes[SLIDER_BMPRES];
-      mButtDrawElem[SLIDER_BMPRES].draw_type = DRAWTYPE_RESOFFSET;
+      mButtDrawElem[SLIDER_BMPRES].draw_type = DRAWTYPE_IRESOFFSET;
 
       InitDrawElem(&mSliderBaseBmp); 
-      mSliderBaseBmp.draw_type = DRAWTYPE_RES;
+      mSliderBaseBmp.draw_type = DRAWTYPE_IRES;
       mSliderBaseBmp.draw_data = (void *)pResMan->Bind ("slidbase", RESTYPE_IMAGE, NULL, mResPath);
 
       for (i = 0; i < kNumSubPanelSlides; i++)
@@ -1348,7 +1348,7 @@ protected:
       for (long i = 0; i < NUM_LIST; i++) {
          if (i < mNumVidDevices) {
             info = lgd3d_get_device_info (i);
-            mListButtonStrs[i] = info->p_ddraw_desc;
+            mListButtonStrs[i] = info->name;
          }
          else
             mListButtonStrs[i] = "";
@@ -1516,7 +1516,7 @@ protected:
 
       InitDrawElem(draw_elem); 
       draw_elem->draw_data = (void *)butt_res;
-      draw_elem->draw_type = DRAWTYPE_RESOFFSET;
+      draw_elem->draw_type = DRAWTYPE_IRESOFFSET;
    }
 
    //////////////////////////////////////////////////////

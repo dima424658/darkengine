@@ -81,6 +81,7 @@
 #include <iobjsys.h> // woo hoo comm-y stuff
 #include <appagg.h>
 #include <motbase.h> // for update_flag_fake. XXX should move this elsewhere KJ 10/97
+#include <dbfile.h>
 
 #include <matrix.h>
 #include <fix.h>
@@ -523,7 +524,7 @@ void CreatureDebugSaveLoadTest()
    mp_free_multiped(mp);
    mp_init_multiped(mp);
    mp_read_multiped(mp,buf,MotSwizzle);
-   delete buf;
+   delete[] buf;
 }
 
 EXTERN BOOL g_mot_quat_debug;
@@ -886,7 +887,9 @@ BOOL CreatureGetRenderHandle(const ObjID objID, long *pHandle)
    if(!CreatureExists(objID))
       return FALSE;
 
-   *pHandle=(long)CreatureFromObj(objID);
+   // mms_model::app_data is part of the legacy 32-bit mesh format.  Keep an
+   // object ID there instead of truncating a runtime creature pointer.
+   *pHandle=(long)objID;
    return TRUE;
 }
 
@@ -896,7 +899,7 @@ void CreatureMeshJointPosCallback(const mms_model *m, const int jointID, mxs_tra
 {
    AssertMsg(m->app_data,"Invalid Creature Pointer In Joint Callback");
 
-   ((cCreature *)(m->app_data))->MeshJointPosCallback(jointID,pTrans);
+   CreatureFromObj((ObjID)m->app_data)->MeshJointPosCallback(jointID,pTrans);
 }
 
 ///////////////////////////////////////////////////
@@ -905,7 +908,7 @@ void CreatureMeshStretchyJointCallback(const mms_model *m, const int jointID, mx
 {
    AssertMsg(m->app_data,"Invalid Creature Pointer In Joint Callback");
 
-   ((cCreature *)(m->app_data))->MeshStretchyJointCallback(jointID,pTrans,pRot);
+   CreatureFromObj((ObjID)m->app_data)->MeshStretchyJointCallback(jointID,pTrans,pRot);
 }
 
 ///////////////////////////////////////////////////
@@ -946,7 +949,7 @@ static void GetPhysSubModelPos(mxs_vector *pJoints, sCrPhysModOffset *pOffset, m
       mxs_vector tmp;
 
       mx_copy_vec(&tmp,&pJoints[pOffset->j1]);
-      mx_scaleeq_vec(&tmp,1.0-pOffset->frac);
+      mx_scaleeq_vec(&tmp,1.0f-pOffset->frac);
       mx_copy_vec(pPos,&pJoints[pOffset->j2]);
       mx_scaleeq_vec(pPos,pOffset->frac);
       mx_addeq_vec(pPos,&tmp);
@@ -999,10 +1002,10 @@ static int g_nSwizzleMots;
 
 void CreaturesRead(fCreatureReadWrite func, eObjPartition partition)
 {
-   int i, ver, num;
+   int i, ver = 0, num = 0;
    if(g_pMotSwizzleMap)
    {
-      delete g_pMotSwizzleMap;
+      delete[] g_pMotSwizzleMap;
       g_pMotSwizzleMap=NULL;
       g_nSwizzleMots=0;
    }
@@ -1010,19 +1013,35 @@ void CreaturesRead(fCreatureReadWrite func, eObjPartition partition)
    AutoAppIPtr_(ObjectSystem,pObjSys);
 
    func(&ver, sizeof(int),1);
+   if (dbLoadHasFailed())
+      return;
    //   AssertMsg1(ver==g_kCreatureVersion||ver==1,"Creature version %d not supported",ver);
 
    if(ver>=7)
    {
       // read in mot swizzle map
       func((void *)&g_nSwizzleMots, sizeof(int),1);
+      if (dbLoadHasFailed() || g_nSwizzleMots < 0 || g_nSwizzleMots > 1048576)
+      {
+         dbLoadReportFailure("creature-reader",
+                             "Creature motion-map count is invalid");
+         g_nSwizzleMots = 0;
+         return;
+      }
 
       g_pMotSwizzleMap=new sMotSwizzle[g_nSwizzleMots];
       func((void *)g_pMotSwizzleMap,sizeof(*g_pMotSwizzleMap),g_nSwizzleMots);
+      if (dbLoadHasFailed())
+         return;
    }
 
    // read number of creatures
    func((void *)&num, sizeof(int),1);
+   if (dbLoadHasFailed() || num < 0 || num > 1048576)
+   {
+      dbLoadReportFailure("creature-reader","Creature count is invalid");
+      return;
+   }
 
    // read in creature data
    for (i = 0; i < num; i++)
@@ -1033,11 +1052,19 @@ void CreaturesRead(fCreatureReadWrite func, eObjPartition partition)
 
       // Read general info
       func((void *)&obj, sizeof(ObjID),1);
+      if (dbLoadHasFailed())
+         return;
       obj = pObjSys->RemapOnLoad(obj);
 
       func((void *)&type, sizeof(type),1);
+      if (dbLoadHasFailed())
+         return;
 
-      Assert_(type>=0&&type<g_nCreatureTypes);
+      if (type < 0 || type >= g_nCreatureTypes)
+      {
+         dbLoadReportFailure("creature-reader","Creature type is out of range");
+         return;
+      }
 
       if(g_pCreatureFactories[type])
       {
@@ -1059,7 +1086,13 @@ void CreaturesRead(fCreatureReadWrite func, eObjPartition partition)
       }
       pCHandle = CreatureHandle(obj_chandle_id(objID));
 
-      AssertMsg(pCHandle,"something wacko in creature loading");
+      if (!pCHandle)
+      {
+         dbLoadReportFailure("creature-reader",
+                             "Creature refers to an invalid object handle");
+         delete pCreature;
+         return;
+      }
       pCHandle->pCreature = pCreature;
    }
 }
@@ -1544,7 +1577,7 @@ cCreature::cCreature(int type, ObjID objID, fCreatureReadWrite func, int version
 
       mp_read_multiped(&m_sMultiped,buf,MotSwizzle);
 
-      delete buf;
+      delete[] buf;
    }
 
 // initialize remaining data
@@ -1588,8 +1621,8 @@ cCreature::cCreature(int type, ObjID objID, fCreatureReadWrite func, int version
       Warning(("cCreature()#2: %s has no position\n",ObjWarnName(m_ObjID)));
    }
 
-   delete lengths.pTorsos;
-   delete lengths.pLimbs;
+   delete[] lengths.pTorsos;
+   delete[] lengths.pLimbs;
 
    MvrUtilsRegisterDefaultObjFlags(m_ObjID);
 }
@@ -1616,10 +1649,10 @@ cCreature::~cCreature()
    mp_stop_all_motions(&m_sMultiped);
    mp_free_multiped(&m_sMultiped);
 
-   delete m_pJoints;
-   delete m_pOrients;
-   delete m_pTorsos;
-   delete m_pLimbs;
+   delete[] m_pJoints;
+   delete[] m_pOrients;
+   delete[] m_pTorsos;
+   delete[] m_pLimbs;
 }
 
 ///////////////////////////////////////////////////
@@ -1673,7 +1706,7 @@ void cCreature::Write(fCreatureReadWrite func)
    uchar *buf= new uchar[msize];
    mp_write_multiped(&m_sMultiped, (void *)buf);
    func((void *)buf,msize,1);
-   delete buf;
+   delete[] buf;
 }
 
 ///////////////////////////////////////////////////
@@ -1709,7 +1742,7 @@ void cCreature::ResetLengths()
       const Position *pPos=ObjPosGet(m_ObjID);
       SetCretObjPos(m_ObjID,&pPos->loc.vec,&pPos->fac); // this needed to update brush and refs
    }
-   delete rot;
+   delete[] rot;
 }
 
 ///////////////////////////////////////////////////
@@ -1764,7 +1797,7 @@ void cCreature::PoseAtMotionFrame(int motNum, float frame)
       SlamPhysicsModels();
    CreatureAttachmentsPosUpdate(m_ObjID);
 
-   delete rot;
+   delete[] rot;
 }
 
 ///////////////////////////////////////////////////
@@ -1856,7 +1889,7 @@ void cCreature::RecomputeJointPositions()
       quat_from_matrix(&rot[m_sMultiped.num_joints],&m_sMultiped.global_orient);
       mx_zero_vec(&v);
       mp_apply_motion(&m_sMultiped,rot,&v,-1);
-      delete rot;
+      delete[] rot;
    } else
    {
       mp_initial_update(&m_sMultiped);
@@ -1871,7 +1904,7 @@ static mxs_ang GetNormVecHeading(mxs_vector *vec)
 {
    mxs_ang angle;
 
-   angle=mx_rad2ang(acos(vec->x));
+   angle=mx_rad2ang(acosf(vec->x));
    if(angle>0)
    {
       if(vec->y<0) // -pi/2 < actual angle < 0
@@ -1885,7 +1918,7 @@ static mxs_ang GetHeadingAngle(mxs_matrix *m)
 {
    mxs_vector vec = m->vec[0];
    // Let's make this NOT quite zero, so normeq div0 won't occur.
-   vec.z = 0.000001; // make sure it normalizes on X/Y plane. 'diff' is not used for anything else.
+   vec.z = 0.000001f; // make sure it normalizes on X/Y plane. 'diff' is not used for anything else.
    mx_normeq_vec(&vec);
 
    return GetNormVecHeading(&vec);
@@ -1970,7 +2003,14 @@ BOOL cCreature::MoveButt(const mxs_vector *pButtPos, const mxs_angvec *pAngles, 
       if (CreatureFromObj(m_ObjID) != NULL)
       {
          int head_joint = GetCreatureJointID(m_ObjID, kCJ_Neck);
-         mx_copy_mat(&m_headOrient, &m_pOrients[head_joint]);
+         // Some valid creature rigs (and several NewDark FM variants) do not
+         // define a neck joint.  The mapping reports -1 for those rigs; the
+         // legacy code indexed m_pOrients[-1] while position properties were
+         // being applied during mission load, producing an intermittent AV.
+         if (head_joint >= 0 && head_joint < m_nJoints)
+            mx_copy_mat(&m_headOrient, &m_pOrients[head_joint]);
+         else
+            mx_copy_mat(&m_headOrient, &m_sMultiped.global_orient);
       }
       else
          mx_copy_mat(&m_headOrient, &m_sMultiped.global_orient);
@@ -2027,7 +2067,7 @@ BOOL cCreature::MoveButt(const mxs_vector *pButtPos, const mxs_angvec *pAngles, 
                }
                else
                {
-                  new_butt_pos.z = hit.vec.z + 1.0; // @TBD: lift a little here?
+                  new_butt_pos.z = hit.vec.z + 1.0f; // @TBD: lift a little here?
                }
             }
          }
@@ -2250,7 +2290,7 @@ void cCreature::FilterMotionFrameData(const mps_motion_info *mi, quat *rot, mxs_
          maxTurn=fix_mul(kMaxAngVel,(fix_from_float(time_delta_ms/1000)));
          if(delta>maxTurn) // clamp
          {
-            delta=maxTurn;
+            delta=(mxs_ang)maxTurn;
          }
 #endif
          if(negRot)
@@ -2331,8 +2371,6 @@ void cCreature::PostUpdateFilter(const ulong dt)
       if (m_trackingObj == 0)
          m_trackingObj = m_MotorState.focus;
 
-      #define sq(x)  ((x) * (x))
-
       int head_joint_id = GetCreatureJointID(m_ObjID, kCJ_Neck);
       int neck_joint_id = GetCreatureJointID(m_ObjID, kCJ_Abdomen);
 
@@ -2358,7 +2396,7 @@ void cCreature::PostUpdateFilter(const ulong dt)
             ObjPos * pPos = ObjPosGet(m_trackingObj);
             if (!pPos)
             {
-               m_trackingObj = NULL;
+               m_trackingObj = OBJ_NULL;
                return;
             }
             to_target = pPos->loc.vec;
@@ -2373,7 +2411,7 @@ void cCreature::PostUpdateFilter(const ulong dt)
          mx_normeq_vec(&to_target);
 
          const float kMinXYNeckDot = 0.0;
-         const float kMaxZNeckDiff = 0.8;
+         const float kMaxZNeckDiff = 0.8f;
 
          mxs_vector xy_to_target;
          mxs_vector xy_neck;
@@ -2385,7 +2423,7 @@ void cCreature::PostUpdateFilter(const ulong dt)
          mx_normeq_vec(&xy_neck);
 
          mxs_real xy_dot = mx_dot_vec(&xy_to_target, &xy_neck);
-         mxs_real z_diff = fabs(to_target.z - neck_mat->vec[0].z);
+         mxs_real z_diff = fabsf(to_target.z - neck_mat->vec[0].z);
 
          // See if we've gone too far
          if ((xy_dot > kMinXYNeckDot) && (z_diff < kMaxZNeckDiff))
@@ -2557,7 +2595,7 @@ BOOL cCreature::MakePhysical()
    const sCreatureDesc *pCDesc=g_pCreatureDescPtr[m_CreatureType];
    int i;
    ObjID objID=m_ObjID;
-   ulong flags=NULL;
+   ulong flags = 0;
 
    if(!pCDesc->nPhysModels)
       return FALSE;
@@ -2659,7 +2697,7 @@ void cCreature::MakeNonPhysical()
 ///////////////////////////////////////////////////
 
 // shrink phys submodels
-#define kDeathShrinkage 0.7
+#define kDeathShrinkage 0.7f
 
 void cCreature::PrepareToDie()
 {
@@ -2917,7 +2955,7 @@ void cCreature::MakePhysSubModBallistic(int index, int style)
                mxs_vector shin;
 
                mx_sub_vec(&shin, &hit.vec, &knee);
-               mx_scaleeq_vec(&shin, 0.99);
+               mx_scaleeq_vec(&shin, 0.99f);
                mx_add_vec(&foot, &knee, &shin);
             }
 
@@ -3369,7 +3407,7 @@ void cCreature::GetPhysSubModPos(sCrPhysModOffset *pOffset,mxs_vector *pPos)
       mxs_vector tmp;
 
       mx_copy_vec(&tmp,&m_pJoints[pOffset->j1]);
-      mx_scaleeq_vec(&tmp,1.0-pOffset->frac);
+      mx_scaleeq_vec(&tmp,1.0f-pOffset->frac);
       mx_copy_vec(pPos,&m_pJoints[pOffset->j2]);
       mx_scaleeq_vec(pPos,pOffset->frac);
       mx_addeq_vec(pPos,&tmp);
@@ -3444,7 +3482,7 @@ static uint HackMpUpdate(multiped * mp, float time_delta_ms, ulong app_flags, Ob
 
             mx_sub_vec(&diff,&pPos->loc.vec,&mp->global_pos);
             // Let's make this NOT quite zero, so normeq div0 won't occur.
-            diff.z = 0.000001; // make sure it normalizes on X/Y plane. 'diff' is not used for anything else.
+            diff.z = 0.000001f; // make sure it normalizes on X/Y plane. 'diff' is not used for anything else.
             mx_normeq_vec(&diff);
             desFac=GetNormVecHeading(&diff);
 
@@ -3459,7 +3497,7 @@ static uint HackMpUpdate(multiped * mp, float time_delta_ms, ulong app_flags, Ob
             maxTurn=fix_mul(((cCreature *)(mp->app_ptr))->GetMaxAngVel(),(fix_from_float(time_delta_ms/1000)));
             if(delta>maxTurn) // clamp
             {
-               delta=maxTurn;
+               delta=(mxs_ang)maxTurn;
             }
             if(negRot)
                delta=-delta;
@@ -3505,7 +3543,7 @@ void cCreature::StartMotionWithParam(const int motionNum, mps_motion_param *pPar
    mps_start_info info;
    mps_motion_param defParam;
 
-   info.flags=NULL;
+   info.flags = 0;
 
    if(motionNum<0 || motionNum>=mp_num_motions)
       Warning(("cCreature::StartMotionWithParam, bad motion number %d\n",motionNum));
@@ -3552,7 +3590,7 @@ void cCreature::StartMotionWithParam(const int motionNum, mps_motion_param *pPar
    }
    info.callback = CreatureMotEndCallback;
    info.motion_num = motionNum;
-   info.trans_duration=MotDescBlendLength(info.motion_num);
+   info.trans_duration=(float)MotDescBlendLength(info.motion_num);
    if(flags&kMotStartFlag_ForceBlend)
    {
       if(info.trans_duration<kForceBlendLength)
@@ -3563,7 +3601,7 @@ void cCreature::StartMotionWithParam(const int motionNum, mps_motion_param *pPar
       defParam=*pParam;
    } else
    {
-      defParam.flags=NULL;
+      defParam.flags = 0;
    }
    if(IsBallistic()) // ignore params that affect xlat
    {
@@ -3932,7 +3970,7 @@ BOOL cCreature::SubFrameUpdate(const ulong dt)
    // (since then not responsible for moving its own phys models
    if(!IsPhysical() || IsBallistic())
    {
-      flags = HackMpUpdate(&m_sMultiped, dt,NULL,m_MotorState.focus); // need this to get flags, callbacks etc
+      flags = HackMpUpdate(&m_sMultiped, (float)dt,NULL,m_MotorState.focus); // need this to get flags, callbacks etc
       if (IsBallistic())
          MoveButt(&ObjPosGet(GetObjID())->loc.vec, &ObjPosGet(GetObjID())->fac, TRUE);
    }
@@ -3940,7 +3978,7 @@ BOOL cCreature::SubFrameUpdate(const ulong dt)
    {
 
       TIMER_Start(CREAT_HackMpUpdate);
-      flags=HackMpUpdate(&m_sMultiped, dt,NULL,m_MotorState.focus);
+      flags=HackMpUpdate(&m_sMultiped, (float)dt,NULL,m_MotorState.focus);
       TIMER_MarkStop(CREAT_HackMpUpdate);
 
       mxs_vector new_pos;

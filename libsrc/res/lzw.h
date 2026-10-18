@@ -7,6 +7,8 @@
 #ifndef __LZW_H
 #define __LZW_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -75,27 +77,28 @@ extern bool lzwBufferMalloced;                       // buffer malloced?
 
 //  The Ginzo compression knife
 
-typedef void (*tLzwCompressCtrlFunc) (long srcOrDestLoc, LzwCtrl ctrl);
+typedef intptr_t tLzwLocation;
+typedef void (*tLzwCompressCtrlFunc) (tLzwLocation srcOrDestLoc, LzwCtrl ctrl);
 typedef uchar(*tLzwCompressSrcGetFunc) (void);
 typedef void (*tLzwCompressDestPutFunc) (uchar);
 
 long LzwCompress( tLzwCompressCtrlFunc f_SrcCtrl,// func to control source
                         tLzwCompressSrcGetFunc f_SrcGet,          // func to get bytes from source
-                        long srcLoc,                         // source "location" (ptr, FILE *, etc.)
+                        tLzwLocation srcLoc,                 // source "location" (ptr, FILE *, etc.)
                         long srcSize,                        // size of source in bytes
                         tLzwCompressCtrlFunc f_DestCtrl,          // func to control dest
                         tLzwCompressDestPutFunc f_DestPut,    // func to put bytes to dest
-                        long destLoc,                        // dest "location" (ptr, FILE *, etc.)
+                        tLzwLocation destLoc,                // dest "location" (ptr, FILE *, etc.)
                         long destSizeMax                     // max size of dest (or LZW_MAXSIZE)
                      );
 //  And its expansion counterpart, both for $19.95 while supplies last
 
 long LzwExpand( tLzwCompressCtrlFunc f_SrcCtrl,  // func to control source
                      tLzwCompressSrcGetFunc f_SrcGet, // func to get bytes from source
-                     long srcLoc,                            // source "location" (ptr, FILE *, etc.)
+                     tLzwLocation srcLoc,                    // source "location" (ptr, FILE *, etc.)
                      tLzwCompressCtrlFunc f_DestCtrl, // func to control dest
                      tLzwCompressDestPutFunc f_DestPut,       // func to put bytes to dest
-                     long destLoc,                           // dest "location" (ptr, FILE *, etc.)
+                     tLzwLocation destLoc,                   // dest "location" (ptr, FILE *, etc.)
                      long destSkip,                      // # dest bytes to skip over (or 0)
                      long destSize                           // # dest bytes to capture (if 0, all)
                      );
@@ -103,10 +106,10 @@ long LzwExpand( tLzwCompressCtrlFunc f_SrcCtrl,  // func to control source
 
 long LzwExpandPartial( tLzwCompressCtrlFunc f_SrcCtrl,  // func to control source
                               tLzwCompressSrcGetFunc f_SrcGet, // func to get bytes from source
-                              long srcLoc,                   // source "location" (ptr, FILE *, etc.)
+                              tLzwLocation srcLoc,            // source "location" (ptr, FILE *, etc.)
                               tLzwCompressCtrlFunc f_DestCtrl, // func to control dest
                               tLzwCompressDestPutFunc f_DestPut,         // func to put bytes to dest
-                              long destLoc,              // dest "location" (ptr, FILE *, etc.)
+                              tLzwLocation destLoc,           // dest "location" (ptr, FILE *, etc.)
                               long destSkip,                 // # dest bytes to skip over (or 0)
                               long destSize,                 // # dest bytes to capture (if 0, all)
                               void *state,                   // internal state structure
@@ -115,10 +118,10 @@ long LzwExpandPartial( tLzwCompressCtrlFunc f_SrcCtrl,  // func to control sourc
 
 void LzwExpandPartialStart( tLzwCompressCtrlFunc f_SrcCtrl,      // func to control source
                                      tLzwCompressSrcGetFunc f_SrcGet,    // func to get bytes from source
-                                     long srcLoc,            // source "location" (ptr, FILE *, etc.)
+                                     tLzwLocation srcLoc,    // source "location" (ptr, FILE *, etc.)
                                      tLzwCompressCtrlFunc f_DestCtrl,    // func to control dest
                                      tLzwCompressDestPutFunc f_DestPut,  // func to put bytes to dest
-                                     long destLoc,           // dest "location" (ptr, FILE *, etc.)
+                                     tLzwLocation destLoc,   // dest "location" (ptr, FILE *, etc.)
                                      long destSkip,      // # dest bytes to skip over (or 0)
                                      long destSize,      // # dest bytes to capture (if 0, all)
                                      void *state,            // internal state structure
@@ -221,14 +224,14 @@ void LzwExpandPartialStart( tLzwCompressCtrlFunc f_SrcCtrl,      // func to cont
 
 //  These macros are used to help implement the compression macros
 
-#define LzwBuffSrcC(psrc,srcSize) LzwBuffSrcCtrl, LzwBuffSrcGet, (long) psrc, srcSize
-#define LzwFdSrcC(fdSrc,srcSize) LzwFdSrcCtrl, LzwFdSrcGet, (long) fdSrc, srcSize
-#define LzwFpSrcC(fpSrc,srcSize) LzwFpSrcCtrl, LzwFpSrcGet, (long) fpSrc, srcSize
+#define LzwBuffSrcC(psrc,srcSize) LzwBuffSrcCtrl, LzwBuffSrcGet, (tLzwLocation) psrc, srcSize
+#define LzwFdSrcC(fdSrc,srcSize) LzwFdSrcCtrl, LzwFdSrcGet, (tLzwLocation) fdSrc, srcSize
+#define LzwFpSrcC(fpSrc,srcSize) LzwFpSrcCtrl, LzwFpSrcGet, (tLzwLocation) fpSrc, srcSize
 
-#define LzwBuffDestC(pdest,destSizeMax) LzwBuffDestCtrl, LzwBuffDestPut, (long) pdest, destSizeMax
-#define LzwFdDestC(fdDest) LzwFdDestCtrl, LzwFdDestPut, (long) fdDest, LZW_MAXSIZE
-#define LzwFpDestC(fpDest) LzwFpDestCtrl, LzwFpDestPut, (long) fpDest, LZW_MAXSIZE
-#define LzwNullDestC() LzwNullDestCtrl, LzwNullDestPut, NULL, LZW_MAXSIZE
+#define LzwBuffDestC(pdest,destSizeMax) LzwBuffDestCtrl, LzwBuffDestPut, (tLzwLocation) pdest, destSizeMax
+#define LzwFdDestC(fdDest) LzwFdDestCtrl, LzwFdDestPut, (tLzwLocation) fdDest, LZW_MAXSIZE
+#define LzwFpDestC(fpDest) LzwFpDestCtrl, LzwFpDestPut, (tLzwLocation) fpDest, LZW_MAXSIZE
+#define LzwNullDestC() LzwNullDestCtrl, LzwNullDestPut, 0, LZW_MAXSIZE
 
 
 //  Macros which implement all the varied expansionn forms, using the
@@ -335,36 +338,36 @@ long LzwExpandFd2Buff(int fdSrc, uchar * pdest, long destSkip, long destSize);
 
 //  These macros are used to help implement the expansion macros
 
-#define LzwBuffSrcE(psrc) LzwBuffSrcCtrl, LzwBuffSrcGet, (long) psrc
-#define LzwFdSrcE(fdSrc) LzwFdSrcCtrl, LzwFdSrcGet, (long) fdSrc
-#define LzwFpSrcE(fpSrc) LzwFpSrcCtrl, LzwFpSrcGet, (long) fpSrc
+#define LzwBuffSrcE(psrc) LzwBuffSrcCtrl, LzwBuffSrcGet, (tLzwLocation) psrc
+#define LzwFdSrcE(fdSrc) LzwFdSrcCtrl, LzwFdSrcGet, (tLzwLocation) fdSrc
+#define LzwFpSrcE(fpSrc) LzwFpSrcCtrl, LzwFpSrcGet, (tLzwLocation) fpSrc
 
 #define LzwBuffDestE(pdest, destSkip, destSize) \
-     LzwBuffDestCtrl, LzwBuffDestPut, (long) pdest, destSkip, destSize
+     LzwBuffDestCtrl, LzwBuffDestPut, (tLzwLocation) pdest, destSkip, destSize
 #define LzwFdDestE(fdDest, destSkip, destSize) \
-     LzwFdDestCtrl, LzwFdDestPut, (long) fdDest, destSkip, destSize
+     LzwFdDestCtrl, LzwFdDestPut, (tLzwLocation) fdDest, destSkip, destSize
 #define LzwFpDestE(fpDest, destSkip, destSize) \
-     LzwFpDestCtrl, LzwFpDestPut, (long) fpDest, destSkip, destSize
+     LzwFpDestCtrl, LzwFpDestPut, (tLzwLocation) fpDest, destSkip, destSize
 #define LzwNullDestE(destSkip, destSize) \
-     LzwNullDestCtrl, LzwNullDestPut, NULL, destSkip, destSize
+     LzwNullDestCtrl, LzwNullDestPut, 0, destSkip, destSize
 
 //  Prototypes of standard sources
 
-void LzwBuffSrcCtrl(long srcLoc, LzwCtrl ctrl);
-uchar LzwBuffSrcGet();
-void LzwFdSrcCtrl(long srcLoc, LzwCtrl ctrl);
-uchar LzwFdSrcGet();
-void LzwFpSrcCtrl(long srcLoc, LzwCtrl ctrl);
-uchar LzwFpSrcGet();
+void LzwBuffSrcCtrl(tLzwLocation srcLoc, LzwCtrl ctrl);
+uchar LzwBuffSrcGet(void);
+void LzwFdSrcCtrl(tLzwLocation srcLoc, LzwCtrl ctrl);
+uchar LzwFdSrcGet(void);
+void LzwFpSrcCtrl(tLzwLocation srcLoc, LzwCtrl ctrl);
+uchar LzwFpSrcGet(void);
 //  Prototypes of standard destinations
 
-void LzwBuffDestCtrl(long destLoc, LzwCtrl ctrl);
+void LzwBuffDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl);
 void LzwBuffDestPut(uchar b);
-void LzwFdDestCtrl(long destLoc, LzwCtrl ctrl);
+void LzwFdDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl);
 void LzwFdDestPut(uchar b);
-void LzwFpDestCtrl(long destLoc, LzwCtrl ctrl);
+void LzwFpDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl);
 void LzwFpDestPut(uchar b);
-void LzwNullDestCtrl(long destLoc, LzwCtrl ctrl);
+void LzwNullDestCtrl(tLzwLocation destLoc, LzwCtrl ctrl);
 void LzwNullDestPut(uchar b);
 
 #ifdef __cplusplus

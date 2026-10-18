@@ -128,11 +128,9 @@ STDMETHODIMP_(void) cDarkAppAdviseSink::OnCommand(unsigned nCmdId)
 // Called when making an emergency exit (not implemented as of 11-05-96)
 //
 
-#pragma off(unreferenced);
 STDMETHODIMP_(void) cDarkAppAdviseSink::OnCriticalError(int errorCode)
 {
 }
-#pragma on(unreferenced);
 
 ///////////////////////////////////////////////////////////////////////////////
 

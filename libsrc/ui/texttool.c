@@ -118,7 +118,7 @@ void _tt_build_cheat(long line_num)
    // recheck carefully for proportional font stuff...
    // should probably modularize out the selector for optimal expose events
 
-   a_wid=strlen(s=sb);
+   a_wid=(int)strlen(s=sb);
    loc->stl=a_wid;
    // find the left edge
    while ((x_pix<_tt->disp_x)&&(x_chr<loc->stl))
@@ -187,8 +187,8 @@ void _tt_display_line(long line_num, long p_left, long p_right)
    dummy = p_right;
 
    llin=line_num-_tt->disp_y;
-   disp_rect.ul.x = _tt->scr_loc.crn.pt.x+_tt->line_info[line_num].pix[0];
-   disp_rect.ul.y = _tt->scr_loc.crn.pt.y+llin*_tt->lfont->height;
+   disp_rect.ul.x = (short)(_tt->scr_loc.crn.pt.x+_tt->line_info[line_num].pix[0]);
+   disp_rect.ul.y = (short)(_tt->scr_loc.crn.pt.y+llin*_tt->lfont->height);
    disp_rect.lr.x = _tt->scr_loc.w - 1;
    disp_rect.lr.y = disp_rect.ul.y + _tt->lfont->height;
 //   mprintf ("disp_rect = (%d, %d)(%d, %d)\n",disp_rect.ul.x, disp_rect.ul.y, disp_rect.lr.x, disp_rect.lr.y);
@@ -256,7 +256,7 @@ void tt_dump(TextTool *tt)
    _tt_top(tt);
    printf("DUMP:\n");
    for (ay=0; ay<_tt->max_h; ay++)
-      printf("%5.5d %s\n", ay, _tt->lines[ay]);
+      printf("%5.5ld %s\n", ay, _tt->lines[ay]);
 }
 
 // return the length of which_word (see defines TTWL_?) in char *s
@@ -267,12 +267,12 @@ int _tt_word_len(int which_word, char *s, long pos)
 
    switch (which_word)
    {
-   case TTWL_FIRST: p=strchr(s,' '); if (p==NULL) val=strlen(s); else val=p-s; break;
-   case TTWL_LAST:  p=strrchr(s,' '); if (p==NULL) val=strlen(s); else val=s-p; break;
+	case TTWL_FIRST: p=strchr(s,' '); if (p==NULL) val=(int)strlen(s); else val=(int)(p-s); break;
+	case TTWL_LAST:  p=strrchr(s,' '); if (p==NULL) val=(int)strlen(s); else val=(int)(s-p); break;
    case TTWL_CUR:   q=strchr(s+pos,' '); sw=*(s+pos); *(s+pos)='\0'; p=strrchr(s,' '); *(s+pos)=sw;
-                    if ((q==NULL)&&(p==NULL)) val=strlen(s);
-                    else if (q==NULL) val=strlen(s)-(p-s);
-                    else if (p==NULL) val=q-s; else val=q-p; break;
+                    if ((q==NULL)&&(p==NULL)) val=(int)strlen(s);
+                    else if (q==NULL) val=(int)(strlen(s)-(p-s));
+                    else if (p==NULL) val=(int)(q-s); else val=(int)(q-p); break;
    }
    return val;
 }
@@ -294,7 +294,7 @@ void _tt_resize_line(long line_num, long new_len)
 // fills line_num with s
 void tt_fill_line(TextTool *tt, int how, long line_num, char *s)
 {
-   long r_len=strlen(s), loop;
+   long r_len=(long)strlen(s), loop;
    _tt_top(tt);
    if (line_num>=_tt->max_h)
       for (loop=_tt->max_h; loop<=line_num; loop++)
@@ -365,7 +365,7 @@ bool _tt_wrap_check(long *line_num, long *cur_pos)
    // first, do we wrap back to the last line (should use pixwid, not stl)
    if (LineExist(_tt,ln-1)&&((_tt->line_info[ln-1].flg&TTC_FLG_RET)==0))
       if (_tt->line_info[ln-1].stl+1+_tt_word_len(TTWL_FIRST,_tt->lines[ln],0)<_tt->es.right_m)
-         printf("Wrap back - note %d %d\n",_tt->line_info[ln-1].stl,_tt_word_len(TTWL_FIRST,_tt->lines[ln],0));
+         printf("Wrap back - note %ld %d\n",_tt->line_info[ln-1].stl,_tt_word_len(TTWL_FIRST,_tt->lines[ln],0));
    // now, does our line wrap
    if (_tt->line_info[ln].stl>=_tt->es.right_m)
    {
@@ -379,12 +379,12 @@ bool _tt_wrap_check(long *line_num, long *cur_pos)
       if (sw!=0) *p=sw;                  /* put any punted characters back */
       if (s>base)
       {                                  /* do the wrap */
-         int brk=(++s)-base;             /* skip the space, figure out where to break */
+         int brk=(int)((++s)-base);       /* skip the space, figure out where to break */
          printf("Want to wrap -%s-...",s);
          tt_fill_line(NULL,TTF_INSFRONT,ln+1,s);
          _tt_break_line(ln,brk-1);
          _tt->line_info[ln].flg&=(~TTC_FLG_RET); /* punt the return */
-         printf("Note strlen %d and stl %d for .%s./.%s.\n",strlen(s),_tt->line_info[(*line_num)+1].stl,s,_tt->lines[(*line_num)+1]);
+         printf("Note strlen %zu and stl %ld for .%s./.%s.\n",strlen(s),_tt->line_info[(*line_num)+1].stl,s,_tt->lines[(*line_num)+1]);
          if ((*cur_pos)>brk)
           { (*line_num)++; (*cur_pos)-=brk; }
          wr=TRUE;
@@ -570,7 +570,7 @@ int _tt_do_event(long tt_event)
    else                                                      /* normal key */
    {
       if (_tt->es.mode&TTS_READONLY) return TTCHG_NOCHANGE;  /* readonly mode, ignore non-event keys */
-	   _tt_add_char(&_tt->cur_h,&_tt->cur_w,tt_event);
+	   _tt_add_char(&_tt->cur_h,&_tt->cur_w,(char)tt_event);
 //        _tt_chg_line(1);
 //     else
 //        _tt_chg_colu(1);
@@ -648,7 +648,7 @@ long tt_parse_string(TextTool *tt, char *st)
    int event;
    _tt_top(tt);
 
-   for (i=0; i<strlen(st); i++)
+   for (i=0; (size_t)i<strlen(st); i++)
    {
       c = st[i];
       event = TTEV_NULL;

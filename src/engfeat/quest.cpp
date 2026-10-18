@@ -447,24 +447,38 @@ STDMETHODIMP cQuestData::Delete(THIS_ const char *pName)
 
 STDMETHODIMP cQuestData::DeleteAll(void)
 {
-   tHashSetHandle handle;
+   // Removing an entry invalidates the hash iterator's current bucket/node.
+   // Always restart from the first remaining entry instead of advancing an
+   // iterator through storage that Delete() just freed.
    cQuestDataNode *pNode;
-
-   pNode = m_nameHash.GetFirst(handle);
-   for (; pNode != NULL; pNode = m_nameHash.GetNext(handle))
-      Delete(pNode->m_pName); 
+   do
+   {
+      tHashSetHandle handle;
+      pNode = m_nameHash.GetFirst(handle);
+      if (pNode == NULL)
+         break;
+      Delete(pNode->m_pName);
+   }
+   while (TRUE);
    return S_OK;
 }
 
 STDMETHODIMP cQuestData::DeleteAllType(eQuestDataType type)
 {
-   tHashSetHandle handle;
    cQuestDataNode *pNode;
+   do
+   {
+      tHashSetHandle handle;
+      pNode = m_nameHash.GetFirst(handle);
+      while ((pNode != NULL) && (pNode->m_type != type))
+         pNode = m_nameHash.GetNext(handle);
 
-   pNode = m_nameHash.GetFirst(handle);
-   for (; pNode != NULL; pNode = m_nameHash.GetNext(handle))
-      if (pNode->m_type == type)
-         Delete(pNode->m_pName); 
+      // As in DeleteAll(), do not reuse the iterator after removing its node.
+      if (pNode == NULL)
+         break;
+      Delete(pNode->m_pName);
+   }
+   while (TRUE);
    return S_OK;
 }
 
@@ -479,7 +493,7 @@ STDMETHODIMP_(BOOL) cQuestData::Save(QuestMoveFunc moveFunc, eQuestDataType type
    {
       if ((pNode->m_type == type) || ((pNode->m_type == kQuestDataUnknown) && (type == kQuestDataMission)))
       {
-         len = strlen(pNode->m_pName)+1;
+      len = (int)strlen(pNode->m_pName)+1;
          moveFunc((void*)&len, sizeof(int), 1);
          moveFunc((void*)(const char*)pNode->m_pName, sizeof(char), len);
          moveFunc((void*)&(pNode->m_value), sizeof(int), 1);
@@ -497,8 +511,17 @@ STDMETHODIMP_(BOOL) cQuestData::Load(QuestMoveFunc moveFunc, eQuestDataType type
 
    while ((num = moveFunc((void*)&len, sizeof(int), 1)) == sizeof(int))
    {
+      if (len <= 0 || len > 1024)
+      {
+         Warning(("cQuestData::Load - invalid name length %d\n", len));
+         return E_FAIL;
+      }
+
       // Alloc a string of size len, bound within the scope of this block
-      cStr name("",len); 
+      // cStr("", len) means "copy len bytes from this source string" and
+      // therefore read past the one-byte empty literal.  The length-only
+      // constructor is the buffer-allocation form intended here.
+      cStr name(len);
       char* pName = (char*)(const char*)name; 
 
       if ((num = moveFunc((void*)pName, sizeof(char), len)) != len*sizeof(char))
@@ -506,6 +529,7 @@ STDMETHODIMP_(BOOL) cQuestData::Load(QuestMoveFunc moveFunc, eQuestDataType type
          Warning(("cQuestData::Load - bad save format\n"));
          return E_FAIL;
       };
+      pName[len - 1] = '\0';
       if ((num = moveFunc((void*)&value, sizeof(int), 1)) != sizeof(int))
       {
          Warning(("cQuestData::Load - bad save format\n"));
@@ -552,7 +576,7 @@ STDMETHODIMP cQuestData::ObjSpewListen(ObjID objID)
       for (; !iter.Done(); iter.Next())
       {
          cQuestDataNode* pQuestNode = iter.Value(); 
-         mprintf("%s ", pQuestNode->m_pName);
+         mprintf("%s ", static_cast<const char *>(pQuestNode->m_pName));
       }
    }
    return S_OK;

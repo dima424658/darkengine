@@ -187,27 +187,27 @@ static float process_object(ObjID obj, FlashbombRender *fr, uchar *rgb)
 
    world_done = FALSE;
 
-   if (tm >= fr->world_flash_duration) {
+   if (tm >= (ulong)fr->world_flash_duration) {
       // remove the light from the world if it's too old
       if (fr->worldlit)
          world_light(obj, fr, FALSE); // darken
       world_done = TRUE;
    }
 
-   if (tm < fr->screen_flash_duration) {
+   if (tm < (ulong)fr->screen_flash_duration) {
       // initial white phase
       alpha = fr->intensity;
       rgb[0] = fr->r;
       rgb[1] = fr->g;
       rgb[2] = fr->b;
       ConfigSpew("FlashSpew",("FlashSpew: First Alpha %d %g\n",tm,alpha));
-   } else if (tm < fr->screen_flash_duration + FADE_TO_BLACK) {
+   } else if (tm < (ulong)(fr->screen_flash_duration + FADE_TO_BLACK)) {
       tm -= fr->screen_flash_duration;
       alpha = 1 - (float) tm / FADE_TO_BLACK;  // 1..0
-      rgb[0] = fr->r * alpha;  // crossfade from white to black
-      rgb[1] = fr->g * alpha;
-      rgb[2] = fr->b * alpha;
-      alpha = 1 - (1-alpha)*.05;  // reshift from 1..0 to 1.. 0.95
+      rgb[0] = (uchar)(fr->r * alpha);  // crossfade from white to black
+      rgb[1] = (uchar)(fr->g * alpha);
+      rgb[2] = (uchar)(fr->b * alpha);
+      alpha = 1 - (1-alpha)*.05f;  // reshift from 1..0 to 1.. 0.95
       if (fr->intensity < 1.0)
 	alpha *= fr->intensity;
       ConfigSpew("FlashSpew",("FlashSpew: Second Alpha %d %g\n",tm,alpha));
@@ -215,14 +215,14 @@ static float process_object(ObjID obj, FlashbombRender *fr, uchar *rgb)
       int max_time = fr->after_effect;
       tm -= fr->screen_flash_duration + FADE_TO_BLACK;
       // shorten the aftereffect by the intensity
-      max_time *= fr->intensity;
+      max_time = (int)(max_time * fr->intensity);
       if (max_time > flash_clamp_time) max_time = flash_clamp_time;
-      if (tm <= max_time) {
+      if (tm <= (ulong)max_time) {
          // ramp intensity down from .95 to 0 and stay black
          // tm/max_time --> 0 .. 1
          alpha = 1 - (float) tm / max_time;
          // now bias it to fade slower
-         alpha *= 0.95;
+         alpha *= 0.95f;
          rgb[0] = rgb[1] = rgb[2] = 0;
          if (fr->intensity < 1.0)
 	   alpha *= fr->intensity;

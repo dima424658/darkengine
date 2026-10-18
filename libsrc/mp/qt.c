@@ -48,7 +48,7 @@ void quat_to_matrix(mxs_matrix * m, quat * q)
 
 	//s = 2.0 / (q->w*q->w + q->x*q->x + q->y*q->y + q->z*q->z);
 // Magnitude should always be 1, so forget the division.
-	s = 2.0;
+	s = 2.0f;
 
 	xs = q->x * s;
 	ys = q->y * s;
@@ -65,17 +65,17 @@ void quat_to_matrix(mxs_matrix * m, quat * q)
 	yz = q->y * zs;
 	zz = q->z * zs;
 
-	qm->mat[0][0] = 1.0 - (yy + zz);
+	qm->mat[0][0] = 1.0f - (yy + zz);
 	qm->mat[1][0] = xy + wz;
 	qm->mat[2][0] = xz - wy;
 
 	qm->mat[0][1] = xy - wz;
-	qm->mat[1][1] = 1.0 - (xx + zz);
+	qm->mat[1][1] = 1.0f - (xx + zz);
 	qm->mat[2][1] = yz + wx;
 
 	qm->mat[0][2] = xz + wy;
 	qm->mat[1][2] = yz - wx;
-	qm->mat[2][2] = 1.0 - (xx + yy);
+	qm->mat[2][2] = 1.0f - (xx + yy);
 
 #ifdef QT_DEBUG
 
@@ -123,9 +123,9 @@ void quat_from_matrix(quat * q, mxs_matrix * m)
 	trace = qm->mat[0][0] + qm->mat[1][1] + qm->mat[2][2];
 	if (trace > 0)
 	{
-		s = sqrt(trace + 1.0);
-		q->w = s * 0.5;
-		s = 0.5 / s;
+		s = sqrtf(trace + 1.0f);
+		q->w = s * 0.5f;
+		s = 0.5f / s;
 
 		q->x = (qm->mat[2][1] - qm->mat[1][2]) * s;
 		q->y = (qm->mat[0][2] - qm->mat[2][0]) * s;
@@ -150,10 +150,10 @@ void quat_from_matrix(quat * q, mxs_matrix * m)
 		j = nxt[i];
 		k = nxt[j];
 
-		s = sqrt( (qm->mat[i][i] - (qm->mat[j][j]+qm->mat[k][k])) + 1.0);
+		s = sqrtf((qm->mat[i][i] - (qm->mat[j][j]+qm->mat[k][k])) + 1.0f);
 
-		q->el[i+1] = s * 0.5;
-		s = 0.5 / s;
+		q->el[i+1] = s * 0.5f;
+		s = 0.5f / s;
 		q->w = (qm->mat[k][j] - qm->mat[j][k]) * s;
 		q->el[j+1] = (qm->mat[j][i] + qm->mat[i][j]) * s;
 		q->el[k+1] = (qm->mat[k][i] + qm->mat[i][k]) * s;
@@ -189,12 +189,12 @@ void quat_from_matrix(quat * q, mxs_matrix * m)
 void quat_create(quat * q, mxs_vector * axis, float angle)
 {
 	float sine;
-	float half_angle = angle / 2.0;
+	float half_angle = angle / 2.0f;
 
-	q->s = cos(half_angle);
+	q->s = cosf(half_angle);
 
 	mx_norm_vec(&q->v, axis);
-	sine = sin(half_angle);
+	sine = sinf(half_angle);
 	mx_scaleeq_vec(&q->v, sine);
 }
 
@@ -237,7 +237,7 @@ void quat_scale(quat * dest, quat * q, float scale)
 //
 // Do the spherical linear interpolation thing.
 //
-#define MX_REAL_HALF_PI	(MX_REAL_PI / 2.0)
+#define MX_REAL_HALF_PI	((float)MX_REAL_PI / 2.0f)
 
 void quat_slerp(quat * dest, quat * q1, quat * q2, float t)
 {
@@ -281,16 +281,16 @@ void quat_slerp(quat * dest, quat * q1, quat * q2, float t)
 	// weirdness. 
 		if ((1.0 - cos_omega) > EPSILON)
 		{
-			omega = acos(cos_omega);
-			sin_omega = sin(omega);
+	omega = acosf(cos_omega);
+	sin_omega = sinf(omega);
 	
-			s1 = sin((1.0 - t) * omega) / sin_omega;
-			s2 = sin(t * omega) / sin_omega;
+		s1 = sinf((1.0f - t) * omega) / sin_omega;
+		s2 = sinf(t * omega) / sin_omega;
 		}
 		else
 		{
 		// Too close, do plain old linear interpolation.
-			s1 = 1.0 - t;
+		s1 = 1.0f - t;
 			s2 = t;
 		}
 
@@ -306,8 +306,8 @@ void quat_slerp(quat * dest, quat * q1, quat * q2, float t)
 		dest->y = q1->x;
 		dest->z = -q1->w;
 
-		s1 = sin((1.0 - t) * MX_REAL_HALF_PI);
-		s2 = sin(t * MX_REAL_HALF_PI);
+		s1 = sinf((1.0f - t) * MX_REAL_HALF_PI);
+		s2 = sinf(t * MX_REAL_HALF_PI);
 //#define MP_SRC	DBGSRC(31, 1)
 		dest->x = s1 * q1->x + s2 * dest->x;
 		dest->y = s1 * q1->y + s2 * dest->y;
@@ -342,7 +342,7 @@ void quat_identity(quat * q)
 float quat_mag(quat * q)
 {
 	float s = q->w * q->w + mx_dot_vec(&q->v, &q->v);
-	return sqrt(s);
+	return sqrtf(s);
 }
 
 //

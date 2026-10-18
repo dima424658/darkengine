@@ -26,8 +26,9 @@
 #include <editbr_.h>
 #include <ged_csg.h>
 #include <brtypes.h>
+#include <darklimit.h>
 
-#define MAX_CSG_BRUSHES   7068
+#define MAX_CSG_BRUSHES   DARK_LIMIT_RUNTIME_BRUSHES
 EXTERN struct _editBrush *csg_brush[MAX_CSG_BRUSHES];
 EXTERN int csg_num_brushes;
 

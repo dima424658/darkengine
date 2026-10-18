@@ -15,8 +15,8 @@
 #include <tmapfcn.h>
 #include <dbg.h>
 
-extern void flat8_flat8_opaque_p2_wrap_il();
-extern void flat8_flat8_opaque_np2_nowrap_il();
+extern void flat8_flat8_opaque_p2_wrap_il(int, int, fix, fix);
+extern void flat8_flat8_opaque_np2_nowrap_il(int, int, fix, fix);
 
 static void tile(grs_bitmap *bm, int n, grs_vertex **vpl, g2s_tmap_info *ti)
 {

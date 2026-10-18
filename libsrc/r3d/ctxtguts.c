@@ -35,7 +35,7 @@ void _r3_guts_ctxt_alloc(r3s_context *ctxt)
    ctxt->clip.clip_flags = 0;
 
    // setup default near clip plane
-   ctxt->clip.near_plane = 0.0001;
+   ctxt->clip.near_plane = 0.0001f;
 
    // set canvas to NULL
    ctxt->cnv = NULL;

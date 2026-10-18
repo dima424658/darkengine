@@ -19,7 +19,7 @@ void cHashSet<NODE, KEY, FUNCLASS>::DestroyAll()
     if (!m_nItems)
         return;
 
-    for (register unsigned i = 0; i < m_nPts; i++)
+    for (unsigned i = 0; i < m_nPts; i++)
     {
         sHashSetChunk * pNext;
         for (sHashSetChunk * p = m_Table[i]; p; p = pNext)

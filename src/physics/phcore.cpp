@@ -242,17 +242,17 @@ static BOOL SubModOnPoly(cPhysModel * pModel, tPhysSubModId subModId, cFaceConta
          if ((pModel->GetType(subModId) == kPMT_Sphere) || (pModel->GetType(subModId) == kPMT_SphereHat))
          {
             if (pModel->IsFancyGhost() && (((cPhysSphereModel *)pModel)->GetRadius(subModId) > 1.0))
-               plane_const += 1.0;
+               plane_const += 1.0f;
             else
                plane_const += ((cPhysSphereModel *)pModel)->GetRadius(subModId);
          }
          else
-            plane_const += 0.1;
+            plane_const += 0.1f;
       }
       else
-         plane_const += 0.1;
+         plane_const += 0.1f;
 
-      if ((mx_dot_vec(&normal, submod_vec) - plane_const) > .01)
+      if ((mx_dot_vec(&normal, submod_vec) - plane_const) > .01f)
          return FALSE;
    }
 
@@ -302,7 +302,7 @@ void ConstrainFromTerrain(cPhysModel * pModel, tPhysSubModId i)
                MakeHintedLocationFromVector(&start, &pModel->GetLocation(i).vec, &pModel->GetLocation(i));
                MakeLocationFromVector(&end, &start.vec);
 
-               mx_scale_vec(&look_offset, &pFaceContact->GetNormal(), 0.1);
+               mx_scale_vec(&look_offset, &pFaceContact->GetNormal(), 0.1f);
                mx_subeq_vec(&end.vec, &look_offset);
 
                if (!PortalRaycast(&start, &end, &hit, 0))
@@ -817,7 +817,6 @@ static void UpdateObjectContacts(cPhysModel *pModel, mxs_real dt)
          mxs_vector dest_rot_arm;
          mxs_vector rot_axis;
          mxs_vector delta_pos;
-         mxs_vector rel_pos;
          mxs_vector add_velocity;
          mxs_vector net_velocity;
          mxs_angvec obj_rotation;
@@ -922,7 +921,7 @@ static void UpdateObjectContacts(cPhysModel *pModel, mxs_real dt)
                         mxs_real scale_factor;
 
                         scale_factor = pModel2->GetDynamics()->GetMass() / pModel->GetDynamics()->GetMass();
-                        mx_scaleeq_vec(&add_velocity, min(scale_factor, 1.0));
+                        mx_scaleeq_vec(&add_velocity, min(scale_factor, 1.0f));
                      }
 
                      // see if we need to contribute to velocity to reach add_velocity
@@ -1001,7 +1000,7 @@ static void UpdateObjectContacts(cPhysModel *pModel, mxs_real dt)
             mx_scaleeq_vec(&tvel2, mass2);
 
             mx_add_vec(&resvel, &tvel1, &tvel2);
-            mx_scaleeq_vec(&resvel, 0.5 / (mass1 + mass2));
+            mx_scaleeq_vec(&resvel, 0.5f / (mass1 + mass2));
 
             // Find relative position & velocity
             mx_sub_vec(&relvel, &vel1, &vel2);
@@ -1278,8 +1277,8 @@ static void UpdateRopeDynamics(cPhysModel *pModel)
       else
          mx_copy_vec(&next_sub_vel, &pModel->GetVelocity(i + 1));
 
-      mx_scale_vec(&result_vel[i], &sub_vel, 0.35);
-      mx_scale_addeq_vec(&result_vel[i], &prev_sub_vel, 0.80);
+      mx_scale_vec(&result_vel[i], &sub_vel, 0.35f);
+      mx_scale_addeq_vec(&result_vel[i], &prev_sub_vel, 0.80f);
       mx_scale_addeq_vec(&result_vel[i], &next_sub_vel, 0.25);
    }
 
@@ -1300,7 +1299,7 @@ static void UpdateRopeDynamics(cPhysModel *pModel)
             continue;
 
          mx_copy_vec(&flow, &g_aMedMoCellMotion[motion_index].center_change);
-         mxs_real scale_jitter = ((float)(Rand() % 1024) / 1024.0) + 0.5;
+         mxs_real scale_jitter = ((float)(Rand() % 1024) / 1024.0f) + 0.5f;
 
          mx_scaleeq_vec(&flow, scale_jitter);
       }
@@ -1376,7 +1375,7 @@ static void UpdateModelTransDynamics(cPhysModel *pModel, BOOL base_friction, mxs
    if (pModel->Gravity())
    {
       if (in_water)
-         pModel->SetBaseFriction(.3);
+         pModel->SetBaseFriction(.3f);
       else
          pModel->SetBaseFriction(0);
    }
@@ -1401,7 +1400,7 @@ static void UpdateModelTransDynamics(cPhysModel *pModel, BOOL base_friction, mxs
    on_conveyor = pModel->IsPlayer() && g_pPhysConveyorVelProp->Get( pModel->GetObjID(), &pConveyorVel );
    if ( on_conveyor ) {
       mxs_vector tmpVec;
-      const float t = 0.2;      // t is the time it takes the conveyor to accelerate you to full speed
+      const float t = 0.2f;      // t is the time it takes the conveyor to accelerate you to full speed
 
       // the conveyor adds in a force sufficient to accelerate player from current
       //   velocity to (conveyor velocity + control velocity) in t seconds
@@ -1437,7 +1436,7 @@ static void UpdateModelTransDynamics(cPhysModel *pModel, BOOL base_friction, mxs
          config_get_float("FlowConstant", &flow_const);
       else
 #endif
-         flow_const = 0.8;
+         flow_const = 0.8f;
 
       // Current flow
       PhysObjGetFlow(pModel->GetObjID(), &flow);
@@ -1447,7 +1446,7 @@ static void UpdateModelTransDynamics(cPhysModel *pModel, BOOL base_friction, mxs
          if (flow.el[j] < 0)
          {
             if ((flow.el[j] * flow_const) < velocity.el[j])
-               sum_forces.el[j] += flow.el[j] * pDynamics->GetMass() * 2 * ((j==2)?4.0:1.0);
+               sum_forces.el[j] += flow.el[j] * pDynamics->GetMass() * 2 * ((j==2)?4.0f:1.0f);
          }
          else
          if (flow.el[j] > 0)
@@ -1474,10 +1473,10 @@ static void UpdateModelTransDynamics(cPhysModel *pModel, BOOL base_friction, mxs
          if (on_platform && (ideal_velocity.z < 0))
             friction.z = 0;
          else
-            friction.z *= 1.4;
+            friction.z *= 1.4f;
 
          if (in_water && !pModel->IsPlayer())
-            mx_scaleeq_vec(&friction, 0.2);
+            mx_scaleeq_vec(&friction, 0.2f);
 
          if (base_friction)
          {
@@ -1625,7 +1624,7 @@ static void AdjustForRestAxes(cPhysModel *pModel, mxs_vector *rot_vel, mxs_vecto
             mprintf("  axis %d with %g\n", i, axis_val);
          #endif
 
-         if ((axis_val > max_axis_val) || (best_axis_index == -1))
+         if ((best_axis_index == -1) || (axis_val > max_axis_val))
          {
             max_axis_val = axis_val;
             mx_copy_vec(&best_axis, &axis);
@@ -1710,7 +1709,7 @@ static void AdjustForRestAxes(cPhysModel *pModel, mxs_vector *rot_vel, mxs_vecto
       }
       #endif
 
-      mx_scaleeq_vec(rot_vel, .3);
+      mx_scaleeq_vec(rot_vel, .3f);
 
       pModel->SetRest(TRUE);
       return;
@@ -2362,7 +2361,8 @@ static void CheckModelTerrainCollisions(cPhysModel * pModel, mxs_real t0, mxs_re
    int i;
    cPhysClsn *pClsn;
 
-   if (pModel->IsRemote() || pModel->IsSleeping() || !pModel->IsTranslating())
+   if ((!g_PhysicsOn && pModel->IsPlayer()) ||
+       pModel->IsRemote() || pModel->IsSleeping() || !pModel->IsTranslating())
       return;
    for (i = 0; i < pModel->NumSubModels(); i++)
    {
@@ -2750,7 +2750,7 @@ static BOOL CheckSphereVsBSP(sClsnCheckParms * /*pParms*/, cPhysClsn **ppClsn)
 ///////////////////////////////////////
 
 
-#define kSphereVsOBBEpsilon .001
+#define kSphereVsOBBEpsilon .001f
 
 static BOOL CheckSphereVsOBB(sClsnCheckParms *pParms, cPhysClsn **ppClsn)
 {
@@ -2832,7 +2832,7 @@ static BOOL CheckSphereVsOBB(sClsnCheckParms *pParms, cPhysClsn **ppClsn)
 
    mxs_real   best_start, best_end;
 
-   mxs_real   inside_epsilon = pOBBModel->IsEdgeTrigger() ? 0.01 : 0.0;
+   mxs_real   inside_epsilon = pOBBModel->IsEdgeTrigger() ? 0.01f : 0.0f;
 
    for (i = 0; i < 6; ++i)
    {
@@ -3369,7 +3369,7 @@ void CheckModelObjectCollisions(cPhysModel * pModel, mxs_real t0, mxs_real dt, B
    static cHashTable<ObjID, BOOL, cHashTableFunctions<ObjID> > objectsSeen;
    static cDynArray<cPhysModel *> potentialModels;
 
-   if (pModel->ObjectPassThru())
+   if ((!g_PhysicsOn && pModel->IsPlayer()) || pModel->ObjectPassThru())
       return;
 
    if (pModel->IsCreature() && CreatureSelfPropelled(pModel->GetObjID()) && (subModId < 0))
@@ -3454,6 +3454,11 @@ void CheckModelObjectCollisions(cPhysModel * pModel, mxs_real t0, mxs_real dt, B
             // Does it even have physics?
             if ((pCurModel = g_PhysModels.GetActive(objID)) != NULL)
             {
+               // When player physics is disabled, exclude the player from
+               // checks initiated by other moving objects as well.
+               if (!g_PhysicsOn && pCurModel->IsPlayer())
+                  goto next_coll_obj;
+
                // Has this object already done its collision checking this frame?
                if (!pCurModel->ObjectPassThru())
                {
@@ -3889,7 +3894,7 @@ next_coll_obj:
             mx_sub_vec(&move_vec, &pContact->point_on_ray, &pModel->GetLocationVec(i));
 
             move_len = mx_norm_vec(&move_backup, &move_vec);
-            mx_scaleeq_vec(&move_backup, -(min(0.01, move_len)));
+            mx_scaleeq_vec(&move_backup, -(min(0.01f, move_len)));
 
             mx_addeq_vec(&move_vec, &move_backup);
 
@@ -4035,11 +4040,11 @@ next_coll_obj:
          // Do a little pushout, proportional to the dot product if necessary
          mxs_real dot = mx_dot_vec(&clsnList[clsnIndex].submod_movement, &normal);
          if (dot < 0.0)
-            mx_scale_addeq_vec(&movement_delta, &normal, 0.02);
+            mx_scale_addeq_vec(&movement_delta, &normal, 0.02f);
          else
-            mx_scale_addeq_vec(&movement_delta, &normal, min(0.04, fabs(dot)));
+            mx_scale_addeq_vec(&movement_delta, &normal, min(0.04f, fabsf(dot)));
 
-         mx_scale_addeq_vec(&movement_delta, &constraint_vec, 1.03);
+         mx_scale_addeq_vec(&movement_delta, &constraint_vec, 1.03f);
 
          for (i=0; i<clsnList.Size(); i++)
             delete clsnList[i].pClsn;
@@ -4091,7 +4096,7 @@ next_coll_obj:
 
          if (move_len > 0.0)
          {
-            mx_scaleeq_vec(&move_backup, -(min(0.01, move_len)));
+            mx_scaleeq_vec(&move_backup, -(min(0.01f, move_len)));
             mx_addeq_vec(&move_vec, &move_backup);
 
             mx_add_vec(&submod_loc, &pModel->GetLocationVec(i), &move_vec);
@@ -4274,7 +4279,7 @@ static void BounceObjectTorque(cPhysDynData * pDynamics, const mxs_vector & norm
    PhysRemNormComp(&velocity, normal);
 
    // And scale it backward proportional to the length of the moment arm
-   mx_scaleeq_vec(&velocity, -moment_arm_len * 3.1415 / 20);
+   mx_scaleeq_vec(&velocity, -moment_arm_len * 3.1415f / 20);
 
    // Scale based on mass
    if (pDynamics->GetMass() > 50)
@@ -4957,8 +4962,8 @@ void BounceSphereOBB(cPhysSphereModel *pSphereModel, tPhysSubModId subModId, cPh
    mx_scale_vec(&temp2, &vel2, (mass2 - mass1) / (mass1 + mass2));
    mx_add_vec(&acc2, &temp1, &temp2);
 
-   mx_scaleeq_vec(&acc1, 0.02);
-   mx_scaleeq_vec(&acc2, 0.02);
+   mx_scaleeq_vec(&acc1, 0.02f);
+   mx_scaleeq_vec(&acc2, 0.02f);
 
    // Replace each object's velocity component along the normal with
    // the new vector.  Note that we're not adding the bounce vector -
@@ -5007,7 +5012,7 @@ inline static void Integrate(cPhysModel *pModel, mxs_real t)
 
    mxs_vector new_pos;
    mxs_real modelTime = pModel->GetDynamics()->GetCurrentTime();
-   static mxs_real kPartialBackupAmt = .9;   // nasty hack to try to avoid epsilon issues
+   static mxs_real kPartialBackupAmt = .9f;   // nasty hack to try to avoid epsilon issues
 
    if (t == modelTime)
       return;
@@ -5146,9 +5151,9 @@ inline void IntegrateToCollision(cPhysModel * pModel, tPhysSubModId subModId,
             movement.y = ((double)loc.y - (double)pModel->GetLocationVec(i).y) * integration_backup;
             movement.z = ((double)loc.z - (double)pModel->GetLocationVec(i).z) * integration_backup;
 
-            new_pos.x = (double)pModel->GetLocationVec(i).x + movement.x;
-            new_pos.y = (double)pModel->GetLocationVec(i).y + movement.y;
-            new_pos.z = (double)pModel->GetLocationVec(i).z + movement.z;
+            new_pos.x = (mxs_real)((double)pModel->GetLocationVec(i).x + movement.x);
+            new_pos.y = (mxs_real)((double)pModel->GetLocationVec(i).y + movement.y);
+            new_pos.z = (mxs_real)((double)pModel->GetLocationVec(i).z + movement.z);
          }
          else
          {
@@ -5281,11 +5286,11 @@ static BOOL CheckStep(cPhysClsn * pClsn, ObjID coll_OBB)
    tPhysSubModId  subModId;
 
    mxs_vector     step_offset;
-   mxs_real       step_up = 0.02;
+   mxs_real       step_up = 0.02f;
 
    mx_mk_vec(&step_offset, 0, 0, 2);
 
-   const mxs_real kMinZDelta = 0.3;
+   const mxs_real kMinZDelta = 0.3f;
 
    mxs_vector movement_dir;
    Location start_loc, end_loc, hit_loc;
@@ -5368,7 +5373,7 @@ static BOOL CheckStep(cPhysClsn * pClsn, ObjID coll_OBB)
 
    MakeHintedLocationFromVector(&start_loc, &end_loc.vec, &start_loc);
 
-   mx_scaleeq_vec(&movement_dir, 0.01);
+   mx_scaleeq_vec(&movement_dir, 0.01f);
    mx_addeq_vec(&end_loc.vec, &movement_dir);
 
    // Cast forward
@@ -5395,9 +5400,24 @@ static BOOL CheckStep(cPhysClsn * pClsn, ObjID coll_OBB)
       return FALSE;
    }
 
+   // PortalRaycast does not update the Location passed to it, but it does
+   // report the cell containing the end of a successful cast.  Carry that
+   // cell into the downward probe.  This matters at thin step portals: the
+   // forward probe can cross into the landing cell while start_loc still
+   // carries the lower cell as its hint, causing the down cast to miss the
+   // tread and reject an otherwise valid step.
+   const int landing_cell = (coll_OBB == OBJ_NULL) ? PortalRaycastCell :
+                                                    CELL_INVALID;
+
    MakeHintedLocationFromVector(&start_loc, &end_loc.vec, &start_loc);
+   if (landing_cell != CELL_INVALID)
+   {
+      start_loc.cell = landing_cell;
+      start_loc.hint = landing_cell;
+   }
    mx_subeq_vec(&end_loc.vec, &step_offset);
    mx_subeq_vec(&end_loc.vec, &step_offset);
+   SetHintFromLocation(&end_loc, &start_loc);
 
    // Cast downward
    #ifndef SHIP
@@ -5461,6 +5481,16 @@ static BOOL CheckStep(cPhysClsn * pClsn, ObjID coll_OBB)
       for (i=0; i<pModel->NumSubModels(); i++)
       {
          if (pModel->GetType(i) != kPMT_Sphere)
+            continue;
+
+         // Spring-controlled submodels (notably the player's head) retain
+         // their current endpoint during a step.  A zero-length spherecast
+         // can rediscover a nearby static contact and falsely reject the
+         // step even though this submodel has not moved.
+         mxs_vector submod_movement;
+         mx_sub_vec(&submod_movement, &pModel->GetEndLocationVec(i),
+                    &pModel->GetLocationVec(i));
+         if (mx_mag2_vec(&submod_movement) < 0.000001f)
             continue;
 
          if (((cPhysSphereModel *)pModel)->CheckTerrainCollision(i, 0, 1, &pDummyClsn))
@@ -5833,7 +5863,7 @@ ePhysClsnResult DetermineCollisionResult(cPhysClsn * pClsn)
       mxs_vector normal = pClsn->GetNormal();
 
       dot = mx_dot_vec(&pClsn->GetModel()->GetVelocity(pClsn->GetSubModId()), &normal);
-      dot = 0.5 * pClsn->GetModel()->GetDynamics()->GetMass() * dot * dot;
+      dot = 0.5f * pClsn->GetModel()->GetDynamics()->GetMass() * dot * dot;
 
       g_CollisionObj1 = pClsn->GetObjID();
       g_CollisionSubmod1 = pClsn->GetSubModId();
@@ -5857,7 +5887,7 @@ ePhysClsnResult DetermineCollisionResult(cPhysClsn * pClsn)
       PosPropLock = FALSE;
 
       AUTO_TIMER(PHYS_CollideEvent);
-      flags = CollideEvent(pClsn->GetObjID(), texture, bits, fabs(dot), pClsn);
+      flags = CollideEvent(pClsn->GetObjID(), texture, bits, fabsf(dot), pClsn);
    }
    else
    {
@@ -5877,10 +5907,10 @@ ePhysClsnResult DetermineCollisionResult(cPhysClsn * pClsn)
       }
 
       dot = max(0, -mx_dot_vec(&pClsn->GetModel()->GetVelocity(), &normal));
-      kinetic_energy += 0.5 * pClsn->GetModel()->GetDynamics()->GetMass() * dot * dot;
+      kinetic_energy += 0.5f * pClsn->GetModel()->GetDynamics()->GetMass() * dot * dot;
 
       dot = max(0, mx_dot_vec(&pClsn->GetModel2()->GetVelocity(), &normal));
-      kinetic_energy += 0.5 * pClsn->GetModel2()->GetDynamics()->GetMass() * dot * dot;
+      kinetic_energy += 0.5f * pClsn->GetModel2()->GetDynamics()->GetMass() * dot * dot;
 
       if (pClsn->GetModel()->IsAttached() || pClsn->GetModel2()->IsAttached())
          kinetic_energy = 0.0;
@@ -6085,7 +6115,7 @@ static void ResolveCollision(cPhysClsn * pClsn, mxs_real dt)
         (pClsn->GetModel2()->GetType(0) == kPMT_OBB) && ((cPhysOBBModel *)pClsn->GetModel2())->IsEdgeTrigger()))
       integration_backup = 1.0;
    else
-      integration_backup = .9;
+      integration_backup = .9f;
 
    IntegrateToCollision(pModel,
       pClsn->GetSubModId(),
@@ -6444,7 +6474,7 @@ static void UpdatePositions()
 
          if ((move_len > 0.0) && !pModel->IsDoor() && !pModel->IsGhost())
          {
-            mx_scaleeq_vec(&move_backup, -(min(0.01, move_len)));
+            mx_scaleeq_vec(&move_backup, -(min(0.01f, move_len)));
             mx_addeq_vec(&move_vec, &move_backup);
 
             mx_add_vec(&end_vec, &pModel->GetLocationVec(), &move_vec);
@@ -6519,7 +6549,7 @@ static void ValidatePositions()
    cPhysModel *pModel;
 
    // The player
-   if (PlayerObjectExists())
+   if (g_PhysicsOn && PlayerObjectExists())
    {
       pModel = g_PhysModels.Get(PlayerObject());
 
@@ -6549,7 +6579,7 @@ static void ValidatePositions()
             mxs_matrix ident;
             mx_identity_mat(&ident);
 
-            for (dist = 0.2; dist < 1.01; dist += 0.2)
+            for (dist = 0.2f; dist < 1.01f; dist += 0.2f)
             {
                for (x=0; x<2; x++)
                {
@@ -6612,6 +6642,16 @@ static void ValidatePositions()
          if (!pModel)
             continue;
 
+         // Gold can attach creature handles to objects whose physics model is
+         // not sphere-backed.  ValidatePositions historically assumed every
+         // creature used cPhysSphereModel and read its radius array through an
+         // invalid downcast.
+         const ePhysModelType modelType = pModel->GetType(0);
+         if ((modelType != kPMT_Sphere) &&
+             (modelType != kPMT_SphereHat) &&
+             (modelType != kPMT_Point))
+            continue;
+
          for (int j=0; j<pModel->NumSubModels(); j++)
          {
             const Location *pLoc = &pModel->GetLocation(j);
@@ -6638,7 +6678,7 @@ static void ValidatePositions()
                float dist;
                int x, y, z;
 
-               for (dist = 0.2; dist < 1.01; dist += 0.2)
+               for (dist = 0.2f; dist < 1.01f; dist += 0.2f)
                {
                   for (x=0; x<2; x++)
                   {

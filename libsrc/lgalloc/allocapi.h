@@ -18,21 +18,30 @@
 
 // If the source file didn't include objidl.h, we need to declare
 // base allocator interfaces here
-#ifndef __objidl_h__
+#if !defined(__IMalloc_INTERFACE_DEFINED__) || !defined(__IMallocSpy_INTERFACE_DEFINED__)
 #define DEFINE_BASE_ALLOC_INTERFACES
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifdef DEFINE_BASE_ALLOC_INTERFACES
+#ifndef __IMalloc_FWD_DEFINED__
+#define __IMalloc_FWD_DEFINED__
 struct IMalloc;
 typedef struct IMalloc IMalloc;
 EXTERN_C const GUID CDECL FAR IID_IMalloc;
+#endif
 
+#ifndef __IMallocSpy_FWD_DEFINED__
+#define __IMallocSpy_FWD_DEFINED__
 struct IMallocSpy;
 typedef struct IMallocSpy IMallocSpy;
 EXTERN_C const GUID CDECL FAR IID_IMallocSpy;
 #endif
+#endif
+
+typedef IMalloc *LPMALLOC;
+typedef IMallocSpy *LPMALLOCSPY;
 
 struct IDebugMalloc;
 typedef struct IDebugMalloc IDebugMalloc;
@@ -57,12 +66,12 @@ EXTERN IAllocator * g_pMalloc;
 
 struct sAllocLimits
 {
-    ulong totalAlloc;
-    ulong allocCap;
-    ulong initAllocCap;
+    size_t totalAlloc;
+    size_t allocCap;
+    size_t initAllocCap;
 
 #ifndef SHIP
-    ulong peakAlloc;
+    size_t peakAlloc;
 #endif
 };
 
@@ -70,11 +79,11 @@ typedef struct sAllocLimits sAllocLimits;
 
 ///////////////////////////////////////
 
-typedef ulong (LGAPI * tAllocatorPageFunc)(ulong needed, sAllocLimits * pLimits);
+typedef size_t (LGAPI * tAllocatorPageFunc)(size_t needed, sAllocLimits * pLimits);
 
 EXTERN BOOL LGAPI  AllocSetPageFunc(tAllocatorPageFunc);
 EXTERN void LGAPI  AllocGetLimits(sAllocLimits *);
-EXTERN ulong LGAPI AllocSetAllocCap(ulong);
+EXTERN size_t LGAPI AllocSetAllocCap(size_t);
 EXTERN ulong LGAPI AllocPickAllocCap();
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,6 +92,8 @@ EXTERN ulong LGAPI AllocPickAllocCap();
 //
 
 #ifdef DEFINE_BASE_ALLOC_INTERFACES
+#ifndef __IMalloc_INTERFACE_DEFINED__
+#define __IMalloc_INTERFACE_DEFINED__
 #undef INTERFACE
 #define INTERFACE IMalloc
 
@@ -95,14 +106,17 @@ DECLARE_INTERFACE_(IMalloc, IUnknown)
     STDMETHOD_(ULONG,AddRef)  (THIS)  PURE;
     STDMETHOD_(ULONG,Release) (THIS) PURE;
 
-    STDMETHOD_(void *, Alloc)   (THIS_ ULONG cb) PURE;
-    STDMETHOD_(void *, Realloc) (THIS_ void * pv, ULONG cb) PURE;
+    STDMETHOD_(void *, Alloc)   (THIS_ SIZE_T cb) PURE;
+    STDMETHOD_(void *, Realloc) (THIS_ void * pv, SIZE_T cb) PURE;
     STDMETHOD_(void,   Free)    (THIS_ void * pv) PURE;
-    STDMETHOD_(ULONG,  GetSize) (THIS_ void * pv) PURE;
+    STDMETHOD_(SIZE_T, GetSize) (THIS_ void * pv) PURE;
     STDMETHOD_(int,    DidAlloc)(THIS_ void * pv) PURE;
     STDMETHOD_(void,   HeapMinimize)(THIS) PURE;
 };
+#endif
 
+#ifndef __IMallocSpy_INTERFACE_DEFINED__
+#define __IMallocSpy_INTERFACE_DEFINED__
 #undef INTERFACE
 #define INTERFACE IMallocSpy
 
@@ -112,20 +126,21 @@ DECLARE_INTERFACE_(IMallocSpy, IUnknown)
     STDMETHOD_(ULONG,AddRef)  (THIS)  PURE;
     STDMETHOD_(ULONG,Release) (THIS) PURE;
 
-    STDMETHOD_(ULONG,  PreAlloc)        (ULONG cbRequest) PURE;
+    STDMETHOD_(SIZE_T, PreAlloc)        (SIZE_T cbRequest) PURE;
     STDMETHOD_(void *, PostAlloc)       (void * Actual) PURE;
     STDMETHOD_(void *, PreFree)         (void * Request, BOOL fSpyed) PURE;
     STDMETHOD_(void,   PostFree)        (BOOL fSpyed) PURE;
-    STDMETHOD_(ULONG,  PreRealloc)      (void * Request, ULONG cbRequest,void ** pNewRequest, BOOL fSpyed) PURE;
+    STDMETHOD_(SIZE_T, PreRealloc)      (void * Request, SIZE_T cbRequest,void ** pNewRequest, BOOL fSpyed) PURE;
     STDMETHOD_(void *, PostRealloc)     (void * Actual, BOOL fSpyed) PURE;
     STDMETHOD_(void *, PreGetSize)      (void * Request, BOOL fSpyed) PURE;
-    STDMETHOD_(ULONG,  PostGetSize)     (ULONG cbActual, BOOL fSpyed) PURE;
+    STDMETHOD_(SIZE_T, PostGetSize)     (SIZE_T cbActual, BOOL fSpyed) PURE;
     STDMETHOD_(void *, PreDidAlloc)     (void * Request, BOOL fSpyed) PURE;
     STDMETHOD_(int,    PostDidAlloc)    (void * Request, BOOL fSpyed, int fActual) PURE;
     STDMETHOD_(void,   PreHeapMinimize) (void) PURE;
     STDMETHOD_(void,   PostHeapMinimize)(void) PURE;
 
 };
+#endif
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,18 +164,18 @@ DECLARE_INTERFACE_(IDebugMalloc, IMalloc)
     //
     // IMalloc methods
     //
-    STDMETHOD_(void *, Alloc)   (THIS_ ULONG cb) PURE;
-    STDMETHOD_(void *, Realloc) (THIS_ void * pv, ULONG cb) PURE;
+    STDMETHOD_(void *, Alloc)   (THIS_ SIZE_T cb) PURE;
+    STDMETHOD_(void *, Realloc) (THIS_ void * pv, SIZE_T cb) PURE;
     STDMETHOD_(void,   Free)    (THIS_ void * pv) PURE;
-    STDMETHOD_(ULONG,  GetSize) (THIS_ void * pv) PURE;
+    STDMETHOD_(SIZE_T, GetSize) (THIS_ void * pv) PURE;
     STDMETHOD_(int,    DidAlloc)(THIS_ void * pv) PURE;
     STDMETHOD_(void,   HeapMinimize)(THIS) PURE;
 
     //
     // Debugging allocation functions
     //
-    STDMETHOD_(void *, AllocEx)  (THIS_ ULONG cb, const char * pszFile, int line) PURE;
-    STDMETHOD_(void *, ReallocEx)(THIS_ void * pv, ULONG cb, const char * pszFile, int line) PURE;
+    STDMETHOD_(void *, AllocEx)  (THIS_ SIZE_T cb, const char * pszFile, int line) PURE;
+    STDMETHOD_(void *, ReallocEx)(THIS_ void * pv, SIZE_T cb, const char * pszFile, int line) PURE;
     STDMETHOD_(void,   FreeEx)   (THIS_ void * pv, const char * pszFile, int line) PURE;
 
     STDMETHOD (VerifyAlloc)(THIS_ void * pv) PURE;

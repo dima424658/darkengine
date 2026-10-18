@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <algorithm>
 
 #include <lg.h>
 #include <lgassert.h>
@@ -65,8 +66,6 @@
 
 #include <dbmem.h>
 #include <vhot.h>
-
-#define min(x,y) ((x) < (y) ? (x) : (y))
 
 static IObjectSystem *cur_osys=NULL;
 static IDamageModel  *cur_dmgmodel=NULL;
@@ -225,7 +224,7 @@ static BOOL end_condition(int cfg_flg, int state_flg)
 // FALSE means it exceeded limits and was killed off
 BOOL processTweqAxis(float *val, sTweqBaseConfig *cfg, sTweqBaseState *state, mxs_vector *limits, int ms)
 {
-   float eff_rate=limits->el[TWEQ_LIMIT_RATE], new_val=*val, step=ms/100.0;;
+   float eff_rate=limits->el[TWEQ_LIMIT_RATE], new_val=*val, step=ms/100.0f;;
    AssertMsg(TweqLimitValid(limits),"Calling processTweqAxis with invalid limit\n");
    // first, lets update the val
    if (state->flg_anim&TWEQ_AS_REVERSE)
@@ -234,9 +233,9 @@ BOOL processTweqAxis(float *val, sTweqBaseConfig *cfg, sTweqBaseState *state, mx
    {
       if (cfg->flg_curve&TWEQ_CC_JITTER)
       {
-         float delta=0.05+fabs(1-eff_rate);  // add 0.05 to make sure we get some jitter
-         float fac=cfg->flg_curve&TWEQ_CC_JITTER;        // fac is now 1-3
-         delta=1.0+(delta*fac*frand_hack()/2.0);
+         float delta=0.05f+fabsf(1-eff_rate);  // add 0.05 to make sure we get some jitter
+   float fac=(float)(cfg->flg_curve&TWEQ_CC_JITTER);        // fac is now 1-3
+         delta=1.0f+(delta*fac*frand_hack()/2.0f);
          eff_rate*=delta;
       }
       new_val*=eff_rate;
@@ -246,8 +245,8 @@ BOOL processTweqAxis(float *val, sTweqBaseConfig *cfg, sTweqBaseState *state, mx
       new_val+=eff_rate*step;
       if (cfg->flg_curve&TWEQ_CC_JITTER)      
       {
-         float fac=cfg->flg_curve&TWEQ_CC_JITTER;  // fac is now 1-3
-         new_val+=(eff_rate*frand_hack()*fac*step/2.0);
+   float fac=(float)(cfg->flg_curve&TWEQ_CC_JITTER);  // fac is now 1-3
+         new_val+=(eff_rate*frand_hack()*fac*step/2.0f);
       }
    }
    if ((cfg->flg_anim&TWEQ_AC_NOLIMIT)==0)
@@ -306,7 +305,7 @@ static int processTweqVector(mxs_vector *vec, sTweqVectorState *vec_state, sTweq
 ////////////
 // rotate
 
-#define fixang_to_float_degrees(ang) ((float)ang*360.0/65536.0)
+#define fixang_to_float_degrees(ang) ((float)ang*360.0f/65536.0f)
 #define float_degrees_to_fixang(d)   ((fixang)(d*(65536.0/360.0)))
 
 int processTweqRotate(ObjID obj, void *state, int ms)
@@ -443,7 +442,7 @@ int processTweqJoints(ObjID obj, void *state, int ms)
       }
       if (jnt_cfg->primary_joint)  // copy global state bits to primary joint specific
          jnt_state->jnt_flgs[jnt_cfg->primary_joint-1]=jnt_state->state;
-      for (i=0; i<min(param_count,MAX_TWEQ_JOINTS); i++)
+      for (i=0; i<std::min(param_count,MAX_TWEQ_JOINTS); i++)
       {
          mxs_vector *limits=&jnt_cfg->jnt_data[i].limits;
          sTweqBaseConfig *jnt_x_cfg=&jnt_cfg->jnt_data[i].flags;
@@ -581,7 +580,7 @@ void SetAllLockJoints()
 		//Most of this is copied from AnimSetTarget.
 
 		int use_joint=lock_cfg->lock_joint;
-		int where =  (ObjSelfLocked(targ)?0.0:1.0); //standard lock setting.0 locked 1 unlocked.
+   int where = ObjSelfLocked(targ) ? 0 : 1; // standard lock setting: 0 locked, 1 unlocked
         if (use_joint!=0) use_joint--; //array offsetting?
         float *parms=ObjJointPos(targ);     
 		float targ_ang = (where ? lock_cfg->jnt_data.limits.el[2] : lock_cfg->jnt_data.limits.el[1]);
@@ -655,8 +654,6 @@ static void chooseRandomFrame(sTweqSimpleState *twq_state, sTweqModelsConfig *md
 
 static void addTime(ushort *overflow, int ms, sTweqBaseConfig *twq_cfg)
 {
-   if (twq_cfg->flg_curve&TWEQ_CC_JITTER)   // play with ms here...
-      ;
    *overflow+=ms;
 }
 
@@ -777,7 +774,7 @@ int processTweqEmitter(ObjID obj, void* state, int ms)
          }
          else if (emit_cfg->cfg.flg_curve&TWEQ_CC_JITTER)
          {  // this is just not the best way...
-            float fac=(emit_cfg->cfg.flg_curve&TWEQ_CC_JITTER)/3.0, mag;   // should use angular displacements!!! yes!!!
+            float fac=(emit_cfg->cfg.flg_curve&TWEQ_CC_JITTER)/3.0f, mag;   // should use angular displacements!!! yes!!!
             mxs_vector ran;  // in msvc, you could do this in declaration
             int i;
             
@@ -793,7 +790,7 @@ int processTweqEmitter(ObjID obj, void* state, int ms)
             mxs_matrix rotMat;
             
             for (int i=0; i<3; i++)
-               fac.el[i] = ushort((float(2*Rand())/32767.0)*emit_cfg->rand.el[i])-emit_cfg->rand.el[i];
+      fac.el[i] = (mxs_ang)(ushort((float(2*Rand())/32767.0f)*emit_cfg->rand.el[i])-emit_cfg->rand.el[i]);
             mx_ang2mat(&rotMat, &fac);   
             mx_mat_mul_vec(&temp, &rotMat, &launchVec);
             mx_copy_vec(&launchVec, &temp);

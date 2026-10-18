@@ -55,7 +55,6 @@ public:
 	char* GetControlFromCmdNext(char* pszCtrlBuf);
 	const char* SaveBnd(const char* filename, char* header);
 	void PollAllKeys();
-
 	const char* DecomposeControl(const char* control_str, char(*controls)[32], long* num_controls);
 	void StripControl(char* dest, const char* src);
 	void RecomposeControl(char* control_str, char(*controls)[32], int num_controls);

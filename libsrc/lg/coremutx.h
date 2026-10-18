@@ -15,39 +15,27 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
 extern void CoreMutexInit(void);
 extern void CoreMutexTerm(void);
 extern void CoreThreadLock(void);
 extern void CoreThreadUnlock(void);
-#define CORE_LOCK() cCoreLock __coreLock;
-
-#if defined(__cplusplus)
-class cCoreLock
-{
- public:
-   cCoreLock()
-   {
-      CoreThreadLock();
-   }
-
-   ~cCoreLock()
-   {
-      CoreThreadUnlock();
-   }
-};
-#endif
-
-#else
-
-#define CoreThreadLock()
-#define CoreThreadUnlock()
-#define CORE_LOCK()
-
-#endif
 
 #ifdef __cplusplus
 }
+
+class cCoreLock
+{
+public:
+   cCoreLock() { CoreThreadLock(); }
+   ~cCoreLock() { CoreThreadUnlock(); }
+
+   cCoreLock(const cCoreLock &) = delete;
+   cCoreLock &operator=(const cCoreLock &) = delete;
+};
+
+#define CORE_LOCK() cCoreLock __coreLock;
+#else
+#define CORE_LOCK()
 #endif
 
 #endif /* !__COREMUTX_H */

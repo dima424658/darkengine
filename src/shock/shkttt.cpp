@@ -93,7 +93,6 @@ static void tictactoe_drawwin(ttt_state* st, Point offset);
 //   static evaluator, move generator
 // ----------------------
 
-#pragma disable_message(202)
 int winnerval(uchar owner)
 {
    if(owner==X) return INT_MAX;
@@ -282,7 +281,6 @@ bool tictactoe_generator(void* pos, int index, bool minimizer_moves)
    }
    return FALSE;
 }
-#pragma enable_message(202)
 
 void TicTacToeMouse(Point pt)
 {

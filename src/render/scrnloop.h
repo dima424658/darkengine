@@ -25,6 +25,7 @@ typedef struct _ScrnManContext
       struct sScrnMode *max_mode;  // maximum mode parameters 
    } mode_params; 
    const char* pal_res;  // palette resource name 
+   BOOL preserve_screen; // leave the active renderer intact for nested modes
 } ScrnManContext; 
 
 

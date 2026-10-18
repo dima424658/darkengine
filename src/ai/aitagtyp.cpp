@@ -24,8 +24,6 @@
 #elif defined (__SC__) || defined (_MSC_VER)
     #define snprintf    _snprintf
     #define vsnprintf   _vsnprintf
-#else
-#error ("Need size-limited printf functions");
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////

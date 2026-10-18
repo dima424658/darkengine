@@ -216,7 +216,7 @@ BOOL PhysSolveLnPtDist(const mxs_vector * p1, const mxs_vector * v1,
       return FALSE;
 
    // Find length of projection of radius (from p2) onto v1 using pythagorean theorum
-   rad_proj = sqrt(rad2 - v23_mag2);
+   rad_proj = sqrtf(rad2 - v23_mag2);
    
    v1_mag = mx_mag_vec(&v1_true);
 

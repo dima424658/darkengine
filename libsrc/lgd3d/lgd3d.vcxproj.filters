@@ -24,22 +24,13 @@
     <ClInclude Include="tmgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="d3dmacs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="d3dpoint.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="d3dtest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lgd3d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lgSS2P.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="setup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -56,9 +47,6 @@
     <ClCompile Include="clip.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="comshell.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="enum.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -69,9 +57,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lgd3d.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="d6sts_s.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -160,6 +160,10 @@ enum eGrModeFlags
     // DynamicProperties
     kGrModeIsWindowed   = 0x0100,
     kGrModeIsDirect     = 0x0200,
+    // Full-display presentation through the desktop compositor.  This is
+    // visually fullscreen, but must not use the legacy exclusive-mode focus
+    // and message-pump rules.
+    kGrModeIsBorderless = 0x0400,
     
     kGrModeNotSet       = 0x80000000
 };

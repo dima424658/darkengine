@@ -105,7 +105,7 @@ uchar ObjFrobResultForLoc(eFrobLoc loc, ObjID obj)
 {
    sFrobInfo *s=ObjFrobResult(obj);
    if (s!=NULL)
-      return s->actions[loc];
+      return (uchar)s->actions[loc];
    return 0;
 }
 

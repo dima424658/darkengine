@@ -111,7 +111,7 @@ void print_info(int vol)
 
 bool spotlight=FALSE;
 
-#define SF   (scale_factor * 0.125)
+#define SF   (scale_factor * 0.125f)
 
 static float editor_3d_speed_fac = 1.0;
 
@@ -123,7 +123,7 @@ void slew(int x)
    temp.y = 0;
    temp.z = 0;
 
-   ((mxs_real *) &temp) [ x % 3 ] = 3.0 * 0.0625 * editor_3d_speed_fac * scale_factor * (x >= 3 ? -1 : 1);
+   ((mxs_real *) &temp) [ x % 3 ] = 3.0f * 0.0625f * editor_3d_speed_fac * scale_factor * (x >= 3 ? -1 : 1);
    vm_cur_slew(&temp);
 }
 
@@ -135,7 +135,7 @@ void rot(int x)
    temp.ty = 0;
    temp.tz = 0;
 
-   ((mxs_ang *) &temp) [ x % 3 ] = 3.0 * 0x0100 * editor_3d_speed_fac * scale_factor * (x >= 3 ? -1 : 1);
+      ((mxs_ang *) &temp) [ x % 3 ] = (mxs_ang)(3.0f * 0x0100 * editor_3d_speed_fac * scale_factor * (x >= 3 ? -1 : 1));
    vm_cur_rotate(&temp);
 }
 
@@ -681,7 +681,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
 extern sLoopClientDesc EditGeomBaseClientDesc;
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -692,16 +691,15 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
 
    return CreateSimpleLoopClient(_LoopFunc,state,desc);
 }
-#pragma on(unreferenced)
 
-#define BASE_MSGS (kMsgDatabase|kMsgVisual|kMsgEnd|kMsgAppInit|kMsgAppTerm)
+#define BASE_MSGS ((ulong)kMsgDatabase|kMsgVisual|kMsgEnd|kMsgAppInit|kMsgAppTerm)
 
 sLoopClientDesc EditGeomClientDesc =
 {
    &LOOPID_EditGeom,
    "EditGeom Client",
    kPriorityNormal,
-   kMsgsMode|kMsgsFrame|BASE_MSGS,
+   (ulong)kMsgsMode|kMsgsFrame|BASE_MSGS,
 
    kLCF_Callback,
    _CreateClient,

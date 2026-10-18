@@ -1,5 +1,5 @@
 #include <fcntl.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <barrykey.h>
 #include <tngbarry.h>
@@ -225,7 +225,7 @@ errtype tng_buttonarray_draw_button(TNG *ptng, int i, int j)
    switch(el.type)
    {
       case COLORED_TYPE:
-         gr_set_fcolor(((int)(el.disp_data)));
+         gr_set_fcolor((int)(intptr_t)el.disp_data);
          gr_rect(brect.ul.x,brect.ul.y,brect.lr.x,brect.lr.y);
          break;
       case TEXT_TYPE:

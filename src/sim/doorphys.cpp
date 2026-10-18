@@ -719,7 +719,7 @@ void UpdateDoorBrush(int o_id)
    {
       case ROTATING_DOOR:
       {
-         pDoorProp->base = ObjPosGet(o_id)->fac.el[pDoorProp->axis] * 180.0 / MX_ANG_PI;
+         pDoorProp->base = ObjPosGet(o_id)->fac.el[pDoorProp->axis] * 180.0f / MX_ANG_PI;
          break;
       }
       case TRANSLATING_DOOR:
@@ -824,12 +824,12 @@ void UpdateDoorPhysics(int o_id)
 
          if (pDoorProp->status == kDoorClosed)
          {
-            pModel->AddAngleLimit(pDoorProp->axis, pDoorProp->open, RotDoorOpenCallback);
+            pModel->AddAngleLimit(pDoorProp->axis, (int)pDoorProp->open, RotDoorOpenCallback);
             pModel->AddAngleLimit(pDoorProp->axis, 0, RotDoorCloseCallback);
          }
          else
          {
-            int closed = pDoorProp->closed + 360 - pDoorProp->open;
+            int closed = (int)(pDoorProp->closed + 360 - pDoorProp->open);
 
             pModel->AddAngleLimit(pDoorProp->axis, 0, RotDoorOpenCallback);
             pModel->AddAngleLimit(pDoorProp->axis, closed, RotDoorCloseCallback);
@@ -873,8 +873,8 @@ void GenerateBaseDoorLocations(int o_id)
          mx_mk_angvec(&ang_offset_open, 0, 0, 0);
          mx_mk_angvec(&ang_offset_closed, 0, 0, 0);
 
-         ang_offset_open.el[pDoorProp->axis] = pDoorProp->open * MX_ANG_PI / 180;
-         ang_offset_closed.el[pDoorProp->axis] = pDoorProp->closed * MX_ANG_PI / 180;
+         ang_offset_open.el[pDoorProp->axis] = (mxs_ang)(pDoorProp->open * MX_ANG_PI / 180);
+         ang_offset_closed.el[pDoorProp->axis] = (mxs_ang)(pDoorProp->closed * MX_ANG_PI / 180);
 
          mxs_matrix rotation, object, both_rot;
          mxs_vector base_cog_offset;
@@ -974,7 +974,7 @@ void GenerateBaseDoorLocations(int o_id)
 }
 
 #define CREEP_SPEED     (0.25)
-#define START_CREEP     (0.1)
+#define START_CREEP     (0.1f)
 #define MAX_CREEP_LEN2  (25)
 
 // Determine the rooms on each side of every door
@@ -1199,7 +1199,7 @@ void AddDoorSoundBlocking(int o_id)
        (pDoorProp->room1 != -1) && (pDoorProp->room2 != -1) &&
        (g_pRooms->GetNumRooms() > 0))
    {
-      g_pPropSnd->SetBlockingFactor((short)pDoorProp->room1, (short)pDoorProp->room2, pDoorProp->sound_blocking / 100.0);
+      g_pPropSnd->SetBlockingFactor((short)pDoorProp->room1, (short)pDoorProp->room2, pDoorProp->sound_blocking / 100.0f);
    }
 }
    

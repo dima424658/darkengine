@@ -270,7 +270,7 @@ STDMETHODIMP_(eDamageResult) cBaseDamageModel::SlayObject(ObjID victim, ObjID cu
          kind = msg->data.damage->kind; 
    }
 
-   sDamageMsgData msgdata = { kDamageMsgSlay, victim, culprit, (void*)kind}; 
+   sDamageMsgData msgdata = { kDamageMsgSlay, victim, culprit, (void *)(intptr_t)kind};
    sDamageMsg msg(kEventKindSlay,&msgdata,cause);
    
    eDamageResult result = SendMessage(&msg);

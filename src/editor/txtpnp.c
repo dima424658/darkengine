@@ -59,7 +59,7 @@ static Rect txtPnP_rects[NUM_BUTTONS];
 #define BTN_ABOVE 4
 #define BTN_BELOW 3
 #define VERT_DIV  4
-#define HORIZ_DIV (0.45)
+#define HORIZ_DIV (0.45f)
 
 void txtPnP_buildRects(Rect *whole)
 {
@@ -216,7 +216,7 @@ static void txtPnP_OneShots(int lid)
 // the idea here is that this just makes sure the globals are right
 // then calls setvars, which deals with making the brush consistent with the globals
 // or, if say a face changes, the globals consistent with the brush
-static void txtPnP_IntFrob(PnP_SliderOp op,Rect *where, int val, int data)
+static void txtPnP_IntFrob(PnP_SliderOp op,Rect *where, int val, intptr_t data)
 {
    if (op != PnP_SliderUpdateOp)
       return;
@@ -233,17 +233,19 @@ static void txtPnP_IntFrob(PnP_SliderOp op,Rect *where, int val, int data)
 
 void texture_pal_cmd(void);
 
-static void txtPnP_TxtFrob(PnP_SliderOp op,Rect *where, int val, int data)
+static void txtPnP_TxtFrob(PnP_SliderOp op,Rect *where, int val, intptr_t data)
 {
    if (op == PnP_SliderUpdateOp)
    {
       if ((val==-1)&&(face==0))
          texture=0;          // cant set to default if you are whole brush
-      if (val>=texmemGetMax())
+      if (TEXMEM_IS_RESERVED(val) && val != BACKHACK_IDX)
+         texture=BACKHACK_IDX;
+      else if (val>=texmemGetMax() && val>=TEXMEM_RESERVED_LIMIT)
       {
-         int mid=texmemGetMax()+((BACKHACK_IDX-texmemGetMax())/2);
-         if ((texture<mid)||(texture>=BACKHACK_IDX)) texture=BACKHACK_IDX;
-         else texture=texmemGetMax()-1;
+         texture=texmemGetMax()-1;
+         while (texture>0 && TEXMEM_IS_RESERVED(texture))
+            --texture;
       }
       txtPnP_setvars(txtPnP_br,TRUE);
    }
@@ -323,7 +325,6 @@ static void draw_string_hack(int color, char *str)
    stringToCanvasBottom(str,TRUE,TRUE);
 }
 
-#pragma off(unreferenced)
 // this really should probably just load from the brush
 // since we really hope it is consistent and right when we get here
 static void txtPnP_Picture(int data)
@@ -344,7 +345,6 @@ static void txtPnP_Picture(int data)
       drawTexturetoCanvas(mt,NULL,FALSE);
    }
 }
-#pragma on(unreferenced)
 
 BOOL txtPnP_allow_attach=FALSE;
 
@@ -371,13 +371,13 @@ void Create_txtPnP(LGadRoot *root, Rect *bounds, editBrush *br)
    if (!config_is_defined("txt_click"))
    {
       pnpOwners[FROBS_TEXTURE]=
-         PnP_SliderInt(getRect(7),"Texture",-1,BACKHACK_IDX,1,&texture,txtPnP_TxtFrob,
+         PnP_SliderInt(getRect(7),"Texture",-1,TEXMEM_MAX-1,1,&texture,txtPnP_TxtFrob,
                        FROBS_TEXTURE,PNP_SLIDER_VSLIDE); // |PNP_SLIDER_CLICKS);
    }
    else
    {
       pnpOwners[FROBS_TEXTURE]=
-         PnP_SliderInt(getRect(7),"Texture",-1,BACKHACK_IDX,1,&texture,txtPnP_TxtFrob,
+         PnP_SliderInt(getRect(7),"Texture",-1,TEXMEM_MAX-1,1,&texture,txtPnP_TxtFrob,
                        FROBS_TEXTURE,PNP_SLIDER_VSLIDE|PNP_SLIDER_CLICKS);
    }
 }

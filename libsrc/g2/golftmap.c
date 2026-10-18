@@ -58,11 +58,11 @@ void g2_lit_haze_dry_umap(grs_bitmap *bm, int n, g2s_point **vpl)
    tp.canvas_row = grd_bm.row;
 
    tp.bm = bm;
-   tp.i_scale = grd_light_table_size;
+   tp.i_scale = (float)grd_light_table_size;
    tp.u_scale = bm->w;
    tp.v_scale = bm->h;
-   tp.h_scale = g2d_haze_table_size;
-   tp.d_scale = g2d_dryness_table_size;
+   tp.h_scale = (float)g2d_haze_table_size;
+   tp.d_scale = (float)g2d_dryness_table_size;
    tp.inner_loop = golf_tmap_inner_loop;
    tp.raster_func = gen_raster_loop;
    tp.right_edge_func = gen_right_edge;

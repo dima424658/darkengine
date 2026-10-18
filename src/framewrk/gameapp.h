@@ -11,6 +11,10 @@
 
 
 EXTERN void LGAPI GameSysCreate(void);
+EXTERN void do_game_switch(char *args);
+EXTERN void do_game_switch_loud(char *args);
+EXTERN void do_game_switch_quiet(char *args);
+EXTERN void quit_game(void);
 DEFINE_LG_GUID(IID_Game, 0x2d);
 
 

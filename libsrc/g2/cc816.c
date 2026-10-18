@@ -71,7 +71,13 @@ opaque_entry: ;
    opaque_inner_loop(&r_o, p, n);
 }
 
-static void (*shell_func)(int x, int y, int w, int h, g2s_poly_params *p);
+static int (*shell_func)(int x, int y, int w, int h, g2s_poly_params *p);
+
+static int scale_ushell_adapter(int x, int y, int w, int h, g2s_poly_params *p)
+{
+   scale_ushell(x, y, w, h, p);
+   return CLIP_NONE;
+}
 
 static void cc_scale_shell(grs_bitmap *bm, int x, int y, int w, int h)
 {
@@ -97,7 +103,7 @@ void clut_clut_8to16_uscale(grs_bitmap *bm, int x, int y, int w, int h, uchar *c
 {
    clut0 = c0;
    clut1 = c1;
-   shell_func = scale_ushell;
+   shell_func = scale_ushell_adapter;
    cc_scale_shell(bm, x, y, w, h);
 }
 

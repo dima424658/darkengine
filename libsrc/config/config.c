@@ -1,21 +1,20 @@
 #include <stdio.h>
 #include <fcntl.h>
-#include <io.h>
+#include <platform_io.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <direct.h>
-#include <dos.H>
 
 #include <lg.h>
 #include <hashfns.h>
 #include <config.h>
 #include <hash.h>
-#include <lgsprntf.H>
+#include <lgsprntf.h>
 #include <cfgdbg.h>
 #include <mprintf.h>
+#include <darklimit.h>
 
-#include <sys\stat.h>	// added by cnn - 8/29/96
+#include <sys/stat.h>	// added by cnn - 8/29/96
 #include <recapi.h>	// added by njt - 8/28/97
 #include <comtools.h>	// added by njt - 8/28/97
 #include <appagg.h>	// added by njt - 8/28/97
@@ -33,7 +32,7 @@
 
 
 #define INITIAL_TBLSIZE 10
-#define LINE_BUFSIZE 256
+#define LINE_BUFSIZE DARK_LIMIT_RUNTIME_CONFIG_LINE_CHARS
 #define FN_BUFSIZE 15
 #define DELIM_CHAR ' '
 #define COMMENT_CHAR ';'
@@ -53,7 +52,7 @@ typedef struct _filename_rec
 typedef struct _config_elem
 {
    char var[VARNAME_LEN+1];
-   char val[80];
+   char val[DARK_LIMIT_RUNTIME_CONFIG_LINE_CHARS];
    uint priority;
    filename_rec* origin;
 } config_elem;
@@ -103,26 +102,16 @@ void free_filename_rec(filename_rec* rec)
 // INTERNALS
 // ---------
 
-char* fdgets(int fd, char* buf, int  bufsiz)
+int config_hashfunc(void* data)
 {
-   char* s;
-   for (s = buf; s < buf + bufsiz - 1 && !eof(fd); s++)
-   {
-      read(fd,s,1);
-      if (*s == '\n')
-         break;
-   }
-   *s = '\0';
-   return buf;
-}
-
-int config_hashfunc(config_elem* e)
-{
+   config_elem* e = data;
    return (int) HashStringCaseless(e->var);
 }
 
-int config_equfunc(config_elem* e1, config_elem* e2)
+int config_equfunc(void* data1, void* data2)
 {
+   config_elem* e1 = data1;
+   config_elem* e2 = data2;
    return config_compare(e1->var,e2->var);
 }
 
@@ -139,7 +128,7 @@ errtype config_set_raw_value(const char* var, char* val, uint priority)
    if (var == NULL) return ERR_NULL;
    strncpy(e.var,var,VARNAME_LEN+1);
    e.var[VARNAME_LEN] = '\0';
-   err = hash_lookup(&config_table,&e,&r);
+   err = hash_lookup(&config_table,&e,(void **)&r);
    if (r == NULL)
    {
 //      e.val = malloc(strlen(val)+1);
@@ -157,7 +146,7 @@ errtype config_set_raw_value(const char* var, char* val, uint priority)
 //        free(r->val);
 //         r->val = malloc(strlen(val)+1);
 //      }
-      r->priority = max(r->priority,priority);
+      r->priority = r->priority > priority ? r->priority : priority;
       if (r->origin != NULL)
          free_filename_rec(r->origin);
       r->origin = NULL;
@@ -175,6 +164,13 @@ void config_parse_line(char* buf, char** var, char** val,char** com)
 {
    char *b,*s;
    *var = *val = *com = NULL;
+   // Windows text mode removes CR from CRLF files; POSIX text mode does not.
+   // Normalize both line endings here so config values are identical on all
+   // platforms (in particular, include filenames must not retain '\r').
+   b = buf + strlen(buf);
+   while (b > buf && (b[-1] == '\r' || b[-1] == '\n'))
+      --b;
+   *b = '\0';
    // Look for the comment character, and end the string there
    for (b = buf; *b != '\0'; b++)
       if (*b == COMMENT_CHAR)
@@ -231,7 +227,7 @@ errtype config_set_priority(const char* var, uint priority)
 
    strncpy(in.var,var,VARNAME_LEN);
    in.var[VARNAME_LEN-1] = '\0';
-   err = hash_lookup(&config_table,&in,&out);
+   err = hash_lookup(&config_table,&in,(void **)&out);
    if (err != OK) return err;
    out->priority = priority;
    return err;
@@ -247,7 +243,7 @@ uint config_get_priority(const char* var)
 
    strncpy(in.var,var,VARNAME_LEN);
    in.var[VARNAME_LEN-1] = '\0';
-   err = hash_lookup(&config_table,&in,&out);
+   err = hash_lookup(&config_table,&in,(void **)&out);
    if ((err != OK) || (out == NULL)) return PRIORITY_TRANSIENT;
    return out->priority;
 }
@@ -260,7 +256,7 @@ errtype config_get_origin(const char* var, char* buf, int buflen)
 
    strncpy(in.var,var,VARNAME_LEN);
    in.var[VARNAME_LEN-1] = '\0';
-   err = hash_lookup(&config_table,&in,&out);
+   err = hash_lookup(&config_table,&in,(void **)&out);
    if (err != OK) return ERR_NOEFFECT;
    if (out->origin == NULL)
    {
@@ -282,7 +278,7 @@ errtype config_set_from_file(const char* var, char* val, uint priority, filename
    if (var == NULL) return ERR_NULL;
    strncpy(e.var,var,VARNAME_LEN+1);
    e.var[VARNAME_LEN] = '\0';
-   err = hash_lookup(&config_table,&e,&r);
+   err = hash_lookup(&config_table,&e,(void **)&r);
    if (r == NULL)
    {
 //      e.val = malloc(strlen(val)+1);
@@ -361,13 +357,16 @@ void config_write_line(int fd, const char* var, char* val, char* com)
    strcpy(buf+strlen(var)+1,val);
    if (com != NULL)
    {
-      int s = strlen(buf);
+      size_t s = strlen(buf);
       buf[s] = COMMENT_CHAR;
       strcpy(buf+s+1,com);
    }
    strcat(buf,"\n");
-   if (write(fd,buf,strlen(buf))!=strlen(buf))
+   {
+      unsigned len = (unsigned)strlen(buf);
+      if (write(fd,buf,len) != (int)len)
       config_write_iter_success=FALSE;
+   }
 }
 
 typedef struct _config_iter_struct
@@ -436,7 +435,7 @@ void _change_dir(char* path)
    }
    else
       colon = path;
-   chdir(path);
+   _chdir(path);
    if (drnum > 0)
    {
       uint tot;
@@ -448,7 +447,9 @@ void _change_dir(char* path)
 errtype config_write_file(const char* in,writefunc writable)
 {
    errtype err;
-   int ofd,ifd;
+   int ofd;
+   FILE *ifp;
+   char input[_MAX_PATH];
    char fn[_MAX_PATH];
    char dbuf[80],fbuf[FN_BUFSIZE];
    citer iter;
@@ -457,30 +458,41 @@ errtype config_write_file(const char* in,writefunc writable)
    err = hash_copy(&seen_vars,&config_table);
    if (err != OK) return err;
    if (config_enabled <= 0) return ERR_NULL;
-   split_fname(in,dbuf,fbuf);
+   if (in == NULL || strlen(in) >= sizeof(input)) return ERR_NULL;
+
+   // split_fname temporarily writes terminators into its argument.  Its
+   // callers commonly pass string literals (CONFIG_FILE is "cam.cfg"), so
+   // never let it modify the caller-owned path.
+   strcpy(input,in);
+   split_fname(input,dbuf,fbuf);
 
    // Construct a temporary filename
    strcpy(fn,dbuf);
    strcat(fn,"_");
    strcat(fn,fbuf+1);
-   ofd = open(fn,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE);
+   ofd = _open(fn,O_WRONLY|O_CREAT|O_TRUNC,S_IREAD|S_IWRITE);
    if (ofd == -1) return ERR_FOPEN;
    config_write_iter_success=TRUE;
 
-   ifd = open(in,O_RDONLY);
-   if (ifd != -1)
+   ifp = fopen(in,"r");
+   if (ifp != NULL)
    {
-      while(!eof(ifd))
+      bool last_was_blank = FALSE;
+      char buf[LINE_BUFSIZE];
+      char rbuf[LINE_BUFSIZE];
+      while (fgets(buf, LINE_BUFSIZE, ifp) != NULL)
       {
          errtype err;
          config_elem in;
          config_elem *out;
          char *var, *val, *com;
-         char  buf[LINE_BUFSIZE];
-         char rbuf[LINE_BUFSIZE];
+         size_t rlen;
 
-         fdgets(ifd,buf,LINE_BUFSIZE);
          strncpy(rbuf,buf,LINE_BUFSIZE);
+         rbuf[LINE_BUFSIZE-1] = '\0';
+         rlen = strlen(rbuf);
+         while (rlen > 0 && (rbuf[rlen-1] == '\r' || rbuf[rlen-1] == '\n'))
+            rbuf[--rlen] = '\0';
 
          config_parse_line(buf,&var,&val,&com);
          if (var)
@@ -493,7 +505,7 @@ errtype config_write_file(const char* in,writefunc writable)
             in.var[0] = '\0';
          } // was comment line
 
-         err = hash_lookup(&config_table,&in,&out);
+         err = hash_lookup(&config_table,&in,(void **)&out);
 
            // if a config variable has been deleted, or
            // one appears more than once in the file, then
@@ -505,18 +517,27 @@ errtype config_write_file(const char* in,writefunc writable)
          {
             config_write_line(ofd,var,out->val,com);
             config_unset(var);
+            last_was_blank = FALSE;
          }
          else
          {
-            strcat(rbuf,"\n");
-            write(ofd,rbuf,strlen(rbuf));
+            bool is_blank = rlen == 0;
+            // Blank lines carry no configuration state.  Keeping at most
+            // one prevents old files from growing a second newline every
+            // time they are saved and makes damaged files cheap to repair.
+            if (!is_blank || !last_was_blank)
+            {
+               rbuf[rlen++] = '\n';
+               write(ofd,rbuf,(unsigned)rlen);
+            }
+            last_was_blank = is_blank;
          }
       }
-      close(ifd);
+      fclose(ifp);
    }
    iter.fd = ofd;
    iter.writable = writable;
-   iter.fn = (char *)in;
+   iter.fn = input;
    hash_iter(&config_table,(HashIterFunc)config_write_iter,&iter);
    close(ofd);
    hash_destroy(&config_table);
@@ -550,10 +571,10 @@ errtype config_set_value(const char* varname, int type, void* fillvec, int cnt)
             strcpy(s,((char**)fillvec)[i]);
             break;
          case CONFIG_INT_TYPE:
-            itoa(((int*)fillvec)[i],s,10);
+            sprintf(s, "%d", ((int*)fillvec)[i]);
             break;
          case CONFIG_FLOAT_TYPE:
-            gcvt(((float *)fillvec)[i],10,s);
+            sprintf(s, "%.9g", (double)((float *)fillvec)[i]);
             break;
       }
       if (i < cnt-1)
@@ -575,11 +596,16 @@ errtype config_set_single_value(const char* varname, int type, config_valtype va
             strcpy(s,(char*)value);
             break;
          case CONFIG_INT_TYPE:
-            itoa((int)value,s,10);
+            sprintf(s, "%d", (int)(intptr_t)value);
             break;
          case CONFIG_FLOAT_TYPE:
-            gcvt(*(float *)(&value),10,s);
+         {
+            uint32 bits = (uint32)(uintptr_t)value;
+            float number;
+            memcpy(&number, &bits, sizeof(number));
+            sprintf(s, "%.9g", (double)number);
             break;
+         }
 
       }
    return config_set_raw_value(varname,buf,config_default_priority);
@@ -595,7 +621,7 @@ bool config_get_value(const char* varname, int type, void* fillvec, int* cnt)
    int max = (*cnt > 0) ? *cnt : -1;
    *cnt = 0;
    strncpy(e.var,varname,VARNAME_LEN+1);
-   hash_lookup(&config_table,&e,&r);
+   hash_lookup(&config_table,&e,(void **)&r);
    if (r == NULL) return FALSE;
    s = r->val;
    while(isspace(*s)) s++;
@@ -617,7 +643,7 @@ bool config_get_value(const char* varname, int type, void* fillvec, int* cnt)
             ((int*)fillvec)[*cnt] = atoi(s);
             break;
          case CONFIG_FLOAT_TYPE:
-            ((float*)fillvec)[*cnt] = atof(s);
+            ((float*)fillvec)[*cnt] = (float)atof(s);
             break;
       }
       *v = tmp;
@@ -630,7 +656,7 @@ bool config_get_value(const char* varname, int type, void* fillvec, int* cnt)
    return TRUE;
 }
 
-bool config_get_single_value(const char* varname, int type, config_valtype* value)
+bool config_get_single_value(const char* varname, int type, config_valptr value)
 {
    void *v = value;
    int cnt = 1;
@@ -644,7 +670,7 @@ bool config_get_raw(const char* varname, char* buf, int bufsize)
    config_elem e;
    config_elem *r;
    strncpy(e.var,varname,VARNAME_LEN+1);
-   hash_lookup(&config_table,&e,&r);
+   hash_lookup(&config_table,&e,(void **)&r);
    if (r == NULL) return FALSE;
    strncpy(buf,r->val,bufsize);
    return TRUE;
@@ -746,7 +772,7 @@ errtype config_unset(const char* varname)
    config_elem e;
    config_elem *r;
    strncpy(e.var,varname,VARNAME_LEN+1);
-   hash_lookup(&config_table,&e,&r);
+   hash_lookup(&config_table,&e,(void **)&r);
 
    if (r==NULL) {
 #ifdef DBG_ON
@@ -763,9 +789,9 @@ errtype config_unset(const char* varname)
 }
 
 
-#pragma disable_message(202)
-bool config_shutdown_iter(config_elem* e, void* data)
+bool config_shutdown_iter(void* elem, void* data)
 {
+   config_elem* e = elem;
 #ifndef NO_DUMMIES
    void* dummy = data;
    data = dummy;
@@ -773,7 +799,6 @@ bool config_shutdown_iter(config_elem* e, void* data)
 //   free(e->val);
    return FALSE;
 }
-#pragma enable_message(202)
 
 errtype config_shutdown(void)
 {
@@ -800,7 +825,6 @@ void config_set_writable_table(config_write_spec* tbl)
 
 
 
-#pragma off(unreferenced)
 bool config_default_writable(char* filename, char* var)
 {
    config_write_spec* spec = cfg_write_table;
@@ -821,7 +845,6 @@ bool config_default_writable(char* filename, char* var)
    if (strcmp(buf,SWITCH_PREFIX)==0) return FALSE;
    return config_default_writability;
 }
-#pragma on(unreferenced)
 
 
 
@@ -918,7 +941,7 @@ void config_add_to_or_extract_from_recording( void )
 //////////////////////////////////////////////////
 
 bool config_spew_on = TRUE;
-static char* _spewsrc = NULL;
+static const char* _spewsrc = NULL;
 
 bool CfgSpewTest(const char* var)
 {

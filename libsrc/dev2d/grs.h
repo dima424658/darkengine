@@ -113,7 +113,7 @@ typedef struct grs_context {
    void *font;       /* font pointer */
    long text_attr;   /* attributes for text */
    long fill_type;   /* how to fill primitives */
-   long fill_parm;   /* parameter for fill */
+   intptr_t fill_parm; /* color value or pointer, depending on fill type */
    grs_clip clip;    /* clipping region */
    grs_clip safe_clip;  /* safe clipping region */ 
 } grs_context;

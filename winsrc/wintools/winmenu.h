@@ -75,7 +75,7 @@ public:
    // Menu-item level operations
    //
    
-   BOOL  AppendMenu(uint nFlags, uint nIDNewItem = 0, const char * pszNewItem = NULL);
+   BOOL  AppendMenu(uint nFlags, uintptr_t nIDNewItem = 0, const char * pszNewItem = NULL);
    uint  CheckMenuItem(uint nIDCheckItem, uint nCheck);
    uint  EnableMenuItem(uint nIDEnableItem, uint nEnable);
    uint  GetMenuItemCount() const;
@@ -235,7 +235,7 @@ inline BOOL cWinMenu::TrackPopupMenu(uint nFlags, int x, int y, HWND hWnd, const
 
 ///////////////////////////////////////
 
-inline BOOL cWinMenu::AppendMenu(uint nFlags, uint nIDNewItem, const char * pszNewItem)
+inline BOOL cWinMenu::AppendMenu(uint nFlags, uintptr_t nIDNewItem, const char * pszNewItem)
 {
    return ::AppendMenu(m_hMenu, nFlags, nIDNewItem, pszNewItem);
 }

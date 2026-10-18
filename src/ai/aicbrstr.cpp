@@ -55,8 +55,8 @@ BOOL cAIRangedStepRight::CheckPreconditions(void)
 
    // @TODO: somehow, these numbers need to be derived from the motion
    // or at least, a property
-   destVec.x=kAIRangedStepRightDist*sin(backang);  
-   destVec.y=-kAIRangedStepRightDist*cos(backang);  
+   destVec.x=kAIRangedStepRightDist*sinf(backang);
+   destVec.y=-kAIRangedStepRightDist*cosf(backang);
    destVec.z=0;
    mx_addeq_vec(&destVec, GetState()->GetLocation());
    MakeHintedLocationFromVector(&destLoc, &destVec, GetState()->GetPortalLocation());

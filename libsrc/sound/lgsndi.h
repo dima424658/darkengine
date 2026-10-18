@@ -14,15 +14,16 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include <dsound.h>
-
 #ifndef _LG_SOUND_H
 #include <lgsound.h>
 #endif
 #include <stdio.h>
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 #include <lgassert.h>
-#include <thrdtool.h>
 
 #include <timelog.h>
 
@@ -129,12 +130,14 @@ public:
    STDMETHOD_(int32,    Get3DPositionVolume)(THIS_ sSndVector *pSrcPos);
    STDMETHOD_(void,     Get3DPositionPanVolume)(THIS_ sSndVector *pSrcPos, int32 *pPan, int32 *pVol);
    STDMETHOD_(void,     Set3DDeferMode)(THIS_ BOOL deferOn);
+	STDMETHOD_(const char*, GetBackendName)(THIS);
+	STDMETHOD_(uint32, GetCapabilities)(THIS);
 
 	// this is how the samples tell the mixer what they're up to
 	void Inform(cSndSample *sample, eSndTraceEvent action);
 	int32 NumberOfChannels();
 
-   static void CALLBACK TimerCallback( UINT tid, UINT r1, DWORD duser, DWORD r2, DWORD r3 );
+   static void TimerCallback(void *user);
    void CheckTimer( void );
    void StartTimer( void );
 
@@ -145,7 +148,7 @@ public:
    cSndSample ** AudibleHead( void );
    cSndSample ** InaudibleHead( void );
 
-   cThreadMutex & MutexRef( void );
+   std::recursive_mutex & MutexRef( void );
 	BOOL CheckStreams(void);
 
    void DoFreeChannelCB(void);
@@ -156,6 +159,8 @@ public:
 
    int BlockDisplay();
    void ReleaseDisplay(int cookie);
+   void InitPlatformState();
+   void ReleasePlatformState();
    void TBD( char *message );
 
 protected:
@@ -174,7 +179,6 @@ protected:
 
 	static BOOL mTimerNeeded;                 // should timer be started/stopped?
 	static uint32 mTimerId;
-	static TIMECAPS mTimerCaps;
 
    // sample allocation stuff
 
@@ -194,7 +198,7 @@ protected:
    int         mIterWhichList;
 
 //   cThreadLock    mLock;
-   cThreadMutex   mMutex;
+   std::recursive_mutex mMutex;
    cMixerThread   *mpThread;
    uint32         mTimeoutMillisecs;
 
@@ -254,26 +258,37 @@ cSndMixer::DoTrace( void            *pSample,
 
 
 // provide access to mixer mutex
-inline cThreadMutex &
+inline std::recursive_mutex &
 cSndMixer::MutexRef()
 {
    return mMutex;
 }
 
 
-class cMixerThread : public cWorkerThread
+class cMixerThread
 {
 public:
-   cMixerThread( cSndMixer *pMixer ) : mpMixer(pMixer), mTimeoutMillisecs( 200 )
-   {};
-   void        SetTimeout( uint32 ms ) {
-      mTimeoutMillisecs = ms;
-   };
+   explicit cMixerThread(cSndMixer *mixer);
+   ~cMixerThread();
+   bool Create(void);
+   bool CallWorker(int command);
+   void WaitForClose(void);
+   void SetTimeout(uint32 milliseconds);
 
 private:
-   virtual DWORD ThreadProc();
-   cSndMixer      *mpMixer;
-   uint32         mTimeoutMillisecs;
+   void ThreadProc(void);
+
+   cSndMixer *mpMixer;
+   std::thread mThread;
+   std::mutex mCallerMutex;
+   std::mutex mCallMutex;
+   std::condition_variable mWake;
+   std::condition_variable mReply;
+   uint32 mTimeoutMillisecs;
+   int mCommand;
+   bool mCommandPending;
+   bool mReplyReady;
+   bool mReplySucceeded;
 };
 
 
@@ -390,7 +405,7 @@ public:
    STDMETHOD_(void,	   SetVolume)(int32 vol);
    STDMETHOD_(void,	   SetPan)(int32 pan) = 0;
    STDMETHOD_(void,	   SetFrequency)(uint32 freq) = 0;
-   STDMETHOD_(void,	   SetData)(int32 data);
+   STDMETHOD_(void,	   SetData)(intptr_t data);
    STDMETHOD_(void,	   SetPriority)(int32 data);
    STDMETHOD_(void,     SetSuperInfo)(void *);
    STDMETHOD_(void,	   SetPosition)(uint32 pos);
@@ -400,7 +415,7 @@ public:
    STDMETHOD_(int32,	   GetVolume)(void);
    STDMETHOD_(int32,	   GetPan)(void);
    STDMETHOD_(uint32,	GetFrequency)(void);
-   STDMETHOD_(int32,	   GetData)(void);
+   STDMETHOD_(intptr_t, GetData)(void);
    STDMETHOD_(int32,	   GetPriority)(void);
    STDMETHOD_(void *,	GetSuperInfo)(void);
    STDMETHOD_(uint32,	GetPosition)(void);
@@ -474,11 +489,11 @@ public:
    void        TBD(const char *message );
 
 protected:
-	virtual HRESULT      Start();
+	virtual eSndError    Start();
    virtual void         LLStop() = 0;
    virtual void         LLRelease() = 0;
    virtual void         LLInit()  = 0;
-   virtual HRESULT      LLStart() = 0;
+   virtual eSndError    LLStart() = 0;
    virtual void         LLPause() = 0;
    virtual void         LLResume() = 0;
    virtual void         LLUnMute() = 0;
@@ -501,7 +516,7 @@ protected:
 	int32 mVolume;			// we keep this to provide master levels
 	int32 mPan;
 	int32 mFrequency;
-	int32 mAppData;
+	intptr_t mAppData;
    void  *mpSuperInfo;
 
 	cSndFadeTask *mFadeTasks[3];  // should be same as number of eSndFadeTasks
@@ -533,7 +548,7 @@ protected:
 
    uint32               mBaseOffset;      // position readback offset
 
-   DWORD                mBaseTime;        // base for muted position estimates
+   uint32               mBaseTime;        // base for muted position estimates
    uint32               mBasePos;
 
    cSndSample           *mpNext;          // doubley linked list ptrs

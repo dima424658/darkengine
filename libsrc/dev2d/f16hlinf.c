@@ -15,10 +15,13 @@
 #include <f16lin.h>
 
 void (*flat16_uhline_func[FILL_TYPES])() =
+{ 0 };
+
+void init_flat16_uhline_func(void)
 {
-	[FILL_NORM] =	flat16_norm_uhline,
-	[FILL_XOR] =	flat16_xor_uhline,
-	[FILL_BLEND] =	flat16_tluc_uhline,
-	[FILL_CLUT] =	flat16_clut_uhline,
-	[FILL_SOLID] =	flat16_solid_uhline,
-};
+	flat16_uhline_func[FILL_NORM] = flat16_norm_uhline;
+	flat16_uhline_func[FILL_XOR] = flat16_xor_uhline;
+	flat16_uhline_func[FILL_BLEND] = flat16_tluc_uhline;
+	flat16_uhline_func[FILL_CLUT] = flat16_clut_uhline;
+	flat16_uhline_func[FILL_SOLID] = flat16_solid_uhline;
+}

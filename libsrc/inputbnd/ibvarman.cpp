@@ -2,6 +2,7 @@
 #include <ibmapper.h>
 
 #include <memory>
+#include <cmath>
 
 extern cIBInputMapper* g_IB_input_mapper;
 extern cIBVariableManager* g_IB_variable_manager;
@@ -481,7 +482,7 @@ const char* cIBVariableManager::ProcessCommand(
 		if (active_toggle)
 			strcpy(val, tokens[0][0] == '+' ? "1.0" : "0.0");
 		else
-			sprintf(val, "%8.8f", 1.0 - floor(atof(val) + 0.5));
+			sprintf(val, "%8.8f", 1.0 - std::floor(atof(val) + 0.5));
 	}
 	else if (!strcmp(tokens[1], "delta"))
 	{
@@ -493,7 +494,7 @@ const char* cIBVariableManager::ProcessCommand(
 		if (num_tokens == 3)
 			strcpy(val, atof(val) == 0.0 ? tokens[2] : "0");
 		else
-			sprintf(val, "%8.8f", 1.0 - floor(atof(val) + 0.5));
+			sprintf(val, "%8.8f", 1.0 - std::floor(atof(val) + 0.5));
 	}
 	else
 	{
@@ -564,7 +565,11 @@ const char* cIBVariableManager::AddChannel(const char* const* control)
 {
 	int cur_token = 1;
 
-	bool active_toggle = control[0][1] == '+' || control[0][1] == '-';
+	// control[0] is the physical control name; control[1] is the bound
+	// variable command.  The recovered implementation tested the second
+	// character of the control name, so active bindings such as "w +walk"
+	// never registered a channel for the expanded "forward" variable.
+	bool active_toggle = control[1][0] == '+' || control[1][0] == '-';
 
 	int num_tokens = 0;
 	auto* tokens = Tokenize(&control[1][active_toggle ? 1 : 0], &num_tokens, 0);
@@ -698,7 +703,7 @@ void cIBVariableManager::LoadBndContexted(
 			}
 		}
 
-		int i = 0;
+		unsigned int i = 0;
 		while (i < iNumContexts && stricmp(pszPrefix, pContexts[i].aszStr))
 			++i;
 

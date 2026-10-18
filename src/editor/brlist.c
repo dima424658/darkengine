@@ -329,7 +329,12 @@ static int        iter_last_used=-1;
 editBrush *_blistIterFinish(int hnd)
 {
    iter_last_used=hnd;
-   if ((iterPtr(hnd)==NULL)||(iterBrush(hnd)==NULL))
+   // Never interpret the list's embedded tail sentinel as a brushElem.
+   // On 64-bit the adjacent flags/count fields can otherwise look like a
+   // non-null pointer when iterBrush() reads beyond the sentinel.
+   if ((iterPtr(hnd)==NULL) ||
+       (iterPtr(hnd)==llist_end(&cur_bl->list)) ||
+       (iterBrush(hnd)==NULL))
    {
       blistIterDone(hnd);
       return NULL;

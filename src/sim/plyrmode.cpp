@@ -66,9 +66,9 @@ sModeMotions g_ModeMotions[kPM_NumModes] =
 sModeSpeedScale g_ModeBaseSpeeds[kPM_NumModes] = 
 {
    { 1.0, 1.0 },  // stand
-   { 0.6, 0.6 },  // crouch
-   { 0.7, 0.7 },  // swim
-   { 0.5, 0.7 },  // climb
+   { 0.6f, 0.6f },  // crouch
+   { 0.7f, 0.7f },  // swim
+   { 0.5f, 0.7f },  // climb
    { 1.0, 1.0 },  // body carry (scale values set from script)
    { 1.0, 1.0 },  // slide
    { 1.0, 1.0 },  // jump
@@ -411,7 +411,7 @@ void cPlayerMode::StartFadeIn(tSimTime time, uchar r, uchar g, uchar b)
 {
    if (time) 
    {
-      m_fadeRate = -1. / float(time);
+      m_fadeRate = -1.f / float(time);
       m_fadeR = r;
       m_fadeG = g;
       m_fadeB = b;
@@ -424,7 +424,7 @@ void cPlayerMode::StartFadeOut(tSimTime time, uchar r, uchar g, uchar b)
 {
    if (time) 
    {
-      m_fadeRate = 1. / float(time);
+      m_fadeRate = 1.f / float(time);
       m_fadeR = r;
       m_fadeG = g;
       m_fadeB = b;
@@ -450,7 +450,7 @@ void cPlayerMode::ActivateStrideMotion(BOOL left)
 
          PhysGetVelocity(PlayerObject(), &player_vel);
 
-         PhysHitRope(pClimbModel->GetObjID(), mx_mag_vec(&player_vel));
+         PhysHitRope(pClimbModel->GetObjID(), (int)mx_mag_vec(&player_vel));
       }
    }
 }
@@ -630,9 +630,9 @@ void cPlayerMode::DoDeath()
 
    mxs_vector rotation;
 
-   mx_mk_vec(&rotation, ((float)(Rand() % 1024) / 1024.0) * 3,
-                        ((float)(Rand() % 1024) / 1024.0) * 3,
-                        ((float)(Rand() % 1024) / 1024.0) * 0.2);
+   mx_mk_vec(&rotation, ((float)(Rand() % 1024) / 1024.0f) * 3.0f,
+                        ((float)(Rand() % 1024) / 1024.0f) * 3.0f,
+                        ((float)(Rand() % 1024) / 1024.0f) * 0.2f);
 
    pModel->GetDynamics(PLAYER_HEAD)->SetRotationalVelocity(rotation);
 
@@ -688,7 +688,7 @@ void cPlayerMode::UpdatePlayerSpeed()
       if (m_speedtoggleState)
          PhysAxisControlVelocity(PlayerObject(),
                                  0,
-                                 SLOW_MOVE_SPEED * trans_scale * m_forwardState * (m_speedtogglemeansFaster ? 2 : 0.5));
+                                 SLOW_MOVE_SPEED * trans_scale * m_forwardState * (m_speedtogglemeansFaster ? 2 : 0.5f));
       else
          PhysAxisControlVelocity(PlayerObject(), 0, SLOW_MOVE_SPEED * trans_scale * m_forwardState);
 #endif
@@ -708,7 +708,7 @@ void cPlayerMode::UpdatePlayerSpeed()
       if (m_speedtoggleState)
          PhysAxisControlVelocity(PlayerObject(),
                                  0,
-                                 SLOW_BACK_SPEED * trans_scale * -m_forwardState * (m_speedtogglemeansFaster ? 2 : 0.5));
+                                 SLOW_BACK_SPEED * trans_scale * -m_forwardState * (m_speedtogglemeansFaster ? 2 : 0.5f));
       else
          PhysAxisControlVelocity(PlayerObject(), 0, SLOW_BACK_SPEED * trans_scale * -m_forwardState);
 #endif

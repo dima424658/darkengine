@@ -109,15 +109,15 @@ void mp_evaluate_motion(multiped * mp, mps_motion_node * m, quat * rot,
       {
          // Motion is suspended, waiting for parent transition to end. Use last
          // frame's data.
-         frame = motion->info.num_frames - 1;
+         frame = (int)motion->info.num_frames - 1;
       }
       else
       {
-         frame = (int) floor(m->frame + 0.5);
+         frame = (int)floorf(m->frame + 0.5f);
       }
 	
       // Go get the rotation and translational data of the specified motion.
-      if (!mp_get_motion_data(mp, motion, frame, rot, xlat))
+      if (!mp_get_motion_data(mp, motion, (float)frame, rot, xlat))
       {
          m->handle |= MP_END_FLAG;
       }
@@ -218,16 +218,16 @@ void mp_evaluate_transition(multiped * mp, mps_transition_node * trans,
    m2 = mp_stack_pop(&stack);
 
    // m1 is guaranteed to be a leaf node.
-   mp_evaluate_motion(mp, (mps_motion_node *) m1, &mp_qbuffer[1], &mp_xbuffer[1]);
+   mp_evaluate_motion(mp, (mps_motion_node *) m1, mp_qbuffer[1], &mp_xbuffer[1]);
 
    // m2 might be another transition.
    if (m2->type == MN_MOTION)
    {
-      mp_evaluate_motion(mp, (mps_motion_node *) m2, &mp_qbuffer[0], &mp_xbuffer[0]);
+      mp_evaluate_motion(mp, (mps_motion_node *) m2, mp_qbuffer[0], &mp_xbuffer[0]);
    }
    else
    {
-      mp_evaluate_transition(mp, (mps_transition_node *) m2, &mp_qbuffer[0], &mp_xbuffer[0]);
+      mp_evaluate_transition(mp, (mps_transition_node *) m2, mp_qbuffer[0], &mp_xbuffer[0]);
    }
 
    // Get time relative to duration as an integer from 0 to 255.
@@ -245,9 +245,9 @@ void mp_evaluate_transition(multiped * mp, mps_transition_node * trans,
 	
    // @HACK add "joint" for base/root rotation
    blend.num_rotations = mp->num_joints+1;
-   blend.r1 = &mp_qbuffer[0];
+   blend.r1 = mp_qbuffer[0];
    mx_copy_vec(&blend.t1, &mp_xbuffer[0]);
-   blend.r2 = &mp_qbuffer[1];
+   blend.r2 = mp_qbuffer[1];
    mx_copy_vec(&blend.t2, &mp_xbuffer[1]);
 	
    blend.rot = rot;
@@ -270,7 +270,7 @@ void mp_blend_motions(mps_blend_info * b)
       quat_slerp(dest, r1, r2, b->param);
    }
 
-   mx_scale_vec(&b->xlat, &b->t1, 1.0 - b->param);
+   mx_scale_vec(&b->xlat, &b->t1, 1.0f - b->param);
    mx_scale_vec(&vec, &b->t2, b->param);
    mx_addeq_vec(&b->xlat, &vec);
 }
@@ -327,8 +327,8 @@ void mp_place_effector(multiped * mp, mps_motion_node * m, quat * rot)
          {
             // approaching effector target.
             float t;
-            int delta = ep->placement_time - ep->start_approach_time;
-            i = (m->time - ep->start_approach_time) / (float) delta * 255.0;
+            float delta = ep->placement_time - ep->start_approach_time;
+            i = (int)((m->time - ep->start_approach_time) / delta * 255.0f);
             t = mp_ramp_table[i];
 
             for (i = 0; i < ep->l->num_segments; i++, q++)
@@ -381,10 +381,10 @@ void mp_place_effector(multiped * mp, mps_motion_node * m, quat * rot)
             else
             {
                // Placement duration has expired. Transition out.
-               int out = ep->placement_time + ep->placement_duration;
+               float out = ep->placement_time + ep->placement_duration;
                if (m->time <= (out + ep->trans_out_duration))
                {
-                  i = (m->time - out) / ep->trans_out_duration * 255.0;
+                  i = (int)((m->time - out) / ep->trans_out_duration * 255.0f);
                   t = mp_ramp_table[i];
 
                   if (ep->stick)

@@ -490,7 +490,7 @@ void DoRoomTest(ObjID obj)
       mxs_vector hit_vec;
       mxs_vector real_hit;
 
-      float amt = ((float)RandRange(50, 95)) / 100.0;
+      float amt = ((float)RandRange(50, 95)) / 100.0f;
 
       mx_sub_vec(&hit_vec, &hit.vec, &start.vec);
       mx_scaleeq_vec(&hit_vec, amt);
@@ -526,20 +526,20 @@ void DoRoomTest(ObjID obj)
    for (i=0; i<gBadRoomPts.Size(); i++)
    {
       line_start = line_end = gBadRoomPts[i];
-      line_start.x += 0.1;
-      line_end.x   -= 0.1;
+      line_start.x += 0.1f;
+      line_end.x   -= 0.1f;
 
       draw_line(&line_start, &line_end);
 
       line_start = line_end = gBadRoomPts[i];
-      line_start.y += 0.1;
-      line_end.y   -= 0.1;
+      line_start.y += 0.1f;
+      line_end.y   -= 0.1f;
 
       draw_line(&line_start, &line_end);
 
       line_start = line_end = gBadRoomPts[i];
-      line_start.z += 0.1;
-      line_end.z   -= 0.1;
+      line_start.z += 0.1f;
+      line_end.z   -= 0.1f;
 
       draw_line(&line_start, &line_end);
    }
@@ -552,8 +552,8 @@ void DoRoomTest(ObjID obj)
 
 typedef mxs_vector vec3f;
 
-#define ONE_EPS   (0.995)
-#define ZERO_EPS  (0.005)
+#define ONE_EPS   (0.995f)
+#define ZERO_EPS  (0.005f)
 
 #define mx_set   mx_mk_vec
 
@@ -687,7 +687,8 @@ tResult PolyClip(vec4f *plane,         bool keep_on,
          facing = -1;
       }
       for (i=0; i < src_n; ++i)
-         point_dist[i] = point_side[i] = facing;
+      point_side[i] = (int)facing;
+      point_dist[i] = (float)facing;
    }
 
    // Now that we know the number of points on each side, allocate
@@ -817,12 +818,12 @@ void DrawRoomPoly(cRoom *pRoom, mxs_vector *verts, int p0, int p1, int p2, int p
    vert[1] = verts[p2];
    vert[2] = verts[p1];
    vert[3] = verts[p0];
-   int r = ((int) pRoom + w*10) & 63;
+   int r = (int)(((uintptr_t)pRoom + (uintptr_t)(w*10)) & 63u);
    r3_set_color(0xC000C0+r+r*65536);
    DrawClippedPoly(pRoom, 4, vert, 0, 0);
 }
 
-#define GROW_SIZE 0.03
+#define GROW_SIZE 0.03f
 
 void DrawRoomBoundaries(cRoom *pRoom)
 {

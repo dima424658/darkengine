@@ -33,4 +33,4 @@ EXTERN int _watch_light;
 #define loud_light_mprint(x)
 #endif
 
-#endif  __LITDBG_H
+#endif // __LITDBG_H

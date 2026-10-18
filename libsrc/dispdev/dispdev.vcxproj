@@ -151,40 +151,42 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="aggddraw.h" />
-    <ClInclude Include="cbchain.h" />
-    <ClInclude Include="dddynf.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\aggddraw.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\cbchain.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\dddynf.h" />
+    <ClInclude Include="..\..\winsrc\render\d3d11present.h" />
     <ClInclude Include="dispbase.h" />
-    <ClInclude Include="wdcreate.h" />
-    <ClInclude Include="wddmode.h" />
-    <ClInclude Include="wdisp.h" />
-    <ClInclude Include="wdispapi.h" />
-    <ClInclude Include="wdispcb.h" />
-    <ClInclude Include="wdispdd.h" />
-    <ClInclude Include="wdispgdi.h" />
-    <ClInclude Include="wdisptls.h" />
-    <ClInclude Include="wdspgshl.h" />
-    <ClInclude Include="wdspguid.h" />
-    <ClInclude Include="wdspmode.h" />
-    <ClInclude Include="wdspprov.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdcreate.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wddmode.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdisp.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdispapi.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdispcb.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdispdd.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdispgdi.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdisptls.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdspgshl.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdspguid.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdspmode.h" />
+    <ClInclude Include="..\..\winsrc\dispdev\wdspprov.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="aggddraw.cpp" />
-    <ClCompile Include="cbchain.cpp" />
-    <ClCompile Include="dddynf.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\aggddraw.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\cbchain.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\dddynf.cpp" />
+    <ClCompile Include="..\..\winsrc\render\d3d11present.cpp" />
     <ClCompile Include="dispbase.cpp" />
-    <ClCompile Include="wdcreate.cpp" />
-    <ClCompile Include="wddmode.cpp" />
-    <ClCompile Include="wdisp.cpp" />
-    <ClCompile Include="wdispdd.cpp" />
-    <ClCompile Include="wdispgdi.cpp" />
-    <ClCompile Include="wdisptls.cpp" />
-    <ClCompile Include="wdspgshl.cpp" />
-    <ClCompile Include="wdspmode.cpp" />
-    <ClCompile Include="wdspprov.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wdcreate.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wddmode.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wdisp.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wdispdd.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wdispgdi.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wdisptls.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wdspgshl.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wdspmode.cpp" />
+    <ClCompile Include="..\..\winsrc\dispdev\wdspprov.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="windisp.txt" />
+    <Text Include="..\..\winsrc\dispdev\windisp.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

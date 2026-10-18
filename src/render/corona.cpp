@@ -95,6 +95,11 @@ static sPropertyDesc g_CoronaDesc
 
 class cCoronaOps : public cClassDataOps<sCoronaLight>
 {
+public:
+   // NewDark retains the 52-byte retail corona prefix and appends its
+   // additional runtime/render settings.  The legacy renderer can use the
+   // prefix while the compatibility layer preserves the remaining bytes.
+   STDMETHOD_(int, ReadVersion)() { return 84; };
 };
 
 class cCoronaStore : public cHashPropertyStore<cCoronaOps>
@@ -236,7 +241,7 @@ void CoronaRender()
       lgd3d_set_zcompare(FALSE);
 
       for (int i = 0; i < g_iNumLightsInFrame; ++i) {
-         register sCoronaLight *pCorona = g_apLightsInFrame[i];
+         sCoronaLight *pCorona = g_apLightsInFrame[i];
 
          float fDist = mx_dist_vec(&pCorona->m_WorldPos, &g_pCamLoc->vec);
          if (fDist > pCorona->m_fMaxDist)
@@ -249,7 +254,7 @@ void CoronaRender()
             * fDistFrac * fDistFrac * pCorona->m_fStrength;
 
          // fade w/distance
-         lgd3d_set_alpha(pCorona->m_fAlpha * (1.0 - sqrt(fDistFrac))
+         lgd3d_set_alpha(pCorona->m_fAlpha * (1.0f - sqrtf(fDistFrac))
                        * pCorona->m_fStrength);
 
          mxs_vector u, v;  // worldspace

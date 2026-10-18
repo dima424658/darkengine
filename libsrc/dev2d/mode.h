@@ -134,6 +134,18 @@ extern int gr_set_mode (int mode, uint flags);
 // Enumerated mode <--> Mode info conversions
 #define gr_mode_info_from_mode(mode) (&grd_mode_info[(mode)])
 extern int gr_mode_from_info(int w, int h, int bitDepth);
+// Registers a DirectDraw-advertised mode when it is not in the original
+// fixed table. Returns -1 when the format is outside renderer limits or the
+// runtime table is full.
+extern int gr_register_mode(int w, int h, int bitDepth);
+// Finds the closest mode actually advertised by DirectDraw for the requested
+// depth and returns its dimensions through the output parameters.
+extern int gr_find_closest_registered_mode(int w, int h, int bitDepth,
+                                           int *registeredWidth,
+                                           int *registeredHeight);
+// Enumerates modes actually advertised by the active display provider.
+extern int gr_get_registered_mode_count(int bitDepth);
+extern int gr_get_registered_mode(int ordinal, int bitDepth);
 extern const char * gr_mode_name(int mode);
 
 // Finds the first 2d mode with w,h, and bitdepth

@@ -52,8 +52,8 @@ sPlayerSkillFullDesc g_BowSkillDesc[kPBS_NumSkills] = {
       1.0, // time to max, for powering reasons
       0x1800, // mouse speed
       0, // mouse zone
-      0.4,  // player slew speed scale
-      0.6,  // player rotate speed scale
+      0.4f,  // player slew speed scale
+      0.6f,  // player rotate speed scale
    },
 // 3 - FlexBow fire - actually do the fire
    {

@@ -39,6 +39,17 @@ EXTERN void uiGameLoadStyle(const char* prefix, guiStyle* style, const char* rel
 EXTERN void uiGameUnloadStyle(guiStyle* style); 
 EXTERN void uiGameLoadStyleColors(const char* prefix, guiStyle* style); 
 
+// Returns the platform text scale expressed in current logical-canvas units.
+// Presentation scaling is removed so text is not enlarged twice.
+EXTERN float uiGameGetLogicalTextScale(void);
+
+// Resolves a readable overlay font. A path-specific config variable wins,
+// followed by overlay_font. Otherwise a larger stock AA font is selected when
+// the platform text scale exceeds the current presentation scale. FALSE means
+// the caller should retain its legacy font.
+EXTERN BOOL uiGameGetReadableOverlayFont(const char* config_var,
+                                         char* font, int capacity);
+
 // contrast-protect all colors in the style 
 EXTERN void uiGameProtectStyle(const guiStyle* style);
 

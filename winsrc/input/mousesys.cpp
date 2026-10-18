@@ -8,7 +8,7 @@
 //
 
 #ifdef _WIN32
-#include <windows.h>
+#include <win32_platform.h>
 #endif
 
 #include <lg.h>
@@ -259,8 +259,8 @@ void _mouse_update_vel(void)
     ulong ticks = get_mouse_ticks();
     if (ticks != last_ticks && (mouseVelX != 0 || mouseVelY != 0))
     {
-        short newx = mouseInstantX;
-        short newy = mouseInstantY;
+        short newx = (short)mouseInstantX;
+        short newy = (short)mouseInstantY;
         ulong dt = ticks - last_ticks;
         long xprod = mouseVelX * dt + x_remain;
         long yprod = mouseVelY * dt + y_remain;
@@ -270,8 +270,8 @@ void _mouse_update_vel(void)
         short xs = sign(xprod);
         short ys = sign(yprod);
 
-        short dx = xs * (xm / MOUSE_VEL_UNIT);
-        short dy = ys * (ym / MOUSE_VEL_UNIT);
+        short dx = (short)(xs * (xm / MOUSE_VEL_UNIT));
+        short dy = (short)(ys * (ym / MOUSE_VEL_UNIT));
         x_remain = xs * (xm % MOUSE_VEL_UNIT);
         y_remain = ys * (ym % MOUSE_VEL_UNIT);
 
@@ -322,7 +322,8 @@ errtype mouse_put_xy(short x, short y)
         me.y = mouseInstantY;
         me.type = MOUSE_MOTION;
         me.timestamp = get_mouse_ticks();
-        me.buttons = mouseInstantButts;
+        me.buttons = (uchar)mouseInstantButts;
+        me.wheel = 0;
         mouse_generate(me);
     }
     return OK;

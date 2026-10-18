@@ -1,5 +1,5 @@
 #include <fcntl.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <tngtextg.h>
 #include <_ui.h>

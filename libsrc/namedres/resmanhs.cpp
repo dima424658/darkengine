@@ -26,7 +26,7 @@ cResourceName::~cResourceName()
 	if (m_fFlags & 1)
 	{
 		for (int i = 0; i < m_ppFullNames->Size(); ++i)
-			Free(m_ppFullNames[i]);
+			Free(const_cast<char*>((*m_ppFullNames)[i]));
 
 		if (m_ppFullNames)
 			delete m_ppFullNames;
@@ -249,4 +249,6 @@ cResourceData* cHashByResName::FindResData(const char* pName, IStore* pStore, BO
 
 		return pData;
 	}
+
+	return nullptr;
 }

@@ -69,6 +69,88 @@ DECLARE_SCRIPT_SERVICE(Debug, 0xd7)
    STDMETHOD (Break)() PURE;
 };
 
+///////////////////////////////////////
+//
+// NewDark-compatible host information and file lookup services.  Squirrel
+// providers use these interfaces to locate scripts without bypassing the
+// active content/FM search context.
+//
+
+
+DECLARE_SCRIPT_SERVICE(Version, 0x228)
+{
+   STDMETHOD_(void, GetAppName)(BOOL titleOnly, string &result) PURE;
+   STDMETHOD_(void, GetVersion)(int &major, int &minor) PURE;
+   STDMETHOD_(int, IsEditor)() PURE;
+   STDMETHOD_(void, GetGame)(string &result) PURE;
+   STDMETHOD_(void, GetGamsys)(string &result) PURE;
+   STDMETHOD_(void, GetMap)(string &result) PURE;
+   STDMETHOD(GetCurrentFM)(string &result) PURE;
+   STDMETHOD(GetCurrentFMPath)(string &result) PURE;
+   STDMETHOD_(void, FMizeRelativePath)(const char *path, string &result) PURE;
+   STDMETHOD_(void, FMizePath)(const char *path, string &result) PURE;
+   STDMETHOD(GetModPath)(string &result, int which = -1) PURE;
+};
+
+enum eWhichVarFile
+{
+   kMissionVar,
+   kGameSysVar,
+   kCampaignVar,
+   kNumVarFiles,
+};
+
+DECLARE_SCRIPT_SERVICE(Engine, 0x229)
+{
+   STDMETHOD_(BOOL, ConfigIsDefined)(const char *name) PURE;
+   STDMETHOD_(BOOL, ConfigGetInt)(const char *name, int &value) PURE;
+   STDMETHOD_(BOOL, ConfigGetFloat)(const char *name, real &value) PURE;
+   STDMETHOD_(BOOL, ConfigGetRaw)(const char *name, string &value) PURE;
+   STDMETHOD_(real, BindingGetFloat)(const char *name) PURE;
+   STDMETHOD_(BOOL, FindFileInPath)(const char *pathVariable,
+                                    const char *filename,
+                                    string &fullName) PURE;
+   STDMETHOD_(BOOL, IsRunningDX6)() PURE;
+   STDMETHOD_(void, GetCanvasSize)(int &width, int &height) PURE;
+   STDMETHOD_(real, GetAspectRatio)() PURE;
+   STDMETHOD_(void, GetFog)(int &red, int &green, int &blue,
+                            float &distance) PURE;
+   STDMETHOD_(void, SetFog)(int red, int green, int blue,
+                            float distance) PURE;
+   STDMETHOD_(void, GetFogZone)(int zone, int &red, int &green, int &blue,
+                                float &distance) PURE;
+   STDMETHOD_(void, SetFogZone)(int zone, int red, int green, int blue,
+                                float distance) PURE;
+   STDMETHOD_(void, GetWeather)(int &type, real &frequency, real &speed,
+                                real &visibility, real &radius, real &alpha,
+                                real &brightness, real &snowJitter,
+                                real &rainLength, real &splashFrequency,
+                                real &splashRadius, real &splashHeight,
+                                real &splashDuration, string &texture,
+                                vector &wind) PURE;
+   STDMETHOD_(void, SetWeather)(int type, real frequency, real speed,
+                                real visibility, real radius, real alpha,
+                                real brightness, real snowJitter,
+                                real rainLength, real splashFrequency,
+                                real splashRadius, real splashHeight,
+                                real splashDuration, const char *texture,
+                                const vector &wind) PURE;
+   STDMETHOD_(BOOL, PortalRaycast)(const vector &from, const vector &to,
+                                   vector &hit) PURE;
+   STDMETHOD_(int, ObjRaycast)(const vector &from, const vector &to,
+                               vector &hit, object &hitObject,
+                               int shortCircuit, int flags,
+                               object ignore1, object ignore2) PURE;
+   STDMETHOD_(void, SetEnvMapZone)(int zone, const char *texture) PURE;
+   STDMETHOD(SetTagBlock)(const char *name, const char *field,
+                          const char *value,
+                          eWhichVarFile which = kMissionVar,
+                          int index = 0) PURE;
+   STDMETHOD_(cMultiParm, GetTagBlock)(const char *name, const char *field,
+                                       eWhichVarFile which = kMissionVar,
+                                       int index = 0) PURE;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // MESSAGES

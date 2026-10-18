@@ -26,7 +26,7 @@
 #include <objloop.h>
 #include <brloop.h>
 #include <ailoop.h>
-#include <physloop.H>
+#include <physloop.h>
 #include <plyrloop.h>
 #include <simloop.h>
 #include <sndloop.h>
@@ -51,7 +51,7 @@
 // MASTER LOOP FACTORY FUNCTION LIST
 //
 
-static sLoopClientDesc* MasterClientsList[]=
+static const sLoopClientDesc* MasterClientsList[]=
 {
    &ScrnManClientDesc,
    &TestLoopClientDesc,
@@ -97,7 +97,7 @@ static sLoopClientDesc* MasterClientsList[]=
 };
 
 
-static ulong MasterFactoryID;
+static tLoopClientCookie MasterFactoryID;
 
 ////////////////////////////////////////////////////////////
 //
@@ -174,7 +174,7 @@ static void set_loopmode_noise(void)
       ILoop * pLoop = AppGetObj(ILoop);
 
       ILoop_GetDiagnostics(pLoop, &diags, &messes);
-      sscanf(buf,"%lx",&messes);
+      sscanf(buf, "%x", &messes);
       ILoop_SetDiagnostics(pLoop, diags|kLoopDiagTracking, messes);
       ILoop_Release(pLoop);
    }
@@ -189,7 +189,6 @@ static void set_loopmode_noise(void)
 //
 
 
-#pragma off(unreferenced)
 STDMETHODIMP LoopAppInitFunc(IUnknown* goof)
 {
    ILoopClientFactory* factory = CreateLoopFactory(MasterClientsList);
@@ -240,14 +239,12 @@ STDMETHODIMP LoopAppInitFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SHUTDOWN FUNC
 //
 
 
-#pragma off(unreferenced)
 STDMETHODIMP LoopAppShutdownFunc(IUnknown* goof)
 {
    ILoopManager* loopman = AppGetObj(ILoopManager);
@@ -256,21 +253,16 @@ STDMETHODIMP LoopAppShutdownFunc(IUnknown* goof)
    SafeRelease(loopman);
    return kNoError;
 }
-#pragma on(unreferenced)
 
 
-#pragma off(unreferenced)
 static STDMETHODIMP NullFunc(IUnknown* goof)
 {
    return kNoError;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 static void STDMETHODCALLTYPE FinalReleaseFunc(IUnknown* goof)
 {
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // LoopAppSysCreate()

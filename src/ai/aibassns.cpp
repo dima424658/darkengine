@@ -180,19 +180,18 @@ IBoolProperty * g_pAIOnlyNoticesPlayerProperty;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define SOUND_RAD_MUL      1.3
-#define SOUND_DB_MUL       1.7
+#define SOUND_DB_MUL       1.7f
 
 static sAISoundTweaks g_AIDefaultSoundTweaks =
 {
    // Ranges by type
    {
-      20*SOUND_RAD_MUL,
-      25*SOUND_RAD_MUL,
-      18*SOUND_RAD_MUL,
-      25*SOUND_RAD_MUL,
-      30*SOUND_RAD_MUL,
-      35*SOUND_RAD_MUL
+      26,
+      32,
+      23,
+      32,
+      39,
+      45
    }
 };
 
@@ -223,7 +222,7 @@ public:
    {
       int i;
       for (i=(int)kAIST_None; i<(int)kAIST_Num; i++)
-         g_aAISoundDBVals[i]=SFX_Attenuate(0,defaultRanges[i]*SOUND_DB_MUL);
+         g_aAISoundDBVals[i]=SFX_Attenuate(0,(int)(defaultRanges[i]*SOUND_DB_MUL));
    }
 };
 
@@ -257,7 +256,7 @@ sFileVarDesc gHearStatDesc =
 
 static sHearingStats def_hear_stats =
 {
-  { 0, 0.25, 0.65, 1.0, 1.5, 3.0 },
+  { 0, 0.25f, 0.65f, 1.0f, 1.5f, 3.0f },
   { 1000000, 1000, 200, 0, -200, -1000 }
 };
 
@@ -317,12 +316,12 @@ sAIAcuitySets _g_AIDefaultConeAcuities =
 {
    {
       {   1,   1,   1 },      // Normal
-      { 0.3,   3,   1 },      // Periph
-      { 0.8, 1.4, 1.2 },      // Omni
+      { 0.3f,   3,   1 },      // Periph
+      { 0.8f, 1.4f, 1.2f },    // Omni
       // @TODO: make these really work, then figure them out, then use them!!
       {   1,   0,   0 },      // Light only
       {   0,   5,   0 },      // Move only -- how do we normalize these
-      { 6.0,   1,   1 },      // Low light powerful vision
+      { 6.0f,   1,   1 },      // Low light powerful vision
    }
 };
 
@@ -472,14 +471,14 @@ sAIAlertSenseMults g_AIDefAlertSenseMults =
 {
    {
    //   XYMult   ZMult    RMult    KMult
-      {  1.0,     1.0,     1.0,     1.0  },     // Alert 0
-      {  1.0,     1.0,     1.0,     1.0  },     // Alert 1
-      {  1.15,    1.15,    1.1,     1.25 },     // Alert 2
-      {  1.30,    1.25,    1.25,    2.0  },     // Alert 3
+      {  1.0f,     1.0f,     1.0f,     1.0f  },     // Alert 0
+      {  1.0f,     1.0f,     1.0f,     1.0f  },     // Alert 1
+      {  1.15f,    1.15f,    1.1f,     1.25f },     // Alert 2
+      {  1.30f,    1.25f,    1.25f,    2.0f  },     // Alert 3
    },
 
    // CombatKMult
-   1.666666
+   1.666666f
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -494,7 +493,7 @@ void AIInitSenses()
    g_AIDefVisCtrl.midVisibility  = 19;
    g_AIDefVisCtrl.highVisibility = 44;
 
-   g_AIDefVisCtrl.lowSpeed      = SLOW_MOVE_SPEED - 0.01;
+   g_AIDefVisCtrl.lowSpeed      = SLOW_MOVE_SPEED - 0.01f;
    g_AIDefVisCtrl.highSpeed     = SLOW_MOVE_SPEED + (MOVE_SPEED - SLOW_MOVE_SPEED) / 2;
 
    g_AIDefVisCtrl.lowSpeedMod   = 0;
@@ -505,7 +504,7 @@ void AIInitSenses()
    g_AIDefVisCtrl.crouchMod     = -3;
    g_AIDefVisCtrl.wallMod       = -1;
 
-   g_AIDefVisCtrl.cornerLeanMod = 0.65;
+   g_AIDefVisCtrl.cornerLeanMod = 0.65f;
 
    StructDescRegister(&_g_AIAcuitySetsStructDesc);
    StructDescRegister(&_g_AISoundTweaksStructDesc);
@@ -911,7 +910,7 @@ STDMETHODIMP_(void) cAISenses::OnDamage(const sDamageMsg * pMsg, ObjID realCulpr
    else
    {
       pPlayerAwareness = NULL;
-      playerLinkID = NULL;
+      playerLinkID = LINKID_NULL;
    }
 #else
    playerLinkID = GetAwarenessLink(PlayerObject(), &pPlayerAwareness);
@@ -1071,7 +1070,7 @@ STDMETHODIMP cAISenses::Update()
 
       #define kDistDelayLongerSq sq(40.0)
       if (m_pAIState->DistSq(*GetObjLocation(PlayerObject())) > kDistDelayLongerSq)
-         m_Timer.Delay(kAIPlayerUpdate * 2.5);
+      m_Timer.Delay((unsigned)(kAIPlayerUpdate * 2.5f));
       else
          m_Timer.Reset();
 
@@ -1097,7 +1096,7 @@ LinkID cAISenses::GetAwarenessLink(ObjID objId, sAIAwareness ** ppAwareness)
    // Grab any existing sense data, or use temporary
    //
    static sAIAwareness awarenessBuf;
-   LinkID              linkID       = (objId) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), objId) : NULL;
+   LinkID              linkID       = (objId) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), objId) : LINKID_NULL;
    int                 time         = AIGetTime();
 
    if (linkID)
@@ -1327,7 +1326,7 @@ const long kVisibilityUpdateRate = 200;
 
 int cAISenses::CalculateLightRating(ObjID objId, const sAIVisibilityControl * pVisCtrl)
 {
-   int rawLighting = 100 * AIGetObjectLighting(objId);
+   int rawLighting = (int)(100 * AIGetObjectLighting(objId));
    int preNormBase;
    int preNormRange;
    int normBase;
@@ -1372,7 +1371,7 @@ int cAISenses::CalculateLightRating(ObjID objId, const sAIVisibilityControl * pV
       normRange    = 100 - kHighLightNorm;
    }
 
-   return normBase + ((float)(rawLighting - preNormBase) / (float)preNormRange) * normRange;
+   return (int)(normBase + ((float)(rawLighting - preNormBase) / (float)preNormRange) * normRange);
 }
 
 ///////////////////////////////////////
@@ -1421,7 +1420,7 @@ int cAISenses::GetVisibility(const sVisionArgs & args, const sAIVisionCone * pCo
 
       if (visibilityToViewer <= 0)
          visibilityToViewer = 1;
-      visibilityToViewer = visibilityToViewer * ((float)pCone->acuity / 100.0);
+      visibilityToViewer = visibilityToViewer * ((float)pCone->acuity / 100.0f);
 
       // Attempt to factor in sneaky corner leaning
       if (args.obj == PlayerObject() && IsLeaning())  //! @TODO: multiplayer
@@ -1438,7 +1437,7 @@ int cAISenses::GetVisibility(const sVisionArgs & args, const sAIVisionCone * pCo
    }
    else if (ObjHasRefs(args.obj))
    {
-      visibilityToViewer = CalculateLightRating(args.obj, pVisCtrl) * ((float)pCone->acuity / 100.0);
+      visibilityToViewer = CalculateLightRating(args.obj, pVisCtrl) * ((float)pCone->acuity / 100.0f);
    }
    else
       return 100;
@@ -1456,14 +1455,14 @@ int cAISenses::GetVisibility(const sVisionArgs & args, const sAIVisionCone * pCo
    else if (visibilityToViewer > 100)
       visibilityToViewer = 100;
 
-   return visibilityToViewer;
+   return (int)visibilityToViewer;
 }
 
 ///////////////////////////////////////
 
 STDMETHODIMP cAISenses::ClearSense(ObjID objId)
 {
-   LinkID linkId = (objId) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), objId) : NULL;
+   LinkID linkId = (objId) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), objId) : LINKID_NULL;
 
    if (linkId != LINKID_NULL)
       g_pAIAwarenessLinks->Remove(linkId);
@@ -1573,7 +1572,7 @@ STDMETHODIMP_(const sAIAwareness *) cAISenses::GetAwareness(ObjID target)
    if (!IsAPlayer(target) && target != GetID())
       Update(target);                            // players are automatically sensed at a regular interval, self is a secret token for heard object-less sounds
 
-   LinkID linkID = (target) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), target) : NULL;
+   LinkID linkID = (target) ? g_pAIAwarenessLinks->GetSingleLink(GetID(), target) : LINKID_NULL;
    sAIAwareness * pResult = NULL;
 
    if (!linkID)
@@ -1709,7 +1708,7 @@ HRESULT cAISenses::Pulse(sAIAwareness * pAwareness, eAIAwareLevel visionPulse, c
 
    eAIAwareLevel      pulse = kAIAL_Lowest;
    const mxs_vector * pPulseLoc = &visionPos;
-   unsigned           time = AIGetTime();
+   int                time = (int)AIGetTime();
 
    if (visionPulse || soundPulse)
    {
@@ -2029,7 +2028,7 @@ const sAIVisionCone * cAISenses::FindVisionCone(const sVisionArgs & args) const
 #ifdef PLAYTEST
 //#define NOTE_DIFFS
 #endif
-#define PI_AGAIN 3.14159265358979323846
+#define PI_AGAIN 3.14159265358979323846f
 
 floatang cAISenses::GetVisionFacing() const
 {  // @TBD (toml 06-18-98): should vision facing be on the IInternalAI?
@@ -2051,7 +2050,7 @@ floatang cAISenses::GetVisionFacing() const
                else
 #endif
                {
-                  float tan=atan2(head_mat.vec[0].el[1],head_mat.vec[0].el[0]);
+                  float tan=atan2f(head_mat.vec[0].el[1],head_mat.vec[0].el[0]);
 #ifdef NOTE_DIFFS
                   //               if (AIIsWatched(Sight,our_id))
                   {
@@ -2155,7 +2154,7 @@ void cAISenses::GetBestInWorld(const mxs_vector & original, mxs_vector * pResult
    {
       pResult->x = original.x;
       pResult->y = original.y;
-      pResult->z = AIGetZAtXYOnCell(original, cell) + 0.25;
+      pResult->z = AIGetZAtXYOnCell(original, cell) + 0.25f;
 
    }
    else
@@ -2273,8 +2272,8 @@ int cAISenses::GetFreeKnowledgePeriod()
    float mult = pMults->mults[m_pAIState->GetAlertness()].KnowledgeMult;
 
    if (m_pAIState->GetMode() != kAIM_Combat)
-      return base * mult;
-   return base * mult * pMults->CombatKnowledgeMult;
+      return (int)(base * mult);
+   return (int)(base * mult * pMults->CombatKnowledgeMult);
 
 }
 

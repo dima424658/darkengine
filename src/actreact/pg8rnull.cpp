@@ -27,7 +27,6 @@ IMPLEMENT_UNAGGREGATABLE_SELF_DELETE(cNullPropagator,IPropagator);
 
 #define Scream() Warning(("cNullPropagation method called %s line %d\n",__FILE__,__LINE__))
 
-#pragma off(unreferenced)
 
 STDMETHODIMP_(const sPropagatorDesc*) cNullPropagator::Describe()
 {
@@ -125,8 +124,3 @@ STDMETHODIMP cNullPropagator::Reset()
    Scream();
    return E_FAIL;
 }
-
-
-
-#pragma on(unreferenced)
-

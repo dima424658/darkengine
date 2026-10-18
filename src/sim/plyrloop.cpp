@@ -40,6 +40,7 @@
 #include <matrix.h>
 #include <tagfile.h>
 #include <vernum.h>
+#include <dbfile.h>
 
 #include <simman.h>
 #include <simdef.h>
@@ -60,6 +61,7 @@
 #include <mnamprop.h>
 
 #include <mprintf.h>
+#include <stdio.h>
 
 // Must be last header 
 #include <dbmem.h>
@@ -166,7 +168,7 @@ static void create_player_cam(void)
       mxs_angvec ang;
 
       mx_mk_vec(&pos, 0.0, 0.0, 0.0); 
-      mx_mk_angvec(&ang, 0.0, 0.0, 0.0); 
+   mx_mk_angvec(&ang, 0, 0, 0);
       
       gPlayerCam = CameraInit(&pos,&ang,OBJ_NULL); 
    }
@@ -199,7 +201,12 @@ static void load_player_cam_info(ITagFile *pFile)
 //checking version info already done by setup_tagfile
 
   readresult = pFile->Read(cam, sizeof(Camera));
-  AssertMsg(readresult==sizeof(Camera),"Read invalid block size trying to load player camera info!");
+  if (readresult != sizeof(Camera))
+  {
+     dbLoadReportFailure("player-camera",
+                         "Player camera block is truncated");
+     return;
+  }
 
   memcpy(gPlayerCam,cam,sizeof(Camera));
 
@@ -323,6 +330,14 @@ struct Position* PlayerPosition()
    return NULL; 
 }
 
+// C entry point used by the editor's command-line render regression mode.
+// Keep the normal C++ API untouched while allowing editmode.c to obtain the
+// exact mission starting transform without duplicating PlayerFactory lookup.
+extern "C" struct Position* PlayerPositionForRenderTest()
+{
+   return PlayerPosition();
+}
+
 ////////////////////////////////////////////////////////////
 // PLAYER TAG FILE
 //
@@ -427,6 +442,49 @@ static void reset_player_position(void)
    PhysSetVelocity(gPlayerObj, &zero);
 }
 
+#ifdef THIEF2_GAME
+static mxs_ang quickstart_degrees_to_ang(float degrees)
+{
+   return (mxs_ang)(degrees * (65536.0 / 360.0));
+}
+
+static void apply_quickstart_transform(void)
+{
+   static BOOL applied = FALSE;
+   char value[160];
+   ObjPos *pos;
+   mxs_vector location;
+   mxs_angvec facing;
+   float pitch, heading, roll;
+
+   if (applied || !config_is_defined("quickstart") || gPlayerObj == OBJ_NULL)
+      return;
+
+   pos = ObjPosGet(gPlayerObj);
+   if (!pos)
+      return;
+
+   location = pos->loc.vec;
+   facing = pos->fac;
+   pitch = (float)facing.ty * (360.0f / 65536.0f);
+   heading = (float)facing.tz * (360.0f / 65536.0f);
+   roll = (float)facing.tx * (360.0f / 65536.0f);
+
+   if (config_get_raw("quickstart_pos", value, sizeof(value)))
+      sscanf(value, "%f,%f,%f", &location.x, &location.y, &location.z);
+   if (config_get_raw("quickstart_angles", value, sizeof(value)))
+      sscanf(value, "%f,%f,%f", &pitch, &heading, &roll);
+
+   // User-facing order is pitch, heading, roll. Dark stores those axes as
+   // ty, tz, tx respectively.
+   facing.tx = quickstart_degrees_to_ang(roll);
+   facing.ty = quickstart_degrees_to_ang(pitch);
+   facing.tz = quickstart_degrees_to_ang(heading);
+   ObjPosUpdate(gPlayerObj, &location, &facing);
+   applied = TRUE;
+}
+#endif
+
 
 ////////////////////////////////////////////////////////////
 // SIM LISTENER
@@ -442,6 +500,9 @@ static void sim_msg(const sDispatchMsg* msg, const sDispatchListenerDesc* )
       case kSimResume:
          if (gPlayerObj == OBJ_NULL)
             PlayerCreate();
+#ifdef THIEF2_GAME
+         apply_quickstart_transform();
+#endif
          init_player_cam(); 
 #ifdef EDITOR
          if (!persistent_player_pos)
@@ -603,7 +664,6 @@ static void db_message(DispatchData* msg)
 // OBJECT MESSAGE HANDLER
 //
 
-#pragma off(unreferenced)
 static void obj_message(ObjID obj, eObjNotifyMsg msg, void* data)
 {
    switch(msg)
@@ -619,7 +679,6 @@ static void obj_message(ObjID obj, eObjNotifyMsg msg, void* data)
          break;
    }
 }
-#pragma on(unreferenced)
 
 static void init_obj_message(void)
 {
@@ -641,7 +700,6 @@ void register_player_commands(void);
 // Here's where we do the dirty work.
 //
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {  // useful stuff for most clients
    eLoopMessageResult result = kLoopDispatchContinue;
@@ -696,7 +754,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function.
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -706,7 +763,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
 
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 
 

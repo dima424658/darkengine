@@ -3,12 +3,11 @@
 #ifndef __FL8TF_H
 #define __FL8TF_H
 
-extern void translucent_8to8_setup();
-extern void opaque_8to8_setup();
-extern void opaque_lit_8to8_setup();
-extern void opaque_clut_8to8_setup();
-extern void trans_8to8_setup();
-extern void trans_lit_8to8_setup();
-extern void trans_clut_8to8_setup();
+#include <tftype.h>
+
+extern tmap_setup_func translucent_8to8_setup;
+extern tmap_setup_func opaque_8to8_setup;
+extern tmap_setup_func opaque_lit_8to8_setup;
+extern tmap_setup_func opaque_clut_8to8_setup;
 
 #endif

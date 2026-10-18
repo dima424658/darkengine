@@ -33,7 +33,7 @@ ObjID highlit_obj=OBJ_NULL;
 ///////////////////////////////////////
 // multiple light system/setup
 
-float objlight_highlight_level=0.35;
+float objlight_highlight_level=0.35f;
 
 // XXX should only be used in debug
 BOOL g_bAllObjsUnlit=FALSE;
@@ -41,17 +41,32 @@ BOOL g_bAllObjsUnlit=FALSE;
 int num_light, num_dyn;
 mls_multi_light light_data[MAX_STATIC];
 mls_multi_light light_this[32];
+static BOOL dynamic_light_overflow_warned;
 
 #define SUNLIGHT_INDEX 0
 #define FIRST_LIGHT (SUNLIGHT_INDEX + 1)// reserve one index for sunlight
 
 // how many feet away sunlight is considered to be for object lighting
-#define SUNLIGHT_DISTANCE 125.0
+#define SUNLIGHT_DISTANCE 125.0f
+
+// Thief 2 reserves object-light slot zero for sunlight.  Thief 1/Gold has no
+// such reservation: WR 0.23 may store an ordinary static light in slot zero
+// and cells may reference it.  Only give slot zero the Thief 2 meaning when
+// this mission actually enables sunlight.
+static BOOL mission_uses_sunlight(void)
+{
+   return GetMissionRenderParams()->use_sun;
+}
 
 
 void reset_object_lighting(void)
 {
    num_light=FIRST_LIGHT;
+   // Mission transitions can rebuild static lighting before the render
+   // loop's first BeginFrame reset.  Do not carry dynamic object lights from
+   // the menu or previous mission into that initial update.
+   num_dyn=0;
+   dynamic_light_overflow_warned = FALSE;
 }
 
 void reset_dynamic_lighting(void)
@@ -78,7 +93,18 @@ void add_dynamic_light(Location *loc, float bright, float clamp_radius)
       ++num_dyn;
    }
    else
-      CriticalMsg("Out of Dynamic Lights");
+   {
+      // The portal lightmap has already received this light.  Only the
+      // fixed-size object-light list is full, so keep rendering instead of
+      // aborting the mission.  NewDark retains 32 object-light slots and
+      // likewise treats additional simultaneous lights as a capped effect.
+      if (!dynamic_light_overflow_warned)
+      {
+         Warning(("Object dynamic-light capacity (%d) exceeded; "
+                  "additional lights affect terrain only\n", MAX_DYNAMIC));
+         dynamic_light_overflow_warned = TRUE;
+      }
+   }
 }
 
 #ifdef RGB_LIGHTING
@@ -171,7 +197,7 @@ BOOL location_sees_light(Location *loc, int light_id)
 {
    Location dummy;
    Location p;
-   if (light_id == SUNLIGHT_INDEX) {
+   if (light_id == SUNLIGHT_INDEX && mission_uses_sunlight()) {
       return portal_loc_has_sunlight(loc);
    } else {
       MakeLocationFromVector(&p, &light_data[light_id].loc);
@@ -320,9 +346,12 @@ static void setup_location_lighting(Location *loc, mxs_vector *newlight, int *sh
 
    num = num_light + num_dyn;
 
-   // put sunlight next to object
-   mx_scale_add_vec(&light_data[SUNLIGHT_INDEX].loc, &loc->vec,
-                    &portal_sunlight_norm, SUNLIGHT_DISTANCE + radius);
+   // Put sunlight next to the object.  Slot zero is an ordinary static light
+   // in Thief 1/Gold missions, so it must remain untouched when sunlight is
+   // disabled.
+   if (mission_uses_sunlight())
+      mx_scale_add_vec(&light_data[SUNLIGHT_INDEX].loc, &loc->vec,
+                       &portal_sunlight_norm, SUNLIGHT_DISTANCE + radius);
 
    // first iterate over non-dynamic lights
    for (n=0, i=0; i <= lt[0]; i += 32, shadPtr++)
@@ -372,7 +401,8 @@ void setup_object_lighting(ObjID o, mxs_vector *newlight, float bright)
    // get info for level
    parms = GetMissionRenderParams();
    mx_copy_vec(&mld_multi_rgb_ambient, &parms->ambient_light);
-   mx_copy_vec(&light_data[SUNLIGHT_INDEX].bright, &parms->sun_scaled_rgb);
+   if (parms->use_sun)
+      mx_copy_vec(&light_data[SUNLIGHT_INDEX].bright, &parms->sun_scaled_rgb);
 
    if (ObjExtraLightGet(o, &extra_light)) {
 #ifdef RGB_LIGHTING
@@ -380,7 +410,7 @@ void setup_object_lighting(ObjID o, mxs_vector *newlight, float bright)
       for (i = 0; i < 3; ++i) {
          mld_multi_rgb_ambient.el[i] += extra_light->m_fValue;
          if ((mld_multi_rgb_ambient.el[i] + mld_multi_hilight) > 1.0)
-            mld_multi_rgb_ambient.el[i] = 1.0 - mld_multi_hilight;
+            mld_multi_rgb_ambient.el[i] = 1.0f - mld_multi_hilight;
          if (!extra_light->m_bAdditive)
             mld_multi_ambient_only = TRUE;
       }
@@ -408,7 +438,7 @@ static float _apply_one_light(int i, Location *loc)
 {
    float scale = 1.0;
 
-   if (i == SUNLIGHT_INDEX) {
+   if (i == SUNLIGHT_INDEX && mission_uses_sunlight()) {
       mx_scale_add_vec(&light_data[SUNLIGHT_INDEX].loc, &loc->vec,
                        &portal_sunlight_norm, SUNLIGHT_DISTANCE);
       return ml_multi_light_on_object(&light_data[i], &loc->vec);
@@ -523,7 +553,7 @@ static void _show_seen(int how_many)
 {
    int i;
    qsort(seen_lights,seen_index,sizeof(sObjLightSort),compare_seen);
-   for (i=0; i<min(how_many,seen_index); i++)
+   for (i=0; i<__min(how_many,seen_index); i++)
    {
       sObjLightSort *s=&seen_lights[i];
       char buf[256];

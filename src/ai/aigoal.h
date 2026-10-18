@@ -175,7 +175,7 @@ public:
 
    // IAIAbility
    IAIAbility * pOwner;
-   DWORD        ownerData;
+   uintptr_t    ownerData;
 };
 
 ///////////////////////////////////////
@@ -215,8 +215,8 @@ inline eAIGoalType cAIGoal::GetType() const
 // CLASS: cAIGotoGoal
 //
 
-#define kAIGG_DefaultAccuracy  (sq(3.0))
-#define kAIGG_DefaultAccuracyZ (6.0833)
+#define kAIGG_DefaultAccuracy  (sq(3.0f))
+#define kAIGG_DefaultAccuracyZ (6.0833f)
 #define kAIGG_NoZAccuracy      kFloatMax
 
 class cAIGotoGoal : public cAIGoal

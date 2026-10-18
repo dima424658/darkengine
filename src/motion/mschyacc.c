@@ -95,6 +95,7 @@ typedef union {
 */
 extern void IncParseFile(char *fileName);
 extern void SchemaParseFile(char *fileName, int (*parseFn)());
+extern void MschParseFile(char *schemaFile);
 
 #define mscherror mprintf
 
@@ -587,7 +588,7 @@ void MotSchemaYaccParse(char *schemaFile)
 
 
 
-mschparse()
+int mschparse(void)
 {
 	register short		mschi, *mschp;	/* for table lookup */
 	register short		*mschps;		/* top of state stack */
@@ -1014,7 +1015,7 @@ case MSCHr63: {	/* motinst :  IDENT optmotparamlist */
    {
       size=sizeof(g_aSchemaMotions[0].name);     
       strncpy(g_aSchemaMotions[g_nSchemaMotions].name.text,mschpvt[-1].strval,size);
-      g_aSchemaMotions[g_nSchemaMotions].stuff.flags=NULL;
+      g_aSchemaMotions[g_nSchemaMotions].stuff.flags=0;
       if(g_NeckIsFixed)
          g_aSchemaMotions[g_nSchemaMotions].stuff.flags|=kMSF_NECK_IS_FIXED;
       g_aSchemaMotions[g_nSchemaMotions].stuff.blendLength=g_BlendLength;
@@ -1066,6 +1067,7 @@ case MSCHr65: {	/* motlist :  */
 	if (mschdebug)
 		MSCH_TRACE(mschShowGoto)
 #endif
+	if (0) goto mscherrlabel;
 	goto mschStack;
 
 mscherrlabel:	;		/* come here from MSCHERROR	*/

@@ -22,6 +22,8 @@
 
 #include <command.h>
 #include <ctype.h>
+#include <string.h>
+#include <darklimit.h>
 
 #include <dev2d.h>
 #include <drkmiss.h>
@@ -66,17 +68,23 @@ static cAmapAnnotationArray    gAnnotations;
 
 static IAutomapProperty* gAutoMapProp = NULL; 
 
-// We allow up to 8 map pages, and up to 32 decals per page
+// NewDark campaign saves allow 32 map pages and 256 decals per page.
 
-#define MAX_AMAP_PAGES 8
+#define MAX_AMAP_PAGES DARK_LIMIT_RUNTIME_AUTOMAP_PAGES
 // MAX_AMAP_DECALS_PER_PAGE should be a multiple of 32
-#define MAX_AMAP_DECALS_PER_PAGE 64
+#define MAX_AMAP_DECALS_PER_PAGE DARK_LIMIT_RUNTIME_AUTOMAP_DECALS
 #define AMAP_LONGS_PER_PAGE (MAX_AMAP_DECALS_PER_PAGE >> 5)
 #define MAX_MISSION_MAPS 32
 
 struct sVisited
 {
    ulong visited[MAX_MISSION_MAPS][MAX_AMAP_PAGES][AMAP_LONGS_PER_PAGE];
+};
+
+struct sVisitedLegacy
+{
+   ulong visited[MAX_MISSION_MAPS][DARK_LIMIT_AUTOMAP_LEGACY_PAGES]
+                [DARK_LIMIT_AUTOMAP_LEGACY_DECALS >> 5];
 };
 
 // Here's my descriptor, which identifies my stuff to the tag file & editor
@@ -91,8 +99,33 @@ sFileVarDesc gVisitedDesc =
    "dark",                   // optional: what game am I in NULL means all 
 };
 
+class cVisitedFileVar : public cFileVar<sVisited,&gVisitedDesc>
+{
+protected:
+   virtual BOOL ReadBlock(ITagFile *file, const TagVersion &)
+   {
+      const ulong storedSize = file->TellFromEnd();
+      memset(visited, 0, sizeof(visited));
+      if (storedSize == sizeof(sVisited))
+         return file->Read((char *)visited, sizeof(visited)) == sizeof(visited);
+      if (storedSize == sizeof(sVisitedLegacy))
+      {
+         sVisitedLegacy legacy;
+         if (file->Read((char *)&legacy, sizeof(legacy)) != sizeof(legacy))
+            return FALSE;
+         for (int mission = 0; mission < MAX_MISSION_MAPS; ++mission)
+            for (int page = 0; page < DARK_LIMIT_AUTOMAP_LEGACY_PAGES; ++page)
+               memcpy(visited[mission][page], legacy.visited[mission][page],
+                      sizeof(legacy.visited[mission][page]));
+         return TRUE;
+      }
+      Warning(("VISITED block has unsupported size %u\n", storedSize));
+      return FALSE;
+   }
+};
+
 // The actual global variable
-cFileVar<sVisited,&gVisitedDesc> gVisited; 
+cVisitedFileVar gVisited;
 
 
 // -1 - display all decals as if they have been visited
@@ -232,7 +265,7 @@ static sPropertyDesc AutomapProp_desc =
    { "Room", "Automap" },
 };
 
-void SetupAutomapProperty(void);
+static void SetupAutomapProperty(void);
 
 void AutomapPropInit(void)
 {
@@ -277,8 +310,8 @@ static sAutomapProperty* map_player_pos()
       if (room != OBJ_NULL && gAutoMapProp->Get(room,&prop))
       {
          AutoAppIPtr(QuestData); 
-         if (prop->page >= pQuestData->Get(MIN_PAGE_QVAR) 
-             && prop->page <= pQuestData->Get(MAX_PAGE_QVAR))
+         if ((int)prop->page >= pQuestData->Get(MIN_PAGE_QVAR)
+             && (int)prop->page <= pQuestData->Get(MAX_PAGE_QVAR))
             return prop; 
 
          static sAutomapProperty oob_pos; 
@@ -599,9 +632,9 @@ OverlapsAnnotation( sAmapAnnotation    *pAnnotation,
 // make values less than 128 smaller,
 //   values greater than 128 bigger
 
-static float brightenRGB[3] = { 0.7, 0.7, 0.3 };
-static float darkenRGB[3] =   { 0.1, 0.1, 0.1 };
-static float dimRGB[3] =      { 0.2, 0.2, 0.7 };
+static float brightenRGB[3] = { 0.7f, 0.7f, 0.3f };
+static float darkenRGB[3] =   { 0.1f, 0.1f, 0.1f };
+static float dimRGB[3] =      { 0.2f, 0.2f, 0.7f };
 static int splitPoint = 100;
 
 static void
@@ -620,14 +653,14 @@ mungeColor( uchar    *pDst,
       // enhance contrast in decal where player is
       if ( ((r + g + b) / 3) >= splitPoint ) {
          // make color brighter
-         r = 255 - ((255 - r) * (1.0 - brightenRGB[0]));
-         g = 255 - ((255 - g) * (1.0 - brightenRGB[1]));
-         b = 255 - ((255 - b) * (1.0 - brightenRGB[2]));
+         r = (int)(255 - ((255 - r) * (1.0f - brightenRGB[0])));
+         g = (int)(255 - ((255 - g) * (1.0f - brightenRGB[1])));
+         b = (int)(255 - ((255 - b) * (1.0f - brightenRGB[2])));
       } else {
          // make color darker
-         r *= (1.0 - darkenRGB[0]);
-         g *= (1.0 - darkenRGB[1]);
-         b *= (1.0 - darkenRGB[2]);
+         r = (int)(r * (1.0f - darkenRGB[0]));
+         g = (int)(g * (1.0f - darkenRGB[1]));
+         b = (int)(b * (1.0f - darkenRGB[2]));
       }
 
    } else {
@@ -637,12 +670,12 @@ mungeColor( uchar    *pDst,
       //  increase the contrast of the blue component.  This color
       //  shifts the palette toward blue, to make the visited areas
       //  stand out, without losing so much contrast text is illegible
-      r = (r >= splitPoint) ? splitPoint + ( (r - splitPoint) * (1.0 - dimRGB[0]) )
-         :                    splitPoint - ( (splitPoint - r) * (1.0 - dimRGB[0]) );
-      g = (g >= splitPoint) ? splitPoint + ( (g - splitPoint) * (1.0 - dimRGB[1]) )
-         :                    splitPoint - ( (splitPoint - g) * (1.0 - dimRGB[1]) );
-      b = (b >= splitPoint) ? 255 - ((255 - b) * (1.0 - dimRGB[2]))
-         :                    b * (1.0 - dimRGB[2]);
+      r = (int)((r >= splitPoint) ? splitPoint + ( (r - splitPoint) * (1.0f - dimRGB[0]) )
+         :                           splitPoint - ( (splitPoint - r) * (1.0f - dimRGB[0]) ));
+      g = (int)((g >= splitPoint) ? splitPoint + ( (g - splitPoint) * (1.0f - dimRGB[1]) )
+         :                           splitPoint - ( (splitPoint - g) * (1.0f - dimRGB[1]) ));
+      b = (int)((b >= splitPoint) ? 255 - ((255 - b) * (1.0f - dimRGB[2]))
+         :                           b * (1.0f - dimRGB[2]));
    }
 
    *pDst++ = r;
@@ -728,6 +761,12 @@ void cAutomap::RedrawDisplay()
    sprintf(buf,"%s/p%03dra",missdata->path,mPageNum); 
    FetchUIRects(buf, tmpRects);
    numDecals = tmpRects.Size();
+   if (numDecals > MAX_AMAP_DECALS_PER_PAGE)
+   {
+      Warning(("Automap page %d has %d decals; only the first %d are supported\n",
+               mPageNum, numDecals, MAX_AMAP_DECALS_PER_PAGE));
+      numDecals = MAX_AMAP_DECALS_PER_PAGE;
+   }
 
    //////////////////////////////////////////////////////////////////////////
    //
@@ -934,7 +973,7 @@ cAutomap::MapRegionEventHandler( uiEvent  *pEvent,
 {
    uiCookedKeyEvent *pKeyEvent;
    uiMouseEvent *pMouseEvent;
-   char c;
+   int c;
    bool retVal = FALSE;
    bool doRedraw = FALSE;
    int x, y, len, i;
@@ -967,7 +1006,7 @@ cAutomap::MapRegionEventHandler( uiEvent  *pEvent,
                case KEY_BS:
                case KEY_DEL:
                   // delete a char
-                  len = strlen( mCurAnnotation.text );
+      len = (int)strlen( mCurAnnotation.text );
                   if ( len ) {
                      mCurAnnotation.text[ len - 1 ] = 0;
                   }
@@ -978,7 +1017,7 @@ cAutomap::MapRegionEventHandler( uiEvent  *pEvent,
                   // 
                   // if key is in range, add it to end of string and redisplay
                   //
-                  len = strlen( mCurAnnotation.text );
+      len = (int)strlen( mCurAnnotation.text );
                   if ( len < (MAX_ANNOT_CHARS - 1) ) {
                      mCurAnnotation.text[ len ] = c;
                      mCurAnnotation.text[ len + 1 ] = 0;
@@ -1126,7 +1165,7 @@ static void create_panel_mode()
 
 
 
-void init_commands(void);
+static void init_commands(void);
 
 void DarkAutomapInit(void)
 {

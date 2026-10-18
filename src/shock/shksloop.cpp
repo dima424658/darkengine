@@ -170,7 +170,6 @@ void UnequipWeapon(void)
    }
 }
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -347,8 +346,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function.
 //
 
-#pragma off(unreferenced)
-static ILoopClient* LGAPI _CreateClient(const sLoopClientDesc* desc, tLoopClientData data)
+static ILoopClient* LGAPI _CreateClient(sLoopClientDesc* desc, tLoopClientData data)
 {
    StateRecord* state;
    // allocate space for our state, and fill out the fields
@@ -357,7 +355,6 @@ static ILoopClient* LGAPI _CreateClient(const sLoopClientDesc* desc, tLoopClient
 
    return CreateSimpleLoopClient(_LoopFunc,state,desc);
 }
-#pragma on(unreferenced)
 
 ///////////////
 // DESCRIPTOR

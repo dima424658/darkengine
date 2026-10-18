@@ -426,7 +426,7 @@ public:
 };
 
 // some reasonable values for a kick
-sGunKick g_defaultGunKick = {1000, 1000, 1000, 0, -0.2, -0.2, 1, 1.0, 200, 200, 1};
+sGunKick g_defaultGunKick = {1000, 1000, 1000, 0, 0, -0.2f, 1, 1.0f, 200, 200, 1};
 
 cGunKicks::cGunKicks(void)
 {

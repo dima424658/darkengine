@@ -94,7 +94,7 @@ BOOL cMotionSchema::Save(ITagFile *pFile)
    ulong size=m_MotIndexList.Size();
    int i;
    ITagFile_Write(pFile,(char *)&size,sizeof(size));
-   for(i=0;i<size;i++)
+   for(i = 0; i < (int)size; i++)
       ITagFile_Write(pFile,(char *)&m_MotIndexList[i],sizeof(m_MotIndexList[i]));
 
    return FALSE;
@@ -120,7 +120,7 @@ BOOL cMotionSchema::Load(ITagFile *pFile, cNameMap *pNameMap)
    int i;
    ITagFile_Read(pFile,(char *)&size,sizeof(size));
    m_MotIndexList.SetSize(size);
-   for(i=0;i<size;i++)
+   for(i = 0; i < (int)size; i++)
    {
       ITagFile_Read(pFile,(char *)&index,sizeof(index));
       m_MotIndexList.SetItem((int *)&index,i);

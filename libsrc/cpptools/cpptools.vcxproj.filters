@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="..\..\3rdparty\blast\blast.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
@@ -27,13 +30,13 @@
     <ClCompile Include="dynfunc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="filepath.cpp">
+    <ClCompile Include="..\..\winsrc\cpptools\filepath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="filespec.cpp">
+    <ClCompile Include="..\..\winsrc\cpptools\filespec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="fnamutil.cpp">
+    <ClCompile Include="..\..\winsrc\cpptools\fnamutil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="hashpp.cpp">
@@ -51,7 +54,7 @@
     <ClCompile Include="relocptr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="splitpat.cpp">
+    <ClCompile Include="..\..\winsrc\cpptools\splitpat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="str.cpp">

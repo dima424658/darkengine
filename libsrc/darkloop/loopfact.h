@@ -47,7 +47,7 @@ public:
 	void ReleaseAll();
 
 	HRESULT AddClient(const sLoopClientDesc* pClientDesc);
-	HRESULT RemoveClient(ulong cookie);
+	HRESULT RemoveClient(tLoopClientCookie cookie);
 
 	HRESULT AddClients(const sLoopClientDesc** ppClientDesc);
 

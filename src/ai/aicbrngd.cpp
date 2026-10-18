@@ -141,7 +141,7 @@ void cAIRangedSubcombat::Reset()
    m_Attacking = FALSE;
    m_MovingAttacking = FALSE;
 
-   m_BaseTacticalScore = (50.0 - (pRangedProp->cover_desire * 10.0));
+   m_BaseTacticalScore = (50.0f - (pRangedProp->cover_desire * 10.0f));
    m_TacticalScore = m_BaseTacticalScore;
 
    // Init bias list
@@ -334,7 +334,7 @@ STDMETHODIMP_(void) cAIRangedSubcombat::OnDamage(const sDamageMsg *pMsg, ObjID r
    if (InControl())
    {
       m_fDamaged = TRUE;
-      m_fDamage = pMsg->data.damage->amount;
+   m_fDamage = (float)pMsg->data.damage->amount;
       SignalAction();
    }
 
@@ -454,7 +454,7 @@ cAIAction * cAIRangedSubcombat::CheckSuggestDamageAction(const cAIActions & prev
          g_pAIRangedAudioResponse->Get(GetID(),&audio);
 
          float dmg=m_fDamage, var;
-         var=((2.0*Rand()-RAND_MAX)/(RAND_MAX+1))*audio->el[2];
+         var=((2.0f*Rand()-RAND_MAX)/(RAND_MAX+1.0f))*audio->el[2];
          dmg+=var;
          if (dmg>audio->el[0])
          {
@@ -768,7 +768,7 @@ cAIAction * cAIRangedSubcombat::CreateActionForMoveKind(eAIRCMoveLocKind moveKin
             float distKeepFreshSense = pLocoAction->ComputePathDist()  - g_RangedNoFreshenRange;
 
             if (distKeepFreshSense > 0.0)
-               pSenses->KeepFresh(GetTargetInfo()->id, (distKeepFreshSense / g_RangedSpeed) * 1000.0);
+      pSenses->KeepFresh(GetTargetInfo()->id, (unsigned)((distKeepFreshSense / g_RangedSpeed) * 1000.0f));
          }
 
          if (m_pAI->AccessSoundEnactor() && CanPlayReactCharge())
@@ -970,7 +970,7 @@ cAIAction * cAIRangedSubcombat::CheckSuggestAttackAction(sAIRangedCombatProp * p
             m_Attacking = TRUE;
 
             #define kRandVar 15
-            float randVar = 1.0 + (AIRandom(0, kRandVar * 2) - kRandVar) / 100.0;
+            float randVar = 1.0f + (AIRandom(0, kRandVar * 2) - kRandVar) / 100.0f;
             m_FiringDelay.Set((eAITimerPeriod)(unsigned)(pRangedProp->firing_delay * 1000 * randVar));
          }
       }
@@ -1049,7 +1049,7 @@ void cAIRangedSubcombat::RefreshProjectilesTime(int dt)
       LinkID id = query->ID();
 
       sAIProjectileRel *pProjData = (sAIProjectileRel *)pLinkMan->GetData(id);
-      pProjData->time_since_selected += ((float)dt) / 1000.0;
+      pProjData->time_since_selected += ((float)dt) / 1000.0f;
       pLinkMan->SetData(id, (void *)pProjData);
    }
    SafeRelease(query);
@@ -1121,8 +1121,8 @@ void cAIRangedSubcombat::DecayLocation()
 
    ai_decay = pRangedProp->decay_speed;
 
-   point_decay = 1.0 - ((1.0 - point_decay) / 100);
-   ai_decay = 1.0 - ((1.0 - ai_decay) / 100);
+   point_decay = 1.0f - ((1.0f - point_decay) / 100);
+   ai_decay = 1.0f - ((1.0f - ai_decay) / 100);
 
    m_CurLocDecayAmt *= (ai_decay * point_decay);
 
@@ -1142,12 +1142,12 @@ void cAIRangedSubcombat::UpdateTacticalScore()
       mxs_real delta = m_TacticalScore - m_BaseTacticalScore;
 
       if (delta > 10)
-         delta = -0.2;
+         delta = -0.2f;
       else
       if (delta < -10)
-         delta = 0.2;
+         delta = 0.2f;
       else
-         delta *= -0.2;
+         delta *= -0.2f;
 
       m_TacticalScore += delta;
    }
@@ -1299,9 +1299,9 @@ BOOL cAIRangedSubcombat::ProjectileHittable(int targ_method, ObjID projectile, O
             return FALSE;
          }
 
-         for (float mult = 0.2; mult <= 1.0; mult += 0.2)
+         for (float mult = 0.2f; mult <= 1.0f; mult += 0.2f)
          {
-            height = (0.5 * sq(pInitVel->x * mult)) / (2 * kGravityAmt);
+            height = (0.5f * sq(pInitVel->x * mult)) / (2 * kGravityAmt);
 
             mx_sub_vec(&midpt, target_loc, source_loc);
             mx_scaleeq_vec(&midpt, 0.5);
@@ -1373,7 +1373,7 @@ BOOL cAIRangedSubcombat::ProjectileHittable(int targ_method, ObjID projectile, O
                   mxs_vector vec;
 
                   mx_sub_vec(&vec, &hit.vec, &start.vec);
-                  mx_scaleeq_vec(&vec, 0.99);
+                  mx_scaleeq_vec(&vec, 0.99f);
                   mx_addeq_vec(&vec, &start.vec);
                   hit.vec = vec;
                }
@@ -1425,7 +1425,7 @@ BOOL cAIRangedSubcombat::ProjectileHittable(int targ_method, ObjID projectile, O
                mxs_vector vec;
 
                mx_sub_vec(&vec, &hit.vec, &start.vec);
-               mx_scaleeq_vec(&vec, 0.99);
+               mx_scaleeq_vec(&vec, 0.99f);
                mx_addeq_vec(&vec, &start.vec);
                hit.vec = vec;
             }
@@ -1514,11 +1514,11 @@ float cAIRangedSubcombat::EvaluateLoc(ObjID markerObj, const mxs_vector &pt_loc)
          if (!g_pVantagePtProp->Get(markerObj, &pVantagePt))
             return REALLY_BAD;
 
-         score = pVantagePt->value;
+         score = (float)pVantagePt->value;
       }
 
-      ideal_dist = pAICombatProp->ideal_distance;
-      min_dist = pAICombatProp->minimum_distance;
+         ideal_dist = (mxs_real)pAICombatProp->ideal_distance;
+         min_dist = (mxs_real)pAICombatProp->minimum_distance;
       no_los_bonus = -50;
    }
    else
@@ -1531,11 +1531,11 @@ float cAIRangedSubcombat::EvaluateLoc(ObjID markerObj, const mxs_vector &pt_loc)
          if (!g_pCoverPtProp->Get(markerObj, &pCoverPt))
             return REALLY_BAD;
 
-         score = pCoverPt->value;
+         score = (float)pCoverPt->value;
       }
 
-      ideal_dist = pAICombatProp->ideal_distance * 2.0;
-      min_dist = pAICombatProp->minimum_distance * 2.0;
+      ideal_dist = pAICombatProp->ideal_distance * 2.0f;
+      min_dist = pAICombatProp->minimum_distance * 2.0f;
       no_los_bonus = 100;
    }
 
@@ -1548,7 +1548,7 @@ float cAIRangedSubcombat::EvaluateLoc(ObjID markerObj, const mxs_vector &pt_loc)
    if (pt_targ_dist_2 < sq(min_dist))
       return REALLY_BAD;
 
-   score -= sqrt(fabs(sq(ideal_dist) - pt_targ_dist_2));
+   score -= sqrtf(fabsf(sq(ideal_dist) - pt_targ_dist_2));
    score -= mx_dist_vec(&pt_loc, ai_loc);
 
    // Weight based on LOS

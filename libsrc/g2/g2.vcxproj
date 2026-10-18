@@ -54,7 +54,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -152,25 +151,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <MASM Include="chkedgeb.asm" />
-    <MASM Include="chkedges.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="co88il.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="fl8lo2wi.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="fl8nni.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="fl8o2ni.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="fl8o2wi.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <None Include="chkedgeb.asm" />
+    <None Include="chkedges.asm" />
+    <None Include="co88il.asm" />
+    <None Include="fl8lo2wi.asm" />
+    <None Include="fl8nni.asm" />
+    <None Include="fl8o2ni.asm" />
+    <None Include="fl8o2wi.asm" />
     <None Include="..\lg\dbgmacro.inc" />
     <None Include="g2spoint.inc" />
     <ClCompile Include="fl8cnv.c" />
@@ -178,53 +165,25 @@
       <FileType>CppCode</FileType>
     </ClCompile>
     <None Include="icanvas.inc" />
-    <MASM Include="lo816il.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="lo88il.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="n88il.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="o2w88i.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="o88bil.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="o88il.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <None Include="lo816il.asm" />
+    <None Include="lo88il.asm" />
+    <None Include="n88il.asm" />
+    <None Include="o2w88i.asm" />
+    <None Include="o88bil.asm" />
+    <None Include="o88il.asm" />
     <None Include="plyparam.inc" />
     <None Include="plyrast.inc" />
     <None Include="plytyp.inc" />
-    <MASM Include="ptfloat.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="ptlinear.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="ptmap.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="ptmapper.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="ptmap_8.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="ptmap_n.asm">
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="ptpersp.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <None Include="ptfloat.asm" />
+    <None Include="ptlinear.asm" />
+    <None Include="ptmap.asm" />
+    <None Include="ptmapper.asm" />
+    <None Include="ptmap_8.asm" />
+    <None Include="ptmap_n.asm" />
+    <None Include="ptpersp.asm" />
     <None Include="tmapd.inc" />
     <None Include="tmaps.inc" />
-    <MASM Include="uvgrad.asm">
-      <FileType>Document</FileType>
-    </MASM>
+    <None Include="uvgrad.asm" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="area.c" />
@@ -273,7 +232,6 @@
     <ClCompile Include="g2poly.c" />
     <ClCompile Include="g2ring.c" />
     <ClCompile Include="g2rot.c" />
-    <ClCompile Include="g2tm.c" />
     <ClCompile Include="gen16il.c" />
     <ClCompile Include="gen8il.c" />
     <ClCompile Include="gencnv.c" />
@@ -281,8 +239,6 @@
     <ClCompile Include="genf16s.c" />
     <ClCompile Include="genfl8l.c" />
     <ClCompile Include="genfl8s.c" />
-    <ClCompile Include="genil.c" />
-    <ClCompile Include="genlil.c" />
     <ClCompile Include="genline.c" />
     <ClCompile Include="genllmf.c" />
     <ClCompile Include="genlm.c" />
@@ -309,6 +265,7 @@
     <ClCompile Include="plyshell.c" />
     <ClCompile Include="point.c" />
     <ClCompile Include="pt_asm.c" />
+    <ClCompile Include="portable.c" />
     <ClCompile Include="pt_duv.c" />
     <ClCompile Include="pt_grad.c" />
     <ClCompile Include="pt_main.c" />
@@ -397,6 +354,5 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

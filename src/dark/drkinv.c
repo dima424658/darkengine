@@ -54,14 +54,14 @@ static int  ms_on_obj[2];  // world, inv
 // controllers in dark for focus/actions
 //
 static int   head_focus_ang_tol=0x200;       // was 180
-static float head_focus_vel2_tol=(0.6*0.6);  // was 0.4*0.4
+static float head_focus_vel2_tol=(0.6f*0.6f);  // was 0.4*0.4
 static int   head_focus_persist_mul=4;
 static float head_focus_speed2_tol=1.0;
 
-static float head_focus_hilight_base=0.21;
-static float head_focus_hilight_level=0.47;
+static float head_focus_hilight_base=0.21f;
+static float head_focus_hilight_level=0.47f;
 static int   head_focus_hilight_ms=129;
-static float head_focus_slow_head=0.1;
+static float head_focus_slow_head=0.1f;
 
 static int   head_time_off=0;
 
@@ -83,7 +83,7 @@ void drkCheckHeadFocus(void)
       BOOL new_val=TRUE;
 
       if (highlit_obj == g_PickCurrentObj)    // so we are less likely to flicker on/off
-         bonus_mul=head_focus_persist_mul;
+      bonus_mul=(float)head_focus_persist_mul;
       if (new_val)
          if (g_PickCurrentObj==PlayerArm())
             new_val=FALSE;     // for now, ultra-special case this
@@ -205,7 +205,7 @@ void drkInvInit(void)
    {
       int val;
       config_get_int("highlight_level",&val);
-      head_focus_hilight_level=(float)val/100.0;
+      head_focus_hilight_level=(float)val/100.0f;
       head_focus_hilight_base=head_focus_hilight_level/3;
    }
    config_get_float("head_hilight_level",&head_focus_hilight_level);

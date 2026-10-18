@@ -5,9 +5,6 @@
 
 // $Header: r:/t2repos/thief2/src/editor/objed.cpp,v 1.4 1998/06/16 14:59:21 mahk Exp $
 
-#include <wtypes.h>
-#include <dynfunc.h>
-
 #include <comtools.h>
 
 #include <appagg.h>
@@ -180,21 +177,9 @@ STDMETHODIMP_(IEditTrait*) cObjEditors::NextTrait(sEditTraitIter* iter)
 ////////////////////////////////////////////////////////////
 
 
-static IObjEditor* obj_woe(const sObjEditorDesc* , ObjID obj)
-{
-   CriticalMsg("Could not load dialog!");
-   return NULL;
-}
-
-
-DeclDynFunc_(IObjEditor*, LGAPI, ConstructObjEditor, (const sObjEditorDesc* , ObjID ));
-ImplDynFunc(ConstructObjEditor, "darkdlgs.dll", "_ConstructObjEditor@8", obj_woe);
-
-#define ObjEdit (DynFunc(ConstructObjEditor).GetProcAddress())
-
 STDMETHODIMP_(IObjEditor*) cObjEditors::Create(sObjEditorDesc* desc, ObjID obj)
 {
-   return ObjEdit(desc,obj);  
+   return NULL;
 }
 
 STDMETHODIMP cObjEditors::End()

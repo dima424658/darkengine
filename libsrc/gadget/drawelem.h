@@ -27,6 +27,7 @@ typedef enum _DrawElemState
 
 #define DRAWELEM_ALL_STATES 0xFFFF
 
+struct _DrawElement;
 typedef void (*DrawElemCallback)(struct _DrawElement* drawme, DrawElemState state);
 
 #define MAX_BTYPES   8
@@ -62,6 +63,8 @@ typedef struct _DrawElement {
 #define DRAWTYPE_RESOFFSET 11 // like DRAWTYPE_RES but uses the callback data as an offset to the Ref, data2 is how many bitmaps are valid
 #define DRAWTYPE_VARTEXTREF     12 // like VARSTRING and VARRES but the array is one of string refs
 #define DRAWTYPE_BITMAPOFFSET 13 // like BITMAP but data is a bitmap**, callback data is offset, data2 is how many bitmaps are valid
+#define DRAWTYPE_IRES       14 // interpret data as an IRes* containing a bitmap
+#define DRAWTYPE_IRESOFFSET 15 // interpret data as an IRes** indexed by the draw state
 
 /* DrawElements represent a specific way to draw yourself.  There are currently 4 types, and when it 
 comes time to draw, having a DrawElement means that it is specified what one needs to do to draw.

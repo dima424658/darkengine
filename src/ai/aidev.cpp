@@ -284,7 +284,7 @@ floatang cAIDevice::FacingDelta(ObjID target)
    jointPos = ObjJointPos(m_pAIState->GetID());
    jointAng = DEGREES(jointPos[AIGetDeviceParams(m_pAIState->GetID())->m_jointRotate]);
    targetAng = m_pAIState->AngleTo(targetLoc);
-   return fabs(Delta(m_pAIState->GetFacingAng()+jointAng, targetAng).value);
+   return fabsf(Delta(m_pAIState->GetFacingAng()+jointAng, targetAng).value);
 }
 
 ////////////////////////////////////////

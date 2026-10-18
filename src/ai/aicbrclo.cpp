@@ -98,8 +98,8 @@ BOOL cAIRangedClose::CheckStepForwardPreconditions(void)
    float facing = GetState()->GetFacingAng().value;
    // @TODO: somehow, these numbers need to be derived from the motion
    // or at least, a property
-   destVec.x=kAIRangedForwardDist*cos(facing);
-   destVec.y=kAIRangedForwardDist*sin(facing);
+   destVec.x=kAIRangedForwardDist*cosf(facing);
+   destVec.y=kAIRangedForwardDist*sinf(facing);
    destVec.z=0;
    mx_addeq_vec(&destVec, GetState()->GetLocation());
    MakeHintedLocationFromVector(&destLoc, &destVec, GetState()->GetPortalLocation());
@@ -173,7 +173,7 @@ cAIAction* cAIRangedClose::SuggestLocoAction(void)
       float distKeepFreshSense = pLocoAction->ComputePathDist()  - g_RangedNoFreshenRange;
 
       if (distKeepFreshSense > 0.0)
-         pSenses->KeepFresh(GetTargetInfo()->id, (distKeepFreshSense / g_RangedSpeed) * 1000.0);
+         pSenses->KeepFresh(GetTargetInfo()->id, (unsigned)((distKeepFreshSense / g_RangedSpeed) * 1000.0f));
    }
 
    if (GetInternalAI()->AccessSoundEnactor() && m_pOwner->CanPlayReactCharge())

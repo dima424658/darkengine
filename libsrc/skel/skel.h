@@ -81,7 +81,7 @@ typedef struct {
             };
             struct { // for 3d model dude
                mds_model *model;
-               float *parm;
+               mds_parm *parm;
             };
          };
       };

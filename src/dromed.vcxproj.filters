@@ -55,6 +55,9 @@
     <Filter Include="Win32">
       <UniqueIdentifier>{e229d188-d20a-4b16-82c0-b91a028d406d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Generated">
+      <UniqueIdentifier>{a8f1e988-755f-4c5d-9a43-c437ae9fbd26}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="actreact\Aredit.h">
@@ -849,9 +852,6 @@
     <ClInclude Include="dark\Drkbreth.h">
       <Filter>Dark</Filter>
     </ClInclude>
-    <ClInclude Include="dark\Drkchkcd.h">
-      <Filter>Dark</Filter>
-    </ClInclude>
     <ClInclude Include="dark\Drkcmbat.h">
       <Filter>Dark</Filter>
     </ClInclude>
@@ -1008,9 +1008,6 @@
     <ClInclude Include="dark\Drkwswd_.h">
       <Filter>Dark</Filter>
     </ClInclude>
-    <ClInclude Include="dark\Eidosafp.h">
-      <Filter>Dark</Filter>
-    </ClInclude>
     <ClInclude Include="dark\Filepanl.h">
       <Filter>Dark</Filter>
     </ClInclude>
@@ -1122,7 +1119,7 @@
     <ClInclude Include="editor\Dragbox.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="editor\Edinhst.h">
+    <ClInclude Include="..\winsrc\editor\edinhst.h">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="editor\Edinhtyp.h">
@@ -1158,7 +1155,7 @@
     <ClInclude Include="editor\Editobj.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="editor\Editplst.h">
+    <ClInclude Include="..\winsrc\editor\editplst.h">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="editor\Editprop.h">
@@ -1173,7 +1170,7 @@
     <ClInclude Include="editor\Edittul_.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="editor\Edlinkst.h">
+    <ClInclude Include="..\winsrc\editor\edlinkst.h">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="editor\Edlnktyp.h">
@@ -1347,7 +1344,7 @@
     <ClInclude Include="editor\Sdesedit.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="editor\Sdesedst.h">
+    <ClInclude Include="..\winsrc\editor\sdesedst.h">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="editor\Sdesparm.h">
@@ -1653,15 +1650,6 @@
     <ClInclude Include="Framewrk\buftagf.h">
       <Filter>Framework</Filter>
     </ClInclude>
-    <ClInclude Include="framewrk\Cdconst.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
-    <ClInclude Include="framewrk\Cdguid.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
-    <ClInclude Include="framewrk\Cdplayer.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
     <ClInclude Include="framewrk\Cfgtool.h">
       <Filter>Framework</Filter>
     </ClInclude>
@@ -1728,12 +1716,6 @@
     <ClInclude Include="framewrk\Dwordset.h">
       <Filter>Framework</Filter>
     </ClInclude>
-    <ClInclude Include="framewrk\Dxload.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
-    <ClInclude Include="framewrk\Dxwrndlg.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
     <ClInclude Include="framewrk\Fastflts.h">
       <Filter>Framework</Filter>
     </ClInclude>
@@ -1788,7 +1770,7 @@
     <ClInclude Include="framewrk\Gen_bind.h">
       <Filter>Framework</Filter>
     </ClInclude>
-    <ClInclude Include="framewrk\Hchkthrd.h">
+    <ClInclude Include="framewrk\gamepad_backend.h">
       <Filter>Framework</Filter>
     </ClInclude>
     <ClInclude Include="framewrk\Idispat_.h">
@@ -1855,9 +1837,6 @@
       <Filter>Framework</Filter>
     </ClInclude>
     <ClInclude Include="framewrk\Netsynch.h">
-      <Filter>Framework</Filter>
-    </ClInclude>
-    <ClInclude Include="framewrk\Netvoice.h">
       <Filter>Framework</Filter>
     </ClInclude>
     <ClInclude Include="framewrk\Pickgame.h">
@@ -3204,9 +3183,6 @@
     <ClInclude Include="Script\Camscrs.h">
       <Filter>Script</Filter>
     </ClInclude>
-    <ClInclude Include="script\Cdscript.h">
-      <Filter>Script</Filter>
-    </ClInclude>
     <ClInclude Include="script\Contscpt.h">
       <Filter>Script</Filter>
     </ClInclude>
@@ -4393,9 +4369,6 @@
     <ClCompile Include="dark\Drkbreth.cpp">
       <Filter>Dark</Filter>
     </ClCompile>
-    <ClCompile Include="dark\Drkchkcd.cpp">
-      <Filter>Dark</Filter>
-    </ClCompile>
     <ClCompile Include="dark\Drkcmbat.cpp">
       <Filter>Dark</Filter>
     </ClCompile>
@@ -4537,9 +4510,6 @@
     <ClCompile Include="dark\Drkwswd_.c">
       <Filter>Dark</Filter>
     </ClCompile>
-    <ClCompile Include="dark\Eidosafp.c">
-      <Filter>Dark</Filter>
-    </ClCompile>
     <ClCompile Include="dark\Filepanl.cpp">
       <Filter>Dark</Filter>
     </ClCompile>
@@ -4645,7 +4615,7 @@
     <ClCompile Include="editor\Editgeom.c">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="editor\Editlink.cpp">
+    <ClCompile Include="..\winsrc\editor\editlink.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="editor\Editmode.c">
@@ -4654,7 +4624,7 @@
     <ClCompile Include="editor\Editobj.c">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="editor\Editplst.cpp">
+    <ClCompile Include="..\winsrc\editor\editplst.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="editor\Editprop.c">
@@ -4669,7 +4639,7 @@
     <ClCompile Include="editor\Famedit.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="editor\Filemenu.cpp">
+    <ClCompile Include="..\winsrc\editor\Filemenu.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="editor\Flowpnp.cpp">
@@ -4744,7 +4714,7 @@
     <ClCompile Include="editor\Medplay.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="editor\Menus.cpp">
+    <ClCompile Include="..\winsrc\editor\menus.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="editor\Modalui.c">
@@ -4759,7 +4729,7 @@
     <ClCompile Include="editor\Objed.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="editor\Objedit.cpp">
+    <ClCompile Include="..\winsrc\editor\objedit.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="editor\Objhistp.cpp">
@@ -4852,7 +4822,7 @@
     <ClCompile Include="editor\Txtrpal.c">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="editor\Uiedit.c">
+    <ClCompile Include="..\winsrc\editor\uiedit.c">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="editor\Undoredo.c">
@@ -5026,9 +4996,6 @@
     <ClCompile Include="Framewrk\buftagf.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
-    <ClCompile Include="framewrk\Cdplayer.cpp">
-      <Filter>Framework</Filter>
-    </ClCompile>
     <ClCompile Include="framewrk\Cfgtool.c">
       <Filter>Framework</Filter>
     </ClCompile>
@@ -5053,8 +5020,11 @@
     <ClCompile Include="framewrk\Dbfile.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
-    <ClCompile Include="framewrk\Diskfree.c">
-      <Filter>Framework</Filter>
+    <ClCompile Include="..\winsrc\framewrk\diskfree.c">
+      <Filter>Win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\winsrc\platform\platform_services.cpp">
+      <Filter>Win32</Filter>
     </ClCompile>
     <ClCompile Include="framewrk\Dispatch.cpp">
       <Filter>Framework</Filter>
@@ -5063,12 +5033,6 @@
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="framewrk\Dlgmode.c">
-      <Filter>Framework</Filter>
-    </ClCompile>
-    <ClCompile Include="framewrk\Dxload.cpp">
-      <Filter>Framework</Filter>
-    </ClCompile>
-    <ClCompile Include="framewrk\Dxwrndlg.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="framewrk\Fcytagdb.cpp">
@@ -5107,7 +5071,7 @@
     <ClCompile Include="framewrk\Gen_bind.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
-    <ClCompile Include="framewrk\Hchkthrd.cpp">
+    <ClCompile Include="framewrk\gamepad.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="framewrk\Hybtable.c">
@@ -5168,9 +5132,6 @@
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="framewrk\Netsynch.cpp">
-      <Filter>Framework</Filter>
-    </ClCompile>
-    <ClCompile Include="framewrk\Netvoice.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="framewrk\Pickgame.cpp">
@@ -5674,12 +5635,6 @@
     <ClCompile Include="portal\Oracle.c">
       <Filter>Portal</Filter>
     </ClCompile>
-    <ClCompile Include="portal\Perfcore.c">
-      <Filter>Portal</Filter>
-    </ClCompile>
-    <ClCompile Include="portal\Perftest.c">
-      <Filter>Portal</Filter>
-    </ClCompile>
     <ClCompile Include="portal\Portal.c">
       <Filter>Portal</Filter>
     </ClCompile>
@@ -5975,9 +5930,6 @@
       <Filter>Script</Filter>
     </ClCompile>
     <ClCompile Include="Script\Camscrpt.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="script\Cdscript.cpp">
       <Filter>Script</Filter>
     </ClCompile>
     <ClCompile Include="script\Contscrs.cpp">
@@ -6319,11 +6271,14 @@
     <ClCompile Include="ui\Cmdterm.c">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="ui\Ged_win.c">
-      <Filter>UI</Filter>
+    <ClCompile Include="..\winsrc\ui\ged_win.c">
+      <Filter>Win32</Filter>
     </ClCompile>
     <ClCompile Include="ui\Joypoll.cpp">
       <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\winsrc\input\gamepad_xinput.cpp">
+      <Filter>Win32</Filter>
     </ClCompile>
     <ClCompile Include="ui\Movie.cpp">
       <Filter>UI</Filter>
@@ -6349,23 +6304,20 @@
     <ClCompile Include="ui\Uiloop.cpp">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="ui\Winui.c">
-      <Filter>UI</Filter>
-    </ClCompile>
-    <ClCompile Include="win32\Inclex.c">
+    <ClCompile Include="..\winsrc\ui\winui.c">
       <Filter>Win32</Filter>
     </ClCompile>
-    <ClCompile Include="Win32\Linklex.c">
-      <Filter>Win32</Filter>
+    <ClCompile Include="generated\Inclex.c">
+      <Filter>Generated</Filter>
     </ClCompile>
-    <ClCompile Include="win32\Mschlex.c">
-      <Filter>Win32</Filter>
+    <ClCompile Include="generated\Mschlex.c">
+      <Filter>Generated</Filter>
     </ClCompile>
-    <ClCompile Include="win32\Schlex.c">
-      <Filter>Win32</Filter>
+    <ClCompile Include="generated\Schlex.c">
+      <Filter>Generated</Filter>
     </ClCompile>
-    <ClCompile Include="win32\Songlex.c">
-      <Filter>Win32</Filter>
+    <ClCompile Include="generated\Songlex.c">
+      <Filter>Generated</Filter>
     </ClCompile>
     <ClCompile Include="Camguids.c" />
     <ClCompile Include="Darktabl.c" />

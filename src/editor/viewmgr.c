@@ -9,20 +9,26 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #include <lg.h>
 #include <2d.h>
 #include <r3d.h>
+#include <lgd3d.h>
+#include <render_backend.h>
+#include <mm.h>
 #include <mprintf.h>
 
 #include <portal.h>
 #include <pt.h>
+#include <wrfunc.h>
 
 #include <command.h>
 #include <editbr.h>
 #include <ged_csg.h>   // level valid extern
 #include <ged_rend.h>
+#include <editsave.h>
 #include <viewmgr_.h>
 #include <viewmgr.h>
 #include <vumanui.h>
@@ -37,6 +43,7 @@
 #include <wrlimit.h>
 
 #include <status.h>
+#include <missiondiag.h>
 
 #include <config.h>
 #include <memall.h>
@@ -44,6 +51,10 @@
 
 
 EXTERN void AIPathFindDrawDB(); // from aipthdbg
+EXTERN BOOL g_lgd3d;
+EXTERN BOOL g_zbuffer;
+EXTERN void set_mm_sort(BOOL sort);
+EXTERN ulong g_MeshRenderFlags;
 
 void vm_set_synch(int r, bool flag);
 
@@ -339,7 +350,7 @@ void vm_init_camera(int c)
    switch (c) {
       case 0:
          CM.camera_3d = TRUE;
-         CM.render_mode = 1;
+         CM.render_mode = RM_SOLID_PORTAL;
          zero_loc(CM.loc);
          zero_ang(CM.ang);
          CM.zoom = 1.0;
@@ -424,9 +435,9 @@ void vm_fit_cameras_to_region(mxs_vector *start, mxs_vector *end)
    mx_scale_addeq_vec(&center, end, 0.5);
 
    mx_sub_vec(&length, start, end);
-   length.x = fabs(length.x);
-   length.y = fabs(length.y);
-   length.z = fabs(length.z);
+   length.x = fabsf(length.x);
+   length.y = fabsf(length.y);
+   length.z = fabsf(length.z);
 
    for (i=0; i < MAX_CAMERAS; ++i)
       if (!camera[i].camera_3d && camera[i].synch)
@@ -455,7 +466,7 @@ void vm_fit_cameras_to_region(mxs_vector *start, mxs_vector *end)
          // is there to give a bit of a boundary; maybe it's effectively
          // giving some boundary in x, and doing aspect ratio in y.
          if (vmGetSizeRatio(camera_to_region_mapping[i],&xsc,&ysc))
-            camera[i].scale=mmax(length.el[x]/xsc,length.el[y]*5/3/ysc)*1.2;
+            camera[i].scale=mmax(length.el[x]/xsc,length.el[y]*5/3/ysc)*1.2f;
       }
 }
 
@@ -689,12 +700,10 @@ int vm_get_camera_axis(int c, int *x, int *y)
    return bogus_axis[camera[c].axis];
 }
 
-#pragma off(unreferenced)
 void vm_end_3d(int c)
 {
    r3_end_frame();
 }
-#pragma on(unreferenced)
 
   // map point in camera c's (x,y) coordinates
   // to an output location, returning which axis
@@ -711,7 +720,7 @@ int vm_map_screen_to_world(int c, mxs_vector *dest, int x, int y)
 
    if (camera[c].camera_3d) return -1;
 
-   sx = x / (float) xsz - 0.5;
+   sx = x / (float) xsz - 0.5f;
    sy = (y - ysz/2) / (float) xsz;
 
    rc = real_camera(c);
@@ -769,7 +778,10 @@ bool vm_screen_axes(int c, mxs_vector *x, mxs_vector *y)
    return TRUE;
 }
 
-bool vm_show_grid=TRUE, vm_show_grid_3d=TRUE;
+// Retail DromEd shows the construction grid in the orthographic panes.  Keep
+// the perspective grid available through grid_3d, but do not enable it by
+// default.
+bool vm_show_grid=TRUE, vm_show_grid_3d=FALSE;
 int vm_3d_grid_axis=2;
 mxs_real vm_3d_grid_height;
 extern Grid cur_global_grid;
@@ -786,10 +798,10 @@ void vm_pick_colors(void)
 
 
 
-static void render_grid(int c)
+static void render_grid_with_color(int c, int color)
 {
    mxs_vector start,end;
-   r3_set_color(view_grid_color);
+   r3_set_color(color);
    if (camera[c].camera_3d) {
       start = end = camera[c].loc.vec;
 
@@ -822,6 +834,21 @@ static void render_grid(int c)
 
       gedit_render_grid(&cur_global_grid, bogus_axis[a], 0, &start, &end);
    }
+}
+
+static void render_grid(int c)
+{
+   render_grid_with_color(c, view_grid_color);
+}
+
+static void render_hardware_grid(int c)
+{
+   // guiScreenColor() produces a native 16-bit software-canvas value.  The
+   // hardware primitive path consumes 0xRRGGBB instead, so supply the grid's
+   // source RGB while palette conversion is disabled.
+   lgd3d_disable_palette();
+   render_grid_with_color(c, 0x393939);
+   lgd3d_enable_palette();
 }
 
 void vm_set_camera_canvas(int c)
@@ -913,6 +940,279 @@ static void _vm_rend_message_corner(int corner_id, char *msg)
    guiStyleCleanupFont(NULL,StyleFontNormal);
 }
 
+// Match DromEd's normal terrain-brush color.  Yellow is reserved for lights,
+// red for objects, and magenta for the synchronized camera marker.
+#define COMPILED_GEOMETRY_COLOR uiRGB(0x63,0xa3,0xb8)
+#define COMPILED_GEOMETRY_LABEL_COLOR uiRGB(0x80,0xd0,0xe8)
+
+typedef struct
+{
+   int quantized[6];
+   mxs_vector point[2];
+   mxs_vector normal;
+   int references;
+   BOOL has_crease;
+   BOOL used;
+} CompiledEdgeHashEntry;
+
+typedef struct
+{
+   mxs_vector point[2];
+} CompiledDisplayEdge;
+
+static CompiledDisplayEdge *g_CompiledDisplayEdges;
+static int g_CompiledDisplayEdgeCount;
+static ulong g_CompiledDisplayEdgeGeneration;
+static BOOL g_CompiledDisplayEdgeCacheValid;
+
+static void _vm_free_compiled_geometry_cache(void)
+{
+   if (g_CompiledDisplayEdges!=NULL)
+      Free(g_CompiledDisplayEdges);
+   g_CompiledDisplayEdges=NULL;
+   g_CompiledDisplayEdgeCount=0;
+   g_CompiledDisplayEdgeGeneration=0;
+   g_CompiledDisplayEdgeCacheValid=FALSE;
+}
+
+static int _vm_quantize_compiled_coordinate(mxs_real value)
+{
+   return (int)floor(value*256.0+0.5);
+}
+
+static int _vm_compare_quantized_points(const int *a, const int *b)
+{
+   int axis;
+   for (axis=0; axis<3; ++axis)
+   {
+      if (a[axis]<b[axis]) return -1;
+      if (a[axis]>b[axis]) return 1;
+   }
+   return 0;
+}
+
+static uint _vm_hash_compiled_edge(const int *coordinates)
+{
+   uint hash=2166136261u;
+   int coordinate;
+   for (coordinate=0; coordinate<6; ++coordinate)
+   {
+      hash^=(uint)coordinates[coordinate];
+      hash*=16777619u;
+   }
+   return hash;
+}
+
+static BOOL _vm_same_compiled_edge(const CompiledEdgeHashEntry *entry,
+                                   const int *coordinates)
+{
+   int coordinate;
+   for (coordinate=0; coordinate<6; ++coordinate)
+      if (entry->quantized[coordinate]!=coordinates[coordinate])
+         return FALSE;
+   return TRUE;
+}
+
+static void _vm_add_compiled_edge(CompiledEdgeHashEntry *table, int table_size,
+                                  const mxs_vector *first,
+                                  const mxs_vector *second,
+                                  const mxs_vector *normal)
+{
+   int first_quantized[3], second_quantized[3], coordinates[6];
+   const mxs_vector *ordered_first=first;
+   const mxs_vector *ordered_second=second;
+   uint slot;
+   int axis;
+
+   for (axis=0; axis<3; ++axis)
+   {
+      first_quantized[axis]=_vm_quantize_compiled_coordinate(first->el[axis]);
+      second_quantized[axis]=_vm_quantize_compiled_coordinate(second->el[axis]);
+   }
+   if (_vm_compare_quantized_points(first_quantized,second_quantized)>0)
+   {
+      int swap[3];
+      memcpy(swap,first_quantized,sizeof(swap));
+      memcpy(first_quantized,second_quantized,sizeof(first_quantized));
+      memcpy(second_quantized,swap,sizeof(second_quantized));
+      ordered_first=second;
+      ordered_second=first;
+   }
+   memcpy(coordinates,first_quantized,sizeof(first_quantized));
+   memcpy(coordinates+3,second_quantized,sizeof(second_quantized));
+
+   slot=_vm_hash_compiled_edge(coordinates)&(table_size-1);
+   while (table[slot].used &&
+          !_vm_same_compiled_edge(&table[slot],coordinates))
+      slot=(slot+1)&(table_size-1);
+
+   if (!table[slot].used)
+   {
+      CompiledEdgeHashEntry *entry=&table[slot];
+      entry->used=TRUE;
+      entry->references=1;
+      memcpy(entry->quantized,coordinates,sizeof(entry->quantized));
+      entry->point[0]=*ordered_first;
+      entry->point[1]=*ordered_second;
+      entry->normal=*normal;
+   }
+   else
+   {
+      CompiledEdgeHashEntry *entry=&table[slot];
+      mxs_real alignment=mx_dot_vec(&entry->normal,normal);
+      ++entry->references;
+      // Normal direction can be reversed on the opposite side of a portal.
+      // Parallel planes in either direction are still coplanar seams.
+      if (fabs(alignment)<0.999)
+         entry->has_crease=TRUE;
+   }
+}
+
+static void _vm_build_compiled_geometry_cache(void)
+{
+   CompiledEdgeHashEntry *table;
+   int maximum_edges=0, table_size=1, cell_index, edge_index, compact_index=0;
+   ulong generation=editor_BrushDataGeneration();
+
+   if (g_CompiledDisplayEdgeCacheValid &&
+       g_CompiledDisplayEdgeGeneration==generation)
+      return;
+   _vm_free_compiled_geometry_cache();
+   g_CompiledDisplayEdgeGeneration=generation;
+
+   for (cell_index=0; cell_index<wr_num_cells; ++cell_index)
+   {
+      PortalCell *cell=WR_CELL(cell_index);
+      int poly_index;
+      if (cell==NULL || cell->poly_list==NULL)
+         continue;
+      for (poly_index=0; poly_index<cell->num_render_polys; ++poly_index)
+         maximum_edges+=cell->poly_list[poly_index].num_vertices;
+   }
+   if (maximum_edges==0)
+      return;
+   while (table_size<maximum_edges*2)
+      table_size<<=1;
+
+   table=(CompiledEdgeHashEntry *)Malloc(table_size*sizeof(*table));
+   if (table==NULL)
+      return;
+   memset(table,0,table_size*sizeof(*table));
+
+   for (cell_index=0; cell_index<wr_num_cells; ++cell_index)
+   {
+      PortalCell *cell=WR_CELL(cell_index);
+      int poly_index, vertex_offset=0;
+      if (cell==NULL || cell->vpool==NULL || cell->poly_list==NULL ||
+          cell->vertex_list==NULL || cell->plane_list==NULL)
+         continue;
+      for (poly_index=0; poly_index<cell->num_render_polys; ++poly_index)
+      {
+         PortalPolygonCore *poly=&cell->poly_list[poly_index];
+         int vertex_index;
+         if (poly->planeid>=cell->num_planes)
+         {
+            vertex_offset+=poly->num_vertices;
+            continue;
+         }
+         for (vertex_index=0; vertex_index<poly->num_vertices; ++vertex_index)
+         {
+            int first=cell->vertex_list[vertex_offset+vertex_index];
+            int second=cell->vertex_list[vertex_offset+
+               ((vertex_index+1)%poly->num_vertices)];
+            if (first<cell->num_vertices && second<cell->num_vertices)
+               _vm_add_compiled_edge(table,table_size,&cell->vpool[first],
+                                     &cell->vpool[second],
+                                     &cell->plane_list[poly->planeid].normal);
+         }
+         vertex_offset+=poly->num_vertices;
+      }
+   }
+
+   // Portalization splits source surfaces across cells.  Shared coplanar
+   // edges are compiler seams rather than geometry; keep actual boundaries
+   // and non-coplanar crease edges.  The cache is not marked valid until this
+   // complete world pass finishes, so an early load frame cannot suppress the
+   // real edges permanently.
+   for (edge_index=0; edge_index<table_size; ++edge_index)
+      if (table[edge_index].used &&
+          (table[edge_index].references==1 || table[edge_index].has_crease))
+         ++g_CompiledDisplayEdgeCount;
+
+   if (g_CompiledDisplayEdgeCount>0)
+      g_CompiledDisplayEdges=(CompiledDisplayEdge *)Malloc(
+         g_CompiledDisplayEdgeCount*sizeof(*g_CompiledDisplayEdges));
+   if (g_CompiledDisplayEdges!=NULL)
+   {
+      for (edge_index=0; edge_index<table_size; ++edge_index)
+      {
+         CompiledEdgeHashEntry *entry=&table[edge_index];
+         if (entry->used &&
+             (entry->references==1 || entry->has_crease))
+         {
+            g_CompiledDisplayEdges[compact_index].point[0]=entry->point[0];
+            g_CompiledDisplayEdges[compact_index].point[1]=entry->point[1];
+            ++compact_index;
+         }
+      }
+   }
+   else
+      g_CompiledDisplayEdgeCount=0;
+   Free(table);
+   g_CompiledDisplayEdgeCacheValid=TRUE;
+}
+
+// Retail mission files retain the portalized world but normally omit BRLIST,
+// the editable source brushes from which it was built.  This renderer is
+// deliberately display-only: selection and editing continue to operate only
+// on real editor brushes.
+static BOOL _vm_has_compiled_geometry_fallback(void)
+{
+   return !editor_BrushDataPresent() && gedcsg_level_valid && wr_num_cells > 0;
+}
+
+static void _vm_render_compiled_geometry(int c)
+{
+   int edge_index;
+   int color = guiScreenColor(COMPILED_GEOMETRY_COLOR);
+
+   r3_set_color(color);
+   gr_set_fcolor(color);
+   // Keep the clip mode selected by vm_start_3d(). Perspective cameras use
+   // the 3D clipper, while orthographic R3_LINEAR_SPACE cameras intentionally
+   // use R3_NO_CLIP plus dev2d's screen-line clipper. Forcing R3_CLIP here is
+   // invalid because the linear transform does not produce perspective clip
+   // codes; interpreting that unset state creates viewport-spanning streaks.
+   r3_start_block();
+
+   _vm_build_compiled_geometry_cache();
+
+   for (edge_index=0; edge_index<g_CompiledDisplayEdgeCount; ++edge_index)
+   {
+      CompiledDisplayEdge *edge=&g_CompiledDisplayEdges[edge_index];
+      r3s_point points[2];
+      r3_transform_block(2,points,edge->point);
+      r3_draw_line(&points[0],&points[1]);
+   }
+
+   r3_end_block();
+}
+
+static void _vm_rend_compiled_geometry_label(int c)
+{
+   char message[]="Compiled terrain view; editable source brushes unavailable";
+
+   // One notice in the selected pane is enough. The other panes show the
+   // same compiled world and retain their normal view labels.
+   if (c != vm_cur_camera)
+      return;
+
+   guiStyleSetupFont(NULL,StyleFontNormal);
+   gr_set_fcolor(guiScreenColor(COMPILED_GEOMETRY_LABEL_COLOR));
+   gr_string(message,1,1);
+   guiStyleCleanupFont(NULL,StyleFontNormal);
+}
+
 static void _vm_show_camera_in2d(int c)
 {
    mxs_vector *locp;
@@ -966,16 +1266,30 @@ static void _vm_restore_camera_bitmap(int c)
        gr_bitmap(camera_saves[c],0,0);
 }
 
-extern void cam_render_scene(Position *pos, double zoom);
+extern void cam_render_scene(Position *pos, float zoom);
+static int vm_lgd3d_frame;
 
 static BOOL update_links = TRUE;
 // ok, secretly knows there is the "new_camera" and "new_select" subflags of redraw....
 void vm_render_camera(int c)
 {
+   static BOOL render_test_logged=FALSE;
    int reg, rv_flag=0;
-   BOOL restore_bm=FALSE, show_grid;
+   BOOL restore_bm=FALSE, show_grid, compiled_fallback;
    uchar mode;
 
+   if (!render_test_logged && c==0 && config_is_defined("render_test"))
+   {
+      char diagnostic[256];
+      snprintf(diagnostic,sizeof(diagnostic),
+         "Render-test viewport entry: display=%d visible=%d camera3d=%d "
+         "mode=0x%x redraw=%d camera=%d render=%d",
+         vm_display_enable,VIS_CAM(c),camera[c].camera_3d,
+         (uint)camera[c].render_mode,redraw,new_camera,new_render);
+      diagnostic[sizeof(diagnostic)-1]='\0';
+      MissionDiagnosticsIssue("INFO","editor-view",diagnostic);
+      render_test_logged=TRUE;
+   }
    if (!vm_display_enable) return;
    if (!VIS_CAM(c)) return;
 
@@ -983,10 +1297,24 @@ void vm_render_camera(int c)
       DrawRelations();
 
    reg = camera_to_region_mapping[c];
+   // Mode dispatch can deliver an initial frame before the editor client has
+   // finished constructing its child regions.  The legacy renderer assumed
+   // those callbacks were always strictly ordered and dereferenced a null
+   // region rectangle during modern startup.  Leave the redraw flags set and
+   // draw this camera on the next frame after EditorCreateGUI has completed.
+   if (vmGetRegion(reg)->r == NULL)
+      return;
    vm_set_region_canvas(reg);
    vm_start_3d(c);
 
    mode = camera[c].render_mode;
+   if (camera[c].camera_3d)
+      RenderBackendTrace(
+         "editor-render index=%d requested-mode=0x%x level-valid=%d "
+         "world-cells=%d cell=%d pos=%.3f,%.3f,%.3f",
+         c,(uint)mode,gedcsg_level_valid,wr_num_cells,
+         CellFromLoc(&camera[c].loc),camera[c].loc.vec.x,
+         camera[c].loc.vec.y,camera[c].loc.vec.z);
 
 // New stuff here:
    if (!config_is_defined("Editor_NoInvalidCellCheck"))
@@ -1014,10 +1342,12 @@ void vm_render_camera(int c)
    if (mode & RM_WIREFRAME_PORTAL)
       Warning(("vm_render_camera: Wireframe portal view not yet supported.\n"));
    show_grid=camera[c].camera_3d ? vm_show_grid_3d : vm_show_grid;
+   compiled_fallback=_vm_has_compiled_geometry_fallback();
 
    if (camera[c].camera_3d)
    {
       BOOL redraw_3d=FALSE;
+      BOOL hardware_grid;
       if (mode & RM_SOLID_PORTAL)
          if (redraw || new_camera || new_render)
             redraw_3d=TRUE;
@@ -1027,7 +1357,24 @@ void vm_render_camera(int c)
       redraw_3d |= (show_grid && (redraw || new_camera));
       if (redraw_3d)
       {
-         _vm_rend_start(c,show_grid);
+         if (g_lgd3d && !(mode & RM_SOLID_PORTAL))
+         {
+            // Leaving the portal world (for example by slewing below the
+            // floor) switches this pane to wireframe-brush mode.  The modern
+            // presenter otherwise keeps compositing the last valid hardware
+            // scene, making the world appear stationary while only the grid
+            // follows the camera.  Retire that stale scene before drawing the
+            // software fallback.
+            lgd3d_scene_suspend();
+         }
+
+         // Draw the construction grid in the hardware scene so its color and
+         // pane coordinates remain correct.  It is an editor overlay, not
+         // world geometry: terrain must not depth-clip it into the finite
+         // patch that appeared after the D3D11 conversion.
+         hardware_grid = show_grid && g_lgd3d &&
+                         (mode & RM_SOLID_PORTAL) && gedcsg_level_valid;
+         _vm_rend_start(c,show_grid && !hardware_grid);
          if (mode & RM_SOLID_PORTAL)
          {
             if (gedcsg_level_valid)
@@ -1039,7 +1386,63 @@ void vm_render_camera(int c)
                vm_end_3d(c);
                pos.loc = *(camera[rc].camera_3d ? &camera[rc].loc : &camera[rc].loc_2d);
                pos.fac = *(camera[c].camera_3d ? &camera[c].ang : &axis_angles[camera[c].axis]);
-               cam_render_scene(&pos, camera[c].zoom);
+               if (g_lgd3d)
+               {
+                  Rect screen_rect;
+                  Region *view_region = vmGetRegion(reg);
+
+                  region_abs_rect(view_region, view_region->r, &screen_rect);
+
+                  // Editor cameras render into sub-canvases.  The modern
+                  // hardware target covers the whole engine canvas, so map
+                  // the camera-local coordinates back to the pane's absolute
+                  // screen position and give the pane its own hardware frame.
+                  lgd3d_set_offsets(screen_rect.ul.x, screen_rect.ul.y);
+                  lgd3d_start_frame(vm_lgd3d_frame++);
+
+                  // The editor's grids, brush outlines, and object markers
+                  // are drawn into its legacy sub-canvas, so editor UI code
+                  // normally leaves R3 using the software primitive table.
+                  // Portal terrain bypasses that table and therefore still
+                  // appeared through lgd3d, but MD/MM object polygons did
+                  // not.  Select the hardware primitive table for the solid
+                  // scene, then restore the editor's software table below.
+                  r3_use_lgd3d();
+
+                  // Game mode selects these pipelines when its render loop
+                  // starts.  The editor renders the same portal scene
+                  // directly, so establish the equivalent hardware state
+                  // here for mesh objects (creatures and rigid fixtures).
+                  set_mm_sort(!g_zbuffer);
+                  g_MeshRenderFlags |= MMF_INDEXED;
+               }
+               cam_render_scene(&pos, (float)camera[c].zoom);
+               if (g_lgd3d)
+               {
+                  if (hardware_grid)
+                  {
+                     int old_zwrite = lgd3d_is_zwrite_on();
+                     int old_zcompare = lgd3d_is_zcompare_on();
+
+                     // Re-establish the editor camera while the pane's
+                     // hardware frame is live.  Disable depth comparison so
+                     // the entire construction plane remains readable over
+                     // the solid view, matching the editor's overlay model.
+                     vm_start_3d(c);
+                     r3_use_lgd3d();
+                     lgd3d_set_fog_enable(FALSE);
+                     lgd3d_set_blend(FALSE);
+                     lgd3d_set_zcompare(FALSE);
+                     lgd3d_set_zwrite(FALSE);
+                     render_hardware_grid(c);
+                     vm_end_3d(c);
+                     lgd3d_set_zwrite(old_zwrite);
+                     lgd3d_set_zcompare(old_zcompare);
+                  }
+                  lgd3d_end_frame();
+                  lgd3d_set_offsets(0, 0);
+                  r3_use_g2();
+               }
                vm_start_3d(c);
             }
             else
@@ -1047,12 +1450,18 @@ void vm_render_camera(int c)
          }
 
          if (mode & RM_WIREFRAME_BRUSHES)
+         {
             gedrendRenderView(rv_flag, c);
+            if (compiled_fallback)
+               _vm_render_compiled_geometry(c);
+         }
 
          if (show_raycasts)
             render_failures();   // ????????
 
-         if (_vm_name_corner!=-1)
+         if (compiled_fallback && c == vm_cur_camera)
+            _vm_rend_compiled_geometry_label(c);
+         else if (_vm_name_corner!=-1)
             _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
       }
       else restore_bm=TRUE;
@@ -1064,9 +1473,16 @@ void vm_render_camera(int c)
       {
          _vm_rend_start(c,show_grid);
          if (mode & RM_WIREFRAME_BRUSHES)
+         {
             gedrendRenderView(rv_flag, c);
+            if (compiled_fallback)
+               _vm_render_compiled_geometry(c);
+         }
 
-         _vm_rend_message_corner(_vm_name_corner,axis_names[camera[c].axis]);
+         if (compiled_fallback && c == vm_cur_camera)
+            _vm_rend_compiled_geometry_label(c);
+         else
+            _vm_rend_message_corner(_vm_name_corner,axis_names[camera[c].axis]);
       }
       else
          restore_bm=TRUE;
@@ -1214,6 +1630,7 @@ void vm_init(void)
 void vm_term(void)
 {  // is this too late, ie. Malloc/Free is already dead?  i dont think so
    _vm_camera_saves_term();
+   _vm_free_compiled_geometry_cache();
 }
 
 void vm_suspend(void)
@@ -1224,6 +1641,11 @@ void vm_suspend(void)
 
 void vm_resume(void)
 {
+   // A display-mode change (including a window resize) destroys and rebuilds
+   // the viewport regions.  Never restore a bitmap captured for the old
+   // regions into the new canvas; force a clean redraw at the new size.
+   _vm_camera_saves_term();
+   vm_redraw();
 }
 
   // build a popup-menu for a given camera

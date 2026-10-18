@@ -114,7 +114,7 @@ enum eScrTimedMsgKind
 typedef enum eScrTimedMsgKind eScrTimedMsgKind;
 
 // Timer handle
-DECLARE_HANDLE(tScrTimer);
+typedef uintptr_t tScrTimer;
 
 // Timer callback
 typedef void (*tScrMsgCallback)(const sScrMsg *, const sMultiParm *, void *);
@@ -405,6 +405,14 @@ DECLARE_INTERFACE_(IScriptModule, IUnknown)
    STDMETHOD_(const sScrClassDesc *, GetNextClass)(THIS_ tScrIter *) PURE;
    STDMETHOD_(void, EndClassIter)(THIS_ tScrIter *) PURE;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Lightweight runtime tracing used by the Thief command console. Each
+// dispatched script message is written immediately while tracing is enabled.
+EXTERN void ScriptDebugSetEnabled(BOOL enabled);
+EXTERN BOOL ScriptDebugIsEnabled(void);
+EXTERN void ScriptDebugLogDispatch(IScript* script, const sScrMsg* message);
 
 ///////////////////////////////////////////////////////////////////////////////
 

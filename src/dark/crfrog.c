@@ -14,8 +14,8 @@
 
 static sCrPhysModOffset g_aFrogPhysModOffsets[] = \
 {
-   { 8, 8, 0.0, 0.3},
-   { 18, 9, 0.8, 0.4},
+   { 8, 8, 0.0f, 0.3f},
+   { 18, 9, 0.8f, 0.4f},
 };
 
 // Joints

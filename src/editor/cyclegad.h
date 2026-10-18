@@ -143,7 +143,7 @@ EXTERN bool TriggerCycleGadg(CycleGadg* gadg, ulong action, eCyclePart part);
 
 typedef struct _StringCycleGadgDesc
 {
-   char** strings; // the string vector
+   const char * const *strings; // the string vector
    int num;  // the size of the vector in elements
    ulong flags; // flags as above
 } StringCycleGadgDesc;
@@ -157,7 +157,7 @@ EXTERN void DestroyStringCycleGadg(CycleGadg* gadg);
 EXTERN void* StringCycleGadgData(CycleGadg* gadg); 
 
 // reset our strings and number 
-EXTERN void RedescribeStringCycleGadg(CycleGadg* gadg, char** strings, int num);
+EXTERN void RedescribeStringCycleGadg(CycleGadg* gadg, const char * const *strings, int num);
 
 ////////////////////////////////////////////////////////////
 // Generator macros for typed cycle gadg

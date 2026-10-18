@@ -12,10 +12,14 @@
 #define  __AMBBASE_H
 
 #include <label.h>
+#include <darklimit.h>
 
 ///////////////
 // constants and flags
-#define MAX_AMB_OBJS          (256)
+// Enhanced missions can contain substantially more ambient properties than
+// the retail compact-property limit.  Keep the parallel runtime state large
+// enough for the extended concrete-object range.
+#define MAX_AMB_OBJS          DARK_LIMIT_RUNTIME_AMBIENT_OBJECTS
 
 // static flags
 #define AMBFLG_S_ENVIRON      (1<<0)  // this is environmental

@@ -143,7 +143,7 @@ void MsgFree (Message *message)
 // Put it back into the free message chain 
 
 	message->next = mL[0].next;
-	mL[0].next = MessageToMsgID(message);
+	mL[0].next = (MsgID)MessageToMsgID(message);
 }
 
 //////////////////////////////
@@ -176,7 +176,7 @@ void MsgSend (Message *message)
 
 // Add to tail of this hash entry, set our next field to 0
 
-	msg = MessageToMsgID(message);
+	msg = (MsgID)MessageToMsgID(message);
 	if (pentry->tail)
 		MsgIDToMessage(pentry->tail)->next = msg;
 	else

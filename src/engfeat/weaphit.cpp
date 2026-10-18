@@ -157,7 +157,7 @@ BOOL ReactToInitialHaloHit(ObjID owner, ObjID weapon, int submod)
       {
          AutoAppIPtr(AIManager);
          IAI *pAI=pAIManager->GetAI(owner);
-         pAI->NotifyGameEvent((void *)halo_id);  // woo woo
+      pAI->NotifyGameEvent((void *)(intptr_t)halo_id);  // woo woo
          SafeRelease(pAI);
       }
 

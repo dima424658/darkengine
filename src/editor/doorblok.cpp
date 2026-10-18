@@ -48,8 +48,8 @@ static cDynArray<editBrush *> g_BrushList;
 // it's completely inside the door and extends well into the door
 // frame.  So we treat it as having a constant thinness on its
 // smallest axis and enlarge it a little on the other two.
-#define kfDoorThickness .04
-#define kfDoorGrowth .1
+#define kfDoorThickness .04f
+#define kfDoorGrowth .1f
 
 #define kMinorAxis 0
 #define kMajorAxis 1
@@ -61,7 +61,7 @@ static float RescaleAxis(float fSize, int iSize)
    if (iSize == kMinorAxis)
       return kfDoorThickness;
    else
-      return fSize * .5 + kfDoorGrowth;
+      return fSize * .5f + kfDoorGrowth;
 }
 
 

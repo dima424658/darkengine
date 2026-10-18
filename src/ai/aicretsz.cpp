@@ -24,7 +24,7 @@ sAICreatureSizes g_AIDefaultCreatureSizes =
 {
    {
       // Width    Height
-      {  2.41,    6.0833 }
+   {  2.41f,   6.0833f }
    }
 };
 

@@ -75,7 +75,8 @@ public:
 
             IterStart(&iter); 
             while (IterNextValue(&iter,&obj,&idx))
-               objmodelDecRef(idx); 
+               if (idx >= 0)
+                  objmodelDecRef(idx);
             IterStop(&iter); 
          }
          

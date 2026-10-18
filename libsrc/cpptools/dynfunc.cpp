@@ -7,24 +7,20 @@
 // (c) Copyright 1994-1996 Tom Leonard. All Rights Reserved. Unlimited license granted to Looking Glass Technologies Inc.
 //
 
-#ifdef _WIN32
-
-#include <windows.h>
-// #include "wsshared.h"
 #include "dynfunc.h"
+#include <platform_services.h>
 
 ///////////////////////////////////////
-
 BOOL cDynFunc::Load()
     {
     if (!fTriedToLoad)
         {
         fTriedToLoad = TRUE;
         // Assert(pszLibName && pszFuncSig);
-        hInstLib = LoadLibrary(pszLibName);
+        hInstLib = PlatformLoadLibrary(pszLibName);
         if (LoadedDLL(hInstLib))
             {
-            pfnFunc = (void *) GetProcAddress(hInstLib, pszFuncSig);
+            pfnFunc = PlatformFindSymbol(hInstLib, pszFuncSig);
             //DebugMsgTrue3(pfnFunc && HIWORD(pszFuncSig), "Loaded function %s from %s (%p)", pszFuncSig, pszLibName, pfnFunc);
             //DebugMsgTrue3(pfnFunc && !HIWORD(pszFuncSig), "Loaded function %d from %s (%p)", int(LOWORD(pszFuncSig)), pszLibName, pfnFunc);
             }
@@ -40,17 +36,32 @@ BOOL cDynFunc::Load()
 
 ///////////////////////////////////////
 
+cDynFunc::~cDynFunc()
+    {
+    Unload();
+    }
+
+///////////////////////////////////////
+
+void cDynFunc::Unload()
+    {
+    pfnFunc = NULL;
+    fTriedToLoad = FALSE;
+    if (LoadedDLL(hInstLib))
+        {
+        PlatformUnloadLibrary(hInstLib);
+        }
+    hInstLib = 0;
+    }
+
+///////////////////////////////////////
+
 void * cDynFunc::FindFunc()
     {
     if (pfnFunc)
         return pfnFunc;
 
-    if (!Load())
-        ;// CriticalMsg("Dynamic function not found");
+    Load();
 
     return pfnFunc;
     }
-
-///////////////////////////////////////
-
-#endif

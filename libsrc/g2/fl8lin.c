@@ -30,14 +30,14 @@ void flat8_uline (uchar c, grs_vertex *v0, grs_vertex *v1)
 /* norm */
 void flat8_uline_norm (grs_vertex *v0, grs_vertex *v1)
 {
-   flat8_uline(grd_gc.fcolor, v0, v1);
+   flat8_uline((uchar)grd_gc.fcolor, v0, v1);
 }
 
 /* solid */
 
 void flat8_uline_solid (grs_vertex *v0, grs_vertex *v1)
 {
-   flat8_uline (grd_gc.fill_parm, v0, v1);
+   flat8_uline ((uchar)grd_gc.fill_parm, v0, v1);
 }
 
 /* clut */
@@ -58,7 +58,7 @@ do { \
 
 void flat8_uline_xor (grs_vertex *v0, grs_vertex *v1)
 {
-   uchar c=grd_gc.fcolor;
+   uchar c=(uchar)grd_gc.fcolor;
    #include <fl8lin.h>
 }
 
@@ -72,7 +72,7 @@ do { \
 
 void flat8_uline_blend (grs_vertex *v0, grs_vertex *v1)
 {
-   uchar c = grd_gc.fcolor;
+   uchar c = (uchar)grd_gc.fcolor;
    uchar *clut = tluc8tab[c];
    if (clut == NULL) {
       flat8_uline (c, v0, v1);

@@ -31,5 +31,5 @@ EXTERN void starfield_enter_mode(void);
 EXTERN void starfield_init(void);
 EXTERN void starfield_term(void);
 
-EXTERN void starfield_set_z(double z);
+EXTERN void starfield_set_z(float z);
 #endif

@@ -12,6 +12,7 @@
 #include <dataops_.h>
 #include <packflag.h>
 #include <osysbase.h>
+#include <stdint.h>
 
 ////////////////////////////////////////////////////////////
 // Special "Bit Vector" property implementation for booleans
@@ -92,7 +93,7 @@ public:
    {
       if (InBounds(obj) && InUse(obj))
       {
-         pval->value = (void*)Value(obj); 
+         pval->value = (void*)(uintptr_t)Value(obj);
       }
       return FALSE; 
    }
@@ -105,7 +106,7 @@ public:
       HRESULT retval = InUse(obj) ? S_FALSE : S_OK; 
 
       SetInUse(obj);
-      SetValue(obj,(BOOL)val.value); 
+      SetValue(obj,(BOOL)(uintptr_t)val.value);
 
       return retval; 
    }
@@ -118,7 +119,7 @@ public:
       BOOL set = Value(src); 
       SetValue(targ,set); 
       SetInUse(targ); 
-      return sDatum((void*)set); 
+      return sDatum((void*)(uintptr_t)set);
    }
 
    STDMETHOD(Reset)()
@@ -145,7 +146,7 @@ public:
       if (obj)
          *obj = piter->next;
       if (value)
-         value->value = (void*)Value(piter->next); 
+         value->value = (void*)(uintptr_t)Value(piter->next);
       piter->next++; 
 
       return TRUE; 

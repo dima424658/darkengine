@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/object/objsys.cpp,v 1.91 2000/03/07 19:57:45 toml Exp $
 #include <appagg.h>
+#include <algorithm>
 #include <constrid.h>
 #include <aggmemb.h>
 
@@ -26,7 +27,7 @@
 #include <traitprp.h>
 #include <donorq.h>
 
-#include <objquer_.H>
+#include <objquer_.h>
 
 #include <tagfile.h>
 #include <vernum.h>
@@ -50,9 +51,6 @@
 
 // Must be last header
 #include <dbmem.h>
-
-#define min(x,y) ((x<y)?(x):(y))
-#define max(x,y) ((x>y)?(x):(y))
 
 F_DECLARE_INTERFACE(IObjectSystem);
 
@@ -102,7 +100,7 @@ EXTERN void ResetObjTimerStats()
 {
    if (gTotalCreateTime > 0)
    {
-      float avg = gNumCreates ? 1.0*gTotalCreateTime/gNumCreates : 0.0;
+      float avg = gNumCreates ? 1.0f*gTotalCreateTime/gNumCreates : 0.0f;
       ConfigSpew("obj_stats",("Created %d objects, Total time %d msec avg %.02g\n",gNumCreates,gTotalCreateTime,avg));
    }
 
@@ -712,7 +710,7 @@ void cObjectSystem::SaveActiveArray(ITagFile* file, eObjPartition partition)
       }
       int start = ObjActiveIdx(minobj - gMinObjID);
       int end = ObjActiveIdx(maxobj - gMinObjID);
-      int size = &tempArray[end] - &tempArray[start];
+      int size = (int)(&tempArray[end] - &tempArray[start]);
 
       memcpy(&tempArray[start], &BaseActiveArray[start], size);
 
@@ -752,10 +750,10 @@ HRESULT cObjectSystem::LoadActiveArray(ITagFile* file, eObjPartition partition)
          sObjBounds newBounds = { gMinObjID, gMaxObjID }; 
 
          if (partition & kObjPartAbstract)
-            newBounds.min = min(gMinObjID,minobj);
+            newBounds.min = std::min(gMinObjID,minobj);
             
          if (partition & kObjPartConcrete)
-            newBounds.max = max(gMaxObjID,maxobj);
+            newBounds.max = std::max(gMaxObjID,maxobj);
             
          Warning(("Resizing object id bounds to (%d, %d)\n",newBounds.min,newBounds.max)); 
 
@@ -1113,9 +1111,9 @@ void cObjectSystem::notify_obj(ObjID obj, ulong msg)
 
    if (forward)
    {
-      PropMan->Notify(msg,(ObjNotifyData)obj);
-      LinkMan->Notify(msg,(ObjNotifyData)obj);
-      TraitMan->Notify(msg,(ObjNotifyData)obj);
+      PropMan->Notify(msg,(ObjNotifyData)(intptr_t)obj);
+      LinkMan->Notify(msg,(ObjNotifyData)(intptr_t)obj);
+      TraitMan->Notify(msg,(ObjNotifyData)(intptr_t)obj);
    }
 
    for (int i = 0; i < mListeners.Size(); i++)
@@ -1127,9 +1125,9 @@ void cObjectSystem::notify_obj(ObjID obj, ulong msg)
 
    if (!forward)
    {
-      PropMan->Notify(msg,(ObjNotifyData)obj);
-      LinkMan->Notify(msg,(ObjNotifyData)obj);
-      TraitMan->Notify(msg,(ObjNotifyData)obj);
+      PropMan->Notify(msg,(ObjNotifyData)(intptr_t)obj);
+      LinkMan->Notify(msg,(ObjNotifyData)(intptr_t)obj);
+      TraitMan->Notify(msg,(ObjNotifyData)(intptr_t)obj);
    }
 }
 
@@ -1447,14 +1445,17 @@ tResult cObjectSystem::ResizeObjIDSpace(const sObjBounds& bounds)
    //
    // We can only shrink if there are no active objects the lost space
    //
-   int i; 
-   for (i = bounds.max; i < gMaxObjID; i++)
-      if (ObjExists(i))
-         return E_FAIL; 
+   int i;
+   if (BaseActiveArray)
+   {
+      for (i = bounds.max; i < gMaxObjID; i++)
+         if (ObjExists(i))
+            return E_FAIL;
 
-   for (i = gMinObjID; i < bounds.min; i++)
-      if (ObjExists(i))
-         return E_FAIL; 
+      for (i = gMinObjID; i < bounds.min; i++)
+         if (ObjExists(i))
+            return E_FAIL;
+   }
 
    if (bounds.min == gMinObjID && bounds.max == gMaxObjID)
       return S_FALSE; 

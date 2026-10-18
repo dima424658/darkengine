@@ -1,35 +1,12 @@
 #include <algorithm>
 
 #include <zipstrm.h>
-#include <zlib.h>
-#include <dynfunc.h>
+#include <portableinflate.h>
 
-#ifndef EXP_BUFFER_SIZE
-#define EXP_BUFFER_SIZE    12596
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Dynamic loading
-//
-
-static void PkFail()
+extern "C"
 {
-	CriticalMsg("Failed to locate and load implode.dll!");
-	exit(1);
+#include <blast.h>
 }
-
-typedef unsigned int(*tPkReadFunc)(char* buf, unsigned int* size, void* param);
-typedef void(*tPkWriteFunc)(char* buf, unsigned int* size, void* param);
-
-DeclDynFunc(unsigned int, PkImplode, (tPkReadFunc, tPkWriteFunc, char*, void*, unsigned int*, unsigned int*));
-DeclDynFunc(unsigned int, PkExplode, (tPkReadFunc, tPkWriteFunc, char*, void*));
-
-ImplDynFunc(PkImplode, "implode.dll", "implode", PkFail);
-ImplDynFunc(PkExplode, "implode.dll", "explode", PkFail);
-
-#define DynPkImplode (DynFunc(PkImplode).GetProcAddress())
-#define DynPkExplode (DynFunc(PkExplode).GetProcAddress())
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -136,195 +113,114 @@ void cZipStream::SetName(const char* pName)
 struct sPkExplodeInfo
 {
 	IStoreStream* pSourceStream;
-	const char* pSource;
-	const char* pSourceLimit;
+	unsigned char readBuffer[0x2000];
 	char* pDest;
 	const char* pDestLimit;
 	ulong skip;
-	char* pReadBuf;
 	int fComplete;
 };
 
 ///////////////////////////////////////
 
-unsigned int PkExplodeReader(char* buf, unsigned int* size, void* param)
+unsigned int PkExplodeReader(void* param, unsigned char** buffer)
 {
 	auto* pInfo = reinterpret_cast<sPkExplodeInfo*>(param);
 
 	if (!param || pInfo->fComplete)
 		return 0;
 
-	if (pInfo->pSource >= pInfo->pSourceLimit)
-	{
-		auto targetReadSize = pInfo->skip ? pInfo->skip : pInfo->pDestLimit - pInfo->pDest;
-		if (targetReadSize < 1)
-			targetReadSize = 1;
-		else if (targetReadSize > 0x10000)
-			targetReadSize = 0x10000;
-
-		auto a = pInfo->pSourceStream->Read(targetReadSize, pInfo->pReadBuf);
-		pInfo->pSource = pInfo->pReadBuf;
-		pInfo->pSourceLimit = a + pInfo->pSource;
-	}
-	if (pInfo->pSourceLimit == pInfo->pSource)
+	const auto size = pInfo->pSourceStream->Read(
+		static_cast<int>(sizeof(pInfo->readBuffer)),
+		reinterpret_cast<char*>(pInfo->readBuffer));
+	if (size <= 0)
 		return 0;
 
-	auto length = std::min(pInfo->pSourceLimit - pInfo->pSource, static_cast<ptrdiff_t>(*size));
-	memcpy(buf, pInfo->pSource, length);
-	pInfo->pSource += length;
-	*size = length;
-
-	return length;
+	*buffer = pInfo->readBuffer;
+	return static_cast<unsigned>(size);
 }
 
 ///////////////////////////////////////
 
-void PkExplodeWriter(char* buf, unsigned int* size, void* param)
+int PkExplodeWriter(void* param, unsigned char* buffer, unsigned size)
 {
 	auto* pInfo = reinterpret_cast<sPkExplodeInfo*>(param);
 
-	auto actualSize = *size;
-
 	if (pInfo->skip)
 	{
-		if (pInfo->skip > actualSize)
-		{
-			pInfo->skip -= actualSize;
-			return;
-		}
-
-		actualSize -= pInfo->skip;
-		buf += pInfo->skip;
-		pInfo->skip = 0;
-
+		const auto skipped = std::min<unsigned>(pInfo->skip, size);
+		pInfo->skip -= skipped;
+		buffer += skipped;
+		size -= skipped;
 	}
 
-	if (actualSize + pInfo->pDest > pInfo->pDestLimit)
-		actualSize = pInfo->pDestLimit - pInfo->pDest;
-
-	memcpy(pInfo->pDest, buf, actualSize);
-	pInfo->pDest += actualSize;
-	if (pInfo->pDest > pInfo->pDestLimit)
+	const auto available = static_cast<size_t>(pInfo->pDestLimit - pInfo->pDest);
+	const auto copied = std::min<size_t>(available, size);
+	if (copied)
+	{
+		memcpy(pInfo->pDest, buffer, copied);
+		pInfo->pDest += copied;
+	}
+	if (copied != size || pInfo->pDest == pInfo->pDestLimit)
+	{
 		pInfo->fComplete = 1;
+		return 1;
+	}
+	return 0;
 }
 
 ///////////////////////////////////////
 
 int PkExplodeStreamToMem(IStoreStream* pSourceStream, void* pDest, int skip, int destMax)
 {
-	static char* pPkBuffer = nullptr;
-
-	if (!pPkBuffer)
-		pPkBuffer = static_cast<char*>(Malloc(0x13134u));
-
-	auto pWorkBuf = pPkBuffer;
 	if (!destMax)
 		destMax = 134217728;
 
 	sPkExplodeInfo explodeInfo{};
 	explodeInfo.pSourceStream = pSourceStream;
-	explodeInfo.pReadBuf = pPkBuffer + EXP_BUFFER_SIZE;
-	explodeInfo.pSource = pPkBuffer + EXP_BUFFER_SIZE;
-	explodeInfo.pSourceLimit = pPkBuffer + EXP_BUFFER_SIZE;
 	explodeInfo.pDest = static_cast<char*>(pDest);
 	explodeInfo.pDestLimit = static_cast<char*>(pDest) + destMax;
 	explodeInfo.skip = skip;
 	explodeInfo.fComplete = 0;
 
-	auto result = DynPkExplode(PkExplodeReader, PkExplodeWriter, (char*)pWorkBuf, &explodeInfo);
-	if (result && (result != 4 || !explodeInfo.fComplete) || explodeInfo.pDest > (char*)explodeInfo.pDestLimit)
+	auto result = blast(PkExplodeReader, &explodeInfo,
+		PkExplodeWriter, &explodeInfo, nullptr, nullptr);
+	if ((result != 0 && (result != 1 || !explodeInfo.fComplete)) ||
+		explodeInfo.pDest > explodeInfo.pDestLimit)
 	{
 		CriticalMsg1("Expansion failed (%d)!", result);
 		return 0;
 	}
 
-	return explodeInfo.pDest - static_cast<char*>(pDest);
-}
-
-///////////////////////////////////////
-
-void* ZAllocInterface(void*, unsigned int items, unsigned int size)
-{
-	return Malloc(size * items);
-}
-
-///////////////////////////////////////
-
-void ZFreeInterface(void*, void* addr)
-{
-	Free(addr);
+	return static_cast<int>(explodeInfo.pDest - static_cast<char*>(pDest));
 }
 
 ///////////////////////////////////////
 
 int ZInflateStreamToMem(IStoreStream* pStream, int nStreamSize, void* pData, int nSize)
 {
-	static constexpr auto BufferSize = 0x10000;
-	if (!nStreamSize)
+	if (nStreamSize <= 0 || nSize < 0)
 		return 0;
 
-	auto inputBuffer = static_cast<char*>(Malloc(BufferSize));
-	auto fFlush = 0;
-	auto finished = false;
+	auto* inputBuffer = static_cast<unsigned char*>(Malloc(nStreamSize));
+	if (!inputBuffer)
+		return -1;
 
-	auto actualReadSize = pStream->Read(std::min(nStreamSize, BufferSize), inputBuffer);
-	if (!actualReadSize)
+	int totalReadSize = 0;
+	while (totalReadSize < nStreamSize)
 	{
-		CriticalMsg("Inflating empty file!");
-		Free(inputBuffer);
-		return 0;
+		const auto readSize = pStream->Read(nStreamSize - totalReadSize,
+			reinterpret_cast<char*>(inputBuffer + totalReadSize));
+		if (readSize <= 0)
+		{
+			Free(inputBuffer);
+			return -1;
+		}
+		totalReadSize += readSize;
 	}
 
-	auto totalReadSize = actualReadSize;
-	if (actualReadSize == nStreamSize)
-		fFlush = 4;
-
-	z_stream_s zBlock{};
-	zBlock.next_in = reinterpret_cast<Bytef*>(inputBuffer);
-	zBlock.avail_in = actualReadSize;
-	zBlock.next_out = reinterpret_cast<Bytef*>(pData);
-	zBlock.avail_out = nSize;
-	zBlock.zalloc = ZAllocInterface;
-	zBlock.zfree = ZFreeInterface;
-	zBlock.opaque = 0;
-
-	auto ret = inflateInit2(&zBlock, -15);
-	if (ret != Z_OK)
-		CriticalMsg1("zlib inflateInit failed with %d\n", ret);
-
-	do
-	{
-		if (!zBlock.avail_in && totalReadSize < nStreamSize)
-		{
-			pStream->Read(std::min(static_cast<long>(BufferSize), nStreamSize - totalReadSize), inputBuffer);
-			zBlock.next_in = reinterpret_cast<Bytef*>(inputBuffer);
-			zBlock.avail_in = actualReadSize;
-			totalReadSize += actualReadSize;
-		}
-		ret = inflate(&zBlock, fFlush);
-		if (ret == Z_STREAM_END)
-		{
-			finished = true;
-		}
-		else
-		{
-			if (ret)
-			{
-				CriticalMsg1("zlib inflate returned %d!\n", ret);
-				Free(inputBuffer);
-				return -1;
-			}
-
-			if (!zBlock.avail_out)
-				CriticalMsg("zlib inflate: buffer full before end!");
-		}
-	} while (!finished);
-
-	auto actualRead = nSize - zBlock.avail_out;
-	inflateEnd(&zBlock);
+	const auto actualRead = RawDeflateExpand(inputBuffer, nStreamSize, pData, nSize);
 	Free(inputBuffer);
-
-	return actualRead;
+	return static_cast<int>(actualRead);
 }
 
 ///////////////////////////////////////
@@ -420,7 +316,7 @@ BOOL cZipStream::SetPos(long nPos)
 	if (!m_nOpenCount)
 		return FALSE;
 
-	if (nPos >= m_pInfo->m_nUncompressedSize)
+	if (nPos < 0 || static_cast<uint32>(nPos) >= m_pInfo->m_nUncompressedSize)
 		return FALSE;
 
 	m_nLastPos = nPos;
@@ -451,7 +347,7 @@ long cZipStream::ReadAbs(long nStartPos, long nEndPos, char* pBuf)
 
 long cZipStream::GetSize()
 {
-	return m_pInfo->m_nUncompressedSize;
+	return static_cast<long>(m_pInfo->m_nUncompressedSize);
 }
 
 ///////////////////////////////////////
@@ -464,12 +360,12 @@ long cZipStream::Read(long nNumBytes, char* pBuf)
 	if (nNumBytes < 1)
 		return -1;
 
-	auto nBytesLeft = m_pInfo->m_nUncompressedSize - m_nLastPos;
+	auto nBytesLeft = static_cast<long>(m_pInfo->m_nUncompressedSize) - m_nLastPos;
 	if (nBytesLeft <= 0)
 		return -1;
 
 	if (nNumBytes > nBytesLeft)
-		nNumBytes = m_pInfo->m_nUncompressedSize - m_nLastPos;
+		nNumBytes = static_cast<long>(m_pInfo->m_nUncompressedSize) - m_nLastPos;
 
 	if (m_pInfo->m_nCompressionMethod)
 	{
@@ -502,15 +398,18 @@ short cZipStream::Getc()
 {
 	if (m_pInfo->m_nCompressionMethod)
 	{
-		if (m_pData && m_nOpenCount && m_nLastPos < m_pInfo->m_nUncompressedSize)
-			return m_pData[m_nLastPos++];
+		if (m_pData && m_nOpenCount && m_nLastPos >= 0 &&
+			static_cast<uint32>(m_nLastPos) < m_pInfo->m_nUncompressedSize)
+			return static_cast<unsigned char>(m_pData[m_nLastPos++]);
 		else
 			return -1;
 	}
 
 	char c{};
 	if (m_nOpenCount && Read(1, &c) == 1)
-		return c;
+		return static_cast<unsigned char>(c);
+
+	return -1;
 }
 
 ///////////////////////////////////////
@@ -531,14 +430,14 @@ void cZipStream::ReadBlocks(void* pBuf, long nSize, tStoreStreamBlockCallback ca
 		memmove(pBuf, p, nRead);
 		p += nRead;
 
-		nSize = callback(pBuf, nRead, nBlockIx, pCallbackData);
+		nSize = callback(pBuf, static_cast<long>(nRead), nBlockIx, pCallbackData);
 		if (nSize < 1)
 			break;
 
 		++nBlockIx;
 	}
 
-	m_nLastPos = p - m_pData;
+	m_nLastPos = static_cast<long>(p - m_pData);
 }
 
 ///////////////////////////////////////

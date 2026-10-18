@@ -45,7 +45,7 @@ BOOL RayPlaneIntersection(const tPlane &plane, const mxs_vector &from, const mxs
    mxs_real   from_dist;
    mxs_real   to_dist;
 
-   dir_on_norm = fabs(mx_dot_vec(&dir, &plane.normal));
+   dir_on_norm = fabsf(mx_dot_vec(&dir, &plane.normal));
 
    if (dir_on_norm == 0)
       return FALSE;
@@ -57,10 +57,10 @@ BOOL RayPlaneIntersection(const tPlane &plane, const mxs_vector &from, const mxs
 
    if ((from_dist * to_dist) > 0)
    {
-      if (fabs(from_dist) < fabs(to_dist))
-         mx_scale_add_vec(intersection, &from, &dir, -fabs(from_dist) / dir_on_norm);
+      if (fabsf(from_dist) < fabsf(to_dist))
+         mx_scale_add_vec(intersection, &from, &dir, -fabsf(from_dist) / dir_on_norm);
       else
-         mx_scale_add_vec(intersection, &to, &dir, fabs(to_dist) / dir_on_norm);
+         mx_scale_add_vec(intersection, &to, &dir, fabsf(to_dist) / dir_on_norm);
    }
    else
       return LinePlaneIntersection(plane, from, to, intersection);
@@ -84,8 +84,8 @@ BOOL LinePlaneIntersection(const tPlane &plane, const mxs_vector &from, const mx
    if (from_dist * to_dist > 0)
       return FALSE;
 
-   from_dist = fabs(from_dist);
-   to_dist   = fabs(to_dist);
+   from_dist = fabsf(from_dist);
+   to_dist   = fabsf(to_dist);
 
    if ((from_dist + to_dist) < ON_PLANE_EPSILON)
    {
@@ -396,7 +396,7 @@ void PortalCenter(const mxs_vector portalPoints[], int numPortalPoints, mxs_vect
    mx_zero_vec(portalCenter);
    for (int i=0; i<numPortalPoints; i++)
       mx_addeq_vec(portalCenter, (mxs_vector *)&portalPoints[i]);
-   mx_scaleeq_vec(portalCenter, 1.0 / numPortalPoints);
+   mx_scaleeq_vec(portalCenter, 1.0f / numPortalPoints);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -440,12 +440,12 @@ BOOL OBBsIntersect(const tOBB &b1, const tOBB &b2)
    for (i=0; i<3; ++i) 
    {
       // Calculate distance between projected centers
-      T_L = fabs(mx_dot_vec(&T, &(M_1.vec[i])));
+      T_L = fabsf(mx_dot_vec(&T, &(M_1.vec[i])));
 
       // Calculate length of maximum radius of brush, projected
       sum = b1.scale.el[i];
       for (j=0; j<3; ++j)
-         sum += b2.scale.el[j] * fabs(mx_dot_vec(&M_2.vec[j], &M_1.vec[i]));
+         sum += b2.scale.el[j] * fabsf(mx_dot_vec(&M_2.vec[j], &M_1.vec[i]));
 
       if (sum < T_L)
          return FALSE;
@@ -455,12 +455,12 @@ BOOL OBBsIntersect(const tOBB &b1, const tOBB &b2)
    for (i=0; i<3; ++i) 
    {
       // Calculate distance between projected centers
-      T_L = fabs(mx_dot_vec(&T, &(M_2.vec[i])));
+      T_L = fabsf(mx_dot_vec(&T, &(M_2.vec[i])));
 
       // Calculate length of maximum radius of brush, projected
       sum = b2.scale.el[i];
       for (j=0; j<3; ++j)
-         sum += b1.scale.el[j] * fabs(mx_dot_vec(&M_1.vec[j], &M_2.vec[i]));
+         sum += b1.scale.el[j] * fabsf(mx_dot_vec(&M_1.vec[j], &M_2.vec[i]));
 
       if (sum < T_L)
          return FALSE;
@@ -472,18 +472,18 @@ BOOL OBBsIntersect(const tOBB &b1, const tOBB &b2)
       for (j=0; j<3; ++j) 
       {
          mx_cross_vec(&L, &(M_1.vec[i]), &(M_2.vec[j]));
-         if (mx_mag2_vec(&L) > 0.0001)
+         if (mx_mag2_vec(&L) > 0.0001f)
             mx_normeq_vec(&L);
-         T_L = fabs(mx_dot_vec(&T, &L));
+         T_L = fabsf(mx_dot_vec(&T, &L));
 
          // Do summations
          sum = 0;
 
          for (k=0; k<3; k++)
-            sum += b1.scale.el[k] * fabs(mx_dot_vec(&M_1.vec[k], &L));
+            sum += b1.scale.el[k] * fabsf(mx_dot_vec(&M_1.vec[k], &L));
 
          for (k=0; k<3; k++)
-            sum += b2.scale.el[k] * fabs(mx_dot_vec(&M_2.vec[k], &L));
+            sum += b2.scale.el[k] * fabsf(mx_dot_vec(&M_2.vec[k], &L));
 
          // If radius is smaller than the distance from center to center,
          //  then they must not intersect

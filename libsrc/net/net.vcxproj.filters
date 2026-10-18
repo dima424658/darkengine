@@ -15,13 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="msgdelay.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="net.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dplay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

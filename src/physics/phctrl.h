@@ -137,7 +137,7 @@ inline mxs_vector & cPhysCtrlData::GetControlVelocity()
 
 inline mxs_real cPhysCtrlData::GetControlAxisVelocity(int axis)
 {
-   return (m_axis[axis] ? m_speed[axis] : 0.0);
+   return (m_axis[axis] ? m_speed[axis] : 0.0f);
 }
 
 ///////////////////////////////////////

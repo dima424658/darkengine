@@ -677,7 +677,8 @@ HRESULT cAISoundEnactor::DoRequestConcept(sAISoundConceptDesc * pDesc, const cTa
    cTagDBInput           tagDBInput;
    tagDBInput.AppendTagSet(&tags);
 
-   hSchema = SpeechSpeak(GetID(), conceptLabel, &tagDBInput, (void *)pDesc->concept);
+      hSchema = SpeechSpeak(GetID(), conceptLabel, &tagDBInput,
+                            (void *)(intptr_t)pDesc->concept);
 
    if (hSchema == SCH_HANDLE_NULL)
    {

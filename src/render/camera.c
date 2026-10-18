@@ -97,9 +97,9 @@ Camera* CameraInit(mxs_vector *pos, mxs_angvec *ang, ObjID objid)
       case 6: CameraAngOffsets[USER_DEFINED].tz = cfg_vals[5];
       case 5: CameraAngOffsets[USER_DEFINED].ty = cfg_vals[4];
       case 4: CameraAngOffsets[USER_DEFINED].tx = cfg_vals[3];
-      case 3: CameraPosOffsets[USER_DEFINED].z = cfg_vals[2];
-      case 2: CameraPosOffsets[USER_DEFINED].y = cfg_vals[1];
-      case 1: CameraPosOffsets[USER_DEFINED].x = cfg_vals[0];
+      case 3: CameraPosOffsets[USER_DEFINED].z = (mxs_real)cfg_vals[2];
+      case 2: CameraPosOffsets[USER_DEFINED].y = (mxs_real)cfg_vals[1];
+      case 1: CameraPosOffsets[USER_DEFINED].x = (mxs_real)cfg_vals[0];
    }
 
    return cam;
@@ -451,7 +451,7 @@ ObjID CameraGetObjID(Camera *cam)
 // save/load system to get accurate camera positions saved to disk
 
 #include <stdio.h>
-#include <io.h>
+#include <platform_io.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
@@ -475,7 +475,7 @@ void CameraSave(Camera *cam, char *str)
    else
    {
       // add .cam?
-      fh=open(str,O_BINARY|O_WRONLY|O_CREAT,S_IREAD|S_IWRITE);
+      fh=_open(str,O_BINARY|O_WRONLY|O_CREAT,S_IREAD|S_IWRITE);
    }
    if (fh==-1)
       Status("Couldnt Open File");
@@ -488,7 +488,7 @@ void CameraSave(Camera *cam, char *str)
       CameraGetLocation(cam, &pos, &ang);
       sprintf(buf,"%x %x %x %x %x %x",
               *((int *)&pos.x),*((int *)&pos.y),*((int *)&pos.z),(int)ang.el[0],(int)ang.el[1],(int)ang.el[2]);
-      write(fh,buf,strlen(buf));
+   write(fh,buf,(unsigned)strlen(buf));
       close(fh);
       sprintf(buf,"Wrote %s",str);
       Status(buf);
@@ -501,7 +501,7 @@ void CameraLoad(Camera *cam, char *str)
    int fh;
 
    // add .cam?   
-   fh=open(str,O_BINARY|O_RDONLY);
+   fh=_open(str,O_BINARY|O_RDONLY);
    if (fh==-1)
       Status("Cant open file");
    else

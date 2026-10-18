@@ -150,7 +150,19 @@
     <ClInclude Include="gif.h">
       <Filter>Header Files\Resource Readers</Filter>
     </ClInclude>
+    <ClInclude Include="imagefmt.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
     <ClInclude Include="pcx.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
+    <ClInclude Include="png.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
+    <ClInclude Include="dds.h">
+      <Filter>Header Files\Resource Readers</Filter>
+    </ClInclude>
+    <ClInclude Include="psd.h">
       <Filter>Header Files\Resource Readers</Filter>
     </ClInclude>
     <ClInclude Include="tga.h">
@@ -252,6 +264,15 @@
       <Filter>Source Files\Resource Readers</Filter>
     </ClCompile>
     <ClCompile Include="pcx.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
+    </ClCompile>
+    <ClCompile Include="png.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
+    </ClCompile>
+    <ClCompile Include="dds.cpp">
+      <Filter>Source Files\Resource Readers</Filter>
+    </ClCompile>
+    <ClCompile Include="psd.cpp">
       <Filter>Source Files\Resource Readers</Filter>
     </ClCompile>
     <ClCompile Include="tga.cpp">

@@ -16,10 +16,13 @@
 #include <bk8lin.h>
 
 void (*bank8_uvline_func[FILL_TYPES])() =
+{ 0 };
+
+void init_bank8_uvline_func(void)
 {
-	[FILL_NORM] =	bank8_norm_uvline,
-	[FILL_XOR] =	bank8_xor_uvline,
-	[FILL_BLEND] =	bank8_tluc_uvline,
-	[FILL_CLUT] =	bank8_clut_uvline,
-	[FILL_SOLID] =	bank8_solid_uvline,
-};
+	bank8_uvline_func[FILL_NORM] = bank8_norm_uvline;
+	bank8_uvline_func[FILL_XOR] = bank8_xor_uvline;
+	bank8_uvline_func[FILL_BLEND] = bank8_tluc_uvline;
+	bank8_uvline_func[FILL_CLUT] = bank8_clut_uvline;
+	bank8_uvline_func[FILL_SOLID] = bank8_solid_uvline;
+}

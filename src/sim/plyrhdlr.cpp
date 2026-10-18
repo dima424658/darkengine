@@ -172,7 +172,7 @@ void PlayerHandlerIdleMode(int mode)
 
 BOOL PlayerHandlerFrame(ulong dt, void *data)
 {
-   int mode=(int)data;
+   int mode = (int)(intptr_t)data;
 
    AssertMsg1((mode >= 0) && (mode < g_nPlayerModes) || (mode == kPlayerModeInvalid),
               "Invalid player arm mode: %d\n", mode);

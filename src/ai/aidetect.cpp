@@ -299,7 +299,7 @@ BOOL cAIDetect::SearchForSuspicious(void)
          //anymore).
          {
 #define kSuspiciousLookDistSq sq(15.0)
-#define kSuspiciousLighting 0.15
+#define kSuspiciousLighting 0.15f
 #define kSuspiciousDotMinimum 0.0
           ObjPos *themLoc=ObjPosGet(targ);
 

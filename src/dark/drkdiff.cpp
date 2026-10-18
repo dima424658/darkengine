@@ -311,7 +311,7 @@ static void do_objectives(void)
 // Init/Term 
 //
 
-void init_commands(); 
+static void init_commands();
 
 void DarkDifficultyInit()
 {

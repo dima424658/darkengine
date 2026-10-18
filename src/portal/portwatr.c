@@ -71,7 +71,7 @@ static void project_vector_z_onto_xy(mxs_vector *v, PortalPlane *plane)
 
 // If we want texture scaling on water later, this should be replaced
 // with a variable.
-#define TEXTURE_UNIT_LENGTH 4.0
+#define TEXTURE_UNIT_LENGTH 4.0f
 
 /* ----- /-/-/-/-/-/-/-/-/ <<< (((((( /\ )))))) >>> \-\-\-\-\-\-\-\-\ ----- *\
 

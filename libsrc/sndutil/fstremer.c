@@ -106,9 +106,9 @@ CreateSoundFileStreamer( ISndMixer        *pMixer,
    }
 
    pInfo = (sndStreamStuff *) Malloc( sizeof( sndStreamStuff ) );
-   pInfo->extras[0] = (uint32) inFile;
-   pInfo->extras[1] = (uint32) endCB;
-   pInfo->extras[2] = (uint32) pEndCBData;
+   pInfo->extras[0] = (uintptr_t)inFile;
+   pInfo->extras[1] = (uintptr_t)endCB;
+   pInfo->extras[2] = (uintptr_t)pEndCBData;
 
    TLOG2("CreateSoundFileStreamer %ld fileLen, %ld buffLen",
         fileLen, bufferLen );

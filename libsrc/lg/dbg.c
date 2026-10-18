@@ -422,7 +422,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <conio.h>
 
 #include <dbg.h>
 #include <lgsprntf.h>
@@ -434,6 +433,7 @@
 
 #include <coremutx.h>
 #include <lgassert.h>
+#include <platform_services.h>
 
 #ifdef DBG_ON
 
@@ -449,11 +449,11 @@ static ulong spewSrc;
 
 static void (*dbg_f_report_user)(int errType, const char *msg) = NULL;
 
-int (*f_getch)() = getch;
+int (*f_getch)() = PlatformReadKey;
 
 int errErrCode;
 
-extern char *pExitMsg;
+extern const char *pExitMsg;
 
 void DbgHandleC(int reportType, ulong src, const char *fmt, va_list __arg);
 
@@ -611,7 +611,7 @@ int DbgGetKey()
 //
 //		f_report_user = report routine, taking report type & msg args
 
-void DbgSetReportRoutine(void (*f_report_user)(int reportType, char *msg))
+void DbgSetReportRoutine(void (*f_report_user)(int reportType, const char *msg))
 {
 	dbg_f_report_user = f_report_user;
 }
@@ -926,7 +926,6 @@ void DbgCloseLogFiles()
 // which is called DbgHandleCpp()
 
 #ifdef __WATCOMC__
-#pragma off(unreferenced);
 #endif
 
 void DbgHandle(int reportType, ulong src, char *buff)
@@ -1023,5 +1022,4 @@ void DbgHandleC(int reportType, ulong src, const char *fmt, va_list __arg)
 }
 
 #ifdef __WATCOMC__
-#pragma on(unreferenced);
 #endif

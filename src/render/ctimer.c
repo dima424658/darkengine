@@ -46,7 +46,7 @@ void CTimerDump()
 {
    int i;
    float fTotalTime = 0.0;
-   float fFrames = g_iCTimerFrames;
+   float fFrames = (float)g_iCTimerFrames;
 
    mprintf("C Timers for %d frames:\n", g_iCTimerFrames);
    mprintf("   timer  millisec    percent  millisec/frame\n");

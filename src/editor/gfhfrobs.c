@@ -185,7 +185,7 @@ static void GFHFrobs_Tog(Rect *where, bool val, int data)
    GFHFrobs_setvars(NULL,TRUE);
 }
 
-static void GFHFrobs_Update(PnP_SliderOp op, Rect *where, int val, int data)
+static void GFHFrobs_Update(PnP_SliderOp op, Rect *where, int val, intptr_t data)
 {
    if (data==FROBS_TIME)
       do_time_frob(o_time);
@@ -201,14 +201,12 @@ static void GFHFrobs_Update(PnP_SliderOp op, Rect *where, int val, int data)
 //////////////////////////////
 // actual swap button area
 
-#pragma off(unreferenced)
 static bool swap_butt_cb(ushort action, int button, void* data, LGadBox* vb)
 {
    if (action & (BUTTONGADG_LCLICK|BUTTONGADG_RCLICK))
       PnP_ExecCommandInt("start_swap",button);
    return TRUE;
 }
-#pragma on(unreferenced)
 
 static DrawElement dvec[] = 
 { 

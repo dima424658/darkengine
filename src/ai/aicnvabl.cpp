@@ -268,7 +268,7 @@ STDMETHODIMP cAIConverse::SuggestActions(cAIGoal * pGoal, const cAIActions & pre
          m_pCurrentAction->Release();
       m_pCurrentAction = pAction;
       m_pCurrentAction->AddRef();
-      for (int i=0; i<m_nActions; i++)
+      for (unsigned i=0; i<m_nActions; i++)
          if ((m_pActionScript[i].type == kAIPS_Play) && m_pActionScript[i].GetArg(0))
             SpeechInstallEndCallback(m_pAIState->GetID(), SpeechEndCallback);
       SetState(kAIConvInProgress);

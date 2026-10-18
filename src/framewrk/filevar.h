@@ -102,6 +102,8 @@ typedef cSimpleDList<cFileVarBase*> cFileVarList;
 class cFileVarBase : public sFileVarData 
 {
 
+   TagVersion mLoadedVersion;
+
 public: 
    cFileVarBase();  
    virtual ~cFileVarBase(); 
@@ -115,6 +117,17 @@ protected:
    
    BOOL SetupFile(ITagFile* file);
    void CleanupFile(ITagFile* file); 
+
+   // A file variable's write version remains in its descriptor.  Codecs may
+   // independently accept a newer input version and decode a compatible
+   // prefix by overriding these hooks.
+   virtual TagVersion ReadVersion() const { return mDesc->version; }
+   virtual TagVersion WriteVersion() const { return mDesc->version; }
+   virtual BOOL ShouldWrite() const { return TRUE; }
+   virtual BOOL ReadBlock(ITagFile* file, const TagVersion&)
+      { return file->Read((char*)mBlock,mSize) == mSize; }
+   virtual BOOL WriteBlock(ITagFile* file)
+      { return file->Write((char*)mBlock,mSize) == mSize; }
 
 public:
    void DatabaseMsg(ulong msg, ITagFile* file); 

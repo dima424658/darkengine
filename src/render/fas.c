@@ -13,7 +13,7 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-#define TICKS_PER_SECOND   1000.0
+#define TICKS_PER_SECOND   1000.0f
 #define MAX_TIME           0x7fffffff
 
 // compute and return the current of the animation
@@ -48,14 +48,14 @@ int FrameAnimationGetFrame(FrameAnimationState *state,
 
       frame = (ulong) abstract_frame;
       if (cfg->fps)
-         state->next_time = cur_time +
-                TICKS_PER_SECOND*(frame+1-abstract_frame)/cfg->fps;
+          state->next_time = cur_time +
+                 (ulong)(TICKS_PER_SECOND*(frame+1-abstract_frame)/cfg->fps);
       else
          state->next_time = MAX_TIME;
 
       if (frame_count <= 0) return 0; // avoid mod by 0 or negative
 
-      if (cfg->clamp && frame >= frame_count)
+      if (cfg->clamp && frame >= (ulong)frame_count)
       {
          frame = frame_count-1;
          state->next_time = MAX_TIME;  // we'll never update again
@@ -69,7 +69,7 @@ int FrameAnimationGetFrame(FrameAnimationState *state,
    }
 
    // if we're bouncing, our frame number might exceed the real one
-   if (state->cur_frame >= num_frames)
+   if (state->cur_frame >= (ulong)num_frames)
       return num_frames - 2 - (state->cur_frame-num_frames);
    else
       return state->cur_frame;
@@ -94,7 +94,7 @@ void FrameAnimationStateBackdateSetFrame(FrameAnimationState *fas,
 {
    // force it to be on frame tm at time tm
 
-   fas->start_time = tm - cfg->fps * frame * TICKS_PER_SECOND;
+   fas->start_time = tm - (ulong)(cfg->fps * frame * TICKS_PER_SECOND);
    if (fas->start_time > tm) // WRAPPED
       fas->start_time = 0;
    fas->next_time = cfg->fps ? 0 : MAX_TIME;
@@ -136,7 +136,7 @@ void FrameAnimationChange(FrameAnimationState  *state,
 
    // clamp if necessary (i.e. if clamping, or if just too big 'cause
    // they have different number of frames)
-   if (state->cur_frame >= new_frames)
+   if (state->cur_frame >= (ulong)new_frames)
       state->cur_frame = new_frames-1;
 
    // finally, we want to force this frame slightly back in time,
@@ -151,7 +151,7 @@ void FrameAnimationChange(FrameAnimationState  *state,
 
       // now use 1-frame_left as "frame_passed", and move it back in time
       if (new_cfg->fps)
-         cur_time -= TICKS_PER_SECOND*(1-frame_left)/new_cfg->fps;
+         cur_time -= (ulong)(TICKS_PER_SECOND*(1.0f-frame_left)/new_cfg->fps);
    }
    FrameAnimationStateBackdateSetFrame(state, new_cfg,
                                       state->cur_frame, cur_time);

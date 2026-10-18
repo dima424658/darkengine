@@ -26,7 +26,6 @@ static int menu_size = 0;
 #define MAX_MENU_LINES 7
 #define USER_MENU_SPACING MakePoint(1,1)
 
-#pragma off(unreferenced)
 void CreateUserPNP(LGadRoot* root, Rect* bounds, editBrush* brush)
 {
    menu_size = 0;
@@ -56,7 +55,3 @@ void DestroyUserPNP(void)
    }
    menu_size = 0;
 }
-
-
-
-#pragma on(unreferenced)

@@ -300,12 +300,6 @@
     <ClCompile Include="vesac.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vgastate.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="vsastate.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="comdfcn.cc">
       <Filter>Source Files</Filter>
     </ClCompile>

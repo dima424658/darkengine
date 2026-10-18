@@ -154,6 +154,11 @@ public:
 // Structure descriptor
 //
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#endif
+
 static sFieldDesc light_fields [] =
 {
    { "brightness",
@@ -216,6 +221,12 @@ IColorProperty *g_ColorProp = NULL;
 
 class cAnimOps : public cClassDataOps<sAnimLightProp>
 {
+public:
+   // NewDark 1.28 appends one 32-bit field to the retail animated-light
+   // record.  The authored retail prefix is unchanged and contains every
+   // field used by this renderer; cClassDataOps reads the complete record,
+   // copies the known prefix, and the property loader retains the tail.
+   STDMETHOD_(int, ReadVersion)() { return 80; };
 };
 
 class cAnimStore : public cHashPropertyStore<cAnimOps>
@@ -308,6 +319,10 @@ static sFieldDesc anim_light_fields [] =
 
 static sStructDesc anim_light_struct
    = StructDescBuild(sAnimLightProp, kStructFlagNone, anim_light_fields);
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 // @TBD (justin 10-14-98): Currently, this property is being set locally
 // on each machine. This isn't ideal -- we would like at least major
 // changes to be reflected the same on all machines. However, this property
@@ -510,9 +525,6 @@ EXTERN BOOL FindVhotLocation(mxs_vector *loc, ObjID obj, int vhot)
    mxs_vector scale;
    int idx;
 
-   // i guess we are disallowing parameterized lights, then?
-   mds_parm parms[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
    ObjPos *pos = ObjPosGet(obj);
 
    // ummm, i think this should have been here all along, eh?
@@ -535,10 +547,6 @@ EXTERN BOOL FindVhotLocation(mxs_vector *loc, ObjID obj, int vhot)
       {
          mds_model *model = (mds_model *) objmodelGetModel(idx);
 
-         r3_start_frame();
-         md_eval_vhots(model, parms);
-         r3_end_frame();
-
          mds_vhot *vh = md_vhot_list(model);
 
          int i = model->vhots;
@@ -550,8 +558,9 @@ EXTERN BOOL FindVhotLocation(mxs_vector *loc, ObjID obj, int vhot)
             }
             vh++;
          }
-         if (i<0)
+         if (i<0) {
             loud_light_mprint(("Never found VHOT %d for %d (has %d)\n",vhot,obj,model->vhots));
+         }
       }
       else
          loud_light_mprint(("Light %d isn't an MD model\n",obj));
@@ -672,9 +681,9 @@ static bool ShineOneLight(sLightPropCore *light, ObjID obj,
    float hue, saturation;
    ObjColorGet(obj, &hue, &saturation);
    portal_convert_hsb_to_rgb(&r, &g, &b, hue, saturation);
-   temp.x = r*brightness/255.0;
-   temp.y = g*brightness/255.0;
-   temp.z = b*brightness/255.0;
+   temp.x = r*brightness/255.0f;
+   temp.y = g*brightness/255.0f;
+   temp.z = b*brightness/255.0f;
    portal_set_normalized_color(r,g,b);
 #endif
 
@@ -748,8 +757,8 @@ static bool ShineOneLight(sLightPropCore *light, ObjID obj,
             mx_mat_muleq_vec(&trans, &dir);
          }
 
-         inner = cos(3.141592*spot->x/180);
-         outer = cos(3.141592*spot->y/180);
+         inner = cosf(3.141592f*spot->x/180);
+         outer = cosf(3.141592f*spot->y/180);
          // we should just have a function call to pass these in or something
          portal_spotlight = TRUE;
          portal_spotlight_loc = light_point;

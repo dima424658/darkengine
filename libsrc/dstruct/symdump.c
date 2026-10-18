@@ -42,7 +42,7 @@ void SymDumpTable(Symtab *psymtab, bool sorted)
 
 	if (sorted)
 		{
-		printf("Sorted dump of Symbol table: $%x\n", psymtab);
+		printf("Sorted dump of Symbol table: %p\n", (void *)psymtab);
 		psym = SymFirst(psymtab);
 		while (psym)
 			{
@@ -53,7 +53,7 @@ void SymDumpTable(Symtab *psymtab, bool sorted)
 		}
 	else
 		{
-		printf("Hash entry dump of Symbol table: $%x\n", psymtab);
+		printf("Hash entry dump of Symbol table: %p\n", (void *)psymtab);
 		for (i = 0; i < psymtab->numSymHashEntries; i++)
 			{
 			plist = &psymtab->hashTable[i];

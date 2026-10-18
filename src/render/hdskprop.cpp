@@ -44,6 +44,9 @@ EXTERN BOOL g_lgd3d;
 
 class cHeatDiskOps : public cClassDataOps<sHeatDiskCluster>
 {
+public:
+   // NewDark extends the 52-byte retail record with one trailing word.
+   STDMETHOD_(int, ReadVersion)() { return 56; };
 };
 
 //
@@ -167,7 +170,7 @@ extern "C" BOOL ObjHeatDiskSet(ObjID obj, sHeatDiskCluster *cluster)
 inline mxs_real RandUnit()
 {
    int r = Rand();
-   return float(r - 16384) * (1.0 / 16384.0);
+   return float(r - 16384) * (1.0f / 16384.0f);
 }
 
 
@@ -209,7 +212,7 @@ extern "C" void ObjHeatDiskRender(ObjID obj, sHeatDiskCluster *cluster)
    mxs_real end_radius = cluster->end_radius;
    mxs_real bottom_radius = start_radius;
    mxs_real delta_radius = (end_radius - start_radius) / real_num_effects;
-   mxs_real delta_time = 1.0 / real_num_effects;
+   mxs_real delta_time = 1.0f / real_num_effects;
 
    // Let's find our starting and ending points in world space.
    mx_ang2mat(&orientation, &p->fac);
@@ -234,7 +237,7 @@ extern "C" void ObjHeatDiskRender(ObjID obj, sHeatDiskCluster *cluster)
       mx_interpolate_vec(&bottom, &start, &end, time);
       top = bottom;
       top.z += cluster->height;
-      top_radius = bottom_radius * .333333333;
+      top_radius = bottom_radius * .333333333f;
 
       top.x += RandUnit() * top_jitter;
       top.y += RandUnit() * top_jitter;

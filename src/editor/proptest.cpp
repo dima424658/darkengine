@@ -6,7 +6,7 @@
 // $Header: r:/t2repos/thief2/src/editor/proptest.cpp,v 1.38 2000/01/18 12:35:24 PATMAC Exp $
 
 #include <comtools.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <str.h>
 #include <dynarray.h>
@@ -68,7 +68,7 @@ extern "C"
 static ObjID parse_obj_arg(char* arg)
 {
    // Remove trailing whitespace;
-   int len = strlen(arg); 
+   int len = (int)strlen(arg);
    for (char* s = arg + len - 1; s > arg && isspace(*s); s--)
       *s = '\0';
    ObjID focus = EditGetObjNamed(arg);
@@ -629,7 +629,7 @@ static void test_briefcase_load(void)
 static void copy_props_to(char* arg)
 {
    // Remove trailing whitespace;
-   int len = strlen(arg); 
+   int len = (int)strlen(arg);
    for (char* s = arg + len - 1; s > arg && isspace(*s); s--)
       *s = '\0';
  

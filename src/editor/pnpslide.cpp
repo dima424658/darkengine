@@ -9,7 +9,7 @@
 
 #include <lg.h>
 #include <gadget.h>
-#include <float.h>
+#include <limits>
 #include <keydefs.h>
 
 #include <pnptools.h>
@@ -25,7 +25,6 @@ extern "C" {
 #include <dbmem.h>
 
 EXTERN DrawElement stupid_arrows[];
-#pragma off(unreferenced)
 
 #define _set_min_max(tcd,lo,hi,scale,minval,maxval) \
    if (lo==hi) \
@@ -40,7 +39,7 @@ EXTERN DrawElement stupid_arrows[];
       (tcd)->max  = hi; \
       (tcd)->wrap = FALSE; \
    } \
-   (tcd)->delta=scale
+   (tcd)->delta = (type)(scale)
 
 #define _unsigned_set_min_max(tcd,lo,hi,scale,maxval) \
    _set_min_max(tcd,lo,hi,scale,0,maxval)
@@ -75,8 +74,8 @@ static int _slider_build_name(Rect *space, const char *name, short pad, pnp_vsli
 
 template <class type> struct CycleData
 {
-   void (*update)(PnP_SliderOp op, Rect* where, type val, int data); 
-   int data; 
+   void (*update)(PnP_SliderOp op, Rect* where, type val, intptr_t data);
+   intptr_t data;
    BOOL send_updates;
 };
 
@@ -115,7 +114,7 @@ struct pnpSlider
    static void Update(void* g, void* arg);   
 
    pnpSlider(Rect* space, const char* name, type lo, type hi, float scale, type* var,
-               void(*update)(PnP_SliderOp op, Rect* where, type val, int data), int data, ulong flags, const char* format); 
+               void(*update)(PnP_SliderOp op, Rect* where, type val, intptr_t data), intptr_t data, ulong flags, const char* format);
    ~pnpSlider();
 };
 
@@ -192,8 +191,8 @@ SLIDER_TEMPLATE
 
 SLIDER_TEMPLATE pnpSlider<type,DESC,SLIDER,METHODS>:: 
 pnpSlider(Rect* space, const char* name, type lo, type hi, float scale, type* var,
-       void(*update)(PnP_SliderOp op, Rect* where, type val, int data), 
-       int data, ulong flags, const char* format)
+       void(*update)(PnP_SliderOp op, Rect* where, type val, intptr_t data),
+       intptr_t data, ulong flags, const char* format)
 {
    CycleGadgDesc cdesc = { {0,}, NULL, stupid_arrows, cycle_cb, format};
    DESC fdesc;
@@ -225,7 +224,7 @@ pnpSlider(Rect* space, const char* name, type lo, type hi, float scale, type* va
    cyc->send_updates = FALSE;
 
    memset(&fdesc,0,sizeof(fdesc));
-   _signed_set_min_max(&fdesc,lo,hi,scale,FLT_MAX);
+   _signed_set_min_max(&fdesc,lo,hi,scale,(std::numeric_limits<type>::max)());
    if (flags & PNP_SLIDER_WRAP)
       fdesc.wrap = TRUE;
    
@@ -243,10 +242,10 @@ SLIDER_TEMPLATE int pnpSlider<type,DESC,SLIDER,METHODS>::Register(int num)
 
 #define BuildCycle(type,Type,format) \
 EXTERN int PnP_Slider##Type(Rect* space, const char* name, type lo, type hi, type scale, type *var, \
-                     void (*update)(PnP_SliderOp op, Rect* where, type val, int data), int data, ulong flags) \
+                     void (*update)(PnP_SliderOp op, Rect* where, type val, intptr_t data), intptr_t data, ulong flags) \
 { \
    SLIDER_INSTANCE(type)* slider; \
-   slider = new SLIDER_INSTANCE(type)(space,name,lo,hi,scale,var,update,data,flags,format); \
+   slider = new SLIDER_INSTANCE(type)(space,name,lo,hi,(float)scale,var,update,data,flags,format); \
    return slider->Register();\
 }
 
@@ -307,8 +306,8 @@ static bool string_cycle_cb(CycleGadg* gadg, ulong action, eCyclePart part,
    return TRUE; 
 }
 
-EXTERN int PnP_SliderString(Rect *space, const char *name, int num, char** vals, int *var,
-                   void (*update)(PnP_SliderOp op, Rect *where, int val, int data), int data, ulong flags)
+EXTERN int PnP_SliderString(Rect *space, const char *name, int num, const char * const *vals, int *var,
+                   void (*update)(PnP_SliderOp op, Rect *where, int val, intptr_t data), intptr_t data, ulong flags)
 {
    CycleGadgDesc cdesc = { {0,}, NULL, stupid_arrows, string_cycle_cb, };
    StringCycleGadgDesc sdesc;
@@ -356,7 +355,7 @@ EXTERN void PnP_StringSliderUpdate(void *g, void *data)
    UpdateCycleGadg(gadg,TRUE);
 }
 
-EXTERN void PnP_StringSliderSetStrings(void* g, char** strings, int num)
+EXTERN void PnP_StringSliderSetStrings(void* g, const char * const *strings, int num)
 {
    CycleGadg* gadg = (CycleGadg *)g;
    RedescribeStringCycleGadg(gadg,strings,num);
@@ -368,8 +367,8 @@ EXTERN void PnP_StringSliderSetStrings(void* g, char** strings, int num)
 // SPECIAL FIXANG GADGET
 // 
 
-#define TOFIXANG(x)  (fixang)((x)*FIXANG_PI/180.0)
-#define TOFLOAT(x)   ((float)(x)*180.0/FIXANG_PI)
+#define TOFIXANG(x)  (fixang)((x)*FIXANG_PI/180.0f)
+#define TOFLOAT(x)   ((float)(x)*180.0f/FIXANG_PI)
 
 //
 // What we want is a float slider that secretly converts to fixang on the way out. 
@@ -380,31 +379,31 @@ typedef SLIDER_INSTANCE(float) fSlider;
 struct DegreeSlider : public fSlider
 {
    float fakevar;
-   void (*real_update)(PnP_SliderOp op, Rect* where, fixang val, int data); 
+   void (*real_update)(PnP_SliderOp op, Rect* where, fixang val, intptr_t data);
    fixang* realvar;
-   int realdata;
+   intptr_t realdata;
       
    DegreeSlider(Rect* space, const char* name, fixang lo, fixang hi, float scale, fixang* var,
-       void(*update)(PnP_SliderOp op, Rect* where, fixang val, int data), 
-       int data, ulong flags);
-   static void fake_update(PnP_SliderOp op, Rect* where, float val, int data); 
+       void(*update)(PnP_SliderOp op, Rect* where, fixang val, intptr_t data),
+       intptr_t data, ulong flags);
+   static void fake_update(PnP_SliderOp op, Rect* where, float val, intptr_t data);
 };
 
 DegreeSlider::DegreeSlider(Rect* space, const char* name, fixang lo, fixang hi, float scale, fixang* var,
-       void(*update)(PnP_SliderOp op, Rect* where, fixang val, int data), 
-       int data, ulong flags) 
+       void(*update)(PnP_SliderOp op, Rect* where, fixang val, intptr_t data),
+       intptr_t data, ulong flags)
 : fakevar(TOFLOAT(*var)),
   realvar(var),
   real_update(update),
   realdata(data),
-  fSlider(space,name,TOFLOAT(lo),TOFLOAT(hi),TOFLOAT(scale),&fakevar,fake_update,(int)this,flags,"%3.2f")
+  fSlider(space,name,TOFLOAT(lo),TOFLOAT(hi),TOFLOAT(scale),&fakevar,fake_update,(intptr_t)this,flags,"%3.2f")
 {
    // send update messages even when others wouldn't want them.
    //   _data.send_updates = TRUE;
    Update(this,NULL);
 }
 
-void DegreeSlider::fake_update(PnP_SliderOp op, Rect* where, float val, int data)
+void DegreeSlider::fake_update(PnP_SliderOp op, Rect* where, float val, intptr_t data)
 {
    DegreeSlider* s = (DegreeSlider*)data;
 
@@ -416,7 +415,7 @@ void DegreeSlider::fake_update(PnP_SliderOp op, Rect* where, float val, int data
 }
 
 EXTERN int PnP_SliderFixang(Rect* space, const char* name, fixang lo, fixang hi, fixang scale, fixang *var, \
-                     void (*update)(PnP_SliderOp op, Rect* where, fixang val, int data), int data, ulong flags) 
+                     void (*update)(PnP_SliderOp op, Rect* where, fixang val, intptr_t data), intptr_t data, ulong flags)
 { 
    DegreeSlider* slider; 
    slider = new DegreeSlider(space,name,lo,hi,scale,var,update,data,flags); 

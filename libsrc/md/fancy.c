@@ -42,11 +42,11 @@ float md_tmap_err(mds_model *m)
 
    // Get the pgon diameter and
    // closest point to the viewer
-   d = 2.0*m->max_pgon_radius;
+   d = 2.0f*m->max_pgon_radius;
    dist -= m->radius;
 
    // pixel size difference
-   return d*r3_get_hscale()*(1.0/dist - 1.0/(dist+d));
+   return d*r3_get_hscale()*(1.0f/dist - 1.0f/(dist+d));
 }
    
 

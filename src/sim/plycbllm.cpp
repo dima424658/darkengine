@@ -24,9 +24,12 @@
 #include <ctagset.h>
 #include <camera.h>
 #include <command.h>
+#include <config.h>
+#include <stdio.h>
 #include <matrixs.h>
 #include <fix.h>
 #include <rendprop.h>
+#include <mnumprop.h>
 #include <dmgmodel.h>
 
 #include <dbmem.h> // must be last header
@@ -172,6 +175,12 @@ void cPlayerCerebellum::MakeBody()
       m_pMCoord->SetMotor(pMotor);
       pMotor->SetMotFrameOfReference(MFRT_ARM);  // was kMFRT_Global - MTR 8/31
    }
+   if (getenv("DARK_PLAYER_TRACE"))
+      fprintf(stderr, "Player arm created obj=%d type=%d model=%s motor=%s\n",
+              obj, ctype,
+              m_pCurAbility->GetModelName(&modname) ? modname->text : "<none>",
+              pMotor ? "yes" : "no");
+
 }
 
 ////////////////////////////////////////////////////////////////
@@ -356,7 +365,7 @@ void cPlayerCerebellum::Update(ulong dt)
    {
       // XXX this should look at return value of frame
       // callback and do something with it.
-      (*g_fFrameCallback)(dt,(void *)g_CurrentPlayerMode);
+      (*g_fFrameCallback)(dt,(void *)(intptr_t)g_CurrentPlayerMode);
    }
    if(m_pMCoord->GetStatus()==kMCoord_Idle)
    {
@@ -392,6 +401,9 @@ void cPlayerCerebellum::Update(ulong dt)
 
 void cPlayerCerebellum::SetupMode(int mode)
 {
+   if (getenv("DARK_PLAYER_TRACE"))
+      fprintf(stderr, "Player mode setup old=%d new=%d next=%d\n",
+              g_CurrentPlayerMode, mode, g_NextPlayerMode);
    // leave current mode
    if(m_pCurAbility)
       m_pCurAbility->End();
@@ -429,6 +441,10 @@ void cPlayerCerebellum::SetupMode(int mode)
       m_pCurAbility->Begin();
       SetupManeuver(m_pCurAbility->GetStartSkillID());
    }
+   if (getenv("DARK_PLAYER_TRACE"))
+      fprintf(stderr, "Player mode ready mode=%d arm=%d ability=%s skill=%d\n",
+              g_CurrentPlayerMode, m_RightArmObj,
+              m_pCurAbility ? "yes" : "no", m_CurSkill);
 }
 
 

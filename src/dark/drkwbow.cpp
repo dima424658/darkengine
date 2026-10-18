@@ -13,6 +13,7 @@
 #include <appagg.h>
 #include <config.h>
 #include <cfgdbg.h>
+#include <stdio.h>
 #include <math.h>
 #include <rand.h>
 #include <mprintf.h>
@@ -83,7 +84,8 @@ static sBowWeaponInfo gBowWeaponInfo = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE
 
 #define PLAYER_BOW_HACK
 
-EXTERN ObjID g_ArrowObj=OBJ_NULL; // gets accessed in drkgame.c
+EXTERN ObjID g_ArrowObj;
+ObjID g_ArrowObj=OBJ_NULL; // gets accessed in drkgame.c
 
 //#define BOW_DEBUG_HORROR
 #ifdef BOW_DEBUG_HORROR
@@ -115,8 +117,8 @@ static cMxsVectorHack g_WristRelStart(0,0,0);
 static cMxsVectorHack g_WristRelEnd(0,0,0);
 static cMxsAngvecHack g_ArrowRotStart(0,0,0);
 
-static cMxsVectorHack g_ArrowCamPosStart(-0.4,0.22,0.3);
-static cMxsVectorHack g_ArrowCamPosEnd(-1.0,0.22,0.3);
+static cMxsVectorHack g_ArrowCamPosStart(-0.4f,0.22f,0.3f);
+static cMxsVectorHack g_ArrowCamPosEnd(-1.0f,0.22f,0.3f);
 static cMxsAngvecHack g_Arm2CamRot(0xfe12,0xfd30,0x3b0c);
 static mxs_matrix g_Cam2WristMat;
 
@@ -222,7 +224,7 @@ static void ForgetRecentArrow()
 static float zoom_start_time=3.0;
 static float zoom_cap=3.0;
 static float zoom_per_s=1.5;
-static float zoom_out_ms=3.5/1000.0;
+static float zoom_out_ms=3.5f/1000.0f;
 
 static void ZoomController(BOOL active, float power)
 {
@@ -234,14 +236,14 @@ static void ZoomController(BOOL active, float power)
 
    if ((active) && (power>0.4) && (g_ElapsedTime>zoom_start_time))
    {
-      active_zoom=1.0+((g_ElapsedTime-zoom_start_time)*zoom_per_s);
+      active_zoom=1.0f+((g_ElapsedTime-zoom_start_time)*zoom_per_s);
 
       if (active_zoom>zoom_cap)
          active_zoom=zoom_cap;
    }
    else if (active_zoom>1.0)
    {
-      float cur_time=GetSimTime();
+   float cur_time=(float)GetSimTime();
       if (unzoom_start_time==0.0)
       {
          unzoom_start_time=cur_time;
@@ -326,7 +328,7 @@ void ForceFinishBowAttack(BOOL abort)
    g_WobbleAmount = 0.0;
    g_Straining = FALSE;
 
-   WeaponEvent(kEndAttack, PlayerObject(), NULL);
+   WeaponEvent(kEndAttack, PlayerObject(), OBJ_NULL);
 
    if (abort)
       PutTheBowAway(abort);
@@ -444,8 +446,8 @@ static void WobbleArmFilter(mxs_vector *loc, mxs_matrix *orient)
    }
    if (g_WobbleRelaxing)
    {  // @TODO: need DT in here!!!
-      g_XWobble*=0.95;
-      g_YWobble*=0.95;
+      g_XWobble*=0.95f;
+      g_YWobble*=0.95f;
       if (fabs(g_XWobble+g_YWobble)<=0.02)
       {
          ClearPlayerArmFilter();
@@ -464,15 +466,15 @@ void WobbleBow(long dt)
    if (g_WobbleAmount == 0.0)
    {
       SetPlayerArmFilter(WobbleArmFilter);
-      g_XWobbleRate = (float)(Rand() % 256) / 64.0;
-      g_YWobbleRate = (float)(Rand() % 256) / 64.0;
+      g_XWobbleRate = (float)(Rand() % 256) / 64.0f;
+      g_YWobbleRate = (float)(Rand() % 256) / 64.0f;
       g_WobbleRelaxing=FALSE;
    }
 
-   g_WobbleAmount = (float)dt / 1000.0;
+   g_WobbleAmount = (float)dt / 1000.0f;
 
-   g_XWobble = (sin(g_WobbleAmount * g_XWobbleRate)) * g_WobbleAmount * 0.02;
-   g_YWobble = (sin(g_WobbleAmount * g_YWobbleRate)) * g_WobbleAmount * 0.02;
+   g_XWobble = (sinf(g_WobbleAmount * g_XWobbleRate)) * g_WobbleAmount * 0.02f;
+   g_YWobble = (sinf(g_WobbleAmount * g_YWobbleRate)) * g_WobbleAmount * 0.02f;
 }
 
 static float bow_renock_mag=1.0;
@@ -492,10 +494,10 @@ BOOL RenockBow(long dt)
    if (dist<1.0)
       dist/=20;
    else if (dist<2.0)
-      dist=0.05+(0.95*(1.0-((2.0-dist)*(2.0-dist))));
+      dist=0.05f+(0.95f*(1.0f-((2.0f-dist)*(2.0f-dist))));
    else
    {
-      dist=3.0-dist;
+      dist=3.0f-dist;
       dist*=dist;
       final_phase=TRUE;
       if (gBowWeaponInfo.frob_pending)
@@ -504,9 +506,9 @@ BOOL RenockBow(long dt)
                gBowWeaponInfo.frob_pending=FALSE; // no arrow, give up
    }
    // @TODO: why isnt end of this smooth?
-   g_XWobble = -0.15 * dist * bow_renock_mag;
-   g_YWobble = -0.59 * dist * bow_renock_mag;
-   g_WobbleAmount = 0.1; // just so IsBowWobbling says the right thing
+   g_XWobble = -0.15f * dist * bow_renock_mag;
+   g_YWobble = -0.59f * dist * bow_renock_mag;
+   g_WobbleAmount = 0.1f; // just so IsBowWobbling says the right thing
    return final_phase;
 }
 
@@ -518,7 +520,7 @@ BOOL DoBowAttack()
       {
          gBowWeaponInfo.bKnocked = TRUE;
          PlayerStartAction();  // WHY doesnt this start RIGHT AWAY!!! HATE HATE HATE
-         WeaponEvent(kStartWindup, PlayerObject(), NULL);
+         WeaponEvent(kStartWindup, PlayerObject(), OBJ_NULL);
          g_ArrowTimePoweringUp = 0;
          g_WobbleAmount = 0.0;
          bow_mprintf(("Start attack\n"));
@@ -589,7 +591,7 @@ BOOL FinishBowAttack()
             {
                int flags=PRJ_FLG_TELLAI|PRJ_FLG_FROMPOS;
                if (power < 0.4)
-                  power = 0.4;
+                  power = 0.4f;
                bow_mprintf(("ACTUAL FIRING (%d)",g_ArrowObj));
                launchProjectile(PlayerObject(),g_ArrowObj,power,flags,NULL,NULL,NULL);
                TweqProcessAll(g_ArrowObj,kTweqDoActivate);
@@ -874,7 +876,9 @@ static void ArrowDestroy()
       g_StartAwayTime=0;
    }
    else if (g_StartAwayTime)
+   {
       bow_mprintf(("Hey, ArrowDestroy, StartAwayTime, no arrow\n"));
+   }
 }
 
 // still consider arrow to be player arrow for a short time after

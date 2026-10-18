@@ -148,16 +148,12 @@ static Label g_aTagEnumLabel[kMaxTagValues][8]; // 8 is a hard limit in tagdb
 static BOOL g_aTagNumEnums[kMaxTagValues];      // 0 indicates an int tag
 
 
-#define min(x,y) ((x)<(y)?(x):(y))
-
 #define yyerror printf
 
 // zero all the stuff telling us whether things have been set
 void SchemaDataReset(void)
 {
    sSchemaPlayParams *pSchemaPlayParams;
-   int i, j, k;
-
    samplesNum = 0;
    schemaParamsSet = FALSE;
    schemaPrioritySet = FALSE;
@@ -266,8 +262,6 @@ voice_param: archetype;
 schema: SCHEMA IDENT opt_schema_params opt_samples
 {
    ObjID objID;
-   int i, j;
-
    MakeLabel(&schemaLabel, $2);
    if (archID == OBJ_NULL)
       objID = SchemaCreate(&schemaLabel, baseSchemaID);
@@ -405,7 +399,7 @@ archetype: ARCHETYPE IDENT
    sSchemaPlayParams *pArchParams, *pDefaultParams;
 
    MakeLabel(&label, $2);
-   archID = IObjectSystem_GetObjectNamed(pObjSys, &label);
+   archID = IObjectSystem_GetObjectNamed(pObjSys, label.text);
    if (archID == OBJ_NULL)
       Warning(("Unknown archetype %s\n", $2));
    if (((pArchParams = SchemaPlayParamsGet(archID)) != NULL) &&
@@ -491,8 +485,8 @@ message: MESSAGE IDENT
 
 tag: TAG IDENT opt_tag_states
 {
-   int i;
    Label TagNameLabel;
+   int i;
 
    MakeLabel(&TagNameLabel, $2);
    SpeechAddTag(&TagNameLabel);
@@ -534,7 +528,6 @@ tag_int: TAG_INT IDENT
 
 env_tag_required: ENV_TAG_REQUIRED IDENT
 {
-   int i;
    Label TagNameLabel;
 
    MakeLabel(&TagNameLabel, $2);
@@ -559,7 +552,7 @@ schema_voice: SCHEMA_VOICE IDENT INT IDENT opt_schema_tags
    for (i = 0; i < g_iNumTagsAdded; ++i) {
       if (g_aTagNumEnums[i])
          SpeechSchemaNewAddEnumTag(&g_aTagNameLabel[i],
-                                   &g_aTagEnumLabel[i]);
+                                   g_aTagEnumLabel[i]);
       else
          SpeechSchemaNewAddIntTag(&g_aTagNameLabel[i],
                                   g_aTagMinInt[i],
@@ -639,7 +632,7 @@ env_tag: ENV_TAG opt_schema_tags
    for (i = 0; i < g_iNumTagsAdded; ++i) {
       if (g_aTagNumEnums[i])
          ESndSchemaNewAddEnumTag(&g_aTagNameLabel[i],
-                                 &g_aTagEnumLabel[i]);
+                                 g_aTagEnumLabel[i]);
       else
          ESndSchemaNewAddIntTag(&g_aTagNameLabel[i],
                                 g_aTagMinInt[i],
@@ -659,7 +652,9 @@ sample: IDENT opt_text opt_freq
 {
    if (samplesNum<SCHEMA_SAMPLES_MAX)
    {
-      int nameLen = min(strlen($1), SAMPLE_NAME_LEN-1);
+      int nameLen = (int)strlen($1);
+      if (nameLen >= SAMPLE_NAME_LEN)
+         nameLen = SAMPLE_NAME_LEN-1;
       strncpy(sampleNames[samplesNum], $1, nameLen);
       sampleNames[samplesNum][nameLen] = '\0';
       if (freqSet)
@@ -713,8 +708,8 @@ void SchemaYaccParse(char *schemaFile)
       pObjSys = AppGetObj(IObjectSystem);
    if (!pTraitMan)
       pTraitMan = AppGetObj(ITraitManager);
-   baseSchemaID = IObjectSystem_GetObjectNamed(pObjSys, &baseSchemaLabel);
-   baseVoiceID = IObjectSystem_GetObjectNamed(pObjSys, &baseVoiceLabel);
+   baseSchemaID = IObjectSystem_GetObjectNamed(pObjSys, baseSchemaLabel.text);
+   baseVoiceID = IObjectSystem_GetObjectNamed(pObjSys, baseVoiceLabel.text);
 
    if (pSchemaPlayParams = SchemaPlayParamsGet(baseSchemaID))
       schemaPlayParams = *pSchemaPlayParams;

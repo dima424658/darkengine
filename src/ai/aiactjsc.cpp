@@ -27,7 +27,7 @@
 // Must be last header
 #include <dbmem.h>
 
-const float kJointScanEpsilon = 0.1;
+const float kJointScanEpsilon = 0.1f;
 
 ///////////////////////////////////////////////////////////////////////////////
 //

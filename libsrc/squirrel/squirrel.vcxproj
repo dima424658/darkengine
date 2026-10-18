@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{4AB7A069-9AAF-4B26-A81E-F31B408441AD}</ProjectGuid>
+    <RootNamespace>squirrel</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(EnableSquirrel)' == 'true'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SquirrelSourceRoot)include;$(SquirrelSourceRoot)squirrel;$(SquirrelSourceRoot)sqstdlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ConformanceMode>true</ConformanceMode>
+      <DisableSpecificWarnings>4244;4267;4706;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ForcedIncludeFiles></ForcedIncludeFiles>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <WarningLevel>Level3</WarningLevel>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Lib>
+      <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup Condition="'$(EnableSquirrel)' == 'true'">
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqapi.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqbaselib.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqclass.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqcompiler.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqdebug.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqfuncstate.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqlexer.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqmem.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqobject.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqstate.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqtable.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)squirrel\sqvm.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdaux.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdblob.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdio.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdmath.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdrex.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdstream.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdstring.cpp" />
+    <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdsystem.cpp" />
+  </ItemGroup>
+  <Target Name="ValidateSquirrelDependency" BeforeTargets="PrepareForBuild" Condition="'$(EnableSquirrel)' == 'true'">
+    <Error Condition="!Exists('$(SquirrelSourceRoot)include\squirrel.h')" Text="The default Windows build requires an external Squirrel 3.2 checkout at $(SquirrelSourceRoot). Clone it there, set SquirrelSourceDir, or explicitly set EnableSquirrel=false for a reduced build." />
+  </Target>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

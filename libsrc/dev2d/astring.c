@@ -24,3 +24,9 @@ void memcpy_by_byte(void *d, void *s, int n)
    for (i=0; i<n; i++)
       ((uchar *)d)[i]=((uchar *)s)[i];
 }
+
+void memcpy_cache_dst(void *d, void *s, int n)
+{
+   if (n > 0)
+      memcpy(d, s, (size_t)n);
+}

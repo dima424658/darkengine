@@ -16,7 +16,84 @@
 #ifndef __TYPES_H
 #define __TYPES_H
 
-#include <windows.h>
+#include <limits.h>
+#include <stdint.h>
+
+/*
+ * glibc exposes a legacy LP64 "ulong" typedef from <sys/types.h> whenever
+ * GNU APIs are enabled.  Dark's ulong is intentionally a persisted 32-bit
+ * type, so let glibc declare its compatibility name under a private spelling
+ * before the engine typedef below.  The sys/types include guard prevents a
+ * later system header from reintroducing the conflicting name.
+ */
+#if defined(__linux__)
+#define ulong __dark_system_ulong
+#include <sys/types.h>
+#undef ulong
+#endif
+
+#ifndef EXTERN_C
+#ifdef __cplusplus
+#define EXTERN_C extern "C"
+#else
+#define EXTERN_C extern
+#endif
+#endif
+
+#ifndef CDECL
+#define CDECL
+#endif
+
+#if !defined(_WIN32)
+#ifndef __cdecl
+#define __cdecl
+#endif
+#ifndef __stdcall
+#define __stdcall
+#endif
+#ifndef __fastcall
+#define __fastcall
+#endif
+#ifndef __declspec
+#define __declspec(attribute)
+#endif
+#ifndef interface
+#define interface struct
+#endif
+
+#include <legacy_compat.h>
+#endif
+
+#ifndef FAR
+#define FAR
+#endif
+
+#ifndef _DARK_HANDLE_DEFINED
+#define _DARK_HANDLE_DEFINED
+typedef void *HANDLE;
+#endif
+
+#ifndef DECLARE_HANDLE
+#define DECLARE_HANDLE(name) struct name##__{int unused;}; typedef struct name##__ *name
+#endif
+
+#ifndef _DARK_SIZE_T_DEFINED
+#define _DARK_SIZE_T_DEFINED
+#ifdef _WIN64
+typedef unsigned __int64 SIZE_T;
+#else
+typedef unsigned long SIZE_T;
+#endif
+
+#ifndef _DARK_DWORD_PTR_DEFINED
+#define _DARK_DWORD_PTR_DEFINED
+#ifdef _WIN64
+typedef unsigned __int64 DWORD_PTR;
+#else
+typedef unsigned long DWORD_PTR;
+#endif
+#endif
+#endif
 
 //
 // COMPILER VENDOR SPECIFIC ADJUSTEMENTS (placed first so will affect this file)
@@ -26,9 +103,14 @@
 // NULL
 //
 
-#ifndef NULL
+#if defined(__GNUC__) && defined(__cplusplus)
+    // GCC's __null extension diagnoses the engine's historical integer uses
+    // of NULL. Dark predates nullptr and consistently expects literal zero.
+    #undef NULL
     #define NULL 0
-#endif /* !NULL */
+#elif !defined(NULL)
+    #define NULL 0
+#endif
 
 
 //
@@ -41,12 +123,21 @@
 typedef unsigned char   uchar;
 typedef unsigned short  ushort;
 typedef unsigned int    uint;
+#if ULONG_MAX == UINT32_MAX
 typedef unsigned long   ulong;
+#else
+typedef uint32_t        ulong;
+#define DARK_UINT_ULONG_SAME_TYPE 1
+#endif
 
 typedef   signed char   schar;
 typedef   signed short  sshort;
 typedef   signed int    sint;
+#if LONG_MAX == INT32_MAX
 typedef   signed long   slong;
+#else
+typedef int32_t         slong;
+#endif
 
 // Size sensitive
 typedef   signed char   sbyte;
@@ -61,12 +152,24 @@ typedef   signed short  sint16;
 typedef   signed short  int16;
 typedef unsigned short  WORD;
 
+#if ULONG_MAX == UINT32_MAX
 typedef unsigned long   uint32;
 typedef   signed long   sint32;
 typedef   signed long   int32;
 typedef unsigned long   DWORD;
+#else
+typedef uint32_t        uint32;
+typedef int32_t         sint32;
+typedef int32_t         int32;
+typedef uint32_t        DWORD;
+#endif
 
 #endif /* !NO_SCALAR_TYPEDEFS */
+
+#ifndef _HRESULT_DEFINED
+#define _HRESULT_DEFINED
+typedef int32 HRESULT;
+#endif
 
 
 //
@@ -170,7 +273,9 @@ typedef struct  _GUID
 #define MAKE_GUID(p, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
    do \
    { \
-      const GUID _temp = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }; \
+      const GUID _temp = { (ulong)(l), (ushort)(w1), (ushort)(w2), \
+         { (uchar)(b1), (uchar)(b2), (uchar)(b3), (uchar)(b4), \
+           (uchar)(b5), (uchar)(b6), (uchar)(b7), (uchar)(b8) } }; \
       *p = _temp; \
    } while (0)
 
@@ -296,7 +401,7 @@ typedef struct  _GUID
 // Microsoft-isms, and add support for "subsystem ids"
 //
 
-typedef long            tResult;
+typedef int32           tResult;
 typedef unsigned char   tResultCode;
 
 #define kNoError        0L

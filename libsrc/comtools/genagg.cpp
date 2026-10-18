@@ -353,7 +353,7 @@ STDMETHODIMP cGenericAggregate::Init()
 
     IAggregateMemberControl * pAggregateMemberControl;
     const int nControls = m_ControllingUnknowns.Size();
-    index_t iCurrentControl;
+    int iCurrentControl;
 
     // Call Connect() on all members
     m_fState |= kConnecting;

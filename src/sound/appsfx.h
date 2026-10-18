@@ -11,6 +11,7 @@
 
 #include <playlist.h>
 #include <matrixs.h>
+#include <darklimit.h>
 
 // says "this parm isnt being set in this struct"
 #define SFX_DEF_PARM (-1)
@@ -37,7 +38,7 @@ typedef struct {
 
 #define SFX_LOOP_INFINITE 0
 
-#define SFX_MAX_MODE_COUNT 16
+#define SFX_MAX_MODE_COUNT DARK_LIMIT_RUNTIME_SOUND_CHANNELS
 #define SFX_MAX_COUNT (SFX_MAX_MODE_COUNT * 2)
 #define SFX_CHANNELS  8
 
@@ -59,7 +60,6 @@ typedef enum sfx_mode {
 // app sfx flags
 #define SFXFLG_LOOP        (1<<0)  // does the sample loop
 #define SFXFLG_STREAM      (1<<5)  // this sample is a stream, not all in memory
-#define SFXFLG_QSOUND      (1<<7)  // really a qsounded thing, deal with it
 #define SFXFLG_PHYS        (1<<8)  // consider speed of object in sound calc
 #define SFXFLG_NOCACHE     (1<<11) // dont cache, drop right after use
 #define SFXFLG_SHARP       (1<<12) // sharp attenuation curve
@@ -67,7 +67,7 @@ typedef enum sfx_mode {
 #define SFXFLG_NET_AMB     (1<<15) // network this ambient sound
 #define SFXFLG_NO_NET      (1<<16) // don't network this spatial sound
 #define SFXFLG_APP_MASK \
-   (SFXFLG_LOOP|SFXFLG_STREAM|SFXFLG_QSOUND|SFXFLG_PHYS|SFXFLG_NOCACHE|SFXFLG_SHARP|SFXFLG_ASYNCH|SFXFLG_NET_AMB|SFXFLG_NO_NET)
+   (SFXFLG_LOOP|SFXFLG_STREAM|SFXFLG_PHYS|SFXFLG_NOCACHE|SFXFLG_SHARP|SFXFLG_ASYNCH|SFXFLG_NET_AMB|SFXFLG_NO_NET)
 
 // internal only flags
 #define SFXFLG_STATIC      (1<<1)  // if static, never update pan/gain
@@ -76,7 +76,7 @@ typedef enum sfx_mode {
 #define SFXFLG_DELAY       (1<<4)  // delay start of sample
 
 #define SFXFLG_HAPPY       (1<<9)  // happy or not, ie. did i play
-#define SFXFLG_IS3D        (1<<10) // did i ask for 3d hardware for this or not?
+#define SFXFLG_IS3D        (1<<10) // this sound owns a positional voice
 #define SFXFLG_ASYNCHWAIT  (1<<14) // am i waiting for the asynch load to finish?
 #define SFXFLG_NOCALLBACK  (1<<17) // dont make the callback
 
@@ -104,7 +104,7 @@ EXTERN BOOL SFXReset(void);
 #define SFXDEVICE_NoSound      (0)
 #define SFXDEVICE_Software     (1)
 #define SFXDEVICE_A3D          (2)
-#define SFXDEVICE_QMIXER       (3)
+#define SFXDEVICE_OBSOLETE_QSOUND (3)
 
 EXTERN BOOL SFX_SetSoundDevice(int device, BOOL reset);
 EXTERN int  SFX_GetSoundDevice();

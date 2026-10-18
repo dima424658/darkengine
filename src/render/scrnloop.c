@@ -4,7 +4,7 @@
 */
 
 // $Header: r:/t2repos/thief2/src/render/scrnloop.c,v 1.28 2000/02/25 16:28:37 kevin Exp $ 
-#include <windows.h>
+#include <string.h>
 #include <config.h>
 #include <resapi.h>
 #include <palrstyp.h>
@@ -12,6 +12,7 @@
 #include <appapi.h>
 
 #include <loopapi.h>
+#include <loopmsg.h>
 #include <dispbase.h>
 #include <vismsg.h>
 
@@ -26,24 +27,58 @@
 #include <palmgr.h>
 #include <palette.h>
 #include <gamma.h>
+#include <platform_services.h>
+#include <stdlib.h>
 #include <mprintf.h>
 
 // Must be last header
 #include <dbmem.h>
 
 BOOL gScrnLoopSetModeFailed = FALSE; 
+static BOOL gScreenPreservedForNestedMode = FALSE;
+
+static BOOL InstantiatorPreservesScreen(const sLoopInstantiator* mode)
+{
+   sLoopModeInitParm* parm;
+
+   if (mode == NULL || mode->init == NULL)
+      return FALSE;
+
+   for (parm = mode->init; parm->pID != NULL; ++parm)
+   {
+      if (IsEqualGUID(parm->pID, &LOOPID_ScrnMan))
+      {
+         ScrnManContext* context = (ScrnManContext*)parm->data;
+         return context != NULL && context->preserve_screen;
+      }
+   }
+   return FALSE;
+}
 
 eLoopMessageResult LGAPI ScrnManLoopFunc(void* context, eLoopMessage msg, tLoopMessageData hdata)
 {
    eLoopMessageResult result = kLoopDispatchContinue;
 
    ScrnManContext* data = (ScrnManContext*)context;
+   LoopMsg info;
+   info.raw = hdata;
    switch(msg)
    {
       case kMsgEnterMode:
       case kMsgResumeMode:
       {
          BOOL auto_fail = FALSE; 
+
+         // Native movie playback is a child window over the current render
+         // target.  Tearing down and rebuilding the renderer here causes a
+         // visible display-mode flash and is unnecessary.
+         if (data->preserve_screen)
+            break;
+         if (msg == kMsgResumeMode && gScreenPreservedForNestedMode)
+         {
+            gScreenPreservedForNestedMode = FALSE;
+            break;
+         }
 
 
 
@@ -71,9 +106,16 @@ eLoopMessageResult LGAPI ScrnManLoopFunc(void* context, eLoopMessage msg, tLoopM
                BOOL last_resort = auto_fail ? FALSE : ScrnModeSet(NULL, ScrnModeGetDefault() ,NULL);
                if (!last_resort)
                {
-                  char buf[80]; 
-                  config_get_raw("scrn_loop_fail_msg",buf,sizeof(buf)); 
-                  MessageBox ((HWND)NULL, buf, (LPCSTR)NULL, MB_ICONWARNING);
+                  char buf[256] =
+                     "The requested display mode could not be initialized. "
+                     "Check the configured resolution, color depth, and fullscreen settings.";
+                  const char *detail = ScrnGetLastSetResError();
+                  if (detail != NULL && detail[0] != '\0')
+                     strncpy(buf, detail, sizeof(buf) - 1);
+                  else
+                     config_get_raw("scrn_loop_fail_msg",buf,sizeof(buf) - 1);
+                  buf[sizeof(buf) - 1] = '\0';
+                  PlatformShowError("Display initialization failed", buf);
                   exit(0); 
                }
             }
@@ -88,8 +130,18 @@ eLoopMessageResult LGAPI ScrnManLoopFunc(void* context, eLoopMessage msg, tLoopM
                                       NULL, NULL, 0);
             if (pRes)
             {
-               ScrnNewPalette(IRes_Lock(pRes),0,256); 
-               IRes_Unlock(pRes); 
+               void *palette = IRes_Lock(pRes);
+               if (palette)
+               {
+                  ScrnNewPalette(palette,0,256);
+                  IRes_Unlock(pRes);
+               }
+               else
+               {
+#ifndef SHIP
+                  mprintf("Failed to lock palette %s\n", data->pal_res);
+#endif
+               }
                SafeRelease(pRes);
             }
             else
@@ -109,6 +161,18 @@ eLoopMessageResult LGAPI ScrnManLoopFunc(void* context, eLoopMessage msg, tLoopM
 
       case kMsgSuspendMode:
       case kMsgExitMode:
+         if (data->preserve_screen)
+            break;
+         if (msg == kMsgSuspendMode && info.mode != NULL &&
+             InstantiatorPreservesScreen(&info.mode->to))
+         {
+            // The transition record's parameter list belongs to the target
+            // dispatch and is only guaranteed to be alive during suspend.
+            // Remember the decision here instead of dereferencing it later
+            // when the previous mode resumes.
+            gScreenPreservedForNestedMode = TRUE;
+            break;
+         }
          porthw_shutdown();
          ScrnTerm3d();
          break;
@@ -149,20 +213,18 @@ eLoopMessageResult LGAPI ScrnManLoopFunc(void* context, eLoopMessage msg, tLoopM
    return result;
 }
 
-#pragma off(unreferenced)
 ILoopClient* LGAPI CreateScrnManClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    ScrnManContext* pContext = (ScrnManContext*)data;
    return CreateSimpleLoopClient(ScrnManLoopFunc,pContext,&ScrnManClientDesc);
 }
-#pragma on(unreferenced)
 
 sLoopClientDesc ScrnManClientDesc =
 {
    &LOOPID_ScrnMan,
    "Screen Manager",
    kPriorityNormal,
-   kMsgsMode|kMsgsFrameEdge|kMsgVisual|kMsgsAppOuter,
+   (ulong)kMsgsMode|kMsgsFrameEdge|kMsgVisual|kMsgsAppOuter,
 
    kLCF_Callback,
    CreateScrnManClient,

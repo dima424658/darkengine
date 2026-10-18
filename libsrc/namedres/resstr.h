@@ -1,8 +1,9 @@
 #pragma once
 
 #include <resbase.h>
+#include <resistr.h>
 
-class cStringResource : public cResourceBase<IRes, &IID_IRes>
+class cStringResource : public cResourceBase<IStringRes, &IID_IStringRes>
 {
 public:
 	cStringResource(IStore* pStore,
@@ -17,10 +18,10 @@ public:
 		ulong nSize,
 		IResMemOverride* pResMem) override;
 
-	void StringPreload(const char*);
-	char* StringLock(const char* pStrName);
-	void StringUnlock(const char* pStrName);
-	int StringExtract(char* pStrName, char* pBuf, int nSize);
+	void STDMETHODCALLTYPE StringPreload(const char*) override;
+	char* STDMETHODCALLTYPE StringLock(const char* pStrName) override;
+	void STDMETHODCALLTYPE StringUnlock(const char* pStrName) override;
+	BOOL STDMETHODCALLTYPE StringExtract(const char* pStrName, char* pBuf, int nSize) override;
 
 private:
 	int SkipLine(IStoreStream* pStream);

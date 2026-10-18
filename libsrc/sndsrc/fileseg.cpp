@@ -45,7 +45,7 @@ void *
 cFileSegment::GetRawData( void    *pDst,
                           uint32  nBytes )
 {
-   int nRead;
+   size_t nRead;
    if ( mNeedsSeek ) {
       fseek( mpInFile, mSrcOffset, SEEK_SET );
    }

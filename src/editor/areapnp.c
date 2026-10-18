@@ -239,7 +239,7 @@ static void areaPnP_OneShots(int lid)
    gedit_full_redraw();  // who knows how many brushes we just changed representations for
 }
 
-static void areaPnP_time(PnP_SliderOp op, Rect *where, int val, int data)
+static void areaPnP_time(PnP_SliderOp op, Rect *where, int val, intptr_t data)
 {
    if (op != PnP_SliderUpdateOp)
       return;

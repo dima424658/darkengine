@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include <cloudobj.h>
+#include <missiondiag.h>
 
 #include <mprintf.h>
 #include <memall.h>
@@ -157,12 +158,12 @@ static int MaskToTJoint[16]=
 
 
 
-#define PI 3.14159265359
-#define fDeg90 (0.50000*PI)
+#define PI 3.14159265359f
+#define fDeg90 (0.50000f*PI)
 #define fDeg180 (PI)
-#define fDeg360 (2*PI)
+#define fDeg360 (2.0f*PI)
 
-#define DEG (PI/180)
+#define DEG (PI/180.0f)
 
 
 ////////////////////////////////////////////////////////
@@ -670,8 +671,8 @@ static inline void ComputeGrid()
       vlist[i] = (r3s_point*)(pPoints+i);
 
    // We define grid from -x,+y to +x,-y, by rows.
-   fStartX = -g_CloudObj.nNumTilesPerSide*0.50000*g_CloudObj.fTileSize;
-   fStartY = g_CloudObj.nNumTilesPerSide*0.50000*g_CloudObj.fTileSize;
+   fStartX = -g_CloudObj.nNumTilesPerSide*0.50000f*g_CloudObj.fTileSize;
+   fStartY = g_CloudObj.nNumTilesPerSide*0.50000f*g_CloudObj.fTileSize;
 
    for (y = 0; y < nPointsPerSide; y++)
    {
@@ -699,7 +700,7 @@ static inline void ComputeGrid()
    mx_rot_y_vec(&TempVec, &ZVec, mx_rad2ang(g_CloudObj.fGlowLat*DEG));
    mx_rot_z_vec(&GlowVec, &TempVec, mx_rad2ang(g_CloudObj.fGlowLong*DEG));
 
-   fGlowMin = (cos(g_CloudObj.fGlowAng*DEG)+1)*0.50000;
+   fGlowMin = (cosf(g_CloudObj.fGlowAng*DEG)+1)*0.50000f;
 
    // Test to see if glow is within any part of the subtiles:
    for (y = 0; y < nPointsPerSide-1; y++)
@@ -717,7 +718,7 @@ static inline void ComputeGrid()
                PointVec.z = g_CloudObj.fHeight;
                mx_norm_vec(&NormVec, &PointVec);
 
-               fGlowDegree = (mx_dot_vec(&NormVec, &GlowVec)+1)*0.50000;
+               fGlowDegree = (mx_dot_vec(&NormVec, &GlowVec)+1)*0.50000f;
                if (fGlowDegree >= fGlowMin)
                {
                   bHasPointInRange = TRUE;
@@ -759,7 +760,7 @@ static inline void ComputeGrid()
    nGlowPointUs = (1+nMaxGlowX-nMinGlowX)*(g_CloudObj.nGlowTiles+1);
    nGlowPointVs = (1+nMaxGlowY-nMinGlowY)*(g_CloudObj.nGlowTiles+1);
 */
-   float nNum; // number of subtiles to break into glow tiles
+   int nNum; // number of subtiles to break into glow tiles
 
    nMaxGlowX++; // span highest point ix
    nMaxGlowY++;
@@ -784,8 +785,8 @@ static inline void ComputeGrid()
       glow_vlist[i] = (r3s_point*)(pGlowPoints+i);
 
    // Now compute vectors:
-   fStartX = -g_CloudObj.nNumTilesPerSide*0.50000*g_CloudObj.fTileSize + nMinGlowX*fSubTileSize;
-   fStartY = g_CloudObj.nNumTilesPerSide*0.50000*g_CloudObj.fTileSize - nMinGlowY*fSubTileSize;
+   fStartX = -g_CloudObj.nNumTilesPerSide*0.50000f*g_CloudObj.fTileSize + nMinGlowX*fSubTileSize;
+   fStartY = g_CloudObj.nNumTilesPerSide*0.50000f*g_CloudObj.fTileSize - nMinGlowY*fSubTileSize;
 
    for (y = 0; y < nGlowPointVs; y++)
       for (x = 0; x < nGlowPointUs; x++)
@@ -831,12 +832,12 @@ static inline void ComputePointColor(mxs_vector *pPoint, mxs_vector *pPointColor
 
    /////////////////////////////////////////////////////////////
    // Determine weights:
-   fEastDegree = (mx_dot_vec(&NormVec, &EastVec)+1)*0.50000*g_CloudObj.fEastScale;
-   fWestDegree = (mx_dot_vec(&NormVec, &WestVec)+1)*0.50000*g_CloudObj.fWestScale;
-   fGlowDegree = (mx_dot_vec(&NormVec, &GlowVec)+1)*0.50000;
+   fEastDegree = (mx_dot_vec(&NormVec, &EastVec)+1)*0.50000f*g_CloudObj.fEastScale;
+   fWestDegree = (mx_dot_vec(&NormVec, &WestVec)+1)*0.50000f*g_CloudObj.fWestScale;
+   fGlowDegree = (mx_dot_vec(&NormVec, &GlowVec)+1)*0.50000f;
 
    // Since glow angle is constrained, we apply scale after angle check:
-   fGlowMin = cos(g_CloudObj.fGlowAng*DEG);
+   fGlowMin = cosf(g_CloudObj.fGlowAng*DEG);
    if (fGlowDegree < fGlowMin)
       fGlowDegree = 0;
    else
@@ -936,7 +937,7 @@ static inline void ComputeAlphas()
    fSubTileSize = g_CloudObj.fTileSize/g_CloudObj.nNumSubTiles;
 
    // Given # of subtiles to alpha over, compute X/Y outer and inner radius:
-   fOuterRadius = g_CloudObj.nNumTilesPerSide*0.50000*g_CloudObj.fTileSize;
+   fOuterRadius = g_CloudObj.nNumTilesPerSide*0.50000f*g_CloudObj.fTileSize;
    fInnerRadius = fOuterRadius - g_CloudObj.nSubTileAlphaStart*fSubTileSize;
 
    // Normal points:
@@ -993,7 +994,7 @@ static inline void ComputeUVs()
    {
       pGlowUs[x] = (x%(g_CloudObj.nNumSubTiles*g_CloudObj.nGlowTiles))/(float)(g_CloudObj.nNumSubTiles*g_CloudObj.nGlowTiles);
       pGlowUs[x] += pUs[nMinGlowX];
-      pGlowUs[x] = fmod(pGlowUs[x],1);
+      pGlowUs[x] = fmodf(pGlowUs[x],1);
    }
 
 //   float fYVal = (((nPointsPerSide-1)-(nMaxGlowY+1))%g_CloudObj.nNumSubTiles)/(float)g_CloudObj.nNumSubTiles;
@@ -1002,7 +1003,7 @@ static inline void ComputeUVs()
    {
       pGlowVs[y] = (((nGlowPointVs-1)-y)%(g_CloudObj.nNumSubTiles*g_CloudObj.nGlowTiles))/(float)(g_CloudObj.nNumSubTiles*g_CloudObj.nGlowTiles);
       pGlowVs[y] += fYVal;
-      pGlowVs[y] = fmod(pGlowVs[y],1);
+      pGlowVs[y] = fmodf(pGlowVs[y],1);
    }
 }
 
@@ -1067,7 +1068,15 @@ void cCloudDeck::Init()
    IResMan *pResMan = AppGetObj(IResMan);
    pRes = IResMan_Bind(pResMan, g_CloudObj.TextureName, RESTYPE_IMAGE, NULL, "fam\\skyhw\\", 0);
    if (!pRes)
+   {
+      char diagnostic[256];
+      snprintf(diagnostic,sizeof(diagnostic),
+               "Cloud deck texture is missing: fam\\skyhw\\%s",
+               g_CloudObj.TextureName);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue("ERROR","sky",diagnostic);
       return;
+   }
 
    for (i = 16; i < 256; i++)
       AlphaTable[i] = 0;
@@ -1239,7 +1248,7 @@ static void SetDebugConfigIx(int nIx)
 
 static void DumpStats()
 {
-   int nTotalSize =
+   size_t nTotalSize =
       MSize(pPoints)+MSize(pPointVecs)+MSize(pPointColors)+MSize(vlist)+MSize(pAlphas)+MSize(pUs)+MSize(pVs)+MSize(pGlowSubTiles);
 
    if (pGlowPoints)
@@ -1411,7 +1420,7 @@ static inline void RenderTJointConfig(int nSubTileX, int nSubTileY, int nConfig,
 void cCloudDeck::Render()
 {
    grs_bitmap *pBitmap;
-   size_t nStride;
+   int nStride;
    mxs_vector OldPos;
    mxs_vector ZeroPos = {0,0,0};
    BOOL bRestoreZWrite;
@@ -1445,8 +1454,8 @@ void cCloudDeck::Render()
    {
       fUOffset = (g_CloudObj.WindVelocity.x/g_CloudObj.fTileSize)*(nCurrentTime/(float)SIM_TIME_SECOND);
       fVOffset = (g_CloudObj.WindVelocity.y/g_CloudObj.fTileSize)*(nCurrentTime/(float)SIM_TIME_SECOND);
-      fUOffset = fmod(fUOffset, 1);
-      fVOffset = fmod(fVOffset, 1);
+      fUOffset = fmodf(fUOffset, 1);
+      fVOffset = fmodf(fVOffset, 1);
    }
 
    nLastTime = nCurrentTime;
@@ -1484,7 +1493,11 @@ void cCloudDeck::Render()
    bRestoreZCompare = lgd3d_is_zcompare_on();
    lgd3d_set_zwrite(FALSE);
    lgd3d_set_zcompare(FALSE);
-   lgd3d_set_alpha(1);
+   // The texture supplies the cloud mask; the mission value controls the
+   // opacity of the whole deck.  Keeping this as global alpha avoids feeding
+   // the legacy clipper a new per-vertex channel while still matching the
+   // intended texture-alpha * mission-alpha blend.
+   lgd3d_set_alpha(g_CloudObj.fAlpha);
 
    lgd3d_set_fog_enable(portal_fog_on && g_CloudObj.bEnableFog);
 
@@ -1614,6 +1627,7 @@ void cCloudDeck::Render()
    gr_set_fill_type(FILL_NORM);
    r3_set_prim();
    lgd3d_set_blend(FALSE);
+   lgd3d_set_alpha(1);
    lgd3d_set_zwrite(bRestoreZWrite);
    lgd3d_set_zcompare(bRestoreZCompare);
    lgd3d_enable_palette();

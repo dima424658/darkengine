@@ -5,7 +5,7 @@
 // $Revision: 1.1 $
 //
 
-#include <windows.h>
+#include <win32_platform.h>
 #include <dinput.h>
 
 #include "inpdynf.h"

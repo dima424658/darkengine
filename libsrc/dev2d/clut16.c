@@ -56,13 +56,13 @@ void gr_init_clut16_vector(ushort *clut16, int color, alpha_vector *opacity, int
    }
 
    for (i = 0; i<3; i++) {
-      alpha_real a = 1.0 - opacity->v.el[i];
-      if (a > 1.0) {
+      alpha_real a = 1.0f - opacity->v.el[i];
+      if (a > 1.0f) {
          Warning(("gr_init_clut16(): alpha out of range.\n"));
-         a = 1.0;
-      } else if (a < 0.0) {
+         a = 1.0f;
+      } else if (a < 0.0f) {
          Warning(("gr_init_clut16(): alpha out of range.\n"));
-         a = 0.0;
+         a = 0.0f;
       }
       alpha.v.el[i] = a;
    }
@@ -76,15 +76,15 @@ void gr_init_clut16_vector(ushort *clut16, int color, alpha_vector *opacity, int
    for (i=0; i<256; i++) {
       int r, gl, gh, b;
 
-      b = b0 + (i&b_mask)*alpha.blue;
+      b = (int)(b0 + (i&b_mask)*alpha.blue);
       if (b>b_max) b = b_max;
-      gl = gl0 + ((i&gl_mask)>>g_shift)*alpha.green;
+      gl = (int)(gl0 + ((i&gl_mask)>>g_shift)*alpha.green);
       if (gl>gl_max) gl = gl_max;
       clut16[i] = (gl<<g_shift) + b;
 
-      gh = gh0 + ((i&gh_mask)<<gh_shift)*alpha.green;
+      gh = (int)(gh0 + ((i&gh_mask)<<gh_shift)*alpha.green);
       if (gh>gh_max) gh = gh_max;
-      r = r0 + ((i&r_mask)>>(r_shift-8))*alpha.red;
+      r = (int)(r0 + ((i&r_mask)>>(r_shift-8))*alpha.red);
       if (r>r_max) r = r_max;
       clut16[256+i] = (r<<r_shift) + (gh<<g_shift);
    }

@@ -10,6 +10,30 @@
 cIBVariableManager* g_IB_variable_manager = nullptr;
 extern cIBInputMapper* g_IB_input_mapper;
 
+void LGAPI InputBinderForEachBinding(tInputBindingIterCallback callback,
+	void* pData)
+{
+	if (!callback || !g_IB_input_mapper)
+		return;
+
+	const int count = g_IB_input_mapper->m_control_binds.GetNumNodes();
+	for (int index = 0; index < count; ++index)
+	{
+		char control[64] = {};
+		char command[128] = {};
+		const auto* boundCommand =
+			g_IB_input_mapper->m_control_binds.GetInOrderAt(index, control);
+		if (!boundCommand)
+			continue;
+		if (!*boundCommand)
+			continue;
+
+		g_IB_input_mapper->StripControl(command, boundCommand);
+		if (!callback(control, command, pData))
+			break;
+	}
+}
+
 class cInputBinder : public cCTDelegating<IInputBinder>,
 	public cCTAggregateMemberControl<kCTU_Default>
 {
@@ -132,9 +156,9 @@ public:
 	// For setting and getting out current context. This should be a bitmask.
 	// Also, do we want to poll when changing to a different context?
 	//
-	STDMETHOD_(BOOL, SetContext) (THIS_ unsigned long iContext, BOOL bPoll);
+	STDMETHOD_(BOOL, SetContext) (THIS_ ulong iContext, BOOL bPoll);
 	// Stuffs it
-	STDMETHOD_(void, GetContext) (THIS_ unsigned long* pContext);
+	STDMETHOD_(void, GetContext) (THIS_ ulong* pContext);
 
 	//
 	// Set globally master agg callback.
@@ -249,7 +273,10 @@ STDMETHODIMP_(BOOL) cInputBinder::Bind(const char* pControl, const char* pCmd)
 {
 	char pBuf[256] = {};
 
-	snprintf(pBuf, 256, "bind %s %s", pControl, pCmd);
+	// The public Bind API receives the whole command as one string.  Preserve
+	// arguments when it is passed through the command parser; without quoting,
+	// only argument-free commands bind successfully.
+	snprintf(pBuf, 256, "bind %s \"%s\"", pControl, pCmd);
 	return ProcessCmd(pBuf) == 0;
 }
 
@@ -263,18 +290,42 @@ STDMETHODIMP_(BOOL) cInputBinder::Unbind(const char* pControl)
 
 STDMETHODIMP_(void) cInputBinder::QueryBind(const char* pControl, char* pCmdBuf, long iBufLen)
 {
+	if (!pCmdBuf || iBufLen <= 0)
+		return;
+
 	char pBuf[256] = {};
 
 	snprintf(pBuf, 256, "bind %s", pControl);
-	strncpy(pCmdBuf, ProcessCmd(pBuf), iBufLen);
+	const char* pCmd = ProcessCmd(pBuf);
+	if (pCmd)
+	{
+		strncpy(pCmdBuf, pCmd, iBufLen - 1);
+		pCmdBuf[iBufLen - 1] = '\0';
+	}
+	else
+	{
+		pCmdBuf[0] = '\0';
+	}
 }
 
 STDMETHODIMP_(void) cInputBinder::GetVarValue(const char* pVarStr, char* pValBuf, long iBufLen)
 {
+	if (!pValBuf || iBufLen <= 0)
+		return;
+
 	char pBuf[256] = {};
 
 	snprintf(pBuf, 256, "echo $%s", pVarStr);
-	strncpy(pValBuf, ProcessCmd(pBuf), iBufLen);
+	const char* pVal = ProcessCmd(pBuf);
+	if (pVal)
+	{
+		strncpy(pValBuf, pVal, iBufLen - 1);
+		pValBuf[iBufLen - 1] = '\0';
+	}
+	else
+	{
+		pValBuf[0] = '\0';
+	}
 }
 
 STDMETHODIMP_(const char*) cInputBinder::ProcessCmd(const char* pCmdStr)
@@ -389,12 +440,12 @@ STDMETHODIMP_(const char*) cInputBinder::VarUnsetAll()
 	return m_IB_variable_manager->VarUnsetAll();
 }
 
-STDMETHODIMP_(BOOL) cInputBinder::SetContext(unsigned long iContext, BOOL bPoll)
+STDMETHODIMP_(BOOL) cInputBinder::SetContext(ulong iContext, BOOL bPoll)
 {
 	if (m_IB_input_mappers[m_cur_context_idx]->m_context == iContext)
 		return TRUE;
 
-	if (!iContext || (iContext & -iContext) != iContext)
+	if (!iContext || (iContext & (iContext - 1)) != 0)
 		return FALSE;
 
 	int bit = 0;
@@ -420,7 +471,7 @@ STDMETHODIMP_(BOOL) cInputBinder::SetContext(unsigned long iContext, BOOL bPoll)
 	return TRUE;
 }
 
-STDMETHODIMP_(void) cInputBinder::GetContext(unsigned long* pContext)
+STDMETHODIMP_(void) cInputBinder::GetContext(ulong* pContext)
 {
 	*pContext = m_IB_input_mappers[m_cur_context_idx]->m_context;
 }

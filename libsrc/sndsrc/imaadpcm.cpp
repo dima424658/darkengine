@@ -151,7 +151,7 @@ DecompressIMABlockPartial( char           *pInBuff,
                            short          *pOutBuff,
                            long           nSamples,
                            BOOL           getHeader,
-                           unsigned long  *pState )
+                           uint32         *pState )
 {
    return nullptr; // TODO
 }

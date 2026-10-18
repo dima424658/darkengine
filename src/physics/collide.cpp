@@ -20,7 +20,7 @@
 #include <appagg.h>
 #include <globalid.h>
 
-#include <phclsn.H>
+#include <phclsn.h>
 #include <phcollev.h>
 
 #include <textarch.h>

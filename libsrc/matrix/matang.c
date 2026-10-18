@@ -16,51 +16,54 @@
 // Does this wrap and stuff right?
 mxs_ang mx_rad2ang(mxs_real rad)
 {
-   return rad*MX_ANG_PI/MX_REAL_PI;
+   // A negative floating-point value cannot be converted directly to the
+   // unsigned mxs_ang type portably.  Convert through a signed integer so
+   // the final cast performs the intended 16-bit angle wrap.
+   return (mxs_ang)(int)(rad*MX_ANG_PI/MX_REAL_PI);
 }
 
 // Always returns positive rads
 mxs_real mx_ang2rad(mxs_ang ang)
 {
-   return (mxs_real)ang * MX_REAL_PI/MX_ANG_PI;
+   return (mxs_real)ang * (float)MX_REAL_PI/MX_ANG_PI;
 }
 
 // convert to and from degs
 mxs_ang mx_deg2ang(mxs_real deg)
 {
-   return  deg*MX_ANG_PI/180.0;
+   return (mxs_ang)(int)(deg*MX_ANG_PI/180.0f);
 }
 
 mxs_real mx_ang2deg(mxs_real ang)
 {
-   return (mxs_real)ang * 180.0/MX_ANG_PI;
+   return (mxs_real)ang * 180.0f/MX_ANG_PI;
 }
 
 
 
 mxs_real mx_sin(mxs_ang ang)
 {
-   return sin((float)ang*MX_REAL_2PI/65536.0);
+   return sinf((float)ang*(float)MX_REAL_2PI/65536.0f);
 }
 
 mxs_real mx_cos(mxs_ang ang)
 {
-   return cos((float)ang*MX_REAL_2PI/65536.0);
+   return cosf((float)ang*(float)MX_REAL_2PI/65536.0f);
 }
 
 void mx_sincos(mxs_ang ang,mxs_real *s, mxs_real *c)
 {
    // well, okay this is lame
-   double rang = (float)ang*MX_REAL_2PI/65536.0;
+   float rang = (float)ang*(float)MX_REAL_2PI/65536.0f;
 
-   *s = sin(rang);
-   *c = cos(rang);
+   *s = sinf(rang);
+   *c = cosf(rang);
 }
 
 /////////////////////////////////
 // octant symmetric sin/cos calls
 
-#define do_ang_convert(ang) ((float)ang*MX_REAL_2PI/65536.0)
+#define do_ang_convert(ang) ((float)ang*(float)MX_REAL_2PI/65536.0f)
 
 #define OCT_USE_SELF 1
 #define OCT_FLIP_SIN 2
@@ -101,9 +104,9 @@ mxs_real mx_sym_sin(mxs_ang ang)
    float val, rang=do_ang_convert(ang);
 
    if (oct_code&OCT_USE_SELF)
-      val=sin(rang);
+      val=sinf(rang);
    else
-      val=cos(rang);
+      val=cosf(rang);
    if (oct_code&OCT_FLIP_SIN)
       val=-val;
    return val;
@@ -115,9 +118,9 @@ mxs_real mx_sym_cos(mxs_ang ang)
    float val, rang=do_ang_convert(ang);
 
    if (oct_code&OCT_USE_SELF)
-      val=cos(rang);
+      val=cosf(rang);
    else
-      val=sin(rang);
+      val=sinf(rang);
    if (oct_code&OCT_FLIP_COS)
       val=-val;
    return val;
@@ -130,13 +133,13 @@ void mx_sym_sincos(mxs_ang ang,mxs_real *s, mxs_real *c)
 
    if (oct_code&OCT_USE_SELF)
    {
-      *s = sin(rang);
-     	*c = cos(rang);
+      *s = sinf(rang);
+	*c = cosf(rang);
    }
    else
    {
-      *c = sin(rang);
-     	*s = cos(rang);
+      *c = sinf(rang);
+	*s = cosf(rang);
    }
    if (oct_code&OCT_FLIP_SIN)
       *s=-*s;
@@ -326,25 +329,25 @@ void mx_mat2rad(mxs_vector* dest, const mxs_matrix* m)
    // pitch (Y) can only be -PI <= Y <= PI
    // mat->m[0][2] is -sin(Y)            
 
-   dest->y = asin(-m->m2);
+   dest->y = asinf(-m->m2);
 
    // yaw (Z) = atan2( sinZ, cosZ)                      
    // Since cosY is always positive, this is the same as
    // atan2(sinZcosY, cosZcosY )                        
    // mat->m[0][0] is cosZcosY, mat->m[0][1] is sinZcosY
 
-   dest->z = atan2(m->m1,m->m0);
+   dest->z = atan2f(m->m1,m->m0);
 
    // Similar argument goes for roll (X)
    // mat->m[1][2] is sinXcosY, mat->m[2][2] is cosXcosY
 
-   dest->x = atan2(m->m5,m->m8);
+   dest->x = atan2f(m->m5,m->m8);
 }
 
 void mx_mk_rot_x_mat_rad(mxs_matrix *m, float ang)
 {
    float s,c;
-   s=sin(ang); c=cos(ang);
+   s=sinf(ang); c=cosf(ang);
 
    m->m0 = 1.0;
    m->m1 = 0;
@@ -359,7 +362,7 @@ void mx_mk_rot_x_mat_rad(mxs_matrix *m, float ang)
 void mx_mk_rot_y_mat_rad(mxs_matrix *m, float ang)
 {
    float s,c;
-   s=sin(ang); c=cos(ang);
+   s=sinf(ang); c=cosf(ang);
 
    m->m4 = 1.0;
    m->m1 = 0;
@@ -374,7 +377,7 @@ void mx_mk_rot_y_mat_rad(mxs_matrix *m, float ang)
 void mx_mk_rot_z_mat_rad(mxs_matrix *m, float ang)
 {
    float s,c;
-   s=sin(ang); c=cos(ang);
+   s=sinf(ang); c=cosf(ang);
    
    m->m8 = 1.0;
    m->m2 = 0;
@@ -392,7 +395,7 @@ void mx_mk_rot_z_mat_rad(mxs_matrix *m, float ang)
 void mx_rot_x_mat_rad(mxs_matrix *dest,const mxs_matrix *m, float ang)
 {
    float s,c;
-   s=sin(ang); c=cos(ang);
+   s=sinf(ang); c=cosf(ang);
    
    dest->m0 = m->m0;
    dest->m1 = m->m1;
@@ -410,7 +413,7 @@ void mx_rot_x_mat_rad(mxs_matrix *dest,const mxs_matrix *m, float ang)
 void mx_rot_y_mat_rad(mxs_matrix *dest,const mxs_matrix *m, float ang)
 {
    float s,c;
-   s=sin(ang); c=cos(ang);
+   s=sinf(ang); c=cosf(ang);
 
    dest->m0 = c*m->m0 - s*m->m6;
    dest->m1 = c*m->m1 - s*m->m7;
@@ -428,7 +431,7 @@ void mx_rot_y_mat_rad(mxs_matrix *dest,const mxs_matrix *m, float ang)
 void mx_rot_z_mat_rad(mxs_matrix *dest,const mxs_matrix *m, float ang)
 {
    float s,c;
-   s=sin(ang); c=cos(ang);
+   s=sinf(ang); c=cosf(ang);
 
    dest->m6 = m->m6;
    dest->m7 = m->m7;

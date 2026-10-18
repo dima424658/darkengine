@@ -300,7 +300,6 @@ void KeypadButton(int button_num)
    }
 }
 //--------------------------------------------------------------------------------------
-#pragma off(unreferenced)
 /*
 static bool key_handler_func(uiEvent* ev, Region* r, void* data)
 {

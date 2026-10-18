@@ -14,7 +14,7 @@
 
 void gen_uhline(int x, int y, int x1)
 {
-   uchar c=grd_gc.fcolor;
+   uchar c=(uchar)grd_gc.fcolor;
    gdupix_func *upix8_func;
 
    upix8_func = gd_upix8_expose(c, x, y);
@@ -24,7 +24,7 @@ void gen_uhline(int x, int y, int x1)
 
 void gen_uvline(int x, int y, int y1)
 {
-   uchar c=grd_gc.fcolor;
+   uchar c=(uchar)grd_gc.fcolor;
    gdupix_func *upix8_func;
 
    upix8_func = gd_upix8_expose(c, x, y);

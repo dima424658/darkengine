@@ -55,9 +55,10 @@ cDirectoryStorage::~cDirectoryStorage()
 
 	if (m_pStreamTable)
 	{
-		tHashSetHandle h;
-		for (auto* pEntry = m_pStreamTable->GetFirst(h); pEntry != nullptr; pEntry = m_pStreamTable->GetNext(h))
+		while (!m_pStreamTable->IsEmpty())
 		{
+			tHashSetHandle h;
+			auto* pEntry = m_pStreamTable->GetFirst(h);
 			m_pStreamTable->Remove(pEntry);
 			delete pEntry;
 		}
@@ -113,9 +114,10 @@ IStore* cDirectoryStorage::GetSubstorage(const char* pSubPath, BOOL bCreate)
 	if (!pSubPath || !strlen(pSubPath))
 		return nullptr;
 
-	char topPathLevel[32]{};
+	char topPathLevel[MAX_STORENAME]{};
 	const char* pathRest = nullptr;
-	GetPathTop(pSubPath, topPathLevel, &pathRest);
+	if (!GetPathTop(pSubPath, topPathLevel, sizeof(topPathLevel), &pathRest))
+		return nullptr;
 
 	IStore* pSubstorage = nullptr;
 	cFilePath AnchoredSubpath{};
@@ -166,7 +168,7 @@ IStore* cDirectoryStorage::GetSubstorage(const char* pSubPath, BOOL bCreate)
 		}
 		else
 		{
-			char pNameBuffer[32]{};
+			char pNameBuffer[MAX_STORENAME]{};
 			if (m_pStoreManager->HeteroStoreExists(this, topPathLevel, pNameBuffer))
 			{
 				pSubstorage = m_pStoreManager->CreateSubstore(this, pNameBuffer);
@@ -511,9 +513,10 @@ void cDirectoryStorage::Close()
 	if (!m_pSubstorageTable)
 		return;
 
-	tHashSetHandle h;
-	for (auto* pEntry = m_pSubstorageTable->GetFirst(h); pEntry != nullptr; pEntry = m_pSubstorageTable->GetNext(h))
+	while (!m_pSubstorageTable->IsEmpty())
 	{
+		tHashSetHandle h;
+		auto* pEntry = m_pSubstorageTable->GetFirst(h);
 		m_pSubstorageTable->Remove(pEntry);
 
 		IStoreHierarchy* pHier = nullptr;

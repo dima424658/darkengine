@@ -50,7 +50,7 @@ static void clear_stats(TraitDescriptions* Descriptions,
    Descriptions->SetSize(1);    // Set the Descriptions array size to one.
    // Clear the ID status array.
    sDonorCacheStats NullEntry;  // Create a dummy array entry into IDStats.
-   memset(&NullEntry,NULL,sizeof(sDonorCacheStats));  // Clear the dummy entry.
+   memset(&NullEntry,0,sizeof(sDonorCacheStats));  // Clear the dummy entry.
    IDStats->Append(NullEntry); // Append the cleared entry to the IDStats array.
    IDStats->SetSize(1);        // Set the array size to one.
 };
@@ -139,7 +139,7 @@ STDMETHODIMP cDonorCache::SetDonor(ObjID obj, TraitID id, ObjID donor, ObjID thr
    }
    else
    {
-	  Assert_(id < StatsByID.Size());  // Check for valid id
+	  Assert_(id < (TraitID)StatsByID.Size());  // Check for valid id
 	  StatsByID[id].overwrites++;  // Add overwrites count to the particular ID
       e->donor = (short)donor;
       e->through = (short)thru;
@@ -166,7 +166,7 @@ STDMETHODIMP_(BOOL) cDonorCache::GetDonor(ObjID obj, TraitID trait, ObjID* donor
    {
       *donor = e->donor;
       *thru = e->through;
-      Assert_(trait < StatsByID.Size());  // Check for valid id
+      Assert_(trait < (TraitID)StatsByID.Size());  // Check for valid id
       StatsByID[trait].hits++;  // Add hit count to the particular ID
       Touch(e);
       return TRUE;
@@ -174,7 +174,7 @@ STDMETHODIMP_(BOOL) cDonorCache::GetDonor(ObjID obj, TraitID trait, ObjID* donor
    else
    {
       trSpew(("Trait cached missed obj %d trait %d\n",obj,trait));
-	  Assert_(trait < StatsByID.Size());  // Check for valid id
+	  Assert_(trait < (TraitID)StatsByID.Size());  // Check for valid id
       StatsByID[trait].misses++;
       return FALSE;
    }
@@ -216,7 +216,7 @@ STDMETHODIMP cDonorCache::Flush(ObjID obj, TraitID trait)
       if (trait != FLUSH_ALL_TRAITS)
       {
          sCacheKey key(obj,trait);
-         Assert_(trait < StatsByID.Size());  // Check for valid id
+         Assert_(trait < (TraitID)StatsByID.Size());  // Check for valid id
          StatsByID[trait].flushes++;
          cDonorCacheEntry* node = Table.Search(&key);
          if (node != NULL)
@@ -241,7 +241,7 @@ STDMETHODIMP cDonorCache::Flush(ObjID obj, TraitID trait)
             if (trait != FLUSH_ALL_TRAITS && node->key.trait != trait)
             {  // Flush all traits
 #ifndef SHIP 
-               for (int traitflush=1;traitflush<=trait;traitflush++)
+               for (int traitflush=1;traitflush<=(int)trait;traitflush++)
                   StatsByID[traitflush].flushes++;
 #endif 
                continue;
@@ -267,7 +267,7 @@ STDMETHODIMP cDonorCache::Flush(ObjID obj, TraitID trait)
          if (trait != FLUSH_ALL_TRAITS && node->key.trait != trait)
          {  // Flush all traits
 #ifndef SHIP 
-            for (int traitflush=1;traitflush<=trait;traitflush++)
+            for (int traitflush=1;traitflush<=(int)trait;traitflush++)
                StatsByID[traitflush].flushes++;
 #endif 
             continue;
@@ -305,7 +305,7 @@ STDMETHODIMP cDonorCache::FlushObjSet(IObjectQuery* q, TraitID trait)
 #ifndef SHIP
       if (!all)
       {
-         Assert_(trait < StatsByID.Size());  // Check for valid id
+         Assert_(trait < (TraitID)StatsByID.Size());  // Check for valid id
          StatsByID[trait].flushes--;
       }
 #endif 
@@ -373,7 +373,7 @@ STDMETHODIMP cDonorCache::GetTotalStats(sDonorCacheStats* stats)
 STDMETHODIMP cDonorCache::GetStatsByTrait(TraitID trait, sDonorCacheStats* stats)
 {
    // Return a valid sDonorCacheStats value if the trait ID is valid.
-   if (trait < StatsByID.Size()) // Check for an out of bounds trait ID.
+   if (trait < (TraitID)StatsByID.Size()) // Check for an out of bounds trait ID.
    {
        memcpy(stats,&StatsByID[trait],sizeof(sDonorCacheStats));  // Save the match.
        return S_OK;
@@ -447,7 +447,7 @@ void cDonorCache::Add(cDonorCacheEntry* e)
    objlist->Append(e); 
 
    StatEntries++;
-   Assert_(e->key.trait < StatsByID.Size());  // Check for valid id
+   Assert_(e->key.trait < (TraitID)StatsByID.Size());  // Check for valid id
    StatsByID[e->key.trait].adds++;
 
    if (StatEntries > Params.max_entries)
@@ -470,7 +470,7 @@ void cDonorCache::Drop(cDonorCacheEntry* e)
    }
 
    StatEntries--;  
-   Assert_(e->key.trait < StatsByID.Size());  // Check for valid id
+   Assert_(e->key.trait < (TraitID)StatsByID.Size());  // Check for valid id
    StatsByID[e->key.trait].drops++;
    delete e;
 }

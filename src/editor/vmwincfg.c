@@ -362,12 +362,12 @@ static BOOL _doWinScroll(int c)
                goto mouse_up;
             if (abs(x_off)>DEAD_SPOT_SIZE)
             {
-               mx_scale_addeq_vec(&cur_loc,&x_sc,((float)x_off*2.0/(float)DEAD_SPOT_SIZE));
+               mx_scale_addeq_vec(&cur_loc,&x_sc,((float)x_off*2.0f/(float)DEAD_SPOT_SIZE));
                chg=TRUE;
             }
             if (abs(y_off)>DEAD_SPOT_SIZE)
             {
-               mx_scale_addeq_vec(&cur_loc,&y_sc,((float)y_off*2.0/(float)DEAD_SPOT_SIZE));
+               mx_scale_addeq_vec(&cur_loc,&y_sc,((float)y_off*2.0f/(float)DEAD_SPOT_SIZE));
                chg=TRUE;
             }
             if (chg)  // need to redraw somehow
@@ -446,7 +446,7 @@ BOOL vmScrollCamera(int c)
 // mouse handler for clicks which make it onto the parent region - ie the cracks between the views
 // sadly this is untrue, since the parent region seems to be the whole display... so we check rect bounds now
 // return TRUE if i eat the event
-static bool vm_parent_mouse_handler(uiEvent* _ev, Region* reg, void* _data)
+static BOOL vm_parent_mouse_handler(uiEvent* _ev, Region* reg, void* _data)
 {
    uiMouseEvent* ev = (uiMouseEvent*)_ev;
    BOOL changed_setup=FALSE;
@@ -536,7 +536,7 @@ void vmWinCfgCreate(Region* parent, Rect* bounds)
 
    config_get_float("vmCenterX",&cenX);
    config_get_float("vmCenterY",&cenY);
-   vmGUICenter = MakePoint((int)(RectWidth(bounds)*cenX),(int)RectHeight(bounds)*cenY);
+   vmGUICenter = MakePoint((int)(RectWidth(bounds) * cenX), (int)(RectHeight(bounds) * cenY));
 
 #ifdef SEE_BORDERS_CLEARLY
    vmGUIDims.x -= 10; vmGUIDims.y -= 10;

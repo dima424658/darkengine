@@ -32,7 +32,7 @@ void modex_uvline_fill(uchar c, int x, int y, int y1)
 
 void modex_norm_uvline(int x, int y, int y1)
 {
-   uchar c = grd_gc.fcolor;
+   uchar c = (uchar)grd_gc.fcolor;
    modex_uvline_fill(c, x, y, y1);
 }
 
@@ -44,7 +44,7 @@ void modex_clut_uvline(int x, int y, int y1)
 
 void modex_solid_uvline(int x, int y, int y1)
 {
-   uchar c = grd_gc.fill_parm;
+   uchar c = (uchar)grd_gc.fill_parm;
    modex_uvline_fill(c, x, y, y1);
 }
 
@@ -52,7 +52,7 @@ void modex_xor_uvline(int x, int y, int y1)
 {
    uchar *p, *p_last;
    int row=grd_bm.row;
-   uchar c = grd_gc.fcolor;
+   uchar c = (uchar)grd_gc.fcolor;
    uchar ws;
 
    x += grd_bm.align;
@@ -74,7 +74,7 @@ void modex_tluc_uvline(int x, int y, int y1)
    uchar *clut;
    uchar ws;
 
-   c = grd_gc.fcolor;
+   c = (uchar)grd_gc.fcolor;
    clut = tluc8tab[c];
    if (clut==NULL)
       modex_uvline_fill(c, x, y, y1);

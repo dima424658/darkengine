@@ -124,7 +124,7 @@ static void flowPnP_DoGroupClick(int button)
    }
 }
 
-static void flowPnP_IntFrob(PnP_SliderOp op, Rect *where, int val, int data)
+static void flowPnP_IntFrob(PnP_SliderOp op, Rect *where, int val, intptr_t data)
 {
    if (op==PnP_SliderUpdateOp)
       flowPnP_setvars(flowPnP_br,TRUE);

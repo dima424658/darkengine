@@ -57,8 +57,6 @@
 // Must be last header
 #include <dbmem.h>
 
-#define min(x,y) ((x)<(y)?(x):(y))
-
 #ifdef OLD_WAY
 // this will be bad if the schema doesn't exist or have a name...
 inline const char* OBJ_NAME(ObjID obj)
@@ -158,6 +156,7 @@ typedef cDListNode<sSchemaPlay,1> SchemaPlayListNode;
 // one for each schema that is currently playing
 struct sSchemaPlay : public SchemaPlayListNode
 {
+   int handle;                    // stable 32-bit public handle, never a pointer
    ObjID schemaID;
    int flags;
    ObjID sourceID;
@@ -175,6 +174,19 @@ struct sSchemaPlay : public SchemaPlayListNode
 };
 
 SchemaPlayList playingSchemas;
+static int nextSchemaHandle = 1;
+
+static sSchemaPlay *SchemaPlayFromHandle(int handle)
+{
+   sSchemaPlay *play = playingSchemas.GetFirst();
+   while (play != NULL)
+   {
+      if (play->handle == handle)
+         return play;
+      play = play->GetNext();
+   }
+   return NULL;
+}
 
 #define MAX_PLAYING_SAMPLES 32 
 static struct sSchemaPlaySample playingSamples[MAX_PLAYING_SAMPLES];
@@ -253,7 +265,7 @@ ulong SchemaGetTime()
 // return rand 0->1 (exclusive)
 double SchemaRand()
 {
-   return (double)UnrecordedRand()/(double)(RAND_MAX+1);
+   return (double)UnrecordedRand()/((double)RAND_MAX+1.0);
 }
 
 // play samples list setup
@@ -368,6 +380,9 @@ sSchemaPlay *SchemaPlayGet()
 
    if ((pSchemaPlay = new sSchemaPlay) != NULL)
    {
+      pSchemaPlay->handle = nextSchemaHandle++;
+      if (nextSchemaHandle == SCH_HANDLE_NULL)
+         ++nextSchemaHandle;
       pSchemaPlay->flags = 0;
       pSchemaPlay->schemaID = OBJ_NULL;
       pSchemaPlay->count = 0;
@@ -450,10 +465,10 @@ void SchemaPlayEnd(sSchemaPlay *pSchemaPlay)
    {
       ConfigSpew("SchemaCallback", 
                  ("SchemaPlayEnd callback: handle %d, schema %s, data %d\n",
-                  (int)pSchemaPlay,
+                  pSchemaPlay->handle,
                   OBJ_NAME(pSchemaPlay->schemaID),
                   (int)(pSchemaPlay->userData)));
-      pSchemaPlay->callback((int)pSchemaPlay, pSchemaPlay->schemaID,
+      pSchemaPlay->callback(pSchemaPlay->handle, pSchemaPlay->schemaID,
                             pSchemaPlay->userData);
    }
 
@@ -465,29 +480,14 @@ void SchemaPlayEnd(sSchemaPlay *pSchemaPlay)
 // halt all samples playing as part of it
 void SchemaPlayHalt(int hSchemaPlay)
 {
-   sSchemaPlay *pSchemaPlay = (sSchemaPlay*)hSchemaPlay;
+   sSchemaPlay *pSchemaPlay = SchemaPlayFromHandle(hSchemaPlay);
    sSchemaPlaySample *pSample;
 
    if (pSchemaPlay == NULL)
    {
-      Warning(("SchemaPlayHalt: called with NULL handle\n"));
+      Warning(("SchemaPlayHalt: called with invalid handle (%d)\n", hSchemaPlay));
       return;
    }
-
-#ifdef DBG_ON
-   {
-      // find handle in playing list
-      sSchemaPlay *pSearch = playingSchemas.GetFirst();
-
-      while ((pSearch != NULL) && (pSearch != pSchemaPlay))
-         pSearch = pSearch->GetNext();
-      if (pSearch != pSchemaPlay)
-      {
-         Warning(("SchemaPlayHalt: called with invalid handle (%d)\n", (int)pSchemaPlay));
-         return;
-      }
-   }
-#endif
 
    // stop samples and free play sample structs
    if ((pSample = pSchemaPlay->pSamples) != NULL)
@@ -575,7 +575,7 @@ static void SchemaSampleEndCallOut(int hSound, void *data)
    pSchemaPlay = playingSchemas.GetFirst();
    while (pSchemaPlay != NULL)
    {
-      if (pSchemaPlay->schemaID == (ObjID)data)
+   if (pSchemaPlay->schemaID == (ObjID)(intptr_t)data)
       {
          // try to find play sample structure corresponding to sound handle
          pSample = SchemaPlaySampleFind(pSchemaPlay->pSamples, hSound);
@@ -627,7 +627,7 @@ static void SchemaSampleLoopCallOut(int hSound, void *data)
                                hSound, OBJ_NAME((ObjID)data)));
 
    pSchemaPlay = playingSchemas.GetFirst();
-   ObjID Schema = (ObjID) data;
+   ObjID Schema = (ObjID)(intptr_t)data;
    while (pSchemaPlay != NULL)
    {
       if (pSchemaPlay->schemaID == Schema)
@@ -637,7 +637,7 @@ static void SchemaSampleLoopCallOut(int hSound, void *data)
          if (pSample != NULL
           && (pSchemaPlay->flags & SCH_SET_LOOP_CALLBACK)
           && (pSchemaPlay->loop_callback != NULL)) {
-            pSchemaPlay->loop_callback((int)pSchemaPlay, 
+            pSchemaPlay->loop_callback(pSchemaPlay->handle,
                                        pSchemaPlay->schemaID,
                                        pSchemaPlay->userData);
          }
@@ -777,7 +777,7 @@ void SchemaParamsSetup(ObjID schemaID, sfx_parm *parm)
 
    parm->flag = 0;
    parm->group = 0;
-   parm->user_data = (void*)schemaID;
+   parm->user_data = (void *)(intptr_t)schemaID;
    parm->radius = 0;
    parm->num_loops = SFX_LOOP_INFINITE;
    parm->end_callback = &SchemaSampleEndCallback;
@@ -878,7 +878,7 @@ static int SchemaSamplePlay(ObjID schemaID, int sampleNum,
       else if (pSchemaPlay->flags&SCH_ADD_VOLUME)
          parm.gain += pSchemaPlay->volume;
       else if (pSchemaPlay->flags&SCH_SCALE_VOLUME)
-         parm.gain = ((float)parm.gain * (float)pSchemaPlay->volume) / 100.0;
+      parm.gain = (int)(((float)parm.gain * (float)pSchemaPlay->volume) / 100.0f);
       else if (pSchemaPlay->flags&SCH_RADIUS_VOLUME)
          parm.radius = pSchemaPlay->volume;
 
@@ -1050,7 +1050,7 @@ int SchemaIDPlay(ObjID schemaID, sSchemaCallParams *pCallParams, void *pData)
    SchemaSampleListsSpew("SchemaIDPlay");
    SchemaListSpew("SchemaIDPlay");
 
-   return (int)pSchemaPlay;
+   return pSchemaPlay != NULL ? pSchemaPlay->handle : SCH_HANDLE_NULL;
 }
 
 int SchemaIDPlayObj(ObjID schemaID, ObjID objID, void *pData)
@@ -1141,7 +1141,7 @@ void SchemaHaltNamed(const Label *schemaName)
    {
       if (pSchemaPlay->schemaID == schemaID)
       {
-         SchemaPlayHalt((int)pSchemaPlay);
+         SchemaPlayHalt(pSchemaPlay->handle);
          return;
       }
       pSchemaPlay = pSchemaPlay->GetNext();
@@ -1252,7 +1252,7 @@ void SchemaHaltAll()
    pSchemaPlay = playingSchemas.GetFirst();
    while (pSchemaPlay != NULL)
    {
-      SchemaPlayHalt((int)pSchemaPlay);
+      SchemaPlayHalt(pSchemaPlay->handle);
       pSchemaPlay = playingSchemas.GetFirst();
    }
    SchemaListSpew("SchemaHaltAll");
@@ -1447,8 +1447,8 @@ ObjID SchemaGetIDFromHandle(int hSchemaPlay)
 {
    if (hSchemaPlay == SCH_HANDLE_NULL)
       return OBJ_NULL;
-   sSchemaPlay *pSchemaPlay = (sSchemaPlay*)hSchemaPlay;
-   return pSchemaPlay->schemaID;
+   sSchemaPlay *pSchemaPlay = SchemaPlayFromHandle(hSchemaPlay);
+   return pSchemaPlay != NULL ? pSchemaPlay->schemaID : OBJ_NULL;
 }
 
 int SchemaGetSFXFromHandle(int hSchemaPlay, int iWhich)
@@ -1456,7 +1456,9 @@ int SchemaGetSFXFromHandle(int hSchemaPlay, int iWhich)
    if (hSchemaPlay == SCH_HANDLE_NULL)
       return SFX_NO_HND;
 
-   sSchemaPlay *pSchemaPlay = (sSchemaPlay*)hSchemaPlay;
+   sSchemaPlay *pSchemaPlay = SchemaPlayFromHandle(hSchemaPlay);
+   if (pSchemaPlay == NULL)
+      return SFX_NO_HND;
    sSchemaPlaySample *pSample = pSchemaPlay->pSamples;
    if (!pSample)
       return SFX_NO_HND;

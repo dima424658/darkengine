@@ -147,36 +147,13 @@ int RectClipCode(Rect *prect, Point pt);
 // oh, doug is mocked, you cant cast to a non-scaler type
 
 // take this, note ax and bx passed but use whole thing... oooooh
-#ifdef __WATCOMC__
-Point MakePointInline(ushort x, ushort y);
-#pragma aux MakePointInline = \
-   "shl     ebx,10H"          \
-   "and     eax,0000ffffH"    \
-   "add     eax,ebx"          \
-   parm [ax] [bx]             \
-   modify [eax ebx];
-#else
-#ifdef BAD
 __inline Point MakePointInline(ushort x, ushort y)
 {
-#pragma warning(disable : 4035)	// disables no return value warning
-	__asm
-	{
-		mov		ax, x
-		mov		bx, y
-		shl		ebx, 10H
-		and		eax, 0000ffffH
-		add		eax, ebx
-	}
-};
-#else
-__inline Point MakePointInline(ushort x, ushort y)
-{
-    ulong l = (y << 16) | x;
-    return *((Point *)(&l));
+   Point point;
+   point.x = (short)x;
+   point.y = (short)y;
+   return point;
 }
-#endif
-#endif
 // and this
 #define MakePoint(x,y) MakePointInline((ushort)x,(ushort)y)
 // curse you

@@ -13,7 +13,7 @@
 static void draw_mark(mxs_trans *trans)
 {
    r3s_point point;
-   float w=0.15,h=0.15;
+   float w=0.15f,h=0.15f;
    fix sw,sh;
    fix maxw=fix_make(grd_bm.w,0),maxh=fix_make(grd_bm.h,0);
    grs_vertex v1,v2;
@@ -34,18 +34,18 @@ static void draw_mark(mxs_trans *trans)
    sw=fix_from_float(r3_get_hsize(point.p.z,w));
    sh=fix_from_float(r3_get_vsize(point.p.z,h));
 
-   ocol=gr_get_fcolor();
+   ocol=(uchar)gr_get_fcolor();
    gr_set_fcolor(255);
-   v1.x=max(0,point.grp.sx-sw);
-   v1.y=max(0,point.grp.sy-sh);
-   v2.x=min(maxw,point.grp.sx+sw);
-   v2.y=min(maxh,point.grp.sy+sh);
+   v1.x=(point.grp.sx-sw > 0) ? point.grp.sx-sw : 0;
+   v1.y=(point.grp.sy-sh > 0) ? point.grp.sy-sh : 0;
+   v2.x=(point.grp.sx+sw < maxw) ? point.grp.sx+sw : maxw;
+   v2.y=(point.grp.sy+sh < maxh) ? point.grp.sy+sh : maxh;
    gr_line(&v1,&v2);
 
-   v1.x=max(0,point.grp.sx-sw);
-   v1.y=min(maxh,point.grp.sy+sh);
-   v2.x=min(maxw,point.grp.sx+sw);
-   v2.y=max(0,point.grp.sy-sh);
+   v1.x=(point.grp.sx-sw > 0) ? point.grp.sx-sw : 0;
+   v1.y=(point.grp.sy+sh < maxh) ? point.grp.sy+sh : maxh;
+   v2.x=(point.grp.sx+sw < maxw) ? point.grp.sx+sw : maxw;
+   v2.y=(point.grp.sy-sh > 0) ? point.grp.sy-sh : 0;
    gr_line(&v1,&v2);
 
    gr_set_fcolor(ocol);
@@ -105,7 +105,7 @@ void mm_dbg_draw_seg_colored_verts(mms_model *m,int index,fix r)
    mm_set_buff(m, NULL, buff);
 
    // transform points per segment, as well as normals and lights
-   mm_transform_only(m, NULL);
+   mm_transform_only(m, 0);
 
    if(bdepth>=32)
       bdepth=24;
@@ -116,7 +116,7 @@ void mm_dbg_draw_seg_colored_verts(mms_model *m,int index,fix r)
       inc=0;
    if(index>0&&index<m->segs) // only draw that seg
    {
-      col=inc*index;
+      col=(ulong)(inc*index);
       gr_set_fcolor(col);
       draw_seg_verts(m,&mmd_segs[index],r);
    } else
@@ -124,7 +124,7 @@ void mm_dbg_draw_seg_colored_verts(mms_model *m,int index,fix r)
       pseg=mmd_segs;
       for(i=0;i<m->segs;i++,pseg++)
       {
-         col=inc*i;
+         col=(ulong)(inc*i);
          gr_set_fcolor(col);
          draw_seg_verts(m,pseg,r);
       }
@@ -149,9 +149,9 @@ void mm_dbg_draw_verts(mms_model *m,uchar c1, uchar c2,fix r)
    mm_set_buff(m, NULL, buff);
 
    // transform points per segment, as well as normals and lights
-   mm_transform_only(m, NULL);
+   mm_transform_only(m, 0);
 
-   ocol=gr_get_fcolor();
+   ocol=(uchar)gr_get_fcolor();
 
    gr_set_fcolor(c1);
    for(i=0;i<mmd_model->verts;i++)

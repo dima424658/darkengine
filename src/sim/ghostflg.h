@@ -35,7 +35,7 @@ typedef enum {
 } eGhostConfigFlags;
 
 #define _GhostGetType(flags)     ((flags)&kGhostCfTypeMask)
-#define _GhostIsType(flags,type) (_GhostGetType(flags)==kGhostCf##type##)
+#define _GhostIsType(flags,type) (_GhostGetType(flags)==kGhostCf##type)
 
 // how to interpret certain heartbeat fields
 typedef enum {

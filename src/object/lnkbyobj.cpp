@@ -22,9 +22,7 @@
 // LinksByObj
 //
 ////////////////////////////////////////////////////////////
-#ifdef __MSVC 
-template LinksByObjTable;
-#endif 
+template class cHashTable<ObjID, LinkSet *, ByObjHashFuncs>;
 
 #define AUTO_BLAME() LGALLOC_AUTO_CREDIT()
 

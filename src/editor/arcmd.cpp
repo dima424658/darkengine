@@ -5,8 +5,6 @@
 
 // $Header: r:/t2repos/thief2/src/editor/arcmd.cpp,v 1.17 2000/02/19 12:27:38 toml Exp $
 
-#include <wtypes.h>
-
 #include <comtools.h>
 #include <appagg.h>
 
@@ -192,20 +190,10 @@ static void stimulate()
 // IMPORTED ACT/REACT EDITORS
 
 
-#include <dynfunc.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-static IActReactEditors* LGAPI import_woe(void)
-{
-   CriticalMsg("Could not load dialog!");
-   return NULL;
-}
-
-DeclDynFunc_(IActReactEditors*, LGAPI, ExportActReactEditors, (void));
-ImplDynFunc(ExportActReactEditors, "darkdlgs.dll", "_ExportActReactEditors@0", import_woe);
-
-#define ImportEditors (DynFunc(ExportActReactEditors).GetProcAddress())
+static IActReactEditors *ImportEditors(void) { return NULL; }
 
 //------------------------------------------------------------
 // Fancy add-source dialog

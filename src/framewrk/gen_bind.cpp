@@ -6,8 +6,8 @@
 // $Header: r:/t2repos/thief2/src/framewrk/gen_bind.cpp,v 1.30 2000/03/09 22:58:23 adurant Exp $
 
 //general binds processing
-#include <windows.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>    // for fabs
 
 #include <event.h>
@@ -26,9 +26,13 @@
 #include <plyrmode.h>
 #include <plyrspd.h>
 #include <playrobj.h>
+#include <platform_services.h>
 #include <mprintf.h>
 
 #include <drk_bind.h>
+#ifdef THIEF2_GAME
+#include <drkinvui.h>
+#endif
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -67,7 +71,7 @@ void InstallIBHandler (ulong context, ulong events, BOOL poll)
    uiSlab* slabptr;
    uiGetCurrentSlab(&slabptr);
    g_root = slabptr->creg;
-   
+
    uiInstallRegionHandler (g_root, events, reinterpret_cast<uiHandlerProc>(inpbnd_handler), NULL, &g_cookie);
    g_pInputBinder->SetContext (context,poll);
    // we need to poll here because SetContext can early exit with polling
@@ -103,9 +107,33 @@ static BOOL g_freelookon;
 
 BOOL  g_joystickActive = FALSE;
 float g_joystickSensitivity = 1.0;
-float g_joystickDeadzone = 0.05;
+float g_joystickDeadzone = 0.05f;
 float g_rudderSensitivity = 1.0;
-float g_rudderDeadzone = 0.05;
+float g_rudderDeadzone = 0.05f;
+static float g_gamepadLookSensitivity = 1.0f;
+static float g_gamepadLookTurnSeconds = 1.0f;
+static int g_gamepadLookInvertY = 0;
+static float g_gamepadRunThreshold = 0.78f;
+static float g_gamepadFastRunThreshold = 0.35f;
+static float g_gamepadLeanThreshold = 0.55f;
+static float g_gamepadForwardAxis = 0.0f;
+static float g_gamepadSidestepAxis = 0.0f;
+static float g_gamepadTurnAxis = 0.0f;
+static float g_gamepadLookAxis = 0.0f;
+static BOOL g_gamepadFastMode = FALSE;
+static BOOL g_gamepadForceSneak = FALSE;
+static BOOL g_gamepadLeanModifier = FALSE;
+static int g_gamepadLeanDirection = 0;
+static ulong g_gamepadLowMagnitudeSince = 0;
+
+static char *LeanLeftProc(const char *, const char *, BOOL);
+static char *LeanRightProc(const char *, const char *, BOOL);
+static char *LeanForwardProc(const char *, const char *, BOOL);
+
+static float parse_float(const char *value)
+{
+   return strtof(value, NULL);
+}
 
 static void GetStates ()
 {
@@ -123,9 +151,9 @@ General binding callbacks
 static char *ForwardProc (const char *, const char *val, BOOL)
 {
 
-   //   mprintf("Forward %g %d\n",atof(val),atoi(val));
+   //   mprintf("Forward %g %d\n",parse_float(val),atoi(val));
    
-   float f = atof (val);
+   float f = parse_float(val);
    if ((f != 0) && (GetPlayerMode() == kPM_Dead))
       return NULL;
 
@@ -197,7 +225,7 @@ static char *ForwardProc (const char *, const char *val, BOOL)
 static char *JoyForwardProc (const char *, const char *val, BOOL)
 {
 
-   float f = atof (val);
+   float f = parse_float(val);
    if ((f != 0) && (GetPlayerMode() == kPM_Dead))
       return NULL;
 
@@ -230,9 +258,156 @@ static char *JoyForwardProc (const char *, const char *val, BOOL)
    return NULL;
 }
 
+static void UpdateGamepadMovement(void)
+{
+   float magnitude = (float)sqrt((double)(g_gamepadForwardAxis * g_gamepadForwardAxis +
+      g_gamepadSidestepAxis * g_gamepadSidestepAxis));
+   if (magnitude > 1.0f)
+      magnitude = 1.0f;
+
+#ifdef THIEF2_GAME
+   if (InvUIRadialActive())
+   {
+      SetForwardState(0.0f);
+      SetSidestepState(0.0f);
+      InvUIRadialSetStick(0, g_gamepadSidestepAxis,
+                         g_gamepadForwardAxis);
+      UpdatePlayerSpeed();
+      return;
+   }
+#endif
+
+   if (g_gamepadLeanModifier)
+   {
+      int direction = 0;
+      const float absX = (float)fabs(g_gamepadSidestepAxis);
+      if (g_gamepadForwardAxis >= g_gamepadLeanThreshold &&
+          g_gamepadForwardAxis >= absX * 0.75f)
+         direction = 3;
+      else if (g_gamepadSidestepAxis <= -g_gamepadLeanThreshold)
+         direction = 1;
+      else if (g_gamepadSidestepAxis >= g_gamepadLeanThreshold)
+         direction = 2;
+
+      if (direction != g_gamepadLeanDirection)
+      {
+         if (g_gamepadLeanDirection == 1)
+            LeanLeftProc(NULL, "0", FALSE);
+         else if (g_gamepadLeanDirection == 2)
+            LeanRightProc(NULL, "0", FALSE);
+         else if (g_gamepadLeanDirection == 3)
+            LeanForwardProc(NULL, "0", FALSE);
+         g_gamepadLeanDirection = direction;
+         if (direction == 1)
+            LeanLeftProc(NULL, "1", FALSE);
+         else if (direction == 2)
+            LeanRightProc(NULL, "1", FALSE);
+         else if (direction == 3)
+            LeanForwardProc(NULL, "1", FALSE);
+      }
+      SetForwardState(0.0f);
+      SetSidestepState(0.0f);
+      UpdatePlayerSpeed();
+      return;
+   }
+
+   if (magnitude >= 0.98f)
+      g_gamepadFastMode = TRUE;
+
+   const float runThreshold = g_gamepadFastMode
+      ? g_gamepadFastRunThreshold : g_gamepadRunThreshold;
+   const BOOL forceSneak = g_gamepadForceSneak || (gcreepon && !grunpref);
+
+   float speed = 0.0f;
+   if (magnitude > 0.0f)
+   {
+      if (forceSneak)
+         speed = NORMSPEED * magnitude;
+      else if (magnitude <= runThreshold)
+         speed = NORMSPEED * magnitude / runThreshold;
+      else
+         speed = NORMSPEED + (FASTSPEED - NORMSPEED) *
+            (magnitude - runThreshold) / (1.0f - runThreshold);
+   }
+
+   const float directionScale = magnitude > 0.0f ? speed / magnitude : 0.0f;
+   const BOOL automaticRun = !forceSneak && speed > NORMSPEED;
+   const BOOL modifierRun = !forceSneak && grunon && grunpref;
+
+   // FASTSPEED and NORMSPEED are doubled binding-command values; ForwardProc
+   // converts them to player states before applying the faster toggle.  Do
+   // the same for the analog curve so full-stick movement matches keyboard
+   // run instead of applying both the doubled value and the run multiplier.
+   // Force-sneak already gets its conversion from the slower toggle below.
+   const float playerStateScale = directionScale * (forceSneak ? 1.0f : 0.5f);
+   float forwardState = g_gamepadForwardAxis * playerStateScale;
+   if (automaticRun)
+      forwardState *= 0.5f;
+   SetForwardState(forwardState);
+   SetSidestepState(g_gamepadSidestepAxis * playerStateScale);
+
+   // Full stick deflection runs automatically.  Clicking the left stick is
+   // also retained as a run modifier for partial deflection.
+   gtogglefast = TRUE;
+   if (forceSneak)
+   {
+      SetSpeedToggleMeansFaster(FALSE);
+      SetSpeedToggleState(TRUE);
+   }
+   else
+   {
+      SetSpeedToggleMeansFaster(TRUE);
+      SetSpeedToggleState(automaticRun || modifierRun);
+   }
+   UpdatePlayerSpeed();
+}
+
+static char *GamepadForwardProc(const char *, const char *val, BOOL)
+{
+   float f = parse_float(val);
+   if ((f != 0.0f) && (GetPlayerMode() == kPM_Dead || gNoMoveKeys))
+      return NULL;
+
+   g_gamepadForwardAxis = f;
+   UpdateGamepadMovement();
+   return NULL;
+}
+
+static char *GamepadSpeedToggleProc(const char *, const char *, BOOL)
+{
+   g_gamepadFastMode = !g_gamepadFastMode;
+   g_gamepadLowMagnitudeSince = 0;
+   UpdateGamepadMovement();
+   return NULL;
+}
+
+static char *GamepadForceSneakProc(const char *, const char *, BOOL)
+{
+   g_gamepadForceSneak = !g_gamepadForceSneak;
+   UpdateGamepadMovement();
+   return NULL;
+}
+
+static char *GamepadLeanProc(const char *, const char *val, BOOL)
+{
+   g_gamepadLeanModifier = parse_float(val) != 0.0f;
+   if (!g_gamepadLeanModifier && g_gamepadLeanDirection)
+   {
+      if (g_gamepadLeanDirection == 1)
+         LeanLeftProc(NULL, "0", FALSE);
+      else if (g_gamepadLeanDirection == 2)
+         LeanRightProc(NULL, "0", FALSE);
+      else
+         LeanForwardProc(NULL, "0", FALSE);
+      g_gamepadLeanDirection = 0;
+   }
+   UpdateGamepadMovement();
+   return NULL;
+}
+
 static char *TurnProc (const char *, const char *val, BOOL)
 {
-   //   mprintf("Turn %g %d\n",atof(val),atoi(val));
+   //   mprintf("Turn %g %d\n",parse_float(val),atoi(val));
    
    if (gNoLookAround) {
       return NULL;
@@ -242,7 +417,7 @@ static char *TurnProc (const char *, const char *val, BOOL)
    if ((GetForceSidestepState() && gNoMoveKeys))
      return NULL;
 
-   float f = atof (val);
+   float f = parse_float(val);
    if ((f != 0) && (GetPlayerMode() == kPM_Dead))
       return NULL;
 
@@ -253,7 +428,7 @@ static char *TurnProc (const char *, const char *val, BOOL)
 
 static char *JoyTurnProc (const char *, const char *val, BOOL)
 {
-   float f = atof (val);
+   float f = parse_float(val);
 
    if ((f != 0) && (GetPlayerMode() == kPM_Dead))
       return NULL;
@@ -281,7 +456,7 @@ static char *JoyTurnProc (const char *, const char *val, BOOL)
 
 static char *SidestepProc (const char *, const char *val, BOOL)
 {
-   float f = atof (val);
+   float f = parse_float(val);
 
    // support for special movement-lockout mode
    if ((f!=0) && (gNoMoveKeys))
@@ -297,7 +472,7 @@ static char *SidestepProc (const char *, const char *val, BOOL)
 
 static char *JoySidestepProc (const char *, const char *val, BOOL)
 {
-   float f = atof (val);
+   float f = parse_float(val);
 
    // support for special movement-lockout mode
    if ((f != 0) && (gNoMoveKeys))
@@ -326,11 +501,22 @@ static char *JoySidestepProc (const char *, const char *val, BOOL)
    return NULL;
 }
 
+static char *GamepadSidestepProc(const char *, const char *val, BOOL)
+{
+   float f = parse_float(val);
+   if ((f != 0.0f) && (GetPlayerMode() == kPM_Dead || gNoMoveKeys))
+      return NULL;
+
+   g_gamepadSidestepAxis = f;
+   UpdateGamepadMovement();
+   return NULL;
+}
+
 static char *JoyXAxisProc (const char *dummy1, const char *val, BOOL dummy2)
 {
-   BOOL joy_rotate = ((atof (g_pInputBinder->ProcessCmd ("echo $joy_rotate")) == 0.0) ? FALSE : TRUE)
+   BOOL joy_rotate = ((parse_float(g_pInputBinder->ProcessCmd ("echo $joy_rotate")) == 0.0) ? FALSE : TRUE)
       && !GetForceSidestepState();
-   float f = atof( val );
+   float f = parse_float( val );
 
    BOOL isZero = fabs(f) < g_joystickDeadzone;
    static int lastJoyRotate = -1;
@@ -372,7 +558,7 @@ static char *CameraHomeProc (const char *, const char *val, BOOL)
 static char *FlyProc (const char *, const char *val, BOOL)
 {
 #ifdef PLAYTEST
-   double dval = atof (val);
+   float dval = parse_float(val);
    if ((dval != 0) &&(GetPlayerMode() == kPM_Dead))
       return NULL;
 
@@ -399,12 +585,12 @@ static char *MTurnProc (const char *, const char *val, BOOL)
    if (gNoLookAround || GetPlayerMode() == kPM_Dead)
       return NULL;
 
-   BOOL freelook = (atof (g_pInputBinder->ProcessCmd ("echo $freelook")) == 0.0) ? FALSE : TRUE;
+   BOOL freelook = (parse_float(g_pInputBinder->ProcessCmd ("echo $freelook")) == 0.0) ? FALSE : TRUE;
 
    if (g_freelookon ^ freelook) 
    {
-      double dval = atof (val);
-      double sens = atof (g_pInputBinder->ProcessCmd ("echo $mouse_sensitivity"));
+      float dval = parse_float(val);
+      float sens = parse_float(g_pInputBinder->ProcessCmd ("echo $mouse_sensitivity"));
       headmoveSetRelPosX (dval * sens);
    }
 
@@ -417,16 +603,16 @@ static char *MLookProc (const char *, const char *val, BOOL)
    if (gNoLookAround || GetPlayerMode() == kPM_Dead)
       return NULL;
 
-   BOOL freelook = (atof (g_pInputBinder->ProcessCmd ("echo $freelook")) == 0.0) ? FALSE : TRUE;
+   BOOL freelook = (parse_float(g_pInputBinder->ProcessCmd ("echo $freelook")) == 0.0) ? FALSE : TRUE;
 
    //mouse looking
    if (g_freelookon ^ freelook) 
    {
-      double dval = atof (val);
-      double sens = atof (g_pInputBinder->ProcessCmd ("echo $mouse_sensitivity"));
+      float dval = parse_float(val);
+      float sens = parse_float(g_pInputBinder->ProcessCmd ("echo $mouse_sensitivity"));
 
       const char *inverted = g_pInputBinder->ProcessCmd ("echo $mouse_invert");
-      if (atof (inverted) == 0.0)
+      if (parse_float(inverted) == 0.0)
          headmoveSetRelPosY (-dval * sens);//non-inverted
       else
          headmoveSetRelPosY (dval * sens);//inverted
@@ -439,7 +625,7 @@ static char *LookProc(const char *, const char *val, BOOL)
    if (GetPlayerMode() == kPM_Dead)
       return NULL;
    
-   float dval = atof(val);
+   float dval = parse_float(val);
    float rot_scale = GetRotSpeedScale();
    if (dval == 0.0)
         headmoveKeyboardTiltReset();
@@ -453,7 +639,7 @@ static char *LookProc(const char *, const char *val, BOOL)
 
 static char *LookUpProc (const char *, const char *val, BOOL)
 {
-   double dval = atof (val);
+   float dval = parse_float(val);
    if ((dval != 0) && (GetPlayerMode() == kPM_Dead))
       return NULL;
 
@@ -470,7 +656,7 @@ static char *LookUpProc (const char *, const char *val, BOOL)
 
 static char *LookDownProc (const char *, const char *val, BOOL)
 {
-   double dval = atof (val);
+   float dval = parse_float(val);
    if ((dval != 0) && (GetPlayerMode() == kPM_Dead))
       return NULL;
 
@@ -499,7 +685,7 @@ static char *LookCenterProc (const char *, const char *, BOOL)
 static char *TiltLeftProc (const char *, const char *val, BOOL)
 {
 
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval != 0) && (gNoMoveKeys))
@@ -522,7 +708,7 @@ static char *TiltLeftProc (const char *, const char *val, BOOL)
 static char *TiltRightProc (const char *, const char *val, BOOL)
 {
 
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval!=0) && (gNoMoveKeys))
@@ -544,7 +730,7 @@ static char *TiltRightProc (const char *, const char *val, BOOL)
 
 static char *LeanLeftProc (const char *, const char *val, BOOL)
 {
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval != 0) && (gNoMoveKeys))
@@ -586,7 +772,7 @@ static char *LeanLeftProc (const char *, const char *val, BOOL)
 
 static char *LeanRightProc (const char *, const char *val, BOOL)
 {
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval != 0) && (gNoMoveKeys))
@@ -629,7 +815,7 @@ static char *LeanRightProc (const char *, const char *val, BOOL)
 static char *LeanForwardProc (const char *, const char *val, BOOL)
 {
 
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval != 0) && (gNoMoveKeys))
@@ -675,7 +861,7 @@ static char *JumpProc (const char *, const char *val, BOOL)
    if (gNoMoveKeys)
       return(NULL);
 
-   double dval = atof (val);
+   float dval = parse_float(val);
    if ((dval != 0) && (GetPlayerMode() == kPM_Dead))
       return NULL;
 
@@ -700,7 +886,7 @@ static char *CrouchProc (const char *, const char *val, BOOL)
    if (gNoMoveKeys)
       return(NULL);
 
-   double dval = atof (val);
+   float dval = parse_float(val);
    if ((dval != 0) && (GetPlayerMode() == kPM_Dead))
       return NULL;
 
@@ -716,7 +902,7 @@ static char *CrouchProc (const char *, const char *val, BOOL)
 
 static char *CrouchHoldProc (const char *, const char *val, BOOL)
 {
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval == 1.0) && (gNoMoveKeys))
@@ -744,11 +930,11 @@ static char *FreelookOnProc (const char *, const char *val, BOOL)
    if (GetPlayerMode() == kPM_Dead)
       return NULL;
 
-   double dval = atof (val);
+   float dval = parse_float(val);
    if (dval == 0.0) {
       g_freelookon = FALSE;
 
-      if (atof (g_pInputBinder->ProcessCmd ("echo $lookspring")) != 0.0) 
+      if (parse_float(g_pInputBinder->ProcessCmd ("echo $lookspring")) != 0.0)
       {
          LookCenterProc (NULL, NULL, 0);
       }
@@ -766,7 +952,7 @@ static char *FreelookOnProc (const char *, const char *val, BOOL)
 
 static char *CreepOnProc (const char *, const char *val, BOOL)
 {
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval != 0) && (gNoMoveKeys))
@@ -816,7 +1002,7 @@ static char *CreepOnProc (const char *, const char *val, BOOL)
 
 static char *RunOnProc (const char *, const char *val, BOOL)
 {
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval != 0) && (gNoMoveKeys))
@@ -875,7 +1061,7 @@ static char *RunOnProc (const char *, const char *val, BOOL)
 static char *SlideOnProc (const char *, const char *val, BOOL)
 {
 
-   double dval = atof (val);
+   float dval = parse_float(val);
 
    // support for special movement-lockout mode
    if ((dval != 0) && (gNoMoveKeys))
@@ -900,7 +1086,7 @@ static char *RudderTurnProc (const char *, const char *val, BOOL)
    if (!g_joystickActive)
       return NULL;
 
-   BOOL freelook = (atof (g_pInputBinder->ProcessCmd ("echo $freelook")) == 0.0) ? FALSE : TRUE;
+   BOOL freelook = (parse_float(g_pInputBinder->ProcessCmd ("echo $freelook")) == 0.0) ? FALSE : TRUE;
 
    if (g_freelookon ^ freelook) 
    {
@@ -908,7 +1094,7 @@ static char *RudderTurnProc (const char *, const char *val, BOOL)
       static float lastVal = 1.0; 
       BOOL isNoise;
 
-      fval = atof(val);
+      fval = parse_float(val);
       // ignore small values around zero (noise), but let a 0 through if the
       //  the previous value was nonzero, to avoid leaving view slowly turning
       isNoise = fabs(fval) < g_rudderDeadzone;
@@ -916,13 +1102,127 @@ static char *RudderTurnProc (const char *, const char *val, BOOL)
          if ( isNoise ) {
             fval = 0.0;
          }
-#define RUDDER_SENSITIVITY_SCALER 200.0
+#define RUDDER_SENSITIVITY_SCALER 200.0f
          headmoveSetRelPosX (fval * RUDDER_SENSITIVITY_SCALER * g_rudderSensitivity);
          lastVal = fval;
       }
    }
 
    return NULL;
+}
+
+static char *GamepadTurnProc(const char *, const char *val, BOOL)
+{
+   const float value = parse_float(val);
+   g_gamepadTurnAxis = value;
+#ifdef THIEF2_GAME
+   if (InvUIRadialActive())
+   {
+      headmoveSetGamepadTurn(0.0f);
+      InvUIRadialSetStick(1, g_gamepadTurnAxis, g_gamepadLookAxis);
+      return NULL;
+   }
+#endif
+   if (gNoLookAround || GetPlayerMode() == kPM_Dead)
+   {
+      headmoveSetGamepadTurn(0.0f);
+      return NULL;
+   }
+
+   BOOL freelook = (parse_float(g_pInputBinder->ProcessCmd("echo $freelook")) != 0.0);
+   if (g_freelookon ^ freelook)
+   {
+      headmoveSetGamepadTurn(value * g_gamepadLookSensitivity /
+         g_gamepadLookTurnSeconds);
+      if (value != 0.0f)
+         headmoveTouch();
+   }
+   else
+      headmoveSetGamepadTurn(0.0f);
+   return NULL;
+}
+
+static char *GamepadLookProc(const char *, const char *val, BOOL)
+{
+   const float axis = parse_float(val);
+   g_gamepadLookAxis = axis;
+#ifdef THIEF2_GAME
+   if (InvUIRadialActive())
+   {
+      headmoveSetGamepadLook(0.0f);
+      InvUIRadialSetStick(1, g_gamepadTurnAxis, g_gamepadLookAxis);
+      return NULL;
+   }
+#endif
+   if (gNoLookAround || GetPlayerMode() == kPM_Dead)
+   {
+      headmoveSetGamepadLook(0.0f);
+      return NULL;
+   }
+
+   BOOL freelook = (parse_float(g_pInputBinder->ProcessCmd("echo $freelook")) != 0.0);
+   if (g_freelookon ^ freelook)
+   {
+      // The binding layer's Y axis uses screen-motion polarity, while the
+      // gamepad backends normalize stick-up as positive.  Match normal mouse
+      // look by reversing that value unless the explicit invert option is on.
+      const float value = axis * g_gamepadLookSensitivity /
+         g_gamepadLookTurnSeconds;
+      headmoveSetGamepadLook(g_gamepadLookInvertY ? value : -value);
+      if (axis != 0.0f)
+         headmoveTouch();
+   }
+   else
+      headmoveSetGamepadLook(0.0f);
+   return NULL;
+}
+
+#ifdef THIEF2_GAME
+static char *GamepadRadialProc(const char *, const char *val, BOOL)
+{
+   const BOOL active = parse_float(val) != 0.0f;
+   InvUIRadialSetActive(active);
+   if (active)
+   {
+      SetForwardState(0.0f);
+      SetSidestepState(0.0f);
+      headmoveSetGamepadTurn(0.0f);
+      headmoveSetGamepadLook(0.0f);
+      InvUIRadialSetStick(0, g_gamepadSidestepAxis,
+                         g_gamepadForwardAxis);
+      InvUIRadialSetStick(1, g_gamepadTurnAxis, g_gamepadLookAxis);
+   }
+   else
+   {
+      UpdateGamepadMovement();
+      char value[32];
+      sprintf(value, "%f", g_gamepadTurnAxis);
+      GamepadTurnProc(NULL, value, FALSE);
+      sprintf(value, "%f", g_gamepadLookAxis);
+      GamepadLookProc(NULL, value, FALSE);
+   }
+   return NULL;
+}
+#endif
+
+void GamepadBindingFrame(void)
+{
+   const float magnitude = (float)sqrt((double)(
+      g_gamepadForwardAxis * g_gamepadForwardAxis +
+      g_gamepadSidestepAxis * g_gamepadSidestepAxis));
+   if (magnitude < 0.30f)
+   {
+      const ulong now = PlatformMilliseconds();
+      if (!g_gamepadLowMagnitudeSince)
+         g_gamepadLowMagnitudeSince = now;
+      else if (g_gamepadFastMode && now - g_gamepadLowMagnitudeSince >= 1000)
+      {
+         g_gamepadFastMode = FALSE;
+         UpdateGamepadMovement();
+      }
+   }
+   else
+      g_gamepadLowMagnitudeSince = 0;
 }
 
 
@@ -946,6 +1246,16 @@ IB_var g_gen_ib_vars[] = {
    {"joysidestep", "0", 0, JoySidestepProc, IBAddActiveAgg, NULL},
    {"joyturn", "0", 0, JoyTurnProc, IBAddActiveAgg, NULL},
    {"rudderturn", "0", 0, RudderTurnProc, NULL, NULL},
+   {"gamepad_forward", "0", 0, GamepadForwardProc, IBAddActiveAgg, NULL},
+   {"gamepad_sidestep", "0", 0, GamepadSidestepProc, IBAddActiveAgg, NULL},
+   {"gamepad_turn", "0", 0, GamepadTurnProc, NULL, NULL},
+   {"gamepad_look", "0", 0, GamepadLookProc, NULL, NULL},
+   {"gamepad_speed_toggle", "0", 0, GamepadSpeedToggleProc, NULL, NULL},
+   {"gamepad_force_sneak", "0", 0, GamepadForceSneakProc, NULL, NULL},
+   {"gamepad_lean", "0", 0, GamepadLeanProc, NULL, NULL},
+#ifdef THIEF2_GAME
+   {"gamepad_radial", "0", 0, GamepadRadialProc, NULL, NULL},
+#endif
 
    {"mturn", "0", 0, MTurnProc, NULL, NULL},
    {"mlook", "0", 0, MLookProc, NULL, NULL},
@@ -1031,7 +1341,7 @@ IB_var g_gen_ib_vars[] = {
    {"rudder_sensitivity", "1.0", 0, DummyProc, NULL, NULL},
    {"rudder_deadzone", "0.05", 0, DummyProc, NULL, NULL},
 
-   NULL
+   {}
 };
 
 
@@ -1043,35 +1353,18 @@ and pass them along to the game's command system.
 */
 char *GenericBind (const char *cmd, const char *val, BOOL already_down)
 {
-   CommandExecute (cmd);
-   return NULL;
+   return CommandExecute (cmd);
 }
 
 
 static uchar GetCountryCode()
 {
-   unsigned short WhichLang;
-   WhichLang = PRIMARYLANGID(GetSystemDefaultLangID());
-
-   switch(WhichLang) {
-      case LANG_ENGLISH:
-         return KBC_US;
-         break;
-      case LANG_FRENCH:
-         return KBC_FR;
-         break;
-      case LANG_GERMAN:
-         return KBC_GR;
-         break;
-      case LANG_ITALIAN:
-         return KBC_IT;
-         break;
-      case LANG_SPANISH:
-         return KBC_SP;
-         break;
-      default:
-         return KBC_US;
-   }
+   const char *language = PlatformGetLanguageCode();
+   if (!strcmp(language, "fr")) return KBC_FR;
+   if (!strcmp(language, "de")) return KBC_GR;
+   if (!strcmp(language, "it")) return KBC_IT;
+   if (!strcmp(language, "es")) return KBC_SP;
+   return KBC_US;
 }
 
 static void SetCountryKeyboard()
@@ -1080,6 +1373,237 @@ static void SetCountryKeyboard()
    config_get_int("kb_country",&lang);
    kb_set_country(lang);
 }
+
+#ifdef EDITOR
+struct sDefaultEditorBind
+{
+   const char *control;
+   const char *command;
+};
+
+// Retail Thief 2 installations do not normally contain the editor's
+// default.bnd.  Without it DromEd starts with an empty editor context, which
+// removes even the basic camera controls.  Keep the original editor defaults
+// available as a built-in fallback; an installed default.bnd still wins, and
+// edit-prefixed entries in user.bnd are loaded afterward as overrides.
+static void InstallDefaultEditorBindings()
+{
+   static const sDefaultEditorBind binds[] = {
+      {"f1", "show_command_help"},
+      {"f2", "cycle_mode"},
+      {"f3", "toggle_3d"},
+      {"f10", "mission_loop"},
+      {"a", "cam_rotate 2"},
+      {"c", "cam_slew 4"},
+      {"d", "cam_rotate 5"},
+      {"e", "cam_slew 5"},
+      {"f", "cam_level"},
+      {"h", "set_medium 0"},
+      {"j", "set_medium 1"},
+      {"k", "set_medium 2"},
+      {"l", "set_medium 3"},
+      {"m", "cycle_media 1"},
+      {"q", "cam_slew 2"},
+      {"r", "cam_rotate 4"},
+      {"s", "cam_slew 3"},
+      {"t", "cycle_tex 1"},
+      {"v", "cam_rotate 1"},
+      {"w", "cam_slew 0"},
+      {"x", "cam_slew 3"},
+      {"z", "cam_slew 1"},
+      {"o", "solo_toggle"},
+      {"tab", "cycle_brush 1"},
+      {"del", "delete_brush"},
+      {"end", "vBrush_EOT"},
+      {"ins", "insert_brush"},
+      {"keypad_end", "num_scroll 1"},
+      {"keypad_down", "num_scroll 2"},
+      {"keypad_pgdn", "num_scroll 3"},
+      {"keypad_left", "num_scroll 4"},
+      {"keypad_right", "num_scroll 6"},
+      {"keypad_home", "num_scroll 7"},
+      {"keypad_up", "num_scroll 8"},
+      {"keypad_pgup", "num_scroll 9"},
+      {"home", "move_game_camera 0.0,0.0,0.0"},
+      {"print_screen", "screen_dump"},
+      {":", "edit_command"},
+      {"1", "cam_rotate 3"},
+      {"2", "cam_unroll"},
+      {"3", "cam_rotate 0"},
+      {"+", "zoom_all 0.5"},
+      {",", "cycle_face -1"},
+      {"-", "zoom_all 2.0"},
+      {".", "cycle_face 1"},
+      {"/", "cam_spotlight"},
+      {"<", "global_scale 0"},
+      {"=", "zoom_all 0.5"},
+      {">", "global_scale 1"},
+      {"[", "cycle_view 0"},
+      {"]", "cycle_view 1"},
+
+      {"d+shift", "store_group"},
+      {"m+shift", "cycle_media -1"},
+      {"t+shift", "cycle_tex -1"},
+      {"s+shift", "set_grid"},
+      {"ins+shift", "brush_to_room 5"},
+      {"tab+shift", "cycle_brush -1"},
+      {"keypad_plus+shift", "brush_translate 5"},
+      {"keypad_minus+shift", "brush_translate 2"},
+      {"keypad_down+shift", "brush_translate 0"},
+      {"keypad_left+shift", "brush_translate 4"},
+      {"keypad_right+shift", "brush_translate 1"},
+      {"keypad_up+shift", "brush_translate 3"},
+
+      {"f1+alt", "mono_debug"},
+      {"b+alt", "edit_command save_group"},
+      {"c+alt", "edit_command clear_world"},
+      {"e+alt", "edit_mode"},
+      {"g+alt", "game_mode"},
+      {"l+alt", "edit_command load_file"},
+      {"o+alt", "edit_command edit_obj"},
+      {"p+alt", "auto_portalize"},
+      {"q+alt", "foot_sounds"},
+      {"r+alt", "reset_brush"},
+      {"s+alt", "eval world_file edit_command save_mission %s"},
+      {"t+alt", "texture_pal"},
+      {"v+alt", "edit_command load_group"},
+      {"space+alt", "quick_resynch"},
+      {"keypad_plus+alt", "brush_rotate 2"},
+      {"keypad_minus+alt", "brush_rotate 5"},
+      {"keypad_down+alt", "brush_rotate 0"},
+      {"keypad_left+alt", "brush_rotate 4"},
+      {"keypad_right+alt", "brush_rotate 1"},
+      {"keypad_up+alt", "brush_rotate 3"},
+      {"1+alt", "game_mode 320,240"},
+      {"2+alt", "game_mode 400,300"},
+      {"3+alt", "game_mode 512,384"},
+      {"4+alt", "game_mode 640,480"},
+      {"5+alt", "game_mode 800,600"},
+      {"6+alt", "show_poly_edges"},
+      {"7+alt", "show_all_edges"},
+      {"8+alt", "show_cell"},
+      {"9+alt", "show_mip"},
+      {"0+alt", "show_poly"},
+      {"?+alt", "render_info 30"},
+      {"++alt", "grid_scale 0.5"},
+      {"-+alt", "grid_scale 2.0"},
+      {"/+alt", "render_info 10"},
+      {"=+alt", "grid_scale 0.5"},
+      {"`+shift+alt", "screen_dump"},
+
+      {"d+ctrl", "dissolve_group"},
+      {"g+ctrl", "grid_toggle"},
+      {"l+ctrl", "raycast_light"},
+      {"o+ctrl", "lit_obj_toggle"},
+      {"p+ctrl", "history_cmd -1"},
+      {"q+ctrl", "brush_relative"},
+      {"r+ctrl", "relight_level 0"},
+      {"u+ctrl", "undo"},
+      {"w+ctrl", "cycle_group 0"},
+      {"x+ctrl", "xmouse"},
+      {"z+ctrl", "undo"},
+      {"space+ctrl", "redraw_all"},
+      {"ins+ctrl", "new_brush 1"},
+      {"keypad_plus+ctrl", "brush_stretch 5"},
+      {"keypad_minus+ctrl", "brush_stretch 2"},
+      {"keypad_down+ctrl", "brush_stretch 3"},
+      {"keypad_left+ctrl", "brush_stretch 4"},
+      {"keypad_right+ctrl", "brush_stretch 1"},
+      {"keypad_up+ctrl", "brush_stretch 0"},
+      {"tab+ctrl", "cycle_context 1"},
+      {"7+ctrl", "brush_color 1"},
+      {"8+ctrl", "brush_color 2"},
+      {"9+ctrl", "brush_color 3"},
+
+      {"d+alt+shift", "hello_debugger"},
+      {"e+alt+shift", "draw_paths"},
+      {"f+alt+shift", "follow_test"},
+      {"l+alt+shift", "draw_links"},
+      {"m+alt+shift", "merge_node"},
+      {"n+alt+shift", "patrol_test 2"},
+      {"o+alt+shift", "edit_command obj_tree"},
+      {"p+alt+shift", "ai_build_path_database"},
+      {"q+alt+shift", "draw_ais"},
+      {"r+alt+shift", "draw_path_cells"},
+      {"s+alt+shift", "show_stats"},
+      {"t+alt+shift", "draw_path_cell_links"},
+      {"u+alt+shift", "path_test"},
+      {"w+alt+shift", "draw_move_suggestions"},
+      {"x+alt+shift", "quit_game"},
+      {"y+alt+shift", "create_ai"},
+
+      {"p+ctrl+shift", "portalize"},
+      {"u+ctrl+shift", "redo"},
+      {"w+ctrl+shift", "cycle_group 1"},
+      {"tab+ctrl+shift", "cycle_context -1"},
+
+      {"f1+alt+ctrl", "edit_mode 640,480"},
+      {"f2+alt+ctrl", "edit_mode 800,600"},
+      {"f3+alt+ctrl", "edit_mode 1024,768"},
+      {"d+alt+ctrl", "dump_cmds cmd.txt"},
+      {"o+alt+ctrl", "rend_name_toggle 23"},
+      {"w+alt+ctrl", "cycle_group -1"},
+      {"p+alt+ctrl+shift", "fake_physics"},
+      {"s+alt+ctrl+shift", "stats_full"},
+      {"t+alt+ctrl+shift", "time_stats"},
+
+      // Original room-acoustics editing commands.  They remain visible even
+      // though the current mixer does not yet implement the EAX effect.
+      {"f1+ctrl", "set_room_type 1"},
+      {"f2+ctrl", "set_room_type 2"},
+      {"f3+ctrl", "set_room_type 3"},
+      {"f4+ctrl", "set_room_type 4"},
+      {"f5+ctrl", "set_room_type 5"},
+      {"f6+ctrl", "set_room_type 6"},
+      {"f7+ctrl", "set_room_type 7"},
+      {"f8+ctrl", "set_room_type 8"},
+      {"f9+ctrl", "set_room_type 9"},
+      {"f10+ctrl", "set_room_type 10"},
+      {"f11+ctrl", "set_room_type 11"},
+      {"f12+ctrl", "set_room_type 21"},
+      {"s+ctrl", "set_room_type 15"},
+      {"a+ctrl", "next_room"},
+   };
+
+   ulong oldContext;
+   g_pInputBinder->GetContext(&oldContext);
+   if (oldContext != HK_BRUSH_EDIT)
+      g_pInputBinder->SetContext(HK_BRUSH_EDIT, TRUE);
+
+   for (size_t i = 0; i < sizeof(binds) / sizeof(binds[0]); ++i)
+      g_pInputBinder->Bind(binds[i].control, binds[i].command);
+
+   if (oldContext != HK_BRUSH_EDIT)
+      g_pInputBinder->SetContext(oldContext, TRUE);
+}
+#endif
+
+#if defined(EDITOR) || defined(THIEF2_GAME)
+static void InstallDefaultConsoleBinding(ulong context)
+{
+   ulong old_context;
+   static const char* controls[] = { ":", ";" };
+   size_t i;
+
+   g_pInputBinder->GetContext(&old_context);
+   if (old_context != context)
+      g_pInputBinder->SetContext(context, TRUE);
+
+   // Use both shifted and unshifted forms of DromEd's historical console key
+   // consistently in the editor, play preview, and retail game. Never
+   // overwrite an explicit command assigned to either form.
+   for (i = 0; i < sizeof(controls) / sizeof(controls[0]); ++i)
+   {
+      char binding[128] = "";
+      g_pInputBinder->QueryBind(controls[i], binding, sizeof(binding));
+      if (!binding[0])
+         g_pInputBinder->Bind(controls[i], "edit_command");
+   }
+
+   if (old_context != context)
+      g_pInputBinder->SetContext(old_context, TRUE);
+}
+#endif
 
 void InitIBVars ()
 {
@@ -1101,7 +1625,9 @@ void InitIBVars ()
    char gamebnd_path[256];
    Verify (find_file_in_config_path (gamebnd_path, gamebnd, "include_path")); 
    char def_path[256];
-   Verify (find_file_in_config_path (def_path, "default.bnd", "include_path"));
+   BOOL have_default_binds = find_file_in_config_path (def_path, "default.bnd", "include_path");
+   if (!have_default_binds)
+      strcpy(def_path, gamebnd_path);
    
    //creates the needed contexts
 #ifdef EDITOR
@@ -1117,7 +1643,10 @@ void InitIBVars ()
 #ifdef EDITOR
    //input binder will recognize brush edit as editor mode
    g_pInputBinder->LoadBndFile (def_path, HK_BRUSH_EDIT, "edit");
+   if (!have_default_binds)
+      InstallDefaultEditorBindings();
    g_pInputBinder->LoadBndFile ("user.bnd", HK_BRUSH_EDIT, "edit");
+   InstallDefaultConsoleBinding(HK_BRUSH_EDIT);
 #endif //EDITOR
    // if user.bnd exists, load it, else load the game specific bnd file
    FILE *pFile = fopen( "user.bnd", "r" );
@@ -1133,9 +1662,120 @@ void InitIBVars ()
       g_pInputBinder->LoadBndFile (gamebnd_path, HK_GAME2_MODE, "game2");
    }
 
-   //the command context is for when the command box is open. there are no binds in it,
-   //so that no key events are eaten by the raw handler
+#if defined(EDITOR) || defined(THIEF2_GAME)
+   InstallDefaultConsoleBinding(HK_GAME_MODE);
+#endif
+
+#ifdef THIEF2_GAME
+   int gamepad_enabled = 1;
+   config_get_int("gamepad_enable", &gamepad_enabled);
+   if (gamepad_enabled)
+   {
+      struct sDefaultGamepadBind
+      {
+         const char *control;
+         const char *command;
+      };
+      static const sDefaultGamepadBind gamepad_binds[] = {
+         {"pad_left_x", "gamepad_sidestep"},
+         {"pad_left_y", "gamepad_forward"},
+         {"pad_right_x", "gamepad_turn"},
+         {"pad_right_y", "gamepad_look"},
+         {"pad_a", "+jump"},
+         {"pad_b", "crouch"},
+         {"pad_x", "+use_item"},
+         {"pad_rt", "+use_weapon"},
+         {"pad_lt", "+block"},
+         {"pad_lb", "+gamepad_lean"},
+         {"pad_rb", "+gamepad_radial"},
+         {"pad_dpad_up", "gamepad_cycle_weapon 1"},
+         {"pad_dpad_down", "gamepad_cycle_weapon -1"},
+         {"pad_dpad_left", "gamepad_cycle_item -1"},
+         {"pad_dpad_right", "gamepad_cycle_item 1"},
+         {"pad_view", "automap"},
+         {"pad_menu", "sim_menu"},
+         {"pad_rightstick", "gamepad_force_sneak"},
+         {"pad_weapon_toggle", "toggle_weapon"},
+         {"pad_drop_item", "gamepad_drop_item"},
+         {"pad_speed_toggle", "gamepad_speed_toggle"},
+         {"pad_quick_save", "quick_save"},
+         {"pad_quick_load", "quick_load"},
+         {"pad_console", "toggle_command"},
+         {"pad_touch_leanforward", "+leanforward"},
+         {"pad_touch_clear_weapon", "clear_weapon"},
+         {"pad_touch_drop_item", "gamepad_drop_item"},
+         {"pad_touch_cycle_weapon", "touch_cycle_weapon"},
+         {"pad_touch_cycle_item", "touch_cycle_item"},
+         {NULL, NULL}
+      };
+
+      // Earlier portable builds wrote these defaults into user.bnd.  Upgrade
+      // only exact known defaults so the new shared layout takes effect while
+      // preserving any genuinely custom controller command.
+      static const sDefaultGamepadBind legacy_gamepad_binds[] = {
+         {"pad_lb", "prev_item"},
+         {"pad_lb", "+leanleft"},
+         {"pad_rb", "next_item"},
+         {"pad_rb", "+leanright"},
+         {"pad_dpad_up", "next_weapon"},
+         {"pad_dpad_down", "prev_weapon"},
+         {"pad_dpad_left", "prev_item"},
+         {"pad_dpad_right", "next_item"},
+         {"pad_rightstick", "lookcenter"},
+         {"pad_touch_drop_item", "drop_item"},
+         {"pad_console", "edit_command"},
+         {NULL, NULL}
+      };
+
+      ulong old_context = 0;
+      g_pInputBinder->GetContext(&old_context);
+      g_pInputBinder->SetContext(HK_GAME_MODE, TRUE);
+      for (const sDefaultGamepadBind *legacy = legacy_gamepad_binds;
+           legacy->control; ++legacy)
+      {
+         char current[256] = {};
+         g_pInputBinder->QueryBind(legacy->control, current, sizeof(current));
+         if (!strcmp(current, legacy->command))
+         {
+            for (const sDefaultGamepadBind *bind = gamepad_binds;
+                 bind->control; ++bind)
+            {
+               if (!strcmp(bind->control, legacy->control))
+               {
+                  g_pInputBinder->Bind(bind->control, bind->command);
+                  break;
+               }
+            }
+         }
+      }
+      for (const sDefaultGamepadBind *bind = gamepad_binds; bind->control; ++bind)
+      {
+         char current[256] = {};
+         g_pInputBinder->QueryBind(bind->control, current, sizeof(current));
+         if (!current[0])
+            g_pInputBinder->Bind(bind->control, bind->command);
+      }
+      g_pInputBinder->SetContext(old_context, TRUE);
+   }
+#endif
+
+   // The command context normally has no binds so key events reach the raw
+   // text handler. Retain the controller console toggle and menu button so
+   // the console can be closed or replaced by the normal simulation menu.
    g_pInputBinder->SetContext (HK_COMMAND_MODE, TRUE);
+#ifdef THIEF2_GAME
+   {
+      char current[256] = {};
+      g_pInputBinder->QueryBind("pad_console", current, sizeof(current));
+      if (!current[0])
+         g_pInputBinder->Bind("pad_console", "toggle_command");
+
+      current[0] = '\0';
+      g_pInputBinder->QueryBind("pad_menu", current, sizeof(current));
+      if (!current[0])
+         g_pInputBinder->Bind("pad_menu", "console_sim_menu");
+   }
+#endif
 #ifdef EDITOR
    g_pInputBinder->SetContext (HK_BRUSH_EDIT, TRUE);
 #endif //EDITOR
@@ -1144,15 +1784,31 @@ void InitIBVars ()
 
    SetCountryKeyboard();
 
-   g_joystickActive = (atof (g_pInputBinder->ProcessCmd ("echo $joystick_enable")) == 0.0) ? FALSE : TRUE;
+   g_joystickActive = (parse_float(g_pInputBinder->ProcessCmd ("echo $joystick_enable")) == 0.0) ? FALSE : TRUE;
 
    // @TODO: this should get replaced with somewhere that this is set.
    if ( !config_get_float("joystick_sensitivity", &g_joystickSensitivity) ) {
-      g_joystickSensitivity = atof (g_pInputBinder->ProcessCmd ("echo $joystick_sensitivity"));
+      g_joystickSensitivity = parse_float(g_pInputBinder->ProcessCmd ("echo $joystick_sensitivity"));
    }
-   g_joystickDeadzone = atof (g_pInputBinder->ProcessCmd ("echo $joystick_deadzone"));
-   g_rudderSensitivity = atof (g_pInputBinder->ProcessCmd ("echo $rudder_sensitivity"));
-   g_rudderDeadzone = atof (g_pInputBinder->ProcessCmd ("echo $rudder_deadzone"));
+   g_joystickDeadzone = parse_float(g_pInputBinder->ProcessCmd ("echo $joystick_deadzone"));
+   g_rudderSensitivity = parse_float(g_pInputBinder->ProcessCmd ("echo $rudder_sensitivity"));
+   g_rudderDeadzone = parse_float(g_pInputBinder->ProcessCmd ("echo $rudder_deadzone"));
+   config_get_float("gamepad_look_sensitivity", &g_gamepadLookSensitivity);
+   if (g_gamepadLookSensitivity < 0.1f) g_gamepadLookSensitivity = 0.1f;
+   if (g_gamepadLookSensitivity > 3.0f) g_gamepadLookSensitivity = 3.0f;
+   config_get_float("gamepad_look_turn_seconds", &g_gamepadLookTurnSeconds);
+   if (g_gamepadLookTurnSeconds < 0.25f) g_gamepadLookTurnSeconds = 0.25f;
+   if (g_gamepadLookTurnSeconds > 4.0f) g_gamepadLookTurnSeconds = 4.0f;
+   config_get_int("gamepad_look_invert_y", &g_gamepadLookInvertY);
+   config_get_float("gamepad_run_threshold", &g_gamepadRunThreshold);
+   if (g_gamepadRunThreshold < 0.55f) g_gamepadRunThreshold = 0.55f;
+   if (g_gamepadRunThreshold > 0.95f) g_gamepadRunThreshold = 0.95f;
+   config_get_float("gamepad_fast_run_threshold", &g_gamepadFastRunThreshold);
+   if (g_gamepadFastRunThreshold < 0.15f) g_gamepadFastRunThreshold = 0.15f;
+   if (g_gamepadFastRunThreshold > 0.60f) g_gamepadFastRunThreshold = 0.60f;
+   config_get_float("gamepad_lean_threshold", &g_gamepadLeanThreshold);
+   if (g_gamepadLeanThreshold < 0.30f) g_gamepadLeanThreshold = 0.30f;
+   if (g_gamepadLeanThreshold > 0.90f) g_gamepadLeanThreshold = 0.90f;
 
 }
 

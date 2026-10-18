@@ -64,6 +64,8 @@ typedef union {
 
 #include <mprintf.h>
 #include <song.h>
+#include <stdio.h>
+#include <string.h>
 
 static ISong* sgpCurrSong;
 static ISongSection* sgpCurrSection; 
@@ -72,6 +74,8 @@ static ISongEvent* sgpCurrEvent;
 static ISongGoto* sgpCurrGoto;
 
 static BOOL sgInSections;
+
+void songyyerror(char* errmsg);
 
 static unsigned _FindSectionIndexFromID (ISong* pSong, char* id)
 {
@@ -90,7 +94,7 @@ static unsigned _FindSectionIndexFromID (ISong* pSong, char* id)
       ISongSection_GetSectionInfo (pSection, &sectionInfo);
       ISongSection_Release (pSection);
 
-      if (!strcmp (&(sectionInfo.id), id))
+      if (!strcmp (sectionInfo.id, id))
       {
          index = i;
          break;
@@ -530,7 +534,7 @@ BOOL SongYaccParse (char* songFile, ISong **ppSong)
    return parseOK;
 }
 
-songyyparse()
+int songyyparse(void)
 {
 	register short		songyyi, *songyyp;	/* for table lookup */
 	register short		*songyyps;		/* top of state stack */
@@ -991,6 +995,7 @@ case SONGYYr38: {	/* gotosection :  GOTOEND error */
 	if (songyydebug)
 		SONGYY_TRACE(songyyShowGoto)
 #endif
+	if (0) goto songyyerrlabel;
 	goto songyyStack;
 
 songyyerrlabel:	;		/* come here from SONGYYERROR	*/

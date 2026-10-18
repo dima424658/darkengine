@@ -116,7 +116,7 @@ const char * g_pszAIDefBehaviorSet;
 tResult LGAPI _AIManagerCreate(REFIID, IAIManager ** ppScriptMan, IUnknown * pOuter)
 {
    g_pAIManager = new cAIManager(pOuter);
-   g_AILoopClientDesc.pClient = g_pAIManager;
+   g_AILoopClientDesc.factory.pClient = g_pAIManager;
    return (g_pAIManager) ? S_OK : E_FAIL;
 
 }
@@ -235,7 +235,7 @@ sLoopClientDesc g_AILoopClientDesc =
    kMsgEnd | kMsgDatabase | kMsgsMode | kMsgsFrame | kMsgsAppOuter,
 
    kLCF_Singleton,
-   0,                                            // Set when AI manager is created
+   (ILoopClient *)0,                             // Set when AI manager is created
 
    NO_LC_DATA,
 
@@ -446,7 +446,7 @@ STDMETHODIMP_(IAI *) cAIManager::GetNext(tAIIter * pIter)
       return NULL;
    }
 
-   *pIter = (tAIIter)i;
+   *pIter = (tAIIter)(uintptr_t)i;
    m_AIs[i]->AddRef();
    return m_AIs[i];
 }
@@ -1190,7 +1190,7 @@ void cAIManager::ScheduledNormalFrame()
          TIMER_Stop(AI_AIMAN_ONF_RunAIs);
          TIMER_Start(AI_AIMAN_ONF_Schedule);
 
-      } while (i < m_Schedule.Size() && tm_get_millisec() - m_FrameStartTime <= g_AIScheduleSettings.budget);
+      } while (i < m_Schedule.Size() && (slong)(tm_get_millisec() - m_FrameStartTime) <= g_AIScheduleSettings.budget);
 
       AITraceRaw(Schedule, "\n");
 

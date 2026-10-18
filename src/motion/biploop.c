@@ -76,7 +76,7 @@ typedef struct _StateRecord
 static ITagFile* tagfile = NULL;
 static void movefunc(void *buf, size_t elsize, size_t nelem)
 {
-   ITagFile_Move(tagfile,(char*)buf,elsize*nelem);
+   ITagFile_Move(tagfile,(char*)buf,(int)(elsize*nelem));
 }
 
 TagFileTag CreatureSystemTag = { "CRET_SYSTEM" };
@@ -141,7 +141,6 @@ static void init_sim_message()
 //
 // OBJECT MESSAGE HANDLER
 //
-#pragma off(unreferenced)
 static void obj_message(ObjID obj, eObjNotifyMsg msg, void* data)
 {
    switch (msg) 
@@ -151,7 +150,6 @@ static void obj_message(ObjID obj, eObjNotifyMsg msg, void* data)
          break;
    }
 }
-#pragma on(unreferenced)
 
 static void init_obj_message(void)
 {
@@ -221,7 +219,6 @@ static void db_message(DispatchData * msg)
 // Here's where we do the dirty work.
 //
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -279,7 +276,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function. 
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -289,7 +285,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
    
    return CreateSimpleLoopClient(_LoopFunc,state,&BipedLoopClientDesc);
 }
-#pragma on(unreferenced)
 
 ///////////////
 // DESCRIPTOR
@@ -300,7 +295,7 @@ sLoopClientDesc BipedLoopClientDesc =
    &MY_GUID,
    "Biped Client",              
    kPriorityNormal,              
-   kMsgEnd | kMsgsFrameMid | kMsgsAppOuter | kMsgDatabase,
+   (ulong)kMsgEnd | kMsgsFrameMid | kMsgsAppOuter | kMsgDatabase,
 
    kLCF_Callback,
    _CreateClient,

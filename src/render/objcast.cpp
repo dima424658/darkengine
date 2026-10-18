@@ -71,7 +71,12 @@ static BOOL MDDetect()
    g_ObjCastMDHit.b = &EndObjRel;
 
    mds_model *pModel = (mds_model *) objmodelGetModel(g_iModelIdx);
-   md_segment_hit_detect(pModel, &g_ObjCastMDHit);
+   // A model-number property can outlive a model that failed to bind.  The
+   // retail code assumes a resident model here; treat a missing resource as
+   // a ray miss instead of dereferencing it in md_segment_hit_detect().
+   g_ObjCastMDHit.hit = FALSE;
+   if (pModel != NULL)
+      md_segment_hit_detect(pModel, &g_ObjCastMDHit);
 
    if (g_ObjCastMDHit.hit && g_ObjCastMDHit.r < g_fEarliestTime) {
       g_fEarliestTime = g_ObjCastMDHit.r;
@@ -151,7 +156,7 @@ static void AddRefsForCellID(cDynArray_<ObjID, 128> *pObjList)
 // This is for when we're only casting against a given set of objects.
 inline BOOL ObjInList(ObjID *pObjList, uint nObjCount)
 {
-   for (int i = 0; i < nObjCount; ++i) {
+   for (uint i = 0; i < nObjCount; ++i) {
       if (*pObjList == g_ObjCastObjID)
          return TRUE;
       ++pObjList;
@@ -182,6 +187,7 @@ eObjCastResult ObjRaycast(Location *pStartLoc, Location *pEndLoc,
 
    g_fEarliestTime = 1.0;
    eObjCastResult rv = kObjCastNone;
+   ObjID HitObjID = OBJ_NULL;
    cDynArray_<ObjID, 128> ObjsCompared;
 
    // This is global since it's used for both kinds of object
@@ -250,6 +256,7 @@ eObjCastResult ObjRaycast(Location *pStartLoc, Location *pEndLoc,
                {
                   if (MDDetect()) {
                      rv = kObjCastMD;
+                     HitObjID = g_ObjCastObjID;
                      if (ShortCircuit)
                         goto Done;
                   }
@@ -260,6 +267,7 @@ eObjCastResult ObjRaycast(Location *pStartLoc, Location *pEndLoc,
                {
                   if (MeshDetect()) {
                      rv = kObjCastMesh;
+                     HitObjID = g_ObjCastObjID;
                      if (ShortCircuit)
                         goto Done;
                   }
@@ -282,6 +290,10 @@ eObjCastResult ObjRaycast(Location *pStartLoc, Location *pEndLoc,
    }
 
 Done:
+   // The loop continues testing other references after a non-short-circuit
+   // hit, so g_ObjCastObjID otherwise names the last object tested rather
+   // than the nearest object that was actually hit.
+   g_ObjCastObjID = HitObjID;
    r3_done_with_context();
    if (pOldContext)
    {

@@ -139,19 +139,19 @@ void abp_compute_arm_normal(mxs_vector * n, multiped * mp, limb * l, mxs_vector 
 
 // Compute interpolation parameter. We've defined things such that end_pos is
 // in the plane defined by "across" and "out".
-	angle = acos(mx_dot_vec(&prj, &across));
+	angle = acosf(mx_dot_vec(&prj, &across));
 
 // Get normal.
 	if (l->joint_id[0] == LSHLDR)
 	{
-		t = angle / 2.0;
+		t = angle / 2.0f;
 		quat_create(&q, end_pos, t);
 		quat_to_matrix(&m, &q);
 		mx_mat_mul_vec(n, &m, &n2);
 	}
 	else
 	{
-		t = (MX_REAL_PI - angle) / 2.0;
+		t = ((float)MX_REAL_PI - angle) / 2.0f;
 		quat_create(&q, end_pos, t);
 		quat_to_matrix(&m, &q);
 		mx_mat_mul_vec(n, &m, &n1);

@@ -71,7 +71,7 @@ void uidefer_testfunc(void* arg)
 
 void test_uidefer(void)
 {
-   uiDefer(uidefer_testfunc,(void*)0xDEADBEEF);
+   uiDefer(uidefer_testfunc,(void *)(uintptr_t)0xDEADBEEF);
 }
 
 static Command commands[] =
@@ -86,7 +86,6 @@ static Command commands[] =
 
 static uiSlab _empty_slab;
 
-#pragma off(unreferenced)
 STDMETHODIMP uiSysInitFunc(IUnknown* goof)
 {
    // I have no idea if this works
@@ -105,13 +104,11 @@ STDMETHODIMP uiSysInitFunc(IUnknown* goof)
 #endif
    return kNoError;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SHUTDOWN FUNC
 //
 
-#pragma off(unreferenced)
 STDMETHODIMP uiSysShutdownFunc(IUnknown* goof)
 {
    LGadTerm();
@@ -119,21 +116,16 @@ STDMETHODIMP uiSysShutdownFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 
-#pragma off(unreferenced)
 static STDMETHODIMP NullFunc(IUnknown* goof)
 {
    return kNoError;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 static void STDMETHODCALLTYPE FinalReleaseFunc(IUnknown* goof)
 {
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // uiSysSysCreate()

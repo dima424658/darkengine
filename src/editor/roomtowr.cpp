@@ -217,9 +217,9 @@ static void SetGlobalsForRoom(cRoom *pRoom)
 
    for (i = 0; i < 8; ++i) {
       mx_copy_vec(&g_aRoomVertexPool[i], &g_RoomCenter);
-      mx_scale_addeq_vec(&g_aRoomVertexPool[i], &aAxis[0], (i&1)? -1 : 1);
-      mx_scale_addeq_vec(&g_aRoomVertexPool[i], &aAxis[1], (i&2)? -1 : 1);
-      mx_scale_addeq_vec(&g_aRoomVertexPool[i], &aAxis[2], (i&4)? -1 : 1);
+      mx_scale_addeq_vec(&g_aRoomVertexPool[i], &aAxis[0], (i&1) ? -1.0f : 1.0f);
+      mx_scale_addeq_vec(&g_aRoomVertexPool[i], &aAxis[1], (i&2) ? -1.0f : 1.0f);
+      mx_scale_addeq_vec(&g_aRoomVertexPool[i], &aAxis[2], (i&4) ? -1.0f : 1.0f);
    }
 }
 

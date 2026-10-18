@@ -9,6 +9,44 @@
 #include <memall.h>
 #include <tmpalloc.h>
 
+void init_com_device_table(void);
+void init_gdd_default_dispdev_canvas_table(void);
+void init_gdd_default_flat16_canvas_table(void);
+void init_flat16_uhline_func(void);
+void init_flat16_upix16_func(void);
+void init_flat16_upix8_func(void);
+void init_flat16_uvline_func(void);
+void init_flat16_ubitmap_func(void);
+void init_gdd_default_flat8_canvas_table(void);
+void init_flat8_uhline_func(void);
+void init_flat8_upix8_func(void);
+void init_flat8_uvline_func(void);
+void init_flat8_ubitmap_func(void);
+void init_gen_bitmap_func(void);
+
+static void init_dispatch_tables(void)
+{
+   static int initialized = 0;
+   if (initialized)
+      return;
+
+   init_com_device_table();
+   init_gdd_default_dispdev_canvas_table();
+   init_gdd_default_flat16_canvas_table();
+   init_flat16_uhline_func();
+   init_flat16_upix16_func();
+   init_flat16_upix8_func();
+   init_flat16_uvline_func();
+   init_flat16_ubitmap_func();
+   init_gdd_default_flat8_canvas_table();
+   init_flat8_uhline_func();
+   init_flat8_upix8_func();
+   init_flat8_uvline_func();
+   init_flat8_ubitmap_func();
+   init_gen_bitmap_func();
+   initialized = 1;
+}
+
 /* start up dev2d system.  try to detect what kind of video hardware is
    present, call device-dependent initialization, and save state.
    returns same as gr_detect() 0 if all is well, or error code. */
@@ -18,9 +56,9 @@ int gd_init(void)
    int err;
    MemStack *tmp;
 
-#ifdef _WIN32
+   init_dispatch_tables();
+
    gd_use_com();
-#endif
 
    if (gdd_active != 0) {
       Warning (("gd_init(): dev2d already active.\n"));
@@ -54,9 +92,7 @@ int gd_close(void)
 
    temp_mem_uninit();
 
-#ifdef _WIN32
    gd_release_com();
-#endif
 
    return 0;
 }

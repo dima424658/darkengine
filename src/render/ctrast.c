@@ -56,12 +56,12 @@ static float get_image_av(int samples,float pointy)
 
    hw = grd_visible_canvas->bm.w/2;
    space = hw/samples;
-   xstart = hw - pointy*space*(hw/space);
-   xend = hw*(1.0+pointy);
+   xstart = (int)(hw - pointy*space*(hw/space));
+   xend = (int)(hw*(1.0f+pointy));
 
    hh = grd_visible_canvas->bm.h/2;
-   ystart = hh - pointy*space*(hh/space);
-   yend = hh*(1.0+pointy);
+   ystart = (int)(hh - pointy*space*(hh/space));
+   yend = (int)(hh*(1.0f+pointy));
 
    for (y=ystart;y<yend;y+=space) {
       for (x=xstart;x<xend;x+=space) {
@@ -73,7 +73,7 @@ static float get_image_av(int samples,float pointy)
          weight += 1;
       }
    }
-   return (av.x+av.y+av.z)/(3.0*weight);
+   return (av.x+av.y+av.z)/(3.0f*weight);
 }
 
 // Update the contrast.  Do this right before the blit.
@@ -100,13 +100,13 @@ void ContrastUpdate()
    // not fixed
 
    new_time = tm_get_millisec();
-   dt = time_scale*(new_time-last_time)/3000.0;
+   dt = time_scale*(new_time-last_time)/3000.0f;
    last_time = new_time;
 
    if (in_flash) {      
       // slow recovery
-      float ftime=dt*.3;
-      scale = (scale+flash_scale*ftime)/(ftime+1.0);
+      float ftime=dt*.3f;
+      scale = (scale+flash_scale*ftime)/(ftime+1.0f);
       if (fabs(scale-flash_scale) < .5) {
          scale = flash_scale;
          in_flash=FALSE;
@@ -132,14 +132,14 @@ void ContrastUpdate()
 void ContrastFlash(void)
 {
    in_flash=TRUE;
-   gr_set_contrast_value(1,.001);
+   gr_set_contrast_value(1,.001f);
 }
 
 
 // Set the contrast time scale
 static void contrast_time_scale(char *val)
 {
-   time_scale=atof(val);
+      time_scale=strtof(val, NULL);
    //   mprintf("time_scale is %g\n",time_scale);
 }
 
@@ -167,7 +167,7 @@ static void contrast(char* val)
       _auto_about = (strnicmp(val,"auto",4)==0)?TRUE:FALSE;
       if (_auto_about) {
          about = 25;      // good starting value
-         scale = atof(val+5);
+      scale = strtof(val+5, NULL);
          outval=2;
       } 
       
@@ -223,7 +223,7 @@ void gamma_load(void)
 }
 
 // Set the contrast and refresh
-static void gamma(char* val)
+static void set_gamma_cmd(char* val)
 {
    if (!strcmp(val, "off"))
       g_gamma = 1.0;
@@ -240,7 +240,7 @@ static void gamma_delta(float val)
    gamma_update();
 }
 
-#define GAMMA_STEP 0.025
+#define GAMMA_STEP 0.025f
 
 static void
 gamma_up_cmd( int count )
@@ -288,7 +288,7 @@ gamma_down_cmd( int count )
 static Command commands[] = 
 {
    { "contrast",FUNC_STRING, contrast, "Set the contrast",HK_ALL },
-   { "gamma",FUNC_STRING, gamma, "Set the gamma",HK_ALL },
+   { "gamma",FUNC_STRING, set_gamma_cmd, "Set the gamma",HK_ALL },
    { "gamma_delta", FUNC_FLOAT, gamma_delta, "Add float to gamma",HK_ALL },
    { "gamma_up", FUNC_INT, gamma_up_cmd, "increase gamma", HK_ALL },
    { "gamma_down", FUNC_INT, gamma_down_cmd, "decrease gamma", HK_ALL },

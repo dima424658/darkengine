@@ -145,8 +145,8 @@ protected:
       {
          // Most flow groups are water, so assume that...
          obj = mpObjSys->BeginCreate(mWaterRoot,kObjectConcrete); 
-         char buf[20]; 
-         sprintf(buf,"Flow Group %d",idx); 
+         char buf[32];
+         snprintf(buf,sizeof(buf),"Flow Group %d",idx);
          mpObjSys->NameObject(obj,buf); 
          Set(obj,idx);  // implicitly updates table 
          mpObjSys->EndCreate(obj); 

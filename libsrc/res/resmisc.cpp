@@ -33,7 +33,7 @@ void ResCheckCache(int maxLocks)
    while (curr_id < resDescMax)
    {
       if (ResInUse(curr_id) && ResPtr(curr_id))
-         if (ResLocked(curr_id)>maxLocks)
+         if (maxLocks >= 0 && ResLocked(curr_id) > static_cast<uint>(maxLocks))
             Warning(("ResCheckCache: res %d is locked %d times\n", curr_id, ResLocked(curr_id)));
       curr_id++;
    };

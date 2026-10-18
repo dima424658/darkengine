@@ -80,18 +80,18 @@ EXTERN BOOL g_fQuietAssert;
 
 #else
 
-    #define Assert_(Test)
-    #define AssertMsg(Test, Msg)
-    #define AssertMsg1(Test, Msg, p1)
-    #define AssertMsg2(Test, Msg, p1, p2)
-    #define AssertMsg3(Test, Msg, p1, p2, p3)
-    #define AssertMsg4(Test, Msg, p1, p2, p3, p4)
-    #define AssertMsg5(Test, Msg, p1, p2, p3, p4, p5)
-    #define AssertMsg6(Test, Msg, p1, p2, p3, p4, p5, p6)
-    #define AssertMsg7(Test, Msg, p1, p2, p3, p4, p5, p6, p7)
-    #define AssertMsg8(Test, Msg, p1, p2, p3, p4, p5, p6, p7, p8)
-    #define AssertMsg9(Test, Msg, p1, p2, p3, p4, p5, p6, p7, p8, p9)
-    #define AssertStr(Test, Msg)
+    #define Assert_(Test) do {} while (0)
+    #define AssertMsg(Test, Msg) do {} while (0)
+    #define AssertMsg1(Test, Msg, p1) do {} while (0)
+    #define AssertMsg2(Test, Msg, p1, p2) do {} while (0)
+    #define AssertMsg3(Test, Msg, p1, p2, p3) do {} while (0)
+    #define AssertMsg4(Test, Msg, p1, p2, p3, p4) do {} while (0)
+    #define AssertMsg5(Test, Msg, p1, p2, p3, p4, p5) do {} while (0)
+    #define AssertMsg6(Test, Msg, p1, p2, p3, p4, p5, p6) do {} while (0)
+    #define AssertMsg7(Test, Msg, p1, p2, p3, p4, p5, p6, p7) do {} while (0)
+    #define AssertMsg8(Test, Msg, p1, p2, p3, p4, p5, p6, p7, p8) do {} while (0)
+    #define AssertMsg9(Test, Msg, p1, p2, p3, p4, p5, p6, p7, p8, p9) do {} while (0)
+    #define AssertStr(Test, Msg) do {} while (0)
 
 #endif
 

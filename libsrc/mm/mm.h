@@ -20,7 +20,7 @@ void mm_debug_toggle();
 ////// set callbacks
 //
 
-typedef void (*mmf_joint_pos_cback)(mms_model *m,int joint_id,
+typedef void (*mmf_joint_pos_cback)(const mms_model *m,int joint_id,
                                     mxs_trans *trans);
 
 // set the joint position callback function.  Should provide the joint position
@@ -28,7 +28,7 @@ typedef void (*mmf_joint_pos_cback)(mms_model *m,int joint_id,
 // function returns previous joint pos callback
 EXTERN mmf_joint_pos_cback mm_set_joint_pos_cback(mmf_joint_pos_cback func);
 
-typedef void (*mmf_stretchy_joint_cback)(mms_model *m, int joint_id,
+typedef void (*mmf_stretchy_joint_cback)(const mms_model *m, int joint_id,
                                          mxs_trans *trans, quat *joint);
 
 // set the stretchy joint callback function.  
@@ -92,6 +92,12 @@ EXTERN void mm_render_only(mms_model *m);
 
 // You should set to R3_PL_TEXTURE or R3_PL_TEXTURE_LINEAR
 EXTERN void mm_set_tmap_mode(ulong mode);
+
+// Mesh model files reserve only 32 bits for a material texture handle.  The
+// original 32-bit runtime stored grs_bitmap pointers there directly.  Keep the
+// serialized layout fixed and use an opaque, process-local token instead.
+EXTERN ulong mm_register_texture(r3s_texture texture);
+EXTERN r3s_texture mm_resolve_texture(ulong handle);
 
 // default pgon renderer.  gets called automatically by render_model and
 // render_only

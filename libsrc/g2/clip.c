@@ -5,7 +5,7 @@
 #include <g2buffer.h>
 #include <lgassert.h>
 
-#define CLIP_MASK 0xfffffff0
+#define G2_CLIP_MASK 0xfffffff0
 #define TIMES_W   0x00000010
 
 static g2s_point *tmp;
@@ -15,7 +15,7 @@ static fix clip_val, left, right, top, bot;
 
 static void code_xy(g2s_point *v)
 {
-   v->flags &= CLIP_MASK;
+   v->flags &= G2_CLIP_MASK;
    if (v->sx < left)
       v->flags|=CLIP_LEFT;
    else if (v->sx > right)
@@ -28,7 +28,7 @@ static void code_xy(g2s_point *v)
 
 static void code_y(g2s_point *v)
 {
-   v->flags &= CLIP_MASK;
+   v->flags &= G2_CLIP_MASK;
    if (v->sy < top) 
       v->flags|=CLIP_TOP;
    else if (v->sy > bot)
@@ -135,10 +135,10 @@ static float x_intersect(g2s_point *v0, g2s_point *v1)
 {
    float dy,r;
    tmp->sx = clip_val;
-   r = clip_val - v0->sx;
-   r /= v1->sx - v0->sx;
-   dy = v1->sy - v0->sy;
-   tmp->sy = v0->sy + r*dy;
+   r = (float)(clip_val - v0->sx);
+   r /= (float)(v1->sx - v0->sx);
+   dy = (float)(v1->sy - v0->sy);
+   tmp->sy = (fix)(v0->sy + r*dy);
    tmp->flags = 0;
    code_y(tmp);
    return r;
@@ -148,10 +148,10 @@ static float y_intersect(g2s_point *v0, g2s_point *v1)
 {
    float dx,r;
    tmp->sy = clip_val;
-   r = clip_val - v0->sy;
-   r /= v1->sy - v0->sy;
-   dx = v1->sx - v0->sx;
-   tmp->sx = v0->sx + r*dx;
+   r = (float)(clip_val - v0->sy);
+   r /= (float)(v1->sy - v0->sy);
+   dx = (float)(v1->sx - v0->sx);
+   tmp->sx = (fix)(v0->sx + r*dx);
    tmp->flags = 0;
    return r;
 }
@@ -170,7 +170,7 @@ static ulong get_codes(g2s_point **a, int n)
    }
    if (ccr!=0)
       return CLIP_ALL;  // trivial reject
-   return (cc&(~CLIP_MASK));
+   return (cc&(~G2_CLIP_MASK));
 }
 
 static int do_plane(g2s_point **src, g2s_point **dest, int n, ulong code)
@@ -321,7 +321,7 @@ void g2_clip_fixup(int n, g2s_point **vpl)
    for (i=0; i<n; i++) {
       g2s_point *v = vpl[i];
       if (v->flags&TIMES_W) {
-         float r = 1.0 / v->w;
+         float r = 1.0f / v->w;
          v->u *= r;
          v->v *= r;
          v->flags &= ~TIMES_W;

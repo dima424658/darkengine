@@ -11,7 +11,9 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-#ifdef EDITOR
+#ifdef THIEF2_GAME
+#define NAME "Thief 2"
+#elif defined(EDITOR)
 #define NAME "DromEd"
 #else
 

@@ -60,10 +60,8 @@ void dispdev_ubitmap(grs_bitmap *bm, int x, int y)
 #endif
 }
 
-#pragma off (unreferenced)
 gdubm_func *dispdev_ubitmap_expose(grs_bitmap *bm, int x, int y)
 {
    return dispdev_ubitmap;
 }
-#pragma on (unreferenced)
 

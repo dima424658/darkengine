@@ -69,6 +69,7 @@ struct sUiAnimElem
 {
    // Contains array of the resource pointer
    cDynArray<IRes *> mFrames;
+   cDynArray<int> mPaletteSlots;
    int mX,mY;     // offset to render at on screen
    float mSpf;   // frame rate at which to render this anim
    int mFrame;   // which frame we are on

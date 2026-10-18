@@ -158,7 +158,7 @@ void PortalMovePointInsideCell(Location *loc)
       for (i=0; i < n; ++i,++p) {
          double dist = PortalDistPointFromPlane(p, loc);
          if (dist < TOO_CLOSE) {
-            mx_scale_addeq_vec(vec, &p->normal, ADJUST_DIST-dist);
+            mx_scale_addeq_vec(vec, &p->normal, (mxs_real)(ADJUST_DIST-dist));
             changed = TRUE;
          }
       }
@@ -218,7 +218,7 @@ void PortalComputeBoundingSphere(PortalCell *cell)
    for (i=0, this = vpool; i < n; ++i,++this) {
       dist_2 = mx_dist2_vec(&center, this);
       if (dist_2 > rad2) {
-         dist = sqrt(dist_2);
+         dist = sqrtf(dist_2);
 
          // our new circle will have a diameter of radius + dist
          radius = (dist + radius)/2;

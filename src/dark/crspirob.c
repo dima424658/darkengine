@@ -78,14 +78,14 @@ static int g_aSpiderBotJointMap[] =
    -1,
 };               
 
-#define SPIDER_BOT_LEG_PHYS_RADIUS 0.3
+#define SPIDER_BOT_LEG_PHYS_RADIUS 0.3f
 
 static sCrPhysModOffset g_SwordPhysOffsets[] = \
 {
-   {l1wrist, l1finger, 0.0, SPIDER_BOT_LEG_PHYS_RADIUS},
-   {l1wrist, l1finger, 0.8, SPIDER_BOT_LEG_PHYS_RADIUS},
-   {r1wrist, r1finger, 0.0, SPIDER_BOT_LEG_PHYS_RADIUS},
-   {r1wrist, r1finger, 0.8, SPIDER_BOT_LEG_PHYS_RADIUS},
+   {l1wrist, l1finger, 0.0f, SPIDER_BOT_LEG_PHYS_RADIUS},
+   {l1wrist, l1finger, 0.8f, SPIDER_BOT_LEG_PHYS_RADIUS},
+   {r1wrist, r1finger, 0.0f, SPIDER_BOT_LEG_PHYS_RADIUS},
+   {r1wrist, r1finger, 0.8f, SPIDER_BOT_LEG_PHYS_RADIUS},
 };
 
 static sCrPhysModOffsetTable g_WeaponPhysTable = \
@@ -95,8 +95,8 @@ static sCrPhysModOffsetTable g_WeaponPhysTable = \
 
 static sCrPhysModOffset g_aPhysModOffsets[] = \
 {
-   { base, sac, 0.5, 1.4 },
-   { base, sac, 0.5, 1.4 }, //only need 1 phys model, really for these guys, but
+   { base, sac, 0.5f, 1.4f },
+   { base, sac, 0.5f, 1.4f }, //only need 1 phys model, really for these guys, but
                             //every other creature is 2, so let's just put them on top of each other.
 							//Yes, I'm superstitious.... but maybe I'm also right (scary, isn't it?)
 };

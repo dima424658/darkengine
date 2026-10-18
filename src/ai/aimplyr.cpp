@@ -25,7 +25,8 @@
 // Must be last header
 #include <dbmem.h>
 
-EXTERN Label g_TestMotionName= { "" };
+EXTERN Label g_TestMotionName;
+Label g_TestMotionName= { "" };
 
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -33,10 +33,10 @@ void lit_haze_8to16_setup(grs_bitmap *bm)
    pixpal = grd_pal16_list[bm->align];
 
    g2d_pp.bm = bm;
-   g2d_pp.i_scale = grd_light_table_size;
+   g2d_pp.i_scale = (float)grd_light_table_size;
    g2d_pp.u_scale = bm->w;
    g2d_pp.v_scale = bm->h;
-   g2d_pp.h_scale = g2d_haze_table_size;
+   g2d_pp.h_scale = (float)g2d_haze_table_size;
    if (bm->flags&BMF_TRANS)
       g2d_pp.inner_loop = trans_lit_haze_8to16_inner_loop;
    else

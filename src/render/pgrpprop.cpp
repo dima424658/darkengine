@@ -82,6 +82,12 @@ struct sOpsParticleGroup : public ParticleGroup
       pl.location = NULL;
       pl.velocity = NULL;
       pl.time_info = NULL;
+      pl.cell = NULL;
+      pl.render_data = NULL;
+      launch = NULL;
+      points = NULL;
+      sort_lists = NULL;
+      free_locs = FALSE;
 
       return *this;
    }
@@ -96,6 +102,12 @@ struct sOpsParticleGroup : public ParticleGroup
       pl.location = NULL;
       pl.velocity = NULL;
       pl.time_info = NULL;
+      pl.cell = NULL;
+      pl.render_data = NULL;
+      launch = NULL;
+      points = NULL;
+      sort_lists = NULL;
+      free_locs = FALSE;
 
    }
 };
@@ -104,10 +116,100 @@ class cParticleGroupOps : public cClassDataOps<sOpsParticleGroup>
 { 
 public:
    STDMETHOD_(int, Version)() { return 1006; };
+   STDMETHOD_(int, ReadVersion)() { return 1008; };
 };
 
 class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
 { 
+   static BOOL WriteBytes(IDataOpsFile *file, const void *data, int size)
+   {
+      return file->Write(data, size) == size;
+   }
+
+   STDMETHOD(WriteObj) (ObjID obj, IDataOpsFile* file)
+   {
+      sDatum dat;
+      if (!Get(obj, &dat))
+         return S_FALSE;
+
+      ParticleGroup *pg = (ParticleGroup *)dat.value;
+      const ulong nullPointers[9] = { 0 };
+
+#define WRITE_MEMBER(member) \
+      if (!WriteBytes(file, &(member), sizeof(member))) return E_FAIL
+
+      if (!WriteBytes(file, nullPointers, sizeof(nullPointers))) return E_FAIL;
+      WRITE_MEMBER(pg->obj);
+      WRITE_MEMBER(pg->render_type);
+      WRITE_MEMBER(pg->motion_type);
+      WRITE_MEMBER(pg->anim_type);
+      WRITE_MEMBER(pg->d);
+      WRITE_MEMBER(pg->e);
+      WRITE_MEMBER(pg->n);
+
+      WRITE_MEMBER(pg->pl.n);
+      if (!WriteBytes(file, nullPointers, 5 * sizeof(ulong))) return E_FAIL;
+      WRITE_MEMBER(pg->velocity);
+      WRITE_MEMBER(pg->gravity);
+      WRITE_MEMBER(pg->cr);
+      WRITE_MEMBER(pg->cg);
+      WRITE_MEMBER(pg->cb);
+      WRITE_MEMBER(pg->ca);
+      WRITE_MEMBER(pg->always_simulate);
+      WRITE_MEMBER(pg->always_simulate_group);
+      WRITE_MEMBER(pg->cell_sort);
+      WRITE_MEMBER(pg->zsort);
+      WRITE_MEMBER(pg->terrain_collide);
+      WRITE_MEMBER(pg->accelerate_cell);
+      WRITE_MEMBER(pg->ignore_attach_refs);
+      WRITE_MEMBER(pg->pad2);
+
+      if (!WriteBytes(file, nullPointers, sizeof(ulong))) return E_FAIL;
+      WRITE_MEMBER(pg->spin);
+      WRITE_MEMBER(pg->pulse_period);
+      WRITE_MEMBER(pg->pulse_percentage);
+      WRITE_MEMBER(pg->fixed_scale);
+      WRITE_MEMBER(pg->pre_launch);
+      WRITE_MEMBER(pg->spin_group);
+      WRITE_MEMBER(pg->tiny_alpha);
+      WRITE_MEMBER(pg->tiny_dropout);
+      WRITE_MEMBER(pg->shared_list);
+      WRITE_MEMBER(pg->worldspace);
+      WRITE_MEMBER(pg->launching);
+      WRITE_MEMBER(pg->active);
+      WRITE_MEMBER(pg->ms_offset);
+      WRITE_MEMBER(pg->size);
+      WRITE_MEMBER(pg->reserved);
+      WRITE_MEMBER(pg->reserved2);
+      WRITE_MEMBER(pg->prev_loc);
+      WRITE_MEMBER(pg->scale_vel);
+      WRITE_MEMBER(pg->render_datum);
+      WRITE_MEMBER(pg->bmin);
+      WRITE_MEMBER(pg->bmax);
+      WRITE_MEMBER(pg->radius);
+      WRITE_MEMBER(pg->cur_scale);
+
+      if (!WriteBytes(file, nullPointers, 2 * sizeof(ulong))) return E_FAIL;
+      WRITE_MEMBER(pg->locs_worldspace);
+      WRITE_MEMBER(pg->free_locs);
+      WRITE_MEMBER(pg->seen);
+      WRITE_MEMBER(pg->need_flags);
+      WRITE_MEMBER(pg->list_length);
+      WRITE_MEMBER(pg->delete_count);
+      WRITE_MEMBER(pg->next_launch);
+      WRITE_MEMBER(pg->launch_period);
+      if (!WriteBytes(file, pg->modelname, sizeof(pg->modelname))) return E_FAIL;
+      WRITE_MEMBER(pg->modelnum);
+      WRITE_MEMBER(pg->fade_time);
+      WRITE_MEMBER(pg->obj_rot_mat);
+      WRITE_MEMBER(pg->last_sim_time);
+      WRITE_MEMBER(pg->attach_obj);
+      WRITE_MEMBER(pg->force_match_unrefs);
+
+#undef WRITE_MEMBER
+      return S_OK;
+   }
+
    STDMETHOD(ReadObj) (ObjID obj, IDataOpsFile* file, int version)
    {
       sDatum dat = Create(obj);
@@ -117,7 +219,13 @@ class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
 
       ParticleGroup *pg = (ParticleGroup *)dat.value;
 
-      file->Read(&pg->pc, sizeof(ParticleClass));
+      // Particle-group properties have a fixed 32-bit disk ABI.  These
+      // callback and data pointers were historically serialized even though
+      // they are rebuilt at runtime; consuming native-width pointers here
+      // shifts every following field in a 64-bit process.
+      ulong legacyPointers[9];
+      file->Read(legacyPointers, sizeof(legacyPointers));
+      memset(&pg->pc, 0, sizeof(pg->pc));
       file->Read(&pg->obj, sizeof(ObjID));
 
       file->Read(&pg->render_type, sizeof(enum ParticleRenderTypes));
@@ -127,7 +235,21 @@ class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
       file->Read(&pg->e, sizeof(int));
 
       file->Read(&pg->n, sizeof(int));
-      file->Read(&pg->pl, sizeof(ParticleList));
+      file->Read(&pg->pl.n, sizeof(pg->pl.n));
+      file->Read(legacyPointers, 5 * sizeof(ulong));
+      pg->pl.location = NULL;
+      pg->pl.velocity = NULL;
+      pg->pl.time_info = NULL;
+      pg->pl.cell = NULL;
+      pg->pl.render_data = NULL;
+      if (version >= 1008)
+      {
+         // NewDark 1.28's 1008 record inserts two serialized runtime-list
+         // words here.  They are rebuilt below, but still have to be consumed
+         // before reading the authored group velocity and every later field.
+         ulong newDarkRuntimeLists[2];
+         file->Read(newDarkRuntimeLists, sizeof(newDarkRuntimeLists));
+      }
       file->Read(&pg->velocity, sizeof(mxs_vector));
       file->Read(&pg->gravity, sizeof(mxs_vector));
 
@@ -165,15 +287,15 @@ class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
 
          for (int i=0; i<3; i++)
          {
-            launch_info->loc_min.el[i] = ((float)(launch_info->start_loc_bbox[0][i])) / 65536.0;
-            launch_info->loc_max.el[i] = ((float)(launch_info->start_loc_bbox[1][i])) / 65536.0;
+            launch_info->loc_min.el[i] = ((float)(launch_info->start_loc_bbox[0][i])) / 65536.0f;
+            launch_info->loc_max.el[i] = ((float)(launch_info->start_loc_bbox[1][i])) / 65536.0f;
 
-            launch_info->vel_min.el[i] = ((float)(launch_info->start_vel_bbox[0][i])) / 65536.0;
-            launch_info->vel_max.el[i] = ((float)(launch_info->start_vel_bbox[1][i])) / 65536.0;
+            launch_info->vel_min.el[i] = ((float)(launch_info->start_vel_bbox[0][i])) / 65536.0f;
+            launch_info->vel_max.el[i] = ((float)(launch_info->start_vel_bbox[1][i])) / 65536.0f;
          }
          
-         launch_info->min_time = ((float)(launch_info->time_range[0])) / 65536.0;
-         launch_info->max_time = ((float)(launch_info->time_range[1])) / 65536.0;
+         launch_info->min_time = ((float)(launch_info->time_range[0])) / 65536.0f;
+         launch_info->max_time = ((float)(launch_info->time_range[1])) / 65536.0f;
 
          launch_info->min_radius = 0;
          launch_info->max_radius = 0;
@@ -185,10 +307,10 @@ class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
       }
       else
       {
-         // read in launch pointer
-         ParticleLaunchInfo *dummy;
-         file->Read(&dummy, sizeof(ParticleLaunchInfo *));
+         ulong legacyPointer;
+         file->Read(&legacyPointer, sizeof(legacyPointer));
       }
+      pg->launch = NULL;
 
       if (version < 1005)
          pg->ignore_attach_refs = FALSE;
@@ -225,8 +347,9 @@ class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
       file->Read(&pg->radius, sizeof(float));
 
       file->Read(&pg->cur_scale, sizeof(float));
-      file->Read(&pg->points, sizeof(r3s_point *));
-      file->Read(&pg->sort_lists, sizeof(int **));
+      file->Read(legacyPointers, 2 * sizeof(ulong));
+      pg->points = NULL;
+      pg->sort_lists = NULL;
 
       file->Read(&pg->locs_worldspace, sizeof(bool));
       file->Read(&pg->free_locs, sizeof(bool));
@@ -275,6 +398,9 @@ class cParticleGroupStore : public cHashPropertyStore<cParticleGroupOps>
       pg->pl.velocity = NULL;
       pg->pl.time_info = NULL;
       pg->pl.cell = NULL;
+      pg->pl.render_data = NULL;
+      pg->launch = NULL;
+      pg->points = NULL;
       pg->free_locs = FALSE;
       pg->sort_lists = NULL;
 
@@ -525,9 +651,9 @@ public:
 
          // Don't allow times to be zero
          if (launch_info->min_time == 0)
-            launch_info->min_time = 0.001;
+            launch_info->min_time = 0.001f;
          if (launch_info->max_time == 0)
-            launch_info->max_time = 0.001;
+            launch_info->max_time = 0.001f;
 
          // Convert our vectors to fixed
          for (int i=0; i<3; i++)
@@ -1029,16 +1155,16 @@ EXTERN void ParticleGroupUpdate(void)
 
          BOOL force_unreffed = FALSE;
 
-		 if (!pg->force_match_unrefs)
-		 {
-			 if (pg->attach_obj != OBJ_NULL)
-				 if (!ObjHasRefs(pg->attach_obj))
-				 {
-					 if (ObjHasRefs(obj))
-						 ObjSetHasRefs(obj, FALSE);
-					 force_unreffed = TRUE;
-				 }
-		 }
+         // This opt-in is stronger than the ordinary attached/trailing rule
+         // below.  The old negated test made every pre-1006 particle group
+         // (including all Gold groups) behave as if it had opted in.
+         if (pg->force_match_unrefs && pg->attach_obj != OBJ_NULL
+          && !ObjHasRefs(pg->attach_obj))
+         {
+            if (ObjHasRefs(obj))
+               ObjSetHasRefs(obj, FALSE);
+            force_unreffed = TRUE;
+         }
 
          if (!pg->ignore_attach_refs)
          {

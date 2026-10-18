@@ -42,7 +42,7 @@ public:
     {
       AssertMsg(!gm_pfnGetPriority, "Already sorting?");
       cPriDynArrayCompareHolder::gm_pfnGetPriority = D;
-      typename cDynArray<T>::Sort((typename cDynArray<T>::tCompareFunc)cPriDynArrayCompareHolder::Compare);
+      cDynArray<T>::Sort((typename cDynArray<T>::tCompareFunc)cPriDynArrayCompareHolder::Compare);
       cPriDynArrayCompareHolder::gm_pfnGetPriority = NULL;
     }
 

@@ -14,6 +14,8 @@
 #include <resistr.h>
 #include <strrstyp.h>
 #include <imgrstyp.h>
+#include <palrstyp.h>
+#include <palmgr.h>
 
 #include <uianim.h>
 #include <memall.h>
@@ -31,7 +33,7 @@ sUiAnimElem::sUiAnimElem(IStringRes *pStr,const char *pName,const char *pResPath
    // Using the string resource, get the "x,y fps"
    const char *p = pStr->StringLock(pName);
    sscanf(p,"%d,%d %f %c",&mX,&mY,&mSpf,&mType);
-   mSpf = 1.0/mSpf;     // convert fps to second/frame
+   mSpf = 1.0f/mSpf;     // convert fps to second/frame
    pStr->StringUnlock(pName);
 
    // Collecting frames, quit when none left
@@ -40,10 +42,30 @@ sUiAnimElem::sUiAnimElem(IStringRes *pStr,const char *pName,const char *pResPath
       sprintf(name,"%s_%d",pName,mFrames.Size()+1);
       IRes *pFrame =  pResMan->Bind(name,RESTYPE_IMAGE,NULL,pResPath);
       if (pFrame == NULL) break;
-      if (mFlags&kAnimLock) pFrame->Lock();
+      int paletteSlot = -1;
+      grs_bitmap* pBitmap = (grs_bitmap*)pFrame->Lock();
+      if (pBitmap && pBitmap->type == BMT_FLAT8)
+      {
+         IRes* pPalette = pResMan->Retype(pFrame, RESTYPE_PALETTE, 0);
+         if (pPalette)
+         {
+            void* pData = pPalette->Lock();
+            if (pData)
+            {
+               paletteSlot = palmgr_alloc_pal((uchar*)pData);
+               pBitmap->align = (uchar)paletteSlot;
+               pPalette->Unlock();
+            }
+            pPalette->Release();
+         }
+      }
+      if (!(mFlags&kAnimLock) && pBitmap)
+         pFrame->Unlock();
       mFrames.Append(pFrame);
+      mPaletteSlots.Append(paletteSlot);
    }
-   mBlit();      
+   if (mFrames.Size() > 0)
+      mBlit();
    pResMan->Release();
 }
 
@@ -55,13 +77,18 @@ sUiAnimElem::~sUiAnimElem()
    for (i=0;i<mFrames.Size();++i) {
       if (mFlags&kAnimLock) mFrames[i]->Unlock();
       mFrames[i]->Release();
+      if (mPaletteSlots[i] > 0)
+         palmgr_release_slot(mPaletteSlots[i]);
    }
 }
 
 void sUiAnimElem::mBlit()
 {
+   if (mFrames.Size() == 0)
+      return;
+
    int frame;
-   if (mType=='r') {
+   if (mType=='r' && mFrames.Size() > 1) {
       int len = mFrames.Size()*2-2;
       frame = mFrame%len;
       if (frame >= mFrames.Size()) frame = len - frame;
@@ -70,9 +97,14 @@ void sUiAnimElem::mBlit()
    }
 
    grs_bitmap *pBm = (grs_bitmap*)mFrames[frame]->Lock();
+   if (pBm == NULL)
+   {
+      Warning(("Unable to lock UI animation frame %d\n", frame));
+      return;
+   }
 
    // Hide and expose the cursor
-   Rect r = {mX,mY,mX+pBm->w,mY+pBm->h};
+   Rect r = {(short)mX, (short)mY, (short)(mX + pBm->w), (short)(mY + pBm->h)};
    uiHideMouse(&r);
 
    gr_bitmap(pBm,mX,mY);
@@ -87,6 +119,9 @@ void sUiAnimElem::mBlit()
 // update the frame with the dt, shows next frame if must be
 void sUiAnimElem::Update(float dt)
 {
+   if (mFrames.Size() == 0)
+      return;
+
    int oFrame = mFrame;
 
    // Increment
@@ -141,7 +176,12 @@ void cUiAnim::InitUI()
       mAnims.Append(new sUiAnimElem(strres,lname,mUiAnimResPath,mFlags));
    }
 
-   strres->Unlock();
+   // StringLock balances its own resource lock when the key is absent.
+   // NewDark menus commonly leave the animation list commented out (BP's
+   // SIMM.STR does this), so unlocking a null result underflows the resource
+   // lock count.
+   if (s)
+      strres->StringUnlock("list");
    res->Release();
    pResMan->Release();
 
@@ -165,7 +205,7 @@ void cUiAnim::OnLoopMsg(eLoopMessage msg, tLoopMessageData data)
    // Update all the anims with the new time
    float dt;
    int clock = tm_get_millisec();
-   dt = (float)(clock - mLastClock)/1000.0;
+   dt = (float)(clock - mLastClock)/1000.0f;
    mLastClock = clock;
 
    int i;

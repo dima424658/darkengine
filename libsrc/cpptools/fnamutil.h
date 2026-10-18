@@ -78,7 +78,7 @@ BOOL __stdcall __CPPTOOLSAPI ReduceDots(char *psz);
 //
 // Utility functions
 //
-#define _IsSlash(c) (c == '\\')
+#define _IsSlash(c) ((c) == '\\' || (c) == '/')
 
 //
 // Return true if this path is a simple component (i.e., is just a file root & ext)
@@ -95,6 +95,9 @@ inline BOOL IsPathSimpleComponent(const char *p)
 //
 inline BOOL IsFullPath(const char *p)
     {
+#ifndef _WIN32
+    return p && *p == '/';
+#else
     // Check for start of domain or x:\...
     if (*p)
         {
@@ -105,6 +108,7 @@ inline BOOL IsFullPath(const char *p)
             return _IsSlash(*++p);
         }
     return FALSE;
+#endif
     }
 
 //
@@ -112,7 +116,11 @@ inline BOOL IsFullPath(const char *p)
 //
 inline BOOL IsRelativePath(const char *p)
     {
+#ifndef _WIN32
+    return !p || *p != '/';
+#else
     return (!*p || (!_IsSlash(*p) && *(p+1) != ':'));
+#endif
     }
 
 //
@@ -120,6 +128,9 @@ inline BOOL IsRelativePath(const char *p)
 //
 inline BOOL IsDriveRelativePath(const char *p)
     {
+#ifndef _WIN32
+    return IsRelativePath(p);
+#else
     if (!*p)
         return TRUE;
 
@@ -130,6 +141,7 @@ inline BOOL IsDriveRelativePath(const char *p)
         return TRUE;
 
     return !_IsSlash(*++p);
+#endif
     }
 
 char *GetCondensePathStr(

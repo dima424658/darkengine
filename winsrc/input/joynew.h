@@ -11,7 +11,7 @@
 #ifndef __JOYNEW_H
 #define __JOYNEW_H
 
-#include <windows.h>
+#include <win32_platform.h>
 #include <dinput.h>
 
 // continue to support old API

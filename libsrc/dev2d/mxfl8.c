@@ -16,38 +16,15 @@
 #define BIG_BLIT_MINIMUM        0x4000          // 16k
 #define PROC_DATA_CACHE         0x1000          // rough size of data cache
 
-#ifdef __WATCOMC__
-modex_memmove (uchar *s, uchar *d, int h, int s_row, int d_row);
-#pragma aux modex_memmove =   \
-"L1:"                         \
-   "mov     al,[esi]"         \
-   "mov     [edi],al"         \
-   "add     esi,ebx"          \
-   "add     edi,ecx"          \
-   "dec     edx"              \
-   "jnz     L1"               \
-   parm [esi] [edi] [edx] [ebx] [ecx] \
-   modify [eax ecx edx];
-#else
-__inline modex_memmove (uchar *s, uchar *d, int h, int s_row, int d_row)
+static __inline void modex_memmove(uchar *s, uchar *d, int h,
+                                   int s_row, int d_row)
 {
-	__asm
-	{
-		mov		esi, s
-		mov		edi, d
-		mov	   edx, h
-		mov	   ebx, s_row
-		mov	   ecx, d_row
-	L1:
-		mov		al, [esi]
-		mov		[edi], al
-		add		esi, ebx
-		add		edi, ecx
-		dec		edx
-		jnz		L1
-	}
+   while (h-- > 0) {
+      *d = *s;
+      s += s_row;
+      d += d_row;
+   }
 }
-#endif
 
 void modex_flat8_trans_ubitmap (grs_bitmap *bm, short x, short y)
 {

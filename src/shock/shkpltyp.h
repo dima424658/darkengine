@@ -9,12 +9,8 @@
 #ifndef __SHKPLTYP_H
 #define __SHKPLTYP_H
 
-typedef enum eStats;
-typedef enum eTechSkills;
-typedef enum eWeaponSkills;
-typedef enum ePsiPowers;
-typedef enum ePlayerEquip;
-typedef enum eTrait;
-typedef enum eImplant;
+#include <shkplcst.h>
+#include <shktrcst.h>
+#include <shkimcst.h>
 
 #endif

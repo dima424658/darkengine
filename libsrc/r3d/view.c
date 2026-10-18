@@ -240,7 +240,7 @@ void r3_get_view_pyr_vecs(mxs_vector *vecs)
 
    // These in view space, not bad, only divides
    // the z's are all one
-   xright = 1.0/cx.zoom;
+   xright = 1.0f/cx.zoom;
    xleft  = -xright;
 
    ybot = (cur_canv->bm.h*cx.aspect)/(cur_canv->bm.w*cx.zoom) ;
@@ -268,7 +268,7 @@ void r3_get_view_vec(mxs_vector *dst,mxs_real sx,mxs_real sy)
 
    TEST_IN_CONTEXT("r3_get_view_vec");
 
-   tmp.x = (2*sx/(cur_canv->bm.w) - 1.0)/cx.zoom;
+   tmp.x = (2.0f*sx/(cur_canv->bm.w) - 1.0f)/cx.zoom;
    tmp.y = cx.aspect * (2*sy - cur_canv->bm.h)/(cur_canv->bm.w*cx.zoom);
    tmp.z = 1.0;
 

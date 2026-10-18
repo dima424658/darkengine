@@ -68,7 +68,7 @@ linkkind::linkkind(const char* name)
 
 linkkind::operator string () const 
 {
-   cAutoIPtr<IRelation> rel ( LinkMan()->GetRelation(id) );
+   cAutoIPtr<IRelation> rel (LinkMan()->GetRelation((RelationID)id));
    return rel->Describe()->name; 
 }
 
@@ -223,12 +223,26 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLinkSrv, Link)
 
       if (pLinkManager->AnyLinks(recipients,self,LINKOBJ_WILDCARD))
       {
+         const char* comparisonField = NULL;
+         cAutoIPtr<IRelation> relation(pLinkManager->GetRelation(recipients));
+         if (relation != (IRelation*)NULL)
+         {
+            const sRelationDataDesc* dataDesc = relation->DescribeData();
+            const sStructDesc* structDesc = dataDesc ?
+               SdescTools()->Lookup(dataDesc->type) : NULL;
+            // Shipping builds historically fell through to the first field
+            // here when filtering a multi-field relation. Name it explicitly
+            // so PLAYTEST builds preserve that behavior without asserting.
+            if (structDesc && structDesc->nfields > 1)
+               comparisonField = structDesc->fields[0].name;
+         }
          ILinkQuery *Controls = pLinkManager->Query(self,LINKOBJ_WILDCARD,recipients);
          
          while (!Controls->Done())
          {
             // so maybe the linkdata should be interepreted in a questbit-specific way someday?
-            if (Controls->Data() == NULL || link(Controls->ID()).GetData() == linkdata)
+            if (Controls->Data() == NULL ||
+                link(Controls->ID()).GetData(comparisonField) == linkdata)
             {
                sLink slink;
 
@@ -276,7 +290,7 @@ DECLARE_SCRIPT_SERVICE_IMPL(cLinkSrv, Link)
             sScrMsg * pMsg = new sScrMsg(self, 
                                          slink.dest, 
                                          Message,
-                                         NULL);
+                                         cMultiParm());
             pMsg->flags |= kSMF_MsgPostToOwner;
             pScriptMan->PostMessage(pMsg);
             pMsg->Release();
@@ -365,30 +379,30 @@ IMPLEMENT_SCRIPT_SERVICE_IMPL(cLinkSrv, Link);
 
 DECLARE_SCRIPT_SERVICE_IMPL(cLinkToolsSrv, LinkTools)
 {
-   STDMETHOD_(long, LinkKindNamed)(const char* name)
+   STDMETHOD_(int32, LinkKindNamed)(const char* name)
    {
       return linkkind(name); 
    }
 
-   STDMETHOD_(string, LinkKindName)(long id)
+   STDMETHOD_(string, LinkKindName)(int32 id)
    {
-      cAutoIPtr<IRelation> rel (LinkMan()->GetRelation(id) ); 
+      cAutoIPtr<IRelation> rel (LinkMan()->GetRelation((RelationID)id) );
       AssertMsg1(rel != 0,"A script referenced non-existent link kind %d",id); 
       return rel->Describe()->name; 
    }
 
-   STDMETHOD(LinkGet)(long id, sLink& link)
+   STDMETHOD(LinkGet)(LinkID id, sLink& link)
    {
       VerifyMsg1(LinkMan()->Get(id,&link),"A script tried to access non-existent link %d",id); 
       return S_OK;
    }
 
-   STDMETHOD_(cMultiParm,LinkGetData)(long id, const char* field)
+   STDMETHOD_(cMultiParm,LinkGetData)(LinkID id, const char* field)
    {
       return link(id).GetData(field); 
    }
 
-   STDMETHOD(LinkSetData)(long id, const char* field, const cMultiParm& val)
+   STDMETHOD(LinkSetData)(LinkID id, const char* field, const cMultiParm& val)
    {
       link(id).SetData(field,val); 
       return S_OK;

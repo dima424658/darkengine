@@ -23,7 +23,7 @@
 
 IMPLEMENT_SCRMSG_PERSISTENT(sPressurePlateMsg)
 {
-   PersistenceHeader(sPressurePlateMsg, kPressurePlateMsgVer);
+   PersistenceHeader(sScrMsg, kPressurePlateMsgVer);
    return TRUE;
 }
 

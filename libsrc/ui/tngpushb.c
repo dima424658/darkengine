@@ -1,5 +1,5 @@
 #include <fcntl.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <tngpushb.h>
 #include <_ui.h>
@@ -124,15 +124,13 @@ bool tng_pushbutton_mousebutt(TNG *ptng, uchar type, Point loc)
 // Handle incoming signals
 bool tng_pushbutton_signal(TNG *ptng, ushort signal)
 {
-   bool retval = FALSE;
    Spew(DSRC_UI_Pushbutton, ("After doing cb_signal, inside pushbutton_signal\n"));
    if (signal & TNG_SIGNAL_SELECT)
-      IF_SET_RV(tng_pushbutton_pressed(TNG_PB(ptng)));
+      tng_pushbutton_pressed(TNG_PB(ptng));
    if (signal & TNG_SIGNAL_DESELECT)
-      IF_SET_RV(tng_pushbutton_released(TNG_PB(ptng)));
-   IF_SET_RV(tng_cb_signal(ptng,signal));
-   retval = TRUE;
-   return(retval);
+      tng_pushbutton_released(TNG_PB(ptng));
+   tng_cb_signal(ptng,signal);
+   return TRUE;
 }
 
 errtype tng_pushbutton_pressed(TNG_pushbutton *ppbtng)

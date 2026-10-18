@@ -57,14 +57,14 @@ public:
 	uint STDMETHODCALLTYPE GetResourceLockCount(IRes* pRes) override;
 	int STDMETHODCALLTYPE DropResource(IRes* pRes) override;
 	long STDMETHODCALLTYPE GetResourceSize(IRes* pRes) override;
-	void STDMETHODCALLTYPE UnregisterResource(IRes* pRes, ulong ManData) override;
+	void STDMETHODCALLTYPE UnregisterResource(IRes* pRes, DWORD_PTR ManData) override;
 
 	int STDMETHODCALLTYPE AsyncLock(IRes* pRes, int nPriority) override;
 	int STDMETHODCALLTYPE AsyncExtract(IRes* pRes, int nPriority, void* pBuf, long bufSize) override;
 	int STDMETHODCALLTYPE AsyncPreload(IRes* pRes) override;
 	int STDMETHODCALLTYPE IsAsyncFulfilled(IRes* pRes) override;
-	long STDMETHODCALLTYPE AsyncKill(IRes* pRes) override;
-	long STDMETHODCALLTYPE GetAsyncResult(IRes* pRes, void** ppResult) override;
+	HRESULT STDMETHODCALLTYPE AsyncKill(IRes* pRes) override;
+	HRESULT STDMETHODCALLTYPE GetAsyncResult(IRes* pRes, void** ppResult) override;
 
 	void InstallResourceType(const char* pExt, IResType* pType);
 	void RemoveResourceType(const char* pExt, IResType* pType);

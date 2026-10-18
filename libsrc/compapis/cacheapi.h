@@ -13,6 +13,7 @@
 
 #include <comtools.h>
 #include <cachguid.h>
+#include <stdint.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -50,7 +51,10 @@ struct sCacheState
 // INTERFACE: ICache
 //
 
-typedef ulong tCacheItemID;
+// Cache IDs are process-local keys.  Some clients use integer handles while
+// the named-resource manager uses an object address, so the key must be able
+// to represent either on every supported architecture.
+typedef uintptr_t tCacheItemID;
 
 ///////////////////////////////////////
 

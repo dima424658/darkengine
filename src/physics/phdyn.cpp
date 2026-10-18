@@ -69,7 +69,9 @@ cPhysDynData::cPhysDynData(unsigned flags, mxs_real mass, mxs_real elasticity, m
 
 void cPhysDynData::LoadV11(PhysReadWrite func)
 {
-   func(&m_pModel, sizeof(cPhysModel *), 1);
+   uint32 ignoredModelPointer;
+   func(&ignoredModelPointer, sizeof(ignoredModelPointer), 1);
+   m_pModel = NULL;
    func(&m_submodel, sizeof(int), 1);
    func(&m_flags, sizeof(unsigned), 1);
    func(&m_translation, sizeof(sDynamics), 1);

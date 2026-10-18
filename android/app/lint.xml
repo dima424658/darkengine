@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- SDL is a pinned, verified third-party source dependency. Project-owned
+         Java, resources, and the merged manifest remain fully linted. -->
+    <issue id="all">
+        <ignore regexp=".*[\\/]\.codex-build[\\/]android-deps[\\/]SDL2-2\.32\.10[\\/]android-project[\\/]app[\\/]src[\\/]main[\\/]java[\\/].*" />
+    </issue>
+</lint>

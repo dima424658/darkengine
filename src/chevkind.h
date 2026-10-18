@@ -25,4 +25,4 @@ enum eChainedEventKind_
 
 
 
-#endif __CHEVKIND_H
+#endif /* __CHEVKIND_H */

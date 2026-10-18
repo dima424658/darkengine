@@ -166,7 +166,7 @@ extern void (*lightmap_callback)(PortalLightMap *lightmap);
 extern void clear_surface_cache(void);
 
   // clear all texture cache entries for a given texture id
-extern void clear_surfaces_for_texture(uchar texture_id);
+extern void clear_surfaces_for_texture(ushort texture_id);
 
   // This oversamples static lighting.  Dynamic lighting is not affected.
 extern bool portal_quadruple_lighting;
@@ -183,7 +183,7 @@ EXTERN void portal_shine_omni_light(int light_index, Location *loc,
                                     uchar lighting_type);
 
   // length of raycasts used to see if something is in sunlight
-#define kPortalSunlightCastLength 1000.0
+#define kPortalSunlightCastLength 1000.0f
 
   // The length of this vector is the brightness of the sunlight.
 EXTERN mxs_vector portal_sunlight;

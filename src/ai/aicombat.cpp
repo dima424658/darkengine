@@ -645,7 +645,7 @@ struct sTargScanInfo
    eAIPriority priority;
 };
 
-#define kCurTargBonus sq(15.0)
+#define kCurTargBonus sq(15.0f)
 #define kRaycastBonus sq(10.0)
 #define kWayWayClose  sq(5.0)
 #define kCloseBonus   sq(25.0)
@@ -710,7 +710,7 @@ ObjID cAICombat::SelectTarget()
 
       if (link.dest == current)
          if (time_this_target<kMaxCurTime)  // ??? ummm - quadratic is screwing this
-            targets[i].distSq -= (kCurTargBonus*(1-(time_this_target/kMaxCurTime)));
+            targets[i].distSq -= (kCurTargBonus*(1.0f-((float)time_this_target/kMaxCurTime)));
 
       if (pSenses->GetAwareness(link.dest)->flags & kAIAF_CanRaycast)
          targets[i].distSq -= kRaycastBonus;

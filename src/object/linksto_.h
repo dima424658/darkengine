@@ -19,6 +19,8 @@
 class cBaseLinkStore : public ILinkStore, protected cLinkManagerKnower
 {
 public:
+   virtual ~cBaseLinkStore() = default;
+
    DECLARE_UNAGGREGATABLE();
 
    // Dumb default implementations that just run queries and do the right thing. 
@@ -36,6 +38,8 @@ public:
 class cBaseLinkDataStore : public ILinkDataStore, protected cLinkManagerKnower
 {
 public:
+   virtual ~cBaseLinkDataStore() = default;
+
    DECLARE_UNAGGREGATABLE();
 
    // Dumb default implementations that just run queries and do the right thing. 

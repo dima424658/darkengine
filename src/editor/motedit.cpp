@@ -180,8 +180,8 @@ BOOL MotEditSetEditMotion(char *motname)
    {
       int left,right;
 
-      MainInterfaceResetBotSlider(g_MotEditMotion->info.num_frames);
-      FlagBoxResetMarks(g_MotEditMotion->info.num_frames);
+      MainInterfaceResetBotSlider((int)g_MotEditMotion->info.num_frames);
+      FlagBoxResetMarks((int)g_MotEditMotion->info.num_frames);
       g_pMotionSet->GetStartEndFrames(num,&left,&right);
       FlagBoxSetMark(left,0);
       if(right>=0)

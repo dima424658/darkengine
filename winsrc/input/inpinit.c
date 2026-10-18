@@ -25,7 +25,6 @@ static int my_priority = kPriorityLibrary;
 
 static char keybuf[512];
 
-#pragma off(unreferenced)
 static STDMETHODIMP _InitFunc(IUnknown* goof)
 {
    kb_startup(keybuf);
@@ -33,20 +32,17 @@ static STDMETHODIMP _InitFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SHUTDOWN FUNC
 //
 
-#pragma off(unreferenced)
 static STDMETHODIMP _ShutdownFunc(IUnknown* goof)
 {
    mouse_shutdown();
    kb_shutdown();
    return kNoError;
 }
-#pragma on(unreferenced)
 
 ////////////////////////////////////////////////////////////
 // CONSTRAINTS
@@ -62,18 +58,14 @@ static sRelativeConstraint _Constraints[] =
 // Nothing needs to change, unless you want to add postconnect stuff
 ////////////////////////////////////////////////////////////
 
-#pragma off(unreferenced)
 static STDMETHODIMP NullFunc(IUnknown* goof)
 {
    return kNoError;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 static void STDMETHODCALLTYPE FinalReleaseFunc(IUnknown* goof)
 {
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SysCreate()

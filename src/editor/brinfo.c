@@ -33,7 +33,6 @@
 // TERRAIN BRUSHES
 //
 
-#pragma off(unreferenced) 
 
 static void _Terr_copy(editBrush *us, editBrush *old, BOOL clone)
 {
@@ -229,7 +228,6 @@ static void _Room_delete(editBrush *us)
    // update graph?
 }
 
-#pragma on(unreferenced)
 
 // basically, this table takes each brush type and knows how to copy it to a new
 // one of itself, or to create a new one

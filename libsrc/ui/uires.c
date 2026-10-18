@@ -13,7 +13,6 @@
 
 struct _uirestempbuffer uiResTempBuffer;
 
-#pragma disable_message(202)
 errtype master_load_bitmap_from_res(grs_bitmap *bmp, Id id_num, int i, RefTable *rt, bool tmp_mem, Rect *anchor, uchar *p)
 {
    Ref rid;
@@ -27,7 +26,8 @@ errtype master_load_bitmap_from_res(grs_bitmap *bmp, Id id_num, int i, RefTable 
    }
 
    rid = MKREF(id_num,i);
-   if (uiResTempBuffer.mem == NULL || RefSize(rt,i) > uiResTempBuffer.size)
+   if (uiResTempBuffer.mem == NULL || RefSize(rt,i) < 0 ||
+      (uint)RefSize(rt,i) > uiResTempBuffer.size)
    {
       Spew(DSRC_UI_Initialization,("damn, we have to malloc...need %d, buffer = %d\n",RefSize(rt,i),uiResTempBuffer.size));
       f = (FrameDesc *)Malloc(RefSize(rt,i));
@@ -71,7 +71,8 @@ errtype uiLoadRefBitmapCursor(Cursor* c, grs_bitmap* bmp, Ref rid, bool alloc)
    int tsize = REFTABLESIZE(numrefs);
 
    RefTable *rt = NULL;
-   if (uiResTempBuffer.mem != NULL && tsize <= uiResTempBuffer.size)
+   if (uiResTempBuffer.mem != NULL && tsize >= 0 &&
+      (uint)tsize <= uiResTempBuffer.size)
    {
       rt = (RefTable*)uiResTempBuffer.mem;
       uiResTempBuffer.mem += tsize;

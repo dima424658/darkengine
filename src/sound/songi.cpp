@@ -117,7 +117,7 @@ cSong::CountSections ()
 STDMETHODIMP_(BOOL)
 cSong::SetSection (unsigned index, ISongSection* pSection)
 {
-   Assert_ (index < m_sections.Size());
+   Assert_ (index < (unsigned)m_sections.Size());
 
    // Release any existing section.
    SafeRelease (m_sections[index]);
@@ -132,7 +132,7 @@ cSong::SetSection (unsigned index, ISongSection* pSection)
 STDMETHODIMP_(BOOL)
 cSong::GetSection (unsigned index, ISongSection** ppSection)
 {
-   Assert_ (index < m_sections.Size());
+   Assert_ (index < (unsigned)m_sections.Size());
 
    ISongSection* pSection = m_sections[index];
    pSection->AddRef();
@@ -158,7 +158,7 @@ cSong::CountEvents ()
 STDMETHODIMP_(BOOL)
 cSong::GetEvent (unsigned index, ISongEvent** ppEvent)
 {
-   Assert_ (index < m_events.Size());
+   Assert_ (index < (unsigned)m_events.Size());
 
    ISongEvent* pEvent = m_events[index];
    pEvent->AddRef();
@@ -224,7 +224,7 @@ cSongSection::CountSamples ()
 STDMETHODIMP_(BOOL)
 cSongSection::GetSample (unsigned index, ISongSample** ppSample)
 {
-   Assert_ (index < m_samples.Size());
+   Assert_ (index < (unsigned)m_samples.Size());
 
    ISongSample* pSample = m_samples[index];
    pSample->AddRef();
@@ -250,7 +250,7 @@ cSongSection::CountEvents ()
 STDMETHODIMP_(BOOL)
 cSongSection::GetEvent (unsigned index, ISongEvent** ppEvent)
 {
-   Assert_ (index < m_events.Size());
+   Assert_ (index < (unsigned)m_events.Size());
 
    ISongEvent* pEvent = m_events[index];
    pEvent->AddRef();
@@ -343,7 +343,7 @@ cSongEvent::CountGotos ()
 STDMETHODIMP_(BOOL)
 cSongEvent::GetGoto (unsigned index, ISongGoto** ppGoto)
 {
-   Assert_ (index < m_gotos.Size());
+   Assert_ (index < (unsigned)m_gotos.Size());
 
    ISongGoto* pGoto = m_gotos[index];
    pGoto->AddRef();

@@ -17,7 +17,7 @@
 #ifndef MEMALL_H
 #define MEMALL_H
 
-#include <malloc.h>
+#include <stdlib.h>
 #include "types.h"
 
 //	Setting, pushing, & popping allocator sets
@@ -117,30 +117,6 @@ extern "C"  {
 
 void MemCheckOn(bool hard);
 void MemCheckOff(void);
-
-//	Heap management (memgrow.c)
-
-int MemGrowHeap(int wantK);
-void MemLockHeap();
-void MemUnlockHeap();
-
-#if !defined(_WIN32)
-
-//	Allocating conventional memory
-//	Caveat: since Malloc() can grab conventional memory, necessary
-//	conventional memory blocks should be grabbed early in program.
-
-typedef struct {
-	ushort realSeg;		// real mode segment to conventional mem block
-	ushort protSel;		// protected mode selector for conv mem block
-	void far *protPtr;	// protected mode ptr to mem block
-} ConvMemBlock;
-
-void far *MallocConvMemBlock(ushort size, ConvMemBlock *pcmb);		// alloc
-void far *ReallocConvMemBlock(ConvMemBlock *pcmb, ushort newsize); // resize
-int FreeConvMemBlock(ConvMemBlock *pcmb);		// free low memory block
-
-#endif
 
 //////////////////////////////
 //

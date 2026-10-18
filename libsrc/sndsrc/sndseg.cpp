@@ -32,7 +32,7 @@ DecompressIMABlockPartial( char           *pInBuff,
                            short          *pOutBuff,
                            long           nSamples,
                            BOOL           getHeader,
-                           unsigned long  *pState );
+                           uint32         *pState );
 
 
 cSndSegment::cSndSegment( void )
@@ -163,7 +163,8 @@ doubleSamples( void     *pSrc,
                int      bytesPerSample,
                int      oldValue ) 
 {
-   int i, value;
+   uint32 i;
+   int value;
    short *pSrcW, *pDstW;
    unsigned char  *pSrcB, *pDstB;
 

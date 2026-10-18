@@ -381,7 +381,7 @@ void LGAPI LockedPropListener(sPropertyListenMsg *msg, PropListenerData data)
       SafeRelease(lock_links);
    }
    // set lock animation frame here?
-   LockAnimSetTarget(msg->obj,ObjSelfLocked(msg->obj)?0.0:1.0);
+   LockAnimSetTarget(msg->obj,ObjSelfLocked(msg->obj)?0.0f:1.0f);
 }
 
 // @TODO: what does modify mean

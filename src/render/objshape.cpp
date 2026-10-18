@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <algorithm>
 
 #include <dev2d.h>
 #include <objpos.h>
@@ -27,7 +28,7 @@
 #include <dbmem.h>
 
 
-#define ONE_OVER_ROOT_3 0.57735
+#define ONE_OVER_ROOT_3 0.57735f
 
 typedef float (*GetRadiusFunc)(ObjID objID, int idx);
 // returns type of bbox retrieved, -1 on error
@@ -182,7 +183,7 @@ EXTERN void BoundBBox(mxs_matrix *trans,mxs_vector *bmin,mxs_vector *bmax)
    // graphics gems I, pg 548
    for (i=0; i < 3; ++i) {
       for (j=0; j < 3; ++j) {
-         double a,b;
+         mxs_real a,b;
          a = trans->vec[j].el[i] * bmin->el[j];
          b = trans->vec[j].el[i] * bmax->el[j];
          if (a < b) {
@@ -289,9 +290,9 @@ static float GetDefaultRadius(ObjID objID, int /*idx*/ )
       if(scale.z>max)
       max=scale.z;
 
-      return 2.0*max*ONE_OVER_ROOT_3;
+      return 2.0f*max*ONE_OVER_ROOT_3;
    }
-   return 2.0*ONE_OVER_ROOT_3;
+   return 2.0f*ONE_OVER_ROOT_3;
 }
 
 static int GetDefaultObjRelBBox(ObjID /*objID*/, int /*idx*/,
@@ -435,14 +436,14 @@ static void GetMdObjOffsetVhot(ObjID objID, int idx, int vhot,mxs_vector *pos)
 
 // XXX THIS IS AN ETCS HACK
 // non-biped mesh objects have no way of getting accurate bboxes.
-extern void stupid_jointpos_callback(mms_model *m, int joint_id, mxs_trans *t);
+extern void stupid_jointpos_callback(const mms_model *m, int joint_id, mxs_trans *t);
 
 static void DippyMeshGetBBox(ObjID /*objID*/, int /*idx*/, mxs_vector *bmax, mxs_vector *bmin)
 {
    mx_mk_vec(bmin,-1.0,-1.0,-1.0);
    mx_mk_vec(bmax,1.0,1.0,1.0);
-   mx_scaleeq_vec(bmin,2.4);
-   mx_scaleeq_vec(bmax,2.4);
+      mx_scaleeq_vec(bmin,2.4f);
+      mx_scaleeq_vec(bmax,2.4f);
 }
 
 // XXX ignore scale on mesh objects
@@ -574,16 +575,13 @@ static int GetMeshFavoriteBBox(ObjID objID, int idx, mxs_vector *bmin, mxs_vecto
 //// heat object functions--we could try something more sophisticated,like writing some code
 //
 
-#define min(x,y) (((x)<(y))?(x):(y))
-#define max(x,y) (((x)>(y))?(x):(y))
-
 static float GetHeatRadius(ObjID obj, int idx)
 {
    sHeatDiskCluster *cluster;
 
    if (ObjHeatDiskGet(obj, &cluster)) {
 
-      mxs_real bounding_radius = max(cluster->start_radius, cluster->end_radius) + cluster->height;
+      mxs_real bounding_radius = std::max(cluster->start_radius, cluster->end_radius) + cluster->height;
 
       mxs_vector start_minus_radius, end_plus_radius;
       mxs_vector plus, minus, diagonal;
@@ -596,7 +594,7 @@ static float GetHeatRadius(ObjID obj, int idx)
 
       mx_sub_vec(&diagonal, &start_minus_radius, &end_plus_radius);
 
-      return mx_mag_vec(&diagonal) * .5;
+      return mx_mag_vec(&diagonal) * .5f;
 
    } else
       return GetDefaultRadius(obj, idx);
@@ -616,7 +614,7 @@ static int GetHeatObjRelBBox(ObjID obj, int /*idx*/,
 
       // This radius can be too large, but should be pretty close
       // since we expect the height to be small.
-      mxs_real bounding_radius = max(cluster->start_radius, cluster->end_radius) + cluster->height;
+      mxs_real bounding_radius = std::max(cluster->start_radius, cluster->end_radius) + cluster->height;
       mxs_vector start_minus_radius, start_plus_radius;
       mxs_vector end_minus_radius, end_plus_radius;
       mxs_vector plus, minus;
@@ -630,13 +628,13 @@ static int GetHeatObjRelBBox(ObjID obj, int /*idx*/,
       mx_add_vec(&end_plus_radius, &cluster->end_offset, &plus);
       mx_add_vec(&end_minus_radius, &cluster->end_offset, &minus);
 
-      bmin->x = min(start_minus_radius.x, end_minus_radius.x);
-      bmin->y = min(start_minus_radius.y, end_minus_radius.y);
-      bmin->z = min(start_minus_radius.z, end_minus_radius.z);
+      bmin->x = std::min(start_minus_radius.x, end_minus_radius.x);
+      bmin->y = std::min(start_minus_radius.y, end_minus_radius.y);
+      bmin->z = std::min(start_minus_radius.z, end_minus_radius.z);
 
-      bmax->x = max(start_plus_radius.x, end_plus_radius.x);
-      bmax->y = max(start_plus_radius.y, end_plus_radius.y);
-      bmax->z = max(start_plus_radius.z, end_plus_radius.z);
+      bmax->x = std::max(start_plus_radius.x, end_plus_radius.x);
+      bmax->y = std::max(start_plus_radius.y, end_plus_radius.y);
+      bmax->z = std::max(start_plus_radius.z, end_plus_radius.z);
       return OBJ_BBOX_TYPE_OBJREL;
    }
    return OBJ_BBOX_TYPE_NONE;
@@ -705,7 +703,7 @@ static int GetSparkWorldBBox(ObjID obj, int idx, mxs_vector *bmin, mxs_vector *b
 static float GetBitmapSize(ObjID obj, int idx)
 {
    grs_bitmap *bm = objmodelSetupBitmapTexture(idx, 0); // get first frame
-   float size = (bm->w > bm->h ? bm->w : bm->h) / 16.0; // 16 texels per foot
+   float size = (bm->w > bm->h ? bm->w : bm->h) / 16.0f; // 16 texels per foot
    objmodelReleaseBitmapTexture(idx, 0);
    return size;
 }
@@ -734,8 +732,8 @@ static int GetBitmapObjRelBBox(ObjID obj, int idx,
 {
    sBitmapWorldspace *pBWS;
    if (ObjBitmapWorldspace(obj, &pBWS)) {
-      mx_mk_vec(bmin, -.5 * pBWS->m_fXSize, -.5 * pBWS->m_fYSize, 0);
-      mx_mk_vec(bmax, .5 * pBWS->m_fXSize, .5 * pBWS->m_fYSize, 0);
+      mx_mk_vec(bmin, -.5f * pBWS->m_fXSize, -.5f * pBWS->m_fYSize, 0);
+      mx_mk_vec(bmax, .5f * pBWS->m_fXSize, .5f * pBWS->m_fYSize, 0);
    } else {
       float sz = GetBitmapSize(obj, idx) / 2;
       mx_mk_vec(bmin, -sz, -sz, -sz);

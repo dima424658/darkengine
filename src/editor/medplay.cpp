@@ -104,20 +104,19 @@ void PlayMotionUpdate(float dt)
    if(playOptions.frame_based) // one motion frame per render frame
    {
       freq=mp_motion_list[g_MotEditMotionNum].info.freq;
-      flags=mp_update(targ,1000/freq,NULL);
+      flags = mp_update(targ, (float)(1000 / freq), NULL);
    } else // Frame-rate independent
    {
       for(i=SIM_FRAME_RESOLUTION;i<dt;i+=SIM_FRAME_RESOLUTION)
       {
          flags|=mp_update(targ,SIM_FRAME_RESOLUTION,NULL);
       }
-      flags|=mp_update(targ,dt-(i-SIM_FRAME_RESOLUTION),NULL);
+      flags |= mp_update(targ, dt - (float)(i - SIM_FRAME_RESOLUTION), NULL);
    }
    if(flags)
       MvrProcessStandardFlags(MotEditGetMotor(),NULL,flags);
 }
 
-#pragma off(unreferenced)
 int PlayEnd(multiped *m,int motion_number,int frame, float time_slop, ulong flags)
 {
    if(playOptions.which_motions==PLAY_ALL_MOTIONS)
@@ -143,7 +142,6 @@ int PlayEnd(multiped *m,int motion_number,int frame, float time_slop, ulong flag
    }
    return 1;
 }
-#pragma on(unreferenced)
 
 void PlayMotionStop()
 {
@@ -242,7 +240,7 @@ void PlayMotionPoseAtFrame(int frame)
    }
 
    memset(&node,0,sizeof(node));
-   node.frame=frame;
+   node.frame = (float)frame;
    node.handle=g_MotEditMotionNum;
 
    // want these to be zero if global frame of ref

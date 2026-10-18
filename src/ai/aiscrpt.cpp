@@ -184,7 +184,7 @@ eAISpeed g_AIScriptSpeedToAISpeed[] =
 #define ScrPriToAIPri(pri) g_AIScriptPriorityToAIPriority[pri]
 // @TBD (toml 05-25-98): remove this test after the next skup
 #define ScrSpdToAISpd(spd)  \
-   (((spd) > kAIS_Fast) ?  \
+   (((int)(spd) > (int)kAIS_Fast) ?  \
       (((spd) == 100) ? kAIS_Fast : kAIS_Normal) : \
       g_AIScriptSpeedToAISpeed[(spd)])
 
@@ -337,7 +337,8 @@ public:
    STDMETHOD_(void, Signal)(ObjID objIdAI, const string& signalName)
    {
       // This will go to doSignal() on the AI's host machine:
-      g_pAISignalMsg->Send(OBJ_NULL, objIdAI, signalName);
+      g_pAISignalMsg->Send(OBJ_NULL, objIdAI,
+                           static_cast<const char *>(signalName));
    }
 
    STDMETHOD_(boolean, StartConversation)(ObjID conversationID)

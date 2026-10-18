@@ -17,7 +17,6 @@
 // the results you expect.
 //
 
-#include <windows.h>
 #include <comtools.h>
 #include <lg.h>
 #include <appagg.h>

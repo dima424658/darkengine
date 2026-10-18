@@ -139,8 +139,8 @@ public:
                                        /* OUT */ ulong *pSize,
                                        IResMemOverride *pResMem);
 
-   STDMETHOD_(void, SetManData) (DWORD ManData);
-   STDMETHOD_(DWORD, GetManData) ();
+   STDMETHOD_(void, SetManData) (DWORD_PTR ManData);
+   STDMETHOD_(DWORD_PTR, GetManData) ();
 
  protected:
    //////////
@@ -168,7 +168,7 @@ public:
    DWORD          m_AppData;
 
    // Set by the Resource Manager, if desired.
-   DWORD          m_ManData;
+   DWORD_PTR      m_ManData;
 
    // Used for multiple calls to ExtractPartial so that streams don't have to
    // be reopened each time.

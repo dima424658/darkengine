@@ -92,7 +92,7 @@ void md_prn_light(mds_light *l)
 
 // Prints the current one and advances
 // the counter to the next one
-mds_pgon *md_prn_pgon(mds_pgon *p)
+mds_pgon *md_prn_pgon(mds_pgon *p, mds_model *m)
 {
    uchar *next = (uchar*)p;
    int i;
@@ -132,6 +132,9 @@ mds_pgon *md_prn_pgon(mds_pgon *p)
          printf("%d ",p->verts[i]);
       }
    }
+
+   if (m->ver > 3)
+      next += sizeof(mds_pgon_aux);
 
    printf("\n");
 
@@ -278,7 +281,7 @@ void md_prn_model(mds_model *m)
 
    // print uv's
    printf("\nUV's:\n");
-   for (i=0;i< (m->vhot_off - m->uv_off)/sizeof(mds_uv);++i) {
+   for (i=0;(size_t)i< (m->vhot_off - m->uv_off)/sizeof(mds_uv);++i) {
       printf("   uv %d: \t%f \t%f\n",i,uvs[i].u,uvs[i].v);
    }
 
@@ -298,14 +301,14 @@ void md_prn_model(mds_model *m)
 
    // print lights
    printf("\nLight vecs:\n");
-   for (i=0;i<(m->norm_off - m->light_off)/sizeof(mds_light);++i) {
+   for (i=0;(size_t)i<(m->norm_off - m->light_off)/sizeof(mds_light);++i) {
       printf("   lt %d: ",i);
       md_prn_light(&lights[i]);
    }
 
    // print norms
    printf("\nNormals:\n");
-   for (i=0;i<(m->pgon_off - m->norm_off)/sizeof(mxs_vector);++i) {
+   for (i=0;(size_t)i<(m->pgon_off - m->norm_off)/sizeof(mxs_vector);++i) {
       printf("   norm %d:\t",i);
       mx_prn_vec(&norms[i]);
    }
@@ -315,8 +318,8 @@ void md_prn_model(mds_model *m)
    p = (mds_pgon *)pgons;
    printf("\nPolygons:\n");
    while(i<m->pgons) {
-      printf("Pgon %d: ",(int)p - (int)pgons);
-      p = md_prn_pgon(p);
+      printf("Pgon %d: ", i);
+      p = md_prn_pgon(p, m);
       i++;
    }
 
@@ -328,7 +331,7 @@ void md_prn_model(mds_model *m)
       n = nodes + subs[j].node_start;
       i = 0;
       while(i<subs[j].node_num) {
-         printf("\nNode %d: ",(int)n - (int)nodes);
+         printf("\nNode %td: ", n - nodes);
          n = md_prn_node(n);
          i++;
       }

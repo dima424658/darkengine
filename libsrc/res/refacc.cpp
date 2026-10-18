@@ -57,7 +57,7 @@
 */
 
 #include <string.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <res.h>
 #include <res_.h>
@@ -339,7 +339,7 @@ int ResExtractRefTable(Id id, RefTable * prt, long size)
 
    lseek(fd, RES_OFFSET_DESC2REAL(prd->offset), SEEK_SET);
    read(fd, &prt->numRefs, sizeof(RefIndex));
-   if (REFTABLESIZE(prt->numRefs) > size)
+   if (size < 0 || REFTABLESIZE(prt->numRefs) > (size_t)size)
    {
       Warning(("ResExtractRefTable: ref table too large for buffer\n"));
       ResThreadUnlock();

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 
 #include <lg.h>
 #include <matrix.h>
@@ -686,13 +687,13 @@ static BOOL near_ok(editBrush *br)
     float posDiff[3];
     float szDiff[3];
     
-    posDiff[0] = abs(br->pos.x - near_brush->pos.x) + abs(br->pos.y - near_brush->pos.y);
-    posDiff[1] = abs(br->pos.y - near_brush->pos.y) + abs(br->pos.z - near_brush->pos.z);
-    posDiff[2] = abs(br->pos.z - near_brush->pos.z) + abs(br->pos.x - near_brush->pos.x);
+    posDiff[0] = fabsf(br->pos.x - near_brush->pos.x) + fabsf(br->pos.y - near_brush->pos.y);
+    posDiff[1] = fabsf(br->pos.y - near_brush->pos.y) + fabsf(br->pos.z - near_brush->pos.z);
+    posDiff[2] = fabsf(br->pos.z - near_brush->pos.z) + fabsf(br->pos.x - near_brush->pos.x);
 
-    szDiff[0] = abs(br->sz.x - near_brush->sz.x) + abs(br->sz.y - near_brush->sz.y);
-    szDiff[1] = abs(br->sz.x - near_brush->sz.x) + abs(br->sz.y - near_brush->sz.y);
-    szDiff[2] = abs(br->sz.x - near_brush->sz.x) + abs(br->sz.y - near_brush->sz.y);
+    szDiff[0] = fabsf(br->sz.x - near_brush->sz.x) + fabsf(br->sz.y - near_brush->sz.y);
+    szDiff[1] = fabsf(br->sz.x - near_brush->sz.x) + fabsf(br->sz.y - near_brush->sz.y);
+    szDiff[2] = fabsf(br->sz.x - near_brush->sz.x) + fabsf(br->sz.y - near_brush->sz.y);
 
     return ((posDiff[0] <= 1.0 && szDiff[0] <= 1.0) ||
             (posDiff[1] <= 1.0 && szDiff[1] <= 1.0) ||

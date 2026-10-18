@@ -67,8 +67,8 @@ static void compute_uv(float *u, float *v, PortalPolygonRenderInfo *r, mxs_vecto
    mxs_vector right;
    float denom;
 
-   mx_scale_add_vec(&right, p, &r->tex_u, r->u_base / (16*256.0));
-   mx_scale_addeq_vec(&right, &r->tex_v, r->v_base / (16*256.0));
+   mx_scale_add_vec(&right, p, &r->tex_u, r->u_base / (16*256.0f));
+   mx_scale_addeq_vec(&right, &r->tex_v, r->v_base / (16*256.0f));
    mx_subeq_vec(&right, base);
 
    // ok, so, now we just want to use cramers rule
@@ -85,8 +85,8 @@ static void compute_uv_light(float *u, float *v, PortalCell *p,
       &p->plane_list[p->poly_list[s].planeid].normal,
       &p->vpool[p->vertex_list[vc+i]], &p->vpool[p->vertex_list[vc]]);
 
-   *u -= p->light_list[s].base_u / 4.0;
-   *v -= p->light_list[s].base_v / 4.0;
+   *u -= p->light_list[s].base_u / 4.0f;
+   *v -= p->light_list[s].base_v / 4.0f;
 }
 
 void compute_uv_light_data(PortalCell *p, int s, int vc)
@@ -127,11 +127,11 @@ void wr_alloc_light_map(PortalCell *p, int s, int vc)
    vm[0] *= 64 / LM_STEP;
    vm[1] *= 64 / LM_STEP;
 
-   p->light_list[s].base_u = floor(um[0]+0.0001);
-   p->light_list[s].base_v = floor(vm[0]+0.0001);
+   p->light_list[s].base_u = (short)floorf(um[0]+0.0001f);
+   p->light_list[s].base_v = (short)floorf(vm[0]+0.0001f);
 
-   p->light_list[s].w = ceil(um[1]-0.0001) - floor(um[0]+0.0001) + 1;
-   p->light_list[s].h = ceil(vm[1]-0.0001) - floor(vm[0]+0.0001) + 1;
+   p->light_list[s].w = (uchar)(ceilf(um[1]-0.0001f) - floorf(um[0]+0.0001f) + 1);
+   p->light_list[s].h = (uchar)(ceilf(vm[1]-0.0001f) - floorf(vm[0]+0.0001f) + 1);
 
    if (p->light_list[s].w <= 0 || p->light_list[s].h <= 0) {
 #ifdef EDITOR

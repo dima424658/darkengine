@@ -9,8 +9,8 @@
 #include <r3ds.h>
 #include <mprintf.h>
 
-#include <ptmap.h>
-#include <recip.h>
+#include "ptmap.h"
+#include "recip.h"
 #include <ptmapper.h>
 #include <profile.h>
 #include <scancvt.h>
@@ -41,10 +41,7 @@ extern int stat_num_spans_drawn;
 
 // enable various asm routines in ptmapper
 
-#define UNCLIPPED_ASM
-#define USE_ASM_OUTER_LOOP
-#define CLIPPED_ASM
-#define RPI_UNLIT_ASM
+/* Portable C scan conversion and span assembly are selected below. */
 
 
 int g2pt_start_y;
@@ -142,8 +139,8 @@ static void scan_convert(grs_point *p1, grs_point *p2)
    x = p1->sx + fix_mul(dx, fix_ceil(p1->sy) - p1->sy);
 
    if (g2pt_poly_lit) {
-      di = (p2->i - p1->i)*SHADES * 65536 / (p2->sy - p1->sy);
-      i  = p1->i*SHADES + fix_mul(di, fix_ceil(p1->sy) - p1->sy);
+      di = (fix)((p2->i - p1->i)*SHADES * 65536 / (p2->sy - p1->sy));
+      i  = (fix)(p1->i*SHADES + fix_mul(di, fix_ceil(p1->sy) - p1->sy));
       if (di < 0) di += 1;
 
       // now generate all crossings for this edge
@@ -155,7 +152,7 @@ static void scan_convert(grs_point *p1, grs_point *p2)
          ++y1;
       }
    } else {
-#if 1
+#if 0
       g2pt_scan_convert(x, &xdata[y1][left], dx, y2 - y1);
 #else
       // now generate all crossings for this edge
@@ -292,8 +289,8 @@ static void scan_convert_uv(r3s_point *p1, r3s_point *p2)
    info.dv2 = dv2;
 
    if (g2pt_poly_lit) {
-      di = (p2->grp.i - p1->grp.i)*SHADES * 65536 / (p2->grp.sy - p1->grp.sy);
-      i  = p1->grp.i*SHADES + fix_mul(di, fix_ceil(p1->grp.sy) - p1->grp.sy);
+      di = (fix)((p2->grp.i - p1->grp.i)*SHADES * 65536 / (p2->grp.sy - p1->grp.sy));
+      i  = (fix)(p1->grp.i*SHADES + fix_mul(di, fix_ceil(p1->grp.sy) - p1->grp.sy));
       if (di < 0) di += 1;
 
       this_x = fix_cint(x);
@@ -320,7 +317,7 @@ static void scan_convert_uv(r3s_point *p1, r3s_point *p2)
          ++y1;
       }
    } else {
-#if 1
+#if 0
       g2pt_scan_convert_uv(&info, &xdata[y1][0], &uvdata[y1][0], y2-y1);
 #else
       this_x = fix_cint(x);
@@ -353,7 +350,7 @@ static void real_render_poly_lit_float(int y0, int y1)
    int x,len, i;
    int row;
    uchar *dest, *destcore;
-   float a,b,c, ma,mb,mc;
+   double a,b,c, ma,mb,mc;
    extern int g2pt16_mask;
 
 #ifdef DBG_ON
@@ -404,10 +401,10 @@ static void real_render_poly_float(int y0, int y1)
 {  PROF
 #ifndef USE_ASM_OUTER_LOOP
    int x,len, i;
-   float a,b,c;
+   double a,b,c;
    uchar *dest;
 #endif
-   float ma,mb,mc;
+   double ma,mb,mc;
    int row;
    uchar *destcore;
 
@@ -444,10 +441,10 @@ static void real_render_poly_float(int y0, int y1)
       len = xdata[i][1] - x;
 
       if (len > 0) {
-         float end_a, end_b, end_c;
+         double end_a, end_b, end_c;
 #ifdef DBG_ON
-         float orig_a, orig_b, orig_c;
-         float old_u_step, old_v_step;
+         double orig_a, orig_b, orig_c;
+         double old_u_step, old_v_step;
 #endif
 
          dest = destcore + x;
@@ -465,21 +462,13 @@ static void real_render_poly_float(int y0, int y1)
             end_c = c + (len-1) * g2pt_fdc;
          }
 
-         pixel_count[length_mapping[len]] += len;
-
-#if 1
          {
-            while (len--) {
-               fix u = a/c + fix_make(2,0), v = b/c + fix_make(2,0);
-               a += g2pt_fda;
-               b += g2pt_fdb;
-               c += g2pt_fdc;
-               *dest++ = g2pt_tmap_ptr[256*(v >> 16) + (u >> 16)]; 
-            }
+            double abc[3];
+            abc[0] = a;
+            abc[1] = b;
+            abc[2] = c;
+            g2ptmap_perspective_run(len, abc, dest);
          }
-#else
-         g2ptmap_do_perspective_lit_run_implicit(dest, len, a, b, c);
-#endif
       }
       destcore += row;
       ma += g2pt_tmap_data[6];
@@ -762,7 +751,7 @@ static void render_rpi(RenderPolyInfo *rpi)
    int y,len, x, dy, skip_i;
    int row;
    uchar *dest, *destcore;
-   float a,b,c, ma,mb,mc;
+   double a,b,c, ma,mb,mc;
    SpanItem *si, *end;
 
    if (g2ptmap_setup(rpi->bm)!=G2PTC_OK)
@@ -871,9 +860,9 @@ static void render_rpi_unlit(RenderPolyInfo *rpi)
 #ifdef RPI_UNLIT_ASM
    double mabc[3];
 #else
-   float a,b,c, ma,mb,mc;
+   double a,b,c, ma,mb,mc;
    uchar *dest;
-   int i,x,dy,len;
+   int x,dy,len;
 #endif
    SpanItem *si, *end;
 
@@ -1229,7 +1218,7 @@ static void add_unclipped_run(int x0, int x1, int y)
 
 #endif
 
-#define CLIP_DATA_HEIGHT   768
+#define CLIP_DATA_HEIGHT   G2C_MAX_HEIGHT
 #define CLIP_DATA_TOTAL    (CLIP_DATA_HEIGHT * 8)
 
 static RunClipData clip_data[CLIP_DATA_TOTAL];  // allocation pool

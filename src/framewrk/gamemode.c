@@ -83,6 +83,7 @@
 #include <appapi.h>
 #include <crwpnlup.h>
 #include <missrend.h>
+#include <render_backend.h>
 
 // yes, this is gross, when we structure the key bind handling better we can get rid of this
 ///#include <drkwswd.h>
@@ -105,6 +106,22 @@ static SimState gameSimState =
 {
    0xFFFFFFFF,  // All flags set
 };
+
+#ifdef EDITOR
+static BOOL gExitGameModeToEditor = FALSE;
+
+void GameModeExitToEditor(void)
+{
+   ILoop* looper = AppGetObj(ILoop);
+
+   // The sim menu is pushed on top of game mode.  Pop it now; game mode's
+   // resume handler will consume this request and switch the underlying mode
+   // to DromEd instead of leaving a suspended game below the editor.
+   gExitGameModeToEditor = TRUE;
+   ILoop_EndMode(looper,0);
+   SafeRelease(looper);
+}
+#endif
 
 #include <fixtime.h>
 #include <memall.h>
@@ -351,6 +368,13 @@ static ScrnManContext scrndata =
    NULL, 
 };
 
+// Fit mode owns a runtime screen description whose dimensions follow the
+// drawable window client. Keep it separate from gGameScrnMode so resizing a
+// window does not overwrite the fixed resolution the user selected for when
+// Fit is disabled.
+static sScrnMode gFitScreenMode;
+static BOOL gFitResizeRestart = FALSE;
+
 static uiLoopContext _uidata =
 {
    NULL, 
@@ -377,6 +401,35 @@ static sLoopInstantiator _instantiator =
    _InitContext,
 };
 
+static BOOL build_fit_screen_mode(sScrnMode* mode)
+{
+   const sScrnMode* selected = GetGameScreenMode();
+   int fit = 0;
+   int width;
+   int height;
+   int registered;
+
+   if (!config_get_int("game_screen_fit", &fit) || !fit ||
+#ifndef __ANDROID__
+       !(selected->flags & kScrnModeWindowed) ||
+#endif
+       !RenderBackendGetSettledClientSize(&width, &height) ||
+       width < 400 || height < 300 || width > 8191 || height > 8191)
+      return FALSE;
+
+   registered = gr_register_mode(width, height, 16);
+   if (registered < 0)
+      return FALSE;
+   grd_mode_info[registered].flags |= GRM_CAN_WINDOW;
+
+   *mode = *selected;
+   mode->valid_fields |= kScrnModeDimsValid | kScrnModeBitDepthValid;
+   mode->w = width;
+   mode->h = height;
+   mode->bitdepth = 16;
+   return TRUE;
+}
+
 sLoopInstantiator* DescribeGameMode(GameMinorMode minorMode, GameModeDesc* desc)
 {
    if (minorMode != mmGameNoChange)
@@ -389,9 +442,38 @@ sLoopInstantiator* DescribeGameMode(GameMinorMode minorMode, GameModeDesc* desc)
          SetGameScreenMode(desc->scrnmode); 
    }
 
-   scrndata.mode_params.preferred = (sScrnMode*)GetGameScreenMode(); 
+   if (build_fit_screen_mode(&gFitScreenMode))
+      scrndata.mode_params.preferred = &gFitScreenMode;
+   else
+      scrndata.mode_params.preferred = (sScrnMode*)GetGameScreenMode();
 
    return &_instantiator;
+}
+
+static BOOL resize_fit_canvas_to_client(void)
+{
+   sScrnMode current;
+   sLoopInstantiator* loop;
+   ILoop* looper;
+
+   if (!build_fit_screen_mode(&gFitScreenMode))
+      return FALSE;
+
+   ScrnModeGet(&current);
+   if ((current.valid_fields & kScrnModeDimsValid) &&
+       current.w == gFitScreenMode.w && current.h == gFitScreenMode.h)
+      return FALSE;
+   scrndata.mode_params.preferred = &gFitScreenMode;
+
+   RenderBackendTrace("fit-canvas source=%dx%d client=%dx%d",
+                      current.w, current.h,
+                      gFitScreenMode.w, gFitScreenMode.h);
+   gFitResizeRestart = TRUE;
+   looper = AppGetObj(ILoop);
+   loop = &_instantiator;
+   ILoop_ChangeMode(looper, kLoopModeSwitch, loop);
+   SafeRelease(looper);
+   return TRUE;
 }
 
 ////////////////////////////////////////
@@ -528,6 +610,14 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
       case kMsgEnterMode:
       {
+         int fit = 0;
+         config_get_int("game_screen_fit", &fit);
+         // DromEd and the retail game share this loop client. Fixed modes are
+         // aspect-fitted to the host; Fit mode replaces the logical canvas
+         // with the settled client size so its CPU HUD overlay stays 1:1.
+         RenderBackendSetScaleToWindow(TRUE);
+         RenderBackendSetFitToViewport(fit != 0);
+         RenderBackendSetPreserveCanvas(FALSE);
 #ifdef HISTO
          ILoop * pLoop = AppGetObj(ILoop);
          int profile = 0; 
@@ -562,6 +652,26 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
       // Fall through
       case kMsgResumeMode:
       {
+         int fit = 0;
+         config_get_int("game_screen_fit", &fit);
+         RenderBackendSetScaleToWindow(TRUE);
+         RenderBackendSetFitToViewport(fit != 0);
+         RenderBackendSetPreserveCanvas(FALSE);
+
+#ifdef EDITOR
+         if (gExitGameModeToEditor)
+         {
+            gExitGameModeToEditor = FALSE;
+            enter_edit_mode("");
+            break;
+         }
+
+#endif
+
+         // Panels pause by replacing the active SimState with a zero-flag
+         // state. Reassert game ownership on resume so rendering cannot stay
+         // disabled after Continue.
+         SimStateSet(&gameSimState);
 
          {
             // Make sure the sim is running...
@@ -573,6 +683,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          root = GetRootRegion();
          HotkeyContext = HK_GAME_MODE; 
          InstallIBHandler (HK_GAME_MODE, UI_EVENT_KBD_RAW | UI_EVENT_MOUSE | UI_EVENT_MOUSE_MOVE | UI_EVENT_JOY, TRUE);
+         mouse_set_relative_mode(TRUE);
          MissionPalSet();
          resume_mode();
          // i love the fall through, i love the control, i love it all
@@ -618,6 +729,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
       }
          // fall through 
       case kMsgSuspendMode:
+         mouse_set_relative_mode(FALSE);
          RemoveIBHandler ();
          suspend_mode();
          break;
@@ -626,12 +738,19 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          break;
       case kMsgNormalFrame:
          // @OPTIMIZE: maybe test a boolean
+         if (resize_fit_canvas_to_client())
+            break;
          if (state->first_frame)
          {
             if (!once)
+            {
                process_config_scripts("game_script");
-            once = TRUE;
-            process_config_scripts("game_always_script");
+               once = TRUE;
+               process_config_scripts("game_always_script");
+            }
+            else if (!gFitResizeRestart)
+               process_config_scripts("game_always_script");
+            gFitResizeRestart = FALSE;
             state->first_frame = FALSE;
          }
 #ifdef HISTO
@@ -661,7 +780,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 }
 
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -671,14 +789,13 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
 
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 sLoopClientDesc GameLoopClientDesc =
 {
    &LOOPID_Game,
    "Generic Game Mode Client",
    kPriorityNormal,
-   kMsgsMode|kMsgsFrame|kMsgsAppOuter|kMsgEnd|kMsgVisual,
+   (ulong)kMsgsMode|kMsgsFrame|kMsgsAppOuter|kMsgEnd|kMsgVisual,
 
    kLCF_Callback,
    _CreateClient,

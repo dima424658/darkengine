@@ -18,16 +18,16 @@
     <ClCompile Include="timelog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="waildynf.cpp">
+    <ClCompile Include="..\..\winsrc\sound\dmixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dmixer.cpp">
+    <ClCompile Include="..\..\winsrc\sound\dsample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dsample.cpp">
+    <ClCompile Include="..\..\winsrc\sound\dsound_guids.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dsnddynf.cpp">
+    <ClCompile Include="..\..\winsrc\sound\dsnddynf.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="fade.cpp">
@@ -36,16 +36,16 @@
     <ClCompile Include="lgsndid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="midiplay.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="qmixer.cpp">
+    <ClCompile Include="openal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="qsample.cpp">
+    <ClCompile Include="..\..\winsrc\sound\openal_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\winsrc\sound\sndplatform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sample.cpp">
@@ -68,19 +68,19 @@
     <ClInclude Include="volconv.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wail.h">
+    <ClInclude Include="..\..\winsrc\sound\dlgsndi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="waildynf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dlgsndi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dsnddynf.h">
+    <ClInclude Include="..\..\winsrc\sound\dsnddynf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lgsndi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="algsndi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="openal_api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lgsndid.h">
@@ -89,22 +89,13 @@
     <ClInclude Include="lgsound.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="midiplay.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="midplayi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="mixerlck.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="qlgsndi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="sndfmt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sndplatform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

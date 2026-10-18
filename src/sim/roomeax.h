@@ -66,7 +66,7 @@ inline void cRoomEAX::SetAcoustics(int roomID, int roomType)
    if (roomID < 0)
       return;
 
-   if (roomID >= m_acousticsIndex.Size())
+   if (roomID >= (int)m_acousticsIndex.Size())
       m_acousticsIndex.SetSize(roomID + 1);
 
    m_acousticsIndex[roomID] = roomType;
@@ -74,7 +74,7 @@ inline void cRoomEAX::SetAcoustics(int roomID, int roomType)
 
 inline int cRoomEAX::GetAcoustics(int roomID) const
 {
-   if ((roomID < 0) || (roomID >= m_acousticsIndex.Size()))
+   if ((roomID < 0) || (roomID >= (int)m_acousticsIndex.Size()))
       return -1;
    else
       return m_acousticsIndex[roomID];

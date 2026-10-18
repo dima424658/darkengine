@@ -92,7 +92,8 @@ typedef void (LGAPI * RelationListenFunc)(sRelationListenMsg* msg, RelationListe
 // LINK IDS
 //
 
-typedef long LinkID;
+// Link IDs are stored in mission files and are always 32-bit, even on LP64.
+typedef int32 LinkID;
 typedef int eLinkPartition; 
 
 // null link

@@ -5,7 +5,7 @@
 // $Revision: 1.2 $
 //
 
-#if defined(_WIN32) && !defined(SHIP)
+#if !defined(SHIP)
 
 #include <memtimer.h>
 #include <memcore.h>
@@ -57,7 +57,7 @@ cMemAllocTimer::~cMemAllocTimer()
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cMemAllocTimer::Alloc(ULONG cb)
+STDMETHODIMP_(void *) cMemAllocTimer::Alloc(SIZE_T cb)
 {
     m_AllocTimer.Start();
     void * p = m_pNext->Alloc(cb);
@@ -67,7 +67,7 @@ STDMETHODIMP_(void *) cMemAllocTimer::Alloc(ULONG cb)
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cMemAllocTimer::Realloc(void * pv, ULONG cb)
+STDMETHODIMP_(void *) cMemAllocTimer::Realloc(void * pv, SIZE_T cb)
 {
     m_ReallocTimer.Start();
     void * p = m_pNext->Realloc(pv, cb);
@@ -86,7 +86,7 @@ STDMETHODIMP_(void) cMemAllocTimer::Free(void * pv)
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(ULONG) cMemAllocTimer::GetSize(void * pv)
+STDMETHODIMP_(SIZE_T) cMemAllocTimer::GetSize(void * pv)
 {
     return m_pNext->GetSize(pv);
 }
@@ -108,7 +108,7 @@ STDMETHODIMP_(void) cMemAllocTimer::HeapMinimize()
 ///////////////////////////////////////
 #ifndef SHIP
 
-STDMETHODIMP_(void *) cMemAllocTimer::AllocEx(ULONG cb, const char * pszFile, int line)
+STDMETHODIMP_(void *) cMemAllocTimer::AllocEx(SIZE_T cb, const char * pszFile, int line)
 {
     m_AllocTimer.Start();
     void * p = m_pNext->AllocEx(cb, pszFile, line);
@@ -118,7 +118,7 @@ STDMETHODIMP_(void *) cMemAllocTimer::AllocEx(ULONG cb, const char * pszFile, in
 
 ///////////////////////////////////////
 
-STDMETHODIMP_(void *) cMemAllocTimer::ReallocEx(void * pv, ULONG cb, const char * pszFile, int line)
+STDMETHODIMP_(void *) cMemAllocTimer::ReallocEx(void * pv, SIZE_T cb, const char * pszFile, int line)
 {
     m_ReallocTimer.Start();
     void * p = m_pNext->ReallocEx(pv, cb, pszFile, line);

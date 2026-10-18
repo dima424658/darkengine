@@ -217,7 +217,7 @@ extern "C" void ObjSparkRender(ObjID obj, sSpark *spark, grs_bitmap *bitmap)
          spokes.el[i] += ((Rand() - 16384) * spark->angle_jitter) >> 15;
 
    if (spark->size_jitter)
-      random_scaling = float(Rand() - 16384) * (spark->size_jitter / 32768.0);
+      random_scaling = float(Rand() - 16384) * (spark->size_jitter / 32768.0f);
 
    if (ObjGetScale(obj, &scale)) {
       has_scale_property = TRUE;
@@ -225,7 +225,7 @@ extern "C" void ObjSparkRender(ObjID obj, sSpark *spark, grs_bitmap *bitmap)
       if (flags & kSprkFlagBrightHighScale)
          base_light_level *= scale.el[0];
       else if (flags & kSprkFlagBrightLowScale)
-         base_light_level *= (1.0 - scale.el[0]);
+         base_light_level *= (1.0f - scale.el[0]);
    } else
       has_scale_property = FALSE;
 
@@ -240,7 +240,7 @@ extern "C" void ObjSparkRender(ObjID obj, sSpark *spark, grs_bitmap *bitmap)
 
       scaled_size *= screen_projection.grp.w;   // this is w, as in 1/z
       scaled_size *= float(grd_bm.w);          // this is w, bitmap width
-      fix_scaled_size = scaled_size;
+      fix_scaled_size = fix_from_float(scaled_size);
       fix_scaled_size = max(fix_scaled_size, 65536);    // somewhat arbitrary
 
       fix_fastsincos(spokes.el[i], &sine, &cosine);
@@ -280,10 +280,10 @@ extern "C" void ObjSparkRender(ObjID obj, sSpark *spark, grs_bitmap *bitmap)
 
    if (flags & kSprkFlagBrightHighAngle)
       base_light_level
-        *= float(ushort(pos->fac.ty)) * 1.0 / 65535.0;
+        *= float(ushort(pos->fac.ty)) * 1.0f / 65535.0f;
    else if (flags & kSprkFlagBrightLowAngle)
       base_light_level
-        *= (1.0 - float(ushort(pos->fac.ty)) * 1.0 / 65535.0);
+        *= (1.0f - float(ushort(pos->fac.ty)) * 1.0f / 65535.0f);
 
    if (flags & kSprkFlagLightByVertex) {
       polygon_context |= R3_PL_GOURAUD;
@@ -295,11 +295,11 @@ extern "C" void ObjSparkRender(ObjID obj, sSpark *spark, grs_bitmap *bitmap)
 
       if (spark->light_jitter) {
          screen_vertex[0].grp.i
-            *= (spark->light_jitter * (((float)Rand()) * (1.0 / 32767)));
+            *= (spark->light_jitter * (((float)Rand()) * (1.0f / 32767)));
          screen_vertex[1].grp.i
-            *= (spark->light_jitter * (((float)Rand()) * (1.0 / 32767)));
+            *= (spark->light_jitter * (((float)Rand()) * (1.0f / 32767)));
          screen_vertex[2].grp.i
-            *= (spark->light_jitter * (((float)Rand()) * (1.0 / 32767)));
+            *= (spark->light_jitter * (((float)Rand()) * (1.0f / 32767)));
       }
 
    } else {

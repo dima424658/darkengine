@@ -68,14 +68,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if defined(__WATCOMC__) || defined(__SC__)
-// for find_t
-#include <dos.h>
-#else 
-#include <io.h>
-#endif
-
 #include <types.h>
+#include <platform_services.h>
+#include <darklimit.h>
 
 #ifdef __cplusplus
 extern "C"  {
@@ -84,8 +79,7 @@ extern "C"  {
 //	The Datapath structure maintains a list of data paths.  It should
 //	be cleared to 0 prior to use (static instances are clear at init already).
 
-#define NUM_DATAPATHS 16			   // was 8, which should have been plenty
-                                    // however, defdep needs more, for instance
+#define NUM_DATAPATHS DARK_LIMIT_RUNTIME_DATA_PATHS
 #pragma pack(4)
 typedef struct Datapath
 {
@@ -147,15 +141,10 @@ void DatapathCopy(Datapath *dst, const Datapath *src);
 
 typedef struct {
    Datapath *dp;
-   char path[128];   // name with path and wild cards added
+   char path[1024];  // name with path and wild cards added
    int curp;         // current datapath entry
    int cur;
-#if defined(__WATCOMC__) || defined(__SC__)
-	struct find_t find;
-#else
-	struct _finddata_t find;		// phs, 7/1/96
-   long findfp;
-#endif
+   sPlatformFileFind find;
    int flags;      
 } DatapathDir;
 

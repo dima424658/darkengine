@@ -16,8 +16,10 @@
 struct sAIScheduleSettings
 {
    BOOL fActive;
-   long budget;
+   int budget;
 };
+
+static_assert(sizeof(sAIScheduleSettings) == 8, "AI schedule settings require 32-bit fields");
 
 extern sAIScheduleSettings g_AIScheduleSettings;
 

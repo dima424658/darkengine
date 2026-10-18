@@ -55,10 +55,10 @@ enum edbPartition // database partitions
 enum edbFiletype_ 
 {
 
-   kFiletypeMIS = kDBMission  | kObjPartConcrete|kObjPartMission, 
-   kFiletypeMAP = kDBMap      | kObjPartConcrete|kObjPartTerrain,
-   kFiletypeGAM = kDBGameSys  | kObjPartAbstract,
-   kFiletypeAll = kFiletypeMIS|kFiletypeGAM|kFiletypeMAP|kObjParts|kObjConcreteSubparts|kObjAbstractSubparts,
+   kFiletypeMIS = (ulong)kDBMission | (ulong)kObjPartConcrete | (ulong)kObjPartMission,
+   kFiletypeMAP = (ulong)kDBMap | (ulong)kObjPartConcrete | (ulong)kObjPartTerrain,
+   kFiletypeGAM = (ulong)kDBGameSys | (ulong)kObjPartAbstract,
+   kFiletypeAll = (ulong)kFiletypeMIS | (ulong)kFiletypeGAM | (ulong)kFiletypeMAP | (ulong)kObjParts | (ulong)kObjConcreteSubparts | (ulong)kObjAbstractSubparts,
 };
 
 

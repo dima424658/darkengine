@@ -24,6 +24,10 @@
 #include <dbasemsg.h>
 #include <objmodel.h>
 #include <sdestool.h>
+#include <contentctx.h>
+#ifdef THIEF2_GAME
+#include <motmngr.h>
+#endif
 
 // must be last header
 #include <dbmem.h>
@@ -45,7 +49,6 @@
 // COM object initializaiton
 //
 
-#ifdef _WIN32
 //
 // Called to notify start-up code is complete, COM initialization is
 // pending.
@@ -88,16 +91,29 @@ static void setup_game_mode(void)
 
 tResult LGAPI AppInit()
 {
+   const BOOL quickstart = config_is_defined("quickstart");
 
    CoreEngineAppInit();
 
-   if (!gPrimordialMode)
+#ifdef THIEF2_GAME
+   // Direct command-line mission loads occur before the biped loop client
+   // has had an opportunity to create the motion database.
+   if (!g_pMotionSet)
+      MotionManagerInit();
+#endif
+
+   // quickstart=<mission> is a deterministic developer path: bypass the
+   // mission loop, movies, and menus and make gameplay the primordial mode.
+   if (quickstart)
+      setup_game_mode();
+   else if (!gPrimordialMode)
       setup_game_mode();   
 
-   char buf[80];
-   if (config_get_raw("file",buf,80))
+   char buf[260];
+   const char *load_var = quickstart ? "quickstart" : "file";
+   if (config_get_raw(load_var,buf,sizeof(buf)))
       dbLoad(buf,kFiletypeAll);
-   else
+   else if (!DarkContentShowPicker())
       dbBuildDefault();
 
    return NOERROR;
@@ -117,14 +133,6 @@ tResult LGAPI AppExit()
    CoreEngineAppExit();
    return NOERROR;
 }
-
-
-
-
-#endif
-
-
-
 
 /*
 Local Variables:

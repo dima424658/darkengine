@@ -51,8 +51,8 @@
 #include <faceg.h>
 
 
-void SpeechStartCB(ObjID speakerID, int hSchema, ObjID schemaID);
-void SpeechEndCB(ObjID speakerID, int hSchema, ObjID schemaID);
+static void SpeechStartCB(ObjID speakerID, int hSchema, ObjID schemaID);
+static void SpeechEndCB(ObjID speakerID, int hSchema, ObjID schemaID);
 extern ISearchPath *pSoundPath; // from appsfx
 
 
@@ -63,16 +63,16 @@ extern ISearchPath *pSoundPath; // from appsfx
 \* --<<= -+-\-\-\=\=\/\- <<< ((( ((( \ / ))) ))) >>> -/\/=/=/-/-/-+- =>>-- */
 
 // number of samples per second
-static float kFaceSamplesPerSec = 16.0;
+static float kFaceSamplesPerSec = 16.0f;
 
 #define kFaceFilename "facepos.str"
 #define kFacePathConfigVar "face_path"
 
 // for finding mouth positions--see FindFacePos
-static float kFaceCutoffClosed = .025;
-static float kFaceCutoffBig = .175;
-static float kFaceCutoffShout = .35;
-static float kFaceOpenFudge = 1.2;
+static float kFaceCutoffClosed = .025f;
+static float kFaceCutoffBig = .175f;
+static float kFaceCutoffShout = .35f;
+static float kFaceOpenFudge = 1.2f;
 
 
 /* --<<= -+-/-/-/=/=/\/- <<< ((( ((( / \ ))) ))) >>> -\/\=\=\-\-\-+- =>>-- *\
@@ -452,7 +452,7 @@ static inline void NormBuffFromRes4(sSndAttribs *pAttribs, void *pRawData,
    short *pTemp = (short *) malloc(pAttribs->numSamples * sizeof(short));
    short *pOut = pTemp;
    uint nSamplesOutNeeded = pAttribs->numSamples;
-   int iInSamplesLeft = 0;
+   uint iInSamplesLeft = 0;
    uint skipNSamples = 0;
    uint nSamps;
    BOOL getHeader;
@@ -483,8 +483,8 @@ static inline void NormBuffFromRes4(sSndAttribs *pAttribs, void *pRawData,
       nSamplesOutNeeded -= nSamps;
    } // end while nSamplesOutNeeded > 0
 
-   for (int i = 0; i < pAttribs->numSamples; ++i)
-      pfSamples[i] = fabs(pTemp[i] * (1.0 / 32767));
+   for (uint i = 0; i < pAttribs->numSamples; ++i)
+      pfSamples[i] = fabsf(pTemp[i] * (1.0f / 32767));
 
    free(pTemp);
 }
@@ -497,8 +497,8 @@ static inline void NormBuffFromRes8(sSndAttribs *pAttribs, void *pRawData,
    uchar *pRawUChars = (uchar *) pRawData;
 
    // 8-bit WAV files are unsigned.
-   for (int i = 0; i < pAttribs->numSamples; ++i)
-      pfSamples[i] = fabs((pRawUChars[i] - 127.0)  * (1.0 / 127.0));
+   for (uint i = 0; i < pAttribs->numSamples; ++i)
+      pfSamples[i] = fabsf((pRawUChars[i] - 127.0f)  * (1.0f / 127.0f));
 }
 
 
@@ -507,8 +507,8 @@ static inline void NormBuffFromRes16(sSndAttribs *pAttribs, void *pRawData,
                                      float *pfSamples)
 {
    short *pRawShorts = (short *) pRawData;
-   for (int i = 0; i < pAttribs->numSamples; ++i)
-      pfSamples[i] = fabs(pRawShorts[i] * (1.0 / 32767));
+   for (uint i = 0; i < pAttribs->numSamples; ++i)
+      pfSamples[i] = fabsf(pRawShorts[i] * (1.0f / 32767));
 }
 
 
@@ -516,7 +516,7 @@ static inline void NormBuffFromRes16(sSndAttribs *pAttribs, void *pRawData,
 static float Average(float *pfSamples, uint nCount)
 {
    float fSum = 0;
-   for (int i = 0; i < nCount; ++i)
+   for (uint i = 0; i < nCount; ++i)
       fSum += pfSamples[i];
    return fSum / nCount;
 }
@@ -526,11 +526,11 @@ static float Average(float *pfSamples, uint nCount)
 static float StandardDeviation(float *pfSamples, uint nCount, float fAverage)
 {
    float fSum = 0;
-   for (int i = 0; i < nCount; ++i) {
+   for (uint i = 0; i < nCount; ++i) {
       float fDifference = pfSamples[i] - fAverage;
       fSum += fDifference * fDifference;
    }
-   return sqrt(fSum / nCount);
+   return sqrtf(fSum / nCount);
 }
 
 
@@ -614,8 +614,8 @@ static inline void ProcessSample(const char *pszName, FILE *pFile)
    // positions.
    float fLengthInSeconds
       = (float) Attribs.numSamples / (float) Attribs.sampleRate;
-   int iNumPositions = fLengthInSeconds * kFaceSamplesPerSec;
-   int iSamplesPerPosition = (float) Attribs.sampleRate / kFaceSamplesPerSec;
+   int iNumPositions = (int)(fLengthInSeconds * kFaceSamplesPerSec);
+   int iSamplesPerPosition = (int)((float) Attribs.sampleRate / kFaceSamplesPerSec);
    float fStDev = StandardDeviation(pfSamples, Attribs.numSamples,
                                     Average(pfSamples, Attribs.numSamples));
 
@@ -724,7 +724,7 @@ static void SpeechStartCB(ObjID speakerID, int hSchema, ObjID schemaID)
    // Is there a string for this sample?
    pState->m_pszFacePosString = FetchMouthString(pszSampleName);
    if (pState->m_pszFacePosString) {
-      pState->m_iFacePosStringLength = strlen(pState->m_pszFacePosString);
+      pState->m_iFacePosStringLength = (int)strlen(pState->m_pszFacePosString);
       ConfigSpew("FaceSpew", ("face: Sample: %s -- string: %s.\n",
                               pszSampleName, pState->m_pszFacePosString));
    }
@@ -815,7 +815,7 @@ static inline grs_bitmap *FindBitmap(ObjID Obj, sFaceNames *pNames)
          iVisage = kFaceNeutral;
 
       int iTimeIntoSample = (int) nTime - (int) pState->m_nTalkStartTime;
-      int iPos = (iTimeIntoSample * kFaceSamplesPerSec) / 1000;
+      int iPos = (int)((iTimeIntoSample * kFaceSamplesPerSec) / 1000);
 
       if (pState->m_pszFacePosString) {
          if (iPos < 0) {
@@ -931,7 +931,7 @@ void FacePrerender(ObjID Obj, mms_model *pModel)
    g_pMaterial = mm_smatr_list(pModel) + pNames->m_iMaterialIndex;
    g_nDefaultMaterial = g_pMaterial->handle;
    if (pBitmap)
-      g_pMaterial->handle = (ulong) pBitmap;
+      g_pMaterial->handle = mm_register_texture(pBitmap);
 }
 
 

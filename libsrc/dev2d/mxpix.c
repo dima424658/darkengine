@@ -18,12 +18,10 @@
 #include <grd.h>
 extern void (*modex_upix8_func[])();
 
-#pragma off(unreferenced)
 gdupix_func *modex_upix8_expose(int c, int x, int y)
 {
    return (gdupix_func *)modex_upix8_func[grd_gc.fill_type];
 }
-#pragma on(unreferenced)
 
 void modex_upix8(int c, int x, int y)
 {

@@ -17,6 +17,7 @@
 
 #include <lgassert.h>
 #include <templexp.h>
+#include <stdint.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -110,7 +111,7 @@
 
 #define __CPPTOOLSAPI
 
-#define kSListInvalidPtr ((cSListNodeBase *)0xffffffff)
+#define kSListInvalidPtr ((cSListNodeBase *)(uintptr_t)-1)
 #ifndef SHIP
 extern const char * g_pszSlistInsertError;
 #define SLValidateNodeInsert(p) AssertMsg((p)->m_pNext == kSListInvalidPtr, g_pszSlistInsertError);

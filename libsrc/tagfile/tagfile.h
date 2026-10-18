@@ -9,7 +9,7 @@
 #define __TAGFILE_H
 
 #include <lg.h>
-#include <io.h>
+#include <platform_io.h>
 
 #include <comtools.h>
 
@@ -37,6 +37,40 @@ typedef struct _TagFileTag
 } TagFileTag; 
 
 typedef struct VersionNum TagVersion;
+
+// Optional database compatibility observer. Readers expose the stored block
+// version and leave acceptance to the codec that owns the data.
+typedef void (LGAPI *TagFileBlockObserver)(ITagFile* file,
+                                           const TagFileTag* tag,
+                                           const TagVersion* version,
+                                           ulong size,
+                                           ulong consumed,
+                                           BOOL closing,
+                                           void* context);
+
+EXTERN void TagFileSetBlockObserver(TagFileBlockObserver observer, void* context);
+EXTERN void TagFileNotifyBlockObserver(ITagFile* file,
+                                       const TagFileTag* tag,
+                                       const TagVersion* version,
+                                       ulong size,
+                                       ulong consumed,
+                                       BOOL closing);
+
+// Structural read failures are input errors, not assertion failures.  The
+// database layer installs this observer while a mission-load transaction is
+// active so a lower-level reader can abort that transaction cleanly.
+typedef void (LGAPI *TagFileErrorObserver)(ITagFile* file,
+                                           const TagFileTag* tag,
+                                           const char* operation,
+                                           const char* detail,
+                                           void* context);
+
+EXTERN void TagFileSetErrorObserver(TagFileErrorObserver observer,
+                                    void* context);
+EXTERN void TagFileNotifyError(ITagFile* file,
+                               const TagFileTag* tag,
+                               const char* operation,
+                               const char* detail);
 
 //------------------------------------------------------------
 // Open modes 

@@ -12,16 +12,16 @@ public:
 	cLoopManager(IUnknown* pOuterUnknown, unsigned nMaxModes);
 
 	// Add a client
-	STDMETHOD(AddClient)(THIS_ ILoopClient*, ulong* pCookie) override;
+	STDMETHOD(AddClient)(THIS_ ILoopClient*, tLoopClientCookie* pCookie) override;
 
 	// Remove a client
-	STDMETHOD(RemoveClient)(THIS_ ulong cookie) override;
+	STDMETHOD(RemoveClient)(THIS_ tLoopClientCookie cookie) override;
 
 	// Add a client factory
-	STDMETHOD(AddClientFactory)(THIS_ ILoopClientFactory*, ulong* pCookie) override;
+	STDMETHOD(AddClientFactory)(THIS_ ILoopClientFactory*, tLoopClientCookie* pCookie) override;
 
 	// Remove a client factory
-	STDMETHOD(RemoveClientFactory)(THIS_ ulong cookie) override;
+	STDMETHOD(RemoveClientFactory)(THIS_ tLoopClientCookie cookie) override;
 
 	// Find/create a client
 	STDMETHOD(GetClient)(THIS_ tLoopClientID*, tLoopClientData, ILoopClient**) override;

@@ -35,7 +35,7 @@
     <ClCompile Include="tmrt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tmwin32.c">
+    <ClCompile Include="..\..\winsrc\timer\tmwin32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tmail.c">

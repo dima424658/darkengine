@@ -10,7 +10,7 @@
 #ifndef SCHTYPE__H
 #define SCHTYPE__H
 
-#define SCH_HANDLE_NULL NULL
+#define SCH_HANDLE_NULL 0
 #define SCH_RANDOM_SAMPLE (-1)
 
 typedef struct sSchemaPlayParams sSchemaPlayParams;

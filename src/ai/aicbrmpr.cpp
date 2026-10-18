@@ -100,7 +100,7 @@ static sStructDesc g_AIRangedApplicabilitiesSDesc = StructDescBuild(sAIRangedApp
 // Ranged Flee
 //
 
-sAIRangedFleeParams g_defaultAIRangedFleeParams = {4, 0, 1.57, 5, 30., 6.,};
+sAIRangedFleeParams g_defaultAIRangedFleeParams = {4, 0, 1.57f, 5, 30.f, 6.f,};
 
 class cAIRangedFleeParams: public sAIRangedFleeParams
 {

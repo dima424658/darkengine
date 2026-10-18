@@ -16,6 +16,7 @@
 
 #include <sndseg.h>
 #include <res.h>
+#include <resapi.h>
 
 class cRezSegment : public cSndSegment
 
@@ -33,6 +34,18 @@ public:
 
 private:
    Id             mRezId;
+};
+
+class cNRezSegment : public cSndSegment
+{
+public:
+   cNRezSegment( void );
+   virtual ~cNRezSegment( void );
+   void *GetRawData( void *pDst, uint32 nBytes );
+   void Init( IRes *pRes, uint32 offset, sSndAttribs *pAttribs, BOOL doDouble );
+
+private:
+   IRes *mpRes;
 };
 
 

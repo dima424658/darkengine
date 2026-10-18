@@ -174,6 +174,20 @@ static porthw_texture *init_texture(int texture_index)
    porthw_texture *texture = &texture_list[texture_index];
    texture->bm = gr_alloc_bitmap(LM_BITMAP_TYPE, LM_FLAGS, TEX_SIZE, TEX_SIZE);
    texture->bits = texture->bm->bits;
+#if defined(RGB_LIGHTING) && !defined(RGB_888)
+   if (g_lgd3d)
+   {
+      grs_rgb_bitmask bitmask;
+
+      // portal_color_convert() packs cached lightmaps in the hardware
+      // texture format.  Label the bitmap with that same format before the
+      // modern uploader expands it to RGBA; treating 5:6:5 data as 5:5:5
+      // shifts the channels and gives dynamic lighting a green cast.
+      lgd3d_get_opaque_texture_bitmask(&bitmask);
+      gr_set_bitmap_format(texture->bm,
+         bitmask.green == 0x07e0 ? BMF_RGB_565 : BMF_RGB_555);
+   }
+#endif
 #ifndef RGB_LIGHTING
    if (pt_lightmap_pal_index < 0)
       pt_init_lightmap_pal();
@@ -265,7 +279,7 @@ static porthw_strip *alloc_strip(porthw_texture *texture, int h)
    strip = &strip_list[strip_index];
    strip->next_strip = texture->strip_index;
    strip->h = h;
-   strip->w = texture->bm->w;
+   strip->w = (char)texture->bm->w;
    strip->elem_index = -1;
    strip->v0 = texture->bm->h - texture->h;
    texture->strip_index = strip_index;
@@ -553,7 +567,7 @@ void porthw_get_cached_lightmap(hw_render_info *hw,
    } else {
       porthw_elem *elem = &elem_list[render->cached_surface];
       hw->lm = texture_list[elem->texture_index].bm;
-      hw->lm_u0 = elem->u0 + 0.5;
-      hw->lm_v0 = elem->v0 + 0.5;
+      hw->lm_u0 = elem->u0 + 0.5f;
+      hw->lm_v0 = elem->v0 + 0.5f;
    }
 }

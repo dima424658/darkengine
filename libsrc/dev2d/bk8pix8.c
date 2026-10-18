@@ -19,10 +19,10 @@
 /* draws an unclipped pixel of the given color at (x, y) on the canvas. */
 void bank8_norm_upix8(int color, int x, int y)
 {
-   long p;
+   uintptr_t p;
    int save_bank=gdd_bank;
 
-   p = ((long )grd_bm.bits) + grd_bm.row*y + x;
+   p = (uintptr_t)grd_bm.bits + grd_bm.row * y + x;
    gd_set_bank(p>>16);
    *(gd_bank_p(p)) =
       color;
@@ -31,10 +31,10 @@ void bank8_norm_upix8(int color, int x, int y)
 
 void bank8_clut_upix8 (int color, int x, int y)
 {
-   long p;
+   uintptr_t p;
    int save_bank=gdd_bank;
 
-   p = ((long )grd_bm.bits) + grd_bm.row*y + x;
+   p = (uintptr_t)grd_bm.bits + grd_bm.row * y + x;
    gd_set_bank(p>>16);
    *(gd_bank_p(p)) =
       ((uchar *)grd_gc.fill_parm)[color];
@@ -44,10 +44,10 @@ void bank8_clut_upix8 (int color, int x, int y)
 void bank8_xor_upix8 (int color, int x, int y)
 {
    uchar *bank_p;
-   long p;
+   uintptr_t p;
    int save_bank=gdd_bank;
 
-   p = ((long )grd_bm.bits) + grd_bm.row*y + x;
+   p = (uintptr_t)grd_bm.bits + grd_bm.row * y + x;
    gd_set_bank(p>>16);
    bank_p = gd_bank_p(p);
    *bank_p = color ^ *bank_p;
@@ -58,10 +58,10 @@ void bank8_tluc_upix8 (int color, int x, int y)
 {
    uchar *clut=tluc8tab[color];
    uchar *bank_p;
-   long p;
+   uintptr_t p;
    int save_bank=gdd_bank;
 
-   p = ((long )grd_bm.bits) + grd_bm.row*y + x;
+   p = (uintptr_t)grd_bm.bits + grd_bm.row * y + x;
    gd_set_bank(p>>16);
    bank_p = gd_bank_p(p);
 
@@ -73,16 +73,14 @@ void bank8_tluc_upix8 (int color, int x, int y)
    gd_restore_bank(save_bank);
 }
 
-#pragma off (unreferenced)
 void bank8_solid_upix8 (int color, int x, int y)
 {
-   long p;
+   uintptr_t p;
    int save_bank=gdd_bank;
 
-   p = ((long )grd_bm.bits) + grd_bm.row*y + x;
+   p = (uintptr_t)grd_bm.bits + grd_bm.row * y + x;
    gd_set_bank(p>>16);
    *(gd_bank_p(p)) =
       (uchar )grd_gc.fill_parm;
    gd_restore_bank(save_bank);
 }
-#pragma on (unreferenced)

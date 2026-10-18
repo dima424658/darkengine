@@ -166,9 +166,9 @@ typedef struct mds_vhot {
 // of fraction, for 10 bytes total.  So the x, y, and z values of each
 // lighting normal can be extracted in the following manner:
 
-#define X_NORM(norm) ((short)((norm>>16)&0xFFC0))/16384.0
-#define Y_NORM(norm) ((short)((norm>>6)&0xFFC0))/16384.0
-#define Z_NORM(norm)  ((short)((norm<<4)&0xFFC0))/16384.0
+#define X_NORM(norm) ((short)((norm>>16)&0xFFC0))/16384.0f
+#define Y_NORM(norm) ((short)((norm>>6)&0xFFC0))/16384.0f
+#define Z_NORM(norm)  ((short)((norm<<4)&0xFFC0))/16384.0f
 
 typedef struct mds_light {
    ushort mat;    // material index
@@ -206,6 +206,10 @@ typedef void (*mdf_light_obj_cback)(int p);
 #define MD_PGON_COLOR_PAL  0x20  // palette color
 #define MD_PGON_COLOR_VCOL 0x40  // vcolor lookup
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4200) // On-disk trailing-array layout.
+#endif
 typedef struct mds_pgon {
    ushort   index;   // absolute index of pgon
    ushort   data;    // color or tmap indice
@@ -216,6 +220,9 @@ typedef struct mds_pgon {
    ushort   verts[]; // vertex indices, then light indices, then uv
                      // indices, optionally
 } mds_pgon;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 // Auxilliary info for the pgon.. like material
 // occurs after verts, has extra info
@@ -236,13 +243,24 @@ enum _mde_node {
 };
 typedef unsigned char mde_node;
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4200) // On-disk trailing-array layout.
+#endif
 typedef struct mds_node_raw {
    mde_node type;       // type of node
    mds_sphere  sphere;  // bounding sphere of node
    ushort   num;		   // number of polys
    ushort   polys[];    // polygon list
 } mds_node_raw;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4200) // On-disk trailing-array layout.
+#endif
 typedef struct mds_node_split {
    mde_node type;             // type of node
    mds_sphere sphere;      // bounding sphere
@@ -254,7 +272,14 @@ typedef struct mds_node_split {
    ushort   pgons_after;	// number of polygons to render after split
    ushort   polys[];
 } mds_node_split;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4200) // On-disk trailing-array layout.
+#endif
 typedef struct mds_node_call {
    mde_node type;
    mds_sphere  sphere;
@@ -263,6 +288,9 @@ typedef struct mds_node_call {
    ushort   pgons_after;		// number of polygons to render after call
    ushort   polys[];
 } mds_node_call;
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 typedef struct mds_node_vcall {
    mde_node type;

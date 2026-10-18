@@ -85,11 +85,11 @@ void DrawSoundPath(char *args)
    ged_line_view_channels |= (1<<LINE_CH_SOUND);
 
    if (strstr(args, "goat"))
-      sscanf(args, "%dgoat%dgoat%s", &src_obj, &radius, &schema_name);
+      sscanf(args, "%dgoat%dgoat%15s", &src_obj, &radius, schema_name.text);
    else
-      sscanf(args, "%d,%d,%s", &src_obj, &radius, &schema_name);
+      sscanf(args, "%d,%d,%15s", &src_obj, &radius, schema_name.text);
 
-   mprintf("playing %s on %d and drawing path (radius %d)\n", &schema_name, src_obj, radius);
+   mprintf("playing %s on %d and drawing path (radius %d)\n", schema_name.text, src_obj, radius);
 
    sSchemaCallParams callParams = g_sDefaultSchemaCallParams;
    callParams.flags |= SCH_SET_OBJ | SCH_RADIUS_VOLUME;

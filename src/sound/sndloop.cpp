@@ -170,7 +170,6 @@ static void do_frame(void)
 // Object message handler
 //
 
-#pragma off(unreferenced)
 static void obj_message(ObjID obj, eObjNotifyMsg msg, void *data)
 {
    switch (msg)
@@ -180,7 +179,6 @@ static void obj_message(ObjID obj, eObjNotifyMsg msg, void *data)
          break;
    }
 }
-#pragma on(unreferenced)
 
 static void init_obj_message(void)
 {
@@ -196,7 +194,6 @@ static void init_obj_message(void)
 // Here's where we do the dirty work.
 //
 
-#pragma off(unreferenced)
 static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMessageData hdata)
 {
    // useful stuff for most clients
@@ -300,7 +297,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 // Loop client factory function.
 //
 
-#pragma off(unreferenced)
 static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    StateRecord* state;
@@ -310,7 +306,6 @@ static ILoopClient* LGAPI _CreateClient(sLoopClientDesc * pDesc, tLoopClientData
 
    return CreateSimpleLoopClient(_LoopFunc,state,pDesc);
 }
-#pragma on(unreferenced)
 
 ///////////////
 // DESCRIPTOR

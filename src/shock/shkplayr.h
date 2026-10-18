@@ -13,14 +13,9 @@
 #include <osystype.h>
 #include <label.h>
 #include <propface.h>
-
-typedef enum eStats;
-typedef enum eTechSkills;
-typedef enum eWeaponSkills;
-typedef enum ePsiPowers;
-typedef enum ePlayerEquip;
-typedef enum eTrait;
-typedef enum eImplant;
+#include <shkplcst.h>
+#include <shktrcst.h>
+#include <shkimcst.h>
 
 typedef struct sStatsDesc
 {

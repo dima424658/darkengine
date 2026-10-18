@@ -62,7 +62,7 @@ void modex_uhline_fill (uchar c, int x, int y, int x1)
 
 void modex_norm_uhline(int x, int y, int x1)
 {
-   uchar c = grd_gc.fcolor;
+   uchar c = (uchar)grd_gc.fcolor;
    modex_uhline_fill(c, x, y, x1);
 }
 
@@ -74,6 +74,6 @@ void modex_clut_uhline(int x, int y, int x1)
 
 void modex_solid_uhline(int x, int y, int x1)
 {
-   uchar c = grd_gc.fill_parm;
+   uchar c = (uchar)grd_gc.fill_parm;
    modex_uhline_fill(c, x, y, x1);
 }

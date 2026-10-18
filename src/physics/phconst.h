@@ -19,37 +19,37 @@
 //
 // Minimum relative velocity below which we stick to a terrain surface
 //
-const mxs_real kBreakTerrainContactVel = 5.0;
+const mxs_real kBreakTerrainContactVel = 5.0f;
 
 //
 // Minimum relative velocity below which we stick to an object
 //
-const mxs_real kBreakObjectContactVel = 5.0;
+const mxs_real kBreakObjectContactVel = 5.0f;
 
 //
 // Minimum relative velocity above which we destroy all contacts 
 //
-const mxs_real kBreakAllObjectContactVel = 1000.0;
+const mxs_real kBreakAllObjectContactVel = 1000.0f;
 
 //
 // Distance at which we judge terrain contact to be broken
 //
-const mxs_real kBreakTerrainContactDist = 0.1;
+const mxs_real kBreakTerrainContactDist = 0.1f;
 
 //
 // Distance at which we judge object contact to be broken
 //
-const mxs_real kBreakObjectContactDist = 0.2;
+const mxs_real kBreakObjectContactDist = 0.2f;
 
 //
 // Distance to backup from a collision (squared)
 //
-const mxs_real kCollisionBackup2 = 0.01;
+const mxs_real kCollisionBackup2 = 0.01f;
 
 //
 // Max proportion of distance travelled to backup
 //
-const mxs_real kCollisionBackupMax = 0.5;
+const mxs_real kCollisionBackupMax = 0.5f;
 
 //
 // Max number of collisions we allow/frame/model
@@ -59,7 +59,7 @@ const int kMaxFrameCollisions = 32;
 //
 // Pump some energy into object vs. object collisions...
 //
-const mxs_real kObjectCollisionEnergy = 0.0;
+const mxs_real kObjectCollisionEnergy = 0.0f;
 
 //
 // Gravity
@@ -70,7 +70,7 @@ EXTERN mxs_real   kGravityAmt;
 //
 // Default terrain elasticity
 //
-const mxs_real kTerrainBounce = 0.1;
+const mxs_real kTerrainBounce = 0.1f;
 
 //
 // Min velocity magnitude a sliding object can have before it 

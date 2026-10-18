@@ -6,7 +6,9 @@ enum class eImgKind
 {
 	kImgBMP,
 	kImgCEL,
+	kImgDDS,
 	kImgGIF,
+	kImgPNG,
 	kImgPCX,
 	kImgTGA
 };

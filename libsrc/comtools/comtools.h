@@ -82,7 +82,10 @@
 #ifndef FAR
 #define FAR
 #endif
-typedef long HRESULT;
+#ifndef _HRESULT_DEFINED
+#define _HRESULT_DEFINED
+typedef int32 HRESULT;
+#endif
 typedef ulong ULONG;
 typedef struct _GUID GUID;
 typedef struct _GUID IID;
@@ -118,12 +121,19 @@ typedef struct _GUID CLSID;
 #endif // !__IID_DEFINED__
 
 #if defined( _WIN32 ) && !defined( _NO_COM )
+#ifndef __STRUCT__
+#define __STRUCT__ struct
+#endif
+#ifndef DECLSPEC_NOVTABLE
+#define DECLSPEC_NOVTABLE __declspec(novtable)
+#endif
+#ifndef DECLSPEC_NOTHROW
+#define DECLSPEC_NOTHROW __declspec(nothrow)
+#endif
 #include <winerror.h>
 #include <basetyps.h>
 #else
-//#error "Need objbase.h equivalent for target platform"
-#include <nt\winerror.h>
-#include <nt\basetyps.h>
+#include <com_compat.h>
 #endif
 
 
@@ -181,6 +191,11 @@ typedef struct IUnknown  IUnknown;
 #endif
 #endif
 
+#ifndef __LPUNKNOWN_DEFINED_BY_DARK
+#define __LPUNKNOWN_DEFINED_BY_DARK
+typedef IUnknown *LPUNKNOWN;
+#endif
+
 #ifndef __cplusplus
 
 #ifndef IUnknown_QueryInterface
@@ -211,7 +226,7 @@ typedef struct IUnknown  IUnknown;
 #endif
 
 
-#ifndef _OBJBASE_H_
+#if !defined(_OBJBASE_H_) && !defined(_GUIDDEF_H_)
 #ifdef __cplusplus
 inline BOOL IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
 {
@@ -231,11 +246,7 @@ inline BOOL IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
 
 inline BOOL operator==(const GUID& guidOne, const GUID& guidOther)
 {
-#ifdef _WIN32
     return !memcmp(&guidOne,&guidOther,sizeof(GUID));
-#else
-    return !_fmemcmp(&guidOne,&guidOther,sizeof(GUID));
-#endif
 }
 
 inline BOOL operator!=(const GUID& guidOne, const GUID& guidOther)
@@ -402,7 +413,8 @@ inline cIPtrBase::operator IUnknown *() const
 
 inline int cIPtrBase::operator=(int)
 {
-    return int(pUnknown = 0);
+    pUnknown = 0;
+    return 0;
 }
 
 ///////////////////

@@ -86,7 +86,7 @@ static int read_int(ITagFile *file)
 // variable length strings (ie. an int then var len char array)
 static BOOL write_str(ITagFile *file, char *str)
 {
-   int len=strlen(str)+1;
+   int len=(int)strlen(str)+1;
    write_int(file,len);
    if (ITagFile_Write(file,str,len) == len)
       return TRUE;

@@ -65,7 +65,7 @@ BOOL cAIRangedFlee::CheckPreconditions(void)
    for (int i=0; i<pParams->m_numPoints; i++)
    {
       // calc angle
-      angle = (float(i)*(2.*pParams->m_angleRange)/float(pParams->m_numPoints-1))-pParams->m_angleRange;
+      angle = (float(i)*(2.f*pParams->m_angleRange)/float(pParams->m_numPoints-1))-pParams->m_angleRange;
       angle = angle+PI-GetTargetHeading();
       floatang_normalize_angle(angle.value);
       
@@ -97,7 +97,7 @@ BOOL cAIRangedFlee::CheckPreconditions(void)
       MakeHintedLocationFromVector(&targetLoc, &targetVec, pMyLoc);
       m_pTargetAILoc->SetLocation(targetLoc);
       m_pTargetAILoc->TestPathcast();  // to get cell ID
-      targetLoc.vec.z = g_AIPathDB.GetZAtXY(m_pTargetAILoc->GetCellID(), targetVec) + 3.0;
+      targetLoc.vec.z = g_AIPathDB.GetZAtXY(m_pTargetAILoc->GetCellID(), targetVec) + 3.0f;
       m_pTargetAILoc->SetLocation(targetLoc);
    }
    return found;   

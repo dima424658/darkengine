@@ -6,7 +6,7 @@
  *
  */
 
-#include <windows.h>
+#include <win32_platform.h>
 #include <lg.h>
 #include <kb.h>
 #include <kbstate.h>

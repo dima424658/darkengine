@@ -74,8 +74,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
-#include <dos.h>
-#include <io.h>
+#include <platform_io.h>
 #include <lg.h>
 
 #include <datapath.h>
@@ -84,12 +83,6 @@
 #ifndef min
 #define min(a, b) ((a < b) ? a : b)
 #endif // min
-
-// Use this for watcom
-#if defined(__WATCOMC__) || defined(__SC__)
-EXTERN int _dp_find_flags_tab[4] = {_A_NORMAL,0,_A_SUBDIR|_A_NORMAL,_A_SUBDIR};
-#endif
-
 
 //	-------------------------------------------------------------
 //
@@ -131,7 +124,7 @@ FILE *DatapathOpen(Datapath *pdp, const char *fname, const char *mode)
 {
 	FILE *fp;
 	int i;
-	char buff[128];
+	char buff[1024];
 
 //	0 means either current directory or file not found
 
@@ -190,7 +183,7 @@ int DatapathFDOpen(Datapath *pdp, const char *fname, int access, ... )
 	int fd;
 	int i;
 	int permis;
-	char buff[128];
+	char buff[1024];
 	va_list curr_arg;
 
 //	If creating, set permissions
@@ -211,9 +204,9 @@ int DatapathFDOpen(Datapath *pdp, const char *fname, int access, ... )
 	if (!pdp->noCurrent)
 		{
 		if (access & O_CREAT)
-		   fd = open(fname, access, permis);
+		   fd = _open(fname, access, permis);
 		else
-		   fd = open(fname, access);
+		   fd = _open(fname, access);
 
 		if (fd != -1)
 			return(fd);
@@ -227,9 +220,9 @@ int DatapathFDOpen(Datapath *pdp, const char *fname, int access, ... )
 		strcat(buff, fname);
 
 		if (access & O_CREAT)
-			fd = open(buff, access, permis);
+			fd = _open(buff, access, permis);
 		else
-		   fd = open(buff, access);
+		   fd = _open(buff, access);
 
 		if (fd != -1)
 			{
@@ -261,13 +254,8 @@ int DatapathFDOpen(Datapath *pdp, const char *fname, int access, ... )
 int DatapathFind(Datapath *pdp, const char *fname, char *buff, int len)
 {
 	int i;
-#if defined(__WATCOMC__) || defined(__SC__)
-	struct find_t find;
-	int err;
-#else
-	struct _finddata_t find;		// phs, 7/1/96
-	long handle;
-#endif
+	size_t bufferLen = len > 0 ? (size_t)len : 0;
+	sPlatformFileFind find = { 0 };
 
 	for (i = -1; i < pdp->numDatapaths; i++)
 		{
@@ -277,8 +265,8 @@ int DatapathFind(Datapath *pdp, const char *fname, char *buff, int len)
 				continue;	// ... but not if noCurrent
 			else
 				{
-               if (strlen(fname) >= len) {
-                  Error(1,"buff len of %d exceeded by %d:\n%s",len,strlen(fname),fname);
+               if (strlen(fname) >= bufferLen) {
+                  Error(1,"buff len of %d exceeded by %zu:\n%s",len,strlen(fname),fname);
                } else {
       				strcpy(buff, fname);
                }
@@ -286,28 +274,18 @@ int DatapathFind(Datapath *pdp, const char *fname, char *buff, int len)
 			}
 		else
 			{
-            if (strlen(fname)+strlen(pdp->datapath[i]) >= len) {
-               Error(1,"buff len of %d exceeded by %d:\n%s\n%s",len,strlen(fname)+strlen(pdp->datapath[i]),fname,pdp->datapath[i]);
+            if (strlen(fname)+strlen(pdp->datapath[i]) >= bufferLen) {
+               Error(1,"buff len of %d exceeded by %zu:\n%s\n%s",len,strlen(fname)+strlen(pdp->datapath[i]),fname,pdp->datapath[i]);
             } else {
       			strcpy(buff, pdp->datapath[i]);
 	      		strcat(buff, fname);
             }
 			}
-#if defined(__WATCOMC__) || defined(__SC__)
-		err = _dos_findfirst(buff, _dp_find_flags_tab[pdp->find_flags], &find);
-		if (err == 0)
+		if (PlatformFindFirst(buff, &find))
 			{
-			_dos_findclose(&find);
+			PlatformFindClose(&find);
 			return TRUE;
 			}
-#else
-		handle = _findfirst(buff, &find);	// MSVC _findfirst acts just a bit differently - phs, 7/1/96
-		if (handle != -1)
-			{
-			_findclose(handle);
-			return TRUE;
-			}
-#endif
 		}
 
 //	Can't find!
@@ -330,7 +308,7 @@ bool DatapathAdd(Datapath *pdp, const char *path)
 	bool any;
 	const char *p;
 	const char *psemi;
-	char buff[128];
+	char buff[1024];
 
 //	If path NULL, can't add
 
@@ -374,7 +352,8 @@ bool DatapathAdd(Datapath *pdp, const char *path)
 
 bool DatapathAddDir(Datapath *pdp, const char *pdir)
 {
-	int len,addSlash,c;
+	size_t len;
+	int addSlash,c;
 	char *p;
 
 //	If path ptr list full, can't add
@@ -432,7 +411,7 @@ static const char *emptyString = "";
 void DatapathCopy(Datapath *dst,const Datapath *src)
 {
    int i;
-   int len;
+   size_t len;
     
    // Copy all flags and stuff
    *dst = *src;

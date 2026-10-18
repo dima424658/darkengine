@@ -229,14 +229,16 @@ public:
    STDMETHOD_(vector,Position)(object obj)
    {
       ObjPos* pos = ObjPosGet(obj);
-      Assert_(pos!=NULL);
+      if (pos == NULL)
+         return vector();
       return pos->loc.vec; 
    }
 
    STDMETHOD_(vector,Facing)(object obj)
    {
       ObjPos* pos = ObjPosGet(obj);
-      Assert_(pos!=NULL);
+      if (pos == NULL)
+         return vector();
       mxs_angvec& ang = pos->fac; 
       return vector(ANG2DEGREES(ang.tx),ANG2DEGREES(ang.ty),ANG2DEGREES(ang.tz)); 
    }

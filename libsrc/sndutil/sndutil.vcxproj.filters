@@ -42,15 +42,6 @@
     <ClCompile Include="oneshot.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="roneshot.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rsplicer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rstremer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sndrezst.h">

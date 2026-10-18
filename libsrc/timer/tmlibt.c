@@ -20,13 +20,13 @@ extern void tm_set_process_period (int id, int period);
  
 
 pfv tm_ftab_libt [TMC_TIMER_FNS] = {
-  TF_tm_add_process,
-  tm_remove_process,
-  tm_activate_process,
-  tm_deactivate_process,
-  tm_set_process_denom,
-  tm_set_process_freq,
-  tm_set_process_period
+  (pfv)TF_tm_add_process,
+  (pfv)tm_remove_process,
+  (pfv)tm_activate_process,
+  (pfv)tm_deactivate_process,
+  (pfv)tm_set_process_denom,
+  (pfv)tm_set_process_freq,
+  (pfv)tm_set_process_period
 };
 
 

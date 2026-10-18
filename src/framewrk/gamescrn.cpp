@@ -31,12 +31,19 @@ static tScrnConstraintFunc constrain = NULL;
 
 const sScrnMode* SetGameScreenMode(const sScrnMode* mode)
 {
+   BOOL was_hardware = (gGameScrnMode.flags & kScrnMode3dDriver) != 0;
+
    ScrnModeCopy(&gGameScrnMode,mode,mode->valid_fields); 
    ScrnModeValidate(&gGameScrnMode); 
    if (constrain)
       constrain(&gGameScrnMode); 
 
-   family_reload_water(); 
+   // Resolution and presentation changes do not change which texture family
+   // the renderer consumes. Reloading water here used to tear down texture
+   // resources while the options panel was still live.
+   if (was_hardware !=
+       ((gGameScrnMode.flags & kScrnMode3dDriver) != 0))
+      family_reload_water();
    return &gGameScrnMode; 
 }
 

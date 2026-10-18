@@ -244,13 +244,13 @@ static void _SongParseAndSave (char* filename)
       // Pull out path of filename.
       // Find last backslash.
       nopathIndex = 0;
-      len = strlen (filename);   
+      len = (int)strlen (filename);
       for (i = 0; i < len; i++)
          if (filename[i] == '\\')
             nopathIndex = i + 1;
       sprintf(outFilename, "song\\%s", &(filename[nopathIndex]));
       // Change extension...
-      len = strlen (outFilename);
+      len = (int)strlen (outFilename);
       // Note: Default to appending extension if no dot found.
       dotIndex = len;
       // Find last dot in filename.

@@ -71,7 +71,8 @@ private:
 };
                          
 cPlayerManeuverFactory g_PlayerManeuverFactory;
-EXTERN cManeuverFactory *g_pPlayerManeuverFactory=&g_PlayerManeuverFactory;
+EXTERN cManeuverFactory *g_pPlayerManeuverFactory;
+cManeuverFactory *g_pPlayerManeuverFactory=&g_PlayerManeuverFactory;
 
 
 cMotionPlan *cPlayerManeuverFactory::CreatePlan(const cMotionSchema *pSchema,const sMcMotorState& motState, \

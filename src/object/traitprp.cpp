@@ -32,7 +32,7 @@ static cGenericArrayPropertyStore* gDonorTypeStore = NULL;
 
 int ObjDonorType(ObjID obj)
 {
-   return (int)(*gDonorTypeStore)[obj].value; 
+   return (int)(intptr_t)(*gDonorTypeStore)[obj].value;
 }
 
 

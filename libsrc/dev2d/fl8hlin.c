@@ -24,7 +24,7 @@ void flat8_uhline_fill(uchar c, int x, int y, int x1)
 
 void flat8_norm_uhline(int x, int y, int x1)
 {
-   uchar c = grd_gc.fcolor;
+   uchar c = (uchar)grd_gc.fcolor;
    flat8_uhline_fill(c, x, y, x1);
 }
 
@@ -36,14 +36,14 @@ void flat8_clut_uhline(int x, int y, int x1)
 
 void flat8_solid_uhline(int x, int y, int x1)
 {
-   uchar c = grd_gc.fill_parm;
+   uchar c = (uchar)grd_gc.fill_parm;
    flat8_uhline_fill(c, x, y, x1);
 }
 
 void flat8_xor_uhline(int x, int y, int x1)
 {
    uchar *p, *p_last;
-   uchar c = grd_gc.fcolor;
+   uchar c = (uchar)grd_gc.fcolor;
 
    p = grd_bm.bits + grd_bm.row*y;
    p_last = p + x1;
@@ -57,7 +57,7 @@ void flat8_tluc_uhline(int x, int y, int x1)
    uchar c;
    uchar *clut;
 
-   c = grd_gc.fcolor;
+   c = (uchar)grd_gc.fcolor;
    clut = tluc8tab[c];
    if (clut==NULL) {
       flat8_uhline_fill(c, x, y, x1);

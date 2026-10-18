@@ -44,6 +44,8 @@
 
 #include <mprintf.h>
 #include <song.h>
+#include <stdio.h>
+#include <string.h>
 
 static ISong* sgpCurrSong;
 static ISongSection* sgpCurrSection; 
@@ -52,6 +54,8 @@ static ISongEvent* sgpCurrEvent;
 static ISongGoto* sgpCurrGoto;
 
 static BOOL sgInSections;
+
+void songyyerror(char* errmsg);
 
 static unsigned _FindSectionIndexFromID (ISong* pSong, char* id)
 {
@@ -70,7 +74,7 @@ static unsigned _FindSectionIndexFromID (ISong* pSong, char* id)
       ISongSection_GetSectionInfo (pSection, &sectionInfo);
       ISongSection_Release (pSection);
 
-      if (!strcmp (&(sectionInfo.id), id))
+      if (!strcmp (sectionInfo.id, id))
       {
          index = i;
          break;

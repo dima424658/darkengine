@@ -17,6 +17,8 @@
 #include <drkldout.h>
 #include <drkdebrf.h>
 #include <scrnmode.h>
+#include <scrnloop.h>
+#include <gamescrn.h>
 #include <dbasemsg.h>
 #include <simstate.h>
 #include <simbase.h>
@@ -32,6 +34,7 @@
 #include <drkbook.h>
 #include <ctype.h>
 #include <drkamap.h>
+#include <missiondiag.h>
 
 // For flags
 #include <gamestr.h>
@@ -115,7 +118,7 @@ static ILoopClient* LGAPI client_factory(sLoopClientDesc * pDesc, tLoopClientDat
    return new cMissionLoopClient; 
 }
 
-static ulong factory_id = -1; 
+static tLoopClientCookie factory_id = (tLoopClientCookie)-1;
 
 static void create_client_factory()
 {
@@ -308,8 +311,8 @@ class cMissLoopState : public cFileVar<sMissLoopState,&gMissLoopStateDesc>
 
 
 void PushCutsceneMovieMode(int mission); 
-void backup_game(); 
-void restore_game(); 
+static void backup_game();
+static void restore_game();
 
 #define STATE(x) case x
 #define GOTO(x) if (1) { gMissLoop.next_state = x; break; } else 
@@ -328,8 +331,6 @@ void cMissionLoopClient::OnFrame()
             if (!config_is_defined("skip_intro"))
             {
                PushMovieOrBookMode("intro"); 
-               if (!config_is_defined("always_play_intro"))
-                  config_set_string("skip_intro",""); 
             }
          }
       NEXT(); 
@@ -368,6 +369,10 @@ void cMissionLoopClient::OnFrame()
                gMissLoop.Next(); 
                GOTO(kLoadFlags); 
             }
+            // The normal-loop smoke path exercises loading, mission prep,
+            // and gameplay without waiting on movies or the loadout panel.
+            if (config_is_defined("mission_loop_test"))
+               gMissLoop.flags |= kSkipBriefing|kSkipLoadout;
          }
       NEXT(); 
 
@@ -388,6 +393,9 @@ void cMissionLoopClient::OnFrame()
 
       STATE(kPrepMission): 
          {
+            if (config_is_defined("mission_loop_test"))
+               MissionDiagnosticsIssue("INFO","mission-loop-test",
+                  "loading panel completed; preparing mission objects");
             AutoAppIPtr(QuestData);    
             pQuestData->Delete(MISSION_COMPLETE_VAR); 
             DarkPrepLevelForDifficulty(); 
@@ -408,6 +416,9 @@ void cMissionLoopClient::OnFrame()
 
       STATE(kSim):
          {
+            if (config_is_defined("mission_loop_test"))
+               MissionDiagnosticsIssue("INFO","mission-loop-test",
+                  "mission preparation completed; entering gameplay");
             AutoAppIPtr_(SimManager,pSimMan); 
             pSimMan->StartSim(); 
 
@@ -586,7 +597,7 @@ ulong cMissionLoopClient::LoadNextMission(int mission)
 const char* cMissionLoopClient::LoadEndMovie(int mission)
 {
   char buf[64];
-  char endmovie[64];
+  static char endmovie[64];
   int  gotnewmovie = 0;
   sprintf(buf,"miss_%d_endmovie",mission);
   
@@ -594,7 +605,7 @@ const char* cMissionLoopClient::LoadEndMovie(int mission)
 
   // Look for end movie
   cStr nextstr = pGameStrings->FetchString("missflag",buf);
-  gotnewmovie = sscanf((const char*)nextstr,"%s",&endmovie);
+  gotnewmovie = sscanf((const char*)nextstr, "%63s", endmovie);
 
   return (gotnewmovie > 0) ? endmovie : "success";
 }
@@ -608,6 +619,7 @@ const char* cMissionLoopClient::LoadEndMovie(int mission)
 
 static tLoopClientID* Clients[] =
 {
+   &LOOPID_ScrnMan,
    &LOOPID_Mission,
 }; 
 
@@ -630,13 +642,28 @@ static void setup_loop_mode()
 ////////////////////////////////////////////////////////////
 // API
 //
-void setup_commands(); 
+static void setup_commands();
 
 void MissionLoopInit()
 {
    setup_commands(); 
    create_client_factory(); 
    setup_loop_mode(); 
+   int testMission = 0;
+   if (config_get_int("mission_loop_test",&testMission) && testMission > 0)
+   {
+      gMissLoop.mission = testMission;
+      gMissLoop.flags = 0;
+      gMissLoop.state = kStartApp;
+      gMissLoop.next_state = kBeginLoop;
+      gMissLoop.next_mission = 0;
+      char diagnostic[128];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "configured normal mission-loop test for mission %d",
+                testMission);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue("INFO","mission-loop-test",diagnostic);
+   }
 }
 
 void MissionLoopTerm()
@@ -660,8 +687,15 @@ void SetNextMission(int m)
 #endif
 }
 
+static ScrnManContext mission_scrndata =
+{
+   { NULL, NULL, NULL },
+   NULL,
+};
+
 static sLoopModeInitParm parm_list[] = 
 {
+   { &LOOPID_ScrnMan, (tLoopClientData)&mission_scrndata },
    { NULL} // terminator
 };
 
@@ -675,6 +709,7 @@ static sLoopInstantiator switch_me =
 
 sLoopInstantiator* DescribeMissionLoopMode()
 {
+   mission_scrndata.mode_params.preferred = (sScrnMode*)GetGameScreenMode();
    return &switch_me; 
 }
 

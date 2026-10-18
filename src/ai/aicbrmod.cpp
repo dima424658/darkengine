@@ -30,7 +30,8 @@
 // Must be last header
 #include <dbmem.h>
 
-EXTERN int g_AIRangedCombatModeWeights[kAIRC_NumApplicabilities] = 
+EXTERN int g_AIRangedCombatModeWeights[kAIRC_NumApplicabilities];
+int g_AIRangedCombatModeWeights[kAIRC_NumApplicabilities] =
 {
    0,    // kAIRC_AppNone
    1,    // kAIRC_AppMinimum

@@ -117,7 +117,7 @@ void r3_start_object_trans(mxs_trans *t)
 // note that are really all the same and perhaps should be one function that
 // has several macro calls, and just passes in an index
 
-typedef void (*rot_fun)(mxs_matrix *,mxs_matrix *,mxs_ang);
+typedef void (*rot_fun)(mxs_matrix *,const mxs_matrix *,mxs_ang);
 static rot_fun rot_table[3] = {
    mx_rot_x_mat,
    mx_rot_y_mat,

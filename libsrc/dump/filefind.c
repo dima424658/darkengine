@@ -11,8 +11,8 @@
 #include <string.h>
 #include <stdlib.h>     // _MAX_PATH
 #include <fcntl.h>
-#include <io.h>
-#include <sys\stat.h>
+#include <platform_io.h>
+#include <sys/stat.h>
 
 /* Finds the free file in a sequence like
  * "<prefix>000.<suff>", tries to open it,
@@ -27,7 +27,8 @@
 int dmp_find_free_file(char *buff,char *prefix,char *suffix)
 {
    char fname[_MAX_PATH];
-   int fp, ps;
+   int fp;
+   size_t ps;
    int num=0;
    
    ps = strlen(prefix);
@@ -36,7 +37,7 @@ int dmp_find_free_file(char *buff,char *prefix,char *suffix)
    strcat(fname,suffix);
    
    /* Look for files like uwpic000.gif */
-   while ( (fp = open(fname,O_BINARY|O_RDONLY)) != -1)
+   while ( (fp = _open(fname,O_BINARY|O_RDONLY)) != -1)
    {  /* Check next slot */
       close(fp);                       // good idea to, like, close the opened file
       ++num;
@@ -45,7 +46,7 @@ int dmp_find_free_file(char *buff,char *prefix,char *suffix)
       fname[ps] = '0'+((num/100)%10);
    }
    
-   if ((fp = open(fname,O_CREAT|O_BINARY|O_WRONLY,S_IREAD|S_IWRITE))==-1)
+   if ((fp = _open(fname,O_CREAT|O_BINARY|O_WRONLY,S_IREAD|S_IWRITE))==-1)
       return -1;
    if (buff != NULL)
       strcpy(buff,fname);

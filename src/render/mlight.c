@@ -22,7 +22,7 @@
 //
 //   
 
-#define MAG(r,g,b) (0.25*(r) + 0.5*(g) + 0.25*(b))
+#define MAG(r,g,b) (0.25f*(r) + 0.5f*(g) + 0.25f*(b))
 #define MAG_VEC(a) MAG((a).x, (a).y, (a).z)
 
 // show debugging info
@@ -41,7 +41,7 @@ int mld_multi_max_near = 4;
 #define MAX_LIGHTS_CONSIDERED 32
 
 // Always add in 0.1 of ambient, this should always be overriden by the app
-float mld_multi_ambient = 0.1;                          
+float mld_multi_ambient = 0.1f;
 #ifdef RGB_LIGHTING
 rgb_vector mld_multi_rgb_ambient = { 0.0,0.0,0.0 };
 #endif
@@ -51,7 +51,7 @@ float mld_multi_near_ratio = 3.0;
 
 // explicitly compute the following percentage of the light, and
 // turn surplus into ambient
-float mld_multi_light_minimum = 0.95;
+float mld_multi_light_minimum = 0.95f;
 
 // if a light is turned into ambient, use 50% of the max (i.e.
 // as if the dot product of the normal and light was 0.5)
@@ -253,7 +253,6 @@ void ml_multi_light_cback(int num, float *out, ulong *norm,
 #ifdef RGB_LIGHTING
    if (mld_multi_rgb)
       num *= 3;
-   return;
 #endif
 
    for (j=0; j < num; ++j)
@@ -460,7 +459,7 @@ int ml_multi_set_lights_for_object(int num, mls_multi_light *inp,
    // add remaining lights as ambient
    for (; i < num; ++i) {
       int j = light_list[i];
-#ifdef RGB_LIGHTINGo
+#ifdef RGB_LIGHTING
       // if we're adding a far lighting in colored mode, we need to
       // actually use a full light calculation again
       float mag = MAG_VEC(inp[j].bright);

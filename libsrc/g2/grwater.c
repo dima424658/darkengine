@@ -5,7 +5,6 @@ int *grd_water_offset_table;
 uchar **grd_water_clut_pointer;
 int grd_water_reflection_delta;
 
-#pragma off(unreferenced)
 void gr_water_floor_umap(grs_bitmap *bm, int n, grs_vertex **vpl, grs_water *w)
 {
    gr_lit_per_umap(bm, n, vpl);
@@ -31,5 +30,4 @@ void gr_water_floor_umap(grs_bitmap *bm, int n, grs_vertex **vpl, grs_water *w)
 //   h_umap(bm,n,vpl,&ti);
 //   bm->type = BMT_FLAT8;
 }
-#pragma on(unreferenced)
 

@@ -14,12 +14,10 @@
 #include <lftype.h>
 extern g2ul_func *flat8_uline_func[];
 
-#pragma off(unreferenced)
 g2ul_func *g2_flat8_uline_expose (grs_vertex *v0, grs_vertex *v1)
 {
    return flat8_uline_func[grd_gc.fill_type];
 }
-#pragma on(unreferenced)
 
 void g2_flat8_uline (grs_vertex *v0, grs_vertex *v1)
 {

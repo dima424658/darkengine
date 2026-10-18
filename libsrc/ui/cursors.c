@@ -98,9 +98,9 @@ typedef struct _cursor_callback_state
 } cstate;
 
 
-#pragma disable_message(202)
-bool cursor_get_callback(Region* reg, Rect* rect, cstate* s)
+bool cursor_get_callback(Region* reg, Rect* rect, void* data)
 {
+   cstate* s = (cstate*)data;
    cursor_stack* cs = (cursor_stack*)(reg->cursors);
    bool anal = FALSE;
 #ifdef SPEW_ON
@@ -115,7 +115,6 @@ bool cursor_get_callback(Region* reg, Rect* rect, cstate* s)
    }
    return *(s->out) != NULL;
 }
-#pragma enable_message(202)
 
 #define cstack_init uiMakeCursorStack
 
@@ -271,7 +270,7 @@ errtype get_region_stack(Region*r, cursor_stack** cs)
 // --------------------
 
 
-static uiCursorCallbackId;
+static int uiCursorCallbackId;
 
 errtype ui_init_cursor_stack(uiSlab* slab, Cursor* default_cursor)
 {

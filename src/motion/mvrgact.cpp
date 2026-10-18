@@ -96,7 +96,8 @@ public:
 };
 
 cGroundActionManeuverFactory g_GroundActionManeuverFactory;
-EXTERN cManeuverFactory *g_pGroundActionManeuverFactory=&g_GroundActionManeuverFactory;
+EXTERN cManeuverFactory *g_pGroundActionManeuverFactory;
+cManeuverFactory *g_pGroundActionManeuverFactory=&g_GroundActionManeuverFactory;
 
 
 cMotionPlan *cGroundActionManeuverFactory::CreatePlan(const cMotionSchema *pSchema,const sMcMotorState& motState, \

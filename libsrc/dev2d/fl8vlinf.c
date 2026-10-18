@@ -16,10 +16,13 @@
 #include <fl8lin.h>
 
 void (*flat8_uvline_func[FILL_TYPES])() =
+{ 0 };
+
+void init_flat8_uvline_func(void)
 {
-	[FILL_NORM] =	flat8_norm_uvline,
-	[FILL_XOR] =	flat8_xor_uvline,
-	[FILL_BLEND] =	flat8_tluc_uvline,
-	[FILL_CLUT] =	flat8_clut_uvline,
-	[FILL_SOLID] =	flat8_solid_uvline,
-};
+	flat8_uvline_func[FILL_NORM] = flat8_norm_uvline;
+	flat8_uvline_func[FILL_XOR] = flat8_xor_uvline;
+	flat8_uvline_func[FILL_BLEND] = flat8_tluc_uvline;
+	flat8_uvline_func[FILL_CLUT] = flat8_clut_uvline;
+	flat8_uvline_func[FILL_SOLID] = flat8_solid_uvline;
+}

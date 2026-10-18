@@ -9,6 +9,7 @@
 #include <comtools.h>
 
 #include <config.h>
+#include <darklimit.h>
 #include <res.h>
 #include <aggmemb.h>
 #include <appagg.h>
@@ -69,20 +70,67 @@ static void register_res_types()
 
 void InitAppData();
 
-#pragma off(unreferenced)
+static void ConfigureContextPath(IResMan *pResMan, const char *dataPath)
+{
+   // Configured NewDark/TFix installs can contribute dozens of mod roots.
+   // On Android each one is expanded to an absolute application-data path,
+   // so the resulting list readily exceeds the old 1 KiB scratch buffer.
+   // Keep this consumer at the same limit as the content/config systems;
+   // config_get_raw() does not terminate a truncated value.
+   char path[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS];
+   ISearchPath *newContext = IResMan_NewSearchPath(pResMan, "");
+
+   // New search paths normally inherit the current global context. This path
+   // is the global context itself, so keep it rooted rather than chained to
+   // the content context it is replacing.
+   ISearchPath_SetContext(newContext, NULL);
+
+   // DarkContentConfigure has already expanded this into priority order:
+   // uber mods, the active FM, normal mods, then base resources.
+   if (config_get_raw("resname_base", path, sizeof(path)))
+      ISearchPath_AddPath(newContext, path);
+
+   {
+      char install[80] = ".";
+      config_get_raw("install_path", install, sizeof(install));
+      sprintf(path, "%s\\patch", install);
+      ISearchPath_AddPath(newContext, path);
+   }
+
+   ISearchPath_AddPath(newContext, ".");
+   if (dataPath && dataPath[0])
+      ISearchPath_AddPath(newContext, dataPath);
+
+   IResMan_SetGlobalContext(pResMan, newContext);
+   IResMan_SetDefaultPath(pResMan, newContext);
+   SafeRelease(gContextPath);
+   gContextPath = newContext;
+}
+
+void LGAPI ResSysRefreshContentPath(void)
+{
+   char dataPath[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS] = "";
+   IResMan *pResMan = AppGetObj(IResMan);
+   if (!pResMan)
+      return;
+   config_get_raw("data_path", dataPath, sizeof(dataPath));
+   ConfigureContextPath(pResMan, dataPath);
+   IResMan_GlobalRefresh(pResMan);
+   SafeRelease(pResMan);
+}
+
 static STDMETHODIMP InitFunc(IUnknown* goof)
 {
-   char path[256]; 
+   char path[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS];
+   char dataPath[DARK_LIMIT_RUNTIME_SEARCH_PATH_CHARS] = "";
    int mem;
    IResMan *pResMan;
 
    // Prep the original resource system:
    ResAddPath(".\\data");
    
-   if (config_get_raw("data_path",path,sizeof(path)))
-      ResAddPath(path);
-   else
-      path[0] = '\0';
+   if (config_get_raw("data_path",dataPath,sizeof(dataPath)))
+      ResAddPath(dataPath);
 
    if (config_get_int("mem_cap",&mem))
       ResMemSetCap(mem*1024*1024); // units of megs
@@ -106,30 +154,7 @@ static STDMETHODIMP InitFunc(IUnknown* goof)
       SafeRelease(vpath); 
    }
 
-   gContextPath = IResMan_NewSearchPath(pResMan, "");
-
-   // PATCH, add a patch path
-   {
-      char install[80] = "."; 
-      config_get_raw("install_path",install,sizeof(install));
-      sprintf(path,"%s\\patch",install); 
-      ISearchPath_AddPath(gContextPath, path);
-   }
-
-   ISearchPath_AddPath(gContextPath,"."); 
-
-   if (path[0])
-      ISearchPath_AddPath(gContextPath, path);
-
-   // This is picked up from the ResName system; 
-   // we might consider changing the name:
-   if (config_get_raw("resname_base", path, sizeof(path)))
-      ISearchPath_AddPath(gContextPath, path);
-
-   // With this in place, you generally shouldn't need to get at
-   // gContextPath directly, unless you're doing something really fancy...
-   IResMan_SetGlobalContext(pResMan, gContextPath);
-   IResMan_SetDefaultPath(pResMan, gContextPath);
+   ConfigureContextPath(pResMan, dataPath);
    register_res_types(); 
 
    // Prep the statistic reporting, if desired:
@@ -148,14 +173,12 @@ static STDMETHODIMP InitFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SHUTDOWN FUNC
 //
 
 
-#pragma off(unreferenced)
 STDMETHODIMP ShutdownFunc(IUnknown* goof)
 {
    SafeRelease(gContextPath);
@@ -173,21 +196,16 @@ STDMETHODIMP ShutdownFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 
-#pragma off(unreferenced)
 static STDMETHODIMP NullFunc(IUnknown* goof)
 {
    return kNoError;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 static void STDMETHODCALLTYPE FinalReleaseFunc(IUnknown* goof)
 {
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // ResSysSysCreate()

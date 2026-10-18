@@ -14,42 +14,34 @@
 //
 
 
-#pragma off(unreferenced)
 static STDMETHODIMP ResSysInitFunc(IUnknown* goof)
 {
    ResInitInternal();
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SHUTDOWN FUNC
 //
 
 
-#pragma off(unreferenced)
 static STDMETHODIMP ResSysShutdownFunc(IUnknown* goof)
 {
    ResTerm();
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 
-#pragma off(unreferenced)
 static STDMETHODIMP NullFunc(IUnknown* goof)
 {
    return kNoError;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 static void STDMETHODCALLTYPE FinalReleaseFunc(IUnknown* goof)
 {
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // ResCreate()

@@ -37,7 +37,7 @@ static const char* indef_article(const char* word)
       return "A";
 }
 
-const const char*  ObjEditName(ObjID obj)
+const char* ObjEditName(ObjID obj)
 {
    static char namebuf[1024];
 

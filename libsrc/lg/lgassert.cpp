@@ -5,10 +5,6 @@
 // $Revision: 1.14 $
 //
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -17,6 +13,7 @@
 #include <lgassert.h>
 #include <mprintf.h>
 #include <coremutx.h>
+#include <platform_services.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -29,8 +26,6 @@
 #elif (_MSC_VER)
 	#define snprintf	_snprintf
 	#define vsnprintf	_vsnprintf
-#else
-#error ("Need size-limited printf functions");
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,23 +38,6 @@ tCritMsgNotificationHandler LGAPI CritMsgSetHandler(tCritMsgNotificationHandler 
     pfnNotificationHandler = pfnNewHandler;
     return pfnOldHandler;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-#if 0
-extern "C"
-#if !defined(OLD_STUFF) && defined(_WIN32)
-int AFXAPI AfxAssertFailedLine(LPCSTR lpszFileName, int nLine)
-#else
-void AFXAPI AfxAssertFailedLine(LPCSTR lpszFileName, int nLine)
-#endif
-{
-    _CriticalStr("MFC Error", lpszFileName, nLine);
-    #if !defined(OLD_STUFF) && defined(_WIN32)
-    return FALSE;
-    #endif
-}
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -171,7 +149,6 @@ void LGAPI _CriticalMsg(const char * cond, const char * file, unsigned uLine)
         (*pfnNotificationHandler)(kCritMsgEnter);
 
     // Display the message
-#if 1
     char szScratch[1024];
 
     // Always write to error log
@@ -179,10 +156,22 @@ void LGAPI _CriticalMsg(const char * cond, const char * file, unsigned uLine)
     snprintf(szScratch, sizeof(szScratch) - 1,  pszLogCriticalMsg, pszMessage);
     _LogWriteMsgFileLine(szScratch, pszTrimmedFile, uLine);
 
+    char szDiagnostic[1280];
+    snprintf(szDiagnostic, sizeof(szDiagnostic) - 1,
+             "%s (File: %s, Line: %u)", pszMessage, pszTrimmedFile, uLine);
+    szDiagnostic[sizeof(szDiagnostic) - 1] = '\0';
+    PlatformDiagnosticsLog("ERROR", "assertion", szDiagnostic);
+    PlatformDiagnosticsLogStack("ERROR", "assertion", 1);
+
     mprintf("[%s@%d] %s\n", pszTrimmedFile, uLine, pszMessage);
 
-#ifdef _WIN32
-    if (!g_fQuietAssert)
+    // Automated architecture smoke tests must be able to record assertions
+    // without stopping on a modal dialog. Normal interactive behavior is
+    // unchanged unless this explicit environment override is present.
+    const char * pszAssertAction = getenv("DARK_ASSERT_ACTION");
+    const BOOL fIgnoreAssert = pszAssertAction &&
+        stricmp(pszAssertAction, "ignore") == 0;
+    if (!g_fQuietAssert && !fIgnoreAssert)
     {
         const char * pszMessageBoxCriticalMsg = "%s  (File: %s, Line: %d)\n(Yes to trap, No to exit, Cancel to ignore)";
         const char * pszMessageBoxCriticalMsgNoFileLine = "%s\n(Yes to trap, No to exit, Cancel to ignore)";
@@ -191,26 +180,21 @@ void LGAPI _CriticalMsg(const char * cond, const char * file, unsigned uLine)
         else
             snprintf(szScratch, sizeof(szScratch) - 1,  pszMessageBoxCriticalMsgNoFileLine, pszMessage);
 
-        int previousThreadPriority = GetThreadPriority(GetCurrentThread());
-        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
-        int nCode = ::MessageBox(NULL, szScratch, "Assertion Failed", MB_SYSTEMMODAL | MB_ICONHAND | MB_YESNOCANCEL);
-        SetThreadPriority(GetCurrentThread(), previousThreadPriority);
-
-
-        if (nCode == IDYES)
+        ePlatformAssertAction action = PlatformShowAssert(szScratch);
+        if (action == kPlatformAssertDebug)
         {
             _LogWriteMsgFileLine("    Going to debugger...", pszFile, uLine);
             if (pfnNotificationHandler)
                 (*pfnNotificationHandler)(kCritMsgDebugging);
-            DebugBreak(); // bang!
+            PlatformDebugBreak();
 
         }
-        else if (nCode == IDNO)
+        else if (action == kPlatformAssertExit)
         {
             _LogWriteMsgFileLine("    Exiting process...", pszFile, uLine);
             if (pfnNotificationHandler)
                 (*pfnNotificationHandler)(kCritMsgTerminating);
-            ExitProcess(1); // swoosh
+            PlatformExitProcess(1);
         }
         else
         {
@@ -220,83 +204,14 @@ void LGAPI _CriticalMsg(const char * cond, const char * file, unsigned uLine)
             g_fQuietAssert = TRUE; // ho-hum
         }
     }
-
-#else
-    const char * pszCriticalMsg = "Assertion Failure: %s  (File: %s, Line: %d)\n";
-    snprintf(szScratch, sizeof(szScratch) - 1,  pszCriticalMsg, pszMessage, pszTrimmedFile, uLine);
-    //mprintf(szScratch);
-    printf(szScratch);
-    abort();
-#endif
-
-
-#else
-    // @Note (toml 04-30-96): This code depends on MFC, so it's been disabled for now.
-    // Always write to error log
-    _LogWriteMsgFileLine("Assertion Failure!", pszFile, uLine);
-    _LogWriteMsgFileLine(pszMessage, pszFile, uLine);
-
-    #ifndef QUIET_ASSERT
-    const char szWhere[] = "%s  File: %s line: %d";
-
-    cCriticalErrorDlg CritErrDlg;
-
-    char linebuf[20];
-    snprintf(linebuf, sizeof(linebuf) - 1, "%u", line);
-
-    CritErrDlg.pMessage = pszMessage;
-    CritErrDlg.pFile = pszFile;
-    CritErrDlg.pLine = linebuf;
-
-    CritErrDlg.DoModal();
-    cCriticalErrorDlg::eCriticalAction action = CritErrDlg.nAction;
-
-    if (CritErrDlg.fShowStack)
+    else if (fIgnoreAssert)
     {
-        char buf[512];
-        snprintf(buf, sizeof(buf) - 1, szWhere, pszMessage, pszFile, line);
-        ShowStackTrace(buf);
+        _LogWriteMsgFileLine("    Continuing (DARK_ASSERT_ACTION=ignore)...", pszFile, uLine);
     }
 
-    switch (action)
-    {
-        case cCriticalErrorDlg::kContinue:
-        break;
-
-        case cCriticalErrorDlg::kAbort:
-            #if defined(_WIN32)
-            ExitProcess(1);
-            #else
-            TerminateApp(NULL, NO_UAE_BOX);
-            #endif
-        break;
-
-        case cCriticalErrorDlg::kTrace:
-            char *pNull = 0;
-            *pNull = 0; // bang!
-            DebugBreak(); // bang again!
-        break;
-    }
-    #else
-    static BOOL bFirstError = TRUE;
-
-    if (bFirstError)
-    {
-        bFirstError = FALSE;
-        unsigned long ulEncodedFilename = EncodeFilename(file);
-        const char DEBUG_STRING_PLACEMENT pcszInternalError[] = "Internal error: %lx:%x\nExiting is recommended.";
-        char buf[128];
-        snprintf(buf, sizeof(buf) - 1, pcszInternalError, ulEncodedFilename, line);
-        MessageBeep(MB_ICONHAND);
-        ::MessageBox(NULL, buf, NULL, MB_OK|MB_ICONHAND|MB_SYSTEMMODAL);
-    }
-    #endif
-#endif
-#ifdef _WIN32
     if (pfnNotificationHandler)
         (*pfnNotificationHandler)(kCritMsgExit);
     fInAssert = FALSE;
-#endif
 #endif
 }
 

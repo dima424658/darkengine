@@ -88,7 +88,7 @@ float AIGetZAtXYOnCell(const mxs_vector & pt, tAIPathCellID cellID)
 BOOL IsPtInCellXYPlane(const mxs_vector &p, const sAIPathCell * pCell)
 {
    int i;
-   register const cMxsVector * p1;
+   const cMxsVector * p1;
    const cMxsVector * p2;
 
    float edge_vec_x, edge_vec_y;   // 2d vectors we dont have...
@@ -146,7 +146,7 @@ inline tAIPathCellID AIFindClosestCellWithHint(const mxs_vector & location, tAIP
       return hintCell;
 
    // Ok, that didn't work.  Let's try the cells connected to the hintCell.
-   const int lastCell = g_AIPathDB.m_Cells[hintCell].firstCell + g_AIPathDB.m_Cells[hintCell].cellCount;
+   const tAIPathCell2CellLinkID lastCell = g_AIPathDB.m_Cells[hintCell].firstCell + g_AIPathDB.m_Cells[hintCell].cellCount;
 
    for (i = g_AIPathDB.m_Cells[hintCell].firstCell; i < lastCell; i++)
       if (g_AIPathDB.m_Links[i].okBits &&
@@ -192,7 +192,7 @@ inline tAIPathCellID AIFindClosestOfCloseCells(const mxs_vector & location)
    const sAIPathCell * pCell;
    const sAIPathCell * pMatch = g_AIPathDB.GetCell(0);
 
-   for (int i = 0; i < g_nCloseCells; i++)
+   for (int i = 0; i < (int)g_nCloseCells; i++)
    {
       pCell = g_AIPathDB.GetCell(g_CloseCells[i]);
       if (IsPtInCellXYPlane(location, pCell))
@@ -213,7 +213,7 @@ inline tAIPathCellID AIFindClosestOfCloseCells(const mxs_vector & location)
       }
    }
 
-   tAIPathCellID result = pMatch - g_AIPathDB.GetCell(0);
+   tAIPathCellID result = (tAIPathCellID)(pMatch - g_AIPathDB.GetCell(0));
    static BOOL recursing;
 
    if (!result && !recursing)
@@ -256,7 +256,7 @@ inline tAIPathCellID AIFindClosestCellExhaustive(const mxs_vector & location)
    const sAIPathCell * pCell;
    const sAIPathCell * pMatch = g_AIPathDB.m_Cells;
 
-   for (int i = 1; i <= g_AIPathDB.m_nCells; i++)
+   for (int i = 1; i <= (int)g_AIPathDB.m_nCells; i++)
    {
       pCell = g_AIPathDB.GetCell(i);
       if (g_pAIRoomDB->IsCellValid(i) && IsPtInCellXYPlane(location, pCell))
@@ -278,7 +278,7 @@ inline tAIPathCellID AIFindClosestCellExhaustive(const mxs_vector & location)
    }
 
    // okay.  we found a cell, let's return the highest one we're above.
-   return pMatch - ((sAIPathCell * )g_AIPathDB.m_Cells);
+   return (tAIPathCellID)(pMatch - ((sAIPathCell * )g_AIPathDB.m_Cells));
 }
 
 ///////////////////////////////////////
@@ -328,7 +328,7 @@ tAIPathCellID __fastcall AIFindClosestCell(const mxs_vector & origLoc,
       AIRaycast(&start, &end, &hit, kAIR_NoHintWarn | kAIR_VsObjects);
 
       location = hit.vec;
-      location.z += 0.1;
+      location.z += 0.1f;
    }
    else
       location = origLoc;
@@ -577,7 +577,7 @@ BOOL AIFindClosestConnectedCellSearch(tAIPathCellID from, const mxs_vector & fro
 
       const mxs_vector & center = g_AIPathDB.GetCenter(closest.cell);
       Vec2Sub((Vec2 *)pClosestLoc, (Vec2 *)pClosestLoc, (Vec2 *)&center);
-      Vec2Scale((Vec2 *)pClosestLoc, (Vec2 *)pClosestLoc, 0.999);
+      Vec2Scale((Vec2 *)pClosestLoc, (Vec2 *)pClosestLoc, 0.999f);
       Vec2Add((Vec2 *)pClosestLoc, (Vec2 *)pClosestLoc, (Vec2 *)&center);
 
       // Assert_(IsPtInCellXYPlane(*pClosestLoc, &g_AIPathDB.m_Cells[closest.cell]));

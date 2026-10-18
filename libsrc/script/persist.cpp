@@ -56,7 +56,7 @@ BOOL sPersistent::Persistent(string & s)
    }
    else
    {
-      len = strlen(s);
+      len = static_cast<int>(strlen(s));
       fSuccess = (*gm_pfnIO)(gm_pContextIO, &len, sizeof(int)) == sizeof(int);
       if (len)
       {
@@ -89,7 +89,7 @@ BOOL sPersistent::Persistent(const char * & psz) // be aware that here, const is
    else
    {
       if (psz)
-         len = strlen(psz);
+         len = static_cast<int>(strlen(psz));
       else
          len = 0;
       fSuccess = (*gm_pfnIO)(gm_pContextIO, &len, sizeof(int)) == sizeof(int);

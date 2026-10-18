@@ -1,8 +1,11 @@
 #include <algorithm>
+#include <limits>
 
 #include "ibmapper.h"
 #include <kbcook.h>
 #include <ibvarman.h>
+#include <gamepad.h>
+#include <gamepadevent.h>
 
 // implement hash sets
 #include <hshsttem.h>
@@ -47,10 +50,7 @@ EXTERN int kbd_modifier_state;
 extern cIBVariableManager* g_IB_variable_manager;
 cIBInputMapper* g_IB_input_mapper = nullptr;
 
-int16 word_B25882[];
-int16* word_B25884;
-
-static uint8 mouseMask = 255;
+static uint8 bindingMouseMask = 255;
 
 const char* g_mods[3][3]{
 	{
@@ -78,13 +78,13 @@ unsigned short g_shift_to_scan[0xE0];
 #define MASK_CAPS_LOCK 0x000004
 #define MASK_LSHIFT    0x000008
 #define MASK_RSHIFT    0x000010
-#define MASK_SHIFT     (MASK_LSHIFT & MASK_RSHIFT)
+#define MASK_SHIFT     (MASK_LSHIFT | MASK_RSHIFT)
 #define MASK_LCTRL     0x000020
 #define MASK_RCTRL     0x000040
-#define MASK_CTRL      (MASK_LCTRL & MASK_RCTRL)
+#define MASK_CTRL      (MASK_LCTRL | MASK_RCTRL)
 #define MASK_LALT      0x000080
 #define MASK_RALT      0x000100
-#define MASK_ALT       (MASK_LALT & MASK_RALT)
+#define MASK_ALT       (MASK_LALT | MASK_RALT)
 
 #define SCANCODE_LCTRL 29
 #define SCANCODE_RCTRL 157
@@ -94,7 +94,7 @@ unsigned short g_shift_to_scan[0xE0];
 #define SCANCODE_RALT 184
 #define SCANCODE_CAPS_LOCK 58
 
-input_code g_valid_input_controls[202] = {
+input_code g_valid_input_controls[] = {
 	{"esc", 27},
 	{"pause", 2175},
 	{"print_screen", 10295},
@@ -296,10 +296,53 @@ input_code g_valid_input_controls[202] = {
 	{"joy_hatdn", -1},
 	{"joy_hatrt", -1},
 	{"joy_hatlt", -1},
+	{"pad_a", -1},
+	{"pad_b", -1},
+	{"pad_x", -1},
+	{"pad_y", -1},
+	{"pad_lb", -1},
+	{"pad_rb", -1},
+	{"pad_view", -1},
+	{"pad_menu", -1},
+	{"pad_leftstick", -1},
+	{"pad_rightstick", -1},
+	{"pad_dpad_up", -1},
+	{"pad_dpad_down", -1},
+	{"pad_dpad_left", -1},
+	{"pad_dpad_right", -1},
+	{"pad_lt", -1},
+	{"pad_rt", -1},
+	{"pad_touch_leanforward", -1},
+	{"pad_touch_clear_weapon", -1},
+	{"pad_touch_drop_item", -1},
+	{"pad_touch_cycle_weapon", -1},
+	{"pad_touch_cycle_item", -1},
+	{"pad_weapon_toggle", -1},
+	{"pad_drop_item", -1},
+	{"pad_speed_toggle", -1},
+	{"pad_quick_save", -1},
+	{"pad_quick_load", -1},
+	{"pad_console", -1},
+	{"pad_left_x", -1},
+	{"pad_left_y", -1},
+	{"pad_right_x", -1},
+	{"pad_right_y", -1},
 	{NULL, 0} };
 
+static const char* g_gamepad_button_controls[kGamepadButtonCount] = {
+	"pad_a", "pad_b", "pad_x", "pad_y",
+	"pad_lb", "pad_rb", "pad_view", "pad_menu",
+	"pad_leftstick", "pad_rightstick",
+	"pad_dpad_up", "pad_dpad_down", "pad_dpad_left", "pad_dpad_right",
+	"pad_lt", "pad_rt", "pad_touch_leanforward",
+	"pad_touch_clear_weapon", "pad_touch_drop_item",
+	"pad_touch_cycle_weapon", "pad_touch_cycle_item",
+	"pad_weapon_toggle", "pad_drop_item", "pad_speed_toggle",
+	"pad_quick_save", "pad_quick_load", "pad_console"
+};
+
 cIBInputMapper::cIBInputMapper()
-	: m_control_binds{}, m_mod_states{ 0 }, m_trapping{ false }, m_valid_events{ std::numeric_limits<uint>::max() }, m_pCtrlIterNode{ nullptr }, m_joyproc{ nullptr }
+	: m_control_binds{}, m_mod_states{ 0 }, m_trapping{ false }, m_valid_events{ (std::numeric_limits<uint>::max)() }, m_pCtrlIterNode{ nullptr }, m_joyproc{ nullptr }
 {
 	uiSetMouseMotionPolling(true);
 
@@ -321,17 +364,26 @@ cIBInputMapper::cIBInputMapper()
 			char code_str[16] = {};
 			sprintf(code_str, "%d", *code);
 
-			if (!strncmp("mouse", control_name, 5))
+			if (!strncmp("pad_", control_name, 4))
 			{
-				g_input_controls[1].Add(code_str, control_name, strlen(control_name) + 1);
+				// Gamepad events already carry semantic names.  They do not need a
+				// reverse lookup entry in the keyboard/mouse/legacy joystick maps.
+				delete[] control_name;
+			}
+			else if (!strncmp("mouse", control_name, 5))
+			{
+				g_input_controls[1].Add(code_str, control_name,
+					static_cast<int>(strlen(control_name) + 1));
 			}
 			else if (!strncmp("joy", control_name, 3))
 			{
-				g_input_controls[2].Add(code_str, control_name, strlen(control_name) + 1);
+				g_input_controls[2].Add(code_str, control_name,
+					static_cast<int>(strlen(control_name) + 1));
 			}
 			else
 			{
-				g_input_controls[0].Add(code_str, control_name, strlen(control_name) + 1);
+				g_input_controls[0].Add(code_str, control_name,
+					static_cast<int>(strlen(control_name) + 1));
 			}
 		}
 	}
@@ -399,7 +451,7 @@ const char* cIBInputMapper::Bind(char** tokens)
 	strcpy(cmd, tokens[1]);
 	strcat(cmd, " control: ");
 	strcat(cmd, m_misc_str);
-	m_control_binds.ChangeInfo(m_misc_str, cmd, strlen(cmd) + 1);
+	m_control_binds.ChangeInfo(m_misc_str, cmd, static_cast<int>(strlen(cmd) + 1));
 	return 0;
 }
 
@@ -571,7 +623,7 @@ BOOL cIBInputMapper::TrapHandler(uiEvent* p_event)
 	}
 	case UI_EVENT_MOUSE: {
 		auto* mouse_event = reinterpret_cast<uiMouseEvent*>(p_event);
-		uint8 action = p_event->subtype;
+		uint8 action = static_cast<uint8>(p_event->subtype);
 		if (action)
 		{
 			if (mouse_event->wheel && action == 128)
@@ -595,10 +647,17 @@ BOOL cIBInputMapper::TrapHandler(uiEvent* p_event)
 	}
 	case UI_EVENT_JOY: {
 		auto* event = reinterpret_cast<uiJoyEvent*>(p_event);
+		const bool gamepad = GAMEPAD_UI_EVENT_IS_GAMEPAD(event->joynum);
+		const unsigned joynum = GAMEPAD_UI_EVENT_VALUE(event->joynum);
 		if (p_event->subtype == 3)
 		{
+			if (gamepad && joynum < kGamepadButtonCount)
+			{
+				strcpy(bind_control, g_gamepad_button_controls[joynum]);
+				break;
+			}
 			char str[32] = {};
-			sprintf(str, "joy%d", event->joynum + 1);
+			sprintf(str, "joy%d", joynum + 1);
 			auto* control = g_input_controls[2].Find(str);
 			if (control)
 			{
@@ -756,9 +815,9 @@ void cIBInputMapper::PollAllKeys()
 	kbs_event keycode = {};
 	for (int i = 0; i < 224; ++i)
 	{
-		keycode.code = i;
+		keycode.code = static_cast<uchar>(i);
 		kb_cook_real(keycode, &cooked, results, 0); // fixme: assert on failure
-		ProcessRawKey(i, kb_state(cooked), 1);
+		ProcessRawKey((short)i, (BOOL)kb_state((uchar)cooked), 1);
 	}
 	kbd_modifier_state = 0;
 }
@@ -785,6 +844,8 @@ cControlDownNode* CDECL cIBInputMapper::GetControlDownNode(const char* pControl)
 		if (pNode->item.control == pControl)
 			return pNode;
 	}
+
+	return nullptr;
 }
 
 int cIBInputMapper::SendButtonCmd(const char* control, int down, int mod)
@@ -796,6 +857,12 @@ int cIBInputMapper::SendButtonCmd(const char* control, int down, int mod)
 		const auto* cmd = m_control_binds.Find(control);
 		if (cmd)
 		{
+			if (!already_down)
+			{
+				g_input_down.Add(control, new uchar[1]{}, 1);
+				already_down = g_input_down.Find(control);
+			}
+
 			if (!GetControlDownNode(control))
 			{
 				auto node = new cControlDownNode;
@@ -822,7 +889,7 @@ int cIBInputMapper::SendButtonCmd(const char* control, int down, int mod)
 		char* pCmd = nullptr;
 		if (node)
 		{
-			pCmd = new char[strlen(node->item.pCmd)]; // fixme: may be an error; no alloc in original version
+			pCmd = new char[strlen(node->item.pCmd) + 1];
 			strcpy(pCmd, node->item.pCmd);
 			delete g_ctrldown_list.Remove(node);
 		}
@@ -1273,39 +1340,53 @@ int cIBInputMapper::ProcessMouseMove(uiMouseEvent* event)
 {
 	auto res_x = grd_canvas->bm.w;
 	auto res_y = grd_canvas->bm.h;
+	const auto* x_cmd = m_control_binds.Find("mouse_axisx");
+	const auto* y_cmd = m_control_binds.Find("mouse_axisy");
 
-	auto old_mouse_mask = mouseMask;
-	mouseMask &= 254;
-	mouse_put_xy(res_x >> 1, res_y >> 1);
-	mouseMask = old_mouse_mask;
+	// UI/command contexts intentionally have no mouse-look bindings. Do not
+	// pin the pointer to the center unless this context consumes a relative
+	// axis; popup gadgets need ordinary absolute mouse motion.
+	if (x_cmd == nullptr && y_cmd == nullptr)
+		return 0;
 
-	auto x = std::clamp(event->pos.x, static_cast<short>(0), res_x);
-	auto y = std::clamp(event->pos.y, static_cast<short>(0), res_y);
+	int rel_x = 0;
+	int rel_y = 0;
+	const bool relative = mouse_consume_relative_motion(&rel_x, &rel_y);
+	if (!relative)
+	{
+		auto old_mouse_mask = bindingMouseMask;
+		bindingMouseMask &= 254;
+		mouse_put_xy(res_x >> 1, res_y >> 1);
+		bindingMouseMask = old_mouse_mask;
+
+		auto x = std::clamp(event->pos.x, static_cast<short>(0), res_x);
+		auto y = std::clamp(event->pos.y, static_cast<short>(0), res_y);
+		rel_x = x - (res_x >> 1);
+		rel_y = y - (res_y >> 1);
+	}
 
 	char str[64] = {};
 	char final[64] = {};
 
-	const auto* cmd = m_control_binds.Find("mouse_axisx");
+	const auto* cmd = x_cmd;
 	if (cmd)
 	{
 		StripControl(final, cmd);
-		float rel_x = x - (res_x >> 1);
-		sprintf(str, " %8.8f", rel_x);
+		sprintf(str, " %8.8f", static_cast<float>(rel_x));
 		strcat(final, str);
 		g_IB_variable_manager->Cmd(final, 0);
 	}
 
-	cmd = m_control_binds.Find("mouse_axisy");
+	cmd = y_cmd;
 	if (cmd)
 	{
 		StripControl(final, cmd);
-		float rel_y = y - (res_y >> 1);
-		sprintf(str, " %8.8f", -rel_y);
+		sprintf(str, " %8.8f", static_cast<float>(-rel_y));
 		strcat(final, str);
 		g_IB_variable_manager->Cmd(final, 0);
 	}
 
-	return 0;
+	return relative ? 1 : 0;
 }
 
 void cIBInputMapper::StripSendDoubleCmd(const char* control, long double a)
@@ -1325,10 +1406,25 @@ void cIBInputMapper::StripSendDoubleCmd(const char* control, long double a)
 
 int cIBInputMapper::ProcessJoystick(uiJoyEvent* event)
 {
+	const bool gamepad = GAMEPAD_UI_EVENT_IS_GAMEPAD(event->joynum);
+	const unsigned joynum = GAMEPAD_UI_EVENT_VALUE(event->joynum);
 	if (event->action == 1 || event->action == 3)
 	{
+		if (gamepad && joynum < kGamepadButtonCount)
+		{
+			const char* semantic = g_gamepad_button_controls[joynum];
+			if (m_control_binds.Find(semantic) != nullptr)
+				return SendButtonCmd(semantic, event->action == 3, 0);
+
+			static const char* dpad_fallbacks[] = {
+				"joy_hatup", "joy_hatdn", "joy_hatlt", "joy_hatrt"
+			};
+			if (joynum >= kGamepadButtonDpadUp && joynum <= kGamepadButtonDpadRight)
+				return SendButtonCmd(dpad_fallbacks[joynum - kGamepadButtonDpadUp], event->action == 3, 0);
+		}
+
 		char str[32] = {};
-		sprintf(str, "joy%d", event->joynum + 1);
+		sprintf(str, "joy%d", joynum + 1);
 		auto* control = g_input_controls[2].Find(str);
 		if (control != nullptr)
 			return SendButtonCmd(control, event->action == 3, 0);
@@ -1339,33 +1435,45 @@ int cIBInputMapper::ProcessJoystick(uiJoyEvent* event)
 	if (event->action)
 		return 1;
 
-	if (event->joynum == 0)
+	if (joynum == 0)
 	{
 		auto x = ShortScaleDouble(event->joypos.x);
 		auto y = ShortScaleDouble(event->joypos.y);
-		if (m_joyproc)
+		if (m_joyproc && !gamepad)
 			m_joyproc->ProcessXY(&x, &y);
 
-		StripSendDoubleCmd("joy_axisx", x);
-		StripSendDoubleCmd("joy_axisy", y);
+		if (gamepad && m_control_binds.Find("pad_left_x"))
+			StripSendDoubleCmd("pad_left_x", x);
+		else
+			StripSendDoubleCmd("joy_axisx", x);
+		if (gamepad && m_control_binds.Find("pad_left_y"))
+			StripSendDoubleCmd("pad_left_y", y);
+		else
+			StripSendDoubleCmd("joy_axisy", y);
 
 		return 1;
 	}
 
-	if (event->joynum == 1)
+	if (joynum == 1)
 	{
 		auto r = ShortScaleDouble(event->joypos.x);
 		auto z = ShortScaleDouble(event->joypos.y);
-		if (m_joyproc)
+		if (m_joyproc && !gamepad)
 			m_joyproc->ProcessZR(&z, &r);
 
-		StripSendDoubleCmd("joy_axisz", z);
-		StripSendDoubleCmd("joy_axisr", r);
+		if (gamepad && m_control_binds.Find("pad_right_y"))
+			StripSendDoubleCmd("pad_right_y", z);
+		else
+			StripSendDoubleCmd("joy_axisz", z);
+		if (gamepad && m_control_binds.Find("pad_right_x"))
+			StripSendDoubleCmd("pad_right_x", r);
+		else
+			StripSendDoubleCmd("joy_axisr", r);
 
 		return 1;
 	}
 
-	if (event->joynum == 2)
+	if (joynum == 2)
 	{
 		if (event->joypos.y == 1)
 		{
@@ -1400,92 +1508,88 @@ int cIBInputMapper::ProcessJoystick(uiJoyEvent* event)
 
 double CDECL cIBInputMapper::ShortScaleDouble(short m)
 {
-	return (double)(m - 0x7FFF) * m + 1.0;
+	return m < 0 ? (double)m / 32768.0 : (double)m / 32767.0;
 }
 
 const char* cIBInputMapper::DecomposeControl(const char* control_str, char(*controls)[32], long* num_controls)
 {
+	*num_controls = 0;
+	if (!control_str || !*control_str)
+		return "Invalid input control";
+
+	char tmp_controls[4][32] = {};
 	int num = 0;
-	char tmp_controls[32][4] = {};
 
-	for (int i = 0; ; ++i)
+	// A lone plus sign names the '+' key.  Otherwise plus separates the
+	// primary control from up to three modifiers.
+	if (control_str[0] == '+' && control_str[1] == '\0')
 	{
-		if (*control_str == '\0')
-			break;
-
-		if (*control_str == '+' && i != 0)
+		strcpy(tmp_controls[num++], "+");
+	}
+	else
+	{
+		const char* token_start = control_str;
+		for (const char* cursor = control_str; ; ++cursor)
 		{
-			tmp_controls[num][i] = '\0';
+			if (*cursor != '+' && *cursor != '\0')
+				continue;
+
+			const size_t token_len = static_cast<size_t>(cursor - token_start);
+			if (token_len == 0 || token_len >= sizeof(tmp_controls[0]))
+				return "Invalid input control";
+			if (num == 4)
+				return "Too many controls in compound binding";
+
+			memcpy(tmp_controls[num], token_start, token_len);
+			tmp_controls[num][token_len] = '\0';
 			++num;
-			i = 0;
-			++control_str;
+
+			if (*cursor == '\0')
+				break;
+			token_start = cursor + 1;
 		}
+	}
 
-		if (num == 4)
-			break;
+	auto is_modifier = [](const char* control) {
+		return !strcmp(control, "alt") || !strcmp(control, "ctrl") || !strcmp(control, "shift");
+	};
 
-		tmp_controls[num][i] = *control_str;
-		++control_str;
+	int primary = -1;
+	for (int i = 0; i < num; ++i)
+	{
+		if (!is_modifier(tmp_controls[i]))
+		{
+			if (primary != -1)
+				return "Multiple non-modifier controls are not allowed";
+			primary = i;
+		}
+	}
+
+	if (num > 1 && primary == -1)
+		return "A non-modifier control is needed in compound bindings";
+	if (primary > 0)
+		std::swap(tmp_controls[0], tmp_controls[primary]);
+
+	for (int i = 1; i < num; ++i)
+	{
+		for (int j = i + 1; j < num; ++j)
+		{
+			const int cmp = strcmp(tmp_controls[i], tmp_controls[j]);
+			if (cmp == 0)
+				return "Duplicate modifier";
+			if (cmp > 0)
+				std::swap(tmp_controls[i], tmp_controls[j]);
+		}
+	}
+
+	for (int i = 0; i < num; ++i)
+	{
+		if (!g_input_codes.Find(tmp_controls[i]))
+			return "Invalid input control";
+		strcpy(controls[i], tmp_controls[i]);
 	}
 
 	*num_controls = num;
-	for (int i = 0; i < num; ++i)
-	{
-		if (strcmp(tmp_controls[i], "alt") && strcmp(tmp_controls[i], "ctrl") && strcmp(tmp_controls[i], "shift"))
-		{
-			if (i != 0)
-			{
-				std::swap(tmp_controls[0], tmp_controls[i]);
-			}
-			break;
-		}
-
-		if (num > 1 && i == num - 1)
-			return "A non-modifier control is needed in compound bindings";
-	}
-
-	for (int i = num; i > 2; --i)
-	{
-		for (int j = 1; j < i - 1; ++j)
-		{
-			if (strcmp(tmp_controls[j], "alt") && strcmp(tmp_controls[j], "ctrl") && strcmp(tmp_controls[j], "shift")
-				|| strcmp(tmp_controls[j + 1], "alt")
-				&& strcmp(tmp_controls[j + 1], "ctrl")
-				&& strcmp(tmp_controls[j + 1], "shift"))
-			{
-				return "Multiple non-modifier controls are not allowed";
-			}
-
-			auto cmp = strcmp(tmp_controls[j], tmp_controls[j + 1]);
-			if (cmp == 0)
-			{
-				return "Duplicate modifier";
-			}
-
-			if (cmp > 0)
-			{
-				std::swap(tmp_controls[j], tmp_controls[j + 1]);
-			}
-		}
-	}
-
-	if (num == 2
-		&& strcmp(tmp_controls[1], "alt")
-		&& strcmp(tmp_controls[1], "ctrl")
-		&& strcmp(tmp_controls[1], "shift"))
-	{
-		return "Multiple non-modifier controls are not allowed";
-	}
-
-	for (int i = 0; i < num; ++i)
-		strcpy(controls[i], tmp_controls[i]);
-
-	for (int i = num - 1; i >= 0; --i)
-	{
-		if (!g_input_codes.Find(controls[i]))
-			return "Invalid input control";
-	}
-
 	return nullptr;
 }
 

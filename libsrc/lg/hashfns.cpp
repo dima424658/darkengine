@@ -123,8 +123,8 @@ unsigned LGAPI HashStringCaseless(const char * pszKey)
 
 unsigned LGAPI HashGUID(const GUID * pID)
 {
-    register const DWORD *  p = (const DWORD *) pID;
-    register unsigned       even,
+    const DWORD *  p = (const DWORD *) pID;
+    unsigned       even,
                             odd,
                             n;
     n = *p;
@@ -165,19 +165,19 @@ unsigned LGAPI HashGUID(const GUID * pID)
 
 unsigned LGAPI HashPtr(const void * p)
 {
-   unsigned    odd,
-               even;
+   uintptr_t value = (uintptr_t)p;
+   unsigned odd = g_RandomValues[(value >> 8) & 0xff];
+   unsigned even = g_RandomValues[value & 0xff];
 
-   odd     = g_RandomValues[(((unsigned)p >> 8) & 0xff)]; 
-   even    = g_RandomValues[(unsigned)p & 0xff]; 
-
-   odd     = g_RandomValues[odd  ^ ((unsigned)p & 0xff)]; 
-   p = (const void *)((unsigned)p >> 8);
-   even    = g_RandomValues[even ^ (((unsigned)p) & 0xff)];
-   p = (const void *)((unsigned)p >> 8);
-   odd     = g_RandomValues[odd  ^ (((unsigned)p) & 0xff)];
-   p = (const void *)((unsigned)p >> 8);
-   even    = g_RandomValues[even ^ ((unsigned)p)];
+   odd = g_RandomValues[odd ^ (value & 0xff)];
+   for (unsigned shift = 8; shift < sizeof(value) * 8; shift += 8)
+   {
+      unsigned byte = (unsigned)((value >> shift) & 0xff);
+      if (shift & 8)
+         even = g_RandomValues[even ^ byte];
+      else
+         odd = g_RandomValues[odd ^ byte];
+   }
 
    return (even << 8) | odd;
 }
@@ -195,7 +195,7 @@ unsigned LGAPI HashPtr(const void * p)
 
 EXTERN unsigned LGAPI HashLong(long key)
 {
-   return HashPtr((void *)key);
+   return HashPtr((const void *)(uintptr_t)key);
 }
 
 ///////////////////////////////////////

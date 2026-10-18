@@ -28,11 +28,13 @@
 #include <resagg.h>
 #include <string.h>
 #include <cfgtool.h>
+#ifdef _WIN32
 #include <breakkey.h>
-#include <hchkthrd.h>
+#endif
 #include <iobjsys.h>
 #include <scrptapi.h>
 #include <scrnmode.h>
+#include <mode.h>
 
 #include <appname.h>
 #include <contexts.h>
@@ -57,7 +59,6 @@
 #include <reaction.h>
 #include <stimul8r.h>
 #include <stimsrc.h>
-#include <dxload.h>
 #include <simtime.h>
 #include <gametool.h>
 #include <aiapi.h>
@@ -75,11 +76,11 @@
 #include <movie.h>
 #include <arqapi.h>
 #include <diskfree.h>
-#include <dxwrndlg.h>
-#include <cdplayer.h>
+#include <platform_services.h>
 #include <dyntex.h>
 #include <scrptne_.h>
 #include <random.h>
+#include <contentctx.h>
 
 #include <md.h>
 
@@ -91,8 +92,6 @@
 #pragma warning 555 9
 #endif
 
-EXTERN BOOL CheckForCD(void);
-
 //------------------------------------------------------------
 // CONFIG INITIALIZATION
 //
@@ -101,6 +100,137 @@ EXTERN BOOL CheckForCD(void);
 #define GAME_CFG_VAR "game"
 #define INCLUDE_PREFIX "include_"
 void AppShutdownConfig(void);
+static void AppSaveConfig(void);
+
+static void RegisterDisplayMode(int width, int height)
+{
+   int mode;
+
+   if (width < 400 || height < 300 || width > 8191 || height > 8191)
+      return;
+   mode = gr_register_mode(width, height, 16);
+   if (mode >= 0)
+      grd_mode_info[mode].flags |= GRM_CAN_WINDOW;
+}
+
+static void RegisterDisplayModes(void)
+{
+   sPlatformDisplayMode modes[512];
+   int count;
+   int i;
+
+   // Register the union of modes exposed by every connected monitor before
+   // screen-mode configuration is read.  D3D11 presents these as internal
+   // render sizes, so no exclusive legacy display-mode switch is required.
+   count = PlatformGetDisplayModes(kPlatformAllDisplays, modes,
+                                   sizeof(modes) / sizeof(modes[0]),
+                                   NULL, NULL);
+   for (i = 0; i < count; ++i)
+      if (modes[i].bit_depth >= 24)
+         RegisterDisplayMode(modes[i].width, modes[i].height);
+   RegisterDisplayMode(640, 480);
+   RegisterDisplayMode(800, 600);
+}
+
+#ifdef THIEF2_GAME
+static const char kUserSettingsStore[] = "Thief2";
+
+static void LoadUserVideoSettings(void)
+{
+   uint32 version;
+   uint32 width;
+   uint32 height;
+   uint32 depth;
+   uint32 fullscreen;
+   uint32 fit;
+   uint32 gamma_milli;
+
+   if (PlatformReadUserUInt(kUserSettingsStore, "VideoSettingsVersion",
+                            &version) &&
+       (version == 1 || version == 2))
+   {
+      if (PlatformReadUserUInt(kUserSettingsStore, "GammaMilli",
+                               &gamma_milli) &&
+          gamma_milli >= 100 && gamma_milli <= 4000)
+      {
+         float gamma = gamma_milli / 1000.0f;
+         config_set_float_from_var("gamma", gamma);
+      }
+
+      if (PlatformReadUserUInt(kUserSettingsStore, "ScreenWidth", &width) &&
+          PlatformReadUserUInt(kUserSettingsStore, "ScreenHeight", &height) &&
+          width > 0 && height > 0)
+      {
+         int dimensions[2] = { (int)width, (int)height };
+         config_set_value("game_screen_size", CONFIG_INT_TYPE,
+                          dimensions, 2);
+      }
+
+      if (PlatformReadUserUInt(kUserSettingsStore, "ScreenDepth", &depth) &&
+          depth > 0)
+         config_set_int("game_screen_depth", (int)depth);
+      if (PlatformReadUserUInt(kUserSettingsStore, "Fullscreen", &fullscreen))
+         config_set_int("game_full_screen", fullscreen != 0);
+      if (version >= 2 &&
+          PlatformReadUserUInt(kUserSettingsStore, "Fit", &fit))
+         config_set_int("game_screen_fit", fit != 0);
+   }
+}
+#else
+static void LoadUserVideoSettings(void)
+{
+}
+#endif
+
+void LGAPI CoreEngineSaveVideoSettings(void)
+{
+#ifdef THIEF2_GAME
+   uint32 version = 2;
+   uint32 width;
+   uint32 height;
+   uint32 depth;
+   uint32 fullscreen;
+   uint32 fit;
+   uint32 gamma_milli;
+   int dimensions[2];
+   int count = 2;
+   int value;
+   float gamma = 1.0f;
+
+   if (config_get_float("gamma", &gamma))
+   {
+      gamma_milli = (uint32)(gamma * 1000.0f + 0.5f);
+      PlatformWriteUserUInt(kUserSettingsStore, "GammaMilli", gamma_milli);
+   }
+
+   if (config_get_value("game_screen_size", CONFIG_INT_TYPE,
+                        dimensions, &count) && count == 2)
+   {
+      width = dimensions[0];
+      height = dimensions[1];
+      PlatformWriteUserUInt(kUserSettingsStore, "ScreenWidth", width);
+      PlatformWriteUserUInt(kUserSettingsStore, "ScreenHeight", height);
+   }
+
+   if (config_get_int("game_screen_depth", &value))
+   {
+      depth = value;
+      PlatformWriteUserUInt(kUserSettingsStore, "ScreenDepth", depth);
+   }
+   if (config_get_int("game_full_screen", &value))
+   {
+      fullscreen = value != 0;
+      PlatformWriteUserUInt(kUserSettingsStore, "Fullscreen", fullscreen);
+   }
+   if (config_get_int("game_screen_fit", &value))
+   {
+      fit = value != 0;
+      PlatformWriteUserUInt(kUserSettingsStore, "Fit", fit);
+   }
+
+   PlatformWriteUserUInt(kUserSettingsStore, "VideoSettingsVersion", version);
+#endif
+}
 
 //----------------------------------------
 
@@ -127,23 +257,7 @@ static void init_monochrome()
    char monofname[256];
    monofname[0] = '\0';
 
-#ifdef WIN32
-#ifndef SHIP
-   {
-      bool is_mono=!config_is_defined("mono_no_screen");
-      char *buf;
-      // for now, we know NT cant do Mono's
-      if ((buf=getenv("OS"))!=NULL)
-         if (stricmp(buf,"Windows_NT")==0)
-            is_mono=FALSE;
-      mono_win_init(is_mono);
-   }
-#else
    mono_win_init(FALSE);
-#endif
-#else
-   mono_init();
-#endif
 
    mono_clear();
    mono_set_flags(MONO_FLG_WRAPCLEAR,NULL);
@@ -255,17 +369,59 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    // config sys initializes NOW so that it can be used to create objects
    //
    config_init();
+
+   // NewDark treats cam_ext.cfg as installation-wide engine defaults and
+   // reads it before cam.cfg.  Use an ordinary low-priority file read here:
+   // config_load() is intentionally high priority and would incorrectly stop
+   // the user's cam.cfg values from overriding these defaults.
+   config_read_file("cam_ext.cfg", NULL);
    config_read_file(CONFIG_FILE,app_read_cfg);
 
+   // cam_mod.ini supplies NewDark-style FM and mod roots.  Parse the command
+   // line now as profile/FM selection must precede game.cfg and include lookup.
+   config_load("cam_mod.ini");
+   config_parse_commandline(g_argc,g_argv,NULL);
+
+   // The selected game profile must be visible while pick_game constructs
+   // aggregate members (notably the networking client).
+   DarkContentConfigureProfile();
    pick_game();
 
    // must come after pick_game
    process_config_includes(INCLUDE_PREFIX);
 #ifdef EDITOR
    process_config_includes("editor_" INCLUDE_PREFIX); 
+
+   // Some retail/NewDark installs ship the editor menu definitions as the
+   // optional sample file instead of including them from DromEd.cfg. Prefer
+   // a user-provided menus.cfg, then make the shipped sample the fallback.
+   if (!config_is_defined("menu_edit"))
+   {
+      config_load("menus.cfg");
+      if (!config_is_defined("menu_edit"))
+         config_load("menus-sample.cfg");
+   }
 #endif 
 
+   // FM-local configuration supplies UI rectangle maps, object limits, and
+   // renderer options.  It must override the retail game configuration.
+   DarkContentLoadFMConfig(g_argc, g_argv);
+
+   // install.cfg and user/editor includes define the base resource paths.
+   // Apply FM/mod precedence only after those inputs are available.
+   DarkContentConfigure(g_argc,g_argv);
+
+   // Keep runner-specific video preferences outside the retail data folder.
+   // Command-line values are parsed afterward and therefore still win.
+   LoadUserVideoSettings();
    config_parse_commandline(g_argc,g_argv,NULL);
+
+   // The themed content panel runs inside the normal engine window. Some
+   // capacities (notably object references and mixer voices) are constructed
+   // before that panel can return a selection, so reserve enough for every
+   // installed FM now. The selected FM is applied before the first database
+   // is built; this is capacity bootstrap, not a live content switch.
+   DarkContentPreparePickerBootstrap();
 
    AtExit(AppShutdownConfig);
 
@@ -276,21 +432,10 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
       if (!CheckForDiskspaceAndMessage(NULL,MIN_STARTUP_DISK_MB))
          Exit(1,NULL); // CheckFor does a message box
 
-      if (!LoadDirectX())
-         Exit(1,NULL);  // message already printed in LoadDirectX itself
    }
 
    // umm, ship only or something?
    init_monochrome();
-
-#ifndef DONT_CHECK_CD
-   // Is the CD in the drive? - in ship, we always check this
-#ifndef SHIP
-   if (!config_is_defined("skip_starting_checks"))
-#endif
-      if (!CheckForCD())
-         Exit(1,NULL);
-#endif
 
    //
    //  Next let's do fault
@@ -328,6 +473,12 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
 
    // Get other options from config
    int opt = kGameShellDefault & ~(kLockFrame | kFlushOnEndFrame);
+#ifdef EDITOR
+   // The editor is a desktop application.  Use the native pointer instead of
+   // the legacy framebuffer cursor, which is not reliably presented while an
+   // otherwise-idle D3D11 viewport is on screen.
+   opt |= kShowNativeCursor;
+#endif
    if (config_is_defined("multithread"))
       opt |= kMultithreadedShell;
 
@@ -366,7 +517,6 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    CampaignCreate(); 
    InputBinderCreate (&g_pInputBinder);
    AsyncReadQueueCreate();
-   CDPlayerCreate();
    DynTextureCreate();
 
    // @TODO: move these out to an "engine features" app object creation function,
@@ -399,6 +549,26 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
 //------------------------------------------------------------
 // CORE INIT FUNCTION
 //
+#ifdef THIEF2_GAME
+static void SetSupportedScreenSize(const char *size_var, const char *depth_var,
+                                   int native_width, int native_height)
+{
+   int dimensions[2] = { native_width, native_height };
+   int count = 2;
+   int depth = 16;
+
+   config_get_value(size_var, CONFIG_INT_TYPE, dimensions, &count);
+   config_get_int(depth_var, &depth);
+   if (gr_find_closest_registered_mode(dimensions[0], dimensions[1], depth,
+                                       &dimensions[0], &dimensions[1]) < 0)
+   {
+      dimensions[0] = 640;
+      dimensions[1] = 480;
+   }
+   config_set_value(size_var, CONFIG_INT_TYPE, dimensions, 2);
+}
+#endif
+
 tResult LGAPI CoreEngineAppInit()
 {
    pGameShell = AppGetObj(IGameShell);
@@ -415,13 +585,59 @@ tResult LGAPI CoreEngineAppInit()
    }
 #endif
 
+#ifdef _WIN32
    if (config_is_defined("breakkey"))
       BreakKeyActivate(VK_F12,VK_F11);
-
-   if (config_is_defined("heapcheck"))
-      HeapCheckActivate(VK_F9);
+#endif
 
    tm_init();
+
+   // D3D11 presents these as render-canvas sizes instead of requesting
+   // obsolete exclusive desktop modes.  Both flavors of the shared project,
+   // including DromEd, need the same compatibility mode list.
+   RegisterDisplayModes();
+
+#ifdef THIEF2_GAME
+   // The modern lgd3d implementation uses D3D11. Prefer it for new runner
+   // configurations while retaining an explicit user override.
+   if (!config_is_defined("game_hardware"))
+      config_set_int("game_hardware", 1);
+
+#ifdef __ANDROID__
+   // Android always owns a fullscreen surface.  Fit therefore means using
+   // that surface's settled pixel dimensions for the gameplay canvas, not
+   // stretching a legacy 4:3 canvas across it.  Menus keep their fixed
+   // logical size and are aspect-fitted by the presentation backend.
+   if (!config_is_defined("game_screen_fit"))
+      config_set_int("game_screen_fit", 1);
+#endif
+
+   // The D3D11 scene is 32-bit, while the retained 2D UI/movie canvas is
+   // 16-bit. Normalize NewDark configuration values to that canvas format.
+   {
+      int depth;
+      if (!config_get_int("screen_depth", &depth) || depth > 16)
+         config_set_int("screen_depth", 16);
+      if (!config_get_int("game_screen_depth", &depth) || depth > 16)
+         config_set_int("game_screen_depth", 16);
+   }
+
+   // Respect an explicit user setting. Otherwise start at the native size of
+   // the display under the pointer, which is the best available "current"
+   // display before the game creates its window.
+   {
+      int native_width;
+      int native_height;
+
+      PlatformGetDisplayModes(kPlatformCurrentDisplay, NULL, 0,
+                              &native_width, &native_height);
+
+      SetSupportedScreenSize("screen_size", "screen_depth",
+                             native_width, native_height);
+      SetSupportedScreenSize("game_screen_size", "game_screen_depth",
+                             native_width, native_height);
+   }
+#endif
 
    // set default screen mode
    sScrnMode mode = { 0 }; 
@@ -435,9 +651,6 @@ tResult LGAPI CoreEngineAppInit()
    //input binding stuff. load all contexts from "default.bnd" and "<game>.bnd"
    g_pInputBinder->Init (NULL, NULL);
    InitIBVars ();
-
-   //  pop dialog box about dxdrivers
-   DxWarnDlg();
 
    // initialize the random number lib
    // note fullwise: we retardedly could be calling this twice,
@@ -487,10 +700,27 @@ static bool write_func(char* filename, char* var)
    return config_default_writable(filename,var);
 }
 
-void AppShutdownConfig(void)
+static bool g_ConfigSaved = FALSE;
+
+static void AppSaveConfig(void)
 {
+   if (g_ConfigSaved)
+      return;
+
    config_set_writable_table(ConfigWritableTable);
    config_write_file(CONFIG_FILE,write_func);
+   g_ConfigSaved = TRUE;
+}
+
+void AppShutdownConfig(void)
+{
+   static bool shutdown_complete = FALSE;
+
+   if (shutdown_complete)
+      return;
+   shutdown_complete = TRUE;
+
+   AppSaveConfig();
    config_shutdown();
 }
 

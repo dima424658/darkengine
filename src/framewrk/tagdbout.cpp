@@ -46,7 +46,7 @@ int cTagDBOutput::Choose()
 
    // We scale the selection down a tiny bit here to make sure we'll
    // fall within the range, even with roundoff error.
-   float fSelection = ((float) Rand()) * (fTotalWeight / 32768.0);
+   float fSelection = ((float) Rand()) * (fTotalWeight / 32768.0f);
 
    i = -1;
    float fAccum = 0;

@@ -83,7 +83,7 @@ TagVersion PhysicsSystemVersion = { 0, 1 };
 static ITagFile* tagfile = NULL;
 static void movefunc(void *buf, size_t elsize, size_t nelem)
 {
-   ITagFile_Move(tagfile,(char*)buf,elsize*nelem);
+   ITagFile_Move(tagfile, (char *)buf, (int)(elsize * nelem));
 }
 
 static BOOL setup_tagfile(ITagFile* file, TagFileTag *tag,
@@ -1095,7 +1095,7 @@ void UpdatePhysModel(ObjID objID, int type)
 
       g_pPhysAttrProp->Get(objID, &pAttrProp);
 
-      pModel->SetGravity(pAttrProp->gravity / 100.0);
+      pModel->SetGravity(pAttrProp->gravity / 100.0f);
       pModel->GetDynamics()->SetMass(pAttrProp->mass);
       pModel->GetDynamics()->SetDensity(pAttrProp->density);
       pModel->GetDynamics()->SetElasticity(pAttrProp->elasticity);

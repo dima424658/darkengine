@@ -154,21 +154,22 @@
     <Text Include="cpptools.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\3rdparty\blast\blast.c" />
     <ClCompile Include="delmlist.cpp" />
     <ClCompile Include="dlist.cpp" />
     <ClCompile Include="dynarray.cpp" />
     <ClCompile Include="dynarsrv.cpp" />
     <ClCompile Include="dynfunc.cpp" />
-    <ClCompile Include="filepath.cpp" />
-    <ClCompile Include="filespec.cpp" />
-    <ClCompile Include="fnamutil.cpp" />
+    <ClCompile Include="..\..\winsrc\cpptools\filepath.cpp" />
+    <ClCompile Include="..\..\winsrc\cpptools\filespec.cpp" />
+    <ClCompile Include="..\..\winsrc\cpptools\fnamutil.cpp" />
     <ClCompile Include="growblk.cpp" />
     <ClCompile Include="hashpp.cpp" />
     <ClCompile Include="hashset.cpp" />
     <ClCompile Include="packflag.cpp" />
     <ClCompile Include="pdynarr.cpp" />
     <ClCompile Include="relocptr.cpp" />
-    <ClCompile Include="splitpat.cpp" />
+    <ClCompile Include="..\..\winsrc\cpptools\splitpat.cpp" />
     <ClCompile Include="str.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -174,8 +174,6 @@ void gr_init_canvas (grs_canvas *c, uchar *p, uint type, int w, int h)
    c->ytab = NULL;
 }
 
-#define min(a, b) ((a)<(b)?(a):(b))
-#define max(a, b) ((a)>(b)?(a):(b))
 void gr_init_sub_canvas (grs_canvas *sc, grs_canvas *dc, int x, int y,
                          int w, int h)
 {

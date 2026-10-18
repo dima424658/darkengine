@@ -9,7 +9,7 @@
 #include <aggmemb.h>
 #include <appagg.h>
 #include <dispguid.h>
-#include <gshlguid.H>
+#include <gshlguid.h>
 #include <resguid.h>
 
 #include <2dapp.h>
@@ -40,7 +40,6 @@ void dark_gr_free(void *p)
 // INIT FUNC
 //
 
-#pragma off(unreferenced)
 STDMETHODIMP Gr2dInitFunc(IUnknown* goof)
 {
 #ifndef SHIP
@@ -51,35 +50,28 @@ STDMETHODIMP Gr2dInitFunc(IUnknown* goof)
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // SHUTDOWN FUNC
 //
 
 
-#pragma off(unreferenced)
 STDMETHODIMP Gr2dShutdownFunc(IUnknown* goof)
 {
    gr_close();
 
    return kNoError;
 }
-#pragma on(unreferenced)
 
 
-#pragma off(unreferenced)
 static STDMETHODIMP NullFunc(IUnknown* goof)
 {
    return kNoError;
 }
-#pragma on(unreferenced)
 
-#pragma off(unreferenced)
 static void STDMETHODCALLTYPE FinalReleaseFunc(IUnknown* goof)
 {
 }
-#pragma on(unreferenced)
 
 //////////////////////////////////////////////////////////////
 // Gr2dSysCreate()

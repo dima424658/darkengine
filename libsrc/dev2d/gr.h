@@ -35,7 +35,7 @@ extern "C" {
 #define gr_clut_bitmap(bm, x, y, clut) \
 do {                                       \
    if (gr_get_fill_type() == FILL_NORM) {  \
-      ulong fill_save=gr_get_fill_parm();  \
+      intptr_t fill_save=gr_get_fill_parm(); \
       gr_set_fill_type(FILL_CLUT);         \
       gr_set_fill_parm(clut);              \
       gd_bitmap(bm, x, y);                 \
@@ -48,7 +48,7 @@ do {                                       \
 #define gr_clut_ubitmap(bm, x, y, clut) \
 do {                                       \
    if (gr_get_fill_type() == FILL_NORM) {  \
-      ulong fill_save=gr_get_fill_parm();  \
+      intptr_t fill_save=gr_get_fill_parm(); \
       gr_set_fill_type(FILL_CLUT);         \
       gr_set_fill_parm(clut);              \
       gd_ubitmap(bm, x, y);                \

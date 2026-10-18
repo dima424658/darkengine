@@ -14,13 +14,13 @@
 
 #define HUMANOID_PHYS_RADIUS 1.0
 
-#define SWORD_PHYS_RADIUS 0.4
+#define SWORD_PHYS_RADIUS 0.4f
 
 static sCrPhysModOffset g_SwordPhysOffsets[] = \
 {
-   { 15, 17, 0.25, SWORD_PHYS_RADIUS},
-   { 15, 17, 0.5,  SWORD_PHYS_RADIUS},
-   { 15, 17, 0.75, SWORD_PHYS_RADIUS},
+   { 15, 17, 0.25f, SWORD_PHYS_RADIUS},
+   { 15, 17, 0.5f,  SWORD_PHYS_RADIUS},
+   { 15, 17, 0.75f, SWORD_PHYS_RADIUS},
    { 17, 17, 0,    SWORD_PHYS_RADIUS},
 //   { 15, 17, 1.5, SWORD_PHYS_RADIUS},
 };
@@ -34,7 +34,7 @@ static sCrPhysModOffsetTable g_WeaponPhysTable = \
 static sCrPhysModOffset g_aConPhysModOffsets[] = \
 {
    { 8, 8, 0.0, 1.0},
-   { 18, 9, 0.8, 1.2},
+   { 18, 9, 0.8f, 1.2f},
 };
 
 // Joints

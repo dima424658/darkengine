@@ -29,9 +29,11 @@
 #include <objedit.h>
 #include <tagfile.h>
 #include <vernum.h>
+#include <darklimit.h>
 
 #include <appagg.h>
 #include <gshelapi.h>
+#include <platform_services.h>
 
 #include <status.h>
 
@@ -78,6 +80,7 @@
 #include <aiflee.h>
 
 #include <filevar.h>
+#include <dbfile.h>
 #include <sdesbase.h>
 #include <sdesc.h>
 
@@ -252,9 +255,9 @@ float TriArea(const mxs_vector & v1, const mxs_vector & v2, const mxs_vector & v
    b = Vec2Dist((Vec2 *)&v2, (Vec2 *)&v3);
    c = Vec2Dist((Vec2 *)&v3, (Vec2 *)&v1);
 
-   s = (a + b + c) / 2.0;
+   s = (a + b + c) / 2.0f;
 
-   return sqrt(s*(s-a)*(s-b)*(s-c));
+   return sqrtf(s*(s-a)*(s-b)*(s-c));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -328,17 +331,21 @@ int g_AIQualityWatch = 0;
 //
 
 #define MAX_LINKS_FROM_CELL      24
-#define MAX_VERTICES             0xfffe          // in g_AIPathDB.m_Vertices array
+#define LEGACY_AIPATH_INDEX_LIMIT DARK_LIMIT_AIPATH_33_INDEX
+#define MAX_AI_PATH_VERTICES     DARK_LIMIT_RUNTIME_AIPATH_INDEX
+#define MAX_VERTICES             (MAX_AI_PATH_VERTICES + 1)
 
 // How many we can actually store:
-#define MAX_CELL2CELL_LINKS      0xfffe          // in g_AIPathCell2Cell array
+#define MAX_AI_PATH_CELL_LINKS   DARK_LIMIT_RUNTIME_AIPATH_INDEX
+#define MAX_CELL2CELL_LINKS      (MAX_AI_PATH_CELL_LINKS + 1)
 
 // How many we can process. We want to allow a little play, since we links get postprocessed and
 // whittled down to below MAX_CELL2CELL_LINKS:
-#define MAX_PROCESSED_CELL2CELL_LINKS 0x0001fffe
+#define MAX_PROCESSED_CELL2CELL_LINKS DARK_LIMIT_RUNTIME_AIPATH_PROCESSED_LINKS
 
 
-#define MAX_CELL2VERTEX_LINKS    0xfffe          // in g_AIPathDB.m_nVertices array
+#define MAX_AI_PATH_VERTEX_LINKS DARK_LIMIT_RUNTIME_AIPATH_INDEX
+#define MAX_CELL2VERTEX_LINKS    (MAX_AI_PATH_VERTEX_LINKS + 1)
 
 #ifdef EDITOR
 const int PATH_PT_OPEN = 0;   // cell vertex is in the open
@@ -463,17 +470,17 @@ static float DROP_DISTANCE             = 8.0;
 // far above the center of each pathfinding cell.
 static float LIGHT_HEIGHT              = 4.0;
 // This is cos(10).
-static float MIN_RAMP_SLANT            = 0.9848;
+static float MIN_RAMP_SLANT            = 0.9848f;
 // When we're deciding whether the cell is in a corner, we cast out
 // this far in 16 directions and look for a block of hits and a block
 // of misses.
 static float BLOCK_CHECK_DISTANCE      = 5.0;
 
 
-float g_AIPlaneZNormAccept = 0.465;
-float g_AIPlaneZNormPath   = 0.7;
+float g_AIPlaneZNormAccept = 0.465f;
+float g_AIPlaneZNormPath   = 0.7f;
 
-#endif EDITOR
+#endif // EDITOR
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -823,8 +830,8 @@ static const mxs_vector & __fastcall ComputeCellCenter(const tAIPathCellID cell,
 {
    tAIPathVertexID id;
    tAIPathCell2VertexLinkID i;
-   register cMxsVector * pPoint;
-   const int lastVertex = g_AIPathDB.m_Cells[cell].firstVertex + g_AIPathDB.m_Cells[cell].vertexCount;
+   cMxsVector * pPoint;
+   const tAIPathCell2VertexLinkID lastVertex = g_AIPathDB.m_Cells[cell].firstVertex + g_AIPathDB.m_Cells[cell].vertexCount;
 
    ((cMxsVector *)pCenter)->Set(0, 0, 0);
 
@@ -902,9 +909,9 @@ static float PathFindCliffHeight(const cMxsVector &sampleSourcePt)
 ///////////////////////////////////////
 
 // This constant must match the number of bits allocated for stair size
-static double g_aStairSize[kAIPathCellNumStairSizes]
+static float g_aStairSize[kAIPathCellNumStairSizes]
 = {
-   .5, .75, 1.0, 1.5
+   .5f, .75f, 1.0f, 1.5f
 };
 
 
@@ -924,7 +931,7 @@ static int EdgeStairLevel(mxs_vector *p1, mxs_vector *p2)
    mx_scaleeq_vec(&Perp, STAIR_SAMPLE_DISTANCE);
 
    int iNumSamples = (int) ceil(fEdgeLength / fSampleInterval);
-   float fInc = 1.0 / (iNumSamples - 1.0);
+   float fInc = 1.0f / (iNumSamples - 1.0f);
    float fFraction = 0.0;
    float fSourceZ, fDiffZ;
 
@@ -1034,8 +1041,8 @@ static int CellBlockedDirections(int iCellIndex)
 {
    mxs_vector Center = g_AIPathDB.GetCenter(iCellIndex);
 
-   float radius = g_pAICreatureSizes->sizes[0].width * .5;
-   float fRise = g_pAICreatureSizes->sizes[0].height * .5 + g_StepClearance * .5;
+   float radius = g_pAICreatureSizes->sizes[0].width * .5f;
+   float fRise = g_pAICreatureSizes->sizes[0].height * .5f + g_StepClearance * .5f;
    float fEffectiveHeight = g_pAICreatureSizes->sizes[0].height - g_StepClearance;
 
    Center.z += fRise;
@@ -1047,7 +1054,7 @@ static int CellBlockedDirections(int iCellIndex)
    {
       rv += rv;
 
-      SampleDirection.value = TWO_PI * (1.0 / 16.0) * (float) i;
+      SampleDirection.value = TWO_PI * (1.0f / 16.0f) * (float) i;
 
       ProjectFromLocationOnZPlane(Center, BLOCK_CHECK_DISTANCE,
                                   SampleDirection, &SampleEnd);
@@ -1190,10 +1197,10 @@ static inline BOOL CheckCigarClear(mxs_vector *pCenter,
    ObjID objIgnored;
 
    Top.vec = *pCenter;
-   Top.vec.z += (fHeight * .5 - radius);
+   Top.vec.z += (fHeight * .5f - radius);
 
    Bottom.vec = *pCenter;
-   Bottom.vec.z -= (fHeight * .5 - radius);
+   Bottom.vec.z -= (fHeight * .5f - radius);
    Bottom.cell = Bottom.hint = -1;
    ComputeCellForLocation(&Bottom);
 
@@ -1218,7 +1225,7 @@ static int CheckPathClear(mxs_vector *pV1, mxs_vector *pV2,
    int rv = 0;
 
    mxs_vector v;
-   float fInc = 1.0 / (float(g_EdgePropertySampleSize) - 1.0);
+   float fInc = 1.0f / (float(g_EdgePropertySampleSize) - 1.0f);
    float fPos = 0.0;    // position along edge, [0..1]
 
    for (int i = 0; i < g_EdgePropertySampleSize; ++i)
@@ -1246,7 +1253,7 @@ static int CheckPathClear(mxs_vector *pV1, mxs_vector *pV2,
 // Do raycasts from center of source cell to points along dest cell's edge. If at least n-2 succeed, then
 // we return TRUE.
 
-#define SOME_SMALL_Z 0.5000000
+#define SOME_SMALL_Z 0.5000000f
 #define OMEGA_Z 0.00010000
 static BOOL TestEdgeRaycast(int iFromCell, sAIPathCellLink *pLink)
 {
@@ -1318,8 +1325,8 @@ static int ComputeEdgeProperty(tAIPathVertexID v1, tAIPathVertexID v2, int iFrom
    eEdgeProperties EdgeVal;
    mxs_vector v1a, v1b, v2a, v2b;
 
-   float radius = g_pAICreatureSizes->sizes[0].width * .5;
-   float fRise = g_pAICreatureSizes->sizes[0].height * .5 + g_StepClearance * .5;
+   float radius = g_pAICreatureSizes->sizes[0].width * .5f;
+   float fRise = g_pAICreatureSizes->sizes[0].height * .5f + g_StepClearance * .5f;
    float fEffectiveHeight = g_pAICreatureSizes->sizes[0].height - g_StepClearance;
 
    v1a = g_AIPathDB.m_Vertices[v1].pt;
@@ -1332,10 +1339,10 @@ static int ComputeEdgeProperty(tAIPathVertexID v1, tAIPathVertexID v2, int iFrom
    v2b = g_AIPathDB.m_Vertices[v2].pt;
    v2b.z = g_AIPathDB.GetZAtXY(pLink->dest, v2b);
 
-   fZDiff = __max(__max(fabs(v1a.z-v2a.z),
-                        fabs(v1a.z-v2b.z)),
-                  __max(fabs(v1b.z-v2a.z),
-                        fabs(v1b.z-v2b.z)));
+   fZDiff = __max(__max(fabsf(v1a.z-v2a.z),
+                         fabsf(v1a.z-v2b.z)),
+                   __max(fabsf(v1b.z-v2a.z),
+                         fabsf(v1b.z-v2b.z)));
 
    // First, do old-style test. If that test think this is a wall, do further tests to see if this is
    // a possible LVL.
@@ -1347,10 +1354,10 @@ static int ComputeEdgeProperty(tAIPathVertexID v1, tAIPathVertexID v2, int iFrom
    // If dest is higher than src, then use dest's z. Else if
    // src is higher, then use src's z.
    endPt1 = v2a;
-   endPt1.z += __max((v1a.z-v2a.z), 0) + g_pAICreatureSizes->sizes[0].height * .5 + SOME_SMALL_Z;
+   endPt1.z += __max((v1a.z-v2a.z), 0.0f) + g_pAICreatureSizes->sizes[0].height * .5f + SOME_SMALL_Z;
 
    endPt2 = v2b;
-   endPt2.z += __max((v1a.z-v2a.z), 0) + g_pAICreatureSizes->sizes[0].height * .5 + SOME_SMALL_Z;
+   endPt2.z += __max((v1a.z-v2a.z), 0.0f) + g_pAICreatureSizes->sizes[0].height * .5f + SOME_SMALL_Z;
 
    nPassages = CheckPathClear(&endPt1, &endPt2,
                                fEffectiveHeight, radius, TRUE, FALSE);
@@ -1414,10 +1421,10 @@ static int ComputeEdgeProperty(tAIPathVertexID v1, tAIPathVertexID v2, int iFrom
       const int nNumIncs = 5;
       eEdgeProperties BestEdgeVal = kEdgeIsWall;
       int i;
-      float fRise1 = g_pAICreatureSizes->sizes[0].height * .5 + g_StepClearance * .5;
+      float fRise1 = g_pAICreatureSizes->sizes[0].height * .5f + g_StepClearance * .5f;
       float fEffectiveHeight1 = g_pAICreatureSizes->sizes[0].height - g_StepClearance;
       // Not ideal. Due to LVL, it requires *more* than enough head room in average case.
-      float fRise2 = TERR_LVL_SIZE+g_pAICreatureSizes->sizes[0].height * .5;
+      float fRise2 = TERR_LVL_SIZE+g_pAICreatureSizes->sizes[0].height * .5f;
       float fEffectiveHeight2 = g_pAICreatureSizes->sizes[0].height;
 
       for (i = 0; (i < nNumIncs) && (BestEdgeVal != kEdgeOpen); i++)
@@ -1481,9 +1488,9 @@ static int ComputeEdgeProperty(tAIPathVertexID v1, tAIPathVertexID v2, int iFrom
       {
          const int nNumIncs = 5;
          int i;
-         float fRise1 = TERR_LVL_SIZE+g_pAICreatureSizes->sizes[0].height * .5;
+         float fRise1 = TERR_LVL_SIZE+g_pAICreatureSizes->sizes[0].height * .5f;
          float fEffectiveHeight1 = g_pAICreatureSizes->sizes[0].height;
-         float fRise2 = HUGE_Z+g_pAICreatureSizes->sizes[0].height * .5;
+         float fRise2 = HUGE_Z+g_pAICreatureSizes->sizes[0].height * .5f;
          float fEffectiveHeight2 = g_pAICreatureSizes->sizes[0].height;
          eEdgeProperties BestEdgeVal = kEdgeIsWall;
 
@@ -1604,9 +1611,9 @@ static tAIPathOkBits PathFindComputeOkBits(int iFromCell, int iToCell,
 
 #define kNumVolumes 7
 static float g_afVolumeHeight[kNumVolumes]
-= { 0.0,    3.0,     4.0,    6.0833, 8.0,    12.0,   20.0 };
+= { 0.0f,   3.0f,    4.0f,   6.0833f, 8.0f,  12.0f,  20.0f };
 static float g_afVolumeRadius[kNumVolumes]
-= { 0.0,    .25,     .5,     .875,   1.5,    3.0,    4.0 };
+= { 0.0f,   .25f,    .5f,    .875f,  1.5f,   3.0f,   4.0f };
 
 static void VolumeCigarAtCenter(int iCellIndex)
 {
@@ -1621,7 +1628,7 @@ static void VolumeCigarAtCenter(int iCellIndex)
       // This part here should really be precalculated.
       fHeight = g_afVolumeHeight[i];
       radius = g_afVolumeRadius[i];
-      fRise = fHeight * .5 + g_StepClearance * .5;
+      fRise = fHeight * .5f + g_StepClearance * .5f;
       fEffectiveHeight = fHeight - g_StepClearance;
 
       RaisedCenter = Center;
@@ -1655,7 +1662,7 @@ static float AdjunctCeiling(Location *pSamplePoint, int iCellIndex,
    {
       Location Hit;
       Location CastEnd = *pSamplePoint;
-      CastEnd.vec.z += 1000.0;      // functional gazillion
+      CastEnd.vec.z += 1000.0f;      // functional gazillion
 
       if (PortalRaycast(pSamplePoint, &CastEnd, &Hit, 1))
       {
@@ -1698,8 +1705,8 @@ static void FindAdjunctData(int iCellIndex,
    const int iFirstVertex = pCell->firstVertex;
    const int iVertexLimit = iFirstVertex + pCell->vertexCount;
 
-   float fMaxFloorZ = -4500000000000.0; // -4.5 gazillion
-   float fMinCeilingZ = 4500000000000.0;// 4.5 gazillion
+   float fMaxFloorZ = -4500000000000.0f; // -4.5 gazillion
+   float fMinCeilingZ = 4500000000000.0f;// 4.5 gazillion
 
    mxs_vector CellCenter = g_AIPathDB.GetCenter(iCellIndex);
 
@@ -1717,8 +1724,8 @@ static void FindAdjunctData(int iCellIndex,
             fMaxFloorZ = pVertex->z;
 
          // Now we find the media at swimming and waist heights.
-         mx_interpolate_vec(&SamplePoint.vec, &CellCenter, pVertex, .9);
-         SamplePoint.vec.z += .01;   // scoodge to make sure we're in world
+         mx_interpolate_vec(&SamplePoint.vec, &CellCenter, pVertex, .9f);
+         SamplePoint.vec.z += .01f;   // scoodge to make sure we're in world
          SamplePoint.hint = CELL_INVALID;
 
          // This is our first pass at ceiling height--will we want
@@ -1742,7 +1749,7 @@ static void FindAdjunctData(int iCellIndex,
 
          // Does something which flies have enough room to do it here?
          FlyPoint = SamplePoint;
-         FlyPoint.vec.z = fMinCeilingZ - .01;
+         FlyPoint.vec.z = fMinCeilingZ - .01f;
          if (PortalRaycast(&FlyPoint, &SamplePoint, &DummyPoint, 1))
             if (ComputeCellForLocation(&FlyPoint) != CELL_INVALID)
                if (WR_CELL(FlyPoint.cell)->medium == MEDIA_AIR)
@@ -1770,9 +1777,9 @@ static void FindAdjunctData(int iCellIndex,
 
 
 #define kNumCeilingHeights 7
-static double g_aCeilingHeight[kNumCeilingHeights]
+static float g_aCeilingHeight[kNumCeilingHeights]
 = {
-   2.0, 4.0, 6.0, 8.0, 10.0, 15.0, 20.0
+   2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 15.0f, 20.0f
 };
 
 static void SetCellInfoFromAdjunct(int iCellIndex,
@@ -1810,7 +1817,7 @@ static void SetAdjunctData()
    memset(g_AIPathCellAdjunct, 0, (g_AIPathDB.m_nCells + 1)
                                   * sizeof(sAIPathCellAdjunct));
 
-   for (i = 1; i <= g_AIPathDB.m_nCells; ++i)
+   for (i = 1; i <= (int)g_AIPathDB.m_nCells; ++i)
    {
       memset(AIAddrCellInfo(&g_AIPathDB.m_Cells[i]), 0, kSizeofCellInfo);
    }
@@ -1818,7 +1825,7 @@ static void SetAdjunctData()
    sAIPathCellAdjunct *pAdjunct = g_AIPathCellAdjunct;
    sAIPathCell *pCell = g_AIPathDB.m_Cells;
 
-   for (i = 1; i <= g_AIPathDB.m_nCells; ++i)
+   for (i = 1; i <= (int)g_AIPathDB.m_nCells; ++i)
    {
       ++pAdjunct;
       ++pCell;
@@ -1860,7 +1867,7 @@ static void PropagateFloorTypes()
    sAIPathCellAdjunct *pAdjunct = g_AIPathCellAdjunct;
    sAIPathCell *pCell = g_AIPathDB.m_Cells;
 
-   for (int iCell = 1; iCell <= g_AIPathDB.m_nCells; ++iCell)
+   for (int iCell = 1; iCell <= (int)g_AIPathDB.m_nCells; ++iCell)
    {
       ++pAdjunct;
       ++pCell;
@@ -1902,7 +1909,7 @@ static void PropagateFloorTypes()
    if (config_is_defined("PathFindGenSpew")) {
       pCell = g_AIPathDB.m_Cells;
 
-      for (int iCell = 1; iCell <= g_AIPathDB.m_nCells; ++iCell) {
+      for (int iCell = 1; iCell <= (int)g_AIPathDB.m_nCells; ++iCell) {
          ++pCell;
 
          mprintf("Cell %d: Stair %s Ramp %s\n",
@@ -1918,9 +1925,9 @@ static void PropagateFloorTypes()
 
 // No lighting has value 0.  While most cells will be from 0 to 1, the
 // range is open-ended.
-static double g_LightThresholds[kAIPathCellNumLightLevels]
+static float g_LightThresholds[kAIPathCellNumLightLevels]
 = {
-   0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5
+   0, .1f, .2f, .3f, .4f, .5f, .6f, .7f, .8f, .9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f
 };
 
 ////////////////////////
@@ -1938,7 +1945,7 @@ inline void ComputeCellLightLevels()
    Assert_(DummyObject != OBJ_NULL);
    EndObjectCreate(DummyObject);
 
-   for (int iCellIndex = 1; iCellIndex <= g_AIPathDB.m_nCells; ++iCellIndex) {
+   for (int iCellIndex = 1; iCellIndex <= (int)g_AIPathDB.m_nCells; ++iCellIndex) {
       Center = g_AIPathDB.GetCenter(iCellIndex);
       Center.z += LIGHT_HEIGHT;
 
@@ -1965,7 +1972,7 @@ inline void ComputeCellLightLevels()
 #define kSteepSlopeMultiplier 5.0
 
 inline void ComputeCell2CellCost(const tAIPathCellID cell_1,
-                                 const tAIPathCellID cell_2, uchar *cost)
+                                 const tAIPathCellID cell_2, ushort *cost)
 {
    mxs_vector center_1, center_2;
    float      dist;
@@ -1983,7 +1990,7 @@ inline void ComputeCell2CellCost(const tAIPathCellID cell_1,
    if (dist > 254.0)
       dist = 254.0;
 
-   *cost = (uchar)((int)dist);
+   *cost = (ushort)((int)dist);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2207,7 +2214,7 @@ static void PostProcessModifiedOkBits()
    {
       iFirstCell1 = g_AIPathDB.m_Cells[cell1].firstCell;
       if (g_AIPathDB.m_Cells[cell1].wrapFlags & IDWRAP_Cell2Cell)
-         iFirstCell1 += MAX_CELL2CELL_LINKS;
+         iFirstCell1 += LEGACY_AIPATH_INDEX_LIMIT;
 
       iCellLimit1 = iFirstCell1 + g_AIPathDB.m_Cells[cell1].cellCount;
       pCell1To2Link = 0;
@@ -2323,7 +2330,7 @@ static void PostProcessModifiedOkBits()
 
 
 
-float g_MinimumSkewOverlap = 0.083333;
+float g_MinimumSkewOverlap = 0.083333f;
 
 struct sIsSharedEdgeResult
 {
@@ -2634,10 +2641,7 @@ static BOOL ValidateCell(tAIPathCellID cell, BOOL warn = TRUE)
 static void ValidateAllCells()
 {
    for (int i = g_AIPathDB.m_nCells; i >= 1; i--)
-   {
-      if (!ValidateCell(i))
-         ; //g_AIPathDB.DeleteCell(i);
-   }
+      ValidateCell(i);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2651,7 +2655,7 @@ float g_MinRatioConsideration = 5.0;
 
 static BOOL g_fQualityWatch;
 
-inline void GetEdgePoint(int vertex1, int vertex2, double ratio, mxs_vector * p)
+inline void GetEdgePoint(int vertex1, int vertex2, float ratio, mxs_vector * p)
 {
    p->x = ((g_AIPathDB.m_Vertices[vertex2].pt.x - g_AIPathDB.m_Vertices[vertex1].pt.x) * ratio) + g_AIPathDB.m_Vertices[vertex1].pt.x;
    p->y = ((g_AIPathDB.m_Vertices[vertex2].pt.y - g_AIPathDB.m_Vertices[vertex1].pt.y) * ratio) + g_AIPathDB.m_Vertices[vertex1].pt.y;
@@ -2679,7 +2683,7 @@ static BOOL __fastcall AddSplitCell(tAIPathCellID origCell, sAIPathCell2VertexLi
 
    g_AIPathDB.m_nCells++;
 
-   g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].firstVertex   = (tAIPathVertexIDPacked) (g_AIPathDB.m_nCellVertices+1);
+   g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].firstVertex = g_AIPathDB.m_nCellVertices+1;
    g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].vertexCount   = (uchar) nVerts;
    g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].plane         = g_AIPathDB.m_Cells[origCell].plane;
    g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].pathFlags     = 0;
@@ -2717,7 +2721,7 @@ BOOL cAIPathDB::SplitCell(tAIPathCellID cell, const mxs_vector & pt1, const mxs_
    sAIPathCell2VertexLink newVertLink;
    int                    i;
 
-   #define AIPDSC_Same(v1, i) Same(v1, GetCellVertex(cell, (i)), 0.001)
+   #define AIPDSC_Same(v1, i) Same(v1, GetCellVertex(cell, (i)), 0.001f)
 
    for (i = 0; i < m_Cells[cell].vertexCount; i++)
    {
@@ -2872,7 +2876,7 @@ BOOL cAIPathDB::SplitCell(tAIPathCellID cell, const mxs_vector & pt1, const mxs_
    m_nCells++;
 
    // Finally, fixup the cell-vertex links for all higher cells
-   for (i = cell + 2; i <= m_nCells; i++)
+   for (i = cell + 2; i <= (int)m_nCells; i++)
       m_Cells[i].firstVertex += nNewVerts;
 
    g_Splits++;
@@ -2893,7 +2897,7 @@ void cAIPathDB::DeleteCell(tAIPathCellID cell)
    m_CellVertices.SetSize(m_CellVertices.Size() - m_Cells[cell].vertexCount);
    m_nCellVertices -= m_Cells[cell].vertexCount;
 
-   for (int i = cell + 1; i <= m_nCells; i++)
+   for (int i = cell + 1; i <= (int)m_nCells; i++)
       m_Cells[i].firstVertex -= m_Cells[cell].vertexCount;
 
    // Delete cell
@@ -2960,14 +2964,14 @@ BOOL cAIPathDB::AddOBBCell(sAIExternCell * pCell, tAIPathCellID cell, BOOL movab
       else
          newCell.plane = AICreateOrFindPlane(pCell->plane.normal, pCell->plane.constant);
 
-      for (i = cell; i <= m_nCells; i++)
+      for (i = cell; i <= (int)m_nCells; i++)
          m_Cells[i].firstVertex += pCell->nVertices;
 
-      for (i = 0; i < pCell->nVertices; i++)
+      for (i = 0; i < (int)pCell->nVertices; i++)
       {
          if (!AICreateOrFindPathVertex(pCell->vertices[i], &idPt))
             return FALSE;
-         m_CellVertices[newCell.firstVertex + i].id = (tAIPathVertexIDPacked) idPt;
+         m_CellVertices[newCell.firstVertex + i].id = idPt;
       }
 
       m_Cells.InsertAtIndex(newCell, cell);
@@ -2976,7 +2980,7 @@ BOOL cAIPathDB::AddOBBCell(sAIExternCell * pCell, tAIPathCellID cell, BOOL movab
    else
    {
       m_nCells++;
-      m_Cells[m_nCells].firstVertex = (tAIPathVertexIDPacked) (m_nCellVertices + 1);
+      m_Cells[m_nCells].firstVertex = m_nCellVertices + 1;
       m_Cells[m_nCells].vertexCount = pCell->nVertices;
       m_Cells[m_nCells].plane;
       m_Cells[m_nCells].pathFlags = 0;
@@ -2986,13 +2990,13 @@ BOOL cAIPathDB::AddOBBCell(sAIExternCell * pCell, tAIPathCellID cell, BOOL movab
       else
          m_Cells[m_nCells].plane = AICreateOrFindPlane(pCell->plane.normal, pCell->plane.constant);
 
-      for (i = 0; i < pCell->nVertices; i++)
+      for (i = 0; i < (int)pCell->nVertices; i++)
       {
          if (!AICreateOrFindPathVertex(pCell->vertices[i], &idPt))
             return FALSE;
 
          m_nCellVertices++;
-         m_CellVertices[m_nCellVertices].id = (tAIPathVertexIDPacked) idPt;
+         m_CellVertices[m_nCellVertices].id = idPt;
       }
    }
    return TRUE;
@@ -3119,7 +3123,7 @@ static eQualityResult __fastcall QualitySplit(tAIPathCellID cell, int iVert1, fl
             return kQualityAbort;
 
          g_AIPathDB.m_CellVertices[g_AIPathDB.m_Cells[cell].firstVertex + 1].id = idPt;
-         cellVertLinks[0].id = (tAIPathVertexIDPacked) idPt;
+         cellVertLinks[0].id = idPt;
 
          if (!AddSplitCell(cell, cellVertLinks, 3))
             return kQualityAbort;
@@ -3141,7 +3145,7 @@ static eQualityResult __fastcall QualitySplit(tAIPathCellID cell, int iVert1, fl
          {
             tAIPathVertexID idPt1, idPt2;
 
-            double ratio = (double)i / (double)g_NumRectSplit;
+            float ratio = (float)i / (float)g_NumRectSplit;
             cMxsVector pt1, pt2;
 
             GetEdgePoint(g_AIPathDB.m_CellVertices[g_AIPathDB.m_Cells[cell].firstVertex + 0].id,
@@ -3150,7 +3154,7 @@ static eQualityResult __fastcall QualitySplit(tAIPathCellID cell, int iVert1, fl
                          &pt1);
             GetEdgePoint(g_AIPathDB.m_CellVertices[g_AIPathDB.m_Cells[cell].firstVertex + 2].id,
                          g_AIPathDB.m_CellVertices[g_AIPathDB.m_Cells[cell].firstVertex + 3].id,
-                         1.0 - ratio,
+                         1.0f - ratio,
                          &pt2);
 
             if (!AICreateOrFindPathVertex(pt1, &idPt1) ||
@@ -3332,7 +3336,7 @@ static BOOL __fastcall DoRemoveColinearPoints(tAIPathCellID cell)
 
          if (pfle(Vec2PointSegmentSquared(edgePt2.AsVec2Ptr(),
                                           edgePt1.AsVec2Ptr(),
-                                          edgePt3.AsVec2Ptr()), 0.00001))
+                                          edgePt3.AsVec2Ptr()), 0.00001f))
          {
             colinears[nColinears] = (anchor + i) % vertexCount;
             nColinears++;
@@ -3559,7 +3563,7 @@ static void SegSpltFindCloseCells(const mxs_vector & start, const mxs_vector & e
 
 //////////////////////////////////////
 
-#define kSegSpltDist 7.0
+#define kSegSpltDist 7.0f
 
 static void AILineSplit(const mxs_vector & lineA, const mxs_vector & lineB, const cDynArray<tAIPathCellID> & cells)
 {
@@ -3650,7 +3654,7 @@ static void AISegmentSplit(const mxs_vector & start, const mxs_vector & end)
 static BOOL InXYBox(const mxs_vector & p, const mxs_vector * box)
 {
    int i;
-   register const mxs_vector * p1;
+   const mxs_vector * p1;
    const mxs_vector * p2;
 
    float edge_vec_x, edge_vec_y;   // 2d vectors we dont have...
@@ -3715,7 +3719,7 @@ static void AddBlockingOBBs()
 
       for (j = 0; j < 4; j++)
       {
-         if (mx_is_identical(&avoidMarks[i].vertices[j], &avoidMarks[i].vertices[(j + 1) % 4], 0.1))
+         if (mx_is_identical(&avoidMarks[i].vertices[j], &avoidMarks[i].vertices[(j + 1) % 4], 0.1f))
             continue;
          AISegmentSplit(avoidMarks[i].vertices[j], avoidMarks[i].vertices[(j + 1) % 4]);
       }
@@ -3740,7 +3744,7 @@ static void MarkBlockingObbsUnpathable()
    if (avoidMarks.Size())
    {
       cMxsVector center;
-      for (i = 1; i <= g_AIPathDB.m_nCells; i++)
+      for (i = 1; i <= (int)g_AIPathDB.m_nCells; i++)
       {
          for (j = 0; j < avoidMarks.Size(); j++)
          {
@@ -3750,13 +3754,13 @@ static void MarkBlockingObbsUnpathable()
             if (g_AIPDB_MarkOnlyObj && avoidMarks[i].object != g_AIPDB_MarkOnlyObj)
                continue;
 
-            if (mx_is_identical(&avoidMarks[j].vertices[0], &avoidMarks[j].vertices[1], 0.1))
+            if (mx_is_identical(&avoidMarks[j].vertices[0], &avoidMarks[j].vertices[1], 0.1f))
                continue;
-            if (mx_is_identical(&avoidMarks[j].vertices[1], &avoidMarks[j].vertices[2], 0.1))
+            if (mx_is_identical(&avoidMarks[j].vertices[1], &avoidMarks[j].vertices[2], 0.1f))
                continue;
-            if (mx_is_identical(&avoidMarks[j].vertices[2], &avoidMarks[j].vertices[3], 0.1))
+            if (mx_is_identical(&avoidMarks[j].vertices[2], &avoidMarks[j].vertices[3], 0.1f))
                continue;
-            if (mx_is_identical(&avoidMarks[j].vertices[3], &avoidMarks[j].vertices[0], 0.1))
+            if (mx_is_identical(&avoidMarks[j].vertices[3], &avoidMarks[j].vertices[0], 0.1f))
                continue;
 
             if (InMark(ComputeCellCenter(i, &center), avoidMarks[j]))       // compute not get because database is only partially built
@@ -3853,7 +3857,7 @@ static void FixupMovingTerrainOBBs()
          if (g_AIPathDB.m_CellObjMap[j].objID == obj)
          {
             objCells.Append(g_AIPathDB.m_CellObjMap[j].cellID);
-            objWaypoints.Append((ObjID)g_AIPathDB.m_CellObjMap[j].data);
+            objWaypoints.Append((ObjID)(intptr_t)g_AIPathDB.m_CellObjMap[j].data);
          }
       }
 
@@ -3903,7 +3907,7 @@ static void FixupMovingTerrainOBBs()
 
          // For each of the soon-to-be-defunct cells, find all cells that
          // have links into them, and fix up the inward/outward links
-         for (k=0; k<g_AIPathDB.m_nCells; k++)
+         for (k=0; k<(int)g_AIPathDB.m_nCells; k++)
          {
             sAIPathCell *pRemapCell = &g_AIPathDB.m_Cells[objCells[j]];
 
@@ -4056,7 +4060,7 @@ static void MarkCellsWithDoors()
    if (doorBBoxes.Size())
    {
       cMxsVector center;
-      for (i = 1; i <= g_AIPathDB.m_nCells; i++)
+      for (i = 1; i <= (int)g_AIPathDB.m_nCells; i++)
       {
          for (j = 0; j < doorBBoxes.Size(); j++)
          {
@@ -4132,13 +4136,13 @@ unsigned AIGetPathDBSize()
 // For now, gotta take it out. (toml 03-08-00)
 //
 
-#define kNarrowDist (g_pAICreatureSizes->sizes[0].width * 1.1)
+#define kNarrowDist (g_pAICreatureSizes->sizes[0].width * 1.1f)
 #define kNarrowSamples 16
 
 BOOL TestPathWidthCenter(tAIPathCellID cell, const mxs_vector & testPt, mxs_vector testVec)
 {
    mxs_vector testPt2;
-   float      scale = kNarrowDist * 0.5;
+   float      scale = kNarrowDist * 0.5f;
    int        opens = 0;
 
    // Test one direction
@@ -4188,7 +4192,7 @@ void PostProcessNarrow()
       return;
 
    // Post-process looking for too narrow edges
-   for (cell = 1; cell <= g_AIPathDB.m_nCells; cell++)
+   for (cell = 1; cell <= (int)g_AIPathDB.m_nCells; cell++)
    {
       if (cell % 128 == 0)
       {
@@ -4202,7 +4206,7 @@ void PostProcessNarrow()
       i = g_AIPathDB.m_Cells[cell].firstCell;
 
       if (g_AIPathDB.m_Cells[cell].wrapFlags & IDWRAP_Cell2Cell)
-         i += MAX_CELL2CELL_LINKS;
+         i += LEGACY_AIPATH_INDEX_LIMIT;
 
       int                iLimit = i + g_AIPathDB.m_Cells[cell].cellCount;
       sAIPathCellLink *  pLink;
@@ -4210,7 +4214,7 @@ void PostProcessNarrow()
       mxs_vector         testBasis, testPtFar, testPtNear;
       mxs_vector         testVec;
       float              d;
-      float              inc = 1.0 / (float(g_EdgePropertySampleSize) - 1.0);
+      float              inc = 1.0f / (float(g_EdgePropertySampleSize) - 1.0f);
       float              pos;    // position along edge, [0..1]
 
       for (; i < iLimit; i++)
@@ -4235,12 +4239,12 @@ void PostProcessNarrow()
 
             mx_sub_vec(&testPtFar, &testBasis, &g_AIPathDB.GetCenter(pLink->dest));
             d = mx_normeq_vec(&testPtFar);
-            mx_scaleeq_vec(&testPtFar, d - 0.005);
+            mx_scaleeq_vec(&testPtFar, d - 0.005f);
             mx_addeq_vec(&testPtFar, &g_AIPathDB.GetCenter(pLink->dest));
 
             mx_sub_vec(&testPtNear, &testBasis, &g_AIPathDB.GetCenter(cell));
             d = mx_normeq_vec(&testPtNear);
-            mx_scaleeq_vec(&testPtNear, d - 0.005);
+            mx_scaleeq_vec(&testPtNear, d - 0.005f);
             mx_addeq_vec(&testPtNear, &g_AIPathDB.GetCenter(cell));
 
             if (!IsPtInCellXYPlane(testPtFar, &g_AIPathDB.m_Cells[pLink->dest]))
@@ -4340,7 +4344,7 @@ void SortLinksByDistance()
    sLinkSort               links[MAX_LINKS_FROM_CELL];
    mxs_vector              mid;
 
-   for (i = 1; i <= g_AIPathDB.m_nCells; i++)
+   for (i = 1; i <= (int)g_AIPathDB.m_nCells; i++)
    {
       pCell = g_AIPathDB.AccessCell(i);
       last  = pCell->firstCell + pCell->cellCount;
@@ -4368,7 +4372,7 @@ void SortLinksByDistance()
 
 }
 
-#endif EDITOR
+#endif // EDITOR
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -4615,7 +4619,7 @@ static void ShrinkLinks()
 #endif
 
    // index at m_nLinks is actually used, but we don't need to worry about it.
-   for (i = 1; i < g_AIPathDB.m_nLinks; i++)
+   for (i = 1; i < (int)g_AIPathDB.m_nLinks; i++)
    {
       pLink = &(g_AIPathDB.m_Links[i]);
 
@@ -4626,7 +4630,7 @@ static void ShrinkLinks()
       // Let the fun begin
       if (!pLink->okBits)
       {
-         for (j = i+1; j <= g_AIPathDB.m_nLinks; j++)
+         for (j = i+1; j <= (int)g_AIPathDB.m_nLinks; j++)
             g_AIPathDB.m_Links[j-1] = g_AIPathDB.m_Links[j];
          g_AIPathDB.m_nLinks--;
 
@@ -4642,7 +4646,7 @@ static void ShrinkLinks()
             if (g_AIPathDB.m_Cells[pci_1].wrapFlags & IDWRAP_Cell2Cell)
             {
                bDidWrappedLink = TRUE;
-               nLinkIx += MAX_CELL2CELL_LINKS;
+               nLinkIx += LEGACY_AIPATH_INDEX_LIMIT;
             }
 
             if ((i >= nLinkIx) && (i < (nLinkIx+g_AIPathDB.m_Cells[pci_1].cellCount))) // deleted link is within range.
@@ -4650,11 +4654,11 @@ static void ShrinkLinks()
             else if (i < nLinkIx) // deleted link is before this one, so just decrement firstCell
             {
                g_AIPathDB.m_Cells[pci_1].firstCell--;
-               if (g_AIPathDB.m_Cells[pci_1].firstCell >= MAX_CELL2CELL_LINKS)
+               if (g_AIPathDB.m_Cells[pci_1].firstCell >= LEGACY_AIPATH_INDEX_LIMIT)
                {
                   g_AIPathDB.m_Cells[pci_1].wrapFlags |= IDWRAP_Cell2Cell; // Redundant, yes.
                   mprintf("Resetting wrapped link @%d\n", pci_1);
-                  g_AIPathDB.m_Cells[pci_1].firstCell -= MAX_CELL2CELL_LINKS;
+                  g_AIPathDB.m_Cells[pci_1].firstCell -= LEGACY_AIPATH_INDEX_LIMIT;
                }
             }
          }
@@ -4740,7 +4744,7 @@ BOOL AIPathFindDBBuild()
 
    ResetPathfindZones();
 
-   _heapmin();
+   PlatformHeapMinimize();
 
    g_AIPathDB.m_Cells.SetSize(MAX_CELLS);
    g_AIPathDB.m_Marks.SetSize(MAX_CELLS);
@@ -4755,7 +4759,7 @@ BOOL AIPathFindDBBuild()
    ///////////////////////////////////////
    // Create Path Cells
 
-   for (ci = 0; ci < wr_num_cells; ci++)
+   for (ci = 0; ci < (tAIPathCellID)wr_num_cells; ci++)
    {
       firstPortalVertex = 0;
 
@@ -4790,7 +4794,7 @@ BOOL AIPathFindDBBuild()
             // wsf added:
             memset(&g_AIPathDB.m_Cells[g_AIPathDB.m_nCells], 0, sizeof(sAIPathCell));
 
-            g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].firstVertex = (tAIPathVertexIDPacked) (g_AIPathDB.m_nCellVertices+1);
+            g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].firstVertex = g_AIPathDB.m_nCellVertices+1;
             g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].vertexCount = wr_cell[ci]->poly_list[pi].num_vertices;
 
             g_AIPathDB.m_Cells[g_AIPathDB.m_nCells].plane = AICreateOrFindPlane(wr_cell[ci]->plane_list[current_planeid].normal, wr_cell[ci]->plane_list[current_planeid].plane_constant);
@@ -4822,7 +4826,7 @@ BOOL AIPathFindDBBuild()
 
                   return FALSE;
                }
-               g_AIPathDB.m_CellVertices[g_AIPathDB.m_nCellVertices].id = (tAIPathVertexIDPacked) newVertexID;
+               g_AIPathDB.m_CellVertices[g_AIPathDB.m_nCellVertices].id = newVertexID;
             }
 
             if (!ValidateCell(g_AIPathDB.m_nCells, FALSE))
@@ -4846,7 +4850,7 @@ BOOL AIPathFindDBBuild()
 
    ///////////////////////////////////////
 
-   for (i = 1; i <= g_AIPathDB.m_nCells; i++)
+   for (i = 1; i <= (int)g_AIPathDB.m_nCells; i++)
       g_AIPathDB.m_Cells[i].pathFlags = 0;
 
    ///////////////////////////////////////
@@ -4870,7 +4874,7 @@ BOOL AIPathFindDBBuild()
 
    ///////////////////////////////////////
 
-   for (i = 1; i <= g_AIPathDB.m_nCells; i++)
+   for (i = 1; i <= (int)g_AIPathDB.m_nCells; i++)
       g_AIPathDB.m_Cells[i].pathFlags = 0;
 
    ///////////////////////////////////////
@@ -4961,7 +4965,7 @@ BOOL AIPathFindDBBuild()
          SetCellEdgeInfo(ci, i, PATH_EDGE_OPEN);
 
          // check to see if the AI can stand on the pt
-         pt1.z += VERTICAL_RISE_LIMIT + 0.5;
+         pt1.z += VERTICAL_RISE_LIMIT + 0.5f;
          angle.set(pt1.x, pt1.y, center.x, center.y);
          ProjectFromLocationOnZPlane(pt1, 0.25, angle, &pt1);
          PathFindMinimumRaycastAtLocation(pt1, heightSq, widthSq);
@@ -4972,7 +4976,7 @@ BOOL AIPathFindDBBuild()
          midPt.x = (pt1.x + pt2.x) / 2;
          midPt.y = (pt1.y + pt2.y) / 2;
          midPt.z = (pt1.z + pt2.z) / 2;
-         midPt.z += VERTICAL_RISE_LIMIT + 0.5;
+         midPt.z += VERTICAL_RISE_LIMIT + 0.5f;
          angle.set(midPt.x, midPt.y, center.x, center.y);
          ProjectFromLocationOnZPlane(midPt, 0.25, angle, &midPt);
          PathFindMinimumRaycastAtLocation(midPt, heightSq, widthSq);
@@ -5100,8 +5104,6 @@ BOOL AIPathFindDBBuild()
 
          // if we have links, set firstCell to next available spot in
          // cell2cell link array.
-         // wsf: now we can process more than is actually stored, so we temporarily store
-         // 'wrap' bit if necessary.
          if ((g_AIPathDB.m_nLinks + 1) >= MAX_PROCESSED_CELL2CELL_LINKS)
          {
             mprintf("ERROR: too many cell->cell links\n");
@@ -5110,18 +5112,10 @@ BOOL AIPathFindDBBuild()
             TIMER_Clear(PathLinks);
             goto done_links_error;
          }
-         else if ((g_AIPathDB.m_nLinks + 1) >= MAX_CELL2CELL_LINKS)
-         {
-            g_AIPathDB.m_Cells[pci_1].firstCell
-               = (tAIPathCell2CellLinkIDPacked)((g_AIPathDB.m_nLinks + 1)-MAX_CELL2CELL_LINKS);
-            g_AIPathDB.m_Cells[pci_1].wrapFlags |= IDWRAP_Cell2Cell;
-            mprintf("Setting wrapped link! Cell=%d\n", pci_1);
-         }
          else
          {
             g_AIPathDB.m_Cells[pci_1].wrapFlags &= ~IDWRAP_Cell2Cell;
-            g_AIPathDB.m_Cells[pci_1].firstCell
-               = (tAIPathCell2CellLinkIDPacked)(g_AIPathDB.m_nLinks + 1);
+            g_AIPathDB.m_Cells[pci_1].firstCell = g_AIPathDB.m_nLinks + 1;
          }
 
          nUsedLinks = 0;
@@ -5160,31 +5154,31 @@ BOOL AIPathFindDBBuild()
                {
                   case kCell1EdgeContained:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1a;
+                        = pConnectionData->vertex1a;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1b;
+                        = pConnectionData->vertex1b;
                      break;
 
                   case kPerfect:
                   case kCell2EdgeContained:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2b;
+                        = pConnectionData->vertex2b;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2a;
+                        = pConnectionData->vertex2a;
                      break;
 
                   case kCell2SkewedLeft:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1a;
+                        = pConnectionData->vertex1a;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2a;
+                        = pConnectionData->vertex2a;
                      break;
 
                   case kCell2SkewedRight:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2b;
+                        = pConnectionData->vertex2b;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1b;
+                        = pConnectionData->vertex1b;
                      break;
                }
             }
@@ -5197,30 +5191,30 @@ BOOL AIPathFindDBBuild()
                   case kPerfect:
                   case kCell1EdgeContained:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1b;
+                        = pConnectionData->vertex1b;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1a;
+                        = pConnectionData->vertex1a;
                      break;
 
                   case kCell2EdgeContained:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2a;
+                        = pConnectionData->vertex2a;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2b;
+                        = pConnectionData->vertex2b;
                      break;
 
                   case kCell2SkewedLeft:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2a;
+                        = pConnectionData->vertex2a;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1a;
+                        = pConnectionData->vertex1a;
                      break;
 
                   case kCell2SkewedRight:
                      pLink->vertex_1
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex1b;
+                        = pConnectionData->vertex1b;
                      pLink->vertex_2
-                        = (tAIPathVertexIDPacked)pConnectionData->vertex2b;
+                        = pConnectionData->vertex2b;
                      break;
                }
             }
@@ -5280,7 +5274,7 @@ done_links_error:
 
    mprintf("\n");
 
-   _heapmin();
+   PlatformHeapMinimize();
 
    mprintf("Setting floor types...");
    PropagateFloorTypes();
@@ -5348,7 +5342,7 @@ done:
    delete [] pPathCell2CellLinks;
    delete [] pPathCell2VertexLinks;
 
-   _heapmin();
+   PlatformHeapMinimize();
 
    ClearAdjunctData();
 
@@ -5374,7 +5368,7 @@ done:
            AIGetZoneSize(kAIZone_HighStrikeLVL)/1024
           );
 
-   _heapmin();
+   PlatformHeapMinimize();
 
    g_fAIPathFindInited = TRUE;
 
@@ -5391,7 +5385,7 @@ done:
 #endif
    BuildAIRoomDatabase();
 
-   _heapmin();
+   PlatformHeapMinimize();
 
    return TRUE;
 }
@@ -5406,30 +5400,211 @@ done:
 static TagFileTag g_AIPathTag        = { "AIPATH" };
 static TagVersion g_AIPathTagVersion = { 3, 3 };
 
-static BOOL OpenPathTagFile(ITagFile* pTagFile)
+static BOOL OpenPathTagFile(ITagFile* pTagFile, TagVersion *pLoadedVersion = NULL)
 {
+   if (pTagFile->OpenMode() == kTagOpenWrite &&
+       dbCompatibilityUseRawTag(&g_AIPathTag))
+      return FALSE;
    HRESULT result;
-   TagVersion v = g_AIPathTagVersion;
+   TagVersion v = pLoadedVersion ? TagVersion{3, 4} : g_AIPathTagVersion;
 
    result = pTagFile->OpenBlock(&g_AIPathTag, &v);
 
    if (result == S_OK)
    {
-      if (v.major != g_AIPathTagVersion.major || v.minor != g_AIPathTagVersion.minor)
+      const BOOL current = v.major == g_AIPathTagVersion.major &&
+                           v.minor == g_AIPathTagVersion.minor;
+      const BOOL dark1 = pLoadedVersion && v.major == 2 && v.minor == 8;
+      const BOOL newDark = pLoadedVersion && v.major == 3 && v.minor == 4;
+      if (!current && !dark1 && !newDark)
       {
          pTagFile->CloseBlock();
          Warning (("File contains old AI path data, data not loaded.\n"));
       }
+      else if (pLoadedVersion)
+         *pLoadedVersion = v;
+
+      return current || dark1 || newDark;
    }
 
-   return ((result == S_OK)  &&
-           (v.major == g_AIPathTagVersion.major) &&
-           (v.minor == g_AIPathTagVersion.minor));
+   return FALSE;
 }
 
 ///////////////////////////////////////
 
 #define ArrToMoveParm(arr) ((char *)((arr).AsPointer()))
+
+struct sAIPathCellDisk33
+{
+   ushort firstVertex, firstCell, plane, next, bestNeighbor, linkFromNeighbor;
+   uchar vertexCount, pathFlags, cellCount, wrapFlags;
+   cMxsVector center;
+   uchar info[4];
+};
+
+struct sAIPathCellDisk34
+{
+   uint firstVertex, firstCell, plane, next, bestNeighbor, linkFromNeighbor;
+   ushort vertexCount;
+   uchar pathFlags, cellCount;
+   cMxsVector center;
+   uchar info[4];
+};
+
+struct sAIPathCellLinkDisk33
+{
+   ushort dest, vertex1, vertex2;
+   uchar okBits, cost;
+};
+
+struct sAIPathCellLinkDisk34
+{
+   uint dest, vertex1, vertex2;
+   ushort okBits, cost;
+};
+
+static_assert(sizeof(sAIPathCellDisk33) == 32, "AIPATH 3.3 cell disk size");
+static_assert(sizeof(sAIPathCellDisk34) == 44, "AIPATH 3.4 cell disk size");
+static_assert(sizeof(sAIPathCellLinkDisk33) == 8, "AIPATH 3.3 link disk size");
+static_assert(sizeof(sAIPathCellLinkDisk34) == 16, "AIPATH 3.4 link disk size");
+
+static BOOL AIPathCountIsValid(const char *name, unsigned count, unsigned limit)
+{
+   if (count <= limit)
+      return TRUE;
+   Warning(("AIPATH %s count %u exceeds codec limit %u\n", name, count, limit));
+   return FALSE;
+}
+
+static void ReadPathCells(ITagFile* file, BOOL wide, sAIPathCell* cells, int count)
+{
+   for (int i = 0; i < count; ++i)
+   {
+      sAIPathCell& cell = cells[i];
+      memset(&cell, 0, sizeof(cell));
+      if (wide)
+      {
+         sAIPathCellDisk34 disk;
+         file->Move((char*)&disk, sizeof(disk));
+         cell.firstVertex = disk.firstVertex;
+         cell.firstCell = disk.firstCell;
+         cell.plane = disk.plane;
+         cell.next = disk.next;
+         cell.bestNeighbor = disk.bestNeighbor;
+         cell.linkFromNeighbor = disk.linkFromNeighbor;
+         cell.vertexCount = disk.vertexCount;
+         cell.pathFlags = disk.pathFlags;
+         cell.cellCount = disk.cellCount;
+         cell.center = disk.center;
+         memcpy(AIAddrCellInfo(&cell), disk.info, sizeof(disk.info));
+      }
+      else
+      {
+         sAIPathCellDisk33 disk;
+         file->Move((char*)&disk, sizeof(disk));
+         cell.firstVertex = disk.firstVertex;
+         cell.firstCell = disk.firstCell;
+         cell.plane = disk.plane;
+         cell.next = disk.next;
+         cell.bestNeighbor = disk.bestNeighbor;
+         cell.linkFromNeighbor = disk.linkFromNeighbor;
+         cell.vertexCount = disk.vertexCount;
+         cell.pathFlags = disk.pathFlags;
+         cell.cellCount = disk.cellCount;
+         cell.wrapFlags = disk.wrapFlags;
+         cell.center = disk.center;
+         memcpy(AIAddrCellInfo(&cell), disk.info, sizeof(disk.info));
+      }
+   }
+}
+
+static void ReadPathLinks(ITagFile* file, BOOL wide, BOOL dark1,
+                          sAIPathCellLink* links, int count)
+{
+   for (int i = 0; i < count; ++i)
+   {
+      if (wide)
+      {
+         sAIPathCellLinkDisk34 disk;
+         file->Move((char*)&disk, sizeof(disk));
+         links[i].dest = disk.dest;
+         links[i].vertex_1 = disk.vertex1;
+         links[i].vertex_2 = disk.vertex2;
+         links[i].okBits = (tAIPathOkBits)disk.okBits;
+         links[i].runtimePad = 0;
+         links[i].cost = disk.cost;
+      }
+      else
+      {
+         sAIPathCellLinkDisk33 disk;
+         file->Move((char*)&disk, sizeof(disk));
+         links[i].dest = disk.dest;
+         links[i].vertex_1 = disk.vertex1;
+         links[i].vertex_2 = disk.vertex2;
+         // Dark 1 used the 0x10 and 0x20 traversal bits before Thief 2
+         // repurposed them as conditional stressed/high-strike flags.  The
+         // legacy pathfinder treated these as additional capabilities, so
+         // they must not restrict ordinary walking when a Dark 1 database is
+         // consumed by the Thief 2 pathfinder.
+         links[i].okBits = dark1 ?
+            (disk.okBits & ~kConditionMask) : disk.okBits;
+         links[i].runtimePad = 0;
+         links[i].cost = disk.cost;
+      }
+   }
+}
+
+static void WritePathCells33(ITagFile* file, const sAIPathCell* cells, int count)
+{
+   for (int i = 0; i < count; ++i)
+   {
+      const sAIPathCell& cell = cells[i];
+      sAIPathCellDisk33 disk = {};
+      disk.firstVertex = (ushort)cell.firstVertex;
+      disk.firstCell = (ushort)cell.firstCell;
+      disk.plane = (ushort)cell.plane;
+      disk.next = (ushort)cell.next;
+      disk.bestNeighbor = (ushort)cell.bestNeighbor;
+      disk.linkFromNeighbor = (ushort)cell.linkFromNeighbor;
+      disk.vertexCount = (uchar)cell.vertexCount;
+      disk.pathFlags = cell.pathFlags;
+      disk.cellCount = cell.cellCount;
+      disk.wrapFlags = cell.wrapFlags;
+      disk.center = cell.center;
+      memcpy(disk.info, AIAddrCellInfo(&cell), sizeof(disk.info));
+      file->Move((char*)&disk, sizeof(disk));
+   }
+}
+
+static void WritePathLinks33(ITagFile* file, const sAIPathCellLink* links, int count)
+{
+   for (int i = 0; i < count; ++i)
+   {
+      sAIPathCellLinkDisk33 disk = {
+         (ushort)links[i].dest,
+         (ushort)links[i].vertex_1,
+         (ushort)links[i].vertex_2,
+         (uchar)links[i].okBits,
+         (uchar)links[i].cost,
+      };
+      file->Move((char*)&disk, sizeof(disk));
+   }
+}
+
+// AIPATH 3.3 is an x86-era on-disk format.  The final field was declared as
+// void * but actually stores a 32-bit waypoint ObjID.  Serializing the native
+// structure directly makes its record grow from 16 to 20 bytes on x64 and
+// shifts every field that follows it in the tag block.
+struct sAIPathCellObjMapDisk
+{
+   ObjID         objID;
+   tAIPathCellID cellID;
+   BOOL          prevPropState;
+   unsigned      data;
+};
+
+static_assert(sizeof(sAIPathCellObjMapDisk) == 16,
+              "AIPATH cell-object map disk record must remain 16 bytes");
 
 
 void AIPathFindRead(ITagFile * pTagFile)
@@ -5437,9 +5612,20 @@ void AIPathFindRead(ITagFile * pTagFile)
    g_AIPathDB.Term();
 
    BOOL rehint = FALSE;
+   TagVersion loadedVersion = g_AIPathTagVersion;
    
-   if (!OpenPathTagFile(pTagFile))
+   if (!OpenPathTagFile(pTagFile, &loadedVersion))
       return;
+
+   const BOOL dark1Format = loadedVersion.major == 2 &&
+                            loadedVersion.minor == 8;
+   const BOOL wideFormat = loadedVersion.major == 3 && loadedVersion.minor == 4;
+   if (wideFormat)
+   {
+      dbCompatibilityMarkTag(&g_AIPathTag,kDBCompatPrefixDecoded,
+                             "3.4 runtime decode; original retained for legacy writer");
+      dbCompatibilityRetainRawTag(&g_AIPathTag,NULL);
+   }
 
    pTagFile->Move((char*)&g_fAIPathFindInited, sizeof(int));
 
@@ -5454,22 +5640,64 @@ void AIPathFindRead(ITagFile * pTagFile)
       pTagFile->Move((char*)&obsolete, sizeof(int));
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCells, sizeof(tAIPathCellID));
+      const unsigned codecLimit = wideFormat
+         ? DARK_LIMIT_AIPATH_34_INDEX
+         : (dark1Format ? DARK_LIMIT_AIPATH_28_INDEX
+                       : DARK_LIMIT_AIPATH_33_INDEX);
+      if (!AIPathCountIsValid("cell", g_AIPathDB.m_nCells, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_Cells.SetSize(g_AIPathDB.m_nCells+1);
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Cells), sizeof(sAIPathCell) * (g_AIPathDB.m_nCells+1));
+      ReadPathCells(pTagFile, wideFormat, g_AIPathDB.m_Cells.AsPointer(),
+                    g_AIPathDB.m_nCells + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nPlanes, sizeof(tAIPathCellID));
+      if (!AIPathCountIsValid("plane", g_AIPathDB.m_nPlanes, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_Planes.SetSize(g_AIPathDB.m_nPlanes+1);
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Planes), sizeof(sAIPathCellPlane) * (g_AIPathDB.m_nPlanes+1));
 
       pTagFile->Move((char*)&g_AIPathDB.m_nVertices, sizeof(tAIPathVertexID));
+      if (!AIPathCountIsValid("vertex", g_AIPathDB.m_nVertices, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_Vertices.SetSize(g_AIPathDB.m_nVertices+1);
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Vertices), sizeof(sAIPathVertex) * (g_AIPathDB.m_nVertices+1));
 
       pTagFile->Move((char*)&g_AIPathDB.m_nLinks, sizeof(tAIPathCell2CellLinkID));
+      if (!AIPathCountIsValid("cell link", g_AIPathDB.m_nLinks, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_Links.SetSize(g_AIPathDB.m_nLinks+1);
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Links), sizeof(sAIPathCellLink) * (g_AIPathDB.m_nLinks+1));
+      ReadPathLinks(pTagFile, wideFormat, dark1Format,
+                    g_AIPathDB.m_Links.AsPointer(),
+                    g_AIPathDB.m_nLinks + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCellVertices, sizeof(tAIPathCell2VertexLinkID));
+      if (!AIPathCountIsValid("cell vertex link", g_AIPathDB.m_nCellVertices, codecLimit))
+      {
+         g_fAIPathFindInited = FALSE;
+         LGALLOC_POP_CREDIT();
+         pTagFile->CloseBlock();
+         return;
+      }
       g_AIPathDB.m_CellVertices.SetSize(g_AIPathDB.m_nCellVertices+1);
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellVertices), sizeof(sAIPathCell2VertexLink) * (g_AIPathDB.m_nCellVertices+1));
 
@@ -5489,116 +5717,151 @@ void AIPathFindRead(ITagFile * pTagFile)
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCellObjMaps, sizeof(int));
       g_AIPathDB.m_CellObjMap.SetSize(g_AIPathDB.m_nCellObjMaps);
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellObjMap), sizeof(sAIPathCellObjMap) * g_AIPathDB.m_nCellObjMaps);
-
-      // New for 3.2, multiple pathfinding zones:
-      for (i = 0; i < kAIZone_Num; i++)
+      for (i = 0; i < g_AIPathDB.m_nCellObjMaps; ++i)
       {
-         g_AIPathDB.m_ZoneDatabases[i].m_CellZones.SetSize(g_AIPathDB.m_nCells+1);
-         pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_ZoneDatabases[i].m_CellZones), sizeof(tAIPathZone) * (g_AIPathDB.m_nCells+1));
-         pTagFile->Move((char *)&g_AIPathDB.m_ZoneDatabases[i].m_nZones, sizeof(int));
+         sAIPathCellObjMapDisk disk = {};
+         pTagFile->Move((char *)&disk, sizeof(disk));
 
-         sZoneOkBitsMap *pMap;
-         sZoneOkBitsMap  map;
-
-         pTagFile->Move((char *)&map.key, sizeof(long));
-         pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
-
-         while (map.key != 0)
-         {
-            pMap = new sZoneOkBitsMap;
-
-            pMap->key = map.key;
-            pMap->okBits = map.okBits;
-
-            g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.Insert(pMap);
-
-            pTagFile->Move((char *)&map.key, sizeof(long));
-            pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
-         }
+         sAIPathCellObjMap &map = g_AIPathDB.m_CellObjMap[i];
+         map.objID = disk.objID;
+         map.cellID = disk.cellID;
+         map.prevPropState = disk.prevPropState;
+         map.data = (void *)(uintptr_t)disk.data;
       }
+
+      if (wideFormat)
+      {
+         // The verified 3.4 prefix ends after the cell-object map.  NewDark
+         // changed the private acceleration data which follows it; parsing
+         // that tail as 3.3 produces plausible counts until it eventually
+         // resizes a runtime array with corrupt input (and is pointer-width
+         // dependent).  Rebuild the derived zone tables from the decoded
+         // cell/link graph and leave the remainder unread for raw retention.
+         ResetPathfindZones();
+         DeterminePathfindZones();
+         LinkPathfindZones();
+         g_AIPathDB.m_nNumFleeRegions = 0;
+      }
+      else
+      {
+         // Dark 1 AIPATH 2.8 stores one zone database.  T2 3.2 introduced the
+         // four movement-capability variants; duplicate the Dark 1 topology
+         // so every modern query sees the legacy connectivity and permissions.
+         const int zoneDatabaseCount = dark1Format ? 1 : kAIZone_Num;
+         for (i = 0; i < zoneDatabaseCount; i++)
+         {
+            g_AIPathDB.m_ZoneDatabases[i].m_CellZones.SetSize(g_AIPathDB.m_nCells+1);
+            pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_ZoneDatabases[i].m_CellZones), sizeof(tAIPathZone) * (g_AIPathDB.m_nCells+1));
+            pTagFile->Move((char *)&g_AIPathDB.m_ZoneDatabases[i].m_nZones, sizeof(int));
+
+            sZoneOkBitsMap *pMap;
+            sZoneOkBitsMap  map;
+
+            pTagFile->Move((char *)&map.key, sizeof(map.key));
+            pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
+
+            while (map.key != 0)
+            {
+               pMap = new sZoneOkBitsMap;
+
+               pMap->key = map.key;
+               pMap->okBits = map.okBits;
+
+               g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.Insert(pMap);
+
+               pTagFile->Move((char *)&map.key, sizeof(map.key));
+               pTagFile->Move((char *)&map.okBits, sizeof(tAIPathOkBits));
+            }
+         }
+
+         if (dark1Format)
+         {
+            for (i = 1; i < kAIZone_Num; ++i)
+            {
+               sZoneDatabase &source = g_AIPathDB.m_ZoneDatabases[0];
+               sZoneDatabase &destination = g_AIPathDB.m_ZoneDatabases[i];
+               destination.m_CellZones.SetSize(g_AIPathDB.m_nCells + 1);
+               destination.m_CellZones.MemCpy(source.m_CellZones,
+                                              g_AIPathDB.m_nCells + 1);
+               destination.m_nZones = source.m_nZones;
+
+               tHashSetHandle handle;
+               sZoneOkBitsMap *sourceMap = source.m_ZonePairTable.GetFirst(handle);
+               while (sourceMap)
+               {
+                  sZoneOkBitsMap *copy = new sZoneOkBitsMap;
+                  copy->key = sourceMap->key;
+                  copy->okBits = sourceMap->okBits;
+                  destination.m_ZonePairTable.Insert(copy);
+                  sourceMap = source.m_ZonePairTable.GetNext(handle);
+               }
+            }
+         }
 
 #ifndef NO_CELLDOOR_SAVELOAD
-      size = 0;
-      pTagFile->Move((char*)&size, sizeof(int));
-      g_AIPathDB.m_CellDoors.SetSize(size);
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellDoors), sizeof(sAICellDoor) * size);
+         size = 0;
+         pTagFile->Move((char*)&size, sizeof(int));
+         g_AIPathDB.m_CellDoors.SetSize(size);
+         pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellDoors), sizeof(sAICellDoor) * size);
 
-      for (i = 0; i < size; i++)
-         g_AIPathDB.m_CellToDoorsTable.Insert(&g_AIPathDB.m_CellDoors[i]);
+         for (i = 0; i < size; i++)
+            g_AIPathDB.m_CellToDoorsTable.Insert(&g_AIPathDB.m_CellDoors[i]);
 #endif
 
-      pTagFile->Move((char *)&size, sizeof(int));
-      g_AIPathDB.m_MovableCells.SetSize(size);
-
-      for (i=0; i<size; i++)
-      {
-         pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].movingObj, sizeof(ObjID));
-         pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].cellID, sizeof(tAIPathCellID));
-         pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].objVec, sizeof(cMxsVector));
-
-         int waypoint_size;
-         pTagFile->Move((char *)&waypoint_size, sizeof(int));
-         g_AIPathDB.m_MovableCells[i].waypointLinkList.SetSize(waypoint_size);
-
-         for (j=0; j<waypoint_size; j++)
+         if (!dark1Format)
          {
-            sAIWaypointLinks *pWaypointLinks = &g_AIPathDB.m_MovableCells[i].waypointLinkList[j];
+            pTagFile->Move((char *)&size, sizeof(int));
+            g_AIPathDB.m_MovableCells.SetSize(size);
 
-            pTagFile->Move((char *)&pWaypointLinks->waypointObj, sizeof(ObjID));
+            for (i=0; i<size; i++)
+            {
+               pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].movingObj, sizeof(ObjID));
+               pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].cellID, sizeof(tAIPathCellID));
+               pTagFile->Move((char *)&g_AIPathDB.m_MovableCells[i].objVec, sizeof(cMxsVector));
 
-            int link_size;
-            pTagFile->Move((char *)&link_size, sizeof(int));
-            pWaypointLinks->linkList.SetSize(link_size);
-            pTagFile->Move(ArrToMoveParm(pWaypointLinks->linkList), sizeof(sAILinkData) * link_size);
+               int waypoint_size;
+               pTagFile->Move((char *)&waypoint_size, sizeof(int));
+               g_AIPathDB.m_MovableCells[i].waypointLinkList.SetSize(waypoint_size);
+
+               for (j=0; j<waypoint_size; j++)
+               {
+                  sAIWaypointLinks *pWaypointLinks = &g_AIPathDB.m_MovableCells[i].waypointLinkList[j];
+
+                  pTagFile->Move((char *)&pWaypointLinks->waypointObj, sizeof(ObjID));
+
+                  int link_size;
+                  pTagFile->Move((char *)&link_size, sizeof(int));
+                  pWaypointLinks->linkList.SetSize(link_size);
+                  pTagFile->Move(ArrToMoveParm(pWaypointLinks->linkList), sizeof(sAILinkData) * link_size);
+               }
+            }
          }
-      }
-
-      if (g_AIPathDB.m_nCells >= MAX_CELLS)
-      {
-         Warning (("g_AIPathDB.m_nCells is really large! Setting to 0\n"));
-         g_AIPathDB.m_nCells = 0;
-      }
-
-      if (g_AIPathDB.m_nVertices >= MAX_VERTICES)
-      {
-         Warning (("g_AIPathDB.m_nVertices is really large! Setting to 0\n"));
-         g_AIPathDB.m_nVertices = 0;
-      }
-
-      if (g_AIPathDB.m_nLinks >= MAX_CELL2CELL_LINKS)
-      {
-         Warning (("g_AIPathDB.m_nLinks is really large! Setting to 0\n"));
-         g_AIPathDB.m_nLinks = 0;
-      }
-
-      if (g_AIPathDB.m_nCellVertices >= MAX_CELL2VERTEX_LINKS)
-      {
-         Warning (("g_AIPathDB.m_nCellVertices is really large! Setting to 0\n"));
-         g_AIPathDB.m_nCellVertices = 0;
       }
 
       g_AIPathDB.m_Marks.SetSize(g_AIPathDB.m_nCells + 1);
       memset(g_AIPathDB.m_Marks, 0, (g_AIPathDB.m_nCells + 1) * sizeof(sbool));
       g_AIPathDB.m_BestCostToReach.SetSize(g_AIPathDB.m_nCells + 1);
 
-      // New for version 3.0: Store Flee Point Region Info
-      pTagFile->Move((char *)&g_AIPathDB.m_nNumFleeRegions, sizeof(int));
-      int nNum;
-      pTagFile->Move((char *)&nNum, sizeof(int));
-      for (i = 0; i < nNum; i++)
+      if (!dark1Format && !wideFormat)
       {
-         sFleeRegionData *pData;
-         pData = new sFleeRegionData;
-         pTagFile->Move((char *)pData, sizeof(sFleeRegionData));
-         g_AIPathDB.m_FleeRegions.Insert(pData);
+         // New for version 3.0: Store Flee Point Region Info
+         pTagFile->Move((char *)&g_AIPathDB.m_nNumFleeRegions, sizeof(int));
+         int nNum;
+         pTagFile->Move((char *)&nNum, sizeof(int));
+         for (i = 0; i < nNum; i++)
+         {
+            sFleeRegionData *pData;
+            pData = new sFleeRegionData;
+            pTagFile->Move((char *)pData, sizeof(sFleeRegionData));
+            g_AIPathDB.m_FleeRegions.Insert(pData);
+         }
+
+         // New for 3.1, store Large Door Size.
+         float ignored;
+         pTagFile->Move((char *)&ignored, sizeof(float));
       }
 
       LGALLOC_POP_CREDIT();
-
-      // New for 3.1, store Large Door Size.
-      float ignored;
-      pTagFile->Move((char *)&ignored, sizeof(float));
    }
 #ifndef SHIP
    else
@@ -5626,6 +5889,19 @@ void AIPathFindWrite(ITagFile * pTagFile)
       return;
 #endif
 
+   // The current writer deliberately remains AIPATH 3.3.  Never truncate a
+   // widened runtime database into that format; a retained 3.4 source block
+   // is replayed by the database compatibility layer instead.
+   if (g_AIPathDB.m_nCells > LEGACY_AIPATH_INDEX_LIMIT ||
+       g_AIPathDB.m_nPlanes > LEGACY_AIPATH_INDEX_LIMIT ||
+       g_AIPathDB.m_nVertices > LEGACY_AIPATH_INDEX_LIMIT ||
+       g_AIPathDB.m_nLinks > LEGACY_AIPATH_INDEX_LIMIT ||
+       g_AIPathDB.m_nCellVertices > LEGACY_AIPATH_INDEX_LIMIT)
+   {
+      Warning(("AIPATH 3.3 writer refused a database requiring 32-bit indices\n"));
+      return;
+   }
+
    if (!OpenPathTagFile(pTagFile))
       return;
 
@@ -5636,32 +5912,9 @@ void AIPathFindWrite(ITagFile * pTagFile)
       int obsolete;
       pTagFile->Move((char*)&obsolete, sizeof(int));
 
-      if (g_AIPathDB.m_nCells >= MAX_CELLS)
-      {
-         Warning (("g_AIPathDB.m_nCells is really large! Setting to 0\n"));
-         g_AIPathDB.m_nCells = 0;
-      }
-
-      if (g_AIPathDB.m_nVertices >= MAX_VERTICES)
-      {
-         Warning (("g_AIPathDB.m_nVertices is really large! Setting to 0\n"));
-         g_AIPathDB.m_nVertices = 0;
-      }
-
-      if (g_AIPathDB.m_nLinks >= MAX_CELL2CELL_LINKS)
-      {
-         Warning (("g_AIPathDB.m_nLinks is really large! Setting to 0\n"));
-         g_AIPathDB.m_nLinks = 0;
-      }
-
-      if (g_AIPathDB.m_nCellVertices >= MAX_CELL2VERTEX_LINKS)
-      {
-         Warning (("g_AIPathDB.m_nCellVertices is really large! Setting to 0\n"));
-         g_AIPathDB.m_nCellVertices = 0;
-      }
-
       pTagFile->Move((char*)&g_AIPathDB.m_nCells, sizeof(tAIPathCellID));
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Cells), sizeof(sAIPathCell) * (g_AIPathDB.m_nCells+1));
+      WritePathCells33(pTagFile, g_AIPathDB.m_Cells.AsPointer(),
+                       g_AIPathDB.m_nCells + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nPlanes, sizeof(tAIPathCellID));
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Planes), sizeof(sAIPathCellPlane) * (g_AIPathDB.m_nPlanes+1));
@@ -5670,7 +5923,8 @@ void AIPathFindWrite(ITagFile * pTagFile)
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Vertices), sizeof(sAIPathVertex) * (g_AIPathDB.m_nVertices+1));
 
       pTagFile->Move((char*)&g_AIPathDB.m_nLinks, sizeof(tAIPathCell2CellLinkID));
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_Links), sizeof(sAIPathCellLink) * (g_AIPathDB.m_nLinks+1));
+      WritePathLinks33(pTagFile, g_AIPathDB.m_Links.AsPointer(),
+                       g_AIPathDB.m_nLinks + 1);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCellVertices, sizeof(tAIPathCell2VertexLinkID));
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellVertices), sizeof(sAIPathCell2VertexLink) * (g_AIPathDB.m_nCellVertices+1));
@@ -5679,9 +5933,19 @@ void AIPathFindWrite(ITagFile * pTagFile)
       pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_ObjHints), sizeof(tAIPathCellID) * g_AIPathDB.m_nObjHints);
 
       pTagFile->Move((char*)&g_AIPathDB.m_nCellObjMaps, sizeof(int));
-      pTagFile->Move(ArrToMoveParm(g_AIPathDB.m_CellObjMap), sizeof(sAIPathCellObjMap) * g_AIPathDB.m_nCellObjMaps);
+      for (i = 0; i < g_AIPathDB.m_nCellObjMaps; ++i)
+      {
+         const sAIPathCellObjMap &map = g_AIPathDB.m_CellObjMap[i];
+         sAIPathCellObjMapDisk disk = {
+            map.objID,
+            map.cellID,
+            map.prevPropState,
+            (unsigned)(uintptr_t)map.data,
+         };
+         pTagFile->Move((char *)&disk, sizeof(disk));
+      }
 
-      long zero = 0;
+      int32 zero = 0;
 
       // New for 3.2, multiple pathfinding zones:
       for (i = 0; i < kAIZone_Num; i++)
@@ -5695,12 +5959,12 @@ void AIPathFindWrite(ITagFile * pTagFile)
          pMap = g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.GetFirst(handle);
          while (pMap != NULL)
          {
-            pTagFile->Move((char*)&pMap->key, sizeof(long));
+            pTagFile->Move((char*)&pMap->key, sizeof(pMap->key));
             pTagFile->Move((char*)&pMap->okBits, sizeof(tAIPathOkBits));
 
             pMap = g_AIPathDB.m_ZoneDatabases[i].m_ZonePairTable.GetNext(handle);
          }
-         pTagFile->Move((char*)&zero, sizeof(long));
+         pTagFile->Move((char*)&zero, sizeof(zero));
          pTagFile->Move((char*)&zero, sizeof(tAIPathOkBits));
       }
 

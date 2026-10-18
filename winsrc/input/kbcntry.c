@@ -6,6 +6,7 @@
 #define SPECIAL(x) ((ushort)((x)|CNV_SPECIAL|CNV_CTRL|CNV_ALT|CNV_SHIFT))
 
 ushort *kbd_country_tab[];
+static const int kbd_country_len[KBC_CNTRY];
 
 //global for which country installed
 uchar kbd_country = KBC_US;
@@ -21,7 +22,7 @@ static void kb_make_delta(void)
    // iterate over countries
    for (cn = 1;cn<KBC_CNTRY;++cn) {
       c = kbd_country_tab[cn];
-      len = ((int)kbd_country_tab[cn+1] - (int)c)/8;
+      len = kbd_country_len[cn];
 
       for (i=0;i<len;++i) {
          scan = *c;
@@ -60,7 +61,7 @@ bool kb_set_country(uchar country)
    //apply reverse delta if not US
    if (kbd_country != KBC_US) {
       c = kbd_country_tab[kbd_country];
-      len = ((int)kbd_country_tab[kbd_country+1] - (int)c)/8;
+      len = kbd_country_len[kbd_country];
 
       for (i=0;i<len;++i) {
          scan = *c;
@@ -78,7 +79,7 @@ bool kb_set_country(uchar country)
 
    //apply foreign delta table
    c = kbd_country_tab[country];
-   len = ((int)kbd_country_tab[country+1] - (int)c)/8;
+   len = kbd_country_len[country];
 
    for (i=0;i<len;++i) {
       scan = *c;
@@ -105,7 +106,7 @@ uchar kb_get_country(void)
 char kb_get_us_equivalent(char key)
 {
    uchar cntry;
-   ushort retval;
+   char retval;
    int i,j;
 
    cntry=kb_get_country();
@@ -250,7 +251,7 @@ ushort kbd_sp_tab[][4] = {
    { 0x02, ASCII('1'),  ASCII('!'), ASCII('!') },
    { 0x03, ASCII('2'),  ASCII('"'), ASCII('@') },
    { 0x04, ASCII('3'),  ASCII(0xF9), ASCII('#') },
-   { 0x07, ASCII('6'),  ASCII('&'), ASCII('0xAA') },
+   { 0x07, ASCII('6'),  ASCII('&'), ASCII(0xAA) },
    { 0x08, ASCII('7'),  ASCII('/'), 0 },
    { 0x09, ASCII('8'),  ASCII('('), 0 },
    { 0x0A, ASCII('9'),  ASCII(')'), 0 },
@@ -283,5 +284,18 @@ ushort *kbd_country_tab[] = {
    kbd_it_tab[0],
    kbd_sp_tab[0],
    kbd_end_tab[0]
+};
+
+// The original code inferred each table's length by subtracting pointers to
+// unrelated global arrays.  That is undefined C and modern linkers may insert
+// padding between them, causing the conversion pass to walk off an array.
+static const int kbd_country_len[] = {
+   0,
+   sizeof(kbd_fr_tab) / sizeof(kbd_fr_tab[0]),
+   sizeof(kbd_gr_tab) / sizeof(kbd_gr_tab[0]),
+   sizeof(kbd_uk_tab) / sizeof(kbd_uk_tab[0]),
+   sizeof(kbd_cf_tab) / sizeof(kbd_cf_tab[0]),
+   sizeof(kbd_it_tab) / sizeof(kbd_it_tab[0]),
+   sizeof(kbd_sp_tab) / sizeof(kbd_sp_tab[0]),
 };
 

@@ -31,7 +31,7 @@
 #include <editbrs.h>
 
 // misc constants for use in picks - distance to virtual infinity
-#define DISTANCE_INF     (1.0e20)
+#define DISTANCE_INF     (1.0e20f)
 
 // sets the current heap for the brush system to use
 EXTERN void brushSysInit(void);

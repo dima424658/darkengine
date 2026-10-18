@@ -12,6 +12,7 @@
 #define __SCRPTBAS_H
 
 #include <scrpttyp.h>
+#include <platform_services.h>
 
 #ifdef SCRIPT
 
@@ -50,7 +51,7 @@ public:
          {
             (*g_pPrint)("Breaking: script %s on object %d getting %s.\n",
                         GetClassName(), pMsg->to, pMsg->message);
-            __asm { int 3 }
+            PlatformDebugBreak();
             break;
          }
 

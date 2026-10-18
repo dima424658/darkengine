@@ -22,7 +22,7 @@
 // @NOTE: This is totally a retrofit for Thief 2, hence the new, tiny interface.
 //
 
-typedef long tObjIdx;  // Fancy way of saying ObjID
+typedef int32 tObjIdx;  // Fancy way of saying ObjID
 
 struct sObjBounds
 {

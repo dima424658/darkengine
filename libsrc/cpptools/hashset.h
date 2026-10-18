@@ -285,7 +285,7 @@ public:
     //
     // Constructors and destructor
     //
-    cHashSet(unsigned n = cHashSetBase::kDefaultSize)   : cHashSetBase(n) { AssertMsg1(sizeof(NODE) == 4, "cHashSet node must be 32-bits. %s", (sizeof(NODE) < 4) ? "Use int." : "Use pointers"); }
+    cHashSet(unsigned n = cHashSetBase::kDefaultSize)   : cHashSetBase(n) { AssertMsg(sizeof(NODE) <= sizeof(tHashSetNode), "cHashSet node must fit in its pointer-sized storage"); }
     cHashSet(const cHashSet &)                          : cHashSetBase(*this) {}
 
     ///////////////////////////////////
@@ -566,7 +566,7 @@ inline tHashSetNode cHashSetBase::GetNext(tHashSetHandle & h) const
 template <class NODE, class KEY, class FUNCLASS>
 inline unsigned cHashSet<NODE, KEY, FUNCLASS>::Hash(tHashSetKey k) const
 {
-    return FUNCLASS::Hash((const KEY)(k));
+    return FUNCLASS::Hash((const KEY)(uintptr_t)(k));
 }
 
 ///////////////////////////////////////
@@ -577,7 +577,7 @@ inline unsigned cHashSet<NODE, KEY, FUNCLASS>::Hash(tHashSetKey k) const
 template <class NODE, class KEY, class FUNCLASS>
 inline BOOL cHashSet<NODE, KEY, FUNCLASS>::IsEqual(tHashSetKey k1, tHashSetKey k2) const
 {
-    return FUNCLASS::IsEqual((const KEY)(k1), (const KEY)(k2));
+    return FUNCLASS::IsEqual((const KEY)(uintptr_t)(k1), (const KEY)(uintptr_t)(k2));
 }
 
 ///////////////////////////////////////
@@ -585,7 +585,7 @@ inline BOOL cHashSet<NODE, KEY, FUNCLASS>::IsEqual(tHashSetKey k1, tHashSetKey k
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 inline NODE cHashSet<NODE, KEY, FUNCLASS>::Search(KEY key) const
 {
-    return (NODE) cHashSetBase::Search((tHashSetKey) key);
+    return (NODE)(uintptr_t)cHashSetBase::Search((tHashSetKey)(uintptr_t)key);
 }
 
 ///////////////////////////////////////
@@ -593,7 +593,7 @@ inline NODE cHashSet<NODE, KEY, FUNCLASS>::Search(KEY key) const
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 inline NODE cHashSet<NODE, KEY, FUNCLASS>::Insert(NODE node)
 {
-    return (NODE) cHashSetBase::Insert((tHashSetNode) node);
+    return (NODE)(uintptr_t)cHashSetBase::Insert((tHashSetNode)(uintptr_t)node);
 }
 
 ///////////////////////////////////////
@@ -601,7 +601,7 @@ inline NODE cHashSet<NODE, KEY, FUNCLASS>::Insert(NODE node)
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 inline NODE cHashSet<NODE, KEY, FUNCLASS>::Remove(NODE node)
 {
-    return (NODE) cHashSetBase::Remove((tHashSetNode) node);
+    return (NODE)(uintptr_t)cHashSetBase::Remove((tHashSetNode)(uintptr_t)node);
 }
 
 ///////////////////////////////////////
@@ -609,7 +609,7 @@ inline NODE cHashSet<NODE, KEY, FUNCLASS>::Remove(NODE node)
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 inline NODE cHashSet<NODE, KEY, FUNCLASS>::RemoveByKey(KEY k)
 {
-    return (NODE) cHashSetBase::RemoveByKey((tHashSetKey) k);
+    return (NODE)(uintptr_t)cHashSetBase::RemoveByKey((tHashSetKey)(uintptr_t)k);
 }
 
 ///////////////////////////////////////
@@ -617,7 +617,7 @@ inline NODE cHashSet<NODE, KEY, FUNCLASS>::RemoveByKey(KEY k)
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 inline NODE cHashSet<NODE, KEY, FUNCLASS>::RemoveByHandle(const tHashSetHandle & h)
 {
-    return (NODE) cHashSetBase::RemoveByHandle(h);
+    return (NODE)(uintptr_t)cHashSetBase::RemoveByHandle(h);
 }
 
 ///////////////////////////////////////
@@ -625,7 +625,7 @@ inline NODE cHashSet<NODE, KEY, FUNCLASS>::RemoveByHandle(const tHashSetHandle &
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 void cHashSet<NODE, KEY, FUNCLASS>::Rehash(tHashSetHandle Handle, NODE node)
 {
-    cHashSetBase::Rehash(Handle, (tHashSetNode) node);
+    cHashSetBase::Rehash(Handle, (tHashSetNode)(uintptr_t)node);
 }
 
 ///////////////////////////////////////
@@ -633,7 +633,7 @@ void cHashSet<NODE, KEY, FUNCLASS>::Rehash(tHashSetHandle Handle, NODE node)
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 tHashSetHandle cHashSet<NODE, KEY, FUNCLASS>::GetHandle(NODE node)
 {
-    return cHashSetBase::GetHandle((tHashSetNode) node);
+    return cHashSetBase::GetHandle((tHashSetNode)(uintptr_t)node);
 }
 
 ///////////////////////////////////////
@@ -641,7 +641,7 @@ tHashSetHandle cHashSet<NODE, KEY, FUNCLASS>::GetHandle(NODE node)
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 inline NODE cHashSet<NODE, KEY, FUNCLASS>::GetFirst(tHashSetHandle & Handle) const
 {
-    return (NODE) cHashSetBase::GetFirst(Handle);
+    return (NODE)(uintptr_t)cHashSetBase::GetFirst(Handle);
 }
 
 ///////////////////////////////////////
@@ -649,7 +649,7 @@ inline NODE cHashSet<NODE, KEY, FUNCLASS>::GetFirst(tHashSetHandle & Handle) con
 template <class NODE, class KEY, class FUNCLASS /* = cHashFunctions*/>
 inline NODE cHashSet<NODE, KEY, FUNCLASS>::GetNext(tHashSetHandle & Handle) const
 {
-    return (NODE) cHashSetBase::GetNext(Handle);
+    return (NODE)(uintptr_t)cHashSetBase::GetNext(Handle);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

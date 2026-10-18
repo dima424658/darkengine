@@ -58,12 +58,12 @@ static void add_span_info(int y, int x0, int x1)
    do {
       // overlap left?
       if ((si->x0 <= x1) && (x1 <= si->x1)) {
-         si->x0 = min(x0, si->x0);
+         si->x0 = __min(x0, si->x0);
          return;
       }
       // overlap right?
       if ((si->x0 <= x0) && (x0 <= si->x1)) {
-         si->x1 = max(x1, si->x1);
+         si->x1 = __max(x1, si->x1);
          return;
       }
       // complete overlap?

@@ -49,7 +49,7 @@ static BOOL check_swap(int *map_table, short *val, int cnt)
 {
    int nval=0;
    if ((*val)==-1) return FALSE;
-   if (((*val)>=WATERIN_IDX)&&((*val)<=255)) // hateful initial check to save sky_tex
+   if (TEXMEM_IS_RESERVED(*val))             // preserve water and legacy sky slots
       return FALSE;
    else if (((*val)>=0)&&((*val)<cnt))
       nval=map_table[*val];
@@ -76,9 +76,9 @@ BOOL _familyRemapBrushes(int *tex_swap, int cnt)
    {
       if (brushGetType(us)==brType_TERRAIN)
       {
-         chg|=check_swap(tex_swap,&us->tx_id,cnt);
+         chg = check_swap(tex_swap,&us->tx_id,cnt) || chg;
          for (i=0; i<us->num_faces; i++)
-            chg|=check_swap(tex_swap,&us->txs[i].tx_id,cnt);
+            chg = check_swap(tex_swap,&us->txs[i].tx_id,cnt) || chg;
       }
       us=blistIterNext(hIter);
    }
@@ -147,19 +147,24 @@ static void family_cmd_compress(char *str)
 static void _draw_histo(int *histo, int cnt, int offset, BOOL xtras, char **report_str, BOOL totals)
 {
    int i, j, mem_used[2]={0,0}, usages_per=10;
-   char buf[80*256], *p; // hey, editor only, woo-woo
+   const size_t buf_size = (size_t)cnt * 160 + 1024;
+   char *buf = (char *)Malloc(buf_size), *p;
+   if (!buf)
+      return;
    p=buf;
+   buf[0]='\0';
    for (i=0; i<cnt; i++)
    {
-      IRes *me=texmemGetHandle(i+offset);
+      int texture_id=i+offset;
+      IRes *me=(texture_id>=0 && texture_id<TEXMEM_MAX) ? texmemGetHandle(texture_id) : NULL;
       int frames=0;
       int size=ectsAnimTxtGetRawSize(me,&frames);      
       if (histo[i])
       {
          if (xtras&&(i+offset>0))
          {
-            grs_bitmap *bm=texmemGetTexture(i+offset);
-            if ((size>128*128)&&histo[i]<16&&((i+offset)<250))
+            grs_bitmap *bm=texmemGetTexture(texture_id);
+            if ((size>128*128)&&histo[i]<16&&!TEXMEM_IS_RESERVED(texture_id))
                if (frames>1)
                   rsprintf(&p,"WARNING: txt %s only %d uses, is %d frames %d by %d big (%dKb)\n",
                            me?me->GetName():"Unknown",histo[i],frames,bm?bm->w:0,bm?bm->h:0,size/1024);
@@ -181,7 +186,7 @@ static void _draw_histo(int *histo, int cnt, int offset, BOOL xtras, char **repo
       else if (i+offset>0)  // if not, we cant tell, so, oh well
          if (me)
          {
-            grs_bitmap *bm=texmemGetTexture(i+offset);            
+            grs_bitmap *bm=texmemGetTexture(texture_id);
             mem_used[1]+=size*4/3;
             if (frames>1)
                rsprintf(&p," f%1.1d",frames);
@@ -197,6 +202,7 @@ static void _draw_histo(int *histo, int cnt, int offset, BOOL xtras, char **repo
       rsprintf(report_str,buf);
    else
       mprint(buf);
+   Free(buf);
 }
 
 // should look at something, someday
@@ -206,13 +212,13 @@ static void _draw_histo(int *histo, int cnt, int offset, BOOL xtras, char **repo
 static void family_find_tmap_id(int tmap_id)
 {
    int i, used_this_face, hIter;
-   int histo[257];
+   int histo[TEXMEM_MAX + 1];
    char tmp[128];
    editBrush *us;
    int cnt[3];
 
    cnt[0]=cnt[1]=cnt[2]=0;
-   memset(histo,0,sizeof(int)*257);
+   memset(histo,0,sizeof(histo));
    us=blistIterStart(&hIter);
    while (us!=NULL)
    {
@@ -244,18 +250,18 @@ static void family_find_tmap_id(int tmap_id)
    Status(tmp);
    mprintf("TmapID %d: ",tmap_id);
    mprintf("%d brushes, %d face overrides, %d faces use it as brush base\n",cnt[0],cnt[1],cnt[2]);
-   _draw_histo(histo,257,-1,TRUE,NULL,TRUE);
+   _draw_histo(histo,TEXMEM_MAX + 1,-1,TRUE,NULL,TRUE);
 }
 
 ////////////////
 // usage in WR, not brush list
 static void texture_wr_usage_count(int tmap_id, char **rep_str)
 {
-   int histo[256];
+   int histo[TEXMEM_MAX];
    PortalCell *p;
    int ci, i;
 
-   memset(histo,0,sizeof(int)*256);
+   memset(histo,0,sizeof(histo));
    for (ci=0; ci<wr_num_cells; ci++)
       if ((p=wr_cell[ci])!=NULL)
          for (i=0; i<p->num_render_polys; i++)
@@ -267,11 +273,11 @@ static void texture_wr_usage_count(int tmap_id, char **rep_str)
       if (histo[tmap_id])
          sprintf(buf,"Tmap %d used %d times",tmap_id,histo[tmap_id]);
       else
-         sprintf(buf,"Tmap %d not used");
+         sprintf(buf,"Tmap %d not used",tmap_id);
       Status(buf);
    }
    else
-      _draw_histo(histo,256,0,TRUE,rep_str,TRUE);
+      _draw_histo(histo,TEXMEM_MAX,0,TRUE,rep_str,TRUE);
 }
 
 static void wr_usage_count_cmd(int tmap_id)

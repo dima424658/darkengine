@@ -99,8 +99,8 @@ EXTERN int resource_bm_height(Ref id);
 
 EXTERN bool gadget_tng_vga_expose(Region *reg, Rect *r);
 EXTERN bool gadget_tng_mono_expose(Region *reg, Rect *r);
-EXTERN bool gadget_tng_mouse_handler(uiEvent *e, Region *r, void *state);
-EXTERN bool gadget_tng_keyboard_handler(uiEvent *e, Region *r, void *state);
+EXTERN BOOL gadget_tng_mouse_handler(uiEvent *e, Region *r, void *state);
+EXTERN BOOL gadget_tng_keyboard_handler(uiEvent *e, Region *r, void *state);
 EXTERN errtype gadget_tng_vga_expose_part(Region *reg, Rect *r, ushort partmask);
 EXTERN errtype gadget_create_setup(Gadget **pg, Gadget *parent, GadgetClass cl, Rect *dim, int z, char *name);
 EXTERN errtype gadget_change_flags(Gadget *g, ulong flags, bool on, bool children);

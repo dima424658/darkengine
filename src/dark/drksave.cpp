@@ -34,14 +34,15 @@
 // For quick save 
 #include <drkuires.h>
 #include <drkmsg.h>
-#include <direct.h>
+#include <platform_io.h>
 
 // For checkpoints
-#include <direct.h>
+#include <platform_io.h>
 #include <stdio.h>
 
 #include <command.h>
 #include <config.h>
+#include <contentctx.h>
 
 #include <mprintf.h>
 
@@ -75,6 +76,8 @@ struct sSaveGameDesc
 
 HRESULT DarkSaveGameInternal(const char* descstr, ITagFile* file)
 {
+   if (!file)
+      return E_FAIL;
    AutoAppIPtr_(SimManager,pSimMan); 
    ulong lastmsg = pSimMan->LastMsg(); 
    // we are "in the sim" if we can't change difficulty
@@ -136,11 +139,15 @@ static TagVersion checkpoint_ver = { 1, 0 } ;
 
 HRESULT DarkSaveGame(const char* descstr, ITagFile* file)
 {
+   if (!file)
+      return E_FAIL;
    HRESULT result = DarkSaveGameInternal(descstr,file); 
    if (FAILED(result))
       return result; 
 
-   const char* fname = CHECKPOINT_SAVE; 
+   char checkpoint[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeSavePath(checkpoint, sizeof(checkpoint), CHECKPOINT_SAVE);
+   const char* fname = checkpoint;
    // pack the checkpoint into the saved game
    FILE* cp = fopen(fname,"rb"); 
    if (!cp)
@@ -154,7 +161,7 @@ HRESULT DarkSaveGame(const char* descstr, ITagFile* file)
    char buf[4096]; 
    while (!feof(cp))
    {
-      int len = fread(buf,1,sizeof(buf),cp); 
+      int len = (int)fread(buf,1,sizeof(buf),cp);
       if (file->Write(buf,len) != len)
          return kDarkSaveCheckpoint; 
    }
@@ -203,6 +210,8 @@ static inline BOOL fully_invalid(const TagVersion& v)
 
 HRESULT DarkLoadGameInternal(ITagFile* file)
 {
+   if (!file)
+      return E_FAIL;
    
    //
    // Read the descriptor
@@ -263,13 +272,19 @@ HRESULT DarkLoadGameInternal(ITagFile* file)
       ITagFile* missfile = OpenMissionFile(GetMissionData()->num); 
 
       // Load the map (but not map objects) from the virgin mission file
-      if (FAILED(dbMergeLoadTagFile(missfile,kFiletypeGAM|kDBMap)))
+      // Database loaders return a loaded-partition mask, not an HRESULT.
+      // Zero means that loading failed; FAILED(0) is false and used to let a
+      // partially initialized database proceed into simulation.
+      if (dbMergeLoadTagFile(missfile,kFiletypeGAM|kDBMap) == 0)
+      {
+         SafeRelease(missfile);
          return kDarkSaveMission; 
+      }
 
       SafeRelease(missfile); 
 
       // Now merge-load the mission (& all concretes) from the save game 
-      if (FAILED(dbMergeLoadTagFile(file,kFiletypeMIS|kObjPartTerrain)))
+      if (dbMergeLoadTagFile(file,kFiletypeMIS|kObjPartTerrain) == 0)
          return kDarkSaveMission;
 
       // send the final post load
@@ -299,12 +314,16 @@ HRESULT DarkLoadGameInternal(ITagFile* file)
 
 HRESULT DarkLoadGame(ITagFile* file)
 {
+   if (!file)
+      return E_FAIL;
 
    TagVersion v = checkpoint_ver; 
    if (SUCCEEDED(file->OpenBlock(&checkpoint_tag,&v)))
    {
       // unpack the checkpoint from the saved game
-      FILE* cp = fopen(CHECKPOINT_SAVE,"wb"); 
+      char checkpoint[DARK_CONTENT_MAX_PATH];
+      DarkContentMakeSavePath(checkpoint, sizeof(checkpoint), CHECKPOINT_SAVE);
+      FILE* cp = fopen(checkpoint,"wb");
       if (!cp)
          return kDarkSaveBlockOpen; 
    
@@ -361,6 +380,8 @@ BOOL DarkLoadGameDescription(ITagFile* file, char* buf, int buflen)
 {
    Assert_(buf && buflen > 0); 
    *buf = '\0'; 
+   if (!file)
+      return FALSE;
 
    TagVersion v = desc_ver; 
    if (FAILED(file->OpenBlock(&desc_tag,&v)))
@@ -387,6 +408,8 @@ BOOL DarkLoadGameDescription(ITagFile* file, char* buf, int buflen)
 
 BOOL DarkGameIsMidMission(ITagFile* file)
 {
+   if (!file)
+      return FALSE;
    TagVersion v = desc_ver; 
    if (FAILED(file->OpenBlock(&desc_tag,&v)))
       return FALSE; 
@@ -415,16 +438,19 @@ BOOL DarkGameIsMidMission(ITagFile* file)
 
 void DarkQuickSaveGame(void)
 {
-   mkdir(SAVE_PATH); 
+   char path[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeSavePath(path, sizeof(path), QUICK_SAVE);
    cStr desc = FetchUIString("gamesav","quick_save"); 
-   BOOL success = SUCCEEDED(DarkSaveGameFile(desc,SAVE_PATH "\\" QUICK_SAVE)); 
+   BOOL success = SUCCEEDED(DarkSaveGameFile(desc,path));
    const char* msg = (success) ? "success" : "failure";
    DarkMessage(FetchUIString("gamesav",msg)); 
 }
 
 void DarkQuickLoadGame(void)
 {
-   long success =   DarkQuickLoadGameFile(SAVE_PATH "\\" QUICK_SAVE); 
+   char path[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeLoadPath(path, sizeof(path), QUICK_SAVE);
+   long success = DarkQuickLoadGameFile(path);
 
    switch(success)
    {
@@ -476,16 +502,36 @@ long DarkQuickLoadGameFile(const char* filename)
 
 EXTERN void DarkSaveCheckpoint(void)
 {
-   ITagFile* file = TagFileOpen(CHECKPOINT_SAVE,kTagOpenWrite); 
+   char path[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeSavePath(path, sizeof(path), CHECKPOINT_SAVE);
+   ITagFile* file = TagFileOpen(path,kTagOpenWrite);
+   if (!file)
+   {
+      Warning(("Unable to create checkpoint save '%s'\n", path));
+      return;
+   }
    long retval = DarkSaveGameInternal("Mission Start",file); 
    SafeRelease(file); 
+   if (FAILED(retval))
+      Warning(("Unable to write checkpoint save '%s' (0x%08lx)\n",
+               path, retval));
 }
 
 EXTERN void DarkRestoreCheckpoint(void)
 {
-   ITagFile* file = BufTagFileOpen(CHECKPOINT_SAVE,kTagOpenRead); 
+   char path[DARK_CONTENT_MAX_PATH];
+   DarkContentMakeLoadPath(path, sizeof(path), CHECKPOINT_SAVE);
+   ITagFile* file = BufTagFileOpen(path,kTagOpenRead);
+   if (!file)
+   {
+      Warning(("Unable to open checkpoint save '%s'\n", path));
+      return;
+   }
    long retval = DarkLoadGameInternal(file); 
    SafeRelease(file); 
+   if (FAILED(retval))
+      Warning(("Unable to restore checkpoint save '%s' (0x%08lx)\n",
+               path, retval));
 }
 
 

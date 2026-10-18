@@ -182,7 +182,7 @@ STDMETHODIMP_(void) cAIStun::OnAlertness(ObjID source, eAIAwareLevel previous, e
    // currently is happening on combat damage... dont want that, i think
    mxs_vector *pSupriseVec=&defSupriseVec;
    //   mprintf("Alert from %d to %d\n",previous,current);
-   if (GetSimTime()>lastSupriseTime+kMinReSuprise)
+   if ((int)GetSimTime()>lastSupriseTime+kMinReSuprise)
    {
       if ((current==3)&&(previous<2))
       {
@@ -193,7 +193,7 @@ STDMETHODIMP_(void) cAIStun::OnAlertness(ObjID source, eAIAwareLevel previous, e
             if (pAwareness->ValidLastPos())
                if (mx_dist2_vec(&pAwareness->lastPos,m_pAIState->GetLocation())<pSupriseVec->el[2]*pSupriseVec->el[2])
                {  // within the legal radius
-                  float chance=RandRange(0,100);
+      float chance=(float)RandRange(0,100);
                   if (pSupriseVec->el[previous]>chance)
                   {
                      floatang ang(m_pAIState->GetLocation()->x,m_pAIState->GetLocation()->y,

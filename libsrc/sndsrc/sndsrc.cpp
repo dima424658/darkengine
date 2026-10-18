@@ -35,7 +35,8 @@ IMPLEMENT_UNAGGREGATABLE_SELF_DELETE(cSndSource, ISndSource);
 ISndSource *
 SndCreateSource( sSndAttribs *pAttribs )
 {
-   cSndSource *pSrc = new cSndSource;
+   cSndSource *pSrc = new cSndSource( SNDSRC_DEFAULT_MAX_LABELS,
+                                      SNDSRC_DEFAULT_MAX_GATES );
 
    pSrc->SetAttribs( pAttribs );
 
@@ -45,8 +46,7 @@ SndCreateSource( sSndAttribs *pAttribs )
 ISndSource *
 SndCreateSourceEx( sSndAttribs* pAttribs, uint32 maxLabels, uint32 maxGates )
 {
-   // TODO
-   cSndSource *pSrc = new cSndSource;
+   cSndSource *pSrc = new cSndSource( maxLabels, maxGates );
 
    pSrc->SetAttribs( pAttribs );
 
@@ -57,7 +57,7 @@ SndCreateSourceEx( sSndAttribs* pAttribs, uint32 maxLabels, uint32 maxGates )
 // cSndSource constructor
 //
 
-cSndSource::cSndSource()
+cSndSource::cSndSource( uint32 maxLabels, uint32 maxGates )
 {
    mSourcesMade++;
    mSerialNum = mNextSerialNum++;
@@ -70,7 +70,11 @@ cSndSource::cSndSource()
    mStartOffset = 0;
    mfEndCB = NULL;
    mpEndCBData = NULL;
-   mGateValue = 0;
+   mMaxLabels = maxLabels;
+   mMaxGates = maxGates;
+   mpLabels = new SndPlaylistElement *[mMaxLabels];
+   mGates = new uint32[mMaxGates];
+   mLastLabelPassed = (uint32) ~0;
 
    // our default source format will be 22kHz mono 8-bit
    mAttribs.dataType = kSndDataPCM;
@@ -119,8 +123,10 @@ cSndSource::~cSndSource()
       delete mpSrc2;
    }
    if ( mpTmpBuffer != NULL ) {
-      delete mpTmpBuffer;
+      delete [] mpTmpBuffer;
    }
+   delete [] mpLabels;
+   delete [] mGates;
    if ( mpPlayer != NULL ) {
       mpPlayer->RegisterFillCallback( NULL, NULL );
       Release();     // player no longer has a ref to us
@@ -175,18 +181,21 @@ cSndSource::SetAttribs( sSndAttribs *pAttribs )
 // SetGate - set loop control variable
 //
 STDMETHODIMP_(BOOL)
-cSndSource::SetGate( uint32   /* gateNum */,
+cSndSource::SetGate( uint32   gateNum,
                      uint32   gateValue )
 {
-   // for now, only support a single gate (ignore gateNum)
-   mGateValue = gateValue;
+   assert( gateNum < mMaxGates );
+   if ( gateNum >= mMaxGates )
+      return FALSE;
+   mGates[gateNum] = gateValue;
 
    return TRUE;
 }
 
 STDMETHODIMP_(uint32) cSndSource::GetGate(uint32 gateNum)
 {
-    return 0; // TODO
+   assert( gateNum < mMaxGates );
+   return ( gateNum < mMaxGates ) ? mGates[gateNum] : 0;
 }
 
 
@@ -226,12 +235,12 @@ cSndSource::SamplesToTime( uint32   nSamples )
       // get sample rate from connected player
       sampleRate = (float) mpPlayer->GetFrequency();
    } else {
-      sampleRate = mAttribs.sampleRate;
+      sampleRate = (float)mAttribs.sampleRate;
    }
 
-   msecs = 1000.0 * ((float) nSamples / sampleRate);
+   msecs = 1000.0f * ((float) nSamples / sampleRate);
 
-   imsecs = msecs;
+   imsecs = (uint32)msecs;
    return imsecs;
 }
 
@@ -249,23 +258,26 @@ cSndSource::TimeToSamples( uint32   milliseconds )
       // get sample rate from connected player
       sampleRate = (float) mpPlayer->GetFrequency();
    } else {
-      sampleRate = mAttribs.sampleRate;
+      sampleRate = (float)mAttribs.sampleRate;
    }
 
-   samples = (float) sampleRate * ((float) milliseconds / 1000.0);
+   samples = (float) sampleRate * ((float) milliseconds / 1000.0f);
 
-   nSamples = samples;
+   nSamples = (uint32)samples;
    return nSamples;
 }
 
-STDMETHODIMP_(void) cSndSource::BranchToLabel(uint32 BranchToLabel)
+STDMETHODIMP_(void) cSndSource::BranchToLabel(uint32 labelNum)
 {
-    // TODO
+   if ( (labelNum < mMaxLabels) && (mpLabels[labelNum] != NULL) ) {
+      mpPlaylist = mpLabels[labelNum];
+      mLastLabelPassed = labelNum;
+   }
 }
 
 STDMETHODIMP_(uint32) cSndSource::GetMostRecentLabel()
 {
-    return 0; // TODO
+   return mLastLabelPassed;
 }
 
 

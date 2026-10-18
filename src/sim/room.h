@@ -219,7 +219,7 @@ inline void cRoom::RemoveWatch(int handle)
 
 inline void cRoom::AddWatchElement(int handle, ObjID objID)
 {
-   AssertMsg2(handle < m_WatchList.Size(), "Attempt to add to watch list 0 of 0", handle, m_WatchList.Size());
+   AssertMsg2(handle >= 0 && handle < m_WatchList.Size(), "Attempt to add to watch list 0 of 0", handle, m_WatchList.Size());
 
 #ifndef SHIP
    for (int i=0; i<m_WatchList[handle].Size(); i++)
@@ -240,8 +240,8 @@ inline void cRoom::AddWatchElement(int handle, ObjID objID)
 
 inline void cRoom::RemoveWatchElement(int handle, int index)
 {
-   AssertMsg2(handle < m_WatchList.Size(), "Attempt to remove from watch list 0 of 0", handle, m_WatchList.Size());
-   AssertMsg2(index < m_WatchList[handle].Size(), "Attempt to remove watch element 0 of 0",
+   AssertMsg2(handle >= 0 && handle < m_WatchList.Size(), "Attempt to remove from watch list 0 of 0", handle, m_WatchList.Size());
+   AssertMsg2(index >= 0 && index < m_WatchList[handle].Size(), "Attempt to remove watch element 0 of 0",
                                                    index, m_WatchList[handle].Size());
 
    // Swap item to be removed with last item so no array packing necessary
@@ -252,7 +252,7 @@ inline void cRoom::RemoveWatchElement(int handle, int index)
 
 inline void cRoom::RemoveAllWatchElements(int handle)
 {
-   AssertMsg2(handle < m_WatchList.Size(), "Attempt to remove from watch list 0 of 0", handle, m_WatchList.Size());
+   AssertMsg2(handle >= 0 && handle < m_WatchList.Size(), "Attempt to remove from watch list 0 of 0", handle, m_WatchList.Size());
 
    m_WatchList[handle].SetSize(0);
 }
@@ -261,7 +261,7 @@ inline void cRoom::RemoveAllWatchElements(int handle)
 
 inline void cRoom::GetObjList(const ObjID **objList, int *size, int handle) const
 {
-   AssertMsg2(handle < m_WatchList.Size(), "Attempt to retrieve watch list 0 of 0", handle, m_WatchList.Size());
+   AssertMsg2(handle >= 0 && handle < m_WatchList.Size(), "Attempt to retrieve watch list 0 of 0", handle, m_WatchList.Size());
 
    *objList = m_WatchList[handle];
    *size = m_WatchList[handle].Size();

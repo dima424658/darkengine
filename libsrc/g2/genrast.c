@@ -126,7 +126,7 @@ void gen_left_edge(g2s_point *prev, g2s_point *next, g2s_poly_params *tp)
    for (i=0, mask=1; ; mask+=mask, i++) {
       if (!(mask&flags))
          continue;
-      tp->left.coord_val[i] = tp->scale[i]*prev->coord[i]*65536.0 + fdy*tp->dcy[i] + fdx*tp->dcx[i];
+      tp->left.coord_val[i] = (fix)(tp->scale[i]*prev->coord[i]*65536.0f + fdy*tp->dcy[i] + fdx*tp->dcx[i]);
       tp->left.coord_delta[i] = tp->dcy[i] + tp->left.dx * tp->dcx[i];
       if ((flags -= mask)==0)
          break;

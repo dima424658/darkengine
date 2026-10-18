@@ -14,7 +14,7 @@
 #include <tagfile.h>
 #include <gcompose.h>
 #include <scrnman.h>
-#include <direct.h>
+#include <platform_io.h>
 #include <simtime.h>
 #include <gen_bind.h>
 #include <keydefs.h>
@@ -135,7 +135,7 @@ bool cFilePanel::textgadg_cb(LGadTextBox* box, LGadTextBoxEvent event, int event
 void cFilePanel::OnTextBox(sSlot* slot, uiEvent* ev)
 {
    // never trusted pointer subtraction 
-   int slotnum = ((char*)slot - (char*)mpSlots)/sizeof(sSlot);
+   int slotnum = (int)(((char*)slot - (char*)mpSlots)/sizeof(sSlot));
 
    if (ev->type == UI_EVENT_MOUSE)
       switch (ev->subtype)
@@ -165,7 +165,7 @@ void cFilePanel::OnTextGadg(sSlot* slot, LGadTextBoxEvent event, int eventdata)
 
          case KEY_ESC:
          {
-            int slotnum = ((char*)slot - (char*)mpSlots)/sizeof(sSlot);
+            int slotnum = (int)(((char*)slot - (char*)mpSlots)/sizeof(sSlot));
 
             if (mCurSlot == slotnum)
                mFileOp = kFileOpExit; 
@@ -212,7 +212,7 @@ void cFilePanel::EnableFileOp(BOOL enabled)
    if (enabled && !mTotalFailure)
       mElems[(int)kDoFile].fcolor = 0;
    else
-      mElems[(int)kDoFile].fcolor = guiStyleGetColor(NULL,StyleColorDim); 
+   mElems[(int)kDoFile].fcolor = (ushort)guiStyleGetColor(NULL,StyleColorDim);
 
    region_expose(LGadBoxRegion(LGadCurrentRoot()),&mRects[(int)kDoFile]); 
 }

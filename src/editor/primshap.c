@@ -21,27 +21,27 @@
 // declare the base static setup, ie. the primalInfo inlined struct
 #define _static_declare_base(NAME) \
   static primalInfo NAME##_base= \
-    {##NAME##_PT_CNT,##NAME##_EDGE_CNT,##NAME##_FACE_CNT,##NAME##_FACE_PTS,NULL,NULL,NULL,NULL}
+    {NAME##_PT_CNT,NAME##_EDGE_CNT,NAME##_FACE_CNT,NAME##_FACE_PTS,NULL,NULL,NULL,NULL}
 
 // various array declarations, here to be consistently named, and have array sizes hardcoded
 #define _static_declare_edges(NAME) \
-  static int NAME##_edge_list[##NAME##_EDGE_CNT*2]
+  static int NAME##_edge_list[NAME##_EDGE_CNT*2]
 #define _static_declare_face_pts(NAME) \
-  static int NAME##_face_pts_list[##NAME##_FACE_CNT * ##NAME##_FACE_PTS]
+  static int NAME##_face_pts_list[NAME##_FACE_CNT * NAME##_FACE_PTS]
 #define _static_declare_face_edge(NAME) \
-  static int NAME##_face_edge_list[##NAME##_FACE_CNT * ##NAME##_FACE_PTS]
+  static int NAME##_face_edge_list[NAME##_FACE_CNT * NAME##_FACE_PTS]
 #define _static_declare_pt_list(NAME) \
-  static mxs_vector NAME##_pts_list[##NAME##_PT_CNT]
+  static mxs_vector NAME##_pts_list[NAME##_PT_CNT]
 
 // memory setup ops
 #define _build_named_primal(NAME,newprim) \
   do { \
-     memcpy(newprim,&##NAME##_base,sizeof(primalInfo)); \
+     memcpy(newprim,&NAME##_base,sizeof(primalInfo)); \
      if (!_primalBr_GetMem(newprim)) return FALSE; \
-     memcpy(newprim->edge_list,##NAME##_edge_list,sizeof(##NAME##_edge_list)); \
-     memcpy(newprim->face_pts_list,##NAME##_face_pts_list,sizeof(##NAME##_face_pts_list)); \
-     memcpy(newprim->face_edge_list,##NAME##_face_edge_list,sizeof(##NAME##_face_edge_list)); \
-     memcpy(newprim->pt_array,##NAME##_pts_list,sizeof(##NAME##_pts_list)); \
+     memcpy(newprim->edge_list,NAME##_edge_list,sizeof(NAME##_edge_list)); \
+     memcpy(newprim->face_pts_list,NAME##_face_pts_list,sizeof(NAME##_face_pts_list)); \
+     memcpy(newprim->face_edge_list,NAME##_face_edge_list,sizeof(NAME##_face_edge_list)); \
+     memcpy(newprim->pt_array,NAME##_pts_list,sizeof(NAME##_pts_list)); \
   } while (0)
   
 ///////////////////
@@ -117,8 +117,8 @@ BOOL PrimShape_CreateLine(primalInfo *new_line)
 #define tri_FACE_CNT   (4)
 #define tri_FACE_PTS (3+1)
 
-#define Root3Over2 (0.866025)
-#define EdgeLn     (1.0)
+#define Root3Over2 (0.866025f)
+#define EdgeLn     (1.0f)
 
 // here is our primalInfo intself
 _static_declare_base(tri);
@@ -181,16 +181,16 @@ BOOL PrimShape_CreateLight(primalInfo *new_light)
 // fill pts with an n-gon in xy with z coodinate z
 static void build_ngon_base(int n, mxs_vector *pts, float z, BOOL face_align)
 {
-   double face_mod=face_align?1.0:0.0, scale_f=1.0;
+   float face_mod = face_align ? 1.0f : 0.0f, scale_f = 1.0f;
    int i;
 
    for (i=0; i<n; i++)
    {
-      double ang=MX_REAL_2PI*(i*2.0+face_mod)/(n*2.0);  // currently vertex aligned, add 1.0 to numerator for face
+      float ang = (float)MX_REAL_2PI * (i * 2.0f + face_mod) / (n * 2.0f);
       if (face_align&&(i==0))
-         scale_f=(double)1.0/cos(ang);
-      pts[i].y= cos(ang)*scale_f;
-      pts[i].x=-sin(ang)*scale_f;
+         scale_f = 1.0f / cosf(ang);
+      pts[i].y = cosf(ang) * scale_f;
+      pts[i].x = -sinf(ang) * scale_f;
       pts[i].z= z;
    }
 }

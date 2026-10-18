@@ -41,7 +41,7 @@ void ResetPathfindZones()
 
 inline tAIPathCellID FindUnzonedCell(eAIPathZoneType ZoneType)
 {
-   for (int i=1; i<g_AIPathDB.m_nCells + 1; i++)
+   for (int i=1; i<(int)g_AIPathDB.m_nCells + 1; i++)
    {
       if (g_AIPathDB.m_ZoneDatabases[ZoneType].m_CellZones[i] == AI_ZONE_INVALID)
           return i;
@@ -66,7 +66,7 @@ static inline void DoDeterminePathfindZones(eAIPathZoneType ZoneType, uint nOkBi
 
    // Initialize zone lists
    g_AIPathDB.m_ZoneDatabases[ZoneType].m_CellZones.SetSize(g_AIPathDB.m_nCells + 1);
-   for (i=0; i<=g_AIPathDB.m_nCells; i++)
+   for (i=0; i<=(int)g_AIPathDB.m_nCells; i++)
    {
       g_AIPathDB.m_ZoneDatabases[ZoneType].m_CellZones[i] = AI_ZONE_INVALID;
       cellInActiveList[i] = FALSE;
@@ -224,7 +224,7 @@ static inline void DoLinkPathfindZones(eAIPathZoneType ZoneType)
 
       // initialize our arrays
       activeCellList.SetSize(0);
-      for (int i=1; i<=g_AIPathDB.m_nCells; i++)
+      for (int i=1; i<=(int)g_AIPathDB.m_nCells; i++)
          cellBestBits[i] = 0;
 
       tAIPathCellID rootCell = FindCellOfZone(ZoneType, zone);

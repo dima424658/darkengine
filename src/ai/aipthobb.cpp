@@ -121,7 +121,7 @@ void GenerateOBBPathCell(sAIObjCell *pNewObjCell, ObjID obj, mxs_vector &size, m
    // Find the centerpoint of that face
    mxs_vector face_center;
    
-   mx_scale_vec(&face_center, &mat.vec[best_side], size.el[best_side] / 2.0 + offset.el[best_side]);
+   mx_scale_vec(&face_center, &mat.vec[best_side], size.el[best_side] / 2.0f + offset.el[best_side]);
    
    if (mat.vec[best_side].z < 0)
       mx_scaleeq_vec(&face_center, -1.0);
@@ -165,8 +165,8 @@ void GenerateOBBPathCell(sAIObjCell *pNewObjCell, ObjID obj, mxs_vector &size, m
          mxs_vector edge_offset_1;
          mxs_vector edge_offset_2;
 
-         mx_scale_vec(&edge_offset_1, &mat.vec[edge_1], size.el[edge_1] / 2.0);
-         mx_scale_vec(&edge_offset_2, &mat.vec[edge_2], size.el[edge_2] / 2.0);
+         mx_scale_vec(&edge_offset_1, &mat.vec[edge_1], size.el[edge_1] / 2.0f);
+         mx_scale_vec(&edge_offset_2, &mat.vec[edge_2], size.el[edge_2] / 2.0f);
 
          // this looks wierd but causes us to wind
          // correctly usually (--, -+, ++, +-)
@@ -314,7 +314,7 @@ void AIGetAllMovingTerrainCells(cAIObjCells *pCellList)
          ObjPosSetLocation(obj, &ObjPosGet(cur_obj)->loc);
          GenerateOBBPathCell(&newObjCell, obj, pDimsProp->size, pDimsProp->offset[0]);
 
-         newObjCell.data = (void *)cur_obj;
+         newObjCell.data = (void *)(intptr_t)cur_obj;
 
          mprintf(".");
          pCellList->Append(newObjCell);

@@ -28,12 +28,12 @@ void gen_triangle_gradients(g2s_point *v0, g2s_point *v1, g2s_point *v2, g2s_pol
 
    flags = tp->flags&PPF_MASK;
    if (flags>0) {
-      x10=v1->sx-v0->sx;
-      y10=v1->sy-v0->sy;
-      x20=v2->sx-v0->sx;
-      y20=v2->sy-v0->sy;
+      x10=(float)(v1->sx-v0->sx);
+      y10=(float)(v1->sy-v0->sy);
+      x20=(float)(v2->sx-v0->sx);
+      y20=(float)(v2->sy-v0->sy);
 
-      r = f2to32/(y10*x20 - y20*x10);
+      r = (float)f2to32/(y10*x20 - y20*x10);
    }
 // divide overlap!
    tp->ytop = fix_cint(v0->sy);
@@ -60,13 +60,13 @@ void gen_triangle_gradients(g2s_point *v0, g2s_point *v1, g2s_point *v2, g2s_pol
          tp->dcx[i] =
          tp->dcy[i] = 0;
       } else {
-         tp->dcx[i] = dc;
+         tp->dcx[i] = (fix)dc;
          dc = (x20*c10-x10*c20)*scale;
          if ((dc > ((float )FIX_MAX))||(dc < ((float)FIX_MIN))) {
             tp->dcx[i] =
             tp->dcy[i] = 0;
          } else {
-            tp->dcy[i] = dc;
+            tp->dcy[i] = (fix)dc;
          }
       }
    }

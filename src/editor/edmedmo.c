@@ -163,7 +163,7 @@ static int SetCells(int cell_index, int prev_cell_index)
       mx_addeq_vec(&middle, vertex);
       vertex++;
    }
-   mx_scaleeq_vec(&middle, 1.0 / (float) num_vertices);
+   mx_scaleeq_vec(&middle, 1.0f / (float) num_vertices);
 
    status = CellStatus(cell, &middle);
    MarkCell(cell_index);
@@ -175,7 +175,7 @@ static int SetCells(int cell_index, int prev_cell_index)
 
       for (i = 0; i < num_portals; i++) {
          if (i < num_render_portals) {
-            portal_render->texture_id = g_texture_below;
+            portal_render->texture_id = (uchar)g_texture_below;
             portal->motion_index = g_motion_index;
          }
 
@@ -193,7 +193,7 @@ static int SetCells(int cell_index, int prev_cell_index)
       for (i = 0; i < num_portals; i++) {
          if (portal->destination == prev_cell_index) {
             if (i < num_render_portals) {
-               portal_render->texture_id = g_texture_above;
+               portal_render->texture_id = (uchar)g_texture_above;
                portal->motion_index = g_motion_index;
             }
          }
@@ -431,13 +431,13 @@ static void SetSDESCFromMotionStructures(int index, sMotionEdit *data)
    data->y = portal_cell_motion[index].center.y;
    data->z = portal_cell_motion[index].center.z;
    data->theta
-      = (((float) portal_cell_motion[index].angle * 360.0) / 65536.0);
+      = (((float) portal_cell_motion[index].angle * 360.0f) / 65536.0f);
 
    data->dx = g_aMedMoCellMotion[index].center_change.x;
    data->dy = g_aMedMoCellMotion[index].center_change.y;
    data->dz = g_aMedMoCellMotion[index].center_change.z;
    data->dtheta
-      = (((float) g_aMedMoCellMotion[index].angle_change * 360.0) / 65536.0);
+      = (((float) g_aMedMoCellMotion[index].angle_change * 360.0f) / 65536.0f);
 
    data->major_axis = (uint) portal_cell_motion[index].major_axis;
 

@@ -9,7 +9,7 @@
 #ifndef __SHKPLCST_H
 #define __SHKPLCST_H
 
-typedef enum eStats {
+enum eStats {
    // stats
    kStatStrength,
    kStatEndurance,
@@ -20,7 +20,7 @@ typedef enum eStats {
    kStatPad = 0xFFFFFFFF,
 };
 
-typedef enum eWeaponSkills {  
+enum eWeaponSkills {
    // weapon skills
    // Note: stupidly, these need to stay in synch with the string constants for
    // the weapon type property in shkgunpr. 
@@ -33,7 +33,7 @@ typedef enum eWeaponSkills {
    kWeaponPad = 0xFFFFFFFF,
 };
 
-typedef enum eTechSkills {
+enum eTechSkills {
    // tech skills
    kTechHacking,
    kTechRepair,
@@ -44,7 +44,7 @@ typedef enum eTechSkills {
    kTechPad = 0xFFFFFFFF,
 };
 
-typedef enum ePsiPowers 
+enum ePsiPowers
 {  
    // psi skills
    kPsiLevel1,    
@@ -99,7 +99,7 @@ typedef enum ePsiPowers
 
 #define NUM_PSI_LEVELS  5
 
-typedef enum ePlayerEquip
+enum ePlayerEquip
 {
    // main items
    kEquipWeapon,
@@ -127,7 +127,7 @@ typedef enum ePlayerEquip
    kEquipPad = 0xFFFFFFFF,
 };
 
-typedef enum eService {
+enum eService {
    // stats
    kServiceMarines,
    kServiceNavy,

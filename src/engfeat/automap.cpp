@@ -229,7 +229,7 @@ static ILoopClient* LGAPI AutomapClientFactoryFunc(sLoopClientDesc * pDesc, tLoo
 }
 
 
-static ulong automap_factory_id = -1; 
+static tLoopClientCookie automap_factory_id = (tLoopClientCookie)-1;
 
 static void create_automap_factory()
 {

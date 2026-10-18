@@ -76,7 +76,8 @@ cStorageManager::cStorageManager() :
 	m_pDefStoreFactory{ nullptr },
 	m_pGlobalContext{ nullptr },
 	m_pDefVariants{ nullptr },
-	m_pFactoryTable{ nullptr }
+	m_pFactoryTable{ nullptr },
+	m_ContextVersion{ 0 }
 {
 	m_pRootStore = new cDirectoryStorage{ nullptr };
 
@@ -199,11 +200,24 @@ void cStorageManager::SetGlobalContext(ISearchPath* pPath)
 		m_pGlobalContext->Release();
 
 	m_pGlobalContext = pPath;
+	++m_ContextVersion;
 	if (m_pGlobalContext)
 	{
 		m_pGlobalContext->AddRef();
 		m_pGlobalContext->Iterate(SetContextRoot, TRUE, this);
 	}
+}
+
+unsigned StorageManagerContextVersion(IStoreManager* pStoreMan)
+{
+	return pStoreMan
+		? static_cast<cStorageManager*>(pStoreMan)->ContextVersion() : 0;
+}
+
+ISearchPath* StorageManagerGlobalContext(IStoreManager* pStoreMan)
+{
+	return pStoreMan
+		? static_cast<cStorageManager*>(pStoreMan)->GlobalContext() : nullptr;
 }
 
 ///////////////////////////////////////
@@ -226,7 +240,7 @@ ISearchPath* cStorageManager::NewSearchPath(const char* pNewPath)
 	auto* pNewSearchPath = new cSearchPath{ this };
 
 	if (m_pGlobalContext)
-		pNewSearchPath->SetContext(m_pGlobalContext);
+		pNewSearchPath->SetGlobalContextPath(m_pGlobalContext);
 
 	if (m_pDefVariants)
 		pNewSearchPath->SetVariants(m_pDefVariants);
@@ -276,15 +290,20 @@ void cStorageManager::Close()
 int cStorageManager::HeteroStoreExists(IStore* pParentStore, const char* pSubStoreName, char* pNameBuffer)
 {
 	auto nLen = strlen(pSubStoreName);
+	if (!nLen)
+		return FALSE;
+	auto baseLen = nLen;
+	if (pSubStoreName[baseLen - 1] == '\\' || pSubStoreName[baseLen - 1] == '/')
+		--baseLen;
 
 	tHashSetHandle hsh{};
 	for (auto* pEntry = m_pFactoryTable->GetFirst(hsh); pEntry != nullptr; pEntry = m_pFactoryTable->GetNext(hsh))
 	{
-		strcpy(pNameBuffer, pSubStoreName);
-		if (pNameBuffer[nLen - 1] == '\\')
-			pNameBuffer[nLen - 1] = '\0';
-
-		strcat(pNameBuffer, pEntry->m_pExt);
+		const auto extLen = strlen(pEntry->m_pExt);
+		if (baseLen + extLen >= MAX_STORENAME)
+			continue;
+		memcpy(pNameBuffer, pSubStoreName, baseLen);
+		memcpy(pNameBuffer + baseLen, pEntry->m_pExt, extLen + 1);
 		if (pParentStore->StreamExists(pNameBuffer))
 			return TRUE;
 	}

@@ -30,6 +30,7 @@
 
 #include <allocovr.h>
 #include <scrptmem.h>
+#include <platform_services.h>
 
 cScriptModuleAlloc g_Malloc;
 IAllocator * g_pMalloc;
@@ -53,7 +54,7 @@ extern "C"
 void *(*f_malloc)(size_t size) = malloc;
 void *(*f_realloc)(void *p, size_t size) = realloc;
 void (*f_free)(void *p) = free;
-size_t (*f_msize)(void *p) = _msize;
+size_t (*f_msize)(void *p) = PlatformAllocationSize;
 void *(*f_malloc_db)(size_t size, const char *, int) = malloc_db;
 void *(*f_realloc_db)(void *p, size_t size, const char *, int) = realloc_db;
 void (*f_free_db)(void *p, const char *, int) = free_db;

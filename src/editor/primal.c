@@ -6,7 +6,7 @@
 // $Header: r:/t2repos/thief2/src/editor/primal.c,v 1.11 2000/02/19 13:11:14 toml Exp $
 // primal brush systems
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 

@@ -207,7 +207,6 @@ extern "C"
 #include <shkfsys.h>
 #include <shkcurm.h>
 
-#include <shkmusic.h>
 
 #ifndef SHIP
 #include <shkcmapi.h>
@@ -498,7 +497,6 @@ void shock_check_keys(void)
 }
 
 
-#pragma off(unreferened)
 bool shock_key_parse(int keycode)
 {
    int kc;
@@ -1394,7 +1392,6 @@ static void HackFOVCompute(void)
    //mprintf ("delta = %g %g %g\n",av1.el[0] - av2.el[0],av1.el[1] - av2.el[1],av1.el[2] - av2.el[2]);
 }
 
-#pragma on(unreferenced)
 
 // per frame updates, for now just spells
 // #define PICK_DIST 35
@@ -1463,13 +1460,11 @@ void shock_rend_update_frame(void)
 //   update_player_medium_sounds();
 }
 
-#pragma off(unreferenced)
 static bool key_handler_func(uiEvent* ev, Region* r, void* data)
 {
    uiCookedKeyEvent* kev = (uiCookedKeyEvent*)ev;
    return shock_key_parse(kev->code);
 }
-#pragma on(unreferenced)
 
 //
 // In-game command terminal

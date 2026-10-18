@@ -218,7 +218,7 @@ public:
       // the field has fewer bits, make sure no lost data:
       Assert_(msg->propertyID == mpProp->mID);
       msg->netObjID = mpProp->gmObjNet->ObjHostObjID(obj);
-      msg->type = type;
+      msg->type = (ubyte)type;
       // the field has fewer bits, make sure no lost data:
       Assert_(msg->type == type);
       NetPropSpew(("SEND: property %d:%s type: 0x%x size: %d first word: %d\n",
@@ -398,7 +398,7 @@ HRESULT cStoredProperty::QI(IUnknown* me, REFIID id, void ** ppI)
 //
 
 
-IPropertyStore* InitBasePropertyStore(IPropertyStore* store, ulong flags);
+static IPropertyStore* InitBasePropertyStore(IPropertyStore* store, ulong flags);
 
 cPropertyBase::cPropertyBase(const sPropertyDesc* desc) :
    mDesc(*desc), 
@@ -1013,6 +1013,15 @@ void cStoredProperty::SetRebuildConcretes(BOOL fRebuild)
 
 void cStoredProperty::RebuildOneConcrete(ObjID obj)
 {
+   // remove_obj() marks an object inactive before notifying its properties.
+   // Deleting a directly stored value can therefore expose an inherited value
+   // while the object is already being destroyed.  Rebuilding that value is
+   // both pointless and unsafe: active properties such as AI may construct
+   // runtime state after prerequisite properties (notably Position) have
+   // already been removed.
+   if (OBJ_IS_CONCRETE(obj) && !ObjExists(obj))
+      return;
+
    sDatum             value;
    uPropListenerValue cbval;
 

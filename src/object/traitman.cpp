@@ -199,7 +199,9 @@ STDMETHODIMP cTraitManager::AddObject(ObjID obj, ObjID archetype)
    }
    
    // Make sure our archetype is valid for inheritance
-   AssertMsg(ObjIsDonor(archetype), "Attempt to inherit from non-inheritable archetype");
+   AssertMsg2(ObjIsDonor(archetype),
+              "Attempt to make object %d inherit from non-inheritable archetype %d",
+              obj, archetype);
 
    SetArchetype(obj, archetype); 
 
@@ -270,21 +272,21 @@ static tMetaPropertyPriority ComputeNewSpecialPriority(IRelation* metaprops, Obj
 
    switch (pri)
    {
-      case kMPropHighestPriority:
+      case (tMetaPropertyPriority)kMPropHighestPriority:
          // Get the front link.  Check the right sign
          pri = links->GetFirst()->Value().pri;
          if (pri > 0)
             return HIGHER_PRIORITY(pri);
          break;
 
-      case kMPropLowestPriority|kMPropPriorityBelowArchetype:
+      case (tMetaPropertyPriority)(kMPropLowestPriority|kMPropPriorityBelowArchetype):
          // Get the back link.  Check the right sign
          pri = links->GetLast()->Value().pri;
          if (pri < 0)
             return -HIGHER_PRIORITY(-pri);
          break;         
 
-      case kMPropHighestPriority|kMPropPriorityBelowArchetype:
+      case (tMetaPropertyPriority)(kMPropHighestPriority|kMPropPriorityBelowArchetype):
       {
          // Iter backwards to find the last pos
          MetaPropLinks::cIter iter = links->Iter();
@@ -297,7 +299,7 @@ static tMetaPropertyPriority ComputeNewSpecialPriority(IRelation* metaprops, Obj
       }
       break;
 
-      case kMPropLowestPriority:
+      case (tMetaPropertyPriority)kMPropLowestPriority:
       {
          MetaPropLinks::cNode* node;
          // Iter backwards to find the last nonneg priority

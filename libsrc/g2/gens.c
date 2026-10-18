@@ -14,7 +14,6 @@
 extern void (*gen_uscale_func[])();
 extern void (*gen_scale_func[])();
 
-#pragma off(unreferenced)
 g2us_func *gen_uscale_expose(grs_bitmap *bm, int x, int y, int w, int h)
 {
    Assrt(bm->type<BMT_TYPES);
@@ -25,7 +24,6 @@ g2s_func *gen_scale_expose(grs_bitmap *bm, int x, int y, int w, int h)
    Assrt(bm->type<BMT_TYPES);
    return (g2s_func *)gen_scale_func[bm->type];
 }
-#pragma on(unreferenced)
 
 void gen_uscale(grs_bitmap *bm, int x, int y, int w, int h)
 {

@@ -9,7 +9,7 @@
 #ifndef __SHKIMCST_H
 #define __SHKIMCST_H
 
-typedef enum eImplant {
+enum eImplant {
    
    kImplantStrength,
    kImplantEndurance,
@@ -28,8 +28,8 @@ typedef enum eImplant {
    kImplantPad = 0xFFFFFFFF,
 };
 
-const float kImplantWormMindDamageFrac = 0.25;
-const float kImplantAimKickFrac = 0.8;
-const float kImplantWormBlendFrac = 1.0;
+const float kImplantWormMindDamageFrac = 0.25f;
+const float kImplantAimKickFrac = 0.8f;
+const float kImplantWormBlendFrac = 1.0f;
 
 #endif

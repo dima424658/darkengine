@@ -22,7 +22,7 @@
 // For the support of the HACK HACK HACK
 #include <prim.h>
 
-#define FIX_CONV 65536.0
+#define FIX_CONV 65536.0f
 
 // globals for fast access from assembly
 fix r3d_x_off, r3d_y_off;
@@ -52,9 +52,9 @@ void _r3_trans_alloc(r3s_xform_context *trans)
 
    // initialize view
    mx_identity_trans(X2TRANS(&trans->view_trans));
-   trans->view_ang.tx = 0.0;
-   trans->view_ang.ty = 0.0;
-   trans->view_ang.tz = 0.0;
+   trans->view_ang.tx = 0;
+   trans->view_ang.ty = 0;
+   trans->view_ang.tz = 0;
 
    // initialize w2v, just like recalc_w2v
    mx_mult_trans(X2TRANS(&(trans->w2v)),X2TRANS(&(trans->world)),X2TRANS(&(trans->view_trans)));
@@ -94,17 +94,17 @@ void _r3_recalc_linear()
       // vcen is screen space about which we get deltas
       vcen.x = 0.0;
       vcen.y = 0.0;
-      vcen.z = cx.lin_width/2.0;
+   vcen.z = cx.lin_width/2.0f;
    } else {
       mx_trans_mul_vec(&vcen,X2TRANS(&cx.w2v),&cx.lin_cen);
    }
 
    // set projection constants
-   kx = FIX_CONV * cx.zoom * (mxs_real)(cur_canv->bm.w)/2.0;
-   ky = FIX_CONV * cx.zoom * (mxs_real)(cur_canv->bm.w)/(2.0 * cx.aspect);
+   kx = FIX_CONV * cx.zoom * (mxs_real)(cur_canv->bm.w)/2.0f;
+   ky = FIX_CONV * cx.zoom * (mxs_real)(cur_canv->bm.w)/(2.0f * cx.aspect);
 
    // set inverse z in cam space
-   wcen = cx.lin_w = 1.0/vcen.z;
+   wcen = cx.lin_w = 1.0f/vcen.z;
 
    // build linear transform
    lm = X2MAT(&cx.lin_trans);
@@ -122,8 +122,8 @@ void _r3_recalc_linear()
    lm->m8 = 0;                            // dsz/dz
 
    // note that these first two are just the sx and sy at the linearized center
-   X2VEC(&cx.lin_trans)->x = kx*vcen.x*wcen + FIX_CONV * cur_canv->bm.w/2.0;
-   X2VEC(&cx.lin_trans)->y = ky*vcen.y*wcen + FIX_CONV * cur_canv->bm.h/2.0;
+   X2VEC(&cx.lin_trans)->x = kx*vcen.x*wcen + FIX_CONV * cur_canv->bm.w/2.0f;
+   X2VEC(&cx.lin_trans)->y = ky*vcen.y*wcen + FIX_CONV * cur_canv->bm.h/2.0f;
    X2VEC(&cx.lin_trans)->z = vcen.z;   // all z's will be this
 }
 
@@ -156,8 +156,8 @@ void _r3_recalc_csp()
    // Same for all spaces
    // Add in fixed point offset to screen x, can we add in bias here?
 
-   r3d_glob.x_off = FIX_CONV * (cur_canv->bm.w/2.0 -.5);
-   r3d_glob.y_off = FIX_CONV * (cur_canv->bm.h/2.0 -.5);
+   r3d_glob.x_off = (fix)(FIX_CONV * (cur_canv->bm.w/2.0f - .5f));
+   r3d_glob.y_off = (fix)(FIX_CONV * (cur_canv->bm.h/2.0f - .5f));
 
    // set csp
    switch(r3d_glob.cur_space) {
@@ -166,8 +166,8 @@ void _r3_recalc_csp()
          cx.cspace_vec.y = cx.zoom*(mxs_real)(cur_canv->bm.w)/((mxs_real)(cur_canv->bm.h) * cx.aspect);
          cx.cspace_vec.z = 1.0;
 
-         r3d_glob.x_prj = FIX_CONV * cur_canv->bm.w/2.0;
-         r3d_glob.y_prj = FIX_CONV * cur_canv->bm.h/2.0;
+   r3d_glob.x_prj = FIX_CONV * cur_canv->bm.w/2.0f;
+   r3d_glob.y_prj = FIX_CONV * cur_canv->bm.h/2.0f;
 
          // r3d_glob.x_clip = (FIX_CONV * cur_canv->bm.w / 2.0) / r3d_glob.x_prj
 
@@ -180,13 +180,13 @@ void _r3_recalc_csp()
 
       break;
       case R3_PROJECT_SPACE:
-         cx.cspace_vec.x = FIX_CONV * cx.zoom *(mxs_real)(cur_canv->bm.w)/2.0;
-         cx.cspace_vec.y = FIX_CONV * cx.zoom *(mxs_real)(cur_canv->bm.w)/(2.0 * cx.aspect);
+   cx.cspace_vec.x = FIX_CONV * cx.zoom *(mxs_real)(cur_canv->bm.w)/2.0f;
+   cx.cspace_vec.y = FIX_CONV * cx.zoom *(mxs_real)(cur_canv->bm.w)/(2.0f * cx.aspect);
          cx.cspace_vec.z = 1.0;
 
          //   r3d_glob.x_clip = (FIX_CONV * cur_canv->bm.w / 2.0) / r3d_glob.x_prj
-         r3d_glob.x_clip = FIX_CONV * cur_canv->bm.w / 2.0;
-         r3d_glob.y_clip = FIX_CONV * cur_canv->bm.h / 2.0;
+   r3d_glob.x_clip = FIX_CONV * cur_canv->bm.w / 2.0f;
+   r3d_glob.y_clip = FIX_CONV * cur_canv->bm.h / 2.0f;
 
          // conversion is
          // (x/z) + x_off
@@ -198,11 +198,11 @@ void _r3_recalc_csp()
          cx.cspace_vec.y = 1.0;
          cx.cspace_vec.z = 1.0;
 
-         r3d_glob.x_prj = FIX_CONV * cx.zoom * (mxs_real)(cur_canv->bm.w)/2.0;
-         r3d_glob.y_prj = FIX_CONV * cx.zoom * (mxs_real)(cur_canv->bm.w)/(2.0 * cx.aspect);
+   r3d_glob.x_prj = FIX_CONV * cx.zoom * (mxs_real)(cur_canv->bm.w)/2.0f;
+   r3d_glob.y_prj = FIX_CONV * cx.zoom * (mxs_real)(cur_canv->bm.w)/(2.0f * cx.aspect);
 
          //   r3d_glob.x_clip = (FIX_CONV * cur_canv->bm.w / 2.0) / r3d_glob.x_prj
-         r3d_glob.x_clip = 1.0 / cx.zoom;
+   r3d_glob.x_clip = 1.0f / cx.zoom;
          r3d_glob.y_clip = (cx.aspect * (mxs_real) cur_canv->bm.h) / ((mxs_real) cur_canv->bm.w * cx.zoom);
 
          // conversion is
@@ -295,14 +295,14 @@ mxs_real r3_linear_accuracy(mxs_vector *wcen,mxs_real rad)
    TEST_IN_CONTEXT("r3_lin_accuracy");
 
    // notice, don't use FIX_CONV in this case
-   kx = cx.zoom * (mxs_real)(cur_canv->bm.w)/2.0;
+   kx = cx.zoom * (mxs_real)(cur_canv->bm.w)/2.0f;
 
    // transform world center to view center in world space
    // vcen is screen space about which we get deltas
 
    mx_trans_mul_vec(&vcen,X2TRANS(&cx.w2v),wcen);
 
-   return kx * rad * (1.0/(vcen.z - rad) - 1.0/(vcen.z + rad));
+   return kx * rad * (1.0f/(vcen.z - rad) - 1.0f/(vcen.z + rad));
 }
 
 
@@ -311,24 +311,24 @@ mxs_real r3_linear_accuracy(mxs_vector *wcen,mxs_real rad)
 // transformed points z, since we're so groovy and don't scale it
 mxs_real r3_get_hsize(mxs_real z,mxs_real h)
 {
-   return h*(mxs_real)(cur_canv->bm.w)*cx.zoom/(2.0*z);
+   return h*(mxs_real)(cur_canv->bm.w)*cx.zoom/(2.0f*z);
 }
 
 mxs_real r3_get_vsize(mxs_real z,mxs_real v)
 {
-   return v*(mxs_real)(cur_canv->bm.w)*cx.zoom/(2.0*z*cx.aspect);
+   return v*(mxs_real)(cur_canv->bm.w)*cx.zoom/(2.0f*z*cx.aspect);
 }
 
 // Return the scaling factor with which you get screen size.  You multiply
 // by height and divide by distance to get pixel size
 mxs_real r3_get_hscale()
 {
-   return (mxs_real)(cur_canv->bm.w)*cx.zoom/(2.0);
+   return (mxs_real)(cur_canv->bm.w)*cx.zoom/2.0f;
 }
 
 mxs_real r3_get_vscale()
 {
-   return (mxs_real)(cur_canv->bm.w)*cx.zoom/(2.0*cx.aspect);
+   return (mxs_real)(cur_canv->bm.w)*cx.zoom/(2.0f*cx.aspect);
 }
 
 
@@ -339,8 +339,8 @@ void r3_unproject(mxs_vector *v,float z,float sx,float sy)
 {
    v->x = z;
 
-   v->y = - 2.0 * z * (sx - (r3d_glob.x_off/FIX_CONV))/(cx.zoom * (mxs_real)(cur_canv->bm.w));
-   v->z = - 2.0 * cx.aspect * z * (sy - (r3d_glob.y_off/FIX_CONV))/(cx.zoom * (mxs_real)(cur_canv->bm.w));
+   v->y = -2.0f * z * (sx - (r3d_glob.x_off/FIX_CONV))/(cx.zoom * (mxs_real)(cur_canv->bm.w));
+   v->z = -2.0f * cx.aspect * z * (sy - (r3d_glob.y_off/FIX_CONV))/(cx.zoom * (mxs_real)(cur_canv->bm.w));
 }
 
 
@@ -348,7 +348,7 @@ void r3_unproject(mxs_vector *v,float z,float sx,float sy)
 // Takes field of view in degrees, and the screen width in pixels
 mxs_real r3_fov_2_zoom(mxs_real degrees)
 {
-   return 1.0/tan(MX_REAL_PI*degrees/360);
+   return 1.0f/tanf((float)MX_REAL_PI*degrees/360.0f);
 }
 
 
@@ -357,7 +357,7 @@ mxs_real r3_fov_2_zoom(mxs_real degrees)
 // z and w are in world coords, pixw is in screen pixels
 mxs_real r3_hsize_2_zoom(mxs_real z,mxs_real w,mxs_real pixw)
 {
-   return (2.0 * z * pixw)/(w*(mxs_real)(cur_canv->bm.w));
+   return (2.0f * z * pixw)/(w*(mxs_real)(cur_canv->bm.w));
 }
 
 

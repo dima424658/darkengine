@@ -4,7 +4,6 @@
 #include <mode.h>
 #include <state.h>
 
-#pragma off(unreferenced)
 
 int null_device(grs_sys_info *info)
 {
@@ -61,6 +60,3 @@ void null_get_rgb_bitmask(grs_rgb_bitmask *bitmask)
       bitmask->blue = 0;
    }
 }
-
-#pragma on(unreferenced)
-

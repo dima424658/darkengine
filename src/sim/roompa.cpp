@@ -89,7 +89,7 @@ void cRoomPropAgent::PropagateBF(const mxs_vector &startPos, const cRoom *startR
 
    // Add the starting room to the list and tables
    active_room_head = active_room_tail = active_room_ptr = startRoom->GetRoomID();
-   m_BFRoomInfo[active_room_head].Init(0.1, -1, -1, -1, -1);
+   m_BFRoomInfo[active_room_head].Init(0.1f, -1, -1, -1, -1);
 
    // Propagate
    while (active_room_ptr != -1)
@@ -164,7 +164,7 @@ void cRoomPropAgent::PropagateBF(const mxs_vector &startPos, const cRoom *startR
          }
          else
          {
-            new_dist = mx_dist_vec(&pNextPortal->GetCenter(), &startPos) + 0.1;
+            new_dist = mx_dist_vec(&pNextPortal->GetCenter(), &startPos) + 0.1f;
             adj_dist = m_Funcs->PortalsCallback(pEnterPortal, pNextPortal, new_dist);
 
             // Negative return means to stop propagating

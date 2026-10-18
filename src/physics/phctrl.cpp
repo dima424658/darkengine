@@ -253,7 +253,7 @@ void cPhysCtrlData::ControlRotationalVelocity()
 
    // Determine the acceleration (factor in mass if using base friction)
    PhysGetFriction(pModel->GetObjID(), &friction);
-   rate = 5.5 * pModel->GetDynamics()->GetMass() * friction / m_rotation_rate;
+   rate = 5.5f * pModel->GetDynamics()->GetMass() * friction / m_rotation_rate;
    if (rate > 1000)
       rate = 1000;
    mx_scale_vec(&ctrl_delta, &delta, rate);   

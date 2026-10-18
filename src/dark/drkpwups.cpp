@@ -124,7 +124,7 @@ static float check_flash_effect(ObjID flash, ObjPos *flash_pos, ObjID target, fl
          if (PortalRaycast(&flash_pos->loc,&target_pos->loc,&hit,0))
          {
             float dist=mx_mag_vec(&pos_diff), effect;
-            effect=(4.0-(dist/power))*dot_res;  // 4 means great, 0 means sadness
+            effect=(4.0f-(dist/power))*dot_res;  // 4 means great, 0 means sadness
             if (target==PlayerObject())
 	      {
                  //effect*=0.5;
@@ -137,15 +137,15 @@ static float check_flash_effect(ObjID flash, ObjPos *flash_pos, ObjID target, fl
 
 	       //implement a more gradual scaling.  End result is a wee bit
 	       //above multiply by 4.
-	       if (dist*5<power) effect *=1.32;
-	       if (dist*4<power) effect *=1.32;
-	       if (dist*3<power) effect *=1.32;
-	       if (dist*2<power) effect *=1.32;
-	       if (dist<power) effect *=1.32;
+	       if (dist*5<power) effect *=1.32f;
+	       if (dist*4<power) effect *=1.32f;
+	       if (dist*3<power) effect *=1.32f;
+	       if (dist*2<power) effect *=1.32f;
+	       if (dist<power) effect *=1.32f;
 //               if (dist<power) effect*=4;
 //               if (dist*2<power) effect+=0.5;
 //            }
-            return effect/4.0;
+            return effect/4.0f;
          }
       }
    }
@@ -206,7 +206,7 @@ void DrkTriggerWorldFlash(ObjID obj)
             int time;
             if (flash>4.0)
                flash=4.0;
-            time=4000+(flash*2000);
+            time = (int)(4000 + (flash * 2000));
             DoAISetStun(us,NULL,"Blinded 0, Stalled 0",time);
 //            mprintf("Stun an AI\n");
          }
@@ -245,8 +245,8 @@ void DrkTriggerWorldFlash(ObjID obj)
 ////////////////
 // Fungus Carpet current count property
 
-#define BASE_FUNGUS_RAD 9.0
-#define PLAY_FUNGUS_MUL 0.85
+#define BASE_FUNGUS_RAD 9.0f
+#define PLAY_FUNGUS_MUL 0.85f
 #define PLAY_FUNGUS_RAD (BASE_FUNGUS_RAD*PLAY_FUNGUS_MUL)
 
 static IBoolProperty *pFungusProxProp=NULL;

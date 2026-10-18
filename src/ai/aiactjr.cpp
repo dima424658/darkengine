@@ -33,7 +33,7 @@
 // Must be last header
 #include <dbmem.h>
 
-const float kJointRotateEpsilon = 0.1;
+const float kJointRotateEpsilon = 0.1f;
 
 ///////////////////////////////////////////////////////////////////////////////
 //

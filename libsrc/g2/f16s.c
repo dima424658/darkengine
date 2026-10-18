@@ -13,7 +13,6 @@
 extern void (*flat16_uscale_func[])();
 extern void (*flat16_scale_func[])();
 
-#pragma off(unreferenced)
 g2us_func *flat16_uscale_expose(grs_bitmap *bm, int x, int y, int w, int h)
 {
    int i = make_index_bmt_fill_bmf(bm);
@@ -24,7 +23,6 @@ g2s_func *flat16_scale_expose(grs_bitmap *bm, int x, int y, int w, int h)
    int i = make_index_bmt_fill_bmf(bm);
    return (g2s_func *)flat16_scale_func[i];
 }
-#pragma on(unreferenced)
 
 void flat16_uscale(grs_bitmap *bm, int x, int y, int w, int h)
 {

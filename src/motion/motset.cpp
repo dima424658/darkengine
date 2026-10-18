@@ -25,11 +25,31 @@ extern "C" {
 #include <dynarray.h>
 #include <namemap.h>
 #include <cfgdbg.h>     
+#include <dbfile.h>
+#include <dataguard.h>
+#include <limits.h>
 
 #include <dbmem.h> // must be last included header
 
 
 #define E398_HACK
+
+namespace
+{
+#pragma pack(push, 1)
+struct sMpsMotionDisk
+{
+   mps_motion_info info;
+   int num_components;
+   uint32 ignored_components;
+   int num_flags;
+   uint32 ignored_flags;
+};
+#pragma pack(pop)
+
+static_assert(sizeof(sMpsMotionDisk) == 112,
+              "Unexpected legacy mps_motion record size");
+}
 
 EXTERN void MotCompRotCallback(mps_motion_info *mi,mps_comp_motion *cm,float frame, quat *data);
 static void MotCompXlatCallback(multiped *mp, mps_motion_info *mi,mps_comp_motion *cm,float frame, mxs_vector *data);
@@ -47,7 +67,7 @@ public:
 // which happens during runtime setup.
    ~cMpsMotion() {}
 
-   void Read(ITagFile *pFile);
+   BOOL Read(ITagFile *pFile);
    void Write(ITagFile *pFile);
 };
 
@@ -77,9 +97,9 @@ cMpsMotion::cMpsMotion(mps_motion *mot)
    flags=mot->flags;
 }
 
-void cMpsMotion::Read(ITagFile *pFile)
+BOOL cMpsMotion::Read(ITagFile *pFile)
 {
-   mps_motion mot;
+   sMpsMotionDisk mot;
 
    // delete any existing alloced stuff
    if(flags)
@@ -93,16 +113,55 @@ void cMpsMotion::Read(ITagFile *pFile)
       components=NULL;
    }
 
-   ITagFile_Read(pFile,(char *)&mot,sizeof(mot));
+   if (ITagFile_Read(pFile,(char *)&mot,sizeof(mot)) != sizeof(mot))
+   {
+      dbLoadReportFailure("motion-reader","Motion record is truncated");
+      return FALSE;
+   }
    info=mot.info;
-   AssertMsg(info.type==MT_CAPTURE,"can't read virtual motions");
+   if (info.type != MT_CAPTURE)
+   {
+      dbLoadReportFailure("motion-reader",
+                          "Serialized motion has an unsupported motion type");
+      return FALSE;
+   }
+   if (mot.num_components < 0 || mot.num_flags < 0 ||
+       mot.num_components > 1048576 || mot.num_flags > 1048576)
+   {
+      dbLoadReportFailure("motion-reader","Motion array count is invalid");
+      return FALSE;
+   }
+
+   uint64_t componentBytes = 0;
+   uint64_t flagBytes = 0;
+   const long remaining = pFile->TellFromEnd();
+   if (!DarkCheckedMulU64((uint64_t)mot.num_components,
+                          sizeof(mps_comp_motion),&componentBytes) ||
+       !DarkCheckedMulU64((uint64_t)mot.num_flags,
+                          sizeof(mps_motion_flag),&flagBytes) ||
+       componentBytes > INT_MAX || flagBytes > INT_MAX ||
+       remaining < 0 || componentBytes + flagBytes > (uint64_t)remaining)
+   {
+      dbLoadReportFailure("motion-reader",
+                          "Motion arrays exceed the containing block");
+      return FALSE;
+   }
    num_components=mot.num_components;
    num_flags=mot.num_flags;
 
    if(mot.num_components)
    {
       components=(mps_comp_motion *) mp_alloc(sizeof(mps_comp_motion) * mot.num_components,__FILE__,__LINE__);
-      ITagFile_Read(pFile,(char *)components,sizeof(*mot.components)*mot.num_components);
+      if (!components ||
+          ITagFile_Read(pFile,(char *)components,(int)componentBytes) != (int)componentBytes)
+      {
+         if (components)
+            mp_free(components);
+         components=NULL;
+         num_components=0;
+         dbLoadReportFailure("motion-reader","Motion component array is truncated");
+         return FALSE;
+      }
    } else
    {
       components=NULL;
@@ -112,23 +171,37 @@ void cMpsMotion::Read(ITagFile *pFile)
    if(mot.num_flags)
 	{
 	   flags=(mps_motion_flag *) mp_alloc(sizeof(mps_motion_flag) * mot.num_flags,__FILE__,__LINE__);
-      ITagFile_Read(pFile,(char *)flags,sizeof(*mot.flags)*mot.num_flags);
+      if (!flags ||
+          ITagFile_Read(pFile,(char *)flags,(int)flagBytes) != (int)flagBytes)
+      {
+         if (flags)
+            mp_free(flags);
+         flags=NULL;
+         num_flags=0;
+         if (components)
+            mp_free(components);
+         components=NULL;
+         num_components=0;
+         dbLoadReportFailure("motion-reader","Motion flag array is truncated");
+         return FALSE;
+      }
 	} else
 	{
 	   flags=NULL;
 	}
+   return TRUE;
 }
 
 void cMpsMotion::Write(ITagFile *pFile)
 {
-   mps_motion mot;
+   sMpsMotionDisk mot = {};
 
    AssertMsg(info.type==MT_CAPTURE,"cannot write virtual motion");
    mot.info=info;
    mot.num_components=num_components;
-   mot.components=NULL;
+   mot.ignored_components=0;
    mot.num_flags=num_flags;
-   mot.flags=NULL;
+   mot.ignored_flags=0;
    
    ITagFile_Write(pFile,(char *)&mot,sizeof(mot));
    ITagFile_Write(pFile,(char *)components,sizeof(*components)*num_components);
@@ -264,7 +337,7 @@ int cMotionSet::GetNumFrames(int motHandle)
    if(motHandle<0 || motHandle>=mp_num_motions)
       return 0;
 
-   return ((mps_motion *)(mp_motion_list+motHandle))->info.num_frames;
+   return (int)((mps_motion *)(mp_motion_list+motHandle))->info.num_frames;
 }
 
 #define kMotDefaultBlendLength 500 // in msec
@@ -314,7 +387,7 @@ void cMotionSet::GetSlidingVelocity(int motHandle, mxs_vector *pVel)
    if(pStuff->flags&kMSF_IS_LOCO)
    {
       mx_copy_vec(pVel,&pStuff->xlat);
-      mx_scaleeq_vec(pVel,1.0/m_MotStuffList[id].duration);
+      mx_scaleeq_vec(pVel,1.0f/m_MotStuffList[id].duration);
    } else
    {
       mx_zero_vec(pVel);
@@ -429,7 +502,7 @@ void cMotionSet::HackComputeMotPhys(int runHandle, int index)
    m_HackSuspendInPlace=TRUE;
 #endif
    // compute xlat and average speed
-   mp_get_xlat_at_frame(&pStuff->xlat,runHandle,pInfo->num_frames-1);
+   mp_get_xlat_at_frame(&pStuff->xlat, runHandle, (int)pInfo->num_frames - 1);
 #ifdef E398_HACK
    m_HackSuspendInPlace=FALSE;
 #endif
@@ -451,7 +524,7 @@ void cMotionSet::SetupRunTimeData()
    mp_set_capture_callbacks(MotCompXlatCallback,MotCompRotCallback,MotRootRotCallback);
 
    m_Index2RunHandle.SetSize(size);
-   for(i=0;i<size;i++)
+   for(i = 0; i < (int)size; i++)
    {
       name=m_NameMap.NameFromID(i);
       if(SetupMotion(name,i,&rh))
@@ -474,7 +547,7 @@ void cMotionSet::DippyComputeAllMotPhys()
    int i,size,rh;
 
    size=m_Index2RunHandle.Size();
-   for(i=0;i<size;i++)
+   for(i = 0; i < (int)size; i++)
    {
       rh=m_Index2RunHandle[i];
       if(rh>=0)
@@ -486,27 +559,47 @@ BOOL cMotionSet::Load(ITagFile *pFile)
 {
    // load namemap
    m_NameMap.Load(pFile);
+   if (dbLoadHasFailed())
+      return FALSE;
    
    // load motstuff
    int i;
    ulong size;
    sMotStuff stuff;
 
-   ITagFile_Read(pFile,(char *)&size,sizeof(size));
-   m_MotStuffList.SetSize(size);
-   for(i=0;i<size;i++)
+   const long motStuffRemaining = pFile->TellFromEnd();
+   if (ITagFile_Read(pFile,(char *)&size,sizeof(size)) != sizeof(size) ||
+       size > 1048576 || motStuffRemaining < (long)sizeof(size) ||
+       (uint64_t)size * sizeof(stuff) >
+          (uint64_t)(motStuffRemaining - sizeof(size)))
    {
-      ITagFile_Read(pFile,(char *)&stuff,sizeof(stuff));
+      dbLoadReportFailure("motion-reader","Motion metadata array is invalid");
+      return FALSE;
+   }
+   m_MotStuffList.SetSize(size);
+   for(i = 0; i < (int)size; i++)
+   {
+      if (ITagFile_Read(pFile,(char *)&stuff,sizeof(stuff)) != sizeof(stuff))
+      {
+         dbLoadReportFailure("motion-reader","Motion metadata array is truncated");
+         return FALSE;
+      }
       m_MotStuffList.SetItem(&stuff,i);
    }
 
-   ITagFile_Read(pFile,(char *)&size,sizeof(size));
+   if (ITagFile_Read(pFile,(char *)&size,sizeof(size)) != sizeof(size) ||
+       size > 1048576)
+   {
+      dbLoadReportFailure("motion-reader","Motion record count is invalid");
+      return FALSE;
+   }
    m_cMoCapList.SetSize(size);
-   for(i=0;i<size;i++)
+   for(i = 0; i < (int)size; i++)
    {
       cMpsMotion m;
 
-      m.Read(pFile);
+      if (!m.Read(pFile))
+         return FALSE;
       m_cMoCapList.SetItem(&m,i);
    }
 
@@ -526,13 +619,13 @@ BOOL cMotionSet::Save(ITagFile *pFile)
    int i;
 
    ITagFile_Write(pFile,(char *)&size,sizeof(size));
-   for(i=0;i<size;i++)
+   for(i = 0; i < (int)size; i++)
    {
       ITagFile_Write(pFile,(char *)&m_MotStuffList[i],sizeof(m_MotStuffList[i]));
    }
    size=m_cMoCapList.Size(); // this should always be same size as motstufflist.
    ITagFile_Write(pFile,(char *)&size,sizeof(size));
-   for(i=0;i<size;i++)
+   for(i = 0; i < (int)size; i++)
    {
       m_cMoCapList[i].Write(pFile);
    }
@@ -757,7 +850,7 @@ static void MotCompXlatCallback(multiped *mp, mps_motion_info *mi,mps_comp_motio
          MotDmngeUnlock(mi->mot_num);
       return;
    }
-   if(cm->handle>=cTable->numEntries)
+   if(cm->handle >= (ulong)cTable->numEntries)
    {
       mx_zero_vec(data);
       if(lockedHere)
@@ -797,8 +890,10 @@ static void MotCompXlatCallback(multiped *mp, mps_motion_info *mi,mps_comp_motio
 
 #ifdef E398_HACK
 
-EXTERN BOOL g_DoRootHack=FALSE;
-EXTERN int  g_HackButtJointID=0; 
+EXTERN BOOL g_DoRootHack;
+EXTERN int  g_HackButtJointID;
+BOOL g_DoRootHack=FALSE;
+int  g_HackButtJointID=0;
 
 #endif
 
@@ -808,7 +903,8 @@ EXTERN int  g_HackButtJointID=0;
 // which means solving the capture distortion problem for real.
 #define NECK 9
 
-EXTERN BOOL g_mot_quat_debug=FALSE;
+EXTERN BOOL g_mot_quat_debug;
+BOOL g_mot_quat_debug=FALSE;
 
 // @TODO: GET RID OF NECK HACK!
 void MotCompRotCallback(mps_motion_info *mi,mps_comp_motion *cm,float frame, quat *data)
@@ -851,7 +947,7 @@ void MotCompRotCallback(mps_motion_info *mi,mps_comp_motion *cm,float frame, qua
          MotDmngeUnlock(mi->mot_num);
       return;
    }
-   if(cm->handle>=cTable->numEntries)
+   if(cm->handle >= (ulong)cTable->numEntries)
    {
       quat_identity(data);
       if(lockedHere)

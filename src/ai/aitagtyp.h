@@ -115,7 +115,7 @@ void AITagMoveDynarray(ITagFile * pTagFile, T * pDynarray)
       nItems = pDynarray->Size();
       AITagMoveRaw(pTagFile, &nItems, sizeof(unsigned));
       if (nItems)
-         AITagMoveRaw(pTagFile, pDynarray->AsPointer(), nItems * pDynarray->GetElementSize());
+      AITagMoveRaw(pTagFile, pDynarray->AsPointer(), (unsigned)(nItems * pDynarray->GetElementSize()));
    }
    else
    {
@@ -124,7 +124,7 @@ void AITagMoveDynarray(ITagFile * pTagFile, T * pDynarray)
       if (nItems)
       {
          pDynarray->SetSize(nItems);
-         AITagMoveRaw(pTagFile, pDynarray->AsPointer(), nItems * pDynarray->GetElementSize());
+      AITagMoveRaw(pTagFile, pDynarray->AsPointer(), (unsigned)(nItems * pDynarray->GetElementSize()));
       }
    }
 }

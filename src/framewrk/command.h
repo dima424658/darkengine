@@ -14,8 +14,8 @@
   // anybody who's adding commands needs to see this
 #include <contexts.h>
 
-EXTERN unsigned long  command_context;
-EXTERN unsigned long *command_context_ptr;
+EXTERN ulong  command_context;
+EXTERN ulong *command_context_ptr;
 
   // setup command system and add internal commands
 EXTERN void CommandInit(void);
@@ -50,18 +50,55 @@ enum CommandType
 
 // command definition structure
 
+#ifdef __cplusplus
+class cCommandValue
+{
+public:
+   typedef void (*tErasedFunction)();
+
+   cCommandValue(decltype(nullptr)) : m_data(NULL) {}
+   cCommandValue(void *data) : m_data(data) {}
+
+   template <class Return, class... Args>
+   cCommandValue(Return (*function)(Args...))
+      : m_function(reinterpret_cast<tErasedFunction>(function))
+   {
+   }
+
+   operator void *() const { return m_data; }
+
+private:
+   union
+   {
+      void *m_data;
+      tErasedFunction m_function;
+   };
+};
+#endif
+
 typedef struct
 {
    const char *name;
    enum CommandType type;
+#ifdef __cplusplus
+   cCommandValue val;
+#else
    void *val;
+#endif
    const char *comment;
    ulong contexts;
 } Command;
 
+// Enumerate the registered command definitions without disturbing the
+// command-completion iterator used by the command entry box.  Returning FALSE
+// from the callback stops enumeration early.
+typedef BOOL (LGAPI *CommandIterateCallback)(const Command *command,
+                                              void *data);
+EXTERN void CommandForEach(CommandIterateCallback callback, void *data);
+
 EXTERN bool CommandParse(const char *inp, Command **res_1, const char **res_2);
-EXTERN void CommandExecuteParsed(Command *, char *parms);
-EXTERN bool CommandExecuteParam(const char *cmd, char *param);
+EXTERN void CommandExecuteParsed(Command *, const char *parms);
+EXTERN bool CommandExecuteParam(const char *cmd, const char *param);
 
   // register an array of commands
 EXTERN void CommandRegister(Command *, int count, ulong contexts);
@@ -70,11 +107,11 @@ EXTERN void CommandRegister(Command *, int count, ulong contexts);
 #define COMMANDS(x,y)  CommandRegister(x, sizeof(x)/sizeof(x[0]), y)
 
   // lookup a command, with explicit length
-EXTERN Command *CommandFind(char *, int len);
-EXTERN Command *CommandFindString(char *s);
+EXTERN Command *CommandFind(const char *, int len);
+EXTERN Command *CommandFindString(const char *s);
 
 // Run a command script
-EXTERN void CommandRunScript(char* filename);
+EXTERN void CommandRunScript(const char* filename);
 
 // for command completion/tab in cmdterm
 EXTERN const char *command_find(const char *prefix, BOOL restart);

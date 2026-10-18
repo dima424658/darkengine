@@ -24,7 +24,7 @@
 #include <phmodsph.h>
 
 #include <mprintf.h>
-#include <wrdbrend.H>
+#include <wrdbrend.h>
 
 // Must be last header
 #include <dbmem.h>

@@ -5,6 +5,7 @@
 #include <loopapi.h>
 #include <appagg.h>
 #include <mprintf.h>
+#include <platform_services.h>
 
 unsigned MessageToIndex(eLoopMessage message)
 {
@@ -212,7 +213,7 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 			pTimer->Stop();
 
 		if (fClientHeapchk)
-			_heapchk();
+			PlatformHeapCheck();
 
 		if (clientResult == kLoopDispatchHalt)
 		{
@@ -222,9 +223,9 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 	}
 
 	if (fFrameHeapchk)
-		_heapchk();
+		PlatformHeapCheck();
 
-	if (message & (kMsgSuspendMode || kMsgEnd))
+	if (message & (kMsgSuspendMode | kMsgEnd))
 		m_TotalModeTime.Stop();
 
 	if (fLoopTime)
@@ -239,7 +240,7 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 				m_aClientInfo[j].timer.Mark();
 		}
 
-		if (message & (kMsgSuspendMode || kMsgEnd))
+		if (message & (kMsgSuspendMode | kMsgEnd))
 		{
 			if (m_AverageFrameTimer.IsActive())
 			{

@@ -16,6 +16,151 @@ BOOL g_fResPrintDrops;
 #include <binrstyp.h>
 #include <zipstfct.h>
 #include <pathutil.h>
+#include <search.h>
+#include <cstdlib>
+#include <missiondiag.h>
+#include <platform_services.h>
+#include <mutex>
+#include <string>
+#include <vector>
+
+namespace
+{
+struct sMissingResourceDiagnostic
+{
+	std::string name;
+	std::string type;
+	std::string path;
+	unsigned count;
+};
+
+std::mutex g_missionDiagnosticsMutex;
+std::vector<sMissingResourceDiagnostic> g_missingResources;
+std::string g_diagnosticMission;
+bool g_diagnosticMissionActive = false;
+bool g_diagnosticPostLoadComplete = false;
+unsigned g_lastSummarizedRequests = 0;
+
+unsigned MissingResourceRequestCount()
+{
+	unsigned total = 0;
+	for (size_t i = 0; i < g_missingResources.size(); ++i)
+		total += g_missingResources[i].count;
+	return total;
+}
+
+bool TraceResourceMisses()
+{
+	const char* trace = getenv("DARK_RESOURCE_MISS_TRACE");
+	if (!trace || !trace[0] || trace[0] == '0')
+		trace = getenv("DARK_RESOURCE_TRACE");
+	return trace && trace[0] && trace[0] != '0';
+}
+
+void RecordMissingResource(const char* name, const char* type,
+	const char* path)
+{
+	std::lock_guard<std::mutex> lock(g_missionDiagnosticsMutex);
+	if (!g_diagnosticMissionActive)
+		return;
+
+	const char* safeName = name ? name : "";
+	const char* safeType = type ? type : "unknown";
+	const char* safePath = path ? path : "";
+	for (size_t i = 0; i < g_missingResources.size(); ++i)
+	{
+		sMissingResourceDiagnostic& existing = g_missingResources[i];
+		if (!stricmp(existing.name.c_str(), safeName) &&
+			!stricmp(existing.type.c_str(), safeType) &&
+			!stricmp(existing.path.c_str(), safePath))
+		{
+			++existing.count;
+			return;
+		}
+	}
+
+	sMissingResourceDiagnostic missing;
+	missing.name = safeName;
+	missing.type = safeType;
+	missing.path = safePath;
+	missing.count = 1;
+	g_missingResources.push_back(missing);
+
+	if (TraceResourceMisses())
+	{
+		char message[1400];
+		snprintf(message, sizeof(message),
+			"Unresolved resource probe '%s' (type=%s%s%s)%s",
+			safeName, safeType, safePath[0] ? ", path=" : "",
+			safePath, g_diagnosticPostLoadComplete ? " [after post-load]" : "");
+		message[sizeof(message) - 1] = '\0';
+		PlatformDiagnosticsLog("TRACE", "resource", message);
+	}
+}
+
+void WriteMissionResourceSummary(const char* checkpoint)
+{
+	const unsigned requests = MissingResourceRequestCount();
+	if (requests == g_lastSummarizedRequests && checkpoint &&
+		!strcmp(checkpoint, "shutdown"))
+		return;
+	g_lastSummarizedRequests = requests;
+
+	char message[1024];
+	snprintf(message, sizeof(message),
+		"Mission '%s' %s: %u unique unresolved resource probe%s, "
+		"%u total (fallback probes are expected; see texture preflight for "
+		"actionable missing art)",
+		g_diagnosticMission.empty() ? "(unknown)" : g_diagnosticMission.c_str(),
+		checkpoint ? checkpoint : "checkpoint",
+		(unsigned)g_missingResources.size(),
+		g_missingResources.size() == 1 ? "" : "s", requests);
+	message[sizeof(message) - 1] = '\0';
+	PlatformDiagnosticsLog("INFO", "resource", message);
+	if (requests && TraceResourceMisses())
+		mprintf("Resource trace: %u unresolved probe%s; see %s\n",
+			(unsigned)g_missingResources.size(),
+			g_missingResources.size() == 1 ? "" : "s",
+			PlatformDiagnosticsPath());
+}
+}
+
+void MissionDiagnosticsBegin(const char* mission)
+{
+	std::lock_guard<std::mutex> lock(g_missionDiagnosticsMutex);
+	g_missingResources.clear();
+	g_diagnosticMission = mission ? mission : "";
+	g_diagnosticMissionActive = true;
+	g_diagnosticPostLoadComplete = false;
+	g_lastSummarizedRequests = 0;
+	char message[1024];
+	snprintf(message, sizeof(message), "Beginning mission load: %s",
+		g_diagnosticMission.empty() ? "(unknown)" : g_diagnosticMission.c_str());
+	message[sizeof(message) - 1] = '\0';
+	PlatformDiagnosticsLog("INFO", "mission", message);
+}
+
+void MissionDiagnosticsFinish(BOOL loaded)
+{
+	std::lock_guard<std::mutex> lock(g_missionDiagnosticsMutex);
+	if (!g_diagnosticMissionActive)
+		return;
+	g_diagnosticPostLoadComplete = true;
+	WriteMissionResourceSummary(loaded ? "post-load" : "load failed");
+}
+
+void MissionDiagnosticsFinalSummary(void)
+{
+	std::lock_guard<std::mutex> lock(g_missionDiagnosticsMutex);
+	if (g_diagnosticMissionActive)
+		WriteMissionResourceSummary("shutdown");
+}
+
+void MissionDiagnosticsIssue(const char* severity, const char* subsystem,
+	const char* message)
+{
+	PlatformDiagnosticsLog(severity, subsystem, message);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -113,6 +258,7 @@ HRESULT cResMan::End()
 	if (!m_fDidInit)
 		return E_FAIL;
 
+	MissionDiagnosticsFinalSummary();
 	m_pSharedCache->FlushAll();
 
 	if (m_pCache)
@@ -258,7 +404,7 @@ void cResMan::BindAll(const char* pPattern, const char* pTypeName, ISearchPath* 
 	if (!pCookie)
 		return;
 
-	char pResName[32];
+	char pResName[MAX_STORENAME];
 	cStr resExt{};
 	IStore* pStore, * pCanonStore;
 
@@ -626,7 +772,7 @@ void* cResMan::FindResource(IRes* pResource, long* pSize)
 		CriticalMsg("FindResource -- no private resource data!");
 
 	if ((pData->m_nUserLockCount || pData->m_nInternalLockCount)
-		&& pData->m_Freshed >= (int)m_ResTable.m_ResizeThreshold)
+		&& pData->m_Freshed >= m_FreshStamp)
 	{
 		if (pSize)
 			*pSize = pData->m_nSize;
@@ -725,11 +871,11 @@ long cResMan::GetResourceSize(IRes* pRes)
 
 ///////////////////////////////////////
 
-void cResMan::UnregisterResource(IRes* pResource, ulong ManData)
+void cResMan::UnregisterResource(IRes* pResource, DWORD_PTR ManData)
 {
 	cAutoResThreadLock lock{};
 
-	if (!pResource || !ManData || ManData == -1)
+	if (!pResource || !ManData || ManData == static_cast<DWORD_PTR>(-1))
 	{
 		Warning(("UnregisterResource called for a bogus resource!\n"));
 		return;
@@ -770,14 +916,14 @@ int cResMan::IsAsyncFulfilled(IRes* pResource)
 
 ///////////////////////////////////////
 
-long cResMan::AsyncKill(IRes* pResource)
+HRESULT cResMan::AsyncKill(IRes* pResource)
 {
 	return m_ResManARQ.Kill(pResource);
 }
 
 ///////////////////////////////////////
 
-long cResMan::GetAsyncResult(IRes* pResource, void** ppResult)
+HRESULT cResMan::GetAsyncResult(IRes* pResource, void** ppResult)
 {
 	return m_ResManARQ.GetResult(pResource, ppResult);
 }
@@ -815,10 +961,15 @@ void cResMan::CleanResources()
 
 struct sFoundTypedStream
 {
+	enum { kMaxCandidates = 16 };
+
 	const char* pName;
 	const char* pRelPath;
 	ISearchPath* pPath;
-	char pFoundName[32];
+	char pFoundName[MAX_STORENAME];
+	char candidateNames[kMaxCandidates][MAX_STORENAME];
+	const char* candidatePtrs[kMaxCandidates];
+	int candidateCount;
 	IStore* pFoundCanonStore;
 	IStore* pStore;
 };
@@ -829,12 +980,17 @@ void TryNameWithExt(const char* pExt, IResType*, void* pClientData)
 {
 	auto* foundTyped = reinterpret_cast<sFoundTypedStream*>(pClientData);
 
-	if (strlen(foundTyped->pFoundName) == 0)
-	{
-		strcpy(foundTyped->pFoundName, foundTyped->pName);
-		strcat(foundTyped->pFoundName, pExt);
+	if (foundTyped->candidateCount >= sFoundTypedStream::kMaxCandidates)
+		return;
 
-		foundTyped->pStore = foundTyped->pPath->Find(foundTyped->pFoundName, 0, &foundTyped->pFoundCanonStore, foundTyped->pRelPath);
+	auto* pCandidate = foundTyped->candidateNames[foundTyped->candidateCount];
+	const int candidateLength = snprintf(pCandidate,
+		sizeof(foundTyped->candidateNames[0]), "%s%s", foundTyped->pName, pExt);
+	if (candidateLength >= 0 &&
+		candidateLength < static_cast<int>(sizeof(foundTyped->candidateNames[0])))
+	{
+		foundTyped->candidatePtrs[foundTyped->candidateCount] = pCandidate;
+		++foundTyped->candidateCount;
 	}
 }
 
@@ -871,7 +1027,7 @@ IRes* cResMan::DoBind(const char* pName, const char* pTypeName, ISearchPath* pPa
 		}
 	}
 
-	char pFullname[32];
+	char pFullname[MAX_STORENAME];
 	IStore* pStore, * pCanonStore;
 
 	cStr resExt{};
@@ -888,6 +1044,32 @@ IRes* cResMan::DoBind(const char* pName, const char* pTypeName, ISearchPath* pPa
 		results.pStore = nullptr;
 
 		pType->EnumerateExts(TryNameWithExt, &results);
+
+		// Resource roots are ordered by content priority.  Search all legal
+		// extensions inside one root before moving to the next root, so a
+		// lower-priority PNG/TGA cannot override an FM or mod PCX merely due
+		// to the global extension preference.
+		int foundIndex = -1;
+		if (auto* pConcretePath = dynamic_cast<cSearchPath*>(pPath))
+		{
+			results.pStore = pConcretePath->FindAny(results.candidatePtrs,
+				results.candidateCount, 0, &results.pFoundCanonStore,
+				results.pRelPath, &foundIndex);
+		}
+		else
+		{
+			for (int i = 0; !results.pStore && i < results.candidateCount; ++i)
+			{
+				results.pStore = pPath->Find(results.candidatePtrs[i], 0,
+					&results.pFoundCanonStore, results.pRelPath);
+				if (results.pStore)
+					foundIndex = i;
+			}
+		}
+
+		if (foundIndex >= 0)
+			strcpy(results.pFoundName, results.candidatePtrs[foundIndex]);
+
 		pStore = results.pStore;
 		if (results.pStore)
 		{
@@ -908,9 +1090,19 @@ IRes* cResMan::DoBind(const char* pName, const char* pTypeName, ISearchPath* pPa
 	}
 
 	if (!pStore)
+	{
+		RecordMissingResource(pName, pTypeName, pRelPath);
 		return nullptr;
+	}
 
 	auto* pRes = BindSpecific(pFullname, pTypeName, pStore, pCanonStore, fBindFlags);
+	const char* pStorePath = pStore->GetFullPathName();
+	if (!pStorePath)
+		pStorePath = "";
+	const char* pTrace = std::getenv("DARK_RESOURCE_TRACE");
+	if (pTrace && pTrace[0] && pTrace[0] != '0')
+		mprintf("resource bind: %s [%s] -> %s%s%s\n", pName, pTypeName,
+			pStorePath, pStorePath[0] ? "\\" : "", pFullname);
 
 	if (pCanonStore)
 		pCanonStore->Release();
@@ -990,7 +1182,10 @@ BOOL cResMan::DropResourceData(cResourceTypeData* pData)
 void cResMan::CacheAdd(cResourceTypeData* pData)
 {
 	if (m_bPagingEnabled)
-		m_pCache->Add(reinterpret_cast<tCacheItemID>(pData->m_pData), pData->m_pRes, pData->m_nSize);
+		// The cache callback receives itemId and passes it to FreeData as the
+		// resource metadata object.  Keying this by m_pData instead makes the
+		// callback interpret the resource bytes as cResourceTypeData.
+		m_pCache->Add(reinterpret_cast<tCacheItemID>(pData), pData->m_pRes, pData->m_nSize);
 }
 
 ///////////////////////////////////////
@@ -1000,7 +1195,7 @@ BOOL cResMan::CacheRemove(cResourceTypeData* pData)
 	if (m_bPagingEnabled)
 	{
 		void* pDummy;
-		if (m_pCache->Remove(reinterpret_cast<tCacheItemID>(pData->m_pData), &pDummy) == S_OK)
+		if (m_pCache->Remove(reinterpret_cast<tCacheItemID>(pData), &pDummy) == S_OK)
 			return TRUE;
 
 		Warning(("Tried to remove an item expected but not in the cache (%s)\n", pData->GetName()));
@@ -1237,7 +1432,7 @@ void cResMan::DoDumpSnapshot(FILE* fp)
 				padded_name[29] = '\0';
 
 				int i;
-				for (i = strlen(padded_name); i < 30; ++i)
+				for (i = static_cast<int>(strlen(padded_name)); i < 30; ++i)
 					padded_name[i] = ' ';
 				padded_name[i] = '\0';
 
@@ -1245,9 +1440,9 @@ void cResMan::DoDumpSnapshot(FILE* fp)
 				pResEntry->m_pRes->Release();
 
 				if (fp)
-					fprintf(fp, "%s%s\t%ld\t%d\t%d\t%d\n", padded_name, pResEntry->m_pType->GetName(), pResEntry->m_nSize, pResEntry->m_nUserLockCount, pResEntry->m_nInternalLockCount, refcnt);
+					fprintf(fp, "%s%s\t%u\t%d\t%d\t%d\n", padded_name, pResEntry->m_pType->GetName(), pResEntry->m_nSize, pResEntry->m_nUserLockCount, pResEntry->m_nInternalLockCount, refcnt);
 				else
-					mprintf("%s%s\t%ld\t%d\t%d\t%d\n", padded_name, pResEntry->m_pType->GetName(), pResEntry->m_nSize, pResEntry->m_nUserLockCount, pResEntry->m_nInternalLockCount, refcnt);
+					mprintf("%s%s\t%u\t%d\t%d\t%d\n", padded_name, pResEntry->m_pType->GetName(), pResEntry->m_nSize, pResEntry->m_nUserLockCount, pResEntry->m_nInternalLockCount, refcnt);
 
 				Free(pCanonPathName);
 			}

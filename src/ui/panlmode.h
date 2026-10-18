@@ -52,6 +52,7 @@ enum ePanelModeFlags
    kPanelAutoExit             = 1 << 4, // exit after the first frame
    kPanelESC                  = 1 << 5, // ESC to exit
    kPanelGrabBG               = 1 << 6, // Use the current screen as your BG
+   kPanelPreserveScreen       = 1 << 7, // Keep the active renderer and mode
 }; 
 
 //

@@ -1454,7 +1454,6 @@ VBEInit_exit:
 // This routine shuts down the interface to the vesa driver
 //
 
-#pragma off(unreferenced)
 void vbe_close(grs_sys_info *info)
 {
    dpmi_unmap_linear_address(videoLinearBase);
@@ -1472,6 +1471,5 @@ void vbe_close(grs_sys_info *info)
    if (gsSel) dpmi_free_desc(gsSel);
    gsSel = 0;
 } // vbe_close
-#pragma on(unreferenced)
 
 #endif /* !_WIN32 */

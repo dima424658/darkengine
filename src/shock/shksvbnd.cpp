@@ -7,7 +7,7 @@
 #include <filepanl.h>
 #include <appagg.h>
 #include <gen_bind.h>
-#include <direct.h>
+#include <platform_io.h>
 #include <contexts.h>
 #include <shksvbnd.h>
 

@@ -11,7 +11,6 @@ template <typename T>
 struct aatree
 {
 public:
-#pragma push(2)
 	struct aa_node
 	{
 		char* name;
@@ -23,7 +22,6 @@ public:
 		short level;
 		int visited;
 	};
-#pragma pop()
 
 	aatree();
 	aatree(const aatree&) = delete;
@@ -42,6 +40,7 @@ public:
 	void ResetVisited(aa_node* pCurrent);
 	void VisitBefore(T* pInfo, aa_node* pCurrent);
 	T* GetNextInOrder(char* pStr);
+	T* GetInOrderAt(int index, char* pStr);
 	void Insert(const char* pName, T* pInfo, aa_node** ppOutNode, aa_node* pParent, int iInfoArraySize);
 	void ResetParents(aa_node* cur, aa_node* parent);
 	int Remove(const char* pName, aa_node** ppOutNode, int iDeleteInfo, T* pInfo);
@@ -53,6 +52,7 @@ public:
 	aa_node* RotateWithRightChild(aa_node* pNode);
 
 private:
+	T* GetInOrderAt(int* pIndex, char* pStr, aa_node* pCurrent);
 	int num_nodes;
 	aa_node* root;
 	aa_node* null_node;
@@ -199,6 +199,38 @@ T* aatree<T>::GetNextInOrder(char* str)
 	cur_visited = cur_visited->parent;
 
 	return GetNextInOrder(str);
+}
+
+// Return an in-order item without relying on the parent links maintained by
+// the legacy stateful iterator.  AA-tree rotations in old imported data can
+// leave those links unsuitable for a complete walk even though lookup and the
+// child links remain valid.
+template<typename T>
+T* aatree<T>::GetInOrderAt(int index, char* str)
+{
+	if (index < 0 || index >= num_nodes)
+		return nullptr;
+	return GetInOrderAt(&index, str, root);
+}
+
+template<typename T>
+T* aatree<T>::GetInOrderAt(int* index, char* str, aatree<T>::aa_node* current)
+{
+	if (current == null_node)
+		return nullptr;
+
+	auto* info = GetInOrderAt(index, str, current->left);
+	if (info || *index < 0)
+		return info;
+
+	if ((*index)-- == 0)
+	{
+		if (str)
+			strcpy(str, current->name);
+		return current->info;
+	}
+
+	return GetInOrderAt(index, str, current->right);
 }
 
 template<typename T>

@@ -56,6 +56,13 @@ typedef struct GameModeDesc
 
 
 EXTERN struct sLoopInstantiator* DescribeGameMode(GameMinorMode minorMode, GameModeDesc* desc);
+
+#ifdef EDITOR
+// Leave a nested in-game panel and return DromEd's play preview to the
+// editor.  The panel must be popped first so the game mode, rather than the
+// panel, is replaced by edit mode.
+EXTERN void GameModeExitToEditor(void);
+#endif
   
 //
 // Game loop client

@@ -11,11 +11,18 @@
 #include <linktype.h>
 #include <hashset.h>
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4200) // Variable-size link payload follows header.
+#endif
 struct sLinkDataTableElem
 {
    LinkID id;
    char data[];
 };
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 class LinkDataTable : public cHashSet<sLinkDataTableElem *,LinkID,cHashFunctions>
 {

@@ -8,6 +8,7 @@
 
 #include <lgd3d.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -25,6 +26,7 @@
 #include <objpos.h>
 
 #include <mnumprop.h>
+#include <mnamprop.h>
 #include <partprop.h>
 #include <prjctile.h>
 
@@ -54,9 +56,9 @@ static BOOL (*next_block_call)(ObjID o1, ObjID o2);
 static void (*next_overlay_call)(void);
 
 // this is at end of file
-void dark_render_object(ObjID o, uchar *clut, ulong fragment);
+static void dark_render_object(ObjID o, uchar *clut, ulong fragment);
 BOOL dark_object_blocks(ObjID blocker, ObjID blockee);
-void dark_render_overlays(void);
+static void dark_render_overlays(void);
 
 // set up our function pointers for the portal render object stuff
 void dark_init_object_rend(void)
@@ -97,7 +99,7 @@ BOOL dark_object_blocks(ObjID o1, ObjID o2)
 
 // THIS IS HORRIFYING!!
 
-static const float fInvTime = 1.000/1000.000;
+static const float fInvTime = 1.000f/1000.000f;
 
 // the actual portal object callback for Dark
 static void dark_render_object(ObjID o, uchar *clut, ulong fragment)

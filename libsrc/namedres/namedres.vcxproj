@@ -154,6 +154,7 @@
     <ClInclude Include="binrstyp.h" />
     <ClInclude Include="bmp.h" />
     <ClInclude Include="cel.h" />
+    <ClInclude Include="dds.h" />
     <ClInclude Include="datasrc.h" />
     <ClInclude Include="defresm.h" />
     <ClInclude Include="defstfct.h" />
@@ -161,12 +162,16 @@
     <ClInclude Include="filestrm.h" />
     <ClInclude Include="fonrstyp.h" />
     <ClInclude Include="gif.h" />
+    <ClInclude Include="imagefmt.h" />
     <ClInclude Include="imgrstyp.h" />
     <ClInclude Include="mdlrstyp.h" />
     <ClInclude Include="miprstyp.h" />
     <ClInclude Include="palrstyp.h" />
     <ClInclude Include="pathutil.h" />
+    <ClInclude Include="portableinflate.h" />
     <ClInclude Include="pcx.h" />
+    <ClInclude Include="png.h" />
+    <ClInclude Include="psd.h" />
     <ClInclude Include="resapi.h" />
     <ClInclude Include="resarq.h" />
     <ClInclude Include="resbase.h" />
@@ -198,6 +203,7 @@
     <ClCompile Include="binrstyp.cpp" />
     <ClCompile Include="bmp.cpp" />
     <ClCompile Include="cel.cpp" />
+    <ClCompile Include="dds.cpp" />
     <ClCompile Include="defresm.cpp" />
     <ClCompile Include="defstfct.cpp" />
     <ClCompile Include="filestrm.cpp" />
@@ -207,7 +213,10 @@
     <ClCompile Include="mdlrstyp.cpp" />
     <ClCompile Include="palrstyp.cpp" />
     <ClCompile Include="pathutil.cpp" />
+    <ClCompile Include="portableinflate.cpp" />
     <ClCompile Include="pcx.cpp" />
+    <ClCompile Include="png.cpp" />
+    <ClCompile Include="psd.cpp" />
     <ClCompile Include="resarq.cpp" />
     <ClCompile Include="resimage.cpp" />
     <ClCompile Include="resman.cpp" />

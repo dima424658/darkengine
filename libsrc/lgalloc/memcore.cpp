@@ -6,13 +6,9 @@
 //
 // @TBD (toml 07-14-97): should cram all functions in this library into the same codeseg
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <allocapi.h>
+#include <platform_services.h>
 
-#ifdef _WIN32
 #include <memcore.h>
 #include <multpool.h>
 #include <heap.h>
@@ -39,43 +35,35 @@ EXTERN BOOL LGAllocOverride();
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#if OS_MUTEX
-CRITICAL_SECTION g_AllocMutex;
-#endif
+sPlatformMutex g_AllocMutex;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 extern void AllocMutexInit(void)
 {
-#if OS_MUTEX
-   InitializeCriticalSection(&g_AllocMutex);
-#endif
+   PlatformMutexInit(&g_AllocMutex);
 }
 
 ///////////////////////////////////////
 
 extern void AllocMutexTerm(void)
 {
-#if OS_MUTEX
-   DeleteCriticalSection(&g_AllocMutex);
-#endif
+   PlatformMutexTerm(&g_AllocMutex);
 }
 
 ///////////////////////////////////////
 
-#if OS_MUTEX
 extern void AllocThreadLock(void)
 {
-    EnterCriticalSection(&g_AllocMutex);
+    PlatformMutexLock(&g_AllocMutex);
 }
 
 ///////////////////////////////////////
 
 extern void AllocThreadUnlock(void)
 {
-    LeaveCriticalSection(&g_AllocMutex);
+    PlatformMutexUnlock(&g_AllocMutex);
 }
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -87,27 +75,6 @@ sAllocLimits *      g_pAllocLimits;
 cHeapDebug *        g_pHeapDebug;
 BOOL                g_bAllocDumpLeaks;
 cMemAllocTimer *    g_pMemAllocTimer;
-#endif
-
-static const char * pszExternalAllocatorDLL = "lgallocx.dll";
-
-///////////////////////////////////////
-
-#if 0
-#ifndef SHIP
-static const BOOL g_fUseMultiPool =
-#ifdef _WIN32
-    GetPrivateProfileInt(
-        "Allocator",
-        "MultiPool",
-        TRUE,
-        "lg.ini");
-#else
-    TRUE;
-#endif
-#endif
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // CLASS: cMemCore
@@ -141,92 +108,14 @@ public:
         CoreMutexInit();
         IAllocator * pNext = NULL;
 
-        if (GetPrivateProfileInt("Allocator", "UseExternal", FALSE, "lg.ini"))
-        {
-            // First, load the primal allocator from lgalloc.dll...
-
-            // @Note (toml 07-10-97): Right now, this is the MS allocator.
-            // @TBD (toml 07-10-97): should performance test Watcom vs MS and pick best
-
-            IMalloc * (__stdcall *pfnGetMalloc)() = NULL;
-
-            m_hLgAllocDll = LoadLibrary(pszExternalAllocatorDLL);
-            if (m_hLgAllocDll)
-                pfnGetMalloc = (IMalloc * (__stdcall *)()) GetProcAddress(m_hLgAllocDll, "_GetMalloc@0");
-            else
-            {
-                MessageBox(NULL, "Failed to load \"lgalloc.dll\"", NULL, MB_OK);
-                ExitProcess(1);
-            }
-
-            if (!pfnGetMalloc)
-            {
-                MessageBox(NULL, "Failed to locate \"GetMalloc()\" in \"lgalloc.dll\"", NULL, MB_OK);
-                FreeLibrary(m_hLgAllocDll);
-                ExitProcess(1);
-            }
-#ifndef SHIP
-            IMalloc * pStdMalloc;
-            pStdMalloc = (*pfnGetMalloc)();
-            pStdMalloc->QueryInterface(IID_IDebugMalloc, (void **) &pNext);
-            pStdMalloc->Release();
-#else
-            pNext = (*pfnGetMalloc)();
-#endif
-            if (!pNext)
-            {
-                MessageBox(NULL, "Failed to load allocator from in \"lgalloc.dll\"", NULL, MB_OK);
-                FreeLibrary(m_hLgAllocDll);
-                ExitProcess(1);
-            }
-        }
-        else
-        {
-            m_StdAlloc.Init();
-            pNext = &m_StdAlloc;
-        }
-
-        ///////////////////////////////
-
-        if (GetPrivateProfileInt("Allocator", "Heap", TRUE, "lg.ini"))
-        {
-            m_Heap.SetNext(pNext);
-            pNext = &m_Heap;
-        }
-
-        if (GetPrivateProfileInt("Allocator", "MultiPool", TRUE, "lg.ini"))
-        {
-            m_MultiPool.SetNext(pNext);
-            m_MultiPool.Init();
-            pNext = &m_MultiPool;
-        }
+        // The legacy MSVC build replaced the CRT allocation entry points with
+        // allocovr.h. Modern UCRT does not expose those hooks, so keep the
+        // allocator handed to OSM modules on the same CRT heap used by the
+        // rest of the executable.
+        m_StdAlloc.Init();
+        pNext = &m_StdAlloc;
 
 #ifndef SHIP
-        if (GetPrivateProfileInt("Allocator", "Timings", FALSE, "lg.ini"))
-        {
-            m_MemAllocTimer.SetNext(pNext);
-            pNext = g_pMemAllocTimer = &m_MemAllocTimer;
-        }
-
-        BOOL fDebugAlloc;
-        fDebugAlloc = GetPrivateProfileInt("Allocator", "Debug", 2, "lg.ini");
-
-        if (fDebugAlloc == 2)
-        {
-        #ifdef DEBUG
-            fDebugAlloc = TRUE;
-        #else
-            fDebugAlloc = FALSE;
-        #endif
-        }
-
-        if (fDebugAlloc)
-        {
-            g_bAllocDumpLeaks = GetPrivateProfileInt("Allocator", "DumpUnfreed", FALSE, "lg.ini");
-            m_HeapDebug.SetNext(pNext);
-            pNext = g_pHeapDebug = &m_HeapDebug;
-        }
-
         g_pAllocLimits = &m_PrimaryMalloc;
 
 #endif
@@ -257,8 +146,6 @@ public:
     cHeapDebug     m_HeapDebug;
 #endif
     cPrimaryMalloc m_PrimaryMalloc;
-
-    HINSTANCE      m_hLgAllocDll;
 
 };
 #pragma pack()
@@ -307,13 +194,11 @@ void LGAPI HeapTerm()
 
 BOOL LGAPI AllocSetPageFunc(tAllocatorPageFunc pfnPage)
 {
-#ifdef _WIN32
     if (LGAllocOverride())
     {
         g_MemCore.m_PrimaryMalloc.SetPageFunc(pfnPage);
         return TRUE;
     }
-#endif
     return FALSE;
 }
 
@@ -321,51 +206,39 @@ BOOL LGAPI AllocSetPageFunc(tAllocatorPageFunc pfnPage)
 
 void LGAPI AllocGetLimits(sAllocLimits * pLimits)
 {
-#ifdef _WIN32
     memcpy(pLimits, (void *)((sAllocLimits *)&(g_MemCore.m_PrimaryMalloc)), sizeof(sAllocLimits));
-#endif
 }
 
 ///////////////////////////////////////
 
-ulong LGAPI AllocSetAllocCap(ulong cap)
+size_t LGAPI AllocSetAllocCap(size_t cap)
 {
-#ifdef _WIN32
-   ulong old = g_MemCore.m_PrimaryMalloc.allocCap;
+   size_t old = g_MemCore.m_PrimaryMalloc.allocCap;
    g_MemCore.m_PrimaryMalloc.initAllocCap = g_MemCore.m_PrimaryMalloc.allocCap = cap;
    return old;
-#else
-   return cap;
-#endif
 }
 
 ///////////////////////////////////////
 
 ulong LGAPI AllocPickAllocCap()
 {
-#ifdef _WIN32
-   MEMORYSTATUS memoryStatus;
-   memoryStatus.dwLength = sizeof(memoryStatus);
-   GlobalMemoryStatus(&memoryStatus);
+   sPlatformMemoryStatus memoryStatus;
+   if (!PlatformGetMemoryStatus(&memoryStatus))
+      return 0;
 
    const ulong kTargetCapNum   = 1;
    const ulong kTargetCapDenom = 2;
    const ulong kMinCap         = 0x0800000;      //  8 mb
    const ulong kMaxCap         = 0x2000000;      // 32 mb
 
-         ulong targetCap       = (memoryStatus.dwTotalPhys * kTargetCapNum) / kTargetCapDenom;
-         ulong iniCap;
+   SIZE_T targetCap =
+      (memoryStatus.total_physical_bytes * kTargetCapNum) / kTargetCapDenom;
 
-   targetCap = max(kMinCap, min(kMaxCap, targetCap));
-   iniCap = GetPrivateProfileInt("Allocator", "MemoryCap", 0, "lg.ini");
-
-   if (iniCap)
-      targetCap = iniCap;
-
-   return targetCap;
-#else
-   return 0;
-#endif
+   if (targetCap < kMinCap)
+      targetCap = kMinCap;
+   if (targetCap > kMaxCap)
+      targetCap = kMaxCap;
+   return (ulong)targetCap;
 }
 
 

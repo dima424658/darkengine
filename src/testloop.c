@@ -42,7 +42,6 @@ void draw_random_stuff(void)
 
 
 
-#pragma off(unreferenced)
 eLoopMessageResult LGAPI TestLoopFunc(void* context, eLoopMessage msg, tLoopMessageData hdata)
 {
    static bool spew_num = FALSE;
@@ -71,12 +70,10 @@ eLoopMessageResult LGAPI TestLoopFunc(void* context, eLoopMessage msg, tLoopMess
    return result;
 }
 
-#pragma off(unreferenced)
 ILoopClient* LGAPI CreateTestClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    return CreateSimpleLoopClient(TestLoopFunc,NULL,&TestLoopClientDesc);
 }
-#pragma on(unreferenced)
 
 sLoopClientDesc TestLoopClientDesc =
 {

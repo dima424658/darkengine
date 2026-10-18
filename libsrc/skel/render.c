@@ -297,7 +297,7 @@ void sk_set_poly_frame(mxs_vector *j1,mxs_vector *j2,mxs_vector *or,mds_model *m
       *scalefac=1.0;
    } else
    {
-      *scalefac=sqrt(mx_dist2_vec(j1,j2)/mx_dist2_vec(a1,a2));
+      *scalefac = sqrtf(mx_dist2_vec(j1, j2) / mx_dist2_vec(a1, a2));
       mx_mat_mul_vec(&v1,&tr.mat,a2);
       mx_scaleeq_vec(&v1,*scalefac);
       mx_subeq_vec(&v1,j2);
@@ -533,19 +533,19 @@ void sk_render_skel(sks_skel *sk,ske_sorttype st)
          p2 = &tmp[cseg->p2];
 
          // Do joint callback if possible
-         if (skd_joint_call_tab[seg]) {
+         if (skd_joint_call_tab[seg].func) {
             if ((p1->p.z > p2->p.z) ^ (skd_joint_call_joint[seg]==0)) {
                if (p1->p.z > p2->p.z) {
-                  skd_joint_call_tab[seg](p1,&sk->pn[cseg->p1]);
+                  skd_joint_call_tab[seg].func(p1,&sk->pn[cseg->p1]);
                } else {
-                  skd_joint_call_tab[seg](p2,&sk->pn[cseg->p2]);
+                  skd_joint_call_tab[seg].func(p2,&sk->pn[cseg->p2]);
                }
-               skd_joint_call_tab[seg] = NULL;
+               skd_joint_call_tab[seg].func = NULL;
             }
          }
 
          // Do seg callback, duh
-         if (skd_seg_call_tab[seg]) {
+         if (skd_seg_call_tab[seg].func) {
             mxs_vector s1;
             mxs_vector bone;
             mxs_vector off; // offset from center of line
@@ -579,25 +579,25 @@ void sk_render_skel(sks_skel *sk,ske_sorttype st)
             r3_end_block();
 
             if ( mx_dot_vec(&off,&voff)  > 0) {
-               skd_seg_call_tab[seg](&seg_point,&seg_vec);
-               skd_seg_call_tab[seg] = NULL;
+               skd_seg_call_tab[seg].func(&seg_point,&seg_vec);
+               skd_seg_call_tab[seg].func = NULL;
             }
          }
 
          sk_render_bmap_piece(cseg,j1,j2,or,p1,p2);
 
          // Do joint callback if possible
-         if (skd_joint_call_tab[seg]) {
+         if (skd_joint_call_tab[seg].func) {
             if (p1->p.z > p2->p.z) {
-               skd_joint_call_tab[seg](p2,j2);
+               skd_joint_call_tab[seg].func(p2,j2);
             } else {
-               skd_joint_call_tab[seg](p1,j1);
+               skd_joint_call_tab[seg].func(p1,j1);
             }
-            skd_joint_call_tab[seg] = NULL;
+            skd_joint_call_tab[seg].func = NULL;
          }
-         if (skd_seg_call_tab[seg]) {
-            skd_seg_call_tab[seg](&seg_point,&seg_vec);
-            skd_seg_call_tab[seg] = NULL;
+         if (skd_seg_call_tab[seg].func) {
+            skd_seg_call_tab[seg].func(&seg_point,&seg_vec);
+            skd_seg_call_tab[seg].func = NULL;
          }
       }
 
@@ -677,17 +677,17 @@ void sk_vhot_skel(sks_skel *sk)
       cseg = &(sk->sg[seg]);
 
       // Do joint callback if possible
-      if (skd_joint_call_tab[seg]) {
+      if (skd_joint_call_tab[seg].vhot) {
          if (skd_joint_call_joint[seg]==0) {
-            memcpy(&skd_vhot_vecs[((int)(skd_joint_call_tab[seg]))-1]
+            memcpy(&skd_vhot_vecs[skd_joint_call_tab[seg].vhot - 1]
                ,&sk->pn[cseg->p1]
                ,sizeof(mxs_vector));
          } else {
-            memcpy(&skd_vhot_vecs[((int)(skd_joint_call_tab[seg]))-1]
+            memcpy(&skd_vhot_vecs[skd_joint_call_tab[seg].vhot - 1]
                ,&sk->pn[cseg->p2]
                ,sizeof(mxs_vector));
          }
-         skd_joint_call_tab[seg] = NULL;
+         skd_joint_call_tab[seg].vhot = 0;
       }
 
 #ifdef USE_POLYS
@@ -697,7 +697,7 @@ void sk_vhot_skel(sks_skel *sk)
 #endif
 
       // Do seg vhot
-      if (skd_seg_call_tab[seg]!=NULL) {
+      if (skd_seg_call_tab[seg].vhot != 0) {
          mxs_vector s1;
          mxs_vector *or = &(sk->or[cseg->or]);
          mxs_vector off; // offset from center of line
@@ -720,9 +720,9 @@ void sk_vhot_skel(sks_skel *sk)
          mx_add_vec(&line,&line,&(sk->pn[cseg->p1]));
 
          // Put vector into table
-         mx_add_vec(&skd_vhot_vecs[((int)(skd_seg_call_tab[seg]))-1],&line,&off);
+         mx_add_vec(&skd_vhot_vecs[skd_seg_call_tab[seg].vhot - 1],&line,&off);
 
-         skd_seg_call_tab[seg] = NULL;
+         skd_seg_call_tab[seg].vhot = 0;
       }
    }
 }

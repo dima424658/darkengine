@@ -161,7 +161,7 @@ STDMETHODIMP_(eAIResult) cAILaunchAction::Enact(ulong deltaTime)
    {
       // we actually need to back up a tiny bit because the hit location
       // is sometimes actually considered "out of world" due to epsilons
-      mx_interpolate_vec(&start_loc, &start.vec, &hit.vec, 0.95);
+      mx_interpolate_vec(&start_loc, &start.vec, &hit.vec, 0.95f);
    }
    else
       start_loc = end.vec;
@@ -227,7 +227,7 @@ STDMETHODIMP_(eAIResult) cAILaunchAction::Enact(ulong deltaTime)
       mxs_real   time_to_impact;
 
       PhysGetVelocity(m_targetObj, &target_velocity);
-      target_velocity.z *= 0.1;
+      target_velocity.z *= 0.1f;
 
       time_to_impact = mx_mag_vec(&delta) / pInitVel->x;
       mx_scale_vec(&target_lead, &target_velocity, time_to_impact);
@@ -264,9 +264,9 @@ STDMETHODIMP_(eAIResult) cAILaunchAction::Enact(ulong deltaTime)
       // Factor in accuracy
       if (accuracy > 0)
       {
-         add_dir.x = 0.5 * ((float)(AIRandom(0, accuracy * 25) - (accuracy * 12.5))) / 100.0;
-         add_dir.y = 0.5 * ((float)(AIRandom(0, accuracy * 25) - (accuracy * 12.5))) / 100.0;
-         add_dir.z = 0.25 * ((float)(AIRandom(0, accuracy * 25) - (accuracy * 12.5))) / 100.0;
+         add_dir.x = 0.5f * ((float)(AIRandom(0, accuracy * 25) - (accuracy * 12.5f))) / 100.0f;
+         add_dir.y = 0.5f * ((float)(AIRandom(0, accuracy * 25) - (accuracy * 12.5f))) / 100.0f;
+         add_dir.z = 0.25f * ((float)(AIRandom(0, accuracy * 25) - (accuracy * 12.5f))) / 100.0f;
 
          mx_scaleeq_vec(&add_dir, mx_mag_vec(&dir));
          mx_addeq_vec(&dir, &add_dir);

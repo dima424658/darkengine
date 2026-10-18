@@ -21,7 +21,7 @@
 #include <view.h>
 #include <block.h>
 #include <r3dctxt.h>
-#include <init.h>
+#include "init.h"
 #include <clipoff.h>
 
 #endif // __R3D_H

@@ -26,10 +26,10 @@ BOOL mp_get_heading(multiped * mp, float *heading)
    mx_normeq_vec(&v1);
    mx_unit_vec(&v2, 0);
 
-   result = acos(mx_dot_vec(&v1, &v2));
+   result = acosf(mx_dot_vec(&v1, &v2));
    if (v1.y < 0)
    {
-      result = MX_REAL_2PI - result;
+      result = (float)MX_REAL_2PI - result;
    }
 
    *heading=result;
@@ -91,7 +91,7 @@ void mp_compute_loco_params(float * bend, float * stretch, multiped * mp,
    mx_copy_vec(&heading, &mp->global_orient.vec[0]);
    heading.z = 0;
    mx_normeq_vec(&heading);
-   *bend = acos(mx_dot_vec(&heading, &v));
+   *bend = acosf(mx_dot_vec(&heading, &v));
 
    // Figure out direction of bend.
    mx_cross_vec(&v, &heading, &delta);
@@ -118,7 +118,7 @@ void mp_compute_loco_params(float * bend, float * stretch, multiped * mp,
    }
 
    m = mp_motion_list + motion_num;
-   mp_get_xlat_at_frame(&v, motion_num, m->info.num_frames - 1);
+   mp_get_xlat_at_frame(&v, motion_num, (int)m->info.num_frames - 1);
    mp_get_xlat_at_frame(&offset, motion_num, start_frame);
 
    mx_subeq_vec(&v, &offset);
@@ -182,7 +182,7 @@ void mp_compute_endpoint(mxs_vector * endpoint, multiped * mp,
    m = mp_motion_list + motion_num;
 
    mp_get_xlat_at_frame(&v1, motion_num, start_frame);
-   mp_get_xlat_at_frame(&v2, motion_num, m->info.num_frames - 1);
+   mp_get_xlat_at_frame(&v2, motion_num, (int)m->info.num_frames - 1);
    mx_subeq_vec(&v2, &v1);
 
    mp_get_heading(mp,&angle);
@@ -236,7 +236,7 @@ void mp_sample_loco_path(multiped * mp, mps_start_info * info, int num_points, m
    }
 
    m = mp_motion_list + motion_num;
-   num_frames = m->info.num_frames - 1 - start_frame;
+   num_frames = (int)m->info.num_frames - 1 - start_frame;
    dframe = (float) num_frames / (float) num_points;
 
    frame = start_frame + dframe;
@@ -321,7 +321,7 @@ void mp_compute_pass_through(float * bend, multiped * mp,
    mx_copy_vec(&heading, &mp->global_orient.vec[0]);
    heading.z = 0;
    mx_normeq_vec(&heading);
-   theta = acos(mx_dot_vec(&heading, &v));
+   theta = acosf(mx_dot_vec(&heading, &v));
 
    // Figure out direction of bend.
    mx_cross_vec(&v, &heading, &delta);
@@ -331,14 +331,14 @@ void mp_compute_pass_through(float * bend, multiped * mp,
    }
 
    d1 = mx_mag_vec(&delta);
-   mp_get_xlat_at_frame(&v, motion_num, m->info.num_frames - 1);
+   mp_get_xlat_at_frame(&v, motion_num, (int)m->info.num_frames - 1);
    mp_get_xlat_at_frame(&offset, motion_num, start_frame);
    mx_subeq_vec(&v, &offset);
    d2 = mx_mag_vec(&v);
 
 // Now compute final bend.
    t = d1 / d2;
-   *bend = theta + (theta / t) * (1.0 - t);
+   *bend = theta + (theta / t) * (1.0f - t);
 }
 
 
@@ -381,7 +381,7 @@ void mp_compute_approach(float * bend, multiped * mp, mps_start_info * info,
    m = mp_motion_list + motion_num;
 
    mp_get_xlat_at_frame(&offset, motion_num, start_frame);
-   mp_get_xlat_at_frame(&v, motion_num, m->info.num_frames - 1);
+   mp_get_xlat_at_frame(&v, motion_num, (int)m->info.num_frames - 1);
 
    mx_subeq_vec(&v, &offset);
    mx_mat_muleq_vec(&base_mat, &v);
@@ -398,7 +398,7 @@ void mp_compute_approach(float * bend, multiped * mp, mps_start_info * info,
 
    // Choose half of angle between current heading and desired endpoint as initial
    // bend.
-   b = acos(mx_dot_vec(&heading, &d)) / 2.0;
+   b = acosf(mx_dot_vec(&heading, &d)) / 2.0f;
    mx_cross_vec(&v2, &heading, &d);
    if (v2.z < 0)
    {
@@ -415,7 +415,7 @@ void mp_compute_approach(float * bend, multiped * mp, mps_start_info * info,
       mx_mk_rot_z_mat(&mat, mx_rad2ang(b));
       mx_mat_mul_vec(&pos, &mat, &v);
 
-      mx_mk_rot_z_mat(&mat, mx_rad2ang(2.0 * b));
+      mx_mk_rot_z_mat(&mat, mx_rad2ang(2.0f * b));
       mx_mat_mul_vec(&h, &mat, &heading);
 
       mx_add_vec(&curr_end, &pos, &mp->global_pos);
@@ -424,7 +424,7 @@ void mp_compute_approach(float * bend, multiped * mp, mps_start_info * info,
       diff.z = 0;
       mx_normeq_vec(&diff);
 
-      angle = acos(mx_dot_vec(&h, &diff));
+      angle = acosf(mx_dot_vec(&h, &diff));
       if (fabs(angle) < 0.001)
       {
          done = TRUE;
@@ -437,7 +437,7 @@ void mp_compute_approach(float * bend, multiped * mp, mps_start_info * info,
             angle = -angle;
          }
 			
-         b += angle / 2.0;
+         b += angle / 2.0f;
       }
 
       i++;
@@ -479,7 +479,7 @@ int mp_count_flags(multiped * mp, uint search_flags)
 
    if ((mn = mp_get_main_motion(mp)) == NULL)
       return 0;
-   return mp_motion_count_flags(mn->handle, mn->frame, search_flags);
+   return mp_motion_count_flags(mn->handle, (int)mn->frame, search_flags);
 }
 
 int mp_motion_next_flags(int motion_num, int start_frame, uint search_flags)
@@ -506,7 +506,7 @@ int mp_next_flags(multiped * mp, uint search_flags)
 
    if ((mn = mp_get_main_motion(mp)) == NULL)
       return -1;
-   return mp_motion_next_flags(mn->handle, mn->frame, search_flags);
+   return mp_motion_next_flags(mn->handle, (int)mn->frame, search_flags);
 }
 
 int mp_motion_last_flags(int motion_num, int start_frame, uint search_flags)
@@ -535,7 +535,7 @@ int mp_last_flags(multiped * mp, uint search_flags)
 
    if ((mn = mp_get_main_motion(mp)) == NULL)
       return -1;
-   return mp_motion_last_flags(mn->handle, mn->frame, search_flags);
+   return mp_motion_last_flags(mn->handle, (int)mn->frame, search_flags);
 }
 
 //

@@ -26,7 +26,7 @@ void ResSetFreeCallback(tResFreeCallback *cb)
 }
 
 
-void *DoResLock(Id id);
+static void *DoResLock(Id id);
 
 //  ---------------------------------------------------------
 //
@@ -69,7 +69,7 @@ void *ResLockSetFlags(Id id, ulong flags)
     });
 
     prd = RESDESC(id);
-    prd->flags = flags;
+    prd->flags = (ushort)flags;
 
     return DoResLock(id);
 }

@@ -10,9 +10,10 @@
 
 #ifndef __FL8LF_H
 #define __FL8LF_H
-extern void flat8_uline_norm();
-extern void flat8_uline_clut();
-extern void flat8_uline_solid();
-extern void flat8_uline_xor();
-extern void flat8_uline_blend();
+#include <plytyp.h>
+extern void flat8_uline_norm(grs_vertex *, grs_vertex *);
+extern void flat8_uline_clut(grs_vertex *, grs_vertex *);
+extern void flat8_uline_solid(grs_vertex *, grs_vertex *);
+extern void flat8_uline_xor(grs_vertex *, grs_vertex *);
+extern void flat8_uline_blend(grs_vertex *, grs_vertex *);
 #endif

@@ -308,7 +308,7 @@ static void AIForgetToggle(char *str)
 #ifdef EDITOR
 static void AICamToCell(int cell)
 {
-   if (cell < 1 || cell > g_AIPathDB.m_nCells)
+   if (cell < 1 || cell > (int)g_AIPathDB.m_nCells)
    {
       mprintf("Invalid cell\n");
       return;
@@ -358,7 +358,7 @@ static void AIPrintIffyCells(float testVal)
    cDynArray<tAIPathCellID> failures;
 
    if (testVal == 0)
-      testVal = 0.666;
+      testVal = 0.666f;
 
    ValidateAllCellSpaces(testVal, TRUE, &failures);
    if (failures.Size())
@@ -473,18 +473,17 @@ static void AIValidateFleePoints()
 static void GenericTest()
 {
    mxs_vector fromLocation, toLocation;
-   float fDist;
    tAIPathCellID startCell;
    tAIPathCellID endCell;
    tAIPathOkBits OkBits;
 
-   fromLocation.x = -58.566;
-   fromLocation.y = -132.013;
-   fromLocation.z = -3.516;
+   fromLocation.x = -58.566f;
+   fromLocation.y = -132.013f;
+   fromLocation.z = -3.516f;
    startCell = 0;
 
-   toLocation.x = -94.1700;
-   toLocation.y = -142.670;
+   toLocation.x = -94.1700f;
+   toLocation.y = -142.670f;
    toLocation.z = 3.0000;
    endCell = 0;
 

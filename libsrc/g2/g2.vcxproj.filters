@@ -152,9 +152,6 @@
     <ClCompile Include="g2rot.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="g2tm.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="gen8il.c">
       <Filter>Source Files</Filter>
     </ClCompile>

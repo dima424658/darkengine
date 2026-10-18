@@ -100,12 +100,12 @@ void r3_wire_sphere(float rad)
    int i,j;
 
    for (z=-rad;z<rad;z+=rad/16) {
-      r = sqrt(rad*rad - z*z);
+      r = sqrtf(rad*rad - z*z);
 
       for (i=0;i<32;++i) {
-         ang = i*MX_REAL_2PI/32.0;
-         v[i].x = cos(ang)*r;
-         v[i].y = sin(ang)*r;
+         ang = i*(float)MX_REAL_2PI/32.0f;
+         v[i].x = cosf(ang)*r;
+         v[i].y = sinf(ang)*r;
          v[i].z = z;
       }
 
@@ -130,9 +130,9 @@ void r3_wire_cylinder(float hrad,float h)
    int i,j;
 
    for (i=0;i<16;++i) {
-      ang = i*MX_REAL_2PI/16.0;
-      v[i+16].x = v[i].x = cos(ang)*hrad;
-      v[i+16].y = v[i].y = sin(ang)*hrad;
+      ang = i*(float)MX_REAL_2PI/16.0f;
+      v[i+16].x = v[i].x = cosf(ang)*hrad;
+      v[i+16].y = v[i].y = sinf(ang)*hrad;
       v[i].z = 0;
       v[i+16].z = h;
    }

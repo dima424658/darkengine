@@ -52,6 +52,14 @@
 #ifndef AIL_H
 #define AIL_H
 
+#ifndef cdecl
+#ifdef _MSC_VER
+#define cdecl _cdecl
+#else
+#define cdecl
+#endif
+#endif
+
 //
 // MetaWare support
 //
@@ -1166,12 +1174,12 @@ extern void     cdecl AIL_send_channel_voice_message
 extern void     cdecl AIL_send_sysex_message        (HMDIDRIVER  mdi,
                                                      void       *buffer);
 
-extern HWAVE    cdecl AIL_create_wave_synthesizer   (HDIGDRIVER  dig,
+extern WAVE_SYNTH *cdecl AIL_create_wave_synthesizer(HDIGDRIVER  dig,
                                                      HMDIDRIVER  mdi,
                                                      void       *wave_lib,
                                                      LONG        polyphony);
 
-extern void     cdecl AIL_destroy_wave_synthesizer  (HWAVE W);
+extern void     cdecl AIL_destroy_wave_synthesizer  (WAVE_SYNTH *W);
 
 #ifdef __cplusplus
 }

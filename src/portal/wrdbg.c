@@ -31,7 +31,7 @@ void PortalDumpCell (FILE *out, int cell)
       lg_sprintf (argh, "  vertex %3d : %q %q %q\n", i, fix_from_float (v->x),
                fix_from_float (v->y), fix_from_float (v->z));
 
-      fprintf (out, argh);
+      fprintf (out, "%s", argh);
    }
 
    fprintf (out, " poly %d-%d are rendered, %d-%d are portals\n", 0,
@@ -62,7 +62,7 @@ void PortalDumpCell (FILE *out, int cell)
       lg_sprintf (argh, "  plane %3d:  [%q %q %q %q]\n", i, fix_from_float (plane->normal.x),
                   fix_from_float (plane->normal.y), fix_from_float (plane->normal.z),
                   fix_from_float (plane->plane_constant));
-      fprintf (out, argh);
+      fprintf (out, "%s", argh);
    }
 }
 

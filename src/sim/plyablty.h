@@ -68,7 +68,7 @@ public:
    virtual BOOL GetCurControllerID(int *pID);
    // to pass along to motor controller
    virtual sMPlayerSkillData *GetCurSkillData();
-   virtual int GetPowerUpTime() { return m_TimeToMax; }
+   virtual float GetPowerUpTime() { return m_TimeToMax; }
 
    // for schema callback
    virtual int GetSoundSchemaHandle() { return m_sndSchHandle; }

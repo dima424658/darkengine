@@ -19,8 +19,6 @@
 
 #include <objtype.h>
 
-enum eAIConvActor;
-
 #pragma once
 #pragma pack(4)
 

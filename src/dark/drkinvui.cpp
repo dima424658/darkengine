@@ -10,6 +10,7 @@
 #include <appagg.h>
 
 #include <simtime.h>
+#include <simtbase.h>
 #include <drkinvui.h>
 #include <drkplinv.h>
 #include <frobctrl.h>
@@ -18,7 +19,9 @@
 #include <command.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <ctype.h>
+#include <math.h>
 
 #include <contain.h>
 #include <prjctile.h>
@@ -43,6 +46,7 @@
 #include <drkinvpr.h>
 #include <gamestr.h>
 #include <resapi.h>
+#include <fonrstyp.h>
 #include <respaths.h>
 #include <scrnman.h>
 #include <drkvo.h>
@@ -108,6 +112,30 @@ static IContainSys* pContainSys = NULL;
 
 // last object player picked up
 static ObjID gLastObjPickedUp = OBJ_NULL;
+
+// The native radial lives in the engine inventory layer so XInput, SDL and
+// Android all see exactly the same inventory contents and selection rules.
+#define INV_RADIAL_MAX_ENTRIES 32
+#define INV_RADIAL_STICK_COUNT 2
+#define INV_RADIAL_DEADZONE 0.45f
+
+struct sInvRadialRing
+{
+   ObjID entries[INV_RADIAL_MAX_ENTRIES];
+   int count;
+   int selected;
+   int current;
+   float x;
+   float y;
+};
+
+static BOOL gInvRadialActive = FALSE;
+static float gInvRadialSavedTimeScale = 1.0f;
+static float gInvRadialTimeScale = 0.15f;
+static sInvRadialRing gInvRadial[INV_RADIAL_STICK_COUNT];
+static IRes* gInvRadialFontRes = NULL;
+static char gInvRadialFontName[64];
+static ObjID gGamepadLastWeapon = OBJ_NULL;
 
 //------------------------------------------------------------
 // OBJECT "EXPIRATION"
@@ -422,6 +450,7 @@ void cycle_weapon_command(int dir)
    // if there's no item frob going on, wield the weapon
    if (gItemStartTime == NO_START_TIME)
       pInventory->Wield(kCurrentWeapon);
+
 }
 
 void next_weapon_command( int count )
@@ -492,6 +521,7 @@ void cycle_item_command(int dir)
       FrobAbort(kFrobLocNone,&gItemStartFrob);
       gItemStartTime = NO_START_TIME;
    }
+
 }
 
 void next_item_command( int count )
@@ -524,6 +554,60 @@ void prev_item_command( int count )
    for ( i = 0; i < count; i++ ) {
       cycle_item_command( dir );
    }
+}
+
+// Touch HUD regions are persistent selectors, rather than keyboard-style
+// transient inventory displays.  A tap must always advance exactly one slot,
+// even when the current selection's display timer has expired.  CycleSelection
+// deliberately contributes the empty slot after the last carried object.
+static void gamepad_cycle_weapon_command(int dir)
+{
+   if (dir == 0)
+      dir = kCycleForward;
+   set_expiration(kCurrentWeapon);
+   ObjID weapon = pInventory->CycleSelection(kCurrentWeapon,
+      dir < 0 ? kCycleBackward : kCycleForward);
+
+   if (gWeaponStartTime != NO_START_TIME
+       && gWeaponStartFrob.src_obj != weapon)
+   {
+      FrobAbort(kFrobLocNone, &gWeaponStartFrob);
+      gWeaponStartTime = NO_START_TIME;
+   }
+
+   if (gItemStartTime == NO_START_TIME)
+      pInventory->Wield(kCurrentWeapon);
+}
+
+static void gamepad_cycle_item_command(int dir)
+{
+   if (dir == 0)
+      dir = kCycleForward;
+   set_expiration(kCurrentItem);
+
+   Camera *cam = PlayerCamera();
+   if (CameraIsRemote(cam))
+      CameraAttach(cam, PlayerObject());
+
+   ObjID item = pInventory->CycleSelection(kCurrentItem,
+      dir < 0 ? kCycleBackward : kCycleForward);
+   if (gItemStartTime != NO_START_TIME
+       && gItemStartFrob.src_loc == kFrobLocInv
+       && gItemStartFrob.src_obj != item)
+   {
+      FrobAbort(kFrobLocNone, &gItemStartFrob);
+      gItemStartTime = NO_START_TIME;
+   }
+}
+
+static void touch_cycle_weapon_command(void)
+{
+   gamepad_cycle_weapon_command(kCycleForward);
+}
+
+static void touch_cycle_item_command(void)
+{
+   gamepad_cycle_item_command(kCycleForward);
 }
 
 
@@ -777,13 +861,21 @@ static void drop_command(void)
       obj = pContainSys->RemoveFromStack(obj);
       pInventory->Remove(obj);
       // @TODO: get a real velocity constant
-      if (!throw_obj(PlayerObject(),obj,0.05))
+      if (!throw_obj(PlayerObject(),obj,0.05f))
          pInventory->Add(obj);
 
       if ( obj == gLastObjPickedUp ) {
          gLastObjPickedUp = OBJ_NULL;
       }
    }
+}
+
+static void gamepad_drop_item_command(void)
+{
+   // The selected object remains meaningful after its HUD display expires.
+   // A deliberate controller hold should therefore drop it immediately.
+   set_expiration(kCurrentItem);
+   drop_command();
 }
 
 //------------------------------------------------------------
@@ -816,6 +908,166 @@ static void clear_both_command(void)
    clear_item_command();
 }
 
+static void toggle_weapon_command(void)
+{
+   ObjID weapon = pInventory->Selection(kCurrentWeapon);
+   if (weapon != OBJ_NULL)
+   {
+      gGamepadLastWeapon = weapon;
+      abort_frob(kCurrentWeapon);
+      pInventory->ClearSelection(kCurrentWeapon);
+      InvUIRefresh();
+      return;
+   }
+
+   if (gGamepadLastWeapon != OBJ_NULL &&
+       pContainSys->IsHeld(PlayerObject(), gGamepadLastWeapon) != ECONTAIN_NULL &&
+       pInventory->GetType(gGamepadLastWeapon) == kInvTypeWeapon)
+   {
+      pInventory->Select(gGamepadLastWeapon);
+      set_expiration(kCurrentWeapon);
+   }
+   else
+   {
+      cycle_weapon_command(kCycleForward);
+      gGamepadLastWeapon = pInventory->Selection(kCurrentWeapon);
+   }
+
+   if (gItemStartTime == NO_START_TIME)
+      pInventory->Wield(kCurrentWeapon);
+   InvUIRefresh();
+}
+
+static int radial_find(const sInvRadialRing& ring, ObjID obj)
+{
+   for (int i = 0; i < ring.count; ++i)
+      if (ring.entries[i] == obj)
+         return i;
+   return 0;
+}
+
+static void radial_build(void)
+{
+   memset(gInvRadial, 0, sizeof(gInvRadial));
+   for (int stick = 0; stick < INV_RADIAL_STICK_COUNT; ++stick)
+   {
+      gInvRadial[stick].entries[0] = OBJ_NULL;
+      gInvRadial[stick].count = 1;
+   }
+
+   sContainIter *iter = pContainSys->IterStart(PlayerObject());
+   for (; !iter->finished; pContainSys->IterNext(iter))
+   {
+      const ObjID obj = iter->containee;
+      const int stick = pInventory->GetType(obj) == kInvTypeWeapon ? 0 : 1;
+      sInvRadialRing& ring = gInvRadial[stick];
+      if (ring.count < INV_RADIAL_MAX_ENTRIES)
+         ring.entries[ring.count++] = obj;
+   }
+   pContainSys->IterEnd(iter);
+
+   gInvRadial[0].current = radial_find(gInvRadial[0],
+      pInventory->Selection(kCurrentWeapon));
+   gInvRadial[1].current = radial_find(gInvRadial[1],
+      pInventory->Selection(kCurrentItem));
+   gInvRadial[0].selected = gInvRadial[0].current;
+   gInvRadial[1].selected = gInvRadial[1].current;
+}
+
+static void radial_apply(int stick)
+{
+   sInvRadialRing& ring = gInvRadial[stick];
+   if (ring.selected < 0 || ring.selected >= ring.count)
+      return;
+
+   const eWhichInvObj which = stick == 0 ? kCurrentWeapon : kCurrentItem;
+   const ObjID selected = ring.entries[ring.selected];
+   if (selected == pInventory->Selection(which))
+      return;
+
+   if (which == kCurrentItem)
+   {
+      Camera *cam = PlayerCamera();
+      if (CameraIsRemote(cam))
+         CameraAttach(cam, PlayerObject());
+      if (selected == OBJ_NULL && pInventory->WieldingJunk())
+         return;
+   }
+
+   abort_frob(which);
+   if (selected == OBJ_NULL)
+      pInventory->ClearSelection(which);
+   else
+   {
+      pInventory->Select(selected);
+      set_expiration(which);
+      if (which == kCurrentWeapon)
+         gGamepadLastWeapon = selected;
+   }
+
+   if (which == kCurrentWeapon && gItemStartTime == NO_START_TIME)
+      pInventory->Wield(kCurrentWeapon);
+}
+
+static void radial_close(BOOL apply)
+{
+   if (!gInvRadialActive)
+      return;
+
+   if (apply)
+   {
+      radial_apply(0);
+      radial_apply(1);
+      InvUIRefresh();
+   }
+   gInvRadialActive = FALSE;
+   SetSimTimeScale(gInvRadialSavedTimeScale);
+}
+
+BOOL InvUIRadialActive(void)
+{
+   return gInvRadialActive;
+}
+
+void InvUIRadialSetActive(BOOL active)
+{
+   if (active)
+   {
+      if (gInvRadialActive || !pInventory || !pContainSys)
+         return;
+      radial_build();
+      const sSimTimingParams *timing = GetSimTimingParams();
+      gInvRadialSavedTimeScale = timing ? timing->scaleFrameTime : 1.0f;
+      gInvRadialTimeScale = 0.15f;
+      config_get_float("gamepad_radial_time_scale", &gInvRadialTimeScale);
+      if (gInvRadialTimeScale < 0.0f) gInvRadialTimeScale = 0.0f;
+      if (gInvRadialTimeScale > 1.0f) gInvRadialTimeScale = 1.0f;
+      SetSimTimeScale(gInvRadialTimeScale);
+      gInvRadialActive = TRUE;
+   }
+   else
+      radial_close(TRUE);
+}
+
+void InvUIRadialSetStick(int stick, float x, float y)
+{
+   if (!gInvRadialActive || stick < 0 || stick >= INV_RADIAL_STICK_COUNT)
+      return;
+
+   sInvRadialRing& ring = gInvRadial[stick];
+   ring.x = x;
+   ring.y = y;
+   const float magnitude = (float)sqrt((double)(x * x + y * y));
+   if (magnitude < INV_RADIAL_DEADZONE || ring.count <= 1)
+      return;
+
+   const double twoPi = 6.28318530717958647692;
+   double angle = atan2((double)x, (double)y);
+   if (angle < 0.0)
+      angle += twoPi;
+   ring.selected = ((int)(angle * ring.count / twoPi + 0.5)) % ring.count;
+}
+
 // select the last item the user picked up
 static void
 select_newest_command( void )
@@ -835,13 +1087,24 @@ static Command commands[] =
 {
    { "use_item", FUNC_INT, use_item_command, "use item  0 = start, 1 = finish", HK_GAME_MODE },
    { "use_weapon", FUNC_INT, use_weapon_command, "weapon item  0 = start, 1 = finish",  HK_GAME_MODE },
+   // Thief 1/Gold's stock DARK.BND, QUAKE.BND, and saved control sets use
+   // these names directly.  Keep them as aliases for the newer directional
+   // commands so original bindings work without rewriting retail files.
+   { "cycle_item", FUNC_INT, cycle_item_command, "cycle item  1 = forward, -1 = backward", HK_GAME_MODE },
+   { "cycle_weapon", FUNC_INT, cycle_weapon_command, "cycle weapon  1 = forward, -1 = backward", HK_GAME_MODE },
    { "next_item", FUNC_INT, next_item_command, "next item  1 = forward, -1 = backward", HK_GAME_MODE },
    { "prev_item", FUNC_INT, prev_item_command, "previous item  -1 = forward, 1 = backward", HK_GAME_MODE },
    { "next_weapon", FUNC_INT, next_weapon_command, "next weapon  1 = forward, -1 = backward", HK_GAME_MODE },
    { "prev_weapon", FUNC_INT, prev_weapon_command, "previous weapon  -1 = forward, 1 = backward", HK_GAME_MODE },
+   { "touch_cycle_weapon", FUNC_VOID, touch_cycle_weapon_command, "advance touch weapon selection, including empty", HK_GAME_MODE },
+   { "touch_cycle_item", FUNC_VOID, touch_cycle_item_command, "advance touch item selection, including empty", HK_GAME_MODE },
+   { "gamepad_cycle_weapon", FUNC_INT, gamepad_cycle_weapon_command, "advance gamepad weapon selection, including empty", HK_GAME_MODE },
+   { "gamepad_cycle_item", FUNC_INT, gamepad_cycle_item_command, "advance gamepad item selection, including empty", HK_GAME_MODE },
    { "inv_select", FUNC_STRING, select_command, "Select an inventory object by name (or archetype name)", HK_GAME_MODE },
    { "loot_select", FUNC_VOID, select_loot_command, "Select loot in inventory", HK_GAME_MODE },
    { "drop_item", FUNC_VOID, drop_command, "Drop (actually, throw) your currently selected item", HK_GAME_MODE },
+   { "gamepad_drop_item", FUNC_VOID, gamepad_drop_item_command, "Drop the selected item regardless of HUD timeout", HK_GAME_MODE },
+   { "toggle_weapon", FUNC_VOID, toggle_weapon_command, "Equip or holster the last selected weapon", HK_GAME_MODE },
 
    { "clear_item", FUNC_VOID, clear_item_command, "Clear the player's 'current item' selection.", HK_GAME_MODE },
    { "clear_weapon", FUNC_VOID, clear_weapon_command, "Clear the player's 'current item' selection.", HK_GAME_MODE },
@@ -1164,10 +1427,10 @@ static sRendState gRendState[kNumItemSels];
 static void interp_rect(Rect* out, const Rect* r1, long w1, const Rect* r2, long w2)
 {
    long sum = w1+w2;
-   out->ul.x = (r1->ul.x*w1 + r2->ul.x*w2)/sum;
-   out->ul.y = (r1->ul.y*w1 + r2->ul.y*w2)/sum;
-   out->lr.x = (r1->lr.x*w1 + r2->lr.x*w2)/sum;
-   out->lr.y = (r1->lr.y*w1 + r2->lr.y*w2)/sum;
+   out->ul.x = (short)((r1->ul.x*w1 + r2->ul.x*w2)/sum);
+   out->ul.y = (short)((r1->ul.y*w1 + r2->ul.y*w2)/sum);
+   out->lr.x = (short)((r1->lr.x*w1 + r2->lr.x*w2)/sum);
+   out->lr.y = (short)((r1->lr.y*w1 + r2->lr.y*w2)/sum);
 }
 
 
@@ -1176,6 +1439,134 @@ static cStr get_object_name(ObjID obj)
 {
    AutoAppIPtr(GameStrings);
    return pGameStrings->FetchObjString(obj,GAME_NAME_TABLE);
+}
+
+static void radial_label(ObjID obj, const char *emptyLabel,
+                         char *buffer, int bufferSize)
+{
+   if (obj == OBJ_NULL)
+   {
+      strncpy(buffer, emptyLabel, bufferSize - 1);
+      buffer[bufferSize - 1] = '\0';
+      return;
+   }
+
+   cStr name = get_object_name(obj);
+   strncpy(buffer, (const char *)name, bufferSize - 1);
+   buffer[bufferSize - 1] = '\0';
+   if (!buffer[0])
+      sprintf(buffer, "Object %d", obj);
+}
+
+static void render_radial_ring(const sInvRadialRing& ring, int centerX,
+                               int centerY, int radius, const char *title,
+                               const char *emptyLabel)
+{
+   const double twoPi = 6.28318530717958647692;
+   const int fg = guiStyleGetColor(NULL, StyleColorFG);
+   const int dim = guiStyleGetColor(NULL, StyleColorDim);
+   const int bright = guiStyleGetColor(NULL, StyleColorBright);
+   const int bg = guiStyleGetColor(NULL, StyleColorBG2);
+
+   short textW, textH;
+   gr_set_fcolor(bright);
+   gr_string_size((char *)title, &textW, &textH);
+   gr_string((char *)title, centerX - textW / 2,
+             centerY - radius - textH - 8);
+
+   for (int i = 0; i < ring.count; ++i)
+   {
+      const double angle = twoPi * i / ring.count - twoPi / 4.0;
+      const int x = centerX + (int)(cos(angle) * radius);
+      const int y = centerY + (int)(sin(angle) * radius);
+      if (i == ring.selected)
+      {
+         gr_set_fcolor(bright);
+         gr_rect(x - 5, y - 5, x + 5, y + 5);
+         gr_int_line(centerX, centerY, x, y);
+      }
+      else
+      {
+         gr_set_fcolor(i == ring.current ? fg : dim);
+         gr_box(x - 3, y - 3, x + 3, y + 3);
+      }
+   }
+
+   char label[80];
+   radial_label(ring.entries[ring.selected], emptyLabel,
+                label, sizeof(label));
+   if (strlen(label) > 31)
+   {
+      label[28] = '.';
+      label[29] = '.';
+      label[30] = '.';
+      label[31] = '\0';
+   }
+   gr_string_size(label, &textW, &textH);
+   const int pad = 5;
+   gr_set_fcolor(bg);
+   gr_rect(centerX - textW / 2 - pad, centerY - textH / 2 - pad,
+           centerX + textW / 2 + pad, centerY + textH / 2 + pad);
+   gr_set_fcolor(bright);
+   gr_box(centerX - textW / 2 - pad, centerY - textH / 2 - pad,
+          centerX + textW / 2 + pad, centerY + textH / 2 + pad);
+   gr_string(label, centerX - textW / 2, centerY - textH / 2);
+}
+
+static void render_radial_menu(void)
+{
+   if (!gInvRadialActive)
+      return;
+
+   const int width = grd_canvas->bm.w;
+   const int height = grd_canvas->bm.h;
+   int radius = width / 7;
+   if (radius > height / 4)
+      radius = height / 4;
+   if (radius < 48)
+      radius = 48;
+
+   guiStyleSetupFont(NULL, StyleFontNormal);
+   grs_font* styleFont = gr_get_font();
+   grs_font* radialFont = NULL;
+   {
+      char font[64] = "";
+      uiGameGetReadableOverlayFont("gamepad_radial_font", font,
+                                   sizeof(font));
+      if (stricmp(font, gInvRadialFontName))
+      {
+         SafeRelease(gInvRadialFontRes);
+         gInvRadialFontName[0] = '\0';
+         if (font[0])
+         {
+            AutoAppIPtr(ResMan);
+            gInvRadialFontRes = pResMan->Bind(font, RESTYPE_FONT, NULL,
+                                              "intrface");
+            if (gInvRadialFontRes)
+            {
+               strncpy(gInvRadialFontName, font,
+                       sizeof(gInvRadialFontName));
+               gInvRadialFontName[sizeof(gInvRadialFontName) - 1] = '\0';
+            }
+         }
+      }
+   }
+   if (gInvRadialFontRes)
+   {
+      radialFont = (grs_font*)gInvRadialFontRes->Lock();
+      if (radialFont)
+         gr_set_font(radialFont);
+   }
+   render_radial_ring(gInvRadial[0], width * 3 / 10, height / 2,
+                      radius, "WEAPONS - LEFT STICK", "NO WEAPON");
+   render_radial_ring(gInvRadial[1], width * 7 / 10, height / 2,
+                      radius, "ITEMS - RIGHT STICK", "NO ITEM");
+   if (radialFont)
+   {
+      gr_set_font(styleFont);
+      gInvRadialFontRes->Unlock();
+   }
+   guiStyleCleanupFont(NULL, StyleFontNormal);
 }
 
 //
@@ -1312,10 +1703,10 @@ static void render_selection_display(ulong time)
          invRendGetView(state.render,&view);
          view.off_ang.ty=-0x4000;
          view.off_ang.tz=-0x4000;
-         view.cam_dist=0.65;
+         view.cam_dist=0.65f;
          invRendSetView(state.render,&view);
          float new_parms[6];
-         new_parms[0]=(-(cam->ang.tz+0x8000))*360.0/65536.0;
+         new_parms[0]=(-(cam->ang.tz+0x8000))*360.0f/65536.0f;
 	 new_parms[0]-=GetCompassOffset();
          ObjSetJointPos(state.obj,new_parms);
          gSelExpired[i] = NO_EXPIRATION;
@@ -1341,7 +1732,7 @@ static void render_selection_display(ulong time)
          view.off_ang.tz = (cam->ang.tz+0x4000);
 	 view.off_ang.tz += degrees_to_fixang(GetCompassOffset());
          view.off_ang.ty = -0x1200 - pitch_factor;
-         view.cam_dist = 0.74;
+         view.cam_dist = 0.74f;
          invRendSetView(state.render,&view);
          gSelExpired[i] = NO_EXPIRATION;
       }
@@ -1416,7 +1807,7 @@ static void setup_selection_display(ulong time, short bottom_margin)
    if (pInventory->WieldingJunk())
    {
       // slide weapon off the left edge
-      Rect weapr = { -2*w, bottom_margin - h, -w, bottom_margin };
+   Rect weapr = { (short)(-2*w), (short)(bottom_margin - h), (short)-w, (short)bottom_margin };
       gRendState[kCurrentWeapon].set_target(&weapr,time + gTransitTime);
 
       // Put the rect in the bottom middle of the screen
@@ -1434,13 +1825,13 @@ static void setup_selection_display(ulong time, short bottom_margin)
       // Weapon goes on the left.
       if (gRendState[kCurrentWeapon].obj != OBJ_NULL)
       {
-         Rect r = { 0, bottom_margin - h, w, bottom_margin };
+   Rect r = { 0, (short)(bottom_margin - h), (short)w, (short)bottom_margin };
          gRendState[kCurrentWeapon].set_target(&r,time + gTransitTime);
       }
       else
       {
          // teleport it off
-         Rect r = { -2*w, bottom_margin - h, -w, bottom_margin };
+   Rect r = { (short)(-2*w), (short)(bottom_margin - h), (short)-w, (short)bottom_margin };
          gRendState[kCurrentWeapon].set_target(&r,time - 1);
       }
 
@@ -1461,16 +1852,16 @@ static void setup_selection_display(ulong time, short bottom_margin)
 
          if (center)
          {
-            Rect r = { (grd_canvas->bm.w - w)/2, (grd_canvas->bm.h - h)/2 };
+            Rect r = { (short)((grd_canvas->bm.w - w)/2), (short)((grd_canvas->bm.h - h)/2) };
 
-            r.lr.x = r.ul.x + w;
-            r.lr.y = r.ul.y + h;
+            r.lr.x = (short)(r.ul.x + w);
+            r.lr.y = (short)(r.ul.y + h);
             gRendState[kCurrentItem].set_target(&r,time + gTransitTime);
          }
          else
          {
-            Rect r = { grd_canvas->bm.w - w, bottom_margin - h,
-                       grd_canvas->bm.w, bottom_margin };
+            Rect r = { (short)(grd_canvas->bm.w - w), (short)(bottom_margin - h),
+                       (short)grd_canvas->bm.w, (short)bottom_margin };
             gRendState[kCurrentItem].set_target(&r,time + gTransitTime);
 
             if (!tool_frob && frobWorldSelectObj)
@@ -1480,8 +1871,8 @@ static void setup_selection_display(ulong time, short bottom_margin)
 
       if (slide_off)
       {
-         Rect r = { grd_canvas->bm.w + w, bottom_margin - h,
-                    grd_canvas->bm.w + 2*w, bottom_margin };
+         Rect r = { (short)(grd_canvas->bm.w + w), (short)(bottom_margin - h),
+                    (short)(grd_canvas->bm.w + 2*w), (short)bottom_margin };
          gRendState[kCurrentItem].set_target(&r,time - 1);
       }
    }
@@ -1540,8 +1931,8 @@ public:
 
       sInvRendView view;
       invRendGetView(rend,&view);
-      view.off_ang.tz += ang*FIXANG_PI*0.005555555555556; // aka "/180";
-      view.cam_dist *= 1.0*zoom*0.010000;  // aka "/100"
+      view.off_ang.tz += (mxs_ang)(ang*FIXANG_PI*0.005555555555556f); // aka "/180";
+      view.cam_dist *= 1.0f*zoom*0.010000f;  // aka "/100"
 
       invRendSetView(rend,&view);
 
@@ -1635,7 +2026,7 @@ protected:
          UseMe.ul.x = mScreenRect.ul.x+rw*i/n;
          UseMe.lr.x = UseMe.ul.x+w;
 
-         view.lighting = 0.50 + 0.50*(i+1)/val;
+         view.lighting = 0.50f + 0.50f*(i+1)/val;
          invRendSetView(rends[i],&view);
          invRendSetRect(rends[i],&UseMe);
          invRendUpdateState(rends[i], 0, OBJ_NULL, NULL, NULL);
@@ -1766,7 +2157,7 @@ static void render_stat_bars(ulong time, int top_margin, int bot_margin)
    int w = grd_canvas->bm.w;
    int h = grd_canvas->bm.h;
 
-   Rect r= { hp_x[0]*w/kExtentX, top_margin, hp_x[1]*w/kExtentX, bot_margin };
+   Rect r= { (short)(hp_x[0]*w/kExtentX), (short)top_margin, (short)(hp_x[1]*w/kExtentX), (short)bot_margin };
 
    hpbar.SetScreenRect(r);
    hpbar.Update(time);
@@ -1826,8 +2217,8 @@ static sPropertyDesc tool_reach_desc =
 
 BOOL enable_inv = TRUE;
 
-static float gStatusH = 0.06; // %of screen
-static float gStatusMargin = 1.0/480; // %of screen
+static float gStatusH = 0.06f; // %of screen
+static float gStatusMargin = 1.0f/480; // %of screen
 
 
 
@@ -1856,6 +2247,9 @@ void InvUIInit(void)
 
 void InvUITerm(void)
 {
+   radial_close(FALSE);
+   SafeRelease(gInvRadialFontRes);
+   gInvRadialFontName[0] = '\0';
    SafeRelease(pContainSys);
    SafeRelease(pInventory);
    SafeRelease(gNoDropProp);
@@ -1869,6 +2263,7 @@ void InvUITerm(void)
 
 void InvUIClearState()
 {
+   radial_close(FALSE);
    InvUIAbortAllFrobs();
 
    pInventory->ClearSelection(kCurrentWeapon);
@@ -1877,6 +2272,7 @@ void InvUIClearState()
 
 void InvUIEnterMode(BOOL resuming)
 {
+   radial_close(FALSE);
    gItemStartTime = NO_START_TIME;
    gWeaponStartTime = NO_START_TIME;
 
@@ -1924,6 +2320,19 @@ void InvUIEnterMode(BOOL resuming)
    config_get_float("inv_status_margin",&gStatusMargin);
 
    config_get_int("inv_enabled",&enable_inv);
+
+#ifdef THIEF2_GAME
+   // A raw mission file has player contents but no saved PlayerInv selection
+   // block. The normal mission/loadout path establishes these selections;
+   // quickstart deliberately bypasses it, so do the equivalent once here.
+   if (!resuming && config_is_defined("quickstart"))
+   {
+      if (pInventory->Selection(kCurrentWeapon) == OBJ_NULL)
+         cycle_weapon_command(kCycleForward);
+      if (pInventory->Selection(kCurrentItem) == OBJ_NULL)
+         cycle_item_command(kCycleForward);
+   }
+#endif
 }
 
 void InvUIRefresh(void)
@@ -1977,7 +2386,7 @@ void InvUIRender(ulong msec)
       render_stat_bars(msec,top,bot);
 
       // compute rect for vis meter
-      Rect vis_r = { 0, top, 0, bot};
+   Rect vis_r = { 0, (short)top, 0, (short)bot};
       vis_r.ul.x = hp_x[1]*grd_canvas->bm.w/kExtentX;
       vis_r.lr.x = air_x[0]*grd_canvas->bm.w/kExtentX;
       VisMeterUpdate(msec,&vis_r);
@@ -1999,6 +2408,7 @@ void InvUIRender(ulong msec)
       }
 
       render_selection_display(msec);
+      render_radial_menu();
       ScrnUnlockDrawCanvas();
    }
 

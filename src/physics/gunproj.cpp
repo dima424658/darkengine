@@ -91,7 +91,7 @@ sLaunchParams g_defaultLaunchParams =
 //
 // @TBD: does this work right if the projectile already exists?
 //
-ObjID GunFireProjectile(ObjID owner, ObjID archetype, int flags,
+static ObjID GunFireProjectile(ObjID owner, ObjID archetype, int flags,
                           float intensityMult, mxs_vector *pPos,
                           mxs_angvec *pAng, mxs_vector *pVel);
 
@@ -232,9 +232,9 @@ ObjID CannisterSpawn(ObjID projID, sCannister *pCannister)
    mx_scaleeq_vec(&vel, pCannister->m_speed);
 
    // angular velocity between -pi/2 and pi/2 (-90 and 90 degrees)
-   angvel.x = ((Rand() % 314) - 157) / 100.0;
-   angvel.y = ((Rand() % 314) - 157) / 100.0;
-   angvel.z = ((Rand() % 314) - 157) / 100.0;
+   angvel.x = ((Rand() % 314) - 157) / 100.0f;
+   angvel.y = ((Rand() % 314) - 157) / 100.0f;
+   angvel.z = ((Rand() % 314) - 157) / 100.0f;
 
    archID = pTraitMan->GetArchetype(projID);
    SafeRelease(pTraitMan);
@@ -448,8 +448,7 @@ ObjID GunLaunchProjectile(ObjID owner, ObjID archetype, sLaunchParams *pParams)
          else
             pValidLoc = &(ownerPos->loc);
       }
-      testLoc.vec = pos;
-      UpdateChangedLocation(&testLoc);
+      MakeHintedLocationFromVector(&testLoc, &pos, pValidLoc);
       good = PortalRaycast(pValidLoc, &testLoc, &hitLoc, 0);
       if (good)
       {

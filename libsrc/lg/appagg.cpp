@@ -5,9 +5,6 @@
 // $Revision: 1.3 $
 //
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include <lg.h>
 #include <comtools.h>
 #include <appagg.h>

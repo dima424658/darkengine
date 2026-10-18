@@ -151,21 +151,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="wgscreat.cpp" />
-    <ClCompile Include="wgshell.cpp" />
-    <ClCompile Include="wgshelmt.cpp" />
-    <ClCompile Include="winput.cpp" />
+    <ClCompile Include="..\..\winsrc\gameshel\wgscreat.cpp" />
+    <ClCompile Include="..\..\winsrc\gameshel\wgshell.cpp" />
+    <ClCompile Include="..\..\winsrc\gameshel\wgshelmt.cpp" />
+    <ClCompile Include="..\..\winsrc\gameshel\winput.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="nec98.h" />
-    <ClInclude Include="wgshell.h" />
-    <ClInclude Include="wgshelmt.h" />
-    <ClInclude Include="winput.h" />
-    <ClInclude Include="winshapi.h" />
-    <ClInclude Include="wnshguid.h" />
+    <ClInclude Include="..\..\winsrc\gameshel\nec98.h" />
+    <ClInclude Include="..\..\winsrc\gameshel\wgshell.h" />
+    <ClInclude Include="..\..\winsrc\gameshel\wgshelmt.h" />
+    <ClInclude Include="..\..\winsrc\gameshel\winput.h" />
+    <ClInclude Include="..\..\winsrc\gameshel\winshapi.h" />
+    <ClInclude Include="..\..\winsrc\gameshel\wnshguid.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="winshell.txt" />
+    <Text Include="..\..\winsrc\gameshel\winshell.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

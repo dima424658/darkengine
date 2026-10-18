@@ -4,7 +4,8 @@
 //
 //
 
-#include <windows.h>
+#include <stdlib.h>
+#include <allocapi.h>
 #include <nullallc.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,7 +20,7 @@ struct sNoOpMalloc;
 
 static void * __stdcall NoOpAlloc(sNoOpMalloc * pThis, ulong n)
 {
-   return HeapAlloc(GetProcessHeap(), 0, n);
+   return malloc(n);
 }
 
 ///////////////////////////////////////

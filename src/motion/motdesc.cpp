@@ -5,8 +5,6 @@
 
 // $Header: r:/t2repos/thief2/src/motion/motdesc.cpp,v 1.26 1998/04/20 15:52:33 kate Exp $
 
-#include <wtypes.h>
-
 #include <motdesc.h>
 #include <string.h>
 #include <motmngr.h>

@@ -24,7 +24,7 @@
     <ClCompile Include="scrptman.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="scrptmod.cpp">
+    <ClCompile Include="..\..\winsrc\script\scrptmod.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="scrptmsg.cpp">

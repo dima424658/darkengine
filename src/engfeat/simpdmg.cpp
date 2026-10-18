@@ -195,7 +195,7 @@ STDMETHODIMP_(eDamageResult) cSimpleDamageModel::SlayObject(ObjID victim, ObjID 
          kind = msg->data.damage->kind; 
    }
 
-   sDamageMsgData msgdata = { kDamageMsgSlay, victim, culprit, (void*)kind }; 
+   sDamageMsgData msgdata = { kDamageMsgSlay, victim, culprit, (void *)(intptr_t)kind };
    sDamageMsg msg(kEventKindSlay,&msgdata,cause); 
    
    eDamageResult result = SendMessage(&msg);
@@ -265,7 +265,7 @@ STDMETHODIMP_(eDamageResult) cSimpleDamageModel::TerminateObject(ObjID victim, s
 
          PropagateCulpability(victim,corpse,kCulpTransitive); 
 
-         if (BOOL(corpseIter.GetData()))
+      if (BOOL((intptr_t)corpseIter.GetData()))
          {
             float scale;
             if (g_pSourceScaleProperty->Get(victim, &scale))
@@ -420,7 +420,7 @@ void cSimpleDamageModel::PropagateCulpability(ObjID from, ObjID to, ulong flags)
    {
       // is anyone culpable for me?
       LinkID culplink = mpCulpableFor->GetSingleLink(LINKOBJ_WILDCARD,from); 
-      if (culplink != NULL)
+      if (culplink != 0)
       {
          sLink link; 
          mpCulpableFor->Get(culplink,&link); 
@@ -582,7 +582,7 @@ ObjID GetRealCulprit(ObjID culprit)
 
 static void LGAPI culp_link_listener(sRelationListenMsg* msg, RelationListenerData data)
 {
-   ulong flags = (ulong)data; 
+   ulong flags = (ulong)(uintptr_t)data;
    PropagateCulpability(msg->link.source,msg->link.dest,flags); 
 }
 
@@ -590,7 +590,7 @@ static void LGAPI culp_link_listener(sRelationListenMsg* msg, RelationListenerDa
 
 void AddCulpabilityRelation(IRelation* pRel, ulong flags)
 {
-   pRel->Listen(kListenLinkBirth,culp_link_listener,(void*)flags); 
+   pRel->Listen(kListenLinkBirth,culp_link_listener,(void *)(uintptr_t)flags);
 }
 
 #endif // __SIMPDMG_H

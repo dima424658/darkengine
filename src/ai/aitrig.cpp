@@ -176,7 +176,7 @@ STDMETHODIMP_(BOOL) cAITriggeredPScripted::LoadGoal(ITagFile * pTagFile, cAIGoal
    *pActs = tempActs;
    AITagMoveRaw(pTagFile, &pActs->acts[0], sizeof(sAIPsdScrAct) * pActs->n);
 
-   (*ppGoal)->ownerData = (DWORD)pActs;
+   (*ppGoal)->ownerData = (uintptr_t)pActs;
    (*ppGoal)->flags |= kAIGF_FreeData;
 
    return TRUE;
@@ -215,7 +215,7 @@ STDMETHODIMP cAITriggeredPScripted::SuggestGoal(cAIGoal * pCurrentGoal, cAIGoal 
    else
       (*ppGoal)->priority = m_pActs->priority;
 
-   (*ppGoal)->ownerData = (DWORD)m_pActs;
+   (*ppGoal)->ownerData = (uintptr_t)m_pActs;
    (*ppGoal)->flags |= kAIGF_FreeData;
    m_pActs = NULL;
 

@@ -159,8 +159,8 @@ void FlagBoxDrawCallback(void *data, LGadBox *vb)
          ulong base_col=(0x1<<3)|(0x1<<9)|(0x1<<13);
          gr_set_fcolor(base_col+(scale/2)*((mflag->flags)%256));
       }
-      l=slot_w*mflag->frame+1;
-      r=(slot_w*(mflag->frame+1)-1);
+      l = (ushort)(slot_w * mflag->frame + 1);
+      r = (ushort)(slot_w * (mflag->frame + 1) - 1);
       if(r<=l+4)
          r=l+4;
       gr_rect(l,2,r,grd_bm.h-2);

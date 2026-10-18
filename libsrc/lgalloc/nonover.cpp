@@ -6,7 +6,7 @@
 //
 // Default, non override versions of functions
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <mallocdb.h>
 
 #pragma code_seg("lgalloc")

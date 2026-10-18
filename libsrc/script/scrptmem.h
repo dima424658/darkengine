@@ -47,18 +47,18 @@ public:
    //
    // IMalloc methods
    //
-   STDMETHOD_(void *, Alloc)   (ULONG cb);
-   STDMETHOD_(void *, Realloc) (void * pv, ULONG cb);
+   STDMETHOD_(void *, Alloc)   (SIZE_T cb);
+   STDMETHOD_(void *, Realloc) (void * pv, SIZE_T cb);
    STDMETHOD_(void,   Free)    (void * pv);
-   STDMETHOD_(ULONG,  GetSize) (void * pv);
+   STDMETHOD_(SIZE_T, GetSize) (void * pv);
    STDMETHOD_(int,    DidAlloc)(void * pv);
    STDMETHOD_(void,   HeapMinimize)();
 
    //
    // debugging allocation functions
    //
-   STDMETHOD_(void *, AllocEx)  (ULONG cb, const char * pszFile, int line);
-   STDMETHOD_(void *, ReallocEx)(void * pv, ULONG cb, const char * pszFile,
+   STDMETHOD_(void *, AllocEx)  (SIZE_T cb, const char * pszFile, int line);
+   STDMETHOD_(void *, ReallocEx)(void * pv, SIZE_T cb, const char * pszFile,
                                  int line);
    STDMETHOD_(void,   FreeEx)   (void * pv, const char * pszFile, int line);
 
@@ -142,7 +142,7 @@ STDMETHODIMP_(ULONG) cScriptModuleAlloc::Release()
 }
 
 
-STDMETHODIMP_(void *) cScriptModuleAlloc::Alloc(ULONG cb)
+STDMETHODIMP_(void *) cScriptModuleAlloc::Alloc(SIZE_T cb)
 {
    sScriptAllocRecord *pAlloc
       = (sScriptAllocRecord *)m_pMalloc->Alloc(cb + sizeof(int));
@@ -160,7 +160,7 @@ STDMETHODIMP_(void *) cScriptModuleAlloc::Alloc(ULONG cb)
 }
 
 
-STDMETHODIMP_(void *) cScriptModuleAlloc::Realloc(void * pv, ULONG cb)
+STDMETHODIMP_(void *) cScriptModuleAlloc::Realloc(void * pv, SIZE_T cb)
 {
    if (!pv)
       return Alloc(cb);
@@ -211,7 +211,7 @@ STDMETHODIMP_(void) cScriptModuleAlloc::Free(void * pv)
 }
 
 
-STDMETHODIMP_(ULONG) cScriptModuleAlloc::GetSize(void * pv)
+STDMETHODIMP_(SIZE_T) cScriptModuleAlloc::GetSize(void * pv)
 {
    if (HaveRecord(pv))
       return m_pMalloc->GetSize(VoidToRecord(pv)) - sizeof(int);
@@ -232,7 +232,7 @@ STDMETHODIMP_(void) cScriptModuleAlloc::HeapMinimize()
 }
 
 
-STDMETHODIMP_(void *) cScriptModuleAlloc::AllocEx (ULONG cb,
+STDMETHODIMP_(void *) cScriptModuleAlloc::AllocEx (SIZE_T cb,
                                                    const char * pszFile,
                                                    int line)
 {
@@ -242,7 +242,7 @@ STDMETHODIMP_(void *) cScriptModuleAlloc::AllocEx (ULONG cb,
 }
 
 
-STDMETHODIMP_(void *) cScriptModuleAlloc::ReallocEx(void * pv, ULONG cb,
+STDMETHODIMP_(void *) cScriptModuleAlloc::ReallocEx(void * pv, SIZE_T cb,
                                                     const char * pszFile,
                                                     int line)
 {

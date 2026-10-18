@@ -289,7 +289,7 @@ int r3_raw_clip_polygon(int n, r3s_phandle *src, r3s_phandle **dest)
          int stride_save = r3d_glob.cur_stride;
 
          r3d_glob.cur_stride = sizeof(clippt[0]);
-         r3_std_code_points(r3_next_point - clippt, (r3s_point *)clippt);
+         r3_std_code_points((int)(r3_next_point - clippt), (r3s_point *)clippt);
          r3d_glob.cur_stride = stride_save;
 
          c_or = 0;
@@ -407,7 +407,7 @@ bool r3_clip_line(r3s_phandle *src,r3s_phandle **dest)
          int stride_save = r3d_glob.cur_stride;
 
          r3d_glob.cur_stride = sizeof(clippt[0]);
-         r3_std_code_points(r3_next_point - clippt, (r3s_point *)clippt);
+         r3_std_code_points((int)(r3_next_point - clippt), (r3s_point *)clippt);
          r3d_glob.cur_stride = stride_save;
 
          if (src[0]->ccodes & src[1]->ccodes) return FALSE;

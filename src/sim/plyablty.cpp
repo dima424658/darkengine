@@ -91,12 +91,12 @@ static BOOL HasSpeedScale(sPlayerSkillFullDesc *pD)
 
 static float GetSlewSpeedScale(sPlayerSkillFullDesc *pD) 
 { 
-   return (pD->slewSpeedScale==0)?1.0:pD->slewSpeedScale; 
+   return (pD->slewSpeedScale==0)?1.0f:pD->slewSpeedScale;
 }
 
 static float GetRotateSpeedScale(sPlayerSkillFullDesc *pD) 
 { 
-   return (pD->rotateSpeedScale==0)?1.0:pD->rotateSpeedScale; 
+   return (pD->rotateSpeedScale==0)?1.0f:pD->rotateSpeedScale;
 }
 
 static void SndSchemaEndCallback(int hSchema, ObjID schemaID, void *pData)

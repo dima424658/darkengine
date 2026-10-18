@@ -442,7 +442,7 @@ static void joy_cook( char *cooked, short *raw )
       if (cooked_hist[0][i]==cooked_hist[1][i])
          cooked[i]=cooked_hist[0][i];
       else
-         cooked[i]=cook;
-      cooked_hist[cooked_hist_index][i]=cook;
+         cooked[i] = (char)cook;
+      cooked_hist[cooked_hist_index][i] = (char)cook;
    }
 }

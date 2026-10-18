@@ -174,7 +174,7 @@ mxs_real mx_mag_vec(const mxs_vector *v)
 {
    mxs_real d;
    d = v->x*v->x + v->y*v->y + v->z*v->z;   
-   return sqrt(d);
+   return sqrtf(d);
 }
 
 // dest = v1/|v1|, returns |v1|
@@ -182,8 +182,8 @@ mxs_real mx_norm_vec(mxs_vector *dest,const mxs_vector *v)
 {
    mxs_real d,id;
 
-   d = sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
-   id = 1.0/d;
+   d = sqrtf(v->x*v->x + v->y*v->y + v->z*v->z);
+   id = 1.0f/d;
    dest->x = v->x*id;
    dest->y = v->y*id;
    dest->z = v->z*id;
@@ -195,8 +195,8 @@ mxs_real mx_normeq_vec(mxs_vector *v)
 {
    mxs_real d,id;
 
-   d = sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
-   id = 1.0/d;
+   d = sqrtf(v->x*v->x + v->y*v->y + v->z*v->z);
+   id = 1.0f/d;
    v->x *= id;
    v->y *= id;
    v->z *= id;

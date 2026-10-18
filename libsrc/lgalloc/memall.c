@@ -38,11 +38,11 @@
 */
 
 #include <string.h>
-#include <dos.h>
 #include <memall.h>
 #include <mallocdb.h>
 #include <dbg.h>
 #include <_lg.h>
+#include <platform_services.h>
 
 #pragma code_seg("lgalloc")
 
@@ -71,7 +71,7 @@ static int memIndexAllocStack = 0;
 void *(*f_malloc)(size_t size) = malloc;
 void *(*f_realloc)(void *p, size_t size) = realloc;
 void (*f_free)(void *p) = free;
-size_t (*f_msize)(void *p) = _msize;
+size_t (*f_msize)(void *p) = PlatformAllocationSize;
 #ifndef SHIP
 void *(*f_malloc_db)(size_t size, const char *, int) = malloc_db;
 void *(*f_realloc_db)(void *p, size_t size, const char *, int) = realloc_db;
@@ -81,8 +81,6 @@ void (*f_free_db)(void *p, const char *, int) = free_db;
 //	Miscellaneous
 
 static bool memHardCheck;		// if checking on, use Error or Warning?
-
-#define INT_DPMI 0x31			// intr for Dos Protected Mode Interface
 
 //	Internal prototypes
 
@@ -300,97 +298,6 @@ void MemCheckOff()
 #endif
 
 	MemPopAllocator();
-}
-#endif
-
-//	----------------------------------------------------------
-//		CONVENTIONAL MEMORY ALLOCATION
-//	----------------------------------------------------------
-//
-//	MallocConvMemBlock() allocates conventional memory.  It
-//	returns a protected mode ptr as well as filling in a useful
-//	structure, or returns NULL if unable to get the memory.
-//
-//		size = size of memory block in bytes
-//		pcmb = ptr to ConvMemBlock structure (see res.h)
-//
-//	Returns: far ptr to block in low memory, or NULL
-
-#ifndef WIN32
-void far *MallocConvMemBlock(ushort size, ConvMemBlock *pcmb)
-{
-	union REGS regs;
-
-//	Use DPMI to get the memory
-
-	regs.x.eax = 0x0100;
-	regs.x.ebx = (size + 15) >> 4;
-	int386(INT_DPMI, &regs, &regs);
-	if (regs.x.cflag)
-		return(NULL);
-
-//	Fill in our ConvMemBlock struct, return protected ptr
-
-	pcmb->realSeg = regs.w.ax;
-	pcmb->protSel = regs.w.dx;
-//	pcmb->protPtr = MK_FP(pcmb->protSel, 0);	// this is the non-flat memory way
-	pcmb->protPtr = (void *)(pcmb->realSeg << 4);
-	return(pcmb->protPtr);
-}
-#endif
-
-
-//	----------------------------------------------------------
-//
-//	ReallocConvMemBlock() resizes a conventional memory block.
-//
-//		pcmb    = ptr to ConvMemBlock structure (see res.h)
-//		newsize = new size in bytes
-//
-//	Returns: far ptr to realloc'ed block
-#ifndef WIN32
-void far *ReallocConvMemBlock(ConvMemBlock *pcmb, ushort newsize)
-{
-	union REGS regs;
-	long realAddr;
-
-	regs.x.eax = 0x0102;
-	regs.w.bx = (newsize + 15) >> 4;
-	regs.w.dx = pcmb->protSel;
-	int386(INT_DPMI, &regs, &regs);
-	if (regs.x.cflag)
-		return(NULL);
-
-	regs.x.eax = 0x0006;
-	regs.w.bx = pcmb->protSel;
-	int386(INT_DPMI, &regs, &regs);
-	realAddr = (((long) regs.w.cx) << 16) + regs.w.dx;
-	pcmb->realSeg = realAddr >> 4;
-//	pcmb->protPtr = MK_FP(pcmb->protSel, 0);	// this is the non-flat memory way
-	pcmb->protPtr = (void *)(pcmb->realSeg << 4);
-	return(pcmb->protPtr);
-}
-#endif
-
-//	---------------------------------------------------------
-//
-//	FreeConvMemBlock() frees a conventional memory block.
-//
-//		pcmb = ptr to ConvMemBlock structure (see res.h)
-//
-//	Returns: 0 if successful, -1 if free failed
-
-#ifndef WIN32
-int FreeConvMemBlock(ConvMemBlock *pcmb)
-{
-	union REGS regs;
-
-	regs.x.eax = 0x0101;
-	regs.w.dx = pcmb->protSel;
-	int386(INT_DPMI, &regs, &regs);
-	if (regs.x.cflag)
-		return(-1);
-	return(0);
 }
 #endif
 

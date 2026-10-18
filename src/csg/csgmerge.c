@@ -589,12 +589,12 @@ static void maybe_reverse_winding(int n, BspVertex *w, PortalPolygon *p)
    norm.x = norm.y = norm.z = 0;
    h = n-1;
    for (i=0; i < n; ++i) {
-      norm.x +=  (w[h].y - w[i].y)
-                *(w[h].z + w[i].z);
-      norm.y +=  (w[h].z - w[i].z)
-                *(w[h].x + w[i].x);
-      norm.z +=  (w[h].x - w[i].x)
-                *(w[h].y + w[i].y);
+      norm.x += (mxs_real)((w[h].y - w[i].y)
+                         *(w[h].z + w[i].z));
+      norm.y += (mxs_real)((w[h].z - w[i].z)
+                         *(w[h].x + w[i].x));
+      norm.z += (mxs_real)((w[h].x - w[i].x)
+                         *(w[h].y + w[i].y));
       h = i;
    }
 
@@ -683,15 +683,15 @@ static bool try_merge(int n1, BspVertex *w1, int n2, BspVertex *w2, BspPlane *p)
 
      // compute the polygon normal
      //  by construction it's the p passed in
-   norm.x = p->a;
-   norm.y = p->b;
-   norm.z = p->c;
+   norm.x = (mxs_real)p->a;
+   norm.y = (mxs_real)p->b;
+   norm.z = (mxs_real)p->c;
 
      // compute the outward normal to the back edge
      // can't use mx_sub_vec since BspVertex's are doubles
-   edge.x = w1[i].x - w1[(i+n1-1)%n1].x;
-   edge.y = w1[i].y - w1[(i+n1-1)%n1].y;
-   edge.z = w1[i].z - w1[(i+n1-1)%n1].z;
+   edge.x = (mxs_real)(w1[i].x - w1[(i+n1-1)%n1].x);
+   edge.y = (mxs_real)(w1[i].y - w1[(i+n1-1)%n1].y);
+   edge.z = (mxs_real)(w1[i].z - w1[(i+n1-1)%n1].z);
    mx_cross_vec(&rel_norm, &norm, &edge);
    mx_normeq_vec(&rel_norm);
 #ifdef SHOW_MERGE
@@ -701,9 +701,9 @@ mprintf("rel_norm %lg,%lg,%lg\n", rel_norm.x, rel_norm.y, rel_norm.z);
 #endif
 
      // compute the extending edge on the other poly
-   edge.x = w2[(f+1)%n2].x - w2[f].x;
-   edge.y = w2[(f+1)%n2].y - w2[f].y;
-   edge.z = w2[(f+1)%n2].z - w2[f].z;
+   edge.x = (mxs_real)(w2[(f+1)%n2].x - w2[f].x);
+   edge.y = (mxs_real)(w2[(f+1)%n2].y - w2[f].y);
+   edge.z = (mxs_real)(w2[(f+1)%n2].z - w2[f].z);
 #ifdef SHOW_MERGE
 mprintf("edge2 %lg,%lg,%lg\n", edge.x, edge.y, edge.z);
 #endif
@@ -717,9 +717,9 @@ mprintf("dot: %lg\n", res);
       return FALSE;
 
      // compute the outward norml to the forward edge on other poly
-   edge.x = w2[e].x - w2[(e+n2-1)%n2].x;
-   edge.y = w2[e].y - w2[(e+n2-1)%n2].y;
-   edge.z = w2[e].z - w2[(e+n2-1)%n2].z;
+   edge.x = (mxs_real)(w2[e].x - w2[(e+n2-1)%n2].x);
+   edge.y = (mxs_real)(w2[e].y - w2[(e+n2-1)%n2].y);
+   edge.z = (mxs_real)(w2[e].z - w2[(e+n2-1)%n2].z);
    mx_cross_vec(&rel_norm, &norm, &edge);
    mx_normeq_vec(&rel_norm);
 #ifdef SHOW_MERGE
@@ -729,9 +729,9 @@ mprintf("rel_norm %lg,%lg,%lg\n", rel_norm.x, rel_norm.y, rel_norm.z);
 #endif
 
      // compute the extending edge on this poly
-   edge.x = w1[(j+1)%n1].x - w1[j].x;
-   edge.y = w1[(j+1)%n1].y - w1[j].y;
-   edge.z = w1[(j+1)%n1].z - w1[j].z;
+   edge.x = (mxs_real)(w1[(j+1)%n1].x - w1[j].x);
+   edge.y = (mxs_real)(w1[(j+1)%n1].y - w1[j].y);
+   edge.z = (mxs_real)(w1[(j+1)%n1].z - w1[j].z);
 #ifdef SHOW_MERGE
 mprintf("edge2 %lg,%lg,%lg\n", edge.x, edge.y, edge.z);
 #endif
@@ -859,13 +859,13 @@ static bool colinear(BspVertex *e1, BspVertex *e2, BspVertex *f1, BspVertex *f2)
    // and check the resultant length.
 
    // e1 matches f1, so build e1->e2, f2->f1
-   a.x = e2->x - e1->x;
-   a.y = e2->y - e1->y;
-   a.z = e2->z - e1->z;
+   a.x = (mxs_real)(e2->x - e1->x);
+   a.y = (mxs_real)(e2->y - e1->y);
+   a.z = (mxs_real)(e2->z - e1->z);
 
-   b.x = f1->x - f2->x;
-   b.y = f1->y - f2->y;
-   b.z = f1->z - f2->z;
+   b.x = (mxs_real)(f1->x - f2->x);
+   b.y = (mxs_real)(f1->y - f2->y);
+   b.z = (mxs_real)(f1->z - f2->z);
 
    // if vectors are too short to be safe, abort!
 

@@ -320,7 +320,7 @@ int DbgSaveConfig(const char *fname);		// save config file
 #define DBGS(src,stuff)
 #define Error DbgReportError
 #define WarnUser DbgReportWarnUser
-#define Warning(msg)
+#define Warning(msg) do {} while (0)
 #define Assert(expr,msg)
 #define Assrt(expr)
 #define Spew(src,msg)
@@ -363,7 +363,7 @@ void Exit(int errcode, const char *msg);	// shut down with msg
 void PrintExitMsg();						// prints exit message
 
 #define SetExitMsg(str) pExitMsg=str
-extern char *pExitMsg;
+extern const char *pExitMsg;
 
 #ifdef __cplusplus
 }

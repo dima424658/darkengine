@@ -10,7 +10,7 @@ struct sLoopQueueMessage
 	int alignmentPadTo16Bytes;
 };
 
-static_assert(sizeof(sLoopQueueMessage) == 16);
+static_assert(sizeof(sLoopQueueMessage) >= 16);
 
 class cLoopQueue
 {

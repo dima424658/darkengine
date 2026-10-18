@@ -20,7 +20,6 @@ typedef struct _ResState
 } ResState;
 
 
-#pragma off(unreferenced)
 eLoopMessageResult LGAPI ResLoopFunc(void* context, eLoopMessage msg, tLoopMessageData hdata)
 {
    eLoopMessageResult result = kLoopDispatchContinue; 
@@ -58,7 +57,6 @@ eLoopMessageResult LGAPI ResLoopFunc(void* context, eLoopMessage msg, tLoopMessa
    return result;
 }
 
-#pragma off(unreferenced)
 ILoopClient* LGAPI CreateResClient(sLoopClientDesc * pDesc, tLoopClientData data)
 {
    ResLoopContext* context = (ResLoopContext*)data;
@@ -68,14 +66,13 @@ ILoopClient* LGAPI CreateResClient(sLoopClientDesc * pDesc, tLoopClientData data
    
    return CreateSimpleLoopClient(ResLoopFunc,state,&ResLoopClientDesc);
 }
-#pragma on(unreferenced)
 
 sLoopClientDesc ResLoopClientDesc =
 {
    &LOOPID_Res, 
    "Resource file loader",
    kPriorityHigh, 
-   kMsgsMode|kMsgEnd,
+   (ulong)kMsgsMode|kMsgEnd,
    
    kLCF_Callback,
    CreateResClient,

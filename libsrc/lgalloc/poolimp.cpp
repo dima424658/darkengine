@@ -11,14 +11,61 @@
 #include <pool.h>
 #include <poolimp.h>
 
-#include <stktrace.h>
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 #pragma code_seg("lgalloc")
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Pool backing storage must not come from operator new: cPoolAllocator is
+// itself used by the engine's global allocator.  The original implementation
+// reserved a separate virtual-memory arena and handed out page-sized chunks.
+// A project-conversion change replaced this with `new sPoolBlock[count]`,
+// which both re-entered the allocator and allocated only pointer-sized blocks
+// while the threading code treated them as full-sized pool elements.
+//
+
+#define kPoolCoreMaxSize  (1024 * 1024 * 64)
+
+class cPoolCore
+{
+public:
+    static void *AllocPage();
+
+private:
+    static void *gm_pCoreStack;
+    static void *gm_pCoreStackEnd;
+};
+
+void *cPoolCore::gm_pCoreStack;
+void *cPoolCore::gm_pCoreStackEnd;
+
+void *cPoolCore::AllocPage()
+{
+    if (!gm_pCoreStack)
+    {
+        gm_pCoreStack = malloc(kPoolCoreMaxSize);
+        AssertMsg(gm_pCoreStack, "Pool allocation failed");
+        if (!gm_pCoreStack)
+            return NULL;
+        gm_pCoreStackEnd = (uchar *)gm_pCoreStack + kPoolCoreMaxSize;
+    }
+
+    void *pReturn = gm_pCoreStack;
+    gm_pCoreStack = (uchar *)gm_pCoreStack + kPageSize;
+
+    if (gm_pCoreStack > gm_pCoreStackEnd)
+    {
+        CriticalMsg("Pool arena exhausted");
+        return NULL;
+    }
+
+    return pReturn;
+}
 
 struct sPoolBlock;
 
@@ -97,7 +144,7 @@ void    cPoolAllocator::Init(size_t elemSize)
     if (m_nElementSize < sizeof(sFreePoolPart))
         m_nElementSize = sizeof(sFreePoolPart);
 
-    m_nBlockingFactor = kPageSize / RealElemSize(m_nElementSize);
+    m_nBlockingFactor = (unsigned)(kPageSize / RealElemSize(m_nElementSize));
 
     m_pNextPool = m_pPools;
     m_pPools = this;
@@ -114,8 +161,8 @@ void cPoolAllocator::ThreadNewBlock()
 
     AssertMsg(!m_pFreeList, "ThreadNew called when not empty");
 
-    // First get a new batch ...
-    m_pFreeList = new sPoolBlock[m_nBlockingFactor];
+    // Get one page from storage outside the allocator that this pool serves.
+    m_pFreeList = (sPoolBlock *)cPoolCore::AllocPage();
 
     if (!m_pFreeList)
         return;

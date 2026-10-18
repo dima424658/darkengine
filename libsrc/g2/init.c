@@ -14,6 +14,41 @@
 #include <setdrv.h>
 #include <g2makewr.h>
 
+extern int gd_init(void);
+extern int gd_close(void);
+
+void init_g2d_default_flat16_canvas_table(void);
+void init_flat16_lit_ulmap_setup_func(void);
+void init_flat16_ulmap_setup_func(void);
+void init_flat16_scale_func(void);
+void init_flat16_uscale_func(void);
+void init_g2d_default_flat8_canvas_table(void);
+void init_flat8_lit_ulmap_setup_func(void);
+void init_flat8_ulmap_setup_func(void);
+void init_flat8_scale_func(void);
+void init_flat8_uline_func(void);
+void init_flat8_uscale_func(void);
+
+static void init_dispatch_tables(void)
+{
+   static int initialized = 0;
+   if (initialized)
+      return;
+
+   init_g2d_default_flat16_canvas_table();
+   init_flat16_lit_ulmap_setup_func();
+   init_flat16_ulmap_setup_func();
+   init_flat16_scale_func();
+   init_flat16_uscale_func();
+   init_g2d_default_flat8_canvas_table();
+   init_flat8_lit_ulmap_setup_func();
+   init_flat8_ulmap_setup_func();
+   init_flat8_scale_func();
+   init_flat8_uline_func();
+   init_flat8_uscale_func();
+   initialized = 1;
+}
+
 void g2_set_canvas(grs_canvas *c)
 {
    switch (c->bm.type) {
@@ -34,6 +69,8 @@ int g2_init()
 {
    extern void g2pt_init(void);
    int err;
+
+   init_dispatch_tables();
 
    if (g2d_active!=0) {
       Warning(("g2_init(): g2 already active.\n"));

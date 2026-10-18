@@ -109,7 +109,8 @@ private:
 };
 
 cCombatManeuverFactory g_CombatManeuverFactory;
-EXTERN cManeuverFactory *g_pCombatManeuverFactory=&g_CombatManeuverFactory;
+EXTERN cManeuverFactory *g_pCombatManeuverFactory;
+cManeuverFactory *g_pCombatManeuverFactory=&g_CombatManeuverFactory;
 
 cMotionPlan *cCombatManeuverFactory::CreatePlan(const cMotionSchema *pSchema,const sMcMotorState& motState, \
       const sMcMoveState& moveState, const sMcMoveParams& params, IMotor *pMotor, cMotionCoordinator *pCoord)
@@ -341,7 +342,7 @@ void cCombatManeuver::GetExpectedEndMoveState(sMcMoveState &moveState)
    AssertMsg(FALSE,"GetExpectedEndMoveState not implemented for Combat maneuver");
 }
 
-static float g_HackTestPercent = 0.1;
+static float g_HackTestPercent = 0.1f;
 
 void cCombatManeuver::Execute()
 {
@@ -364,7 +365,7 @@ void cCombatManeuver::Execute()
       // @DIPPY: this should be a "getmotioninfo" function elsewhere
       if(m_MotionNum>=0)
       {
-         startFrame=mp_motion_list[m_MotionNum].info.num_frames*pS->lastMotPercentCompleted;
+         startFrame = (int)(mp_motion_list[m_MotionNum].info.num_frames * pS->lastMotPercentCompleted);
          ConfigSpew("MnvrTrace",("doing continue mot %d\n",m_MotionNum));
          motFlags=kMotStartFlag_SetStartFrame;
       }

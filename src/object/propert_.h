@@ -20,6 +20,7 @@
 #include <prpstats.h>
 #include <propnet.h>
 #include <propinst.h>
+#include <string.h>
 
 F_DECLARE_INTERFACE(ITrait);
 F_DECLARE_INTERFACE(IPropertyStore); 
@@ -253,7 +254,8 @@ protected:
    void Save(ITagFile* file, edbFiletype filetype);
    void Load(ITagFile* file, edbFiletype filetype);
    void write_obj(ObjID obj, IDataOpsFile* file, edbFiletype filetype);
-   void read_obj(IDataOpsFile* file, edbFiletype filetype, uint version);
+   BOOL read_obj(IDataOpsFile* file, ITagFile* tagFile,
+                 edbFiletype filetype, uint version);
    
    IPropertyStore *mpStore;         // Property store 
    ITrait* mpDonors;                // My trait for inheritance
@@ -409,28 +411,36 @@ protected:
 // cGenericProperty 
 //
 // Generic property, with (slow) accessors, templatized on type 
-// Accessors must be by 32-bit (or smaller) value. 
+// Accessors must fit in an sDatum. This includes legacy 32-bit scalar values
+// as well as native-width pointers.
 //
 ////////////////////////////////////////////////////////////
+
+template <class TYPE>
+inline sDatum PropertyValueToDatum(const TYPE& value)
+{
+   static_assert(sizeof(TYPE) <= sizeof(sDatum), "Property value does not fit in sDatum");
+   sDatum datum;
+   memset(&datum.value, 0, sizeof(datum.value));
+   memcpy(&datum.value, &value, sizeof(value));
+   return datum;
+}
+
+template <class TYPE>
+inline void PropertyValueFromDatum(sDatum datum, TYPE* value)
+{
+   static_assert(sizeof(TYPE) <= sizeof(sDatum), "Property value does not fit in sDatum");
+   memcpy(value, &datum.value, sizeof(*value));
+}
 
 template <class IFACE, const GUID* IID, class TYPE> 
 class cGenericProperty : public cProperty<IFACE,IID> 
 {
-protected:
-   // We use this to do type-conversion 
-   union uPropVal
-   {
-      TYPE t;
-      void* d; 
-
-      uPropVal(const TYPE& tt) : t(tt) {}; 
-   }; 
-
 public:
    cGenericProperty(const sPropertyDesc* desc, IPropertyStore* store = NULL, IDataOps* ops = NULL)
       : cProperty<IFACE,IID>(desc,store)
    {
-      AssertMsg(sizeof(TYPE) == sizeof(sDatum),"Can't make property accessors for non-32 bit type");  
+      AssertMsg(sizeof(TYPE) <= sizeof(sDatum),"Property value does not fit in sDatum");
       if (ops)
          store->SetOps(ops); 
    } 
@@ -439,43 +449,49 @@ public:
    {
       STOREDPROP_TIMER(Get); 
 
-      sDatum* pdat = (sDatum*)pval; 
-      BOOL result = this->mpStore->Get(obj,pdat);
+      sDatum datum;
+      BOOL result = this->mpStore->Get(obj,&datum);
       if (!result)
       {
          PROP_TIMER_STOP(); 
          ObjID donor = this->GetDonor(obj);
          PROP_TIMER_START(); 
          if (donor != OBJ_NULL)
-            result = this->mpStore->Get(donor,pdat);
+            result = this->mpStore->Get(donor,&datum);
       }
+      if (result)
+         PropertyValueFromDatum(datum,pval);
       return result; 
    }
 
    STDMETHOD_ (BOOL, GetSimple) (ObjID obj, TYPE (*ptr)) const 
    {
       STOREDPROP_TIMER(Get); 
-      sDatum* pdat = (sDatum*)ptr; 
-      return this->mpStore->Get(obj,pdat);
+      sDatum datum;
+      BOOL result = this->mpStore->Get(obj,&datum);
+      if (result)
+         PropertyValueFromDatum(datum,ptr);
+      return result;
    }
 
    STDMETHOD(Set) (ObjID obj, TYPE val) 
    {
-      uPropVal dat = val;
-      return cStoredProperty::Set(obj, dat.d);
+      return cStoredProperty::Set(obj, PropertyValueToDatum(val));
    }
 
    STDMETHOD_ (BOOL, IterNextValue) (sPropertyObjIter* iter,ObjID* next, TYPE (*val)) const
    {
       STOREDPROP_TIMER(IterNext); 
-      sDatum* pdat = (sDatum*)val; 
-      return this->mpStore->IterNext(iter,next,pdat);
+      sDatum datum;
+      BOOL result = this->mpStore->IterNext(iter,next,&datum);
+      if (result)
+         PropertyValueFromDatum(datum,val);
+      return result;
    }
 
    STDMETHOD_(BOOL,TouchValue)(ObjID obj, TYPE val)  
    {
-      uPropVal dat = val;
-      sDatum d = dat.d; 
+      sDatum d = PropertyValueToDatum(val);
       return cStoredProperty::Touch(obj,&d);
    }; 
 }; 
@@ -486,7 +502,7 @@ public:
 // cSpecificProperty
 //
 // Generic property, templatized on type and on store type for speed 
-// Accessors must be by 32-bit value. 
+// Accessors must fit in an sDatum.
 //
 ////////////////////////////////////////////////////////////
 
@@ -504,23 +520,13 @@ class cNonDeletingStore : public STORE
 template <class IFACE, const GUID* IID, class TYPE, class STORE> 
 class cSpecificProperty : public cProperty<IFACE,IID> 
 {
-protected:
-   // We use this to do type-conversion 
-   union uPropVal
-   {
-      TYPE t;
-      void* d; 
-
-      uPropVal(const TYPE& tt) : t(tt) {}; 
-   }; 
-
 public:
 
 
    cSpecificProperty(const sPropertyDesc* desc)
       : cProperty<IFACE,IID>(desc,NULL)
    {
-      AssertMsg(sizeof(TYPE) == sizeof(sDatum),"Can't make property accessors for non-32 bit type");  
+      AssertMsg(sizeof(TYPE) <= sizeof(sDatum),"Property value does not fit in sDatum");
 
       // Since we circumvent the mpStore a lot, we can't deal with the auto-mixing
       // done by kpropertyconcrete
@@ -551,8 +557,8 @@ public:
    STDMETHOD_(BOOL,Get)(ObjID obj, TYPE (*pval)) const 
    {
       STOREDPROP_TIMER(Get); 
-      sDatum* pdat = (sDatum*)pval; 
-      BOOL result = mStore.Get(obj,pdat);
+      sDatum datum;
+      BOOL result = mStore.Get(obj,&datum);
       if (!result)
       {
          PROP_TIMER_STOP(); 
@@ -560,35 +566,41 @@ public:
          PROP_TIMER_START(); 
 
          if (donor != OBJ_NULL)
-            result = mStore.Get(donor,pdat);
+            result = mStore.Get(donor,&datum);
       }
+      if (result)
+         PropertyValueFromDatum(datum,pval);
       return result; 
    }
 
    STDMETHOD_ (BOOL, GetSimple) (ObjID obj, TYPE (*ptr)) const 
    {
       STOREDPROP_TIMER(Get); 
-      sDatum* pdat = (sDatum*)ptr; 
-      return mStore.Get(obj,pdat);
+      sDatum datum;
+      BOOL result = mStore.Get(obj,&datum);
+      if (result)
+         PropertyValueFromDatum(datum,ptr);
+      return result;
    }
 
    STDMETHOD(Set) (ObjID obj, TYPE val) 
    {
-      uPropVal dat = val;
-      return cStoredProperty::Set(obj, dat.d);
+      return cStoredProperty::Set(obj, PropertyValueToDatum(val));
    }
 
    STDMETHOD_ (BOOL, IterNextValue) (sPropertyObjIter* iter,ObjID* next, TYPE (*val)) const
    {
       STOREDPROP_TIMER(IterNext); 
-      sDatum* pdat = (sDatum*)val; 
-      return mStore.IterNext(iter,next,pdat); 
+      sDatum datum;
+      BOOL result = mStore.IterNext(iter,next,&datum);
+      if (result)
+         PropertyValueFromDatum(datum,val);
+      return result;
    }
 
    STDMETHOD_(BOOL,TouchValue)(ObjID obj, TYPE val)  
    {
-      uPropVal dat = val;
-      sDatum d = dat.d; 
+      sDatum d = PropertyValueToDatum(val);
       return cStoredProperty::Touch(obj,&d);
    } ; 
 

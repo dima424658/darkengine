@@ -178,7 +178,7 @@ void cModalButtonPanel::cClient::CleanupUI()
 
 ////////////////////////////////////////
 
-ILoopClient* cModalButtonPanel::cClient::FactoryFunc(const sLoopClientDesc* desc, tLoopClientData  data)
+ILoopClient* cModalButtonPanel::cClient::FactoryFunc(sLoopClientDesc* desc, tLoopClientData data)
 {
    return new cClient(desc,(cModalButtonPanel*)data); 
 }
@@ -189,13 +189,13 @@ ILoopClient* cModalButtonPanel::cClient::FactoryFunc(const sLoopClientDesc* desc
 //
 
 
-cModalButtonPanel::cModalButtonPanel(sPanelModeDesc* pmdesc, sLoopClientDesc* lcdesc)
+cModalButtonPanel::cModalButtonPanel(const sPanelModeDesc& mdesc, sLoopClientDesc* lcdesc)
    :mFactoryHandle(-1)
 {
    
    // stuff the relevant fields of the client desc 
    lcdesc->factoryType = kLCF_Callback;
-   lcdesc->pfnFactory = cClient::FactoryFunc;
+   lcdesc->factory.pfnFactory = cClient::FactoryFunc;
 
    // we always install the client handler 
    const sLoopClientDesc* descs[] = { lcdesc, NULL}; 
@@ -204,7 +204,7 @@ cModalButtonPanel::cModalButtonPanel(sPanelModeDesc* pmdesc, sLoopClientDesc* lc
    pLoopMan->AddClientFactory(factory,&mFactoryHandle); 
 
    // create the panel mode
-   mpPanelMode = CreatePanelMode(pmdesc); 
+   mpPanelMode = CreatePanelMode(&mdesc);
 
    // set the params for this mode to point at me
    sLoopModeInitParm client_parm[] = 

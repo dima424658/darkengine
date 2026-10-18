@@ -1,4 +1,5 @@
 #include <search.h>
+#include <storeman.h>
 #include <pathutil.h>
 #include <storbase.h>
 #include <hshsttem.h>
@@ -15,7 +16,9 @@ cSearchPath::cSearchPath(IStoreManager* pStoreMan)
 	m_pVariants{ nullptr },
 	m_pPathStorages{ nullptr },
 	m_pLastNode{ nullptr },
-	m_pStoreMan{ pStoreMan }
+	m_pStoreMan{ pStoreMan },
+	m_ContextVersion{ StorageManagerContextVersion(pStoreMan) },
+	m_bUsesGlobalContext{ false }
 {
 	if (m_pStoreMan)
 		m_pStoreMan->AddRef();
@@ -44,6 +47,7 @@ cSearchPath::~cSearchPath()
 
 void cSearchPath::Clear()
 {
+	m_bUsesGlobalContext = false;
 	if (m_pContext)
 	{
 		m_pContext->Release();
@@ -72,7 +76,12 @@ ISearchPath* cSearchPath::Copy()
 	auto* pSearchPath = new cSearchPath{ m_pStoreMan };
 
 	if (m_pContext)
-		pSearchPath->SetContext(m_pContext);
+	{
+		if (m_bUsesGlobalContext)
+			pSearchPath->SetGlobalContextPath(m_pContext);
+		else
+			pSearchPath->SetContext(m_pContext);
+	}
 
 	if (m_pVariants)
 		pSearchPath->SetVariants(m_pVariants);
@@ -114,6 +123,7 @@ void cSearchPath::AddPathTrees(const char* pPath, BOOL bRecurse)
 
 void cSearchPath::Ready()
 {
+	EnsureCurrentContext();
 	if (!m_bPathParsed)
 		SetupStorages();
 }
@@ -122,12 +132,14 @@ void cSearchPath::Ready()
 
 void cSearchPath::Refresh()
 {
+	ClearStorages();
 }
 
 ///////////////////////////////////////
 
 void cSearchPath::SetContext(ISearchPath* pContext)
 {
+	m_bUsesGlobalContext = false;
 	if (m_pContext)
 	{
 		m_pContext->Release();
@@ -143,6 +155,12 @@ void cSearchPath::SetContext(ISearchPath* pContext)
 	m_bPathParsed = FALSE;
 }
 
+void cSearchPath::SetGlobalContextPath(ISearchPath* pContext)
+{
+	SetContext(pContext);
+	m_bUsesGlobalContext = true;
+}
+
 ///////////////////////////////////////
 
 void cSearchPath::SetVariants(ISearchPath* pVariants)
@@ -153,7 +171,7 @@ void cSearchPath::SetVariants(ISearchPath* pVariants)
 		m_pVariants = nullptr;
 	}
 
-	if (m_pVariants)
+	if (pVariants)
 	{
 		m_pVariants = pVariants;
 		m_pVariants->AddRef();
@@ -225,6 +243,7 @@ IStore* cSearchPath::Find(const char* pName, uint fFlags, IStore** ppCanonStore,
 		return nullptr;
 	}
 
+	EnsureCurrentContext();
 	if (!m_bPathParsed)
 		SetupStorages();
 
@@ -277,6 +296,71 @@ IStore* cSearchPath::Find(const char* pName, uint fFlags, IStore** ppCanonStore,
 
 ///////////////////////////////////////
 
+IStore* cSearchPath::FindAny(const char* const* ppNames, int nNames, uint fFlags,
+	IStore** ppCanonStore, const char* pRawRelPath, int* pFoundIndex)
+{
+	if (!ppNames || nNames <= 0)
+		return nullptr;
+
+	EnsureCurrentContext();
+	if (!m_bPathParsed)
+		SetupStorages();
+
+	char* pRelPath = nullptr;
+	if (pRawRelPath)
+		GetNormalizedPath(pRawRelPath, &pRelPath);
+
+	IStore* found = nullptr;
+	for (auto pNode = m_pPathStorages; !found && pNode; pNode = pNode->pNext)
+	{
+		IStore* pStore;
+		if (pRelPath)
+			pStore = pNode->pStore->GetSubstorage(pRelPath, FALSE);
+		else
+		{
+			pStore = pNode->pStore;
+			pStore->AddRef();
+		}
+
+		if (!pStore)
+			continue;
+
+		for (int i = 0; !found && i < nNames; ++i)
+		{
+			FindInfo info{};
+			info.pName = ppNames[i];
+			info.pStore = pStore;
+			info.fFlags = fFlags;
+
+			if (m_pVariants)
+				m_pVariants->Iterate(FindInStorage, FALSE, &info);
+			else
+				FindInStorage(nullptr, nullptr, 0, &info);
+
+			found = info.pFound;
+			if (found)
+			{
+				if (ppCanonStore)
+				{
+					*ppCanonStore = pStore;
+					pStore->AddRef();
+				}
+				if (pFoundIndex)
+					*pFoundIndex = i;
+			}
+		}
+
+		pStore->Release();
+	}
+
+	if (pRelPath)
+		Free(pRelPath);
+
+	return found;
+}
+
+///////////////////////////////////////
+
 struct SearchCookie
 {
 	PathStorageNode* pNode;
@@ -291,6 +375,7 @@ struct SearchCookie
 
 void* cSearchPath::BeginContents(const char* pPattern, uint fFlags, const char* pRelPath)
 {
+	EnsureCurrentContext();
 	if (!m_bPathParsed)
 		SetupStorages();
 
@@ -335,64 +420,60 @@ BOOL cSearchPath::Next(void* pUntypedCookie, IStore** pFoundStore, char* pFoundN
 {
 	auto* pCookie = reinterpret_cast<SearchCookie*>(pUntypedCookie);
 
-	IStore* pStore = nullptr;
-	while (1)
+	while (pCookie->pNode)
 	{
-		while (1)
+		IStore* pStore = nullptr;
+		if (pCookie->pPath)
 		{
-		LABEL_1: // TODO: remove labels
-			if (!pCookie->pNode)
-				return FALSE;
-
-			if (!pCookie->pPath)
-				break;
-
-			auto* pStore = pCookie->pNode->pStore->GetSubstorage(pCookie->pPath, FALSE);
-			if (pStore)
-				goto LABEL_8;
-
-			pCookie = reinterpret_cast<SearchCookie*>(pCookie->pData);
+			pStore = pCookie->pNode->pStore->GetSubstorage(pCookie->pPath, FALSE);
+		}
+		else
+		{
+			pStore = pCookie->pNode->pStore;
+			pStore->AddRef();
 		}
 
-		pStore = pCookie->pNode->pStore;
-		pStore->AddRef();
-	LABEL_8:
-		if (pCookie->pData)
-			break;
-		pCookie->pData = pStore->BeginContents(pCookie->pPattern, pCookie->fFlags);
+		if (!pStore)
+		{
+			pCookie->pNode = pCookie->pNode->pNext;
+			continue;
+		}
 
-		if (pCookie->pData)
-			break;
+		if (!pCookie->pData)
+		{
+			pCookie->pData = pStore->BeginContents(pCookie->pPattern, pCookie->fFlags);
+			if (!pCookie->pData)
+			{
+				pStore->Release();
+				pCookie->pNode = pCookie->pNode->pNext;
+				continue;
+			}
+		}
 
+		while (pStore->Next(pCookie->pData, pFoundName))
+		{
+			if (pCookie->pStreamTable->Search(pFoundName))
+				continue;
+
+			*pFoundStore = pStore;
+
+			if (ppFoundCanonStore)
+			{
+				*ppFoundCanonStore = pStore;
+				pStore->AddRef();
+			}
+
+			pCookie->pStreamTable->Insert(new cNamedStream{ pFoundName, 1 });
+			return TRUE;
+		}
+
+		pStore->EndContents(pCookie->pData);
 		pStore->Release();
-
-		pCookie = reinterpret_cast<SearchCookie*>(pCookie->pData);
+		pCookie->pData = nullptr;
+		pCookie->pNode = pCookie->pNode->pNext;
 	}
 
-	do
-	{
-		if (!pStore->Next(pCookie->pData, pFoundName))
-		{
-			pStore->EndContents(pCookie->pData);
-			pStore->Release();
-			pCookie->pData = nullptr;
-
-			pCookie = reinterpret_cast<SearchCookie*>(pCookie->pData);
-			goto LABEL_1;
-		}
-	} while (pCookie->pStreamTable->Search(pFoundName));
-
-	*pFoundStore = pStore;
-
-	if (ppFoundCanonStore)
-	{
-		*ppFoundCanonStore = pStore;
-		pStore->AddRef();
-	}
-
-	pCookie->pStreamTable->Insert(new cNamedStream{ pFoundName, 1 });
-
-	return TRUE;
+	return FALSE;
 }
 
 ///////////////////////////////////////
@@ -439,6 +520,14 @@ void cSearchPath::Iterate(tSearchPathIterateCallback callback, BOOL bUseContext,
 {
 	static char pContext[4]; // TODO ???
 	PathIterateData envelope{};
+
+	// Search paths can themselves be the context of another search path (for
+	// example, object textures use the object-model path as their context).
+	// Find() refreshes a path before using it, but nested path expansion comes
+	// through Iterate() directly.  Without refreshing here, an in-process
+	// content switch leaves the nested path rooted in the previous global
+	// context even though the outer path noticed the context-version change.
+	EnsureCurrentContext();
 
 	if (bUseContext && m_pContext)
 	{
@@ -528,12 +617,31 @@ void cSearchPath::ClearStorages()
 	{
 		pStoreNode->pStore->Release();
 		pNext = pStoreNode->pNext;
-		delete pStoreNode;
+		Free(pStoreNode);
 	}
 
 	m_pLastNode = nullptr;
 	m_pPathStorages = nullptr;
 	m_bPathParsed = FALSE;
+}
+
+void cSearchPath::EnsureCurrentContext()
+{
+	const unsigned version = StorageManagerContextVersion(m_pStoreMan);
+	if (m_ContextVersion != version)
+	{
+		ClearStorages();
+		if (m_bUsesGlobalContext)
+		{
+			ISearchPath* pContext = StorageManagerGlobalContext(m_pStoreMan);
+			if (pContext)
+				pContext->AddRef();
+			if (m_pContext)
+				m_pContext->Release();
+			m_pContext = pContext;
+		}
+		m_ContextVersion = version;
+	}
 }
 
 ///////////////////////////////////////
@@ -592,8 +700,11 @@ void cSearchPath::DoAddPath(const char* pPath, int fRecurse)
 			return;
 		}
 
-		strncpy(buff, p, pdelim - p);
-		buff[pdelim - p] = '\0';
-		DoAddStore(buff, fRecurse);
+		if (pdelim != p)
+		{
+			strncpy(buff, p, pdelim - p);
+			buff[pdelim - p] = '\0';
+			DoAddStore(buff, fRecurse);
+		}
 	}
 }

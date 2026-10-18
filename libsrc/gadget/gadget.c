@@ -7,11 +7,9 @@
 
 // library includes
 #include <lg.h>
-#ifdef _WIN32
 #include <comtools.h>
 #include <appagg.h>
 #include <dispapi.h>
-#endif
 
 #undef BTYPE
 
@@ -97,7 +95,6 @@ static ulong lgad_lookup_pal16(int paltype)
    }
    return palid;
 }
-
 static void lgad_set_pal16(int paltype, int align)
 {
    if (lgad_use_pal16)
@@ -128,43 +125,35 @@ static ulong get_color_default(LGadBox* vb, ulong stylecol, ulong def)
 // Some general functions, basically exposing the UI underneath
 Cursor push_cursor;
 bool push_cursor_used = FALSE;
+static IDataSource *push_cursor_source = NULL;
 
-int LGadSetCursor(Ref r, int paltype, Cursor *c)
+int LGadSetCursor(grs_bitmap *bm, Point anchor, int paltype, Cursor *c)
 {
-   Point p; // to find the hotspot
-   grs_bitmap *cbm; // bitmap of art
-
-   cbm = UtilLockBitmapRef(r);
-   cbm->align = CURSOR_ALIGN;
-   UtilRefAnchor(r,&p);
-
+   bm->align = CURSOR_ALIGN;
    lgad_set_pal16(paltype,CURSOR_ALIGN);
-   uiMakeBitmapCursor(c, cbm, p);
+   uiMakeBitmapCursor(c, bm, anchor);
    uiSetGlobalDefaultCursor(c);
-   RefUnlock(r);
-
-   return(0);
-   
+   return 0;
 }
 
-int LGadPushCursor(Ref r, int paltype)
+int LGadPushCursor(IDataSource *pCurs, Point anchor, int paltype)
 {
-   Point p; // to find the hotspot
-   grs_bitmap *cbm; // bitmap of art
+   grs_bitmap *bm;
 
    if (push_cursor_used)
    {
       Warning(("LGadPushCursor: temp cursor already in use!\n"));
       return(-1);
    }
-   cbm = UtilLockBitmapRef(r);
-   cbm->align = CURSOR_ALIGN;
-   UtilRefAnchor(r,&p);
+   bm = (grs_bitmap *)IDataSource_Lock(pCurs);
+   if (!bm)
+      return -1;
+   bm->align = CURSOR_ALIGN;
 
    lgad_set_pal16(paltype,CURSOR_ALIGN);
-   uiMakeBitmapCursor(&push_cursor, cbm, p);
+   uiMakeBitmapCursor(&push_cursor, bm, anchor);
    uiPushGlobalCursor(&push_cursor);
-   RefUnlock(r);
+   push_cursor_source = pCurs;
    push_cursor_used = TRUE;
 
    return(0);
@@ -172,14 +161,18 @@ int LGadPushCursor(Ref r, int paltype)
 
 int LGadPopCursor()
 {
+   int result;
    push_cursor_used = FALSE;
    // restore "normal" cursor palette
    lgad_set_pal16(VB(current_root)->paltype,CURSOR_ALIGN);
 
-   if (uiPopGlobalCursor() == OK)
-      return(0);
-   else
-      return(-1);
+   result = uiPopGlobalCursor();
+   if (push_cursor_source != NULL)
+   {
+      IDataSource_Unlock(push_cursor_source);
+      push_cursor_source = NULL;
+   }
+   return result == OK ? 0 : -1;
 }
 
 int LGadFlush(void)
@@ -193,8 +186,7 @@ our and parse the relevant data out of the mouse/key info and pass it on down.  
 value of the inner Voyager function which is whether the input has been "claimed" by that callback and should
 not be passed on to further ones. */
 
-#pragma off(unreferenced)
-bool LGadKeyHandler(uiEvent *e, Region *r, void *data)
+BOOL LGadKeyHandler(uiEvent *e, Region *r, void *data)
 {
    bool retval = FALSE;
    LGadBox *vb = (LGadBox *)data;
@@ -214,7 +206,7 @@ bool LGadKeyHandler(uiEvent *e, Region *r, void *data)
    return(retval);
 }
 
-bool LGadMouseHandler(uiEvent *e, Region *r, void *data)
+BOOL LGadMouseHandler(uiEvent *e, Region *r, void *data)
 {
    LGadBox *vb = (LGadBox *)data;
    LGadMouseCallback cb;
@@ -226,7 +218,7 @@ bool LGadMouseHandler(uiEvent *e, Region *r, void *data)
    return(FALSE);
 }
 
-bool LGadMotionHandler(uiEvent *e, Region *r, void *data)
+BOOL LGadMotionHandler(uiEvent *e, Region *r, void *data)
 {
    LGadBox *vb = (LGadBox *)data;
    LGadMotionCallback cb;
@@ -237,7 +229,6 @@ bool LGadMotionHandler(uiEvent *e, Region *r, void *data)
       return(cb(me->pos.x,me->pos.y,vb));
    return(FALSE);
 }
-#pragma on(unreferenced)
 
 void GenericRegionInit(Region *reg, Rect *rct, uiSlab *slb, void *key_h, void *key_d,
    void *maus_h, void *maus_d, Cursor *c)
@@ -426,8 +417,6 @@ LGadRoot* LGadSetupSubRoot(LGadRoot* subroot, LGadRoot* parent, short x, short y
    subroot->curs = parent->curs;
    return subroot;
 }
-
-
 // *********** BOX ************
 
 #define MAX_BOX_OVERLAYS   4
@@ -456,7 +445,7 @@ OverlayStatus LGadOverlayFunc(void *arg)
 
    // find which box_overlay corresponds to this particular thing
    for (i=0; i < num_box_overlays; i++)
-      if (box_overlays[i].id == (ushort)arg)
+      if (box_overlays[i].id == (ushort)(uintptr_t)arg)
       {
          oip = &box_overlays[i];
          break; // we've found it, no sense in continuing
@@ -553,7 +542,7 @@ int LGadAddOverlay(LGadBox *vb)
          Warning(("LGadAddOverlay: lgad_overlay_add is NULL!\n"));
       else
          lgad_overlay_add(nr.ul.x,nr.ul.y,&box_overlays[num_box_overlays].bm,LGadOverlayFunc,
-            (void *)box_overlays[num_box_overlays].id,
+            (void *)(uintptr_t)box_overlays[num_box_overlays].id,
             (lgad_use_pal16 && lgad_pal_id != 0) ? UtilGetPalConv(MKREF(lgad_pal_id,vb->paltype)) : NULL );  // pass in NULL as the 16-bit conversion if it is irrelevant
 
       // some bookkeeping
@@ -745,9 +734,10 @@ int LGadDrawCallback(DrawCallback dcb, LGadBox *vb, void *data, Rect *r)
    gr_init_sub_canvas(can, &sub, r->ul.x, r->ul.y, RectWidth(r), RectHeight(r));
    gr_push_canvas(&sub);
    // deal with the sub canvas being larger than the canvas
-   gr_safe_set_cliprect(max(-r->ul.x,0),max(-r->ul.y,0),
-                   min(can->bm.w - r->ul.x,sub.bm.w),
-                   min(can->bm.h - r->ul.y,sub.bm.h));
+   gr_safe_set_cliprect(-r->ul.x > 0 ? -r->ul.x : 0,
+                   -r->ul.y > 0 ? -r->ul.y : 0,
+                   can->bm.w - r->ul.x < sub.bm.w ? can->bm.w - r->ul.x : sub.bm.w,
+                   can->bm.h - r->ul.y < sub.bm.h ? can->bm.h - r->ul.y : sub.bm.h);
    dcb(data,vb);
 
    // draw to both video pages, if requested
@@ -770,8 +760,6 @@ int LGadDrawCallback(DrawCallback dcb, LGadBox *vb, void *data, Rect *r)
    gr_close_sub_canvas(&sub);
    return(0);
 }
-
-
 
 // Forces the box to draw.  Pretty much just calls the draw callback.
 // Returns -1 for failure.
@@ -853,6 +841,7 @@ int LGadDrawBoxInternal(LGadBox *vb, void *data,Rect* drawrect)
       {
          ulong pal = lgad_lookup_pal16(vb->paltype);
 
+         if (vb->box_flags & BOXFLAG_CLEAR) flags |= ComposeFlagClear;
          if (pal != 0) flags |= ComposeFlagClear;
 
          GUIsetup(&compose,&r,flags,GUI_CANV_ANY);
@@ -931,9 +920,6 @@ int LGadDestroyBox(LGadBox *vb, bool free_self)
       Free(vb);
    return(0);
 }
-
-
-#pragma off(unreferenced)
 void LGadEraseCallback(void *data, LGadBox *vb)
 {
    int color;
@@ -945,7 +931,6 @@ void LGadEraseCallback(void *data, LGadBox *vb)
       color = lgad_pal_blacks[vb->paltype];
    gr_clear(color);
 }
-#pragma on(unreferenced)
 
 int LGadEraseBox(LGadBox *vb, bool free_self)
 {
@@ -961,11 +946,12 @@ int LGadEraseBox(LGadBox *vb, bool free_self)
 
 #ifdef OLD_LGAD_BUTTONS
 
-#pragma off(unreferenced)
-bool ButtonMouseHandler(short x, short y, short action, LGadBox *vb)
+bool ButtonMouseHandler(short x, short y, short action, short wheel, LGadBox *vb)
 {
    bool retval=FALSE; // return value of our callback, if any
    LGadButton *vbutt = (LGadButton *)vb;  // our actual button, cast from the LGadBox param
+
+   (void)wheel;
 
 
    if (vbutt == NULL)
@@ -1001,7 +987,7 @@ void ButtonDraw(void *data, LGadBox *vb)
 }
 
 
-static bool button_signal_handler(uiEvent* uiev, Region* reg, void* data)
+static BOOL button_signal_handler(uiEvent* uiev, Region* reg, void* data)
 {
    LGadButton* butt = (LGadButton*)reg;
    GadgEvent* ev = (GadgEvent*)uiev;
@@ -1015,7 +1001,6 @@ static bool button_signal_handler(uiEvent* uiev, Region* reg, void* data)
 
 }
 
-#pragma on(unreferenced)
 
 // Deals with that pesky ability to have w or h be 0 and thus autosize.
 // Note that autosizing is a bit wacky with format strings.
@@ -1168,11 +1153,12 @@ Thus using -3 for w will cause it to autosize with a margin of 3 in width. */
 the pointer, and keep the value in the range of 0 to max_val-1.  As the button callback func is triggered for
 each click, it passes in the contents of the variable as the data parameter. */
 
-#pragma off(unreferenced)
-bool ToggleMouseHandler(short x, short y, short action, LGadBox *vb)
+bool ToggleMouseHandler(short x, short y, short action, short wheel, LGadBox *vb)
 {
    bool retval=FALSE; // return value of our callback, if any
    LGadToggle *vt = (LGadToggle *)vb;  // our actual toggle, cast from the LGadBox param
+
+   (void)wheel;
 
    if (vt == NULL)
    {
@@ -1288,7 +1274,6 @@ LGadToggle *LGadCreateToggleArgs(LGadToggle *vt, LGadRoot *vr, short x, short y,
 
    return(LGadCreateToggle(vt,vr,x,y,w,h,paltype));
 }
-#pragma on(unreferenced)
 
 // ********** Scale **********
 
@@ -1352,13 +1337,15 @@ bool ScaleMotionHandler(short x, short y, LGadBox *vb)
    return(retval);
 }
 
-bool ScaleMouseHandler(short x, short y, short action, LGadBox *vb)
+bool ScaleMouseHandler(short x, short y, short action, short wheel, LGadBox *vb)
 {
    LGadScale *vs;
    Rect *r = (BOX_RECT(vb));
    bool retval = TRUE;
    bool use_scale;
    short tw,th; // temp width and height
+
+   (void)wheel;
 
    vs = (LGadScale *)vb;
    if (vs->scale_flags & SCALE_READONLY)
@@ -1396,7 +1383,7 @@ bool ScaleMouseHandler(short x, short y, short action, LGadBox *vb)
    if (action & (MOUSE_LUP|MOUSE_RUP))
    {
       if ((!vs->down) && !(vs->scale_flags & SCALE_NOTOGGLE))
-         retval = ToggleMouseHandler(x,y,action,vb); // otherwise, act like a toggle
+         retval = ToggleMouseHandler(x,y,action,wheel,vb); // otherwise, act like a toggle
       else
       {
          if (vs->buttonfunc)
@@ -1412,7 +1399,6 @@ bool ScaleMouseHandler(short x, short y, short action, LGadBox *vb)
 // We go through this wacky convolution of drawing a DrawElement callback that
 // is our real draw callback so that the contents of the scale will wind up inside
 // the whole combined border/internal paraphenalia
-#pragma off(unreferenced)
 void ScaleDrawCallback(DrawElement* elem, DrawElemState state)
 {
    LGadScale *vs = (LGadScale *)elem->draw_data2;
@@ -1483,7 +1469,6 @@ void ScaleDraw(void *data, LGadBox *vb)
    // note assumption that we are in a canvas just right for us to draw into
    ElementDraw(&de,dsNORMAL,0,0,grd_canvas->bm.w,grd_canvas->bm.h);
 }
-#pragma on(unreferenced)
 void LGadInitScale(LGadScale *vs)
 {
    memset(vs,0,sizeof(LGadScale));
@@ -1669,7 +1654,6 @@ void MenuElemSize(LGadMenu *vm, short *pw, short *ph)
    }
 }
 
-#pragma off(unreferenced)
 void MenuDrawCallback(DrawElement* elem, DrawElemState state)
 {
    int i; // iterator
@@ -1756,7 +1740,6 @@ void MenuDrawCallback(DrawElement* elem, DrawElemState state)
          y = y + h + MENU_MARGIN;
    }
 }
-#pragma on(unreferenced)
 
 
 static void do_deferred_menu_destroy(void* _menu)
@@ -1798,7 +1781,7 @@ static void defer_menu_destroy(LGadMenu* menu)
    uiDefer(do_deferred_menu_destroy,menu);
 }
 
-bool MenuMouseHandler(short x, short y, short action, LGadBox *vb)
+bool MenuMouseHandler(short x, short y, short action, short wheel, LGadBox *vb)
 {
    LGadMenu *vm = (LGadMenu *)vb; // the menu, duh
    Region* reg = LGadBoxRegion(vb);
@@ -1806,6 +1789,8 @@ bool MenuMouseHandler(short x, short y, short action, LGadBox *vb)
    short w,h; // elem sizes
    short tw, th; // temp w and h
    int i; // iterator
+
+   (void)wheel;
 
    // relativize point to region coordinates
    x -= reg->abs_x - r->ul.x;
@@ -1918,7 +1903,6 @@ bool MenuMouseHandler(short x, short y, short action, LGadBox *vb)
 }
 
 
-#pragma off(unreferenced)
 bool MenuMotionHandler(short x, short y, LGadBox *vb)
 {
    LGadMenu *vm = (LGadMenu *)vb;
@@ -2015,7 +1999,6 @@ bool MenuMotionHandler(short x, short y, LGadBox *vb)
    else
       return(FALSE);
 }
-#pragma on(unreferenced)
 
 
 
@@ -2415,27 +2398,21 @@ int LGadFocusMenu(LGadMenu *vm, int new_f)
    }
    return(0);
 }
-
-
 // ********** Edit Menu **********
 
 void LGadEditMenuParseText(VarElem *tv)
 {
    int base = 10; // what counting base
-   int cap = 10; // what is the highest valid decimal
-   int i; // iterator
-   bool okay = TRUE; // valid string?
    int atoival = 0; // final value for atoi, whether it is by hand or with real atoi
-   int newval; // temp value for individual digits
    int smax; // maximum valid value for signed
    uint umax; // maximum valid value for unsigned
+   char *end;
 
    if (tv->flags & EDITFLAG_HEX)
    {
       base = 16;
-      cap = 10;
    };  // advance past the 0x
-   if (tv->flags & EDITFLAG_OCTAL) { base = 8; cap = 8; };
+   if (tv->flags & EDITFLAG_OCTAL) { base = 8; };
    if (tv->flags & EDITFLAG_UNSIGNED)
    {
       switch(tv->vtype)
@@ -2455,47 +2432,12 @@ void LGadEditMenuParseText(VarElem *tv)
       }
    }
 
-   if (base == 10)
-      atoival = atoi(tv->edit);
+   if (tv->flags & EDITFLAG_UNSIGNED)
+      atoival = (int)strtoul(tv->edit, &end, base);
    else
-   {
-      // validate the string
-      for (i=0; i < strlen(tv->edit); i++)
-      {
-         tv->edit[i] = toupper(tv->edit[i]);
-         switch(base)
-         {
-            case 16:
-               if ((tv->edit[i] < '0') || ((tv->edit[i] > '9') && (tv->edit[i] < 'A')) || (tv->edit[i] > 'F'))
-                  okay = FALSE;
-               break;
-            case 8:
-               if ((tv->edit[i] < '0') || (tv->edit[i] > '7'))
-                  okay = FALSE;
-               break;
-            case 2:
-               if ((tv->edit[i] < '0') || (tv->edit [i] > '1'))
-                  okay = FALSE;
-               break;
-         }
-      }
-      if (okay)
-      {
-         for (i=0; i < strlen(tv->edit); i++)
-         {
-            if ((tv->edit[i] - '0') < cap)
-            {
-               newval = pow(base,strlen(tv->edit)-1-i) * (tv->edit[i] - '0');
-               atoival += newval;
-            }
-            else if ((base == 16) && (tv->edit[i] >= 'A'))
-            {
-               newval = pow(16,strlen(tv->edit)-1-i) * (tv->edit[i] - 'A' + 10);
-               atoival += newval;
-            }
-         }
-      }
-   }
+      atoival = (int)strtol(tv->edit, &end, base);
+   if (end == tv->edit || *end != '\0')
+      atoival = 0;
 
    // At this point, atoival is the real actual value of the string.  Now we need to poke it into
    // the VarElem value pointer.
@@ -2556,7 +2498,7 @@ void LGadEditMenuProcess(LGadEditMenu *vem)
             *((fix *)(tv->vdata)) = fix_from_float(atof(tv->edit));
             break;
          case EDITTYPE_FLOAT:
-            tmpf=atof(tv->edit);
+            tmpf=(float)atof(tv->edit);
             *((float *)(tv->vdata)) = tmpf;
             break;
          case EDITTYPE_TOGGLE:
@@ -2652,7 +2594,7 @@ bool EditMenuKeyHandler(short keycode, LGadBox *vb)
    VarElem *vep;
    bool retval; // for default menu key behavior
    int code = keycode & ~(KB_FLAG_DOWN | KB_FLAG_2ND);
-   int n; // length of string
+   size_t n; // length of string
    int i,j; // iterator
 
    vep = &vem->varlist[vem->active_slot];
@@ -2743,7 +2685,6 @@ bool EditMenuKeyHandler(short keycode, LGadBox *vb)
    return(TRUE);
 }
 
-#pragma off(unreferenced)
 void EditMenuDrawCallback(DrawElement* elem, DrawElemState state)
 {
    int i; // iterator
@@ -2833,7 +2774,6 @@ void EditMenuDrawCallback(DrawElement* elem, DrawElemState state)
       y = y + eh + MENU_MARGIN;
    }
 }
-#pragma on(unreferenced)
 
 void LGadEditMenuSetText(LGadEditMenu *vm)
 {
@@ -3058,7 +2998,6 @@ LGadEditMenu *LGadCreateEditMenuArgs(LGadEditMenu *vm, LGadRoot *vr, short x, sh
 extern void DrawElementInit(void);
 
 
-#pragma off(unreferenced)
 
 EXTERN void LGadSetDefaultFont(IDataSource* pFont)
 {
@@ -3099,6 +3038,3 @@ int LGadFrame(void)
    }
    return(0);
 }
-
-#pragma on(unreferenced)
-

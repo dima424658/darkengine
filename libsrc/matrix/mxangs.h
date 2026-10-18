@@ -31,22 +31,22 @@ struct sMxAng
    inline sMxAng &Set(mxs_ang _a) {a = _a; return *this;}
 
    inline sMxAng &SetRad(float rad) 
-   {a = rad*(MX_ANG_PI/MX_REAL_PI); return *this;}
+    {a = (mxs_ang)(int)(rad*(MX_ANG_PI/MX_REAL_PI)); return *this;}
    inline sMxAng &SetRad(double rad) 
-   {a = rad*(MX_ANG_PI/MX_REAL_PI); return *this;}
+    {a = (mxs_ang)(int)(rad*(MX_ANG_PI/MX_REAL_PI)); return *this;}
 
    inline sMxAng &SetDeg(float rad) 
-   {a = rad*(MX_ANG_PI/180.0); return *this;}
+    {a = (mxs_ang)(int)(rad*(MX_ANG_PI/180.0f)); return *this;}
    inline sMxAng &SetDeg(double rad) 
-   {a = rad*(MX_ANG_PI/180.0); return *this;}
+    {a = (mxs_ang)(int)(rad*(MX_ANG_PI/180.0)); return *this;}
    
    // Gets radians and degrees
-   const inline float Rad() {return (float)a * (MX_REAL_PI/MX_ANG_PI);}
-   const inline float Deg() {return (float)a * (180.0/MX_ANG_PI);}
+    const inline float Rad() {return (float)a * ((float)MX_REAL_PI/MX_ANG_PI);}
+    const inline float Deg() {return (float)a * (180.0f/MX_ANG_PI);}
    
    // Signed version
-   const inline float RadSigned() {return (float)((short)a) * (MX_REAL_PI/MX_ANG_PI);}
-   const inline float DegSigned() {return (float)((short)a) * (180.0/MX_ANG_PI);}
+    const inline float RadSigned() {return (float)((short)a) * ((float)MX_REAL_PI/MX_ANG_PI);}
+    const inline float DegSigned() {return (float)((short)a) * (180.0f/MX_ANG_PI);}
 
    const inline mxs_ang Ang() {return a;}
 
@@ -94,16 +94,16 @@ struct sMxAngVec : mxs_angvec
 
    // Sets from a vector of degrees
    inline sMxAngVec &SetDeg(const sMxVector &_r) {
-      tx=_r.x*(MX_ANG_PI/180.0);
-      ty=_r.y*(MX_ANG_PI/180.0);
-      tz=_r.z*(MX_ANG_PI/180.0); return *this;}
+      tx=(mxs_ang)(_r.x*(MX_ANG_PI/180.0f));
+      ty=(mxs_ang)(_r.y*(MX_ANG_PI/180.0f));
+      tz=(mxs_ang)(_r.z*(MX_ANG_PI/180.0f)); return *this;}
 
    // Stuffs into a vector of degrees
    // Treats as unsigned so beware
    inline void StuffDeg(sMxVector *_r) {
-      _r->x = (float)tx*(180.0/MX_ANG_PI);
-      _r->y = (float)ty*(180.0/MX_ANG_PI);
-      _r->z = (float)tz*(180.0/MX_ANG_PI);
+      _r->x = (float)tx*(180.0f/MX_ANG_PI);
+      _r->y = (float)ty*(180.0f/MX_ANG_PI);
+      _r->z = (float)tz*(180.0f/MX_ANG_PI);
    }
 
    // sMxMatrix (do the standard decomposition)
@@ -135,15 +135,15 @@ struct sMxAngVec : mxs_angvec
    
    // Scalar Multiply
    inline sMxAngVec operator*(float s) const
-   { return sMxAngVec(tx*s,ty*s,tz*s); } 
+    { return sMxAngVec((mxs_ang)(tx*s),(mxs_ang)(ty*s),(mxs_ang)(tz*s)); }
    sMxAngVec &operator*=(float s)
-   { tx*=s; ty*=s; tz*=s; return *this; }
+    { tx=(mxs_ang)(tx*s); ty=(mxs_ang)(ty*s); tz=(mxs_ang)(tz*s); return *this; }
 
    // Scalar Divide
    sMxAngVec operator/(float s) const
-   { return sMxAngVec(tx/s,ty/s,tz/s); } 
+    { return sMxAngVec((mxs_ang)(tx/s),(mxs_ang)(ty/s),(mxs_ang)(tz/s)); }
    sMxAngVec &operator/=(float s)
-   { tx/=s; ty/=s; tz/=s; return *this; }
+    { tx=(mxs_ang)(tx/s); ty=(mxs_ang)(ty/s); tz=(mxs_ang)(tz/s); return *this; }
 };
 
 
@@ -161,9 +161,9 @@ struct sMxRadVec : sMxVector
    
    // AngVec
    inline sMxRadVec(const sMxAngVec &a) { 
-      x=(float)a.tx*(MX_REAL_PI/MX_ANG_PI);
-      y=(float)a.ty*(MX_REAL_PI/MX_ANG_PI);
-      z=(float)a.tz*(MX_REAL_PI/MX_ANG_PI); }
+      x=(float)a.tx*((float)MX_REAL_PI/MX_ANG_PI);
+      y=(float)a.ty*((float)MX_REAL_PI/MX_ANG_PI);
+      z=(float)a.tz*((float)MX_REAL_PI/MX_ANG_PI); }
 
    // Matrix
    inline sMxRadVec(const sMxMatrix &m) 
@@ -174,9 +174,9 @@ struct sMxRadVec : sMxVector
    {x=_x;y=_y;z=_z; return *this;}
 
    inline sMxRadVec &Set(const sMxAngVec &a) { 
-      x=(float)a.tx*(MX_REAL_PI/MX_ANG_PI);
-      y=(float)a.ty*(MX_REAL_PI/MX_ANG_PI);
-      z=(float)a.tz*(MX_REAL_PI/MX_ANG_PI); return *this;}
+      x=(float)a.tx*((float)MX_REAL_PI/MX_ANG_PI);
+      y=(float)a.ty*((float)MX_REAL_PI/MX_ANG_PI);
+      z=(float)a.tz*((float)MX_REAL_PI/MX_ANG_PI); return *this;}
 
    inline sMxRadVec &Set(const sMxMatrix &m) 
    { mx_mat2rad(this,&m); return *this;}
@@ -184,23 +184,23 @@ struct sMxRadVec : sMxVector
    // Renormalizer
    // Forces all between -2pi and pi
    inline sMxRadVec &Renorm()
-   {  x = fmod(x,(float)MX_REAL_2PI);
-      y = fmod(y,(float)MX_REAL_2PI);
-      z = fmod(z,(float)MX_REAL_2PI); return *this; }
+   {  x = fmodf(x,(float)MX_REAL_2PI);
+      y = fmodf(y,(float)MX_REAL_2PI);
+      z = fmodf(z,(float)MX_REAL_2PI); return *this; }
 };
 
 
 // sMxAngVec/sMxRadVec
 inline sMxAngVec::sMxAngVec(sMxRadVec _r) 
-{  tx=_r.x*(MX_ANG_PI/MX_REAL_PI);
-   ty=_r.y*(MX_ANG_PI/MX_REAL_PI);
-   tz=_r.z*(MX_ANG_PI/MX_REAL_PI);}
+{  tx=(mxs_ang)(_r.x*(MX_ANG_PI/(float)MX_REAL_PI));
+   ty=(mxs_ang)(_r.y*(MX_ANG_PI/(float)MX_REAL_PI));
+   tz=(mxs_ang)(_r.z*(MX_ANG_PI/(float)MX_REAL_PI));}
 
 
 inline sMxAngVec &sMxAngVec::Set(sMxRadVec _r) 
-{  tx=_r.x*(MX_ANG_PI/MX_REAL_PI);
-   ty=_r.y*(MX_ANG_PI/MX_REAL_PI);
-   tz=_r.z*(MX_ANG_PI/MX_REAL_PI); return *this;}
+{  tx=(mxs_ang)(_r.x*(MX_ANG_PI/(float)MX_REAL_PI));
+   ty=(mxs_ang)(_r.y*(MX_ANG_PI/(float)MX_REAL_PI));
+   tz=(mxs_ang)(_r.z*(MX_ANG_PI/(float)MX_REAL_PI)); return *this;}
 
 #endif  // __MXANGS_H
 

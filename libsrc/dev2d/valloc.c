@@ -12,7 +12,7 @@
 
 #include <grd.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <comtools.h>
 #include <comdfcn.h>
 #include <dispapi.h>
@@ -21,7 +21,7 @@
 // returns whether the pointer is monitored or not (i.e., whether it is relocatable).
 bool vMonitor(uchar **p)
 {
-#ifdef WIN32
+#ifdef _WIN32
    if (g_pDev2dDisplayDevice)
       if (IDisplayDevice_SetMonitor(g_pDev2dDisplayDevice, p, kGrDispPtrMonitorOn) != FALSE)
          return TRUE;
@@ -31,7 +31,7 @@ bool vMonitor(uchar **p)
 
 void vUnmonitor(uchar **p)
 {
-#ifdef WIN32
+#ifdef _WIN32
    // This function will try to unregister the bits pointer of the bitmap
    // should it be a relocatable pointer.
    if (g_pDev2dDisplayDevice)

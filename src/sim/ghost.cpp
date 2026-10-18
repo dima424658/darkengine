@@ -22,7 +22,7 @@
 #include <dbmem.h>
 
 static int ghost_local_process_ms=0;
-static int ghost_local_last_run=0;
+static tSimTime ghost_local_last_run=0;
 
 //
 // go through all objects in the ghost system
@@ -32,7 +32,7 @@ static int ghost_local_last_run=0;
 void GhostFrame(int dt)
 {
    if (dt==0) return; // nothing happening, so who cares...
-   float flt_dt=(float)dt/1000.0;
+   float flt_dt=(float)dt/1000.0f;
 
    if (ghost_local_process_ms==0 || 
        (ghost_local_last_run+ghost_local_process_ms<GetSimTime()))

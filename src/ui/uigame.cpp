@@ -18,6 +18,8 @@
 #include <uiapp.h>
 #include <scrnman.h>
 #include <metasnd.h>
+#include <platform_services.h>
+#include <render_backend.h>
 
 #include <resapi.h>
 #include <fonrstyp.h>
@@ -35,6 +37,8 @@ guiStyle* uiGameStyle()
 
 static char* strip_trailing(char* arg)
 {
+   if (!arg || !*arg)
+      return arg;
    char* s = arg + strlen(arg) - 1; 
    for (; s >= arg && isspace(*s); s--)
       *s = '\0'; 
@@ -48,7 +52,7 @@ static BOOL cfg_get_lang(const char* var, char* buf, int buflen)
    if (config_get_raw("language",lang,sizeof(lang)))
    {
       char langvar[256];
-      sprintf(langvar,"%s_%s",lang,var); 
+      snprintf(langvar,sizeof(langvar),"%s_%.190s",lang,var);
       if (config_get_raw(langvar,buf,buflen))
          return TRUE; 
    }
@@ -226,6 +230,86 @@ void uiGameLoadStyle(const char* prefix, guiStyle* style, const char* relpath)
 void uiGameUnloadStyle(guiStyle* style)
 {
    unload_style_fonts(style); 
+}
+
+float uiGameGetLogicalTextScale(void)
+{
+   int client_width = 0;
+   int client_height = 0;
+   const int logical_width = grd_canvas ? grd_canvas->bm.w : 0;
+   const int logical_height = grd_canvas ? grd_canvas->bm.h : 0;
+   float presentation_scale = 1.0f;
+
+   if (logical_width > 0 && logical_height > 0)
+   {
+      if (RenderBackendGetSettledClientSize(&client_width, &client_height) &&
+          client_width > 0 && client_height > 0)
+      {
+         const float scale_x = (float)client_width / logical_width;
+         const float scale_y = (float)client_height / logical_height;
+         presentation_scale = scale_x < scale_y ? scale_x : scale_y;
+         if (presentation_scale <= 0.0f)
+            presentation_scale = 1.0f;
+      }
+   }
+
+   float scale = PlatformGetTextScale() / presentation_scale;
+   if (scale < 0.5f)
+      scale = 0.5f;
+   if (scale > 8.0f)
+      scale = 8.0f;
+   return scale;
+}
+
+BOOL uiGameGetReadableOverlayFont(const char* config_var,
+                                  char* font, int capacity)
+{
+   if (!font || capacity <= 0)
+      return FALSE;
+   font[0] = '\0';
+
+   if (config_var && config_var[0] &&
+       config_get_raw(config_var, font, capacity))
+   {
+      strip_trailing(font);
+      return font[0] != '\0';
+   }
+   if (config_get_raw("overlay_font", font, capacity))
+   {
+      strip_trailing(font);
+      return font[0] != '\0';
+   }
+
+   static const char* names[] =
+   {
+      "fontaa12", "fontaa16", "fontaa20", "fontaa29", "fontaa36"
+   };
+   static const int heights[] = { 12, 16, 20, 29, 36 };
+   const float scale = uiGameGetLogicalTextScale();
+   if (scale <= 1.05f)
+      return FALSE;
+
+   // Sixteen pixels is a conventional readable body-text height. Preserve
+   // legacy faces at 1x, then choose the nearest available AA face when the
+   // platform requests magnification.
+   const float logical_target = 16.0f * scale;
+   int selected = 0;
+   float nearest = logical_target > heights[0]
+      ? logical_target - heights[0] : heights[0] - logical_target;
+   for (int i = 1; i < (int)(sizeof(heights) / sizeof(heights[0])); ++i)
+   {
+      const float distance = logical_target > heights[i]
+         ? logical_target - heights[i] : heights[i] - logical_target;
+      if (distance < nearest)
+      {
+         nearest = distance;
+         selected = i;
+      }
+   }
+
+   strncpy(font, names[selected], capacity - 1);
+   font[capacity - 1] = '\0';
+   return TRUE;
 }
 
 void uiGameProtectStyle(const guiStyle* style)

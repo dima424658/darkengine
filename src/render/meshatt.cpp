@@ -85,12 +85,67 @@ struct sOpsMeshAttach : public sMeshAttach
    }
 };
 
+namespace
+{
+#pragma pack(push, 1)
+struct sMeshAttachDisk
+{
+   uint32 ignored_custom;
+   uint32 ignored_accessory;
+   sMeshAttachInstance attachments[kMeshAttachMax];
+};
+#pragma pack(pop)
+
+static_assert(sizeof(sMeshAttachDisk) == 120,
+              "Unexpected legacy mesh attachment record size");
+}
+
 class cMeshAttachOps : public cClassDataOps<sOpsMeshAttach>
 {
 public:
    cMeshAttachOps()
       : cClassDataOps<sOpsMeshAttach>(kNoFlags)
    {
+   }
+
+   STDMETHOD_(long,BlockSize)(sDatum)
+   {
+      return sizeof(sMeshAttachDisk);
+   }
+
+   STDMETHOD_(int,Version)()
+   {
+      return sizeof(sMeshAttachDisk);
+   }
+
+   STDMETHOD(Read)(sDatum* pdat, IDataOpsFile* file, int version)
+   {
+      char* bytes = new char[version];
+      file->Read(bytes, version);
+
+      if (!pdat->value)
+         *pdat = New();
+
+      sOpsMeshAttach* value = (sOpsMeshAttach*)pdat->value;
+      if (version >= sizeof(sMeshAttachDisk))
+      {
+         const sMeshAttachDisk* disk = (const sMeshAttachDisk*)bytes;
+         memcpy(value->m_Attachment, disk->attachments,
+                sizeof(value->m_Attachment));
+         value->m_pAccessory->m_bAttachmentCurrent = FALSE;
+      }
+
+      delete [] bytes;
+      return S_OK;
+   }
+
+   STDMETHOD(Write)(sDatum value, IDataOpsFile* file)
+   {
+      sMeshAttachDisk disk = {};
+      const sMeshAttach* attachment = (const sMeshAttach*)value.value;
+      memcpy(disk.attachments, attachment->m_Attachment,
+             sizeof(disk.attachments));
+      return file->Write(&disk, sizeof(disk)) == sizeof(disk) ? S_OK : E_FAIL;
    }
 
 }; 
@@ -136,7 +191,7 @@ public:
 // sdesc info, horrible macro for basic array element
 //
 #define an_sMeshAttach_field_set(n,nstr) \
-   { "attached obj"nstr,  kFieldTypeInt,    FieldLocation(sMeshAttach, m_Attachment[n].m_Object) }, \
+   { "attached obj" nstr,  kFieldTypeInt,    FieldLocation(sMeshAttach, m_Attachment[n].m_Object) }, \
    { "joint of skeleton", kFieldTypeInt,    FieldLocation(sMeshAttach, m_Attachment[n].m_iJoint) }, \
    { "x angle (0-65535)", kFieldTypeShort,  FieldLocation(sMeshAttach, m_Attachment[n].m_Angles.tx) }, \
    { "y angle (0-65535)", kFieldTypeShort,  FieldLocation(sMeshAttach, m_Attachment[n].m_Angles.ty) }, \

@@ -33,8 +33,8 @@
 */
 
 #include <fcntl.h>
-#include <sys\stat.h>
-#include <io.h>
+#include <sys/stat.h>
+#include <platform_io.h>
 #include <string.h>
 
 #include <res.h>
@@ -151,7 +151,7 @@ int ResOpenResFile(char *fname, ResOpenMode mode, bool auxinfo)
 
    if (mode == ROM_CREATE)
    {
-      fd = open(fname, O_CREAT | O_TRUNC | O_RDWR | O_BINARY,
+      fd = _open(fname, O_CREAT | O_TRUNC | O_RDWR | O_BINARY,
                 S_IREAD | S_IWRITE);
       if (fd < 0)
       {

@@ -23,6 +23,7 @@
 #include <config.h>
 #include <cfgdbg.h>
 #include <mprintf.h>
+#include <cmdterm.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -141,9 +142,12 @@ void StatusDrawStringAll(void)
 
 int str_wid(const char* s)
 {
+   int width;
+
    guiStyleSetupFont(NULL,StyleFontNormal); 
-   gr_font_string_width(gr_get_font(),s); 
+   width = gr_font_string_width(gr_get_font(),s);
    guiStyleCleanupFont(NULL,StyleFontNormal); 
+   return width;
 }
 
 void StatusField(int x, const char *s)
@@ -182,6 +186,7 @@ void StatusField(int x, const char *s)
 void Status(const char *s)
 {
    StatusField(SF_STATUS, s);
+   cmdterm_capture_status(s);
 #ifndef SHIP   
    if (*s != '\0' && config_is_defined("status"))
       mprintf("STATUS: %s\n",s);

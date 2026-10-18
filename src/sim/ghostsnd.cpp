@@ -159,8 +159,8 @@ static void _GhostAnalyzeAndSendMiniPacket(sGhostLocal *pGL, sGhostPos *pNew)
 
    // would this be faster as subtract and zero vec test? ???
    if (same_flags&&
-       mx_is_identical(&pNew->pos.vel,&pGL->info.last.pos.vel,0.02)&&
-       mx_is_identical(&pNew->pos.pos,&pGL->info.last.pos.pos,0.02))
+       mx_is_identical(&pNew->pos.vel,&pGL->info.last.pos.vel,0.02f)&&
+       mx_is_identical(&pNew->pos.pos,&pGL->info.last.pos.pos,0.02f))
    {  // wow, we can use a rot packet, i guess?
       sGhostRotMiniHB RMH;
       RMH.angle_info.fac=pNew->pos.angle_info.fac;
@@ -284,8 +284,6 @@ static int _ComputeHeartFrequencyMin(sGhostLocal *pGL, sGhostPos *pNew)
 ////////////////////////////////////////
 // detail systems
 
-static int _ghost_detail_mul[]={1.0,1.5,1.0,0.5};
-
 static float _ComputeGhostDetail(sGhostLocal *pGL)
 {
    return pGL->cfg.detail;
@@ -304,8 +302,8 @@ static float _ComputeGhostDetail(sGhostLocal *pGL)
 #define kGhostDtzMinCap       (0x800)
 
 // use detail implicitly
-#define _fltEps(type) ((float)((kGhostEps##type##))*_ComputeGhostDetail(pGL))
-#define _intEps(type) ((int)((kGhostEps##type##))*_ComputeGhostDetail(pGL))
+#define _fltEps(type) ((float)(kGhostEps##type)*_ComputeGhostDetail(pGL))
+#define _intEps(type) ((int)(kGhostEps##type*_ComputeGhostDetail(pGL)))
 
 ////////////////////////////////////////
 // do the wierd stuff we do for dtz computation
@@ -615,7 +613,7 @@ static BOOL _IsNewPacketNeeded(sGhostLocal *pGL, sGhostPos *pNew)
    }
 
    // early out if we are sending too often - ???
-   if (pGL->info.last.time+_ComputeHeartFrequencyMin(pGL,pNew)>GetSimTime())
+   if ((ulong)(pGL->info.last.time+_ComputeHeartFrequencyMin(pGL,pNew))>GetSimTime())
       return FALSE;
 
    // check transition from relative to non-relative
@@ -660,10 +658,10 @@ static BOOL _IsNewPacketNeeded(sGhostLocal *pGL, sGhostPos *pNew)
       Return_NeedPacketReason(8);
    
    // check timeout
-   if (pGL->info.last.time+_ComputeHeartFrequencyMax(pGL,pNew)<GetSimTime())
+   if ((ulong)(pGL->info.last.time+_ComputeHeartFrequencyMax(pGL,pNew))<GetSimTime())
    {
       // no timeout if we are in the EXACT SAME PLACE - should check rotation too...
-      if (!mx_is_identical(&pNew->pos.pos,&pGL->info.last.pos.pos,0.02))
+      if (!mx_is_identical(&pNew->pos.pos,&pGL->info.last.pos.pos,0.02f))
          if (!AngvecMatch(&pNew->pos.angle_info.fac,&pGL->info.last.pos.angle_info.fac,0x100))
             Return_NeedPacketReason(9);
    }
@@ -768,7 +766,7 @@ int ghost_local_frame_rate=0;      // ms between frames
 // go through our local ghosts and see what we care about updating
 void _GhostFrameProcessLocal(sGhostLocal *pGL, float dt)
 {
-   if ((ghost_local_frame_rate)&&(pGL->last_fr+ghost_local_frame_rate>GetSimTime()))
+   if ((ghost_local_frame_rate)&&((ulong)(pGL->last_fr+ghost_local_frame_rate)>GetSimTime()))
       return;  // this ghost was last run at a time under our frame rate, so skip
    _GhostDebugSetupLocal(pGL);   
    if (pGL->state&kGhostStRevive)        // if user revives us

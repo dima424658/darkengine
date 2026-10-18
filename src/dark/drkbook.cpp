@@ -71,8 +71,8 @@ protected:
    // Lookup the text string
    const char* PageName(int i)
    {
-      static char buf[8]; 
-      sprintf(buf,"PAGE_%d",i); 
+      static char buf[32];
+      snprintf(buf,sizeof(buf),"PAGE_%d",i);
       return buf;
    }
 
@@ -169,7 +169,7 @@ void cBook::InitUI()
    // get the color
    int rgb[3] = { 1, 1, 1, }; 
    int cnt = 3; 
-   sprintf(buf,"color_%s",mResPath);
+   sprintf(buf,"color_%s",(const char *)mResPath);
    config_get_value(buf,CONFIG_INT_TYPE,rgb,&cnt); 
    mTextColor = gr_make_screen_fcolor(uiRGB(rgb[0],rgb[1],rgb[2])); 
    
@@ -463,7 +463,7 @@ BOOL cBook::FindArt()
 {
   char buf[80];
   char filename[255];
-  sprintf(buf,"%s\\book.pcx",mResPath);
+  sprintf(buf,"%s\\book.pcx",(const char *)mResPath);
   if (!find_file_in_config_path(filename,buf,"resname_base"))
     return FALSE;
   return TRUE;
@@ -515,7 +515,7 @@ static void create_panel_mode()
 
 
 
-void init_commands(void);
+static void init_commands(void);
 
 void DarkBookInit(void)
 {

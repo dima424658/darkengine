@@ -234,8 +234,8 @@ void cAIDefend::Seek()
    {
       pPoint->fInRange = AIInsideCylinder(*m_pAIState->GetLocation(),
                                           pPoint->location,
-                                          sq(pPoint->ranges[i].radius),
-                                          pPoint->ranges[i].height / 2,
+                                          sq((float)pPoint->ranges[i].radius),
+                                          pPoint->ranges[i].height * 0.5f,
                                           &pPoint->distSq);
    }
 

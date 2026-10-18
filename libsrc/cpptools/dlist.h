@@ -12,6 +12,7 @@
 
 #include <lgassert.h>
 #include <templexp.h>
+#include <stdint.h>
 
 #include <dbmem.h>
 
@@ -105,7 +106,7 @@
 // }
 //
 
-#define kDListInvalidPtr ((cDListNodeBase *)0xffffffff)
+#define kDListInvalidPtr ((cDListNodeBase *)(uintptr_t)-1)
 #ifndef SHIP
 extern const char * g_pszDlistInsertError;
 #define ValidateNodeInsert(p) AssertMsg((p)->m_pNext == kDListInvalidPtr && (p)->m_pPrevious == kDListInvalidPtr, g_pszDlistInsertError);

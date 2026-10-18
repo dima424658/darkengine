@@ -30,8 +30,7 @@ static Region stupid_region; // placeholder for our handler
 // stupid event hander that just queues
 //
 
-#pragma off(unreferenced)
-bool stupid_event_handler(uiEvent* ev, Region* reg, void* data)
+BOOL stupid_event_handler(uiEvent* ev, Region* reg, void* data)
 {
    if (ev->type == UI_EVENT_KBD_RAW)
       return FALSE;

@@ -88,8 +88,7 @@ static void lightPnP_setvars(editBrush *br, bool update)
 
 #define LIGHT_BRIGHT 1
 
-#pragma disable_message(202)
-static void lightPnP_Slide(PnP_SliderOp op,Rect *where, float val, int data)
+static void lightPnP_Slide(PnP_SliderOp op,Rect *where, float val, intptr_t data)
 {
    if ((lightPnP_br==NULL) || (op != PnP_SliderUpdateOp))
       return;
@@ -104,7 +103,6 @@ static void lightPnP_ChangeInt(Rect *where, bool val, int data)
 {
    lightPnP_setvars(lightPnP_br,TRUE);
 }
-#pragma enable_message(202)
 
 void Create_lightPnP(LGadRoot* root, Rect* bounds, editBrush *br)
 {
@@ -116,8 +114,8 @@ void Create_lightPnP(LGadRoot* root, Rect* bounds, editBrush *br)
    PnP_ButtonToggle(getRect(1),"Type:Omni","Type:Spot",&_local_type,lightPnP_ChangeInt,0);
    PnP_SliderFloat(getRect(2),"Bright",1.0,1024.0,4.0,&brLight_Bright(br),
                     lightPnP_Slide,LIGHT_BRIGHT,PNP_SLIDER_VSLIDE);
-   PnP_SliderFloat(getRect(3),"Hue",0,1.0,0.05,&brLight_Hue(br),lightPnP_Slide,0,PNP_SLIDER_VSLIDE);
-   PnP_SliderFloat(getRect(4),"Saturation",0.0,1.0,0.05,&brLight_Saturation(br),lightPnP_Slide,0,PNP_SLIDER_VSLIDE);
+   PnP_SliderFloat(getRect(3),"Hue",0,1.0f,0.05f,&brLight_Hue(br),lightPnP_Slide,0,PNP_SLIDER_VSLIDE);
+   PnP_SliderFloat(getRect(4),"Saturation",0.0f,1.0f,0.05f,&brLight_Saturation(br),lightPnP_Slide,0,PNP_SLIDER_VSLIDE);
 }
 
 void Destroy_lightPnP(void)

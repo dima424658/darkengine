@@ -24,7 +24,6 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-#pragma off(unreferenced)
 bool pick_surface(PortalPolygonCore *poly, int voff, void *clip, int x, int y)
 {
    r3s_phandle vlist[32], *final;
@@ -60,7 +59,6 @@ bool pick_surface(PortalPolygonCore *poly, int voff, void *clip, int x, int y)
    }
    return inside;
 }
-#pragma on(unreferenced)
 
 int pick_region(PortalCell *r, int x, int y)
 {

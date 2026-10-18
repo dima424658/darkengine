@@ -6,10 +6,11 @@
 #define __REGION_H
 #pragma once
 
+struct _Region;
+
 #ifdef __cplusplus
 extern "C"
 {
-struct _Region;
 #endif // __cplusplus
 
 #include <rect.h>
@@ -179,7 +180,7 @@ bool region_test_pt(Region* reg, Point pt);
 bool region_test_rect(Region* reg, Rect* rect);
 
 // uiDeferred version of region_destroy
-void region_destroy_deferred(void* reg, bool draw);
+void region_destroy_deferred(Region* reg, bool draw);
 
 #define UNOBSCURED            0
 #define PARTIALLY_OBSCURED    1

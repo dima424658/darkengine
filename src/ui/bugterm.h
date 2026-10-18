@@ -9,6 +9,9 @@
 #ifndef __BUGTERM_H
 #define __BUGTERM_H
 
+struct _LGadRoot;
+struct Rect;
+
 #ifdef PLAYTEST
 
 //

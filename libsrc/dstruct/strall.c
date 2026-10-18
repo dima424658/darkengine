@@ -57,7 +57,7 @@ char *StringAlloc(char *s)
 {
 static bool heapsNotInitialized = TRUE;
 	HheapHead *phh;
-	short len;
+	size_t len;
 	int itable;
 	char *p;
 
@@ -80,7 +80,7 @@ static bool heapsNotInitialized = TRUE;
 	len = strlen(s) + 1;
 	for (itable = 0; itable < NUM_STRING_HEAP_SIZES; itable++)
 		{
-		if (len <= strallSizeStrings[itable])
+		if (len <= (size_t)strallSizeStrings[itable])
 			{
 			p = HheapAlloc(pheapHeadStrings[itable]);
 			memcpy(p, s, len);
@@ -103,7 +103,7 @@ static bool heapsNotInitialized = TRUE;
 
 void StringFree(char *s)
 {
-	short len;
+	size_t len;
 	int itable;
 
 //	Calculate length of string, find proper heap table, free string
@@ -111,7 +111,7 @@ void StringFree(char *s)
 	len = strlen(s) + 1;
 	for (itable = 0; itable < NUM_STRING_HEAP_SIZES; itable++)
 		{
-		if (len <= strallSizeStrings[itable])
+		if (len <= (size_t)strallSizeStrings[itable])
 			{
 			HheapFree(pheapHeadStrings[itable], s);
 			return;

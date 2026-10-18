@@ -25,7 +25,7 @@ int LGAPI GetEntryPtrPriority(const void *p)
 
 void cPriGuidSetBase::ApplyConstraints(const sAbsoluteConstraint * pConstraints, unsigned nNumConstraints)
 {
-    const unsigned nItems = m_Entries.Size();
+    const int nItems = m_Entries.Size();
     const unsigned kTriesLimit = 1000;
 
     BOOL fDidSwap = TRUE;
@@ -34,13 +34,13 @@ void cPriGuidSetBase::ApplyConstraints(const sAbsoluteConstraint * pConstraints,
     const sAbsoluteConstraint *pCurrentConstraint;
     sPriGuidSetEntry **pBeforeEntry;
     sPriGuidSetEntry **pAfterEntry;
-    index_t i;
+    int i;
     // Repeatedly apply constraints until no changes, or reach break-out limit
     while (fDidSwap && nTries < kTriesLimit)
     {
         fDidSwap = FALSE;
         nTries++;
-        for (int iCurrentConstraint = 0; iCurrentConstraint < nNumConstraints; iCurrentConstraint++)
+        for (unsigned iCurrentConstraint = 0; iCurrentConstraint < nNumConstraints; iCurrentConstraint++)
         {
             pCurrentConstraint = &pConstraints[iCurrentConstraint];
             pBeforeEntry = NULL;

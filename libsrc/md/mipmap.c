@@ -182,9 +182,9 @@ void md_mipmap_downsamp(uchar *dstbit,int dw,int dh,uchar *srcbit,int sw,int sh,
             }
 
             // Now map through the ipal
-            ((_rgb565 *)dstbit)->r = (r>>area_shift);
-            ((_rgb565 *)dstbit)->g = (g>>area_shift);
-            ((_rgb565 *)dstbit)->b = (b>>area_shift);
+            ((_rgb565 *)dstbit)->r = (ushort)(r>>area_shift);
+            ((_rgb565 *)dstbit)->g = (ushort)(g>>area_shift);
+            ((_rgb565 *)dstbit)->b = (ushort)(b>>area_shift);
 
             dstbit+=2;
          }
@@ -209,74 +209,8 @@ void md_mipmap_render(r3s_texture tmap,int x,int y)
 // I'm going to migrate this to r3d utils
 // I hate writing the same damn code over and over again...
 // Creates it all in one big block, copies srcbits
-r3s_texture md_mipmap_alloc(uchar *srcbits,int type,int flags,int w,int h,uchar *pal)
-{
-   int size;
-   int num_levs;
-   int hlog,wlog;
-   uchar *bits;
-   grs_bitmap *bm;
-   r3s_texture tmap;
-   int scale;
-
-   scale = (type==BMT_FLAT16)?2:1;
-
-   // First figure out the total size we need
-   // wlog is number of additional levels beyond 1 that we need
-   wlog = 0;
-   while((1<<wlog) < w) ++wlog;
-
-   // ditto
-   hlog = 0;
-   while((1<<hlog) < h) ++hlog;
-   
-   num_levs = (hlog>wlog)?hlog:wlog;
-   num_levs++;
-
-
-   size = num_levs * sizeof(grs_bitmap);
-
-   // Figure out texture space
-   wlog=w;
-   hlog=h;
-   while(1) {
-      size += wlog*hlog*scale;
-
-      if (wlog==1 && hlog==1) break;
-
-      if (wlog>1) wlog>>=1;
-      if (hlog>1) hlog>>=1;
-   }
-
-   tmap = bm = (grs_bitmap *)Malloc(size);
-
-   bits = (uchar *)(bm+num_levs);
-
-   // Generate all the levels including the top one
-   wlog=w;
-   hlog=h;
-   while(1) {
-      
-      // generate the lower level
-      if (srcbits)
-         md_mipmap_downsamp(bits,wlog,hlog,srcbits,w,h,pal,type);
-
-      gr_init_bitmap(bm,bits,type,flags,wlog,hlog);
-
-      if (wlog==1 && hlog==1) break;
-
-      bm++;
-      bits+= wlog*hlog*scale;
-
-      if (wlog>1) wlog>>=1;
-      if (hlog>1) hlog>>=1;
-   }
-
-   return tmap;
-}
-
 // This looks pretty darn good, you can override it if you wish
-static float mipmap_detail = 1.8;
+static float mipmap_detail = 1.8f;
 
 void md_mipmap_set_detail(float detail)
 {
@@ -368,13 +302,13 @@ void md_mipmap_render_pgon(mds_pgon *p, r3s_phandle *v,grs_bitmap *bm, ulong col
       // Calculate pixel area from screen coords
       pix_area = (float)(v1->grp.sx - v0->grp.sx)*(float)(v2->grp.sy - v1->grp.sy);
       pix_area -= (float)(v2->grp.sx - v1->grp.sx)*(float)(v1->grp.sy - v0->grp.sy);
-      pix_area *= mipmap_detail / (65536.0*65536.0);
+      pix_area *= mipmap_detail / (65536.0f*65536.0f);
 
       t_area = (v1->grp.u - v0->grp.u)*(v2->grp.v - v1->grp.v);
       t_area -= (v2->grp.u - v1->grp.u)*(v1->grp.v - v0->grp.v);
       t_area *= bm->w * bm->h;
 
-      tex_area = fabs(t_area/pix_area);
+      tex_area = fabsf(t_area/pix_area);
 
       // In truth, does this work anyway?  Isn't it the wrong size now...
       // if the other one goes to one...

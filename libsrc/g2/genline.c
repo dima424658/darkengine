@@ -109,10 +109,8 @@ void gen_uline(grs_vertex *v0, grs_vertex *v1) {
    }
 }
 
-#pragma off(unreferenced)
 #include <lftype.h>
 g2ul_func *gen_uline_expose (grs_vertex *v0, grs_vertex *v1)
 {
    return gen_uline;
 }
-#pragma on(unreferenced)
