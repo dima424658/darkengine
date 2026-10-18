@@ -2,8 +2,8 @@
 Type=Application
 Name=Dark Engine Restored
 Comment=Portable restoration of the Dark Engine
-Exec=Thief2
-TryExec=Thief2
+Exec=thief-runner
+TryExec=thief-runner
 Icon=dark-engine-restored
 Terminal=false
 Categories=Game;ActionGame;

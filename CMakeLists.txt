@@ -542,7 +542,7 @@ if(DARK_BUILD_ENGINE)
       )
       if(NOT ANDROID)
         target_link_libraries(thief2 PRIVATE pthread)
-        set_target_properties(thief2 PROPERTIES OUTPUT_NAME Thief2)
+        set_target_properties(thief2 PROPERTIES OUTPUT_NAME thief-runner)
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
           install(TARGETS thief2 RUNTIME DESTINATION bin)
           install(FILES

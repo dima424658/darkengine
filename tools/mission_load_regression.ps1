@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$GameDirectory,
-    [string]$Executable = "$(Join-Path $PSScriptRoot '..\build\Release\Win32\Thief2\Thief2.exe')"
+    [string]$Executable = "$(Join-Path $PSScriptRoot '..\build\Release\Win32\ThiefRunner\ThiefRunner.exe')"
 )
 
 $ErrorActionPreference = 'Stop'

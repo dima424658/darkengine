@@ -2562,9 +2562,9 @@
     <None Include="portal\Ptsurf16.asm" />
   </ItemGroup>
   <PropertyGroup Condition="'$(BuildThief2)'=='true'">
-    <TargetName>Thief2</TargetName>
-    <OutDir>$(DarkPlatformOutputDir)Thief2\</OutDir>
-    <IntDir>$(DarkIntermediateRoot)Thief2\</IntDir>
+    <TargetName>ThiefRunner</TargetName>
+    <OutDir>$(DarkPlatformOutputDir)ThiefRunner\</OutDir>
+    <IntDir>$(DarkIntermediateRoot)ThiefRunner\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(BuildThief2)'!='true'">
     <!-- The game and editor share this project but must never share object

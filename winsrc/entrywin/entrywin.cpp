@@ -54,7 +54,8 @@ static BOOL UsesDarkData(const char* executable)
     if (slash)
         name = slash + 1;
 
-    return _strnicmp(name, "thief2", 6) == 0 ||
+    return _strnicmp(name, "thiefrunner", 11) == 0 ||
+           _strnicmp(name, "thief2", 6) == 0 ||
            _strnicmp(name, "dromed", 6) == 0;
 }
 
