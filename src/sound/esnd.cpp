@@ -124,7 +124,7 @@ static int ESndPlayCore(cTagSet *pTagSet, ObjID Obj1, ObjID Obj2,
 
    // We depend on the speech system for our label management so we've
    // got no chance without it.
-   if (!g_bSpeechDatabaseLoaded)
+   if (!g_bSpeechDatabaseLoaded || !g_pDatabase || !g_pTagRequired)
       return -1;
 
    // Some tags are passed in.  There are as many as four other
@@ -384,8 +384,10 @@ extern "C" void ESndTerm(void)
    SafeRelease(pRecorder);
    if (g_pTagRequired)
       delete g_pTagRequired;
+   g_pTagRequired = NULL;
 
    delete g_pDatabase;
+   g_pDatabase = NULL;
 }
 
 #ifndef SHIP
@@ -484,6 +486,8 @@ static void ESndDatabasesDestroy(void)
 {
    g_pDatabase->Clear();
    g_LocalTagRequired.SetSize(0);
+   delete g_pTagRequired;
+   g_pTagRequired = NULL;
 }
 
 

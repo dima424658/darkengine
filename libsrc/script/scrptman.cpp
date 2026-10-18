@@ -544,7 +544,7 @@ HRESULT cScriptMan::DoForgetObj(cScrObj * pScrObj)
          }
       }
 
-      for (i = 0; i < m_PostedMsgs.Size(); i++)
+      for (i = m_PostedMsgs.Size() - 1; i >= 0; i--)
       {
          if (m_PostedMsgs[i].pMsg->to == pScrObj->GetObjID())
          {
@@ -621,6 +621,23 @@ STDMETHODIMP cScriptMan::ForgetAllObjs()
       tHashSetHandle iter;
       DoForgetObj(m_ActiveObjs.GetFirst(iter));
    }
+
+   // A database reset must not leave work addressed to pseudo objects,
+   // objects without an active script aggregate, or an object removed while
+   // adjacent posted messages were queued.  SaveLoad() also relies on these
+   // containers being empty before it restores checkpoint state.
+   for (int i = m_TimedMsgs.Size() - 1; i >= 0; --i)
+   {
+      m_TimedMsgs[i]->pMsg->Release();
+      m_TimedMsgs[i]->Release();
+   }
+   m_TimedMsgs.SetSize(0);
+
+   for (int i = m_PostedMsgs.Size() - 1; i >= 0; --i)
+      m_PostedMsgs[i].pMsg->Release();
+   m_PostedMsgs.SetSize(0);
+
+   m_ScriptsData.DestroyAll();
 
    // recycle timer ids 
    m_NextTimerID = 1; 
