@@ -94,6 +94,17 @@ static RECT ComputePresentationViewport(DWORD sourceWidth, DWORD sourceHeight,
   return viewport;
 }
 
+static BOOL IsExactIntegerScale(DWORD sourceWidth, DWORD sourceHeight,
+                                const RECT &viewport) {
+  const LONG width = viewport.right - viewport.left;
+  const LONG height = viewport.bottom - viewport.top;
+  if (!sourceWidth || !sourceHeight || width < (LONG)sourceWidth ||
+      height < (LONG)sourceHeight)
+    return FALSE;
+  return width % sourceWidth == 0 && height % sourceHeight == 0 &&
+         width / sourceWidth == height / sourceHeight;
+}
+
 static BOOL TraceEnabled(void) {
   static int enabled = -1;
   if (enabled < 0)
@@ -217,7 +228,7 @@ struct cD3D11Presenter::sImpl {
   ID3D11DepthStencilView *depthView;
   ID3D11VertexShader *compositeVS, *sceneVS;
   ID3D11PixelShader *compositePS, *scenePS;
-  ID3D11SamplerState *compositeSampler, *samplers[4];
+  ID3D11SamplerState *samplers[4];
   ID3D11Buffer *compositeConstants, *sceneConstants, *sceneVertices;
   ID3D11InputLayout *sceneLayout;
   UINT sceneVertexCapacity;
@@ -243,7 +254,7 @@ struct cD3D11Presenter::sImpl {
         sourceTexture(NULL), sceneTexture(NULL), depthTexture(NULL),
         sourceView(NULL), sceneView(NULL), sceneTarget(NULL), depthView(NULL),
         compositeVS(NULL), sceneVS(NULL), compositePS(NULL), scenePS(NULL),
-        compositeSampler(NULL), compositeConstants(NULL), sceneConstants(NULL),
+        compositeConstants(NULL), sceneConstants(NULL),
         sceneVertices(NULL), sceneLayout(NULL), sceneVertexCapacity(0),
         rasterizer(NULL), gamma(1), hardwareFrame(FALSE), sceneActive(FALSE),
         sceneOpen(FALSE), depthCompare(FALSE), depthWrite(FALSE),
@@ -314,7 +325,6 @@ void cD3D11Presenter::Stop() {
   ReleaseInterface(m_pImpl->scenePS);
   ReleaseInterface(m_pImpl->sceneVS);
   ReleaseInterface(m_pImpl->compositeConstants);
-  ReleaseInterface(m_pImpl->compositeSampler);
   ReleaseInterface(m_pImpl->compositePS);
   ReleaseInterface(m_pImpl->compositeVS);
   ReleaseInterface(m_pImpl->depthView);
@@ -597,12 +607,12 @@ BOOL cD3D11Presenter::Start(HWND hwnd, DWORD sw, DWORD sh,
       "cbuffer C:register(b0){float g;float hs;float pp;float z;float2 us;"
       "float2 zz;float2 os;float2 oo;}Texture2D "
       "ui:register(t0);Texture2D sc:register(t1);SamplerState "
-      "s:register(s0);float4 main(float4 p:SV_Position,float2 "
+      "usamp:register(s0);SamplerState ssamp:register(s1);float4 main(float4 p:SV_Position,float2 "
       "u:TEXCOORD0):SV_Target{float4 a;float3 b;if(pp>.5){int3 "
       "q=int3(int2(p.xy),0);a=ui.Load(q);b=sc.Load(q).rgb;}else{"
       "float2 au=(u-oo)*os;float ai=step(0,au.x)*step(au.x,1)*"
-      "step(0,au.y)*step(au.y,1);a=ui.Sample(s,saturate(au)*us)*ai;"
-      "b=sc.Sample(s,u).rgb;}float3 "
+      "step(0,au.y)*step(au.y,1);a=ui.Sample(usamp,saturate(au)*us)*ai;"
+      "b=sc.Sample(ssamp,u).rgb;}float3 "
       "c=a.rgb;if(hs>.5)c=lerp(b,a.rgb,a.a);return "
       "float4(pow(saturate(c),g),1);}";
   RECT rc;
@@ -725,11 +735,6 @@ BOOL cD3D11Presenter::Start(HWND hwnd, DWORD sw, DWORD sh,
             m_pImpl->device->CreateSamplerState(&samp, &m_pImpl->samplers[i])))
       goto fail;
   }
-  samp.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-  samp.AddressU = samp.AddressV = samp.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-  if (FAILED(m_pImpl->device->CreateSamplerState(&samp,
-                                                 &m_pImpl->compositeSampler)))
-    goto fail;
   m_pImpl->boundSamplers[0] = m_pImpl->samplers[1];
   m_pImpl->boundSamplers[1] = m_pImpl->samplers[1];
   for (i = 0; i < 4; ++i) {
@@ -1168,10 +1173,12 @@ BOOL cD3D11Presenter::Present(IDirectDrawSurface *surface, int x0, int y0,
   int x, y;
   BOOL transparentOverlay;
   BOOL tracePresentation;
+  BOOL pointOverlay;
   HRESULT hr;
   float black[4] = {0, 0, 0, 1};
   sCompositeConstants c;
   ID3D11ShaderResourceView *views[2];
+  ID3D11SamplerState *compositeSamplers[2];
   if (!m_pImpl || !m_pImpl->device || !surface)
     return FALSE;
   ConfigureFrameCapture();
@@ -1265,6 +1272,8 @@ BOOL cD3D11Presenter::Present(IDirectDrawSurface *surface, int x0, int y0,
                                          m_pImpl->sourceHeight, bw, bh,
                                          g_D3D11FitToViewport &&
                                              m_pImpl->sceneActive);
+  pointOverlay = IsExactIntegerScale(m_pImpl->sourceWidth,
+                                     m_pImpl->sourceHeight, viewport);
   ZeroMemory(&v, sizeof(v));
   v.TopLeftX = (float)viewport.left;
   v.TopLeftY = (float)viewport.top;
@@ -1273,12 +1282,13 @@ BOOL cD3D11Presenter::Present(IDirectDrawSurface *surface, int x0, int y0,
   v.MaxDepth = 1;
   if (tracePresentation)
     RenderBackendTrace(
-        "present source=%lux%lu texture=%lux%lu scene=%lux%lu output=%lux%lu viewport=%.1f,%.1f %.1fx%.1f scale=%d fit=%d scene-active=%d gamma=%.4f",
+        "present source=%lux%lu texture=%lux%lu scene=%lux%lu output=%lux%lu viewport=%.1f,%.1f %.1fx%.1f scale=%d fit=%d scene-active=%d overlay-filter=%s gamma=%.4f",
         m_pImpl->sourceWidth, m_pImpl->sourceHeight,
         m_pImpl->sourceTextureWidth, m_pImpl->sourceTextureHeight,
         m_pImpl->sceneWidth, m_pImpl->sceneHeight, bw, bh,
         v.TopLeftX, v.TopLeftY, v.Width, v.Height, g_D3D11ScaleToWindow,
-        g_D3D11FitToViewport, m_pImpl->sceneActive, m_pImpl->gamma);
+        g_D3D11FitToViewport, m_pImpl->sceneActive,
+        pointOverlay ? "point" : "linear", m_pImpl->gamma);
   m_pImpl->context->OMSetRenderTargets(1, &m_pImpl->renderTarget, NULL);
   m_pImpl->context->ClearRenderTargetView(m_pImpl->renderTarget, black);
   m_pImpl->context->RSSetViewports(1, &v);
@@ -1314,6 +1324,8 @@ BOOL cD3D11Presenter::Present(IDirectDrawSurface *surface, int x0, int y0,
                                       0, 0);
   views[0] = m_pImpl->sourceView;
   views[1] = m_pImpl->sceneView;
+  compositeSamplers[0] = m_pImpl->samplers[pointOverlay ? 0 : 1];
+  compositeSamplers[1] = m_pImpl->samplers[1];
   m_pImpl->context->IASetInputLayout(NULL);
   m_pImpl->context->IASetPrimitiveTopology(
       D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -1321,7 +1333,7 @@ BOOL cD3D11Presenter::Present(IDirectDrawSurface *surface, int x0, int y0,
   m_pImpl->context->PSSetShader(m_pImpl->compositePS, NULL, 0);
   m_pImpl->context->PSSetConstantBuffers(0, 1, &m_pImpl->compositeConstants);
   m_pImpl->context->PSSetShaderResources(0, 2, views);
-  m_pImpl->context->PSSetSamplers(0, 1, &m_pImpl->compositeSampler);
+  m_pImpl->context->PSSetSamplers(0, 2, compositeSamplers);
   m_pImpl->context->Draw(3, 0);
   if (!g_D3D11CaptureComplete && g_D3D11CapturePath[0] &&
       ++g_D3D11HardwareFrameCount >= g_D3D11CaptureFrame) {

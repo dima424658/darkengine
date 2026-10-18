@@ -1971,6 +1971,7 @@ protected:
                                              kScrnModeFullScreen);
                mPendingVideoMode.flags |= kScrnModeFullScreen |
                                            kScrnMode2dDriver;
+               mPendingFit = FALSE;
             }
             else
             {
@@ -1978,6 +1979,7 @@ protected:
                                              kScrnModeFullScreen);
                mPendingVideoMode.flags |= kScrnModeWindowed |
                                            kScrnMode2dDriver;
+               mPendingFit = TRUE;
             }
 
             // Apply presentation changes immediately, but restart this panel

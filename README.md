@@ -693,9 +693,14 @@ messages, `show_stats`, and the console. Windows obtains the scale from the
 window's current monitor, Linux uses the SDL drawable/compositor scale with a
 display-DPI fallback, and Android uses `scaledDensity`, including the user's
 system font-size preference. Presentation magnification is removed before a
-font is selected so text is not enlarged twice. Set `gamepad_radial_font` to a
-font resource name to override it on any platform; `overlay_font` overrides
-the automatic choice for all readable overlays.
+font is selected so text is not enlarged twice. The Windows compositor
+point-samples the overlay at exact integer scales and retains linear filtering
+for fractional scales and the 3D scene. Switching from fullscreen to windowed
+defaults the resolution choice to `Fit`, making the logical canvas match the
+settled client size; a fixed windowed resolution can still be selected
+afterward. Set `gamepad_radial_font` to a font resource name to override it on
+any platform; `overlay_font` overrides the automatic choice for all readable
+overlays.
 
 In menus, either stick moves the mouse pointer, A/X left-click, Y right-click,
 and B or Menu goes back; the D-pad remains directional navigation. These
