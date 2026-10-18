@@ -57,11 +57,18 @@ typedef enum ePlatformAssertAction
    kPlatformAssertIgnore
 } ePlatformAssertAction;
 
+typedef void (*tPlatformProcessOutput)(const char *bytes, int length,
+                                       void *context);
+
 EXTERN int PlatformGetDisplayModes(ePlatformDisplayScope scope,
                                    sPlatformDisplayMode *modes,
                                    int capacity,
                                    int *native_width,
                                    int *native_height);
+// Returns the platform's normal body-text height in physical pixels when the
+// platform has a meaningful touch-screen default. Zero preserves the legacy
+// engine font choice.
+EXTERN int PlatformGetDefaultTextPixelHeight(void);
 EXTERN BOOL PlatformGetMemoryStatus(sPlatformMemoryStatus *status);
 EXTERN BOOL PlatformReadUserUInt(const char *store, const char *name,
                                  uint32 *value);
@@ -82,6 +89,18 @@ EXTERN void *PlatformLoadLibrary(const char *name);
 EXTERN void *PlatformFindSymbol(void *library, const char *name);
 EXTERN void PlatformUnloadLibrary(void *library);
 EXTERN void PlatformDebugOutput(const char *text);
+// Starts one human-readable diagnostic report in the current game directory.
+// DARK_DIAGNOSTICS_PATH may override the destination for unattended tests.
+EXTERN void PlatformDiagnosticsStartSession(const char *application,
+                                            int argc,
+                                            const char *const *argv);
+EXTERN void PlatformDiagnosticsLog(const char *severity,
+                                   const char *subsystem,
+                                   const char *message);
+EXTERN void PlatformDiagnosticsLogStack(const char *severity,
+                                        const char *subsystem,
+                                        int skip_frames);
+EXTERN const char *PlatformDiagnosticsPath(void);
 EXTERN ePlatformAssertAction PlatformShowAssert(const char *message);
 EXTERN void PlatformDebugBreak(void);
 EXTERN void PlatformExitProcess(int status);
@@ -89,6 +108,21 @@ EXTERN BOOL PlatformSetClipboardText(const char *text);
 EXTERN int PlatformGetClipboardText(char *text, int capacity);
 EXTERN void PlatformSetTextInputActive(BOOL active);
 EXTERN BOOL PlatformGetCurrentDirectory(char *path, int capacity);
+EXTERN BOOL PlatformGetExecutableDirectory(char *path, int capacity);
+// Runs one child synchronously with an explicit argument vector and working
+// directory. stdout and stderr are combined and delivered incrementally.
+EXTERN BOOL PlatformRunProcess(const char *executable,
+                               const char *const *arguments,
+                               int argument_count,
+                               const char *working_directory,
+                               tPlatformProcessOutput output,
+                               void *context,
+                               uint32 *exit_code);
+// Starts a second copy of the current executable and returns immediately.
+// Use this when bootstrap UI changes configuration consumed by constructors.
+EXTERN BOOL PlatformRelaunchSelf(const char *const *arguments,
+                                 int argument_count,
+                                 const char *working_directory);
 // Converts Windows separators and resolves an existing path component by
 // component. Exact spelling always wins; on case-sensitive hosts, a unique
 // ASCII case-insensitive match is used only when the exact component is

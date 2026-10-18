@@ -255,6 +255,8 @@ int main(int argc, char *argv[])
     else
         unsetenv("DARK_CONTENT_PICKER");
 
+    PlatformDiagnosticsStartSession(engineArgc > 0 ? arguments[0] : nullptr,
+                                    engineArgc, arguments.data());
     const int result = _AppMain(engineArgc, arguments.data());
 #ifdef __ANDROID__
     char resultMessage[96];

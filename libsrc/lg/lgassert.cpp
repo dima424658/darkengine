@@ -156,6 +156,13 @@ void LGAPI _CriticalMsg(const char * cond, const char * file, unsigned uLine)
     snprintf(szScratch, sizeof(szScratch) - 1,  pszLogCriticalMsg, pszMessage);
     _LogWriteMsgFileLine(szScratch, pszTrimmedFile, uLine);
 
+    char szDiagnostic[1280];
+    snprintf(szDiagnostic, sizeof(szDiagnostic) - 1,
+             "%s (File: %s, Line: %u)", pszMessage, pszTrimmedFile, uLine);
+    szDiagnostic[sizeof(szDiagnostic) - 1] = '\0';
+    PlatformDiagnosticsLog("ERROR", "assertion", szDiagnostic);
+    PlatformDiagnosticsLogStack("ERROR", "assertion", 1);
+
     mprintf("[%s@%d] %s\n", pszTrimmedFile, uLine, pszMessage);
 
     // Automated architecture smoke tests must be able to record assertions

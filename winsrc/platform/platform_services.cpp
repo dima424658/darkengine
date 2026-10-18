@@ -3,10 +3,14 @@
 #include <platform_services.h>
 
 #include <stdio.h>
+#include <cstdio>
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
 #include <malloc.h>
+#include <mutex>
+#include <string>
+#include <vector>
 
 struct sDisplayModeCollector
 {
@@ -118,6 +122,13 @@ int PlatformGetDisplayModes(ePlatformDisplayScope scope,
    }
 
    return collector.count;
+}
+
+int PlatformGetDefaultTextPixelHeight(void)
+{
+   // Desktop builds retain their configured legacy fonts. The Android
+   // provider supplies a density-aware default for handheld displays.
+   return 0;
 }
 
 static uint32 ClampMemorySize(DWORDLONG size)
@@ -295,6 +306,65 @@ void PlatformDebugOutput(const char *text)
    OutputDebugStringA(text ? text : "");
 }
 
+static void PlatformDiagnosticTimestamp(char *buffer, size_t size,
+                                        bool milliseconds)
+{
+   SYSTEMTIME now = {};
+   GetLocalTime(&now);
+   if (milliseconds)
+      std::snprintf(buffer, size, "%02u:%02u:%02u.%03u",
+                    now.wHour, now.wMinute, now.wSecond, now.wMilliseconds);
+   else
+      std::snprintf(buffer, size, "%04u-%02u-%02u %02u:%02u:%02u",
+                    now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute,
+                    now.wSecond);
+}
+
+static const char *PlatformDiagnosticArchitecture(void)
+{
+#if defined(_M_X64)
+   return "x64";
+#else
+   return "x86";
+#endif
+}
+
+static unsigned long long PlatformDiagnosticProcessId(void)
+{
+   return GetCurrentProcessId();
+}
+
+#include <platform_diagnostics.inl>
+
+void PlatformDiagnosticsLogStack(const char *severity, const char *subsystem,
+                                 int skip_frames)
+{
+   void *frames[24] = {};
+   const USHORT count = CaptureStackBackTrace(
+      (ULONG)(skip_frames < 0 ? 0 : skip_frames + 1),
+      (ULONG)(sizeof(frames) / sizeof(frames[0])),frames,NULL);
+   const uintptr_t imageBase = (uintptr_t)GetModuleHandleA(NULL);
+   char message[1024];
+   int used = _snprintf(message,sizeof(message) - 1,
+                        "stack image-base=%p",(void *)imageBase);
+   if (used < 0)
+      used = 0;
+   for (USHORT i = 0; i < count && used < (int)sizeof(message) - 32; ++i)
+   {
+      const uintptr_t address = (uintptr_t)frames[i];
+      const uintptr_t relative = address >= imageBase
+         ? address - imageBase : address;
+      const int written = _snprintf(message + used,sizeof(message) - used - 1,
+                                    " %p(+%p)",(void *)address,
+                                    (void *)relative);
+      if (written <= 0)
+         break;
+      used += written;
+   }
+   message[sizeof(message) - 1] = '\0';
+   PlatformDiagnosticsLog(severity,subsystem,message);
+}
+
 ePlatformAssertAction PlatformShowAssert(const char *message)
 {
    int priority = GetThreadPriority(GetCurrentThread());
@@ -381,6 +451,205 @@ BOOL PlatformGetCurrentDirectory(char *path, int capacity)
       return FALSE;
    length = GetCurrentDirectoryA((DWORD)capacity, path);
    return length > 0 && length < (DWORD)capacity;
+}
+
+BOOL PlatformGetExecutableDirectory(char *path, int capacity)
+{
+   if (!path || capacity <= 0)
+      return FALSE;
+   const DWORD length = GetModuleFileNameA(NULL,path,(DWORD)capacity);
+   if (!length || length >= (DWORD)capacity)
+   {
+      path[0] = '\0';
+      return FALSE;
+   }
+   char *separator = strrchr(path,'\\');
+   char *alternate = strrchr(path,'/');
+   if (alternate && (!separator || alternate > separator))
+      separator = alternate;
+   if (!separator)
+   {
+      path[0] = '\0';
+      return FALSE;
+   }
+   *separator = '\0';
+   return TRUE;
+}
+
+static std::wstring PlatformUtf8ToWide(const char *text)
+{
+   if (!text)
+      return std::wstring();
+   int count = MultiByteToWideChar(CP_UTF8,0,text,-1,NULL,0);
+   UINT page = CP_UTF8;
+   if (!count)
+   {
+      page = CP_ACP;
+      count = MultiByteToWideChar(page,0,text,-1,NULL,0);
+   }
+   if (!count)
+      return std::wstring();
+   std::vector<wchar_t> buffer(count);
+   MultiByteToWideChar(page,0,text,-1,buffer.data(),count);
+   return std::wstring(buffer.data());
+}
+
+static void PlatformAppendQuotedArgument(std::wstring& command,
+                                         const std::wstring& argument)
+{
+   if (!command.empty())
+      command.push_back(L' ');
+   const BOOL quote = argument.empty() ||
+      argument.find_first_of(L" \t\"") != std::wstring::npos;
+   if (!quote)
+   {
+      command += argument;
+      return;
+   }
+   command.push_back(L'\"');
+   size_t slashes = 0;
+   for (size_t i = 0; i < argument.size(); ++i)
+   {
+      const wchar_t ch = argument[i];
+      if (ch == L'\\')
+      {
+         ++slashes;
+         continue;
+      }
+      if (ch == L'\"')
+      {
+         command.append(slashes * 2 + 1,L'\\');
+         command.push_back(L'\"');
+      }
+      else
+      {
+         command.append(slashes,L'\\');
+         command.push_back(ch);
+      }
+      slashes = 0;
+   }
+   command.append(slashes * 2,L'\\');
+   command.push_back(L'\"');
+}
+
+BOOL PlatformRunProcess(const char *executable,
+                        const char *const *arguments,
+                        int argument_count,
+                        const char *working_directory,
+                        tPlatformProcessOutput output,
+                        void *context,
+                        uint32 *exit_code)
+{
+   if (exit_code)
+      *exit_code = UINT32_MAX;
+   if (!executable || !executable[0] || argument_count < 0)
+      return FALSE;
+
+   const std::wstring application = PlatformUtf8ToWide(executable);
+   const std::wstring directory = PlatformUtf8ToWide(working_directory);
+   if (application.empty())
+      return FALSE;
+
+   std::wstring command;
+   PlatformAppendQuotedArgument(command,application);
+   for (int i = 0; i < argument_count; ++i)
+      PlatformAppendQuotedArgument(command,
+         PlatformUtf8ToWide(arguments && arguments[i] ? arguments[i] : ""));
+   std::vector<wchar_t> mutableCommand(command.begin(),command.end());
+   mutableCommand.push_back(L'\0');
+
+   SECURITY_ATTRIBUTES security = { sizeof(security), NULL, TRUE };
+   HANDLE readPipe = NULL;
+   HANDLE writePipe = NULL;
+   if (!CreatePipe(&readPipe,&writePipe,&security,0))
+      return FALSE;
+   SetHandleInformation(readPipe,HANDLE_FLAG_INHERIT,0);
+
+   STARTUPINFOW startup = {};
+   startup.cb = sizeof(startup);
+   startup.dwFlags = STARTF_USESTDHANDLES;
+   startup.hStdOutput = writePipe;
+   startup.hStdError = writePipe;
+   startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+   PROCESS_INFORMATION process = {};
+   const BOOL created = CreateProcessW(application.c_str(),
+      mutableCommand.data(),NULL,NULL,TRUE,CREATE_NO_WINDOW,NULL,
+      directory.empty() ? NULL : directory.c_str(),&startup,&process);
+   CloseHandle(writePipe);
+   if (!created)
+   {
+      CloseHandle(readPipe);
+      return FALSE;
+   }
+
+   char buffer[4096];
+   BOOL running = TRUE;
+   while (running)
+   {
+      DWORD available = 0;
+      while (PeekNamedPipe(readPipe,NULL,0,NULL,&available,NULL) && available)
+      {
+         DWORD read = 0;
+         DWORD request = available < sizeof(buffer) ? available
+                                                    : sizeof(buffer);
+         if (!ReadFile(readPipe,buffer,request,&read,NULL) || !read)
+            break;
+         if (output)
+            output(buffer,(int)read,context);
+      }
+      running = WaitForSingleObject(process.hProcess,25) == WAIT_TIMEOUT;
+   }
+   for (;;)
+   {
+      DWORD read = 0;
+      if (!ReadFile(readPipe,buffer,sizeof(buffer),&read,NULL) || !read)
+         break;
+      if (output)
+         output(buffer,(int)read,context);
+   }
+
+   DWORD nativeExit = UINT32_MAX;
+   GetExitCodeProcess(process.hProcess,&nativeExit);
+   if (exit_code)
+      *exit_code = (uint32)nativeExit;
+   CloseHandle(readPipe);
+   CloseHandle(process.hThread);
+   CloseHandle(process.hProcess);
+   return TRUE;
+}
+
+BOOL PlatformRelaunchSelf(const char *const *arguments,
+                          int argument_count,
+                          const char *working_directory)
+{
+   if (argument_count < 0)
+      return FALSE;
+
+   wchar_t executable[MAX_PATH];
+   const DWORD length = GetModuleFileNameW(NULL,executable,MAX_PATH);
+   if (!length || length >= MAX_PATH)
+      return FALSE;
+
+   std::wstring command;
+   PlatformAppendQuotedArgument(command,executable);
+   for (int i = 0; i < argument_count; ++i)
+      PlatformAppendQuotedArgument(command,
+         PlatformUtf8ToWide(arguments && arguments[i] ? arguments[i] : ""));
+   std::vector<wchar_t> mutableCommand(command.begin(),command.end());
+   mutableCommand.push_back(L'\0');
+
+   const std::wstring directory = PlatformUtf8ToWide(working_directory);
+   STARTUPINFOW startup = {};
+   startup.cb = sizeof(startup);
+   PROCESS_INFORMATION process = {};
+   const BOOL created = CreateProcessW(executable,mutableCommand.data(),
+      NULL,NULL,FALSE,0,NULL,directory.empty() ? NULL : directory.c_str(),
+      &startup,&process);
+   if (!created)
+      return FALSE;
+   CloseHandle(process.hThread);
+   CloseHandle(process.hProcess);
+   return TRUE;
 }
 
 BOOL PlatformResolvePath(const char *path, char *resolved, int capacity)

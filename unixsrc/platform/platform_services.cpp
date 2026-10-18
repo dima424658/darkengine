@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <dlfcn.h>
 #include <filesystem>
 #include <fnmatch.h>
@@ -18,9 +19,14 @@
 #include <unordered_map>
 #include <vector>
 #include <unistd.h>
+#if defined(__linux__) && !defined(__ANDROID__)
+#include <execinfo.h>
+#endif
 
 #if defined(__ANDROID__)
 #include <android/log.h>
+#include <SDL2/SDL_system.h>
+#include <jni.h>
 #endif
 
 #if defined(__linux__)
@@ -101,6 +107,82 @@ int PlatformGetDisplayModes(ePlatformDisplayScope scope,
    (void)scope;
    (void)modes;
    (void)capacity;
+   return 0;
+#endif
+}
+
+int PlatformGetDefaultTextPixelHeight(void)
+{
+#if defined(__ANDROID__)
+   // Android's normal body text is 16sp. scaledDensity includes both the
+   // device density and the user's system font-size preference.
+   JNIEnv *environment = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+   jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+   float scaledDensity = 0.0f;
+   jclass activityClass = NULL;
+   jobject resources = NULL;
+   jclass resourcesClass = NULL;
+   jobject metrics = NULL;
+   jclass metricsClass = NULL;
+
+   if (environment && activity)
+   {
+      activityClass = environment->GetObjectClass(activity);
+      jmethodID getResources = activityClass
+         ? environment->GetMethodID(activityClass, "getResources",
+                                    "()Landroid/content/res/Resources;")
+         : NULL;
+      if (getResources)
+         resources = environment->CallObjectMethod(activity, getResources);
+      resourcesClass = resources ? environment->GetObjectClass(resources)
+                                 : NULL;
+      jmethodID getDisplayMetrics = resourcesClass
+         ? environment->GetMethodID(resourcesClass, "getDisplayMetrics",
+                                    "()Landroid/util/DisplayMetrics;")
+         : NULL;
+      if (getDisplayMetrics)
+         metrics = environment->CallObjectMethod(resources,
+                                                  getDisplayMetrics);
+      metricsClass = metrics ? environment->GetObjectClass(metrics) : NULL;
+      jfieldID scaledDensityField = metricsClass
+         ? environment->GetFieldID(metricsClass, "scaledDensity", "F")
+         : NULL;
+      if (scaledDensityField)
+         scaledDensity = environment->GetFloatField(metrics,
+                                                     scaledDensityField);
+      if (environment->ExceptionCheck())
+      {
+         environment->ExceptionClear();
+         scaledDensity = 0.0f;
+      }
+   }
+   if (metricsClass) environment->DeleteLocalRef(metricsClass);
+   if (metrics) environment->DeleteLocalRef(metrics);
+   if (resourcesClass) environment->DeleteLocalRef(resourcesClass);
+   if (resources) environment->DeleteLocalRef(resources);
+   if (activityClass) environment->DeleteLocalRef(activityClass);
+   if (activity) environment->DeleteLocalRef(activity);
+   if (scaledDensity > 0.0f)
+      return (int)(16.0f * scaledDensity + 0.5f);
+
+   // Retain an SDL density fallback for unusual activity startup states where
+   // Android resources are not yet available.
+   float density = 0.0f;
+   int display = 0;
+   SDL_Window *window = SDL_GetKeyboardFocus();
+   if (window)
+   {
+      const int current = SDL_GetWindowDisplayIndex(window);
+      if (current >= 0)
+         display = current;
+   }
+   if (SDL_GetDisplayDPI(display, NULL, NULL, &density) == 0 && density > 0.0f)
+      return (int)(16.0f * density / 160.0f + 0.5f);
+
+   // Android's baseline density is 160 dpi. A conservative 32-pixel fallback
+   // is preferable to silently reverting to Dark's 8-pixel desktop font.
+   return 32;
+#else
    return 0;
 #endif
 }
@@ -210,6 +292,67 @@ void PlatformDebugOutput(const char *text)
    std::fputs(resolvedText, stderr);
 }
 
+static void PlatformDiagnosticTimestamp(char *buffer, size_t size,
+                                        bool milliseconds)
+{
+   using namespace std::chrono;
+   const system_clock::time_point now = system_clock::now();
+   const std::time_t value = system_clock::to_time_t(now);
+   struct tm local = {};
+#if defined(_WIN32)
+   localtime_s(&local, &value);
+#else
+   localtime_r(&value, &local);
+#endif
+   if (milliseconds)
+   {
+      const long fraction = (long)(duration_cast<std::chrono::milliseconds>(
+         now.time_since_epoch()).count() % 1000);
+      char seconds[32];
+      std::strftime(seconds, sizeof(seconds), "%H:%M:%S", &local);
+      std::snprintf(buffer, size, "%s.%03ld", seconds, fraction);
+   }
+   else
+      std::strftime(buffer, size, "%Y-%m-%d %H:%M:%S", &local);
+}
+
+static const char *PlatformDiagnosticArchitecture(void)
+{
+   return sizeof(void *) == 8 ? "x64" : "x86";
+}
+
+static unsigned long long PlatformDiagnosticProcessId(void)
+{
+   return (unsigned long long)getpid();
+}
+
+#include <platform_diagnostics.inl>
+
+void PlatformDiagnosticsLogStack(const char *severity, const char *subsystem,
+                                 int skip_frames)
+{
+#if defined(__linux__) && !defined(__ANDROID__)
+   void *frames[24] = {};
+   const int count = backtrace(frames,(int)(sizeof(frames) / sizeof(frames[0])));
+   char message[1024];
+   int used = snprintf(message,sizeof(message),"stack");
+   const int first = std::max(0,skip_frames + 1);
+   for (int i = first; i < count && used < (int)sizeof(message) - 24; ++i)
+   {
+      const int written = snprintf(message + used,sizeof(message) - used,
+                                   " %p",frames[i]);
+      if (written <= 0)
+         break;
+      used += written;
+   }
+   message[sizeof(message) - 1] = '\0';
+   PlatformDiagnosticsLog(severity,subsystem,message);
+#else
+   (void)skip_frames;
+   PlatformDiagnosticsLog(severity,subsystem,"stack unavailable");
+#endif
+}
+
 ePlatformAssertAction PlatformShowAssert(const char *message)
 {
    PlatformShowError("Assertion Failed", message);
@@ -238,6 +381,75 @@ void PlatformSetTextInputActive(BOOL active)
 BOOL PlatformGetCurrentDirectory(char *path, int capacity)
 {
    return path && capacity > 0 && getcwd(path, (size_t)capacity) != nullptr;
+}
+
+BOOL PlatformGetExecutableDirectory(char *path, int capacity)
+{
+   if (!path || capacity <= 0)
+      return FALSE;
+   const ssize_t length = readlink("/proc/self/exe",path,(size_t)capacity - 1);
+   if (length <= 0 || length >= capacity)
+   {
+      path[0] = '\0';
+      return FALSE;
+   }
+   path[length] = '\0';
+   char *separator = strrchr(path,'/');
+   if (!separator)
+   {
+      path[0] = '\0';
+      return FALSE;
+   }
+   *separator = '\0';
+   return TRUE;
+}
+
+BOOL PlatformRunProcess(const char *, const char *const *, int, const char *,
+                        tPlatformProcessOutput, void *, uint32 *exit_code)
+{
+   if (exit_code)
+      *exit_code = UINT32_MAX;
+   return FALSE;
+}
+
+BOOL PlatformRelaunchSelf(const char *const *arguments, int argument_count,
+                          const char *working_directory)
+{
+#if defined(__ANDROID__)
+   (void)arguments;
+   (void)argument_count;
+   (void)working_directory;
+   return FALSE;
+#else
+   if (argument_count < 0)
+      return FALSE;
+   char executable[4096];
+   const ssize_t length = readlink("/proc/self/exe",executable,
+                                   sizeof(executable) - 1);
+   if (length <= 0 || length >= (ssize_t)sizeof(executable))
+      return FALSE;
+   executable[length] = '\0';
+
+   const pid_t child = fork();
+   if (child < 0)
+      return FALSE;
+   if (child == 0)
+   {
+      if (working_directory && working_directory[0] &&
+          chdir(working_directory) != 0)
+         _exit(126);
+      std::vector<char *> argv;
+      argv.reserve((size_t)argument_count + 2);
+      argv.push_back(executable);
+      for (int i = 0; i < argument_count; ++i)
+         argv.push_back(const_cast<char *>(arguments && arguments[i]
+                                          ? arguments[i] : ""));
+      argv.push_back(nullptr);
+      execv(executable,argv.data());
+      _exit(127);
+   }
+   return TRUE;
+#endif
 }
 
 namespace
