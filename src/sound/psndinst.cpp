@@ -1849,7 +1849,14 @@ BOOL cPropSndInstHigh::EnterCallback(const cRoom *room, const cRoomPortal *enter
 
       obj_dist /= m_attenFactor;
 
-      real_dist *= (obj_dist / old_obj_dist);
+      // A source can coincide with its listener, notably for sounds emitted
+      // as the player enters water.  Scaling that zero-length path as 0 / 0
+      // produces NaN; the occlusion path later converts it to a negative SFX
+      // distance and poisons the next distance update.
+      if (old_obj_dist > 0.0f)
+         real_dist *= (obj_dist / old_obj_dist);
+      else
+         real_dist = 0.0f;
 
       if (PlayerObjectExists() &&
           (*obj_list == PlayerObject()) &&

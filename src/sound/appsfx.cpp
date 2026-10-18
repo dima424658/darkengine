@@ -1452,7 +1452,17 @@ BOOL SFX_StereoReversed()
 
 void SFX_Slam_Dist(int hnd, int distance, BOOL force_update)
 {
-   AssertMsg(fxlist[hnd].distance >= 0, "Attempt to distance override on absolute sample");
+   if (distance < 0)
+   {
+      AssertMsg3(FALSE, "Attempt to set negative distance %d on sample %s (handle %d)",
+                 distance, fxlist[hnd].name ? fxlist[hnd].name : "(unnamed)", hnd);
+      return;
+   }
+
+   AssertMsg4(fxlist[hnd].distance >= 0,
+              "Attempt to override distance on sample %s (handle %d): stored %d, requested %d",
+              fxlist[hnd].name ? fxlist[hnd].name : "(unnamed)", hnd,
+              fxlist[hnd].distance, distance);
    fxlist[hnd].distance = distance;
    fxlist[hnd].parm.blocking_factor = 0.0;
 
@@ -1464,7 +1474,17 @@ void SFX_Slam_Dist(int hnd, int distance, BOOL force_update)
 
 void SFX_Slam_Dist_BF(int hnd, int distance, mxs_real blocking_factor, BOOL force_update)
 {
-   AssertMsg(fxlist[hnd].distance >= 0, "Attempt to distance override on absolute sample");
+   if (distance < 0)
+   {
+      AssertMsg3(FALSE, "Attempt to set negative distance %d on sample %s (handle %d)",
+                 distance, fxlist[hnd].name ? fxlist[hnd].name : "(unnamed)", hnd);
+      return;
+   }
+
+   AssertMsg4(fxlist[hnd].distance >= 0,
+              "Attempt to override distance on sample %s (handle %d): stored %d, requested %d",
+              fxlist[hnd].name ? fxlist[hnd].name : "(unnamed)", hnd,
+              fxlist[hnd].distance, distance);
    fxlist[hnd].distance = distance;
    fxlist[hnd].parm.blocking_factor = blocking_factor;
 
