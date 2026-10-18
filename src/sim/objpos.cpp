@@ -30,6 +30,7 @@
 #include <objnotif.h>
 #include <tagfile.h>
 #include <vernum.h>
+#include <dbfile.h>
 
 #include <sdesbase.h>
 #include <sdestool.h>
@@ -549,7 +550,10 @@ STDMETHODIMP_(void) cPosProp::Notify(ePropertyNotifyMsg msg, PropNotifyData raw)
 // Parse the old EOS tag and read in object positions 
 //
 
-#define READ(f,v) if (f->Read((char*)&(v),sizeof(v)) != sizeof(v)) goto err
+#define READ(f,v) if (f->Read((char*)&(v),sizeof(v)) != sizeof(v)) { \
+   dbLoadReportFailure("position-reader","Legacy object-position block is truncated"); \
+   goto err; \
+}
 
 static const TagFileTag EOSTag = { "OBJECTS" };
 static const TagVersion EOSVersion = { 0, 1, };
@@ -573,11 +577,25 @@ void cPosProp::LoadEOSPoses(ITagFile* file)
       // read in number of phyla 
       int nphyla; 
       READ(file,nphyla);
+      if (nphyla < 0 || nphyla > 255)
+      {
+         dbLoadReportFailure("position-reader",
+                             "Legacy object-position phylum count is invalid");
+         goto err;
+      }
       
       // read in a size for each phylum 
       sizes = new int[nphyla+1]; 
       for (i = 0; i <= nphyla; i++)
+      {
          READ(file,sizes[i]); 
+         if (sizes[i] < 0 || sizes[i] > sizeof(buf))
+         {
+            dbLoadReportFailure("position-reader",
+                                "Legacy object-position record size is invalid");
+            goto err;
+         }
+      }
 
       // read in max objID used
       ObjID max_id; 
@@ -587,10 +605,12 @@ void cPosProp::LoadEOSPoses(ITagFile* file)
       // we could actually just seek, but why fix what aint broke 
       for (i = 0; i <= nphyla; i++)
       {
-         Assert_(sizeof(buf) >= sizes[i]); 
-
          if (file->Read(buf,sizes[i]) != sizes[i])
+         {
+            dbLoadReportFailure("position-reader",
+                                "Legacy object-position phylum data is truncated");
             goto err; 
+         }
       }
 
       ObjID obj; 
@@ -603,10 +623,20 @@ void cPosProp::LoadEOSPoses(ITagFile* file)
             // read phylum 
             uchar phylum; 
             READ(file,phylum); 
+            if (phylum > nphyla)
+            {
+               dbLoadReportFailure("position-reader",
+                                   "Legacy object-position phylum index is invalid");
+               goto err;
+            }
 
             // read the object
             if (file->Read(buf,sizes[phylum]) != sizes[phylum])
+            {
+               dbLoadReportFailure("position-reader",
+                                   "Legacy object-position record is truncated");
                goto err; 
+            }
 
             // this is what we want!  the obj pos! 
             ObjPos pos; 
@@ -616,7 +646,7 @@ void cPosProp::LoadEOSPoses(ITagFile* file)
       while (obj < max_id);
 
    err:
-      delete sizes; 
+      delete[] sizes;
       file->CloseBlock(); 
    }
 }

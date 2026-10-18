@@ -272,13 +272,19 @@ HRESULT DarkLoadGameInternal(ITagFile* file)
       ITagFile* missfile = OpenMissionFile(GetMissionData()->num); 
 
       // Load the map (but not map objects) from the virgin mission file
-      if (FAILED(dbMergeLoadTagFile(missfile,kFiletypeGAM|kDBMap)))
+      // Database loaders return a loaded-partition mask, not an HRESULT.
+      // Zero means that loading failed; FAILED(0) is false and used to let a
+      // partially initialized database proceed into simulation.
+      if (dbMergeLoadTagFile(missfile,kFiletypeGAM|kDBMap) == 0)
+      {
+         SafeRelease(missfile);
          return kDarkSaveMission; 
+      }
 
       SafeRelease(missfile); 
 
       // Now merge-load the mission (& all concretes) from the save game 
-      if (FAILED(dbMergeLoadTagFile(file,kFiletypeMIS|kObjPartTerrain)))
+      if (dbMergeLoadTagFile(file,kFiletypeMIS|kObjPartTerrain) == 0)
          return kDarkSaveMission;
 
       // send the final post load

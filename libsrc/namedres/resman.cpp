@@ -18,6 +18,149 @@ BOOL g_fResPrintDrops;
 #include <pathutil.h>
 #include <search.h>
 #include <cstdlib>
+#include <missiondiag.h>
+#include <platform_services.h>
+#include <mutex>
+#include <string>
+#include <vector>
+
+namespace
+{
+struct sMissingResourceDiagnostic
+{
+	std::string name;
+	std::string type;
+	std::string path;
+	unsigned count;
+};
+
+std::mutex g_missionDiagnosticsMutex;
+std::vector<sMissingResourceDiagnostic> g_missingResources;
+std::string g_diagnosticMission;
+bool g_diagnosticMissionActive = false;
+bool g_diagnosticPostLoadComplete = false;
+unsigned g_lastSummarizedRequests = 0;
+
+unsigned MissingResourceRequestCount()
+{
+	unsigned total = 0;
+	for (size_t i = 0; i < g_missingResources.size(); ++i)
+		total += g_missingResources[i].count;
+	return total;
+}
+
+bool TraceResourceMisses()
+{
+	const char* trace = getenv("DARK_RESOURCE_MISS_TRACE");
+	if (!trace || !trace[0] || trace[0] == '0')
+		trace = getenv("DARK_RESOURCE_TRACE");
+	return trace && trace[0] && trace[0] != '0';
+}
+
+void RecordMissingResource(const char* name, const char* type,
+	const char* path)
+{
+	std::lock_guard<std::mutex> lock(g_missionDiagnosticsMutex);
+	if (!g_diagnosticMissionActive)
+		return;
+
+	const char* safeName = name ? name : "";
+	const char* safeType = type ? type : "unknown";
+	const char* safePath = path ? path : "";
+	for (size_t i = 0; i < g_missingResources.size(); ++i)
+	{
+		sMissingResourceDiagnostic& existing = g_missingResources[i];
+		if (!stricmp(existing.name.c_str(), safeName) &&
+			!stricmp(existing.type.c_str(), safeType) &&
+			!stricmp(existing.path.c_str(), safePath))
+		{
+			++existing.count;
+			return;
+		}
+	}
+
+	sMissingResourceDiagnostic missing;
+	missing.name = safeName;
+	missing.type = safeType;
+	missing.path = safePath;
+	missing.count = 1;
+	g_missingResources.push_back(missing);
+
+	if (TraceResourceMisses())
+	{
+		char message[1400];
+		snprintf(message, sizeof(message),
+			"Unresolved resource probe '%s' (type=%s%s%s)%s",
+			safeName, safeType, safePath[0] ? ", path=" : "",
+			safePath, g_diagnosticPostLoadComplete ? " [after post-load]" : "");
+		message[sizeof(message) - 1] = '\0';
+		PlatformDiagnosticsLog("TRACE", "resource", message);
+	}
+}
+
+void WriteMissionResourceSummary(const char* checkpoint)
+{
+	const unsigned requests = MissingResourceRequestCount();
+	if (requests == g_lastSummarizedRequests && checkpoint &&
+		!strcmp(checkpoint, "shutdown"))
+		return;
+	g_lastSummarizedRequests = requests;
+
+	char message[1024];
+	snprintf(message, sizeof(message),
+		"Mission '%s' %s: %u unique unresolved resource probe%s, "
+		"%u total (fallback probes are expected; see texture preflight for "
+		"actionable missing art)",
+		g_diagnosticMission.empty() ? "(unknown)" : g_diagnosticMission.c_str(),
+		checkpoint ? checkpoint : "checkpoint",
+		(unsigned)g_missingResources.size(),
+		g_missingResources.size() == 1 ? "" : "s", requests);
+	message[sizeof(message) - 1] = '\0';
+	PlatformDiagnosticsLog("INFO", "resource", message);
+	if (requests && TraceResourceMisses())
+		mprintf("Resource trace: %u unresolved probe%s; see %s\n",
+			(unsigned)g_missingResources.size(),
+			g_missingResources.size() == 1 ? "" : "s",
+			PlatformDiagnosticsPath());
+}
+}
+
+void MissionDiagnosticsBegin(const char* mission)
+{
+	std::lock_guard<std::mutex> lock(g_missionDiagnosticsMutex);
+	g_missingResources.clear();
+	g_diagnosticMission = mission ? mission : "";
+	g_diagnosticMissionActive = true;
+	g_diagnosticPostLoadComplete = false;
+	g_lastSummarizedRequests = 0;
+	char message[1024];
+	snprintf(message, sizeof(message), "Beginning mission load: %s",
+		g_diagnosticMission.empty() ? "(unknown)" : g_diagnosticMission.c_str());
+	message[sizeof(message) - 1] = '\0';
+	PlatformDiagnosticsLog("INFO", "mission", message);
+}
+
+void MissionDiagnosticsFinish(BOOL loaded)
+{
+	std::lock_guard<std::mutex> lock(g_missionDiagnosticsMutex);
+	if (!g_diagnosticMissionActive)
+		return;
+	g_diagnosticPostLoadComplete = true;
+	WriteMissionResourceSummary(loaded ? "post-load" : "load failed");
+}
+
+void MissionDiagnosticsFinalSummary(void)
+{
+	std::lock_guard<std::mutex> lock(g_missionDiagnosticsMutex);
+	if (g_diagnosticMissionActive)
+		WriteMissionResourceSummary("shutdown");
+}
+
+void MissionDiagnosticsIssue(const char* severity, const char* subsystem,
+	const char* message)
+{
+	PlatformDiagnosticsLog(severity, subsystem, message);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -115,6 +258,7 @@ HRESULT cResMan::End()
 	if (!m_fDidInit)
 		return E_FAIL;
 
+	MissionDiagnosticsFinalSummary();
 	m_pSharedCache->FlushAll();
 
 	if (m_pCache)
@@ -260,7 +404,7 @@ void cResMan::BindAll(const char* pPattern, const char* pTypeName, ISearchPath* 
 	if (!pCookie)
 		return;
 
-	char pResName[32];
+	char pResName[MAX_STORENAME];
 	cStr resExt{};
 	IStore* pStore, * pCanonStore;
 
@@ -822,8 +966,8 @@ struct sFoundTypedStream
 	const char* pName;
 	const char* pRelPath;
 	ISearchPath* pPath;
-	char pFoundName[32];
-	char candidateNames[kMaxCandidates][32];
+	char pFoundName[MAX_STORENAME];
+	char candidateNames[kMaxCandidates][MAX_STORENAME];
 	const char* candidatePtrs[kMaxCandidates];
 	int candidateCount;
 	IStore* pFoundCanonStore;
@@ -883,7 +1027,7 @@ IRes* cResMan::DoBind(const char* pName, const char* pTypeName, ISearchPath* pPa
 		}
 	}
 
-	char pFullname[32];
+	char pFullname[MAX_STORENAME];
 	IStore* pStore, * pCanonStore;
 
 	cStr resExt{};
@@ -946,7 +1090,10 @@ IRes* cResMan::DoBind(const char* pName, const char* pTypeName, ISearchPath* pPa
 	}
 
 	if (!pStore)
+	{
+		RecordMissingResource(pName, pTypeName, pRelPath);
 		return nullptr;
+	}
 
 	auto* pRes = BindSpecific(pFullname, pTypeName, pStore, pCanonStore, fBindFlags);
 	const char* pStorePath = pStore->GetFullPathName();

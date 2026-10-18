@@ -40,6 +40,7 @@
 #include <matrix.h>
 #include <tagfile.h>
 #include <vernum.h>
+#include <dbfile.h>
 
 #include <simman.h>
 #include <simdef.h>
@@ -200,7 +201,12 @@ static void load_player_cam_info(ITagFile *pFile)
 //checking version info already done by setup_tagfile
 
   readresult = pFile->Read(cam, sizeof(Camera));
-  AssertMsg(readresult==sizeof(Camera),"Read invalid block size trying to load player camera info!");
+  if (readresult != sizeof(Camera))
+  {
+     dbLoadReportFailure("player-camera",
+                         "Player camera block is truncated");
+     return;
+  }
 
   memcpy(gPlayerCam,cam,sizeof(Camera));
 

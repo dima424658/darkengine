@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
+#include <new>
 #include <vector>
 
 #include <config.h>
@@ -30,6 +32,10 @@
 #include <objspace.h>
 
 #include <mprintf.h>
+#include <missiondiag.h>
+#ifdef EDITOR
+#include <brestore.h>
+#endif
 
 #include <filemenu.h>
 
@@ -54,6 +60,64 @@ static char gCurrGameFile[256] = "";
 static char gCurrMapFile[256] = "";
 
 static char gCurrFilename[256]; // so people who want to query can find out
+
+static int gDBLoadDepth = 0;
+static BOOL gDBLoadFailed = FALSE;
+static char gDBLoadFailure[512] = "";
+
+void dbLoadReportFailure(const char* subsystem, const char* detail)
+{
+   const char* safeSubsystem = subsystem && *subsystem ? subsystem : "mission-data";
+   const char* safeDetail = detail && *detail ? detail : "unspecified load failure";
+   MissionDiagnosticsIssue("ERROR",safeSubsystem,safeDetail);
+   if (gDBLoadDepth > 0 && !gDBLoadFailed)
+   {
+      gDBLoadFailed = TRUE;
+      _snprintf(gDBLoadFailure,sizeof(gDBLoadFailure)-1,"%s: %s",
+                safeSubsystem,safeDetail);
+      gDBLoadFailure[sizeof(gDBLoadFailure)-1] = '\0';
+   }
+}
+
+BOOL dbLoadHasFailed(void)
+{
+   return gDBLoadFailed;
+}
+
+const char* dbLoadFailureReason(void)
+{
+   return gDBLoadFailure;
+}
+
+static void LGAPI database_tagfile_error(ITagFile*, const TagFileTag* tag,
+                                         const char* operation,
+                                         const char* detail, void*)
+{
+   char diagnostic[512];
+   _snprintf(diagnostic,sizeof(diagnostic)-1,
+             "Tag-file %s failed%s%s: %s",
+             operation ? operation : "read",
+             tag ? " for " : "", tag ? tag->label : "",
+             detail ? detail : "invalid data");
+   diagnostic[sizeof(diagnostic)-1] = '\0';
+   dbLoadReportFailure("chunk-reader",diagnostic);
+}
+
+static void begin_load_transaction(void)
+{
+   if (gDBLoadDepth++ == 0)
+   {
+      gDBLoadFailed = FALSE;
+      gDBLoadFailure[0] = '\0';
+      TagFileSetErrorObserver(database_tagfile_error,NULL);
+   }
+}
+
+static void end_load_transaction(void)
+{
+   if (gDBLoadDepth > 0 && --gDBLoadDepth == 0)
+      TagFileSetErrorObserver(NULL,NULL);
+}
 
 struct sCompatibilityChunk
 {
@@ -87,6 +151,20 @@ struct sCompatibilityRecordTail
 };
 
 static std::vector<sCompatibilityRecordTail> gCompatibilityRecordTails;
+
+struct sDBSourceFormatChunk
+{
+   ITagFile* source;
+   TagFileTag tag;
+   TagVersion version;
+   ulong filetype;
+   ulong size;
+   std::vector<char> bytes;
+};
+
+static std::vector<sDBSourceFormatChunk> gDBSourceFormat;
+static eDBWriteProfile gDBWriteProfile = kDBWritePreserveSource;
+static BOOL gDBSourceTargetFrozen = FALSE;
 
 static void clear_compatibility_state()
 {
@@ -153,11 +231,175 @@ void dbCompatibilityRetainRawTag(const TagFileTag* tag, const char* detail)
 BOOL dbCompatibilityUseRawTag(const TagFileTag* tag)
 {
    sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
-   return chunk && (chunk->retainRaw ||
+   return chunk && ((chunk->size == 0 &&
+                     gDBWriteProfile == kDBWritePreserveSource) ||
+                    chunk->retainRaw ||
                     chunk->status == kDBCompatRawPreserved ||
                     (chunk->status == kDBCompatPrefixDecoded &&
                      !chunk->hasRecordTails)) &&
-          !chunk->bytes.empty();
+          (chunk->size == 0 || !chunk->bytes.empty());
+}
+
+void dbCompatibilityRewriteTag(const TagFileTag* tag, const char* detail)
+{
+   sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
+   if (!chunk)
+      return;
+   chunk->retainRaw = FALSE;
+   chunk->hasRecordTails = TRUE;
+   chunk->status = kDBCompatPrefixDecoded;
+   if (detail)
+   {
+      strncpy(chunk->detail,detail,sizeof(chunk->detail));
+      chunk->detail[sizeof(chunk->detail)-1] = '\0';
+   }
+}
+
+const void* dbCompatibilityGetRawTag(const TagFileTag* tag, ulong* size,
+                                     TagVersion* version)
+{
+   if (size)
+      *size = 0;
+   if (version)
+      memset(version,0,sizeof(*version));
+   sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
+   if (!chunk || chunk->bytes.empty())
+      return NULL;
+   if (size)
+      *size = (ulong)chunk->bytes.size();
+   if (version)
+      *version = chunk->version;
+   return chunk->bytes.data();
+}
+
+eDBWriteProfile dbFormatGetWriteProfile(void)
+{
+   return gDBWriteProfile;
+}
+
+eDBWriteProfile dbFormatSetWriteProfile(eDBWriteProfile profile)
+{
+   eDBWriteProfile previous = gDBWriteProfile;
+   gDBWriteProfile = profile;
+   return previous;
+}
+
+BOOL dbFormatSourceTag(const TagFileTag* tag, TagVersion* version, ulong* size)
+{
+   for (int i = (int)gDBSourceFormat.size() - 1; i >= 0; --i)
+   {
+      const sDBSourceFormatChunk& chunk = gDBSourceFormat[i];
+      if (!strcmp(chunk.tag.label,tag->label) &&
+          (!gCompatibilitySaveMask || (chunk.filetype & gCompatibilitySaveMask)))
+      {
+         if (version)
+            *version = chunk.version;
+         if (size)
+            *size = chunk.size;
+         return TRUE;
+      }
+   }
+   return FALSE;
+}
+
+const void* dbFormatSourceRawTag(const TagFileTag* tag, ulong* size,
+                                 TagVersion* version)
+{
+   if (size)
+      *size = 0;
+   if (version)
+      memset(version,0,sizeof(*version));
+   for (int i = (int)gDBSourceFormat.size() - 1; i >= 0; --i)
+   {
+      const sDBSourceFormatChunk& chunk = gDBSourceFormat[i];
+      if (!strcmp(chunk.tag.label,tag->label) && !chunk.bytes.empty() &&
+          (!gCompatibilitySaveMask ||
+           (chunk.filetype & gCompatibilitySaveMask)))
+      {
+         if (size)
+            *size = (ulong)chunk.bytes.size();
+         if (version)
+            *version = chunk.version;
+         return chunk.bytes.data();
+      }
+   }
+
+   // During an ordinary load/save cycle the compatibility inventory owns the
+   // only raw copy.  The source inventory takes ownership only while an
+   // external-tool target is frozen, avoiding a second copy of very large
+   // blocks such as WREXT in 32-bit DromEd.
+   return dbCompatibilityGetRawTag(tag,size,version);
+}
+
+BOOL dbFormatTargetHasTag(const TagFileTag* tag)
+{
+   const BOOL newDarkOnly = !strcmp(tag->label,"WREXT") ||
+                            !strcmp(tag->label,"LM_PARAM");
+   if (gDBWriteProfile == kDBWriteRetail && newDarkOnly)
+      return FALSE;
+   if ((gDBWriteProfile == kDBWriteNewDark ||
+        gDBWriteProfile == kDBWriteKCToolsExchange) && newDarkOnly)
+      return TRUE;
+   return dbFormatSourceTag(tag,NULL,NULL);
+}
+
+BOOL dbFormatUsesNewDark(void)
+{
+   return gDBWriteProfile == kDBWriteNewDark ||
+          gDBWriteProfile == kDBWriteKCToolsExchange;
+}
+
+void dbFormatFreezeSourceTarget(BOOL freeze)
+{
+   if (freeze && !gDBSourceTargetFrozen)
+   {
+      for (size_t sourceIndex = 0;
+           sourceIndex < gDBSourceFormat.size(); ++sourceIndex)
+      {
+         sDBSourceFormatChunk& source = gDBSourceFormat[sourceIndex];
+         if (!source.bytes.empty())
+            continue;
+         for (size_t chunkIndex = 0;
+              chunkIndex < gCompatibilityChunks.size(); ++chunkIndex)
+         {
+            sCompatibilityChunk& chunk = gCompatibilityChunks[chunkIndex];
+            if (source.source == chunk.source &&
+                !strcmp(source.tag.label,chunk.tag.label))
+            {
+               source.bytes.swap(chunk.bytes);
+               break;
+            }
+         }
+      }
+   }
+   else if (!freeze && gDBSourceTargetFrozen)
+   {
+      // KCTools writes every input chunk. Once an imported chunk is at least
+      // as complete as its original, its current compatibility copy is the
+      // canonical raw source. Retain an original only when the tool omitted
+      // the block or shortened a suffix (notably RENDPARAMS in some versions).
+      for (size_t sourceIndex = 0;
+           sourceIndex < gDBSourceFormat.size(); ++sourceIndex)
+      {
+         sDBSourceFormatChunk& source = gDBSourceFormat[sourceIndex];
+         if (source.bytes.empty())
+            continue;
+         for (size_t chunkIndex = 0;
+              chunkIndex < gCompatibilityChunks.size(); ++chunkIndex)
+         {
+            const sCompatibilityChunk& chunk =
+               gCompatibilityChunks[chunkIndex];
+            if (!strcmp(source.tag.label,chunk.tag.label) &&
+                (source.filetype & chunk.filetype) &&
+                chunk.bytes.size() >= source.bytes.size())
+            {
+               std::vector<char>().swap(source.bytes);
+               break;
+            }
+         }
+      }
+   }
+   gDBSourceTargetFrozen = freeze;
 }
 
 void dbCompatibilityPreserveRecordTail(const TagFileTag* tag, int object,
@@ -287,7 +529,19 @@ static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
          }
       }
       if (merged)
+      {
+         if (!gDBSourceTargetFrozen)
+            for (size_t formatIndex = 0;
+                 formatIndex < gDBSourceFormat.size(); ++formatIndex)
+               if (gDBSourceFormat[formatIndex].source == file &&
+                   !strcmp(gDBSourceFormat[formatIndex].tag.label,
+                           tag->label))
+               {
+                  gDBSourceFormat[formatIndex].filetype |= filetype;
+                  break;
+               }
          continue;
+      }
 
       sCompatibilityChunk chunk = {};
       chunk.source = file;
@@ -295,8 +549,49 @@ static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
       chunk.filetype = filetype;
       chunk.size = file->BlockSize(tag);
 #ifdef EDITOR
+      if (gDBSourceTargetFrozen)
+      {
+         // The imported block is about to become the current raw copy. Drop
+         // an equally complete frozen payload before allocating it, so a
+         // baked 187 MB WREXT never needs two simultaneous raw buffers.
+         for (size_t sourceIndex = 0;
+              sourceIndex < gDBSourceFormat.size(); ++sourceIndex)
+         {
+            sDBSourceFormatChunk& source = gDBSourceFormat[sourceIndex];
+            if (!strcmp(source.tag.label,chunk.tag.label) &&
+                (source.filetype & filetype) &&
+                chunk.size >= source.bytes.size())
+            {
+               std::vector<char>().swap(source.bytes);
+               break;
+            }
+         }
+      }
+      if (chunk.size > INT_MAX)
+      {
+         char diagnostic[256];
+         _snprintf(diagnostic,sizeof(diagnostic)-1,
+                   "Chunk %.12s is %lu bytes, exceeding the reader's safe single-block limit",
+                   chunk.tag.label,chunk.size);
+         diagnostic[sizeof(diagnostic)-1] = '\0';
+         dbLoadReportFailure("chunk-reader",diagnostic);
+         return;
+      }
       chunk.status = kDBCompatRawPreserved;
-      chunk.bytes.resize(chunk.size);
+      try
+      {
+         chunk.bytes.resize(chunk.size);
+      }
+      catch (const std::bad_alloc&)
+      {
+         char diagnostic[256];
+         _snprintf(diagnostic,sizeof(diagnostic)-1,
+                   "Chunk %.12s requests %lu bytes, which cannot be retained safely",
+                   chunk.tag.label,chunk.size);
+         diagnostic[sizeof(diagnostic)-1] = '\0';
+         dbLoadReportFailure("chunk-reader",diagnostic);
+         return;
+      }
 #else
       chunk.status = kDBCompatUnsupported;
 #endif
@@ -309,16 +604,61 @@ static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
          chunk.version = version;
 #ifdef EDITOR
          if (chunk.size)
-            file->Read(chunk.bytes.data(),chunk.size);
+         {
+            long read = file->Read(chunk.bytes.data(),(int)chunk.size);
+            if (read != (long)chunk.size)
+            {
+               char diagnostic[256];
+               _snprintf(diagnostic,sizeof(diagnostic)-1,
+                         "Chunk %.12s is truncated (%ld of %lu bytes)",
+                         chunk.tag.label,read,chunk.size);
+               diagnostic[sizeof(diagnostic)-1] = '\0';
+               dbLoadReportFailure("chunk-reader",diagnostic);
+            }
+         }
 #endif
          file->CloseBlock();
       }
       gCompatibilityChunks.push_back(chunk);
+
+      if (!gDBSourceTargetFrozen)
+      {
+         BOOL updated = FALSE;
+         for (size_t formatIndex = 0;
+              formatIndex < gDBSourceFormat.size(); ++formatIndex)
+         {
+            sDBSourceFormatChunk& format = gDBSourceFormat[formatIndex];
+            if (format.source == file &&
+                !strcmp(format.tag.label,chunk.tag.label))
+            {
+               format.version = chunk.version;
+               format.size = chunk.size;
+               format.filetype |= filetype;
+               updated = TRUE;
+               break;
+            }
+         }
+         if (!updated)
+         {
+            sDBSourceFormatChunk format = {};
+            format.source = file;
+            format.tag = chunk.tag;
+            format.version = chunk.version;
+            format.filetype = filetype;
+            format.size = chunk.size;
+            gDBSourceFormat.push_back(format);
+         }
+      }
    }
 }
 
 static void report_compatibility_chunks(const char* phase)
 {
+   unsigned decoded = 0;
+   unsigned prefixDecoded = 0;
+   unsigned rawPreserved = 0;
+   unsigned unclassified = 0;
+   unsigned explicitProblems = 0;
    FILE* report = fopen("mission_compatibility.log","a");
    if (report)
       fprintf(report,"Compatibility report: %s\n",phase);
@@ -329,15 +669,60 @@ static void report_compatibility_chunks(const char* phase)
       if (chunk.source != gCompatibilitySource ||
           !(chunk.filetype & gCompatibilityFiletype))
          continue;
-      mprintf("  %-12s %u.%u %-14s %lu bytes%s%s\n",
+      switch (chunk.status)
+      {
+         case kDBCompatDecoded:       ++decoded; break;
+         case kDBCompatPrefixDecoded: ++prefixDecoded; break;
+         case kDBCompatRawPreserved:  ++rawPreserved; break;
+         default:                     ++unclassified; break;
+      }
+      mprintf("  %-12s %u.%u %-14s %u bytes%s%s\n",
               chunk.tag.label,chunk.version.major,chunk.version.minor,
-              compatibility_status_name(chunk.status),chunk.size,
+              compatibility_status_name(chunk.status),(unsigned)chunk.size,
               chunk.detail[0] ? " - " : "",chunk.detail);
       if (report)
-         fprintf(report,"  %-12s %u.%u %-14s %lu bytes%s%s\n",
+         fprintf(report,"  %-12s %u.%u %-14s %u bytes%s%s\n",
                  chunk.tag.label,chunk.version.major,chunk.version.minor,
-                 compatibility_status_name(chunk.status),chunk.size,
+                 compatibility_status_name(chunk.status),(unsigned)chunk.size,
                  chunk.detail[0] ? " - " : "",chunk.detail);
+
+      // The inventory initially classifies unobserved property/relation and
+      // per-AI blocks as unsupported. Many are intentionally consumed by
+      // generic systems without touching the tag observer, so do not present
+      // that raw state as thousands of false errors. Explicit codec details
+      // are actionable and belong in the main report; the full inventory
+      // remains in mission_compatibility.log.
+      if (chunk.detail[0] &&
+          (chunk.status == kDBCompatUnsupported ||
+           chunk.status == kDBCompatRawPreserved ||
+           chunk.status == kDBCompatPrefixDecoded))
+      {
+         char diagnostic[512];
+         snprintf(diagnostic,sizeof(diagnostic),
+                  "%s chunk %-12s %u.%u is %s (%u bytes)%s%s",
+                  phase,chunk.tag.label,chunk.version.major,
+                  chunk.version.minor,compatibility_status_name(chunk.status),
+                  (unsigned)chunk.size,chunk.detail[0] ? ": " : "",chunk.detail);
+         diagnostic[sizeof(diagnostic)-1] = '\0';
+         MissionDiagnosticsIssue(
+            chunk.status == kDBCompatUnsupported ? "ERROR" : "WARN",
+            "mission-data",diagnostic);
+         if (chunk.status == kDBCompatUnsupported)
+            ++explicitProblems;
+      }
+   }
+   {
+      char diagnostic[512];
+      snprintf(diagnostic,sizeof(diagnostic),
+               "%s compatibility inventory: %u decoded, %u prefix-decoded, "
+               "%u raw-preserved, %u generic/unclassified; %u explicit "
+               "problem%s (full inventory: mission_compatibility.log)",
+               phase,decoded,prefixDecoded,rawPreserved,unclassified,
+               explicitProblems,explicitProblems == 1 ? "" : "s");
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue(explicitProblems ? "ERROR" :
+         (prefixDecoded || rawPreserved ? "WARN" : "INFO"),
+         "mission-data",diagnostic);
    }
    if (report)
    {
@@ -346,13 +731,25 @@ static void report_compatibility_chunks(const char* phase)
    }
 }
 
+static BOOL suppress_profile_chunk(const TagFileTag& tag)
+{
+   if (gDBWriteProfile == kDBWriteRetail)
+      return !strcmp(tag.label,"WREXT") ||
+             !strcmp(tag.label,"LM_PARAM");
+   if (dbFormatUsesNewDark())
+      return !strcmp(tag.label,"WRRGB") || !strcmp(tag.label,"WR");
+   return FALSE;
+}
+
 static void replay_compatibility_chunks(ITagFile* file, ulong filetype)
 {
 #ifdef EDITOR
    for (int i = (int)gCompatibilityChunks.size() - 1; i >= 0; --i)
    {
       const sCompatibilityChunk& chunk = gCompatibilityChunks[i];
-      if (!(chunk.filetype & filetype) || chunk.bytes.empty() ||
+      if (suppress_profile_chunk(chunk.tag))
+         continue;
+      if (!(chunk.filetype & filetype) ||
           file->BlockSize(&chunk.tag) != kTagNoSuchBlock)
          continue;
       TagVersion version = chunk.version;
@@ -360,6 +757,26 @@ static void replay_compatibility_chunks(ITagFile* file, ulong filetype)
       {
          if (!chunk.bytes.empty())
             file->Write(chunk.bytes.data(),(int)chunk.bytes.size());
+         file->CloseBlock();
+      }
+   }
+
+   // An external tool may understand and rewrite only a subset of the
+   // database.  Restore any source chunk it omitted, while never replacing a
+   // block already emitted by a live codec or by the imported tool output.
+   for (int i = (int)gDBSourceFormat.size() - 1; i >= 0; --i)
+   {
+      const sDBSourceFormatChunk& chunk = gDBSourceFormat[i];
+      if (suppress_profile_chunk(chunk.tag))
+         continue;
+      if (!(chunk.filetype & filetype) ||
+          (chunk.size != 0 && chunk.bytes.empty()) ||
+          file->BlockSize(&chunk.tag) != kTagNoSuchBlock)
+         continue;
+      TagVersion version = chunk.version;
+      if (SUCCEEDED(file->OpenBlock(&chunk.tag,&version)))
+      {
+         file->Write(chunk.bytes.data(),(int)chunk.bytes.size());
          file->CloseBlock();
       }
    }
@@ -605,6 +1022,8 @@ static BOOL read_file_type(ITagFile* file, edbFiletype* Filetype)
    long bytesRead = file->Read((char*)Filetype,sizeof(*Filetype));
    BOOL retval = bytesRead == sizeof(*Filetype);
    file->CloseBlock();
+   if (!retval)
+      dbLoadReportFailure("mission-data","FILE_TYPE block is truncated");
    return retval;
 }
 
@@ -671,6 +1090,14 @@ static BOOL read_file_ref_tag(ITagFile* file, ulong ftype, char* filename)
 
    strcpy(filename,buf);
    file->CloseBlock();
+   if (!success)
+   {
+      char diagnostic[160];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "%.12s file-reference block is truncated",tag->label);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      dbLoadReportFailure("mission-data",diagnostic);
+   }
    return success;
 }
 
@@ -761,18 +1188,40 @@ edbFiletype dbLoad(const char* filename, ulong loadtype)
 {
    char fullname[256];
    const char* name = filename; 
+   MissionDiagnosticsBegin(filename);
+   begin_load_transaction();
    if (!file_factory)
    {
       if (!find_for_load(fullname,(char*)filename))
+      {
+         char diagnostic[512];
+         snprintf(diagnostic,sizeof(diagnostic),
+                  "Mission file not found: %s",filename ? filename : "(null)");
+         diagnostic[sizeof(diagnostic)-1] = '\0';
+         MissionDiagnosticsIssue("ERROR","mission-data",diagnostic);
+         MissionDiagnosticsFinish(FALSE);
+         end_load_transaction();
          return 0;
+      }
       name = fullname;
    }
 
    cAutoIPtr<ITagFile> file ( dbOpenFile(name,kTagOpenRead) );
    if (file == NULL)
+   {
+      char diagnostic[512];
+      snprintf(diagnostic,sizeof(diagnostic),
+               "Mission file could not be opened: %s",name ? name : "(null)");
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue("ERROR","mission-data",diagnostic);
+      MissionDiagnosticsFinish(FALSE);
+      end_load_transaction();
       return 0;
+   }
 
    edbFiletype retval = dbLoadTagFile(file,loadtype); 
+   MissionDiagnosticsFinish(retval != 0);
+   end_load_transaction();
 
    // So user knows what file he just loaded.
    strncpy(gCurrFilename, (char *)strip_pathname(name),sizeof(gCurrFilename));
@@ -811,10 +1260,19 @@ edbFiletype dbMergeLoad(const char* filename, ulong loadtype)
 
 edbFiletype dbLoadTagFile(ITagFile* file, edbFiletype loadtype)
 {
+   begin_load_transaction();
+   if (!file)
+   {
+      dbLoadReportFailure("mission-data","Mission loader received no tag file");
+      end_load_transaction();
+      return 0;
+   }
    // We are starting from the ground up:
    gCurrFilenum = 0;
    TagFileSetBlockObserver(NULL,NULL);
    clear_compatibility_state();
+   if (!gDBSourceTargetFrozen)
+      gDBSourceFormat.clear();
 
    // Send a reset message
    DispatchData msg = { kDatabaseReset, NULL } ;
@@ -829,11 +1287,12 @@ edbFiletype dbLoadTagFile(ITagFile* file, edbFiletype loadtype)
    // post-load messages to a database that had just been reset and only
    // partially reconstructed, which made cancellation crash-prone.  Leave a
    // valid empty editor database instead and do not post-load missing pieces.
-   if (retval == 0)
+   if (retval == 0 || dbLoadHasFailed())
    {
       dbBuildDefault();
       AutoAppIPtr_(SimManager,pSim);
       pSim->SuspendSim();
+      end_load_transaction();
       return 0;
    }
 
@@ -852,6 +1311,7 @@ edbFiletype dbLoadTagFile(ITagFile* file, edbFiletype loadtype)
    AutoAppIPtr_(SimManager,pSim); 
    pSim->SuspendSim();
 
+   end_load_transaction();
    return retval; 
 
 }
@@ -859,6 +1319,13 @@ edbFiletype dbLoadTagFile(ITagFile* file, edbFiletype loadtype)
 
 edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
 {
+   begin_load_transaction();
+   if (!file)
+   {
+      dbLoadReportFailure("mission-data","Merge loader received no tag file");
+      end_load_transaction();
+      return 0;
+   }
    // The actual type in the file, rather than just whether we've loaded it.
    ulong Filetype = 0;
 
@@ -871,6 +1338,11 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
    // Figure out what kinds of stuff are in the file
    if (!read_file_type(file,&Filetype))
    {
+      if (dbLoadHasFailed())
+      {
+         end_load_transaction();
+         return 0;
+      }
       // @TODO: this is back-compatibility stuff, remove when obsolete
       // look for a mission header 
       if (ReadMissionHeader(file,NULL,pieceNames[0]))
@@ -952,6 +1424,7 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
          {
             sprintf(msgbuf,"Failed to open %s file %s",phase_names[i],fullpiecename);
             Status(msgbuf);
+            MissionDiagnosticsIssue("ERROR","mission-data",msgbuf);
             retval = 0;
             break;
          }
@@ -959,6 +1432,12 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
 
       // now use_file is valid.  Load the our piece from it
       inventory_compatibility_chunks(use_file,piece);
+      if (dbLoadHasFailed())
+      {
+         SafeRelease(use_file);
+         retval = 0;
+         break;
+      }
       gCompatibilitySource = use_file;
       gCompatibilityFiletype = piece;
       dbCompatibilityMarkTag(&dbTypeTag,kDBCompatDecoded,"database header");
@@ -969,6 +1448,13 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
       report_compatibility_chunks(phase_names[i]);
       gCompatibilitySource = NULL;
       gCompatibilityFiletype = 0;
+
+      if (dbLoadHasFailed())
+      {
+         SafeRelease(use_file);
+         retval = 0;
+         break;
+      }
 
       SafeRelease(use_file);
 
@@ -988,6 +1474,9 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
    }
 
 
+   if (dbLoadHasFailed())
+      retval = 0;
+   end_load_transaction();
    return retval;
 }
 
@@ -998,6 +1487,8 @@ void dbReset(void)
    gCurrFilenum = 0;
    TagFileSetBlockObserver(NULL,NULL);
    clear_compatibility_state();
+   if (!gDBSourceTargetFrozen)
+      gDBSourceFormat.clear();
 
    DispatchData msg = { kDatabaseReset, NULL};
    DispatchMsg(kMsgDatabase,&msg);
@@ -1285,6 +1776,12 @@ static void load_cmd_guts(char* filename, edbFiletype ftype)
    special_file_find = oldfunc;
    if (result > 0)
    {
+#ifdef EDITOR
+       // Object load callbacks run before inherited HasBrush values settle.
+       // Rebuild the transient editor brushes at the next completed frame.
+       if (result & (kFiletypeMAP | kFiletypeMIS))
+          ScheduleBrushSelectionRestore();
+#endif
       Status("Load successful");
       //      set_file_var(SAVE_FILE_VAR,filename,TRUE);
       set_file_var(LOAD_FILE_VAR,filename,TRUE);
@@ -1357,6 +1854,88 @@ void dispatch_noise(char* arg)
 #endif
 }
 
+static const char* db_write_profile_name(eDBWriteProfile profile)
+{
+   switch (profile)
+   {
+      case kDBWriteRetail:          return "retail";
+      case kDBWriteNewDark:         return "newdark";
+      case kDBWriteKCToolsExchange: return "kctools-exchange";
+      default:                      return "preserve";
+   }
+}
+
+static void db_format_report(void)
+{
+   mprintf("Database write profile: %s\n",
+           db_write_profile_name(gDBWriteProfile));
+   mprintf("Source chunk inventory (%u chunks):\n",
+           (uint)gDBSourceFormat.size());
+   for (size_t i = 0; i < gDBSourceFormat.size(); ++i)
+   {
+      const sDBSourceFormatChunk& chunk = gDBSourceFormat[i];
+      const sCompatibilityChunk* compatibility = NULL;
+      for (int compatibilityIndex =
+              (int)gCompatibilityChunks.size() - 1;
+           compatibilityIndex >= 0; --compatibilityIndex)
+      {
+         const sCompatibilityChunk& candidate =
+            gCompatibilityChunks[compatibilityIndex];
+         if (!strcmp(candidate.tag.label,chunk.tag.label) &&
+             (candidate.filetype & chunk.filetype) &&
+             candidate.source == chunk.source)
+         {
+            compatibility = &candidate;
+            break;
+         }
+      }
+      if (!compatibility)
+         for (int compatibilityIndex =
+                 (int)gCompatibilityChunks.size() - 1;
+              compatibilityIndex >= 0; --compatibilityIndex)
+         {
+            const sCompatibilityChunk& candidate =
+               gCompatibilityChunks[compatibilityIndex];
+            if (!strcmp(candidate.tag.label,chunk.tag.label) &&
+                (candidate.filetype & chunk.filetype))
+            {
+               compatibility = &candidate;
+               break;
+            }
+         }
+      mprintf("  %-12s %u.%u %8lu bytes  filetype %08lx  %s%s%s\n",
+              chunk.tag.label,chunk.version.major,chunk.version.minor,
+              chunk.size,chunk.filetype,
+              compatibility ? compatibility_status_name(compatibility->status)
+                            : "not-observed",
+              compatibility && compatibility->detail[0] ? " - " : "",
+              compatibility && compatibility->detail[0]
+                 ? compatibility->detail : "");
+   }
+}
+
+static void db_set_write_profile(char* name)
+{
+   if (!name)
+      name = "";
+   while (isspace((unsigned char)*name))
+      ++name;
+   if (!_stricmp(name,"preserve") || !_stricmp(name,"source"))
+      gDBWriteProfile = kDBWritePreserveSource;
+   else if (!_stricmp(name,"retail") || !_stricmp(name,"olddark"))
+      gDBWriteProfile = kDBWriteRetail;
+   else if (!_stricmp(name,"newdark"))
+      gDBWriteProfile = kDBWriteNewDark;
+   else
+   {
+      Warning(("Unknown database write profile '%s'. Use preserve, retail, or newdark.\n",
+               name));
+      return;
+   }
+   mprintf("Database write profile: %s\n",
+           db_write_profile_name(gDBWriteProfile));
+}
+
 ////////////////////////////////////////
 
 Command dbfile_commands[] = 
@@ -1371,6 +1950,8 @@ Command dbfile_commands[] =
    { "dispatch_noise",FUNC_STRING, dispatch_noise, "Toggle dispatch noise for hex message mask\n"},
    { "file_menu", FUNC_VOID, FileMenu, "Bring up the file menu" },
    { "new_world", FUNC_VOID, new_world, "Clear the world and load the gamesys" },
+   { "db_format_report", FUNC_VOID, db_format_report, "show source chunk versions and output profile" },
+   { "db_write_profile", FUNC_STRING, db_set_write_profile, "set output profile: preserve, retail, or newdark" },
 };
 #endif // ~EDITOR
 

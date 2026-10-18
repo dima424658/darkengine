@@ -91,13 +91,29 @@ BOOL cFileVarBase::SetupFile(ITagFile* file)
    }
 
    if (file->OpenMode() == kTagOpenWrite &&
+       !ShouldWrite())
+      return FALSE;
+
+   if (file->OpenMode() == kTagOpenWrite &&
        dbCompatibilityUseRawTag(&mDesc->tag))
       return FALSE;
 
    const TagVersion maxRead = ReadVersion();
-   TagVersion v = file->OpenMode() == kTagOpenRead ? maxRead : mDesc->version;
+   TagVersion v = file->OpenMode() == kTagOpenRead ? maxRead : WriteVersion();
    if (!SUCCEEDED(file->OpenBlock(&mDesc->tag,&v)))
+   {
+      if (file->OpenMode() == kTagOpenRead &&
+          file->BlockSize(&mDesc->tag) != kTagNoSuchBlock)
+      {
+         char diagnostic[256];
+         _snprintf(diagnostic,sizeof(diagnostic)-1,
+                   "Required file-variable %.12s has a malformed or unsupported version",
+                   mDesc->tag.label);
+         diagnostic[sizeof(diagnostic)-1] = '\0';
+         dbLoadReportFailure("file-variable",diagnostic);
+      }
       return FALSE; 
+   }
 
    if (file->OpenMode() == kTagOpenRead &&
        VersionNumsCompare(&v,&maxRead) > 0)
@@ -105,6 +121,12 @@ BOOL cFileVarBase::SetupFile(ITagFile* file)
       Warning(("Unsupported file-variable version %u.%u for %s (max %u.%u)\n",
                v.major,v.minor,mDesc->tag.label,maxRead.major,maxRead.minor));
       file->CloseBlock();
+      char diagnostic[256];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "Required file-variable %.12s version %u.%u is newer than %u.%u",
+                mDesc->tag.label,v.major,v.minor,maxRead.major,maxRead.minor);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      dbLoadReportFailure("file-variable",diagnostic);
       return FALSE;
    }
    mLoadedVersion = v;
@@ -120,6 +142,13 @@ BOOL cFileVarBase::SetupFile(ITagFile* file)
    if (VersionNumsCompare(&v,&mDesc->last_good_version) < 0)
    {
       file->CloseBlock(); 
+      char diagnostic[256];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "Required file-variable %.12s version %u.%u predates the oldest safe codec %u.%u",
+                mDesc->tag.label,v.major,v.minor,
+                mDesc->last_good_version.major,mDesc->last_good_version.minor);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      dbLoadReportFailure("file-variable",diagnostic);
       return FALSE; 
    }
    return TRUE; 
@@ -152,7 +181,15 @@ void cFileVarBase::DatabaseMsg(ulong msg, ITagFile* file)
          if (SetupFile(file))
          {
             ConfigSpew("filevar_spew",("Loading %s\n",mDesc->friendly_name)); 
-            ReadBlock(file,mLoadedVersion);
+            if (!ReadBlock(file,mLoadedVersion))
+            {
+               char diagnostic[192];
+               _snprintf(diagnostic,sizeof(diagnostic)-1,
+                         "Required file-variable %.12s is truncated or malformed",
+                         mDesc->tag.label);
+               diagnostic[sizeof(diagnostic)-1] = '\0';
+               dbLoadReportFailure("file-variable",diagnostic);
+            }
             CleanupFile(file); 
          }
          break; 

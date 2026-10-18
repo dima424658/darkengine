@@ -25,6 +25,9 @@ extern "C" {
 #include <dynarray.h>
 #include <namemap.h>
 #include <cfgdbg.h>     
+#include <dbfile.h>
+#include <dataguard.h>
+#include <limits.h>
 
 #include <dbmem.h> // must be last included header
 
@@ -64,7 +67,7 @@ public:
 // which happens during runtime setup.
    ~cMpsMotion() {}
 
-   void Read(ITagFile *pFile);
+   BOOL Read(ITagFile *pFile);
    void Write(ITagFile *pFile);
 };
 
@@ -94,7 +97,7 @@ cMpsMotion::cMpsMotion(mps_motion *mot)
    flags=mot->flags;
 }
 
-void cMpsMotion::Read(ITagFile *pFile)
+BOOL cMpsMotion::Read(ITagFile *pFile)
 {
    sMpsMotionDisk mot;
 
@@ -110,16 +113,55 @@ void cMpsMotion::Read(ITagFile *pFile)
       components=NULL;
    }
 
-   ITagFile_Read(pFile,(char *)&mot,sizeof(mot));
+   if (ITagFile_Read(pFile,(char *)&mot,sizeof(mot)) != sizeof(mot))
+   {
+      dbLoadReportFailure("motion-reader","Motion record is truncated");
+      return FALSE;
+   }
    info=mot.info;
-   AssertMsg(info.type==MT_CAPTURE,"can't read virtual motions");
+   if (info.type != MT_CAPTURE)
+   {
+      dbLoadReportFailure("motion-reader",
+                          "Serialized motion has an unsupported motion type");
+      return FALSE;
+   }
+   if (mot.num_components < 0 || mot.num_flags < 0 ||
+       mot.num_components > 1048576 || mot.num_flags > 1048576)
+   {
+      dbLoadReportFailure("motion-reader","Motion array count is invalid");
+      return FALSE;
+   }
+
+   uint64_t componentBytes = 0;
+   uint64_t flagBytes = 0;
+   const long remaining = pFile->TellFromEnd();
+   if (!DarkCheckedMulU64((uint64_t)mot.num_components,
+                          sizeof(mps_comp_motion),&componentBytes) ||
+       !DarkCheckedMulU64((uint64_t)mot.num_flags,
+                          sizeof(mps_motion_flag),&flagBytes) ||
+       componentBytes > INT_MAX || flagBytes > INT_MAX ||
+       remaining < 0 || componentBytes + flagBytes > (uint64_t)remaining)
+   {
+      dbLoadReportFailure("motion-reader",
+                          "Motion arrays exceed the containing block");
+      return FALSE;
+   }
    num_components=mot.num_components;
    num_flags=mot.num_flags;
 
    if(mot.num_components)
    {
       components=(mps_comp_motion *) mp_alloc(sizeof(mps_comp_motion) * mot.num_components,__FILE__,__LINE__);
-      ITagFile_Read(pFile,(char *)components,sizeof(mps_comp_motion)*mot.num_components);
+      if (!components ||
+          ITagFile_Read(pFile,(char *)components,(int)componentBytes) != (int)componentBytes)
+      {
+         if (components)
+            mp_free(components);
+         components=NULL;
+         num_components=0;
+         dbLoadReportFailure("motion-reader","Motion component array is truncated");
+         return FALSE;
+      }
    } else
    {
       components=NULL;
@@ -129,11 +171,25 @@ void cMpsMotion::Read(ITagFile *pFile)
    if(mot.num_flags)
 	{
 	   flags=(mps_motion_flag *) mp_alloc(sizeof(mps_motion_flag) * mot.num_flags,__FILE__,__LINE__);
-      ITagFile_Read(pFile,(char *)flags,sizeof(mps_motion_flag)*mot.num_flags);
+      if (!flags ||
+          ITagFile_Read(pFile,(char *)flags,(int)flagBytes) != (int)flagBytes)
+      {
+         if (flags)
+            mp_free(flags);
+         flags=NULL;
+         num_flags=0;
+         if (components)
+            mp_free(components);
+         components=NULL;
+         num_components=0;
+         dbLoadReportFailure("motion-reader","Motion flag array is truncated");
+         return FALSE;
+      }
 	} else
 	{
 	   flags=NULL;
 	}
+   return TRUE;
 }
 
 void cMpsMotion::Write(ITagFile *pFile)
@@ -503,27 +559,47 @@ BOOL cMotionSet::Load(ITagFile *pFile)
 {
    // load namemap
    m_NameMap.Load(pFile);
+   if (dbLoadHasFailed())
+      return FALSE;
    
    // load motstuff
    int i;
    ulong size;
    sMotStuff stuff;
 
-   ITagFile_Read(pFile,(char *)&size,sizeof(size));
+   const long motStuffRemaining = pFile->TellFromEnd();
+   if (ITagFile_Read(pFile,(char *)&size,sizeof(size)) != sizeof(size) ||
+       size > 1048576 || motStuffRemaining < (long)sizeof(size) ||
+       (uint64_t)size * sizeof(stuff) >
+          (uint64_t)(motStuffRemaining - sizeof(size)))
+   {
+      dbLoadReportFailure("motion-reader","Motion metadata array is invalid");
+      return FALSE;
+   }
    m_MotStuffList.SetSize(size);
    for(i = 0; i < (int)size; i++)
    {
-      ITagFile_Read(pFile,(char *)&stuff,sizeof(stuff));
+      if (ITagFile_Read(pFile,(char *)&stuff,sizeof(stuff)) != sizeof(stuff))
+      {
+         dbLoadReportFailure("motion-reader","Motion metadata array is truncated");
+         return FALSE;
+      }
       m_MotStuffList.SetItem(&stuff,i);
    }
 
-   ITagFile_Read(pFile,(char *)&size,sizeof(size));
+   if (ITagFile_Read(pFile,(char *)&size,sizeof(size)) != sizeof(size) ||
+       size > 1048576)
+   {
+      dbLoadReportFailure("motion-reader","Motion record count is invalid");
+      return FALSE;
+   }
    m_cMoCapList.SetSize(size);
    for(i = 0; i < (int)size; i++)
    {
       cMpsMotion m;
 
-      m.Read(pFile);
+      if (!m.Read(pFile))
+         return FALSE;
       m_cMoCapList.SetItem(&m,i);
    }
 

@@ -190,7 +190,10 @@ BOOL cPhysSphereModel::CheckTerrainCollision(tPhysSubModId i, mxs_real t0, mxs_r
          if (!HasObjectWarned(GetObjID()) && CellFromLoc(&start_loc) == CELL_INVALID)
          {
             SetObjectWarned(GetObjID());
-            mprintf("Point (%s - %d) out of world!\n", ObjWarnName(GetObjID()), i);
+            mprintf("Point (%s - %d) out of world at (%g,%g,%g), target (%g,%g,%g)!\n",
+                    ObjWarnName(GetObjID()), i, start_loc.vec.x,
+                    start_loc.vec.y, start_loc.vec.z, end_loc.vec.x,
+                    end_loc.vec.y, end_loc.vec.z);
          }
       }
       #endif
@@ -205,7 +208,10 @@ BOOL cPhysSphereModel::CheckTerrainCollision(tPhysSubModId i, mxs_real t0, mxs_r
             if (!HasObjectWarned(GetObjID()) && CellFromLoc(&hit) == CELL_INVALID) 
             {
                SetObjectWarned(GetObjID());
-               mprintf("Point (%s - %d) out of world!\n", ObjWarnName(GetObjID()), i);
+               mprintf("Point (%s - %d) out of world at hit (%g,%g,%g), from (%g,%g,%g)!\n",
+                       ObjWarnName(GetObjID()), i, hit.vec.x, hit.vec.y,
+                       hit.vec.z, start_loc.vec.x, start_loc.vec.y,
+                       start_loc.vec.z);
             }
          }
          #endif
@@ -255,7 +261,10 @@ BOOL cPhysSphereModel::CheckTerrainCollision(tPhysSubModId i, mxs_real t0, mxs_r
             if (!HasObjectWarned(GetObjID()) && CellFromLoc(&end_loc) == CELL_INVALID)
             {
                SetObjectWarned(GetObjID());
-               mprintf("Point (%s - %d) out of world!\n", ObjWarnName(GetObjID()), i);
+               mprintf("Point (%s - %d) out of world at target (%g,%g,%g), from (%g,%g,%g)!\n",
+                       ObjWarnName(GetObjID()), i, end_loc.vec.x,
+                       end_loc.vec.y, end_loc.vec.z, start_loc.vec.x,
+                       start_loc.vec.y, start_loc.vec.z);
             }
          }
          #endif

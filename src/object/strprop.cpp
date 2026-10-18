@@ -6,6 +6,7 @@
 // $Header: r:/t2repos/thief2/src/object/strprop.cpp,v 1.6 1998/10/05 17:28:17 mahk Exp $
 #include <appagg.h>
 #include <string.h>
+#include <new>
 #include <strprop_.h>
 
 
@@ -26,10 +27,19 @@ STDMETHODIMP cStringDataOps::Read(sDatum* pdat, IDataOpsFile* file, int version)
    ulong size = version;
    if (version > sizeof(Label))
    {
-      file->Read(&size,sizeof(size));
+      if (file->Read(&size,sizeof(size)) != sizeof(size))
+         return E_FAIL;
    }
-   char* buf = new char[size];
-   file->Read(buf,size); 
+   if (size == 0 || size > 16 * 1024 * 1024)
+      return E_FAIL;
+   char* buf = new (std::nothrow) char[size];
+   if (!buf)
+      return E_OUTOFMEMORY;
+   if (file->Read(buf,size) != (long)size)
+   {
+      delete [] buf;
+      return E_FAIL;
+   }
    buf[size-1] ='\0'; 
 
    str = buf;

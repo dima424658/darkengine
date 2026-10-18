@@ -122,6 +122,8 @@ protected:
    // independently accept a newer input version and decode a compatible
    // prefix by overriding these hooks.
    virtual TagVersion ReadVersion() const { return mDesc->version; }
+   virtual TagVersion WriteVersion() const { return mDesc->version; }
+   virtual BOOL ShouldWrite() const { return TRUE; }
    virtual BOOL ReadBlock(ITagFile* file, const TagVersion&)
       { return file->Read((char*)mBlock,mSize) == mSize; }
    virtual BOOL WriteBlock(ITagFile* file)

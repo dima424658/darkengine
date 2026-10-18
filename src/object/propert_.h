@@ -254,7 +254,8 @@ protected:
    void Save(ITagFile* file, edbFiletype filetype);
    void Load(ITagFile* file, edbFiletype filetype);
    void write_obj(ObjID obj, IDataOpsFile* file, edbFiletype filetype);
-   void read_obj(IDataOpsFile* file, edbFiletype filetype, uint version);
+   BOOL read_obj(IDataOpsFile* file, ITagFile* tagFile,
+                 edbFiletype filetype, uint version);
    
    IPropertyStore *mpStore;         // Property store 
    ITrait* mpDonors;                // My trait for inheritance

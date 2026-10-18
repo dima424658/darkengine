@@ -61,6 +61,9 @@
 #include <gshelapi.h>
 #include <gameinfo.h>
 #include <drksave.h>
+#include <missiondiag.h>
+#include <dataguard.h>
+#include <gameapp.h>
 
 #include <btffact.h>
 
@@ -825,6 +828,9 @@ public:
       : cObjectivesBase(&vars,kFictionGoals), 
         mpMissionFile(NULL),
         mState(kWaitForLoad),
+        mFileTotal(1),
+        mFileCur(0),
+        mDialRate(kFineDialRate),
         mStateLocked(FALSE)
    {
       for (int i = 0; i < kNumDials; ++i)
@@ -872,9 +878,23 @@ public:
    // Add a file's size to our totals
    void AddFile(ITagFile* file)
    {
+      if (!file)
+         return;
       cAutoIPtr<ITagFileIter> iter = file->Iterate(); 
       for (iter->Start(); !iter->Done(); iter->Next())
-         mFileTotal += file->BlockSize(iter->Tag());
+      {
+         const ulong size = file->BlockSize(iter->Tag());
+         uint64_t total = 0;
+         if (size == kTagNoSuchBlock ||
+             !DarkCheckedAddU64(mFileTotal,size,&total))
+         {
+            MissionDiagnosticsIssue("ERROR","mission-data",
+               "Mission progress size overflow; using a saturated progress total");
+            mFileTotal = UINT64_MAX;
+            break;
+         }
+         mFileTotal = total;
+      }
    }
 
    void SetFile(ITagFile* file)
@@ -882,7 +902,8 @@ public:
       SafeRelease(mpMissionFile); 
 
       mpMissionFile = file; 
-      file->AddRef(); 
+      if (file)
+         file->AddRef();
    }
 
    
@@ -907,18 +928,29 @@ public:
 
    void UpdateDials(int bytes)
    {
-      int old = mFileCur;
-      mFileCur += bytes; 
+      // Read/Move report requested byte counts.  NewDark WREXT missions can
+      // exceed 100 MiB, so the old signed 32-bit `current * 18` expression
+      // overflowed and produced a negative frame index.  The loading panel
+      // then indexed before mpDialImages and called through a null pointer.
+      if (bytes <= 0)
+         return;
+      uint64_t old = mFileCur;
+      uint64_t updated = 0;
+      if (DarkCheckedAddU64(mFileCur,(unsigned int)bytes,&updated))
+         mFileCur = updated;
+      else
+         mFileCur = UINT64_MAX;
 
       //ConfigSpew("dial_spew",("bytes = %d delta = %d\n",mFileCur,bytes)); 
 
       // update fine dial 
       {
-         int frame = mFileCur/mDialRate;
-         int oldframe = old/mDialRate; 
+         int frame = (int)((mFileCur/(unsigned int)mDialRate) %
+                           kNumDialImages);
+         int oldframe = (int)((old/(unsigned int)mDialRate) %
+                              kNumDialImages);
          if (frame != oldframe)
          {
-            frame %= kNumDialImages; 
             DrawDialImage(kFineDial,frame); 
 
          }
@@ -926,8 +958,17 @@ public:
 
       // update coarse dial 
       {
-         int frame = mFileCur*kFineDialFrames/mFileTotal; 
-         int oldframe = old*kFineDialFrames/mFileTotal;
+         const uint64_t total = mFileTotal ? mFileTotal : 1;
+         const uint64_t current = mFileCur < total ? mFileCur : total;
+         const uint64_t previous = old < total ? old : total;
+         uint64_t product = 0;
+         uint64_t oldProduct = 0;
+         int frame = DarkCheckedMulU64(current,kFineDialFrames,&product) ?
+            (int)(product/total) :
+            (int)((long double)current*kFineDialFrames/(long double)total);
+         int oldframe = DarkCheckedMulU64(previous,kFineDialFrames,&oldProduct) ?
+            (int)(oldProduct/total) :
+            (int)((long double)previous*kFineDialFrames/(long double)total);
          if (frame != oldframe)
          {
             DrawDialImage(kCoarseDial,frame); 
@@ -955,14 +996,16 @@ public:
 
       STDMETHOD_(long,Read)(char* buf, int buflen)
       {
-         mpUs->UpdateDials(buflen); 
-         return cTagFileProxy::Read(buf,buflen); 
+         long result = cTagFileProxy::Read(buf,buflen);
+         mpUs->UpdateDials(result);
+         return result;
       }
 
       STDMETHOD_(long,Move)(char* buf, int buflen)
       {
-         mpUs->UpdateDials(buflen); 
-         return cTagFileProxy::Move(buf,buflen); 
+         long result = cTagFileProxy::Move(buf,buflen);
+         mpUs->UpdateDials(result);
+         return result;
       }
 
 
@@ -988,8 +1031,26 @@ public:
          char buf[256]; 
          ConfigSpew("loading_open_spew",("Opening %s\n",filename)); 
          // The factory is required to find the file
-         dbFind(filename,buf); 
+         if (!dbFind(filename,buf))
+         {
+            char diagnostic[384];
+            _snprintf(diagnostic,sizeof(diagnostic)-1,
+                      "Referenced mission file was not found: %s",
+                      filename ? filename : "(null)");
+            diagnostic[sizeof(diagnostic)-1] = '\0';
+            dbLoadReportFailure("mission-data",diagnostic);
+            return NULL;
+         }
          cAutoIPtr<ITagFile> file = BufTagFileOpen(buf,mode);
+         if (!file)
+         {
+            char diagnostic[384];
+            _snprintf(diagnostic,sizeof(diagnostic)-1,
+                      "Referenced mission file could not be opened: %s",buf);
+            diagnostic[sizeof(diagnostic)-1] = '\0';
+            dbLoadReportFailure("mission-data",diagnostic);
+            return NULL;
+         }
          return new cLoadingFile(file,mpUs); 
       }
    }; 
@@ -1001,8 +1062,8 @@ protected:
    int mDialPaletteSlots[kNumDials][kNumDialImages];
 
    int mState; 
-   int mFileTotal;
-   int mFileCur; 
+   uint64_t mFileTotal;
+   uint64_t mFileCur;
    int mDialRate;
    BOOL mStateLocked; //sigh.  If TRUE, kGoOn cannot use NextState. 
                       //set false on every frame.  Prevents kGoOn button
@@ -1012,6 +1073,7 @@ protected:
    {
       cObjectivesBase::InitUI(); 
       AutoAppIPtr(ResMan);
+      int missingDialImages = 0;
 
        for (int i = 0; i < kNumDials; i++)
          for(int j = 0; j < kNumDialImages; j++)
@@ -1021,6 +1083,8 @@ protected:
             ConfigSpew("dial_spew",("Binding %s\n",buf)); 
             mpDialImages[i][j] = FetchUIImage(buf,mResPath+"\\Dials"); 
             mDialPaletteSlots[i][j] = -1;
+            if (!mpDialImages[i][j])
+               ++missingDialImages;
 
             // The background and the dial frames need not share a palette.
             // In particular, NewDark FMs can replace LOADING.PCX with a
@@ -1056,11 +1120,27 @@ protected:
                imageRes->Release();
             }
          }
-       if (mFileTotal <= 0)
+       if (missingDialImages)
+       {
+          char diagnostic[192];
+          _snprintf(diagnostic,sizeof(diagnostic)-1,
+                    "Loading progress artwork is missing %d of %d dial "
+                    "frames; unavailable frames will retain the background",
+                    missingDialImages,kNumDials*kNumDialImages);
+          diagnostic[sizeof(diagnostic)-1]='\0';
+          MissionDiagnosticsIssue("ERROR","resource",diagnostic);
+       }
+       if (mFileTotal == 0)
           mFileTotal = 1;  // make sure this is not zero 
 
        mDialRate = kFineDialRate; 
        config_get_int("progress_dial_rate",&mDialRate); 
+      if (mDialRate <= 0)
+      {
+         MissionDiagnosticsIssue("ERROR","configuration",
+            "progress_dial_rate must be positive; using 16384");
+         mDialRate = kFineDialRate;
+      }
    }
 
    void TermUI()
@@ -1081,10 +1161,18 @@ protected:
    {
       GUIcompose c; 
 
+      if (image < 0)
+         image = 0;
       if (image >= kNumDialImages)
          image = kNumDialImages - 1; 
       Rect& area = mRects[dial]; 
       IDataSource* img = mpDialImages[dial-kFirstDial][image]; 
+
+      // Missing UI art is an error state, but it must not terminate mission
+      // loading. InitUI reports the incomplete set once; leave the already
+      // drawn loading background intact for an unavailable frame.
+      if (!img)
+         return;
 
       //      ConfigSpew("dial_spew",("[%d %d] ",dial-kFirstDial,image)); 
 
@@ -1141,6 +1229,8 @@ protected:
 
    void ReadMission(void)
    {
+      if (!mpMissionFile)
+         return;
       // load the objectives 
       AutoAppIPtr(QuestData); 
       pQuestData->DeleteAllType(kQuestDataMission); 
@@ -1155,16 +1245,55 @@ protected:
    
    virtual void DoFileLoad(ITagFile* file)
    {
-      dbLoadTagFile(file,kFiletypeAll); 
-      NextState(); 
+      const edbFiletype loaded = dbLoadTagFile(file,kFiletypeAll);
+      if (config_is_defined("mission_loop_test_expect_failure"))
+      {
+         MissionDiagnosticsIssue(loaded == 0 ? "INFO" : "ERROR",
+            "mission-regression",loaded == 0 ?
+            "PASS: untrusted mission data was rejected without entering gameplay" :
+            "FAIL: malformed mission data unexpectedly reached post-load");
+         SetState(kQuit);
+         quit_game();
+         return;
+      }
+      if (loaded != 0)
+         NextState();
+      else
+      {
+         MissionDiagnosticsIssue("ERROR","mission-data",
+            dbLoadFailureReason()[0] ? dbLoadFailureReason() :
+            "Mission load failed; returning to the main menu");
+         SetState(kQuit);
+      }
 
    }
 
    virtual void SetInitialFile(void)
    {
-      ITagFile* file = OpenMissionFile(GetNextMission());
+      ITagFile* file = NULL;
+      char regressionFile[1024];
+      if (config_get_raw("mission_loop_test_file",regressionFile,
+                         sizeof(regressionFile)))
+      {
+         regressionFile[sizeof(regressionFile)-1] = '\0';
+         file = BufTagFileOpen(regressionFile,kTagOpenRead);
+      }
+      else
+         file = OpenMissionFile(GetNextMission());
       SetFile(file); 
       SafeRelease(file); 
+      if (!mpMissionFile)
+      {
+         MissionDiagnosticsIssue("ERROR","mission-data",
+            "Selected mission could not be opened; returning to the main menu");
+         if (config_is_defined("mission_loop_test_expect_failure"))
+         {
+            MissionDiagnosticsIssue("INFO","mission-regression",
+               "PASS: malformed tag-file container was rejected before decoding");
+            quit_game();
+         }
+         SetState(kQuit);
+      }
    }
 
    void OnLoopMsg(eLoopMessage msg, tLoopMessageData data)
@@ -1176,7 +1305,8 @@ protected:
             mState = kWaitForLoad;
             SetInitialFile(); 
 
-            ReadMission(); 
+            if (mpMissionFile)
+               ReadMission();
          }
          break; 
 
@@ -1184,6 +1314,12 @@ protected:
          case kMsgPauseFrame:
          {
             mStateLocked = FALSE;
+            // Deterministic regression path for the real mission-loop loader.
+            // Unlike quickstart this retains database progress wrapping,
+            // mission preparation, and the transition into gameplay.
+            if (config_is_defined("mission_loop_test") &&
+                mState == kWaitForLoad)
+               NextState();
             switch (mState)
             {
                case kLoad:
@@ -1199,9 +1335,16 @@ protected:
                   dbSetFileFactory(&fact); 
 
                   // load the file 
-                  cLoadingFile* file = new cLoadingFile(mpMissionFile,this); 
-                  DoFileLoad(file); 
-                  DrawDialImage(kCoarseDial,kNumDialImages-1); 
+                  cLoadingFile* file = mpMissionFile ?
+                     new cLoadingFile(mpMissionFile,this) : NULL;
+                  if (file)
+                  {
+                     DoFileLoad(file);
+                     if (mState != kQuit)
+                        DrawDialImage(kCoarseDial,kNumDialImages-1);
+                  }
+                  else
+                     SetState(kQuit);
 
                   uiShowMouse(NULL); 
                   dbSetFileFactory(NULL); 

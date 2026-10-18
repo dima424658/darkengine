@@ -81,6 +81,7 @@
 #include <iobjsys.h> // woo hoo comm-y stuff
 #include <appagg.h>
 #include <motbase.h> // for update_flag_fake. XXX should move this elsewhere KJ 10/97
+#include <dbfile.h>
 
 #include <matrix.h>
 #include <fix.h>
@@ -1001,7 +1002,7 @@ static int g_nSwizzleMots;
 
 void CreaturesRead(fCreatureReadWrite func, eObjPartition partition)
 {
-   int i, ver, num;
+   int i, ver = 0, num = 0;
    if(g_pMotSwizzleMap)
    {
       delete[] g_pMotSwizzleMap;
@@ -1012,19 +1013,35 @@ void CreaturesRead(fCreatureReadWrite func, eObjPartition partition)
    AutoAppIPtr_(ObjectSystem,pObjSys);
 
    func(&ver, sizeof(int),1);
+   if (dbLoadHasFailed())
+      return;
    //   AssertMsg1(ver==g_kCreatureVersion||ver==1,"Creature version %d not supported",ver);
 
    if(ver>=7)
    {
       // read in mot swizzle map
       func((void *)&g_nSwizzleMots, sizeof(int),1);
+      if (dbLoadHasFailed() || g_nSwizzleMots < 0 || g_nSwizzleMots > 1048576)
+      {
+         dbLoadReportFailure("creature-reader",
+                             "Creature motion-map count is invalid");
+         g_nSwizzleMots = 0;
+         return;
+      }
 
       g_pMotSwizzleMap=new sMotSwizzle[g_nSwizzleMots];
       func((void *)g_pMotSwizzleMap,sizeof(*g_pMotSwizzleMap),g_nSwizzleMots);
+      if (dbLoadHasFailed())
+         return;
    }
 
    // read number of creatures
    func((void *)&num, sizeof(int),1);
+   if (dbLoadHasFailed() || num < 0 || num > 1048576)
+   {
+      dbLoadReportFailure("creature-reader","Creature count is invalid");
+      return;
+   }
 
    // read in creature data
    for (i = 0; i < num; i++)
@@ -1035,11 +1052,19 @@ void CreaturesRead(fCreatureReadWrite func, eObjPartition partition)
 
       // Read general info
       func((void *)&obj, sizeof(ObjID),1);
+      if (dbLoadHasFailed())
+         return;
       obj = pObjSys->RemapOnLoad(obj);
 
       func((void *)&type, sizeof(type),1);
+      if (dbLoadHasFailed())
+         return;
 
-      Assert_(type>=0&&type<g_nCreatureTypes);
+      if (type < 0 || type >= g_nCreatureTypes)
+      {
+         dbLoadReportFailure("creature-reader","Creature type is out of range");
+         return;
+      }
 
       if(g_pCreatureFactories[type])
       {
@@ -1061,7 +1086,13 @@ void CreaturesRead(fCreatureReadWrite func, eObjPartition partition)
       }
       pCHandle = CreatureHandle(obj_chandle_id(objID));
 
-      AssertMsg(pCHandle,"something wacko in creature loading");
+      if (!pCHandle)
+      {
+         dbLoadReportFailure("creature-reader",
+                             "Creature refers to an invalid object handle");
+         delete pCreature;
+         return;
+      }
       pCHandle->pCreature = pCreature;
    }
 }

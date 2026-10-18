@@ -13,6 +13,8 @@
 
 #include <tagfile.h>
 #include <vernum.h>
+#include <dbfile.h>
+#include <new>
 
 #include <iobjsys.h>
 #include <objquery.h>
@@ -109,21 +111,49 @@ void LoadObjMappingTable(ITagFile* pFile)
          ObjID loadobj;
 
          // read in an objid
-         ulong len = pFile->Read((char*)&loadobj,sizeof(loadobj));
-         Assert_(len == sizeof(loadobj));
+         if (pFile->TellFromEnd() < sizeof(loadobj) ||
+             pFile->Read((char*)&loadobj,sizeof(loadobj)) != sizeof(loadobj))
+         {
+            dbLoadReportFailure("object-reader",
+                                "Object mapping table ends inside an object id");
+            break;
+         }
 
          ulong size;
          if (fixed_size)
             size = sizeof(Label);
          else
          {
-            len = pFile->Read((char*)&size,sizeof(size));
-            Assert_(len == sizeof(size));
+            if (pFile->TellFromEnd() < sizeof(size) ||
+                pFile->Read((char*)&size,sizeof(size)) != sizeof(size))
+            {
+               dbLoadReportFailure("object-reader",
+                                   "Object mapping table ends inside a name size");
+               break;
+            }
          }
 
-         char* buf = new char[size];
-         len = pFile->Read(buf,size);
-         Assert_(len == size);
+         if (size == 0 || size > 1024 * 1024 || size > pFile->TellFromEnd())
+         {
+            dbLoadReportFailure("object-reader",
+                                "Object mapping name has an invalid size");
+            break;
+         }
+         char* buf = new (std::nothrow) char[size];
+         if (!buf)
+         {
+            dbLoadReportFailure("object-reader",
+                                "Object mapping name allocation failed");
+            break;
+         }
+         ulong len = pFile->Read(buf,size);
+         if (len != size)
+         {
+            delete [] buf;
+            dbLoadReportFailure("object-reader",
+                                "Object mapping name is truncated");
+            break;
+         }
          buf[size-1] = '\0';
 
          // Find the object with its name.

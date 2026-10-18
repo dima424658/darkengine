@@ -23,6 +23,7 @@
 #include <tagfile.h>
 #include <dbasemsg.h>
 #include <objremap.h>
+#include <dbfile.h>
 
 #include <config.h>
 #include <cfgdbg.h>
@@ -569,8 +570,14 @@ void cInventory::Load(ITagFile* file)
    HRESULT result = file->OpenBlock(&inv_tag,&v);
    if (SUCCEEDED(result))
    {
-      Verify(file->Read((char*)&mInHand,sizeof(mInHand)) == sizeof(mInHand));
-      Verify(file->Read((char*)&mCurSel,sizeof(mCurSel)) == sizeof(mCurSel));
+      if (file->Read((char*)&mInHand,sizeof(mInHand)) != sizeof(mInHand) ||
+          file->Read((char*)&mCurSel,sizeof(mCurSel)) != sizeof(mCurSel))
+      {
+         dbLoadReportFailure("inventory-reader",
+                             "Player inventory block is truncated");
+         file->CloseBlock();
+         return;
+      }
       file->CloseBlock();
 
       for (int i = 0; i < kNumItemSels; i++)

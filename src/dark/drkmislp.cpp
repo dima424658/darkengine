@@ -34,6 +34,7 @@
 #include <drkbook.h>
 #include <ctype.h>
 #include <drkamap.h>
+#include <missiondiag.h>
 
 // For flags
 #include <gamestr.h>
@@ -368,6 +369,10 @@ void cMissionLoopClient::OnFrame()
                gMissLoop.Next(); 
                GOTO(kLoadFlags); 
             }
+            // The normal-loop smoke path exercises loading, mission prep,
+            // and gameplay without waiting on movies or the loadout panel.
+            if (config_is_defined("mission_loop_test"))
+               gMissLoop.flags |= kSkipBriefing|kSkipLoadout;
          }
       NEXT(); 
 
@@ -388,6 +393,9 @@ void cMissionLoopClient::OnFrame()
 
       STATE(kPrepMission): 
          {
+            if (config_is_defined("mission_loop_test"))
+               MissionDiagnosticsIssue("INFO","mission-loop-test",
+                  "loading panel completed; preparing mission objects");
             AutoAppIPtr(QuestData);    
             pQuestData->Delete(MISSION_COMPLETE_VAR); 
             DarkPrepLevelForDifficulty(); 
@@ -408,6 +416,9 @@ void cMissionLoopClient::OnFrame()
 
       STATE(kSim):
          {
+            if (config_is_defined("mission_loop_test"))
+               MissionDiagnosticsIssue("INFO","mission-loop-test",
+                  "mission preparation completed; entering gameplay");
             AutoAppIPtr_(SimManager,pSimMan); 
             pSimMan->StartSim(); 
 
@@ -638,6 +649,21 @@ void MissionLoopInit()
    setup_commands(); 
    create_client_factory(); 
    setup_loop_mode(); 
+   int testMission = 0;
+   if (config_get_int("mission_loop_test",&testMission) && testMission > 0)
+   {
+      gMissLoop.mission = testMission;
+      gMissLoop.flags = 0;
+      gMissLoop.state = kStartApp;
+      gMissLoop.next_state = kBeginLoop;
+      gMissLoop.next_mission = 0;
+      char diagnostic[128];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "configured normal mission-loop test for mission %d",
+                testMission);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      MissionDiagnosticsIssue("INFO","mission-loop-test",diagnostic);
+   }
 }
 
 void MissionLoopTerm()

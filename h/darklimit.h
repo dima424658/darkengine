@@ -53,6 +53,22 @@
 #define DARK_LIMIT_NEWDARK_MODEL_HANDLES                2048
 #define DARK_LIMIT_RUNTIME_MODEL_HANDLES DARK_LIMIT_NEWDARK_MODEL_HANDLES
 
+/* FM configuration commonly expands these pools before the engine starts.
+ * The startup content panel therefore reserves the broadest supported pool;
+ * the selected FM's exact object bounds are still applied when its database
+ * is first built. */
+#define DARK_LIMIT_LEGACY_ABSTRACT_OBJECT_IDS           8192
+#define DARK_LIMIT_NEWDARK_ABSTRACT_OBJECT_IDS         18192
+#define DARK_LIMIT_RUNTIME_ABSTRACT_OBJECT_IDS         32768
+
+#define DARK_LIMIT_LEGACY_OBJECT_REFS                   1408
+#define DARK_LIMIT_NEWDARK_OBJECT_REFS                 47740
+#define DARK_LIMIT_RUNTIME_OBJECT_REFS                 65536
+
+#define DARK_LIMIT_LEGACY_SOUND_CHANNELS                  16
+#define DARK_LIMIT_NEWDARK_SOUND_CHANNELS                  48
+#define DARK_LIMIT_RUNTIME_SOUND_CHANNELS                  64
+
 /* Texture and image capacities. */
 #define DARK_LIMIT_LEGACY_TEXTURE_DIMENSION             1024
 #define DARK_LIMIT_NEWDARK_TEXTURE_DIMENSION            4096

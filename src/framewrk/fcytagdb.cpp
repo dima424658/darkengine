@@ -12,6 +12,7 @@
 #include <dynarray.h>
 #include <packflag.h>
 #include <tagremap.h>
+#include <dbfile.h>
 
 #include <dbmem.h> // must be last included header
 
@@ -121,15 +122,23 @@ BOOL cFancyTagDatabase::Load(ITagFile *pFile)
    ulong size;
    sTagInfo info;
 
-   ITagFile_Read(pFile, (char *)&size, sizeof(size));
-
-   if (size > 65536)
-      Error(1, "Invalid motion tag declaration count %lu\n", size);
+   if (ITagFile_Read(pFile,(char *)&size,sizeof(size)) != sizeof(size) ||
+       size > 65536 || size > pFile->TellFromEnd() / sizeof(sTagInfo))
+   {
+      dbLoadReportFailure("tag-database",
+                          "Invalid motion tag declaration count or range");
+      return FALSE;
+   }
 
    m_TagSet.SetSize(size);
    for(i=0;i<(int)size;i++)
    {
-      ITagFile_Read(pFile,(char *)&info,sizeof(info));
+      if (ITagFile_Read(pFile,(char *)&info,sizeof(info)) != sizeof(info))
+      {
+         dbLoadReportFailure("tag-database",
+                             "Motion tag declaration is truncated");
+         return FALSE;
+      }
       m_TagSet.SetItem(&info,i);
    }
 
@@ -139,12 +148,19 @@ BOOL cFancyTagDatabase::Load(ITagFile *pFile)
    // out of date.
    // check for this and assert
    int ncat;
-   ITagFile_Read(pFile, (char *)&ncat, sizeof(ncat));
-   AssertMsg(ncat==m_nCategories,"number of tagdb categories not save as saved file.  Must up version number");
+   if (ITagFile_Read(pFile,(char *)&ncat,sizeof(ncat)) != sizeof(ncat) ||
+       ncat != m_nCategories)
+   {
+      dbLoadReportFailure("tag-database",
+                          "Motion tag database category count is incompatible");
+      return FALSE;
+   }
 
    for(i=0;i<m_nCategories;i++)
    {
       m_pTagDatabases[i]->Load(pFile);
+      if (dbLoadHasFailed())
+         return FALSE;
    }
    return TRUE;
 }

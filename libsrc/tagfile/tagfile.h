@@ -56,6 +56,22 @@ EXTERN void TagFileNotifyBlockObserver(ITagFile* file,
                                        ulong consumed,
                                        BOOL closing);
 
+// Structural read failures are input errors, not assertion failures.  The
+// database layer installs this observer while a mission-load transaction is
+// active so a lower-level reader can abort that transaction cleanly.
+typedef void (LGAPI *TagFileErrorObserver)(ITagFile* file,
+                                           const TagFileTag* tag,
+                                           const char* operation,
+                                           const char* detail,
+                                           void* context);
+
+EXTERN void TagFileSetErrorObserver(TagFileErrorObserver observer,
+                                    void* context);
+EXTERN void TagFileNotifyError(ITagFile* file,
+                               const TagFileTag* tag,
+                               const char* operation,
+                               const char* detail);
+
 //------------------------------------------------------------
 // Open modes 
 //

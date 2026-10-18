@@ -20,6 +20,7 @@
 #include <tagfile.h>
 #include <objnotif.h>
 #include <vernum.h>
+#include <dbfile.h>
 
 #include <config.h>
 #include <cfgdbg.h>
@@ -687,7 +688,12 @@ void cLinkManager::load_relation_ids(ITagFile* file, ulong filetype)
       for (int i = RELID_NULL + 1; file->TellFromEnd() > 0; i++)
       {
          sRelationDesc desc;
-         Verify(file->Read(desc.name,sizeof(desc.name)) == sizeof(desc.name)); 
+         if (file->Read(desc.name,sizeof(desc.name)) != sizeof(desc.name))
+         {
+            dbLoadReportFailure("relation-reader",
+                                "Relation identifier block is truncated");
+            break;
+         }
          desc.name[sizeof(desc.name)-1] = '\0';
 
          IRelation* rel = byName.Search(desc.name); 

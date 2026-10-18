@@ -56,6 +56,9 @@
 #ifndef E_FAIL
 #define E_FAIL ((HRESULT)0x80004005L)
 #endif
+#ifndef E_OUTOFMEMORY
+#define E_OUTOFMEMORY ((HRESULT)0x8007000EL)
+#endif
 #ifndef E_INVALIDARG
 #define E_INVALIDARG ((HRESULT)0x80070057L)
 #endif

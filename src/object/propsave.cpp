@@ -15,6 +15,7 @@
 #include <cfgdbg.h>
 #include <objdb.h>
 #include <dbfile.h>
+#include <missiondiag.h>
 
 #include <lazyagg.h>
 
@@ -90,17 +91,30 @@ static BOOL setup_file(const sPropertyDesc* desc, ITagFile* file, uint& version)
    }
    BOOL retval = file->OpenBlock(&tag,&v) == S_OK;
 
+   if (!retval && file->OpenMode() == kTagOpenRead &&
+       file->BlockSize(&tag) != kTagNoSuchBlock)
+   {
+      char diagnostic[256];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "Property chunk %.12s has a malformed or unsupported version",
+                tag.label);
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      dbLoadReportFailure("property-reader",diagnostic);
+   }
+
    version = MINOR_2_VFUNC(v.minor);
 
-   // OpenBlock deliberately exposes newer input.  This property codec now
-   // makes the acceptance decision using its own declared read ceiling.
+   // OpenBlock deliberately exposes newer input.  Records are length-bounded
+   // below, so a newer value codec may safely decode its known prefix.  The
+   // complete source chunk is retained for DromEd round-trip output.
    if (retval && file->OpenMode() == kTagOpenRead &&
        version > maxValueVersion)
    {
-      ConfigSpew("prop_save_spew",("Unsupported value version %u for %s (max %u)\n",
+      ConfigSpew("prop_save_spew",("Prefix-decoding value version %u for %s (known %u)\n",
                                    version,desc->name,maxValueVersion));
-      file->CloseBlock();
-      return FALSE;
+      dbCompatibilityMarkTag(&tag,kDBCompatPrefixDecoded,
+         "newer value records decoded through a bounded prefix; original chunk retained");
+      dbCompatibilityRetainRawTag(&tag,NULL);
    }
 
    if (!VersionNumsEqual(&v,&thisver))
@@ -114,6 +128,17 @@ static BOOL setup_file(const sPropertyDesc* desc, ITagFile* file, uint& version)
       {
          ConfigSpew("prop_save_spew",("Old property version.  Purging %s\n",desc->name));
          file->CloseBlock();
+         char diagnostic[256];
+         _snprintf(diagnostic,sizeof(diagnostic)-1,
+                   "Property %.12s schema %u predates oldest supported schema %u; skipping it",
+                   tag.label,(unsigned)propver,(unsigned)oldest);
+         diagnostic[sizeof(diagnostic)-1] = '\0';
+         // Old property schemas have always been discarded independently;
+         // they do not invalidate the rest of a gamesys or mission.  Treating
+         // this compatibility decision as a transaction failure prevents all
+         // post-load notifications and leaves otherwise valid databases only
+         // half initialized.
+         MissionDiagnosticsIssue("WARN","property-reader",diagnostic);
          return FALSE;
       }
       
@@ -248,16 +273,31 @@ static int read_func(PropFile* file, void* buf, int len)
    return len;
 }
 
-void cStoredProperty::read_obj(IDataOpsFile* file, eObjPartition partition, uint version)
+BOOL cStoredProperty::read_obj(IDataOpsFile* file, ITagFile* tagFile,
+                               eObjPartition partition, uint version)
 {
    ObjHeader header;
 
    // read in header
-   file->READ(header);
-   ulong target = file->Tell() + header.len;
+   if (tagFile->TellFromEnd() < sizeof(header) ||
+       file->READ(header) != sizeof(header) ||
+       header.len > tagFile->TellFromEnd())
+   {
+      dbLoadReportFailure("property-reader",
+                          "Property record header or payload range is invalid");
+      return FALSE;
+   }
+   const ulong valueStart = tagFile->Tell();
+   const ulong target = valueStart + header.len;
+   if (target < valueStart)
+   {
+      dbLoadReportFailure("property-reader","Property record offset overflow");
+      return FALSE;
+   }
 
    BOOL decoded = FALSE;
    ObjID loadedObj = header.obj;
+   cDataOpsTagFile recordFile(tagFile,valueStart,header.len);
    if (gpObjSys->IsObjLoadPartition(header.obj,partition))
    {
       header.obj = gpObjSys->RemapOnLoad(header.obj); 
@@ -265,7 +305,7 @@ void cStoredProperty::read_obj(IDataOpsFile* file, eObjPartition partition, uint
       if (gpObjSys->Exists(header.obj))
       {
          ConfigSpew("prop_save_spew",("Loading %s property for object %d\n",mDesc.name,header.obj));
-         decoded = SUCCEEDED(mpStore->ReadObj(header.obj,file,version));
+         decoded = SUCCEEDED(mpStore->ReadObj(header.obj,&recordFile,version));
       }
       else 
       {
@@ -273,21 +313,48 @@ void cStoredProperty::read_obj(IDataOpsFile* file, eObjPartition partition, uint
       }
    }
 
-   const ulong current = file->Tell();
+   const ulong current = recordFile.Tell();
+   if (current > target)
+   {
+      dbLoadReportFailure("property-reader",
+                          "Property codec read beyond its record boundary");
+      return FALSE;
+   }
    if (decoded && current < target)
    {
       const ulong tailSize = target - current;
-      std::vector<char> tail(tailSize);
-      if (file->Read(tail.data(),(int)tailSize) == (long)tailSize)
+      std::vector<char> tail;
+      try
+      {
+         tail.resize(tailSize);
+      }
+      catch (const std::bad_alloc&)
+      {
+         dbLoadReportFailure("property-reader",
+                             "Property compatibility tail allocation failed");
+         return FALSE;
+      }
+      if (recordFile.Read(tail.data(),(int)tailSize) == (long)tailSize)
       {
          TagFileTag tag = property_tag(&mDesc);
          dbCompatibilityPreserveRecordTail(&tag,loadedObj,
                                            tail.data(),tailSize,header.len);
       }
+      else
+      {
+         dbLoadReportFailure("property-reader",
+                             "Property compatibility tail is truncated");
+         return FALSE;
+      }
    }
 
    // seek to the end of the value
-   file->Seek(kDataOpSeekFromStart,target);
+   if (FAILED(recordFile.Seek(kDataOpSeekFromStart,target)))
+   {
+      dbLoadReportFailure("property-reader","Property record seek failed");
+      return FALSE;
+   }
+   return !dbLoadHasFailed();
 }
 
 void cStoredProperty::Load(ITagFile* file, eObjPartition partition)
@@ -312,7 +379,8 @@ void cStoredProperty::Load(ITagFile* file, eObjPartition partition)
 
    while (file->TellFromEnd() > 0)
    {
-      read_obj(&opfile,partition,version);
+      if (!read_obj(&opfile,file,partition,version))
+         break;
    }
    cleanup_file(file);
 }

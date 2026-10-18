@@ -21,6 +21,7 @@
 
 #include <objremap.h>
 #include <osysbase.h>
+#include <dbfile.h>
 
 // Must be last header
 #include <dbmem.h>
@@ -33,11 +34,20 @@
 
 STDMETHODIMP cObjIDDataOps::Read(sDatum* pdat, IDataOpsFile* file, int ver)
 {
-   cSimpleDataOps::Read(pdat,file,ver);
+   HRESULT result = cSimpleDataOps::Read(pdat,file,ver);
+   if (FAILED(result))
+      return result;
+
    ObjID* pObj = (ObjID*)pdat;
    // remap on load
    *pObj = ObjRemapOnLoad(*pObj);
-   Assert_(*pObj == OBJ_NULL || ObjExists(*pObj));
+   if (*pObj != OBJ_NULL && !ObjExists(*pObj))
+   {
+      dbLoadReportFailure("property-reader",
+                          "Object-link property references a missing object");
+      *pObj = OBJ_NULL;
+      return E_FAIL;
+   }
    return S_OK; 
 }
 

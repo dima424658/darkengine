@@ -25,7 +25,7 @@
 // do not permit such long names -- substorages in other formats might
 // allow longer ones.
 //
-#define MAX_STORENAME 32
+#define MAX_STORENAME MAX_STOREPATH
 
 //
 // The maximum length of the extension to a component name.

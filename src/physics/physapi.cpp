@@ -19,6 +19,7 @@
 #include <command.h>
 #include <config.h>
 #include <rand.h>
+#include <dbfile.h>
 
 #include <autolink.h>
 #include <objnotif.h>
@@ -875,10 +876,10 @@ void PhysPostLoad()
 void PhysRead(PhysReadWrite func, eObjPartition part)
 {
    func(&g_PhysVersion, sizeof(int), 1);
-
    if (g_PhysVersion < 5)
    {
-      AssertMsg(FALSE, "Attempt to load outdated physics data.  Ignoring.");
+      dbLoadReportFailure("physics-reader",
+                          "Physics data version is too old to load safely");
       g_PhysVersion = g_PhysCurrentVersion;
       return;
    }
