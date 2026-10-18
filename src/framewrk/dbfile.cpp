@@ -1331,6 +1331,7 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
 
    //  filenames of the various pieces, corresponding to load order
    char pieceNames[LOAD_ORDER_PHASES][256];
+   memset(pieceNames,0,sizeof(pieceNames));
    // and whether we've found them 
    BOOL pieceFound[LOAD_ORDER_PHASES]; 
    memset(pieceFound,0,sizeof(pieceFound));
@@ -1422,7 +1423,18 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype)
          }
          if (!success)
          {
-            sprintf(msgbuf,"Failed to open %s file %s",phase_names[i],fullpiecename);
+            if (!pieceFound[i])
+               snprintf(msgbuf,sizeof(msgbuf),
+                        "Mission has no %s file reference",phase_names[i]);
+            else if (!fullpiecename[0])
+               snprintf(msgbuf,sizeof(msgbuf),
+                        "Referenced %s file was not found: %s",
+                        phase_names[i],pieceNames[i]);
+            else
+               snprintf(msgbuf,sizeof(msgbuf),
+                        "Failed to open %s file: %s",
+                        phase_names[i],fullpiecename);
+            msgbuf[sizeof(msgbuf)-1] = '\0';
             Status(msgbuf);
             MissionDiagnosticsIssue("ERROR","mission-data",msgbuf);
             retval = 0;
