@@ -6,13 +6,27 @@
          the shared executable project is built directly. -->
     <SolutionDir Condition="'$(SolutionDir)' == '' Or '$(SolutionDir)' == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>
     <BuildThief2 Condition="'$(BuildThief2)' == ''">true</BuildThief2>
-    <!-- Squirrel support is opt-in so the normal build has no external source
-         dependency. Set EnableSquirrel=true after cloning Squirrel 3.2, or
-         override SquirrelSourceDir to use a checkout elsewhere. -->
-    <EnableSquirrel Condition="'$(EnableSquirrel)' == ''">false</EnableSquirrel>
-    <SquirrelSourceDir Condition="'$(SquirrelSourceDir)' == ''">$(MSBuildThisFileDirectory)3rdparty\squirrel\</SquirrelSourceDir>
+    <!-- NewDark Squirrel compatibility is part of the normal Windows feature
+         set.  The source stays in the sibling dependency checkout; constrained
+         builds may opt out explicitly with EnableSquirrel=false. -->
+    <EnableSquirrel Condition="'$(EnableSquirrel)' == ''">true</EnableSquirrel>
+    <SquirrelSourceDir Condition="'$(SquirrelSourceDir)' == ''">$(MSBuildThisFileDirectory)..\..\darkengine-deps\squirrel\</SquirrelSourceDir>
     <SquirrelSourceRoot>$([MSBuild]::EnsureTrailingSlash('$(SquirrelSourceDir)'))</SquirrelSourceRoot>
     <SquirrelIncludePath Condition="'$(EnableSquirrel)' == 'true'">$(SquirrelSourceRoot)include;</SquirrelIncludePath>
+    <!-- KCTools follows the same external-checkout policy as Squirrel.  The
+         editor can publish a sibling dependency checkout beside DromEd, or
+         callers can point KCToolsSourceDir at another external checkout. -->
+    <EnableKCTools Condition="'$(EnableKCTools)' == ''">false</EnableKCTools>
+    <KCToolsSourceDir Condition="'$(KCToolsSourceDir)' == ''">$(MSBuildThisFileDirectory)..\..\darkengine-deps\kctools\</KCToolsSourceDir>
+    <KCToolsSourceRoot>$([MSBuild]::EnsureTrailingSlash('$(KCToolsSourceDir)'))</KCToolsSourceRoot>
+    <DotNetExecutable Condition="'$(DotNetExecutable)' == '' And Exists('$(MSBuildThisFileDirectory)..\..\darkengine-deps\dotnet10-sdk\dotnet.exe')">$(MSBuildThisFileDirectory)..\..\darkengine-deps\dotnet10-sdk\dotnet.exe</DotNetExecutable>
+    <DotNetExecutable Condition="'$(DotNetExecutable)' == ''">dotnet</DotNetExecutable>
+    <!-- Ogg Vorbis FM sounds use libsndfile through a runtime-only dynamic
+         load. Official architecture-specific releases stay outside the repo. -->
+    <EnableSndFileRuntime Condition="'$(EnableSndFileRuntime)' == ''">false</EnableSndFileRuntime>
+    <SndFileRuntimeDir Condition="'$(SndFileRuntimeDir)' == '' And '$(Platform)' == 'Win32'">$(MSBuildThisFileDirectory)..\..\darkengine-deps\libsndfile-1.2.2-win32\libsndfile-1.2.2-win32\bin\</SndFileRuntimeDir>
+    <SndFileRuntimeDir Condition="'$(SndFileRuntimeDir)' == '' And '$(Platform)' == 'x64'">$(MSBuildThisFileDirectory)..\..\darkengine-deps\libsndfile-1.2.2-win64\libsndfile-1.2.2-win64\bin\</SndFileRuntimeDir>
+    <SndFileRuntimeRoot Condition="'$(SndFileRuntimeDir)' != ''">$([MSBuild]::EnsureTrailingSlash('$(SndFileRuntimeDir)'))</SndFileRuntimeRoot>
     <!-- Keep all generated files under build, grouped first by configuration
          and then by the MSBuild platform name (Win32 or x64). -->
     <DarkBuildRoot>$(MSBuildThisFileDirectory)build\</DarkBuildRoot>

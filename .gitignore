@@ -56,9 +56,10 @@ build/
 .gradle/
 local.properties
 
-# External build dependency. Clone Squirrel 3.2 here; do not vendor or
-# register it as a submodule.
+# Optional local source checkouts; keep external dependencies out of the
+# repository.
 /3rdparty/squirrel/
+/3rdparty/kctools/
 
 # Local game state and diagnostics. Retail Thief 2 data is never part of this
 # repository.

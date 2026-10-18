@@ -7,6 +7,8 @@
 // layout: interface to brushes during csg, then support calls, then portalization calls themselves
 
 #include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 #include <lg.h>
 #include <appagg.h>
@@ -55,6 +57,10 @@
 #include <wrmem.h>
 #include <dbfile.h>
 #include <dbasemsg.h>
+#include <contentctx.h>
+#include <platform_services.h>
+#include <viewmgr.h>
+#include <editsave.h>
 #include <gedmedmo.h>
 #include <ged_rmap.h>
 #include <doorblok.h>
@@ -404,6 +410,11 @@ void gedcsg_relight_level(void)
    AnimLightClear();
    clear_surface_cache();
    reset_lighting();   // really dont need to do this, if just portalized
+   {
+      TagFileTag wrextTag = { "WREXT" };
+      dbCompatibilityRewriteTag(&wrextTag,
+         "lighting changed; source block will be regenerated");
+   }
    reset_object_lighting();
 
    if (gedcsg_light_objcast)
@@ -529,6 +540,7 @@ EXTERN void cid_register_start(void);
 EXTERN void fix_tjoints(void);
 static bool fixup_tjoints=TRUE;
 BOOL doing_opt_pass1=FALSE;
+static BOOL gExternalLightingBuild=FALSE;
 
 static editBrush hotregion_hack_brush;
 
@@ -606,8 +618,11 @@ void build_level(void)
      SFX_Play_Raw(SFX_STATIC,NULL,portal_snd);
    Status("Lighting...");
    editobjFullReref();
-   if (!doing_opt_pass1) 
+   if (!doing_opt_pass1 && !gExternalLightingBuild &&
+       !config_is_defined("no_auto_relight"))
       gedcsg_relight_level();
+   else
+      gedcsg_lighting_ok=FALSE;
    PhysRefSystemClear(); 
    PhysRefSystemResize(); 
    PhysRefSystemRebuild();
@@ -676,6 +691,8 @@ extern "C" void UpdateMenuCheckmarks (void);
 
 void set_lighting_mode(int mode)
 {
+   sMissionLightmapParams lightmapParams = *GetMissionLightmapParams();
+
    switch (mode)
    {
       case 0:
@@ -708,8 +725,205 @@ void set_lighting_mode(int mode)
          break;
       }
    }
+
+   if (mode >= 0 && mode <= 2)
+   {
+      lightmapParams.shadow_type = mode;
+      SetMissionLightmapParams(&lightmapParams);
+   }
    
    UpdateMenuCheckmarks();
+}
+
+static BOOL path_is_absolute(const char* path)
+{
+   return path && path[0] &&
+      ((isalpha((unsigned char)path[0]) && path[1] == ':') ||
+       path[0] == '\\' || path[0] == '/');
+}
+
+static BOOL join_path(char* output, int capacity, const char* root,
+                      const char* leaf)
+{
+   if (!output || capacity <= 0 || !root || !leaf)
+      return FALSE;
+   const int rootLength = (int)strlen(root);
+   const BOOL separator = rootLength > 0 && root[rootLength - 1] != '\\' &&
+                          root[rootLength - 1] != '/';
+   const int written = _snprintf(output,capacity - 1,"%s%s%s",root,
+                                 separator ? "\\" : "",leaf);
+   output[capacity - 1] = '\0';
+   return written >= 0 && written < capacity;
+}
+
+static void kctools_output(const char* bytes, int length, void*)
+{
+   if (bytes && length > 0)
+      mprintf("%.*s",length,bytes);
+}
+
+static BOOL run_kctools_lighting(void)
+{
+   char executable[1024] = "Tools\\KCTools\\KCTools.exe";
+   char configured[1024];
+   char executableDirectory[1024];
+   char managedExecutable[1024];
+   char resolvedExecutable[1024];
+   char exchangePath[1024];
+   char outputPath[1024];
+   char currentFile[256];
+   const char* basePath = DarkContentBasePath();
+   const char* fmPath = DarkContentFMPath();
+   const char* fmName = DarkContentFMName();
+   const char* exchangeRoot = fmPath && fmPath[0] ? fmPath : basePath;
+   uint32 exitCode = UINT32_MAX;
+   int camera = vm_current_camera();
+   mxs_vector cameraLocation = *vm_get_location(camera);
+   mxs_angvec cameraFacing = *vm_get_facing(camera);
+
+   if (gedit_editted || !gedcsg_level_valid || wr_num_cells <= 0)
+   {
+      Warning(("KCTools requires an up-to-date portalized world.\n"));
+      Status("KCTools: portalize the mission first");
+      return FALSE;
+   }
+   if (!editor_BrushDataPresent())
+   {
+      Warning(("KCTools requires the editor BRLIST/source brush data.\n"));
+      Status("KCTools: source brush data is unavailable");
+      return FALSE;
+   }
+   if (!basePath || !basePath[0] || !exchangeRoot || !exchangeRoot[0])
+   {
+      Warning(("KCTools cannot determine the active installation path.\n"));
+      return FALSE;
+   }
+
+   if (config_get_raw("kctools_path",configured,sizeof(configured)))
+   {
+      if (path_is_absolute(configured))
+      {
+         strncpy(executable,configured,sizeof(executable));
+         executable[sizeof(executable) - 1] = '\0';
+      }
+      else if (!join_path(executable,sizeof(executable),basePath,configured))
+      {
+         Warning(("Configured kctools_path is too long.\n"));
+         return FALSE;
+      }
+   }
+   else
+   {
+      static const char defaultExecutable[] =
+         "Tools\\KCTools\\KCTools.exe";
+      BOOL foundManaged = FALSE;
+      if (PlatformGetExecutableDirectory(executableDirectory,
+                                         sizeof(executableDirectory)) &&
+          join_path(managedExecutable,sizeof(managedExecutable),
+                    executableDirectory,"KCTools\\KCTools.exe") &&
+          PlatformResolvePath(managedExecutable,resolvedExecutable,
+                              sizeof(resolvedExecutable)))
+      {
+         strncpy(executable,resolvedExecutable,sizeof(executable));
+         executable[sizeof(executable) - 1] = '\0';
+         foundManaged = TRUE;
+      }
+      if (!foundManaged &&
+          !join_path(executable,sizeof(executable),basePath,
+                     defaultExecutable))
+      {
+         Warning(("KCTools executable path is too long.\n"));
+         return FALSE;
+      }
+   }
+
+   if (!join_path(exchangePath,sizeof(exchangePath),exchangeRoot,"KCLight.cow"))
+   {
+      Warning(("KCTools exchange path is too long.\n"));
+      return FALSE;
+   }
+   if (!join_path(outputPath,sizeof(outputPath),exchangeRoot,"KCLightOut.cow"))
+   {
+      Warning(("KCTools output path is too long.\n"));
+      return FALSE;
+   }
+   dbCurrentFile(currentFile,sizeof(currentFile));
+   Status("KCTools: writing exchange mission");
+   const eDBWriteProfile previousProfile =
+      dbFormatSetWriteProfile(kDBWriteKCToolsExchange);
+   const edbFiletype saved = dbSave(exchangePath,kFiletypeAll);
+   dbFormatSetWriteProfile(previousProfile);
+   if (!saved)
+   {
+      Warning(("Failed to write KCTools exchange mission '%s'.\n",exchangePath));
+      Status("KCTools: exchange save failed");
+      return FALSE;
+   }
+
+   const char* arguments[] = { "light", basePath, "KCLight.cow", "-c",
+                               fmName, "-o", "KCLightOut" };
+   mprintf("Running KCTools: %s\n",executable);
+   Status("KCTools: baking lightmaps");
+   const BOOL launched = PlatformRunProcess(executable,arguments,
+      sizeof(arguments) / sizeof(arguments[0]),basePath,kctools_output,NULL,
+      &exitCode);
+   if (!launched || exitCode != 0)
+   {
+      if (!launched)
+         Warning(("Failed to launch KCTools at '%s'.\n",executable));
+      else
+         Warning(("KCTools failed with exit code %u.\n",exitCode));
+      Status("KCTools: lighting failed; current mission was not replaced");
+      return FALSE;
+   }
+
+   Status("KCTools: importing baked mission");
+   dbFormatFreezeSourceTarget(TRUE);
+   const edbFiletype loaded = dbLoad(outputPath,kFiletypeAll);
+   edbFiletype restored = 0;
+   if (!(loaded & (kFiletypeMIS | kFiletypeMAP)))
+      restored = dbLoad(exchangePath,kFiletypeAll);
+   dbFormatFreezeSourceTarget(FALSE);
+   dbSetCurrentFile(currentFile);
+   StatusField(SF_FILENAME,currentFile);
+   vm_set_location(camera,&cameraLocation);
+   vm_set_facing(camera,&cameraFacing);
+   vm_set_cur_camera(camera);
+   if (!(loaded & (kFiletypeMIS | kFiletypeMAP)))
+   {
+      Warning(("KCTools output could not be imported from '%s'.\n",outputPath));
+      if (restored & (kFiletypeMIS | kFiletypeMAP))
+         Status("KCTools: output import failed; pre-light mission restored");
+      else
+         Status("KCTools: output import and recovery failed");
+      return FALSE;
+   }
+
+   ged_validate_level(TRUE);
+   gedit_redraw_3d();
+   Status("KCTools: lighting complete");
+   return TRUE;
+}
+
+static void kctools_light(void)
+{
+   run_kctools_lighting();
+}
+
+static void kctools_portalize(void)
+{
+   gExternalLightingBuild=TRUE;
+   build_level();
+   gExternalLightingBuild=FALSE;
+   run_kctools_lighting();
+}
+
+static void kctools_optimize(void)
+{
+   gExternalLightingBuild=TRUE;
+   optimize_level();
+   gExternalLightingBuild=FALSE;
+   run_kctools_lighting();
 }
 
 ///////////////////////////////
@@ -730,6 +944,9 @@ Command gedcsg_keys[] =
    { "portalize", FUNC_VOID, build_level, "recompute world terrain" },
    { "world_size", FUNC_FLOAT, csg_set_world_size, "set world extent (1 through 2000)" },
    { "relight_level", FUNC_VOID, gedcsg_relight_level, "relight the level" },
+   { "kctools_light", FUNC_VOID, kctools_light, "bake lighting with KCTools and import it" },
+   { "kctools_portalize", FUNC_VOID, kctools_portalize, "portalize, bake with KCTools, and import" },
+   { "kctools_optimize", FUNC_VOID, kctools_optimize, "optimize, bake with KCTools, and import" },
    { "save_wr", FUNC_STRING, gedcsg_save_world_rep,"save world rep to file"},
    { "compress_br_ids", FUNC_VOID, ged_remap_brushes, "compact brush ids" },
    { "merge_node", TOGGLE_BOOL, &merge_nodes, "build faster imperfect level" },

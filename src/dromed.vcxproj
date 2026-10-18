@@ -123,6 +123,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
       <AdditionalDependencies>arq.lib;dxguid.lib;actmovie.lib;entrywin.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
@@ -164,6 +166,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
       <AdditionalDependencies>arq.lib;dxguid.lib;actmovie.lib;entrywin.lib;r3d.lib;star.lib;skel.lib;mp.lib;md.lib;dump.lib;vec2.lib;prof.lib;gfile.lib;darkloop.lib;lgd3d.lib;mm.lib;script.lib;sndsrc.lib;ref.lib;sdesc.lib;inputbnd.lib;input.lib;namedres.lib;net.lib;random.lib;tagfile.lib;mprintf.lib;lg.lib;lgalloc.lib;matrix.lib;fix.lib;dstruct.lib;cpptools.lib;comtools.lib;templgen.lib;compapis.lib;appcore.lib;config.lib;res.lib;gameshel.lib;timer.lib;rnd.lib;recorder.lib;dev2d.lib;g2.lib;font.lib;dispdev.lib;sound.lib;sndutil.lib;ui.lib;gadget.lib;winmm.lib;comctl32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
@@ -2636,6 +2640,21 @@
   <ItemGroup>
     <ResourceCompile Include="dark.rc" />
   </ItemGroup>
+  <Target Name="ValidateKCToolsDependency" BeforeTargets="PrepareForBuild" Condition="'$(EnableKCTools)' == 'true' And '$(BuildThief2)' != 'true'">
+    <Error Condition="!Exists('$(KCToolsSourceRoot)KCTools\KCTools.csproj')" Text="EnableKCTools=true requires an external KCTools v1.3.4 checkout. Clone it into ..\..\darkengine-deps\kctools or set KCToolsSourceDir." />
+  </Target>
+  <Target Name="PublishKCToolsDependency" AfterTargets="Build" Condition="'$(EnableKCTools)' == 'true' And '$(BuildThief2)' != 'true'">
+    <Message Importance="high" Text="Publishing external KCTools dependency to $(OutDir)KCTools" />
+    <!-- KCTools NativeAOT is x64, but it is an out-of-process sidecar and is
+         therefore shared by the Win32 and x64 DromEd builds. -->
+    <Exec Command="&quot;$(DotNetExecutable)&quot; publish &quot;$(KCToolsSourceRoot)KCTools\KCTools.csproj&quot; --configuration Release --runtime win-x64 --self-contained true --output &quot;$(OutDir)KCTools&quot; --nologo" />
+  </Target>
+  <Target Name="ValidateSndFileRuntime" BeforeTargets="PrepareForBuild" Condition="'$(EnableSndFileRuntime)' == 'true'">
+    <Error Condition="!Exists('$(SndFileRuntimeRoot)sndfile.dll')" Text="EnableSndFileRuntime=true requires the architecture-matched libsndfile 1.2.2 Windows runtime outside the repository. Set SndFileRuntimeDir to its bin directory." />
+  </Target>
+  <Target Name="PublishSndFileRuntime" AfterTargets="Build" Condition="'$(EnableSndFileRuntime)' == 'true'">
+    <Copy SourceFiles="$(SndFileRuntimeRoot)sndfile.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
