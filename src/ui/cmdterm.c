@@ -30,6 +30,7 @@
 #include <scrnman.h>
 #include <status.h>
 #include <simstate.h>
+#include <uigame.h>
 
 #include <config.h>
 #include <platform_services.h>
@@ -106,6 +107,9 @@ static const char* CmdTermPopupFontNames[] =
    "smalfont", "textfont", "fontaa20", "fontaa29", "fontaa36"
 };
 static int CmdTermFontIndices[2] = { 0, 2 };
+static BOOL CmdTermFontDefaultsInitialized[2] = { FALSE, FALSE };
+static BOOL CmdTermUsesConfiguredFont[2] = { FALSE, FALSE };
+static char CmdTermConfiguredFonts[2][64];
 
 #define CMDTERM_EDITOR_FONT_COUNT \
    (sizeof(CmdTermEditorFontNames) / sizeof(CmdTermEditorFontNames[0]))
@@ -1426,9 +1430,41 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
    CmdTerm.style.colors[StyleColorFG] = 0xffff;
    CmdTerm.style.colors[StyleColorText] = 0xffff;
    font_profile = (flags & kCmdTermHideUnfocused) ? 1 : 0;
-   font_name = font_profile
-      ? CmdTermPopupFontNames[CmdTermFontIndices[font_profile]]
-      : CmdTermEditorFontNames[CmdTermFontIndices[font_profile]];
+   if (!CmdTermFontDefaultsInitialized[font_profile])
+   {
+      char configured_font[64];
+      const char* config_var = font_profile ? "console_font"
+                                            : "editor_console_font";
+      const char* const* names = font_profile ? CmdTermPopupFontNames
+                                              : CmdTermEditorFontNames;
+      int count = font_profile ? (int)CMDTERM_POPUP_FONT_COUNT
+                               : (int)CMDTERM_EDITOR_FONT_COUNT;
+      int i;
+
+      if (uiGameGetReadableOverlayFont(config_var, configured_font,
+                                       sizeof(configured_font)))
+      {
+         CmdTermUsesConfiguredFont[font_profile] = TRUE;
+         strncpy(CmdTermConfiguredFonts[font_profile], configured_font,
+                 sizeof(CmdTermConfiguredFonts[font_profile]) - 1);
+         CmdTermConfiguredFonts[font_profile]
+            [sizeof(CmdTermConfiguredFonts[font_profile]) - 1] = '\0';
+         for (i = 0; i < count; ++i)
+            if (!stricmp(configured_font, names[i]))
+            {
+               CmdTermFontIndices[font_profile] = i;
+               CmdTermUsesConfiguredFont[font_profile] = FALSE;
+               break;
+            }
+      }
+      CmdTermFontDefaultsInitialized[font_profile] = TRUE;
+   }
+   if (CmdTermUsesConfiguredFont[font_profile])
+      font_name = CmdTermConfiguredFonts[font_profile];
+   else
+      font_name = font_profile
+         ? CmdTermPopupFontNames[CmdTermFontIndices[font_profile]]
+         : CmdTermEditorFontNames[CmdTermFontIndices[font_profile]];
    resman = AppGetObj(IResMan);
    if (resman)
    {
@@ -1634,6 +1670,9 @@ static BOOL cmdterm_apply_pending_font_change(void)
       return FALSE;
 
    profile = (CmdTerm.flags & kCmdTermHideUnfocused) ? 1 : 0;
+   // Once the user changes the live size, switch an arbitrary configured
+   // face onto the stock size ladder so subsequent wheel steps are stable.
+   CmdTermUsesConfiguredFont[profile] = FALSE;
    font_count = profile ? (int)CMDTERM_POPUP_FONT_COUNT
                         : (int)CMDTERM_EDITOR_FONT_COUNT;
    index = CmdTermFontIndices[profile] + delta;
@@ -1648,7 +1687,8 @@ static BOOL cmdterm_apply_pending_font_change(void)
    bounds = CmdTerm.bounds;
    flags = CmdTerm.flags;
    scroll = CmdTerm.scroll;
-   focused = LGadTextBoxEditing(&CmdTerm.textbox) != 0;
+   focused = (LGadTextBoxEditing(&CmdTerm.textbox) &
+              TEXTBOX_EDIT_EDITABLE) != 0;
    visible = (CmdTerm.statebits & kStateVisible) != 0;
    strncpy(command, CmdTerm.cmdbuf, sizeof(command));
    command[sizeof(command) - 1] = '\0';
@@ -1755,6 +1795,46 @@ static void new_cmdterm(char *prefix)
    cmdterm_focus(prefix);
 }
 
+static void toggle_cmdterm(void)
+{
+   if (!(CmdTerm.statebits & kStateInUse))
+      return;
+
+   if (LGadTextBoxEditing(&CmdTerm.textbox) & TEXTBOX_EDIT_EDITABLE)
+   {
+      // Use the normal Escape path so focus, text input, simulation pause,
+      // popup visibility, and the input-binding context are restored together.
+      cmdterm_textbox_cb(&CmdTerm.textbox, TEXTBOX_SPECKEY,
+                         KB_FLAG_DOWN | KEY_ESC, NULL);
+   }
+   else
+   {
+      history_new_cmdterm();
+      cmdterm_focus("");
+   }
+}
+
+static void cmdterm_deferred_sim_menu(void *unused)
+{
+   (void)unused;
+   IInputBinder_ProcessCmd(g_pInputBinder, "sim_menu");
+}
+
+static void cmdterm_sim_menu(void)
+{
+   if ((CmdTerm.statebits & kStateInUse) &&
+       (LGadTextBoxEditing(&CmdTerm.textbox) & TEXTBOX_EDIT_EDITABLE))
+   {
+      cmdterm_textbox_cb(&CmdTerm.textbox, TEXTBOX_SPECKEY,
+                         KB_FLAG_DOWN | KEY_ESC, NULL);
+   }
+
+   // The pad binding is being dispatched by the input binder. Defer the menu
+   // transition until that dispatch returns and console cleanup is complete.
+   if (uiDefer(cmdterm_deferred_sim_menu, NULL) != OK)
+      cmdterm_deferred_sim_menu(NULL);
+}
+
 static void history_cmdterm(int offset)
 {
    int idx;
@@ -1772,6 +1852,10 @@ static void history_cmdterm(int offset)
 static Command commands[] = 
 {
    { "edit_command", FUNC_STRING, new_cmdterm, "edit a command in the command editor: edit_command <cmd>",HK_ALL},
+   { "toggle_command", FUNC_VOID, toggle_cmdterm,
+     "toggle keyboard focus for the command console", HK_ALL },
+   { "console_sim_menu", FUNC_VOID, cmdterm_sim_menu,
+     "close the command console and open the simulation menu", HK_ALL },
    { "history_cmd", FUNC_INT, history_cmdterm, "edit command from history offset" },
    { "console_copy", FUNC_STRING, cmdterm_console_copy,
      "copy console_copy [visible/all/command] to the clipboard", HK_ALL },

@@ -9,6 +9,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -35,10 +38,17 @@ public final class ThiefActivity extends SDLActivity {
         "io.github.inkmakerdroid.darkengine.extra.QUICKSTART_ANGLES";
     static final String EXTRA_AUTO_STOP =
         "io.github.inkmakerdroid.darkengine.extra.AUTO_STOP";
+    static final String EXTRA_TEXTURE_AUDIT =
+        "io.github.inkmakerdroid.darkengine.extra.TEXTURE_AUDIT";
+    static final String EXTRA_CONTENT =
+        "io.github.inkmakerdroid.darkengine.extra.CONTENT";
+    static final String EXTRA_FAN_MISSION =
+        "io.github.inkmakerdroid.darkengine.extra.FAN_MISSION";
 
     static native void nativeSetTouchControllerConnected(boolean connected);
     static native void nativeSetTouchAxis(int axis, float x, float y);
     static native void nativeSetTouchButton(int button, boolean down);
+    static native void nativeSetConsoleButton(boolean down);
     static native void nativeNotifyTouchInput();
     static native boolean nativeTouchControlsActive();
     static native boolean nativeTouchControlsVisible();
@@ -52,6 +62,23 @@ public final class ThiefActivity extends SDLActivity {
     private AtomicBoolean movieResult;
     private boolean moviePlaybackStarted;
     private int movieTouchVisibility = View.VISIBLE;
+    private final Handler consoleButtonHandler =
+        new Handler(Looper.getMainLooper());
+    private boolean consoleButtonPending;
+    private final Runnable consoleButtonFallback = new Runnable() {
+        @Override
+        public void run() {
+            if (consoleButtonPending) {
+                consoleButtonPending = false;
+                pulseConsoleButton();
+            }
+        }
+    };
+
+    private static void pulseConsoleButton() {
+        nativeSetConsoleButton(true);
+        nativeSetConsoleButton(false);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +119,33 @@ public final class ThiefActivity extends SDLActivity {
                 return true;
             }
         }
+
+        // Android and SDL normally collapse a gamepad's dedicated Back key
+        // and its Select/View key into one controller button. Keep Select as
+        // automap and route only the distinct hardware Back key to Dark's
+        // console semantic. Normally pulse it after the key has been released:
+        // opening SDL's text editor on ACTION_DOWN would make that editor
+        // interpret the matching ACTION_UP as a request to hide the IME. Some
+        // Odin firmware paths omit that key-up, so use a guarded fallback.
+        final int source = event.getSource();
+        if (keyCode == KeyEvent.KEYCODE_BACK &&
+            ((source & InputDevice.SOURCE_GAMEPAD) ==
+                 InputDevice.SOURCE_GAMEPAD ||
+             (source & InputDevice.SOURCE_JOYSTICK) ==
+                 InputDevice.SOURCE_JOYSTICK)) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN &&
+                event.getRepeatCount() == 0) {
+                consoleButtonPending = true;
+                consoleButtonHandler.removeCallbacks(consoleButtonFallback);
+                consoleButtonHandler.postDelayed(consoleButtonFallback, 250L);
+            } else if (event.getAction() == KeyEvent.ACTION_UP &&
+                       consoleButtonPending) {
+                consoleButtonPending = false;
+                consoleButtonHandler.removeCallbacks(consoleButtonFallback);
+                pulseConsoleButton();
+            }
+            return true;
+        }
         return super.dispatchKeyEvent(event);
     }
 
@@ -101,6 +155,9 @@ public final class ThiefActivity extends SDLActivity {
         if (touchControls != null) {
             touchControls.releaseAll();
         }
+        consoleButtonPending = false;
+        consoleButtonHandler.removeCallbacks(consoleButtonFallback);
+        nativeSetConsoleButton(false);
         super.onPause();
     }
 
@@ -357,12 +414,16 @@ public final class ThiefActivity extends SDLActivity {
         ArrayList<String> arguments = new ArrayList<>();
         arguments.add("game_path=" + game.getAbsolutePath());
         if ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+            addDebugArgument(arguments, intent, EXTRA_CONTENT, "content");
+            addDebugArgument(arguments, intent, EXTRA_FAN_MISSION, "fm");
             addDebugArgument(arguments, intent, EXTRA_QUICKSTART,
                              "quickstart");
             addDebugArgument(arguments, intent, EXTRA_QUICKSTART_POS,
                              "quickstart_pos");
             addDebugArgument(arguments, intent, EXTRA_QUICKSTART_ANGLES,
                              "quickstart_angles");
+            addDebugArgument(arguments, intent, EXTRA_TEXTURE_AUDIT,
+                             "texture_audit");
             int autoStop = intent.getIntExtra(EXTRA_AUTO_STOP, 0);
             if (autoStop > 0) {
                 arguments.add("auto_stop=" + autoStop);

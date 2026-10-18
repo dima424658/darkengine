@@ -334,16 +334,17 @@ static void UpdateGamepadMovement(void)
    const BOOL automaticRun = !forceSneak && speed > NORMSPEED;
    const BOOL modifierRun = !forceSneak && grunon && grunpref;
 
-   // Player mode accepts movement states only in [-2, 2].  Running is the
-   // same state with its faster toggle enabled, so keep the analog curve
-   // continuous by halving the forward state once it enters the run band.
-   // Sidestepping deliberately has no run multiplier in player mode; leave
-   // that component at its normal (clamped) speed.
-   float forwardState = g_gamepadForwardAxis * directionScale;
+   // FASTSPEED and NORMSPEED are doubled binding-command values; ForwardProc
+   // converts them to player states before applying the faster toggle.  Do
+   // the same for the analog curve so full-stick movement matches keyboard
+   // run instead of applying both the doubled value and the run multiplier.
+   // Force-sneak already gets its conversion from the slower toggle below.
+   const float playerStateScale = directionScale * (forceSneak ? 1.0f : 0.5f);
+   float forwardState = g_gamepadForwardAxis * playerStateScale;
    if (automaticRun)
       forwardState *= 0.5f;
    SetForwardState(forwardState);
-   SetSidestepState(g_gamepadSidestepAxis * directionScale);
+   SetSidestepState(g_gamepadSidestepAxis * playerStateScale);
 
    // Full stick deflection runs automatically.  Clicking the left stick is
    // also retained as a run modifier for partial deflection.
@@ -1699,6 +1700,7 @@ void InitIBVars ()
          {"pad_speed_toggle", "gamepad_speed_toggle"},
          {"pad_quick_save", "quick_save"},
          {"pad_quick_load", "quick_load"},
+         {"pad_console", "toggle_command"},
          {"pad_touch_leanforward", "+leanforward"},
          {"pad_touch_clear_weapon", "clear_weapon"},
          {"pad_touch_drop_item", "gamepad_drop_item"},
@@ -1721,6 +1723,7 @@ void InitIBVars ()
          {"pad_dpad_right", "next_item"},
          {"pad_rightstick", "lookcenter"},
          {"pad_touch_drop_item", "drop_item"},
+         {"pad_console", "edit_command"},
          {NULL, NULL}
       };
 
@@ -1756,9 +1759,23 @@ void InitIBVars ()
    }
 #endif
 
-   //the command context is for when the command box is open. there are no binds in it,
-   //so that no key events are eaten by the raw handler
+   // The command context normally has no binds so key events reach the raw
+   // text handler. Retain the controller console toggle and menu button so
+   // the console can be closed or replaced by the normal simulation menu.
    g_pInputBinder->SetContext (HK_COMMAND_MODE, TRUE);
+#ifdef THIEF2_GAME
+   {
+      char current[256] = {};
+      g_pInputBinder->QueryBind("pad_console", current, sizeof(current));
+      if (!current[0])
+         g_pInputBinder->Bind("pad_console", "toggle_command");
+
+      current[0] = '\0';
+      g_pInputBinder->QueryBind("pad_menu", current, sizeof(current));
+      if (!current[0])
+         g_pInputBinder->Bind("pad_menu", "console_sim_menu");
+   }
+#endif
 #ifdef EDITOR
    g_pInputBinder->SetContext (HK_BRUSH_EDIT, TRUE);
 #endif //EDITOR

@@ -39,6 +39,7 @@ typedef enum eGamepadButton
    kGamepadButtonSpeedToggle,
    kGamepadButtonQuickSave,
    kGamepadButtonQuickLoad,
+   kGamepadButtonConsole,
    kGamepadButtonCount
 } eGamepadButton;
 

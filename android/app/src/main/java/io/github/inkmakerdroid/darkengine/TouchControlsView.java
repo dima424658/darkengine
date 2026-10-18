@@ -38,6 +38,7 @@ final class TouchControlsView extends View {
     private static final int BUTTON_DROP_ITEM = 18;
     private static final int BUTTON_CYCLE_WEAPON = 19;
     private static final int BUTTON_CYCLE_ITEM = 20;
+    private static final int BUTTON_CONSOLE = 26;
 
     private static final long LONG_PRESS_MILLIS = 550L;
     private static final long PULSE_MILLIS = 100L;
@@ -47,7 +48,7 @@ final class TouchControlsView extends View {
         BUTTON_VIEW, BUTTON_MENU, BUTTON_DPAD_UP, BUTTON_DPAD_DOWN,
         BUTTON_DPAD_LEFT, BUTTON_DPAD_RIGHT, BUTTON_LT, BUTTON_RT,
         BUTTON_LEAN_FORWARD, BUTTON_CLEAR_WEAPON, BUTTON_DROP_ITEM,
-        BUTTON_CYCLE_WEAPON, BUTTON_CYCLE_ITEM
+        BUTTON_CYCLE_WEAPON, BUTTON_CYCLE_ITEM, BUTTON_CONSOLE
     };
 
     private static final class TouchButton {
@@ -117,7 +118,8 @@ final class TouchControlsView extends View {
         new TouchButton(BUTTON_RT, "HIT"),
         new TouchButton(BUTTON_LT, "BLOCK"),
         new TouchButton(BUTTON_VIEW, "MAP"),
-        new TouchButton(BUTTON_MENU, "PAUSE")
+        new TouchButton(BUTTON_MENU, "PAUSE"),
+        new TouchButton(BUTTON_CONSOLE, "CONSOLE")
     };
 
     private float stickRadius;
@@ -204,15 +206,20 @@ final class TouchControlsView extends View {
                 smallWidth, buttonHeight);
 
         final float actionWidth = unit * 0.10f;
-        final float actionStep = actionWidth + gap;
-        final float actionY = gameTop + gameHeight * 0.40f;
+        final float actionStepX = actionWidth + gap;
+        final float actionStepY = buttonHeight + gap;
+        final float actionY = gameTop + gameHeight * 0.37f;
         final float actionCenterX = Math.min(rightX,
             gameLeft + gameWidth - unit * 0.02f - actionWidth * 0.5f -
-            actionStep * 1.5f);
-        for (int i = 0; i < 4; ++i) {
-            setRect(buttons[4 + i], actionCenterX + (i - 1.5f) * actionStep,
-                    actionY, actionWidth, buttonHeight);
-        }
+            actionStepX);
+        setRect(buttons[6], actionCenterX, actionY - actionStepY,
+                actionWidth, buttonHeight); // Hit
+        setRect(buttons[4], actionCenterX - actionStepX, actionY,
+                actionWidth, buttonHeight); // Use
+        setRect(buttons[7], actionCenterX + actionStepX, actionY,
+                actionWidth, buttonHeight); // Block
+        setRect(buttons[5], actionCenterX, actionY + actionStepY,
+                actionWidth, buttonHeight); // Jump
 
         setRect(buttons[8], gameLeft + gameWidth * 0.065f,
                 gameTop + gameHeight * 0.085f,
@@ -220,6 +227,10 @@ final class TouchControlsView extends View {
         setRect(buttons[9], gameLeft + gameWidth * 0.935f,
                 gameTop + gameHeight * 0.085f,
                 unit * 0.15f, buttonHeight);
+        final float consoleWidth = unit * 0.165f;
+        setRect(buttons[10], buttons[9].bounds.left - gap -
+                consoleWidth * 0.5f, buttons[9].bounds.centerY(),
+                consoleWidth, buttonHeight);
         text.setTextSize(unit * 0.026f);
         hint.setTextSize(unit * 0.019f);
     }

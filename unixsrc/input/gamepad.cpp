@@ -37,10 +37,37 @@ uint32_t g_touchDesiredButtons;
 uint32_t g_touchPolledButtons;
 uint32_t g_touchPendingPresses;
 uint32_t g_touchPendingReleases;
+std::mutex g_androidButtonMutex;
+uint32_t g_androidDesiredButtons;
+uint32_t g_androidPolledButtons;
+uint32_t g_androidPendingPresses;
+uint32_t g_androidPendingReleases;
 
 void TouchStateChanged()
 {
    ++g_touchState.packet_number;
+}
+
+void ApplyAndroidButtons(sGamepadRawState *raw)
+{
+   std::lock_guard<std::mutex> lock(g_androidButtonMutex);
+   const uint32_t presses = g_androidPendingPresses &
+      ~g_androidPolledButtons;
+   if (presses)
+   {
+      g_androidPolledButtons |= presses;
+      g_androidPendingPresses &= ~presses;
+   }
+
+   const uint32_t releases = g_androidPendingReleases &
+      g_androidPolledButtons & ~presses;
+   if (releases)
+   {
+      g_androidPolledButtons &= ~releases;
+      g_androidPendingReleases &= ~releases;
+      g_androidPendingPresses |= releases & g_androidDesiredButtons;
+   }
+   raw->buttons |= g_androidPolledButtons;
 }
 #endif
 
@@ -230,6 +257,16 @@ int SDLBackendPoll(unsigned index, sGamepadRawState *raw)
              kGamepadButtonDpadLeft);
    AddButton(raw, slot.controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
              kGamepadButtonDpadRight);
+#if defined(__ANDROID__)
+   // Android exposes the controller Select key and its dedicated Back key as
+   // the same SDL controller button. ThiefActivity consumes only the latter
+   // and injects it here, leaving Select/View available for the automap.
+   if (index == 0)
+      ApplyAndroidButtons(raw);
+#else
+   AddButton(raw, slot.controller, SDL_CONTROLLER_BUTTON_GUIDE,
+             kGamepadButtonConsole);
+#endif
 
    sGamepadRawState comparison = *raw;
    comparison.packet_number = 0;
@@ -332,6 +369,27 @@ Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeSetTouchButton(
          g_touchDesiredButtons &= ~mask;
          g_touchPendingReleases |= mask;
       }
+   }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeSetConsoleButton(
+   JNIEnv *, jclass, jboolean down)
+{
+   const uint32_t mask = 1u << kGamepadButtonConsole;
+   std::lock_guard<std::mutex> lock(g_androidButtonMutex);
+   if (down)
+   {
+      if (!(g_androidDesiredButtons & mask))
+      {
+         g_androidDesiredButtons |= mask;
+         g_androidPendingPresses |= mask;
+      }
+   }
+   else if (g_androidDesiredButtons & mask)
+   {
+      g_androidDesiredButtons &= ~mask;
+      g_androidPendingReleases |= mask;
    }
 }
 
