@@ -29,6 +29,8 @@
 #include <engscrpt.h>
 #include <frobscrm.h>
 #include <keyscpt.h>
+#include <linkman.h>
+#include <relation.h>
 #include <linkscpt.h>
 #include <litscrpt.h>
 #include <lockscpt.h>
@@ -55,6 +57,7 @@
 #include <grscale.h>
 #include <imgrstyp.h>
 #include <resapi.h>
+#include <platform_services.h>
 
 #undef string
 #undef vector
@@ -93,6 +96,38 @@ namespace
 
 class cNativeSquirrelModule;
 static cNativeSquirrelModule* gSquirrelModule = NULL;
+
+struct cSquirrelLinkListener
+{
+   ObjID watcher;
+   ObjID object;
+   RelationID flavor;
+   RelationListenMsgSet interests;
+   bool active;
+};
+
+struct sSquirrelLinkNotifyMessage : public sScrMsg
+{
+   eRelationListenMsg type;
+   LinkID id;
+   ObjID source;
+   ObjID dest;
+   RelationID flavor;
+
+   sSquirrelLinkNotifyMessage(ObjID recipient,
+                              const sRelationListenMsg& notification)
+      : sScrMsg(recipient, "LinkNotify"), type(notification.type),
+        id(notification.id), source(notification.link.source),
+        dest(notification.link.dest), flavor(notification.link.flavor)
+   {
+   }
+};
+
+// IRelation has no Unlisten operation.  Records therefore remain stable for
+// the lifetime of the relation and are deactivated by the script service.
+static std::vector<cSquirrelLinkListener*> gSquirrelLinkListeners;
+static void LGAPI SquirrelLinkListener(sRelationListenMsg* message,
+                                       RelationListenerData data);
 
 struct cOverlayCallback
 {
@@ -181,22 +216,43 @@ static std::string LastError(HSQUIRRELVM vm)
    return result;
 }
 
+static void ReportScriptError(const char* message)
+{
+   PlatformDiagnosticsLog("ERROR","script",message ? message :
+                          "Unspecified Squirrel script error");
+}
+
 static bool RunSource(HSQUIRRELVM vm, const char* source, size_t size,
                       const char* name)
 {
+   if (!vm || !source || size > 64U * 1024U * 1024U)
+   {
+      ReportScriptError("Squirrel source buffer is invalid or exceeds 64 MiB");
+      return false;
+   }
    const SQInteger top = sq_gettop(vm);
    if (SQ_FAILED(sq_compilebuffer(vm, source, (SQInteger)size, name, SQTrue)))
    {
-      mprintf("Squirrel compile error in %s: %s\n", name,
-              LastError(vm).c_str());
+      char diagnostic[2048];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "Squirrel compile error in %s: %s",name,
+                LastError(vm).c_str());
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      mprintf("%s\n",diagnostic);
+      ReportScriptError(diagnostic);
       sq_settop(vm, top);
       return false;
    }
    sq_pushroottable(vm);
    if (SQ_FAILED(sq_call(vm, 1, SQFalse, SQTrue)))
    {
-      mprintf("Squirrel load error in %s: %s\n", name,
-              LastError(vm).c_str());
+      char diagnostic[2048];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "Squirrel load error in %s: %s",name,
+                LastError(vm).c_str());
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      mprintf("%s\n",diagnostic);
+      ReportScriptError(diagnostic);
       sq_settop(vm, top);
       return false;
    }
@@ -207,16 +263,32 @@ static bool RunSource(HSQUIRRELVM vm, const char* source, size_t size,
 static bool ReadFile(const char* path, std::string& data)
 {
    FILE* file = fopen(path, "rb");
-   long size;
    if (!file)
       return false;
-   if (fseek(file, 0, SEEK_END) != 0 || (size = ftell(file)) < 0 ||
-       fseek(file, 0, SEEK_SET) != 0)
+#ifdef _WIN32
+   const int seekEnd = _fseeki64(file,0,SEEK_END);
+   const __int64 size = seekEnd == 0 ? _ftelli64(file) : -1;
+   const int seekStart = size >= 0 ? _fseeki64(file,0,SEEK_SET) : -1;
+#else
+   const int seekEnd = fseeko(file,0,SEEK_END);
+   const off_t size = seekEnd == 0 ? ftello(file) : -1;
+   const int seekStart = size >= 0 ? fseeko(file,0,SEEK_SET) : -1;
+#endif
+   if (seekEnd != 0 || size < 0 || size > 64 * 1024 * 1024 ||
+       seekStart != 0)
    {
       fclose(file);
       return false;
    }
-   data.resize((size_t)size);
+   try
+   {
+      data.resize((size_t)size);
+   }
+   catch (const std::bad_alloc&)
+   {
+      fclose(file);
+      return false;
+   }
    if (size && fread(&data[0], 1, (size_t)size, file) != (size_t)size)
    {
       fclose(file);
@@ -315,16 +387,15 @@ static std::vector<std::string> NutFiles(const std::string& root)
    std::vector<std::string> result;
    const std::string directory = JoinPath(root, "sq_scripts");
    const std::string pattern = JoinPath(directory, "*.nut");
-   WIN32_FIND_DATAA data;
-   HANDLE find = FindFirstFileA(pattern.c_str(), &data);
-   if (find == INVALID_HANDLE_VALUE)
+   sPlatformFileFind find = {};
+   if (!PlatformFindFirst(pattern.c_str(), &find))
       return result;
    do
    {
-      if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-         result.push_back(JoinPath(directory, data.cFileName));
-   } while (FindNextFileA(find, &data));
-   FindClose(find);
+      if (!(find.attributes & kPlatformFileDirectory))
+         result.push_back(JoinPath(directory, find.name));
+   } while (PlatformFindNext(&find));
+   PlatformFindClose(&find);
    std::sort(result.begin(), result.end(),
       [](const std::string& a, const std::string& b)
       {
@@ -856,6 +927,22 @@ private:
    std::string mCurrentClass;
 };
 
+static void LGAPI SquirrelLinkListener(sRelationListenMsg* message,
+                                       RelationListenerData data)
+{
+   cSquirrelLinkListener* listener =
+      static_cast<cSquirrelLinkListener*>(data);
+   if (!message || !listener || !listener->active || !gSquirrelModule ||
+       !(message->type & listener->interests) ||
+       (listener->object != OBJ_NULL &&
+        message->link.source != listener->object &&
+        message->link.dest != listener->object))
+      return;
+
+   sSquirrelLinkNotifyMessage notification(listener->watcher, *message);
+   gSquirrelModule->Manager()->SendMessage(&notification);
+}
+
 static IScript* CreateSquirrelScript(const char* className, ObjID object)
 {
    return gSquirrelModule ? gSquirrelModule->Create(className, object) : NULL;
@@ -891,6 +978,16 @@ static SQInteger NativeGetMessage(HSQUIRRELVM vm)
    {
       const sSimMsg* sim = static_cast<const sSimMsg*>(message);
       SetSlotBool(vm, -1, "starting", sim->starting != FALSE);
+   }
+   else if (MessageIs(message, "LinkNotify"))
+   {
+      const sSquirrelLinkNotifyMessage* link =
+         static_cast<const sSquirrelLinkNotifyMessage*>(message);
+      SetSlotInteger(vm, -1, "type", link->type);
+      SetSlotInteger(vm, -1, "id", link->id);
+      SetSlotInteger(vm, -1, "source", link->source);
+      SetSlotInteger(vm, -1, "dest", link->dest);
+      SetSlotInteger(vm, -1, "flavor", link->flavor);
    }
    else if (MessageStartsWith(message, "FrobTool") ||
             MessageStartsWith(message, "FrobWorld") ||
@@ -1804,6 +1901,97 @@ static SQInteger CallLinkTools(HSQUIRRELVM vm, const char* method)
    return 1;
 }
 
+static SQInteger CallListener(HSQUIRRELVM vm, const char* method)
+{
+   if (!gSquirrelModule)
+   {
+      sq_pushinteger(vm, E_FAIL);
+      return 1;
+   }
+
+   const ObjID watcher = ArgumentObject(vm, 0, gSquirrelModule->Manager());
+   const ObjID object = ArgumentObject(vm, 1, gSquirrelModule->Manager());
+   const RelationID flavor = static_cast<RelationID>(
+      ArgumentLinkKind(vm, 2, gSquirrelModule->Manager()));
+
+   if (_stricmp(method, "SubscribeLink") == 0)
+   {
+      const RelationListenMsgSet defaultInterests =
+         kListenLinkModify | kListenLinkBirth | kListenLinkDeath;
+      const RelationListenMsgSet interests = ArgumentCount(vm) > 3 ?
+         static_cast<RelationListenMsgSet>(ArgumentInteger(vm, 3)) :
+         defaultInterests;
+      const bool asynchronous = ArgumentCount(vm) > 4 &&
+         ArgumentInteger(vm, 4) != 0;
+      if (!watcher || !flavor || asynchronous)
+      {
+         sq_pushinteger(vm, asynchronous ? E_NOTIMPL : E_INVALIDARG);
+         return 1;
+      }
+
+      for (size_t i = 0; i < gSquirrelLinkListeners.size(); ++i)
+      {
+         cSquirrelLinkListener* existing = gSquirrelLinkListeners[i];
+         if (existing->active && existing->watcher == watcher &&
+             existing->object == object && existing->flavor == flavor)
+         {
+            existing->interests = interests;
+            sq_pushinteger(vm, S_OK);
+            return 1;
+         }
+      }
+
+      AutoAppIPtr(LinkManager);
+      IRelation* relation = pLinkManager ?
+         pLinkManager->GetRelation(flavor) : NULL;
+      if (!relation || relation->GetID() == RELID_NULL)
+      {
+         SafeRelease(relation);
+         sq_pushinteger(vm, E_INVALIDARG);
+         return 1;
+      }
+
+      cSquirrelLinkListener* listener = new cSquirrelLinkListener;
+      listener->watcher = watcher;
+      listener->object = object;
+      listener->flavor = flavor;
+      listener->interests = interests;
+      listener->active = true;
+      const HRESULT result = relation->Listen(interests,
+         SquirrelLinkListener, listener);
+      relation->Release();
+      if (FAILED(result))
+      {
+         delete listener;
+         sq_pushinteger(vm, result);
+         return 1;
+      }
+      gSquirrelLinkListeners.push_back(listener);
+      sq_pushinteger(vm, S_OK);
+      return 1;
+   }
+
+   if (_stricmp(method, "UnsubscribeLink") == 0)
+   {
+      bool found = false;
+      for (size_t i = 0; i < gSquirrelLinkListeners.size(); ++i)
+      {
+         cSquirrelLinkListener* listener = gSquirrelLinkListeners[i];
+         if (listener->active && listener->watcher == watcher &&
+             listener->object == object && listener->flavor == flavor)
+         {
+            listener->active = false;
+            found = true;
+         }
+      }
+      sq_pushinteger(vm, found ? S_OK : S_FALSE);
+      return 1;
+   }
+
+   sq_pushinteger(vm, E_NOTIMPL);
+   return 1;
+}
+
 static SQInteger CallPhysics(HSQUIRRELVM vm, const char* method)
 {
    IUnknown* unknown = gSquirrelModule->Manager()->GetService(&IID_IPhysicsScriptService);
@@ -2444,7 +2632,7 @@ static SQInteger CallSound(HSQUIRRELVM vm, const char* method)
    if (!service) { sq_pushnull(vm); return 1; }
    const object callback(ArgumentObject(vm, 0, gSquirrelModule->Manager()));
    const cScrStr name(ArgumentString(vm, 1).c_str());
-   boolean played = FALSE;
+   BOOL played = FALSE;
    if (_stricmp(method, "PlayAtLocation") == 0)
    {
       cScrVec where(ArgumentVector(vm, 2));
@@ -3091,6 +3279,7 @@ static SQInteger NativeCall(HSQUIRRELVM vm)
    if (_stricmp(service, "Object") == 0) return CallObject(vm, method);
    if (_stricmp(service, "Link") == 0) return CallLink(vm, method);
    if (_stricmp(service, "LinkTools") == 0) return CallLinkTools(vm, method);
+   if (_stricmp(service, "Listener") == 0) return CallListener(vm, method);
    if (_stricmp(service, "Physics") == 0) return CallPhysics(vm, method);
    if (_stricmp(service, "Door") == 0) return CallDoor(vm, method);
    if (_stricmp(service, "Locked") == 0) return CallLocked(vm, method);
@@ -3142,6 +3331,8 @@ cNativeSquirrelModule::cNativeSquirrelModule(const char* name,
 
 cNativeSquirrelModule::~cNativeSquirrelModule()
 {
+   for (size_t i = 0; i < gSquirrelLinkListeners.size(); ++i)
+      gSquirrelLinkListeners[i]->active = false;
    if (gSquirrelModule == this) gSquirrelModule = NULL;
    if (mVm) { ClearOverlayState(mVm); sq_close(mVm); }
    if (mManager) mManager->Release();
@@ -3241,7 +3432,13 @@ bool cNativeSquirrelModule::LoadScripts()
          std::string source;
          if (!ReadFile(files[j].c_str(), source))
          {
-            mprintf("Squirrel could not read %s\n", files[j].c_str());
+            char diagnostic[2048];
+            _snprintf(diagnostic,sizeof(diagnostic)-1,
+                      "Squirrel source is missing, unreadable, or larger than 64 MiB: %s",
+                      files[j].c_str());
+            diagnostic[sizeof(diagnostic)-1] = '\0';
+            mprintf("%s\n",diagnostic);
+            ReportScriptError(diagnostic);
             return false;
          }
          if (!RunSource(mVm, source.data(), source.size(), files[j].c_str()))
@@ -3398,8 +3595,16 @@ HRESULT cNativeSquirrelModule::Dispatch(HSQOBJECT instance,
    sq_pushobject(mVm, instance);
    const SQRESULT callResult = sq_call(mVm, 1, SQFalse, SQTrue);
    if (SQ_FAILED(callResult))
-      mprintf("Squirrel runtime error in %s.%s on object %d: %s\n",
-              className, handler.c_str(), object, LastError(mVm).c_str());
+   {
+      char diagnostic[2048];
+      _snprintf(diagnostic,sizeof(diagnostic)-1,
+                "Squirrel runtime error in %s.%s on object %d: %s",
+                className ? className : "(unknown)",handler.c_str(),object,
+                LastError(mVm).c_str());
+      diagnostic[sizeof(diagnostic)-1] = '\0';
+      mprintf("%s\n",diagnostic);
+      ReportScriptError(diagnostic);
+   }
    sq_settop(mVm, top);
    mCurrentObject = oldObject; mCurrentMessage = oldMessage;
    mCurrentReply = oldReply; mCurrentClass = oldClass;

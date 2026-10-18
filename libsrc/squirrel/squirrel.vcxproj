@@ -96,7 +96,7 @@
     <ClCompile Include="$(SquirrelSourceRoot)sqstdlib\sqstdsystem.cpp" />
   </ItemGroup>
   <Target Name="ValidateSquirrelDependency" BeforeTargets="PrepareForBuild" Condition="'$(EnableSquirrel)' == 'true'">
-    <Error Condition="!Exists('$(SquirrelSourceRoot)include\squirrel.h')" Text="EnableSquirrel=true requires a Squirrel 3.2 checkout. Clone it into 3rdparty\squirrel or set SquirrelSourceDir." />
+    <Error Condition="!Exists('$(SquirrelSourceRoot)include\squirrel.h')" Text="The default Windows build requires an external Squirrel 3.2 checkout at $(SquirrelSourceRoot). Clone it there, set SquirrelSourceDir, or explicitly set EnableSquirrel=false for a reduced build." />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

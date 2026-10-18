@@ -232,6 +232,7 @@ __dark_install_service("Property", ["Get", "Set", "SetSimple", "SetLocal", "Add"
 __dark_install_service("Physics", ["SubscribeMsg", "UnsubscribeMsg", "LaunchProjectile", "SetVelocity", "GetVelocity", "ControlVelocity", "StopControlVelocity", "SetGravity", "GetGravity", "HasPhysics", "IsSphere", "IsOBB", "ControlCurrentLocation", "ControlCurrentRotation", "ControlCurrentPosition", "DeregisterModel", "PlayerMotionSetOffset", "Activate", "ValidPos", "IsRope", "GetClimbingObject"]);
 __dark_install_service("Link", ["Create", "Destroy", "AnyExist", "GetAll", "GetOne", "BroadcastOnAllLinks", "BroadcastOnAllLinksData", "CreateMany", "DestroyMany", "GetAllInherited", "GetAllInheritedSingle"]);
 __dark_install_service("LinkTools", ["LinkKindNamed", "LinkKindName", "LinkGet", "LinkGetData", "LinkSetData"]);
+__dark_install_service("Listener", ["SubscribeLink", "UnsubscribeLink"]);
 __dark_install_service("ActReact", ["React", "Stimulate", "GetReactionNamed", "GetReactionName", "SubscribeToStimulus", "UnsubscribeToStimulus", "BeginContact", "EndContact", "SetSingleSensorContact"]);
 __dark_install_service("Data", ["GetString", "GetObjString", "DirectRand", "RandInt", "RandFlt0to1", "RandFltNeg1to1"]);
 __dark_install_service("AI", ["MakeGotoObj", "MakeGotoObjLoc", "MakeFrobObjWith", "MakeFrobObj", "GetAlertLevel", "SetMinimumAlert", "ClearGoals", "SetScriptFlags", "ClearAlertness", "Signal", "StartConversation"]);
@@ -291,5 +292,6 @@ ePhysContactType <- { kContactNone = 0, kContactFace = 1, kContactEdge = 2, kCon
 ePhysContact <- { kContactCreate = 0, kContactDestroy = 1 };
 ePhysEnterExit <- { kEnter = 0, kExit = 1 };
 ePhysMessageResult <- { kPM_StatusQuo = 0, kPM_Nothing = 1, kPM_Bounce = 2, kPM_Slay = 3, kPM_NonPhys = 4 };
+eRelationListenMsg <- { kListenLinkModify = 1, kListenLinkBirth = 2, kListenLinkDeath = 4, kListenLinkPostMortem = 8 };
 
 )SQAPI";
