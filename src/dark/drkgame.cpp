@@ -800,7 +800,7 @@ static void console_retinfo(char* value)
       int state = console_on_off(value, gConsoleRetinfoHUD);
       if (state < 0)
       {
-         console_message("Usage: retinfo [on/off]");
+         console_message("Usage: reticle_info [on/off]");
          return;
       }
       gConsoleRetinfoHUD = state;
@@ -1054,13 +1054,6 @@ static Command thief_console_commands[] =
    { "audit_textures", FUNC_STRING, console_texture_audit, "audit_textures [output file]" },
    { "list_scripts", FUNC_VOID,   console_list_scripts,  "list loaded script classes" },
    { "debug_scripts", FUNC_STRING, console_debug_scripts, "debug_scripts [on/off]" },
-   { "openmission",  FUNC_STRING, console_open_mission,  "compatibility alias for open_mission" },
-   { "listmissions", FUNC_VOID,   console_list_missions, "compatibility alias for list_missions" },
-   { "playerphysics", FUNC_STRING, console_player_physics, "compatibility alias for player_physics" },
-   { "retinfo",      FUNC_STRING, console_retinfo,       "compatibility alias for reticle_info" },
-   { "ret_info",     FUNC_STRING, console_retinfo,       "compatibility alias for reticle_info" },
-   { "listscripts",  FUNC_VOID,   console_list_scripts,  "compatibility alias for list_scripts" },
-   { "debugscripts", FUNC_STRING, console_debug_scripts, "compatibility alias for debug_scripts" },
 };
 
 #endif // THIEF2_GAME

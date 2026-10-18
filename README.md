@@ -775,9 +775,6 @@ In DromEd, bare `help` opens the searchable **Command Reference** window
 instead of printing the complete editor command registry. Use `help <text>`
 to print only matching commands in the console.
 
-The earlier spellings `openmission`, `listmissions`, `playerphysics`,
-`retinfo`, `listscripts`, and `debugscripts` remain compatibility aliases.
-
 Long mission and script listings are appended to `thief-console.log`. Both log
 files are ignored by Git.
 
