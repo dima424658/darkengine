@@ -18,6 +18,8 @@
 #include <uiapp.h>
 #include <scrnman.h>
 #include <metasnd.h>
+#include <platform_services.h>
+#include <render_backend.h>
 
 #include <resapi.h>
 #include <fonrstyp.h>
@@ -35,6 +37,8 @@ guiStyle* uiGameStyle()
 
 static char* strip_trailing(char* arg)
 {
+   if (!arg || !*arg)
+      return arg;
    char* s = arg + strlen(arg) - 1; 
    for (; s >= arg && isspace(*s); s--)
       *s = '\0'; 
@@ -226,6 +230,70 @@ void uiGameLoadStyle(const char* prefix, guiStyle* style, const char* relpath)
 void uiGameUnloadStyle(guiStyle* style)
 {
    unload_style_fonts(style); 
+}
+
+BOOL uiGameGetReadableOverlayFont(const char* config_var,
+                                  char* font, int capacity)
+{
+   if (!font || capacity <= 0)
+      return FALSE;
+   font[0] = '\0';
+
+   if (config_var && config_var[0] &&
+       config_get_raw(config_var, font, capacity))
+   {
+      strip_trailing(font);
+      return font[0] != '\0';
+   }
+   if (config_get_raw("overlay_font", font, capacity))
+   {
+      strip_trailing(font);
+      return font[0] != '\0';
+   }
+
+#if defined(__ANDROID__)
+   static const char* names[] =
+   {
+      "fontaa12", "fontaa16", "fontaa20", "fontaa29", "fontaa36"
+   };
+   static const int heights[] = { 12, 16, 20, 29, 36 };
+   int client_width = 0;
+   int client_height = 0;
+   int logical_width = grd_canvas ? grd_canvas->bm.w : 0;
+   int logical_height = grd_canvas ? grd_canvas->bm.h : 0;
+   int physical_height = PlatformGetDefaultTextPixelHeight();
+
+   if (physical_height <= 0 || logical_width <= 0 || logical_height <= 0)
+      return FALSE;
+   if (!RenderBackendGetSettledClientSize(&client_width, &client_height))
+      PlatformGetDisplayModes(kPlatformCurrentDisplay, NULL, 0,
+                              &client_width, &client_height);
+
+   float scale = 1.0f;
+   if (client_width > 0 && client_height > 0)
+   {
+      const float scale_x = (float)client_width / logical_width;
+      const float scale_y = (float)client_height / logical_height;
+      scale = scale_x < scale_y ? scale_x : scale_y;
+      if (scale <= 0.0f)
+         scale = 1.0f;
+   }
+
+   const int logical_target = (int)(physical_height / scale + 0.999f);
+   int selected = (int)(sizeof(heights) / sizeof(heights[0])) - 1;
+   for (int i = 0; i < (int)(sizeof(heights) / sizeof(heights[0])); ++i)
+      if (heights[i] >= logical_target)
+      {
+         selected = i;
+         break;
+      }
+
+   strncpy(font, names[selected], capacity - 1);
+   font[capacity - 1] = '\0';
+   return TRUE;
+#else
+   return FALSE;
+#endif
 }
 
 void uiGameProtectStyle(const guiStyle* style)

@@ -39,6 +39,13 @@ EXTERN void uiGameLoadStyle(const char* prefix, guiStyle* style, const char* rel
 EXTERN void uiGameUnloadStyle(guiStyle* style); 
 EXTERN void uiGameLoadStyleColors(const char* prefix, guiStyle* style); 
 
+// Resolves a readable overlay font. A path-specific config variable wins,
+// followed by overlay_font. On Android the fallback is chosen from Dark's
+// stock AA fonts using the system body-text size and current presentation
+// scale. Other platforms return FALSE when there is no explicit override.
+EXTERN BOOL uiGameGetReadableOverlayFont(const char* config_var,
+                                         char* font, int capacity);
+
 // contrast-protect all colors in the style 
 EXTERN void uiGameProtectStyle(const guiStyle* style);
 

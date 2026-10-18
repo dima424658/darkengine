@@ -37,6 +37,7 @@ struct sMsgData
 
 static sMsgData gMsg; 
 static IRes* gpFontRes; 
+static BOOL gFontResolved;
 static IGameShell* gpGameShell; 
 static int gTextRGB[3] = { 0xFF, 0xFF, 0xFF }; 
 static int gTextMargins[] = { 10, 5 }; // x,y margins in % of screen 
@@ -50,7 +51,11 @@ static void init_commands();
 void DarkMessageInit(void)
 {
    AutoAppIPtr(ResMan); 
-   gpFontRes = pResMan->Bind(FONTRES, RESTYPE_FONT, NULL, FONTDIR); 
+   // The game canvas is not established yet. Bind the legacy fallback now
+   // and choose a density-aware face on the first frame, once the logical to
+   // physical presentation scale is available.
+   gpFontRes = pResMan->Bind(FONTRES, RESTYPE_FONT, NULL, FONTDIR);
+   gFontResolved = FALSE;
    gpGameShell = AppGetObj(IGameShell); 
    int cnt = 3;
    config_get_value("text_message_rgb",CONFIG_INT_TYPE,gTextRGB,&cnt); 
@@ -64,7 +69,32 @@ void DarkMessageInit(void)
 void DarkMessageTerm(void)
 {
    SafeRelease(gpFontRes); 
+   gFontResolved = FALSE;
    SafeRelease(gpGameShell); 
+}
+
+static void resolve_message_font(void)
+{
+   char font[64] = FONTRES;
+   IRes* readable;
+
+   if (gFontResolved)
+      return;
+   if (!uiGameGetReadableOverlayFont("text_message_font", font,
+                                     sizeof(font)))
+   {
+      gFontResolved = TRUE;
+      return;
+   }
+
+   AutoAppIPtr(ResMan);
+   readable = pResMan->Bind(font, RESTYPE_FONT, NULL, FONTDIR);
+   if (readable)
+   {
+      SafeRelease(gpFontRes);
+      gpFontRes = readable;
+   }
+   gFontResolved = TRUE;
 }
 
 //
@@ -94,6 +124,7 @@ void DarkMessage(const char* msg)
 
 void DarkMessageUpdateFrame(void)
 {
+   resolve_message_font();
    Rect r = { 0, 0, grd_canvas->bm.w, grd_canvas->bm.h };
    BOOL drawText = gpGameShell->GetTimerTick() < gMsg.timeout;
 
