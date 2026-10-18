@@ -124,11 +124,14 @@ int PlatformGetDisplayModes(ePlatformDisplayScope scope,
    return collector.count;
 }
 
-int PlatformGetDefaultTextPixelHeight(void)
+float PlatformGetTextScale(void)
 {
-   // Desktop builds retain their configured legacy fonts. The Android
-   // provider supplies a density-aware default for handheld displays.
-   return 0;
+   HWND window = GetActiveWindow();
+   UINT dpi = window ? GetDpiForWindow(window) : GetDpiForSystem();
+   if (!dpi)
+      dpi = 96;
+   const float scale = (float)dpi / 96.0f;
+   return scale < 0.5f ? 0.5f : (scale > 8.0f ? 8.0f : scale);
 }
 
 static uint32 ClampMemorySize(DWORDLONG size)

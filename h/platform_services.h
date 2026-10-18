@@ -65,10 +65,11 @@ EXTERN int PlatformGetDisplayModes(ePlatformDisplayScope scope,
                                    int capacity,
                                    int *native_width,
                                    int *native_height);
-// Returns the platform's normal body-text height in physical pixels when the
-// platform has a meaningful touch-screen default. Zero preserves the legacy
-// engine font choice.
-EXTERN int PlatformGetDefaultTextPixelHeight(void);
+// Returns the platform text scale relative to its baseline desktop density.
+// Implementations include the active display scale and, where the platform
+// exposes it separately, the user's font-size preference. The shared UI uses
+// this value only for text; game geometry and input coordinates are unchanged.
+EXTERN float PlatformGetTextScale(void);
 EXTERN BOOL PlatformGetMemoryStatus(sPlatformMemoryStatus *status);
 EXTERN BOOL PlatformReadUserUInt(const char *store, const char *name,
                                  uint32 *value);

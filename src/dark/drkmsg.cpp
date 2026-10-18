@@ -37,7 +37,7 @@ struct sMsgData
 
 static sMsgData gMsg; 
 static IRes* gpFontRes; 
-static BOOL gFontResolved;
+static char gFontName[64] = FONTRES;
 static IGameShell* gpGameShell; 
 static int gTextRGB[3] = { 0xFF, 0xFF, 0xFF }; 
 static int gTextMargins[] = { 10, 5 }; // x,y margins in % of screen 
@@ -55,7 +55,8 @@ void DarkMessageInit(void)
    // and choose a density-aware face on the first frame, once the logical to
    // physical presentation scale is available.
    gpFontRes = pResMan->Bind(FONTRES, RESTYPE_FONT, NULL, FONTDIR);
-   gFontResolved = FALSE;
+   strncpy(gFontName, FONTRES, sizeof(gFontName));
+   gFontName[sizeof(gFontName) - 1] = '\0';
    gpGameShell = AppGetObj(IGameShell); 
    int cnt = 3;
    config_get_value("text_message_rgb",CONFIG_INT_TYPE,gTextRGB,&cnt); 
@@ -69,23 +70,21 @@ void DarkMessageInit(void)
 void DarkMessageTerm(void)
 {
    SafeRelease(gpFontRes); 
-   gFontResolved = FALSE;
+   strncpy(gFontName, FONTRES, sizeof(gFontName));
+   gFontName[sizeof(gFontName) - 1] = '\0';
    SafeRelease(gpGameShell); 
 }
 
 static void resolve_message_font(void)
 {
-   char font[64] = FONTRES;
+   char font[64];
    IRes* readable;
 
-   if (gFontResolved)
+   strncpy(font, FONTRES, sizeof(font));
+   font[sizeof(font) - 1] = '\0';
+   uiGameGetReadableOverlayFont("text_message_font", font, sizeof(font));
+   if (!stricmp(font, gFontName))
       return;
-   if (!uiGameGetReadableOverlayFont("text_message_font", font,
-                                     sizeof(font)))
-   {
-      gFontResolved = TRUE;
-      return;
-   }
 
    AutoAppIPtr(ResMan);
    readable = pResMan->Bind(font, RESTYPE_FONT, NULL, FONTDIR);
@@ -93,8 +92,9 @@ static void resolve_message_font(void)
    {
       SafeRelease(gpFontRes);
       gpFontRes = readable;
+      strncpy(gFontName, font, sizeof(gFontName));
+      gFontName[sizeof(gFontName) - 1] = '\0';
    }
-   gFontResolved = TRUE;
 }
 
 //

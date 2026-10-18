@@ -111,13 +111,14 @@ int PlatformGetDisplayModes(ePlatformDisplayScope scope,
 #endif
 }
 
-int PlatformGetDefaultTextPixelHeight(void)
+float PlatformGetTextScale(void)
 {
 #if defined(__ANDROID__)
-   // Android's normal body text is 16sp. scaledDensity includes both the
-   // device density and the user's system font-size preference.
+   // density describes device scaling. scaledDensity additionally includes
+   // the user's system font-size preference, which is the value text needs.
    JNIEnv *environment = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
    jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+   float density = 0.0f;
    float scaledDensity = 0.0f;
    jclass activityClass = NULL;
    jobject resources = NULL;
@@ -147,12 +148,18 @@ int PlatformGetDefaultTextPixelHeight(void)
       jfieldID scaledDensityField = metricsClass
          ? environment->GetFieldID(metricsClass, "scaledDensity", "F")
          : NULL;
+      jfieldID densityField = metricsClass
+         ? environment->GetFieldID(metricsClass, "density", "F")
+         : NULL;
+      if (densityField)
+         density = environment->GetFloatField(metrics, densityField);
       if (scaledDensityField)
          scaledDensity = environment->GetFloatField(metrics,
                                                      scaledDensityField);
       if (environment->ExceptionCheck())
       {
          environment->ExceptionClear();
+         density = 0.0f;
          scaledDensity = 0.0f;
       }
    }
@@ -163,11 +170,13 @@ int PlatformGetDefaultTextPixelHeight(void)
    if (activityClass) environment->DeleteLocalRef(activityClass);
    if (activity) environment->DeleteLocalRef(activity);
    if (scaledDensity > 0.0f)
-      return (int)(16.0f * scaledDensity + 0.5f);
+      return std::max(0.5f, std::min(8.0f, scaledDensity));
+   if (density > 0.0f)
+      return std::max(0.5f, std::min(8.0f, density));
 
    // Retain an SDL density fallback for unusual activity startup states where
    // Android resources are not yet available.
-   float density = 0.0f;
+   float displayDpi = 0.0f;
    int display = 0;
    SDL_Window *window = SDL_GetKeyboardFocus();
    if (window)
@@ -176,14 +185,51 @@ int PlatformGetDefaultTextPixelHeight(void)
       if (current >= 0)
          display = current;
    }
-   if (SDL_GetDisplayDPI(display, NULL, NULL, &density) == 0 && density > 0.0f)
-      return (int)(16.0f * density / 160.0f + 0.5f);
+   if (SDL_GetDisplayDPI(display, &displayDpi, NULL, NULL) == 0 &&
+       displayDpi > 0.0f)
+      return std::max(0.5f, std::min(8.0f, displayDpi / 160.0f));
 
-   // Android's baseline density is 160 dpi. A conservative 32-pixel fallback
-   // is preferable to silently reverting to Dark's 8-pixel desktop font.
-   return 32;
+   // A conservative 2x fallback is preferable to silently reverting to
+   // Dark's small desktop text on a handheld display.
+   return 2.0f;
 #else
-   return 0;
+   if ((SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) != 0)
+   {
+      SDL_Window *window = SDL_GetKeyboardFocus();
+      if (!window)
+         window = SDL_GetMouseFocus();
+      if (window)
+      {
+         int windowWidth = 0;
+         int windowHeight = 0;
+         int drawableWidth = 0;
+         int drawableHeight = 0;
+         SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+         SDL_GL_GetDrawableSize(window, &drawableWidth, &drawableHeight);
+         if (windowWidth > 0 && windowHeight > 0 &&
+             drawableWidth > 0 && drawableHeight > 0)
+         {
+            const float xScale = (float)drawableWidth / windowWidth;
+            const float yScale = (float)drawableHeight / windowHeight;
+            const float compositorScale = std::min(xScale, yScale);
+            if (compositorScale > 1.01f)
+               return std::min(8.0f, compositorScale);
+         }
+      }
+
+      int display = 0;
+      if (window)
+      {
+         const int current = SDL_GetWindowDisplayIndex(window);
+         if (current >= 0)
+            display = current;
+      }
+      float displayDpi = 0.0f;
+      if (SDL_GetDisplayDPI(display, &displayDpi, NULL, NULL) == 0 &&
+          displayDpi > 0.0f)
+         return std::max(0.5f, std::min(8.0f, displayDpi / 96.0f));
+   }
+   return 1.0f;
 #endif
 }
 

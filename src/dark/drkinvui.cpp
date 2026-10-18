@@ -46,6 +46,7 @@
 #include <drkinvpr.h>
 #include <gamestr.h>
 #include <resapi.h>
+#include <fonrstyp.h>
 #include <respaths.h>
 #include <scrnman.h>
 #include <drkvo.h>
@@ -132,6 +133,8 @@ static BOOL gInvRadialActive = FALSE;
 static float gInvRadialSavedTimeScale = 1.0f;
 static float gInvRadialTimeScale = 0.15f;
 static sInvRadialRing gInvRadial[INV_RADIAL_STICK_COUNT];
+static IRes* gInvRadialFontRes = NULL;
+static char gInvRadialFontName[64];
 static ObjID gGamepadLastWeapon = OBJ_NULL;
 
 //------------------------------------------------------------
@@ -1524,10 +1527,45 @@ static void render_radial_menu(void)
       radius = 48;
 
    guiStyleSetupFont(NULL, StyleFontNormal);
+   grs_font* styleFont = gr_get_font();
+   grs_font* radialFont = NULL;
+   {
+      char font[64] = "";
+      uiGameGetReadableOverlayFont("gamepad_radial_font", font,
+                                   sizeof(font));
+      if (stricmp(font, gInvRadialFontName))
+      {
+         SafeRelease(gInvRadialFontRes);
+         gInvRadialFontName[0] = '\0';
+         if (font[0])
+         {
+            AutoAppIPtr(ResMan);
+            gInvRadialFontRes = pResMan->Bind(font, RESTYPE_FONT, NULL,
+                                              "intrface");
+            if (gInvRadialFontRes)
+            {
+               strncpy(gInvRadialFontName, font,
+                       sizeof(gInvRadialFontName));
+               gInvRadialFontName[sizeof(gInvRadialFontName) - 1] = '\0';
+            }
+         }
+      }
+   }
+   if (gInvRadialFontRes)
+   {
+      radialFont = (grs_font*)gInvRadialFontRes->Lock();
+      if (radialFont)
+         gr_set_font(radialFont);
+   }
    render_radial_ring(gInvRadial[0], width * 3 / 10, height / 2,
                       radius, "WEAPONS - LEFT STICK", "NO WEAPON");
    render_radial_ring(gInvRadial[1], width * 7 / 10, height / 2,
                       radius, "ITEMS - RIGHT STICK", "NO ITEM");
+   if (radialFont)
+   {
+      gr_set_font(styleFont);
+      gInvRadialFontRes->Unlock();
+   }
    guiStyleCleanupFont(NULL, StyleFontNormal);
 }
 
@@ -2210,6 +2248,8 @@ void InvUIInit(void)
 void InvUITerm(void)
 {
    radial_close(FALSE);
+   SafeRelease(gInvRadialFontRes);
+   gInvRadialFontName[0] = '\0';
    SafeRelease(pContainSys);
    SafeRelease(pInventory);
    SafeRelease(gNoDropProp);

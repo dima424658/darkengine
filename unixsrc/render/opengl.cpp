@@ -592,7 +592,7 @@ bool DarkRenderOpen(int width, int height, const char *title)
    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
    g_window = SDL_CreateWindow(title ? title : "Dark Engine",
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-      SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+      SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
    if (g_window) set_window_icon();
    if (g_window) g_context = SDL_GL_CreateContext(g_window);
    if (!g_window || !g_context) { DarkRenderClose(); return false; }
