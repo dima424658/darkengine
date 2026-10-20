@@ -1,11 +1,12 @@
 # Thief: Dark Engine Restored for Windows, Linux, and Android
 
 This repository restores the historical Dark Engine sources as a portable,
-working codebase. It builds the ThiefRunner game executable on Windows, Linux,
-and Android, plus a work-in-progress Windows DromEd mission viewer
-and editor. The engine core is shared across platforms; operating-system,
-rendering, input, audio, movie, and filesystem services are supplied by
-platform backends.
+working codebase for the Thief and Thief 2 games. It builds the ThiefRunner
+game executable on Windows, Linux, and Android, plus a work-in-progress Windows
+DromEd mission viewer and editor. The engine core is shared across platforms;
+operating-system, rendering, input, audio, movie, and filesystem services are
+supplied by platform backends. The engine experimentally implements many of the
+anonymously created but closed-source NewDark extensions.
 
 The repository does not include retail missions, movies, sounds, scripts, or
 other game assets. A legally obtained installation of *Thief: The Dark
@@ -18,6 +19,47 @@ Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
 > accepted into the project. AI-assisted changes receive the same build and
 > runtime validation as other changes, but that review cannot guarantee the
 > absence of defects.
+
+## Table of contents
+
+- [Screenshots](#screenshots)
+- [Platform status](#platform-status)
+  - [Mission compatibility and goals](#mission-compatibility-and-goals)
+  - [Cross-platform architecture](#cross-platform-architecture)
+  - [Game runner features](#game-runner-features)
+- [Building and running](#building-and-running)
+  - [Windows](#windows)
+  - [Linux](#linux)
+  - [Android](#android)
+- [Legacy OSM diagnostics](#legacy-osm-diagnostics)
+- [Content selection and diagnostics](#content-selection-and-diagnostics)
+- [Game saves](#game-saves)
+- [Game settings](#game-settings)
+- [Controls](#controls)
+- [DromEd on Windows](#dromed-on-windows)
+  - [DromEd settings](#dromed-settings)
+  - [Mission and game-system files](#mission-and-game-system-files)
+- [Command console](#command-console)
+- [Known limitations and remaining work](#known-limitations-and-remaining-work)
+- [Preservation and open access](#preservation-and-open-access)
+
+## Screenshots
+
+These captures were produced during local runtime verification with external
+retail game data. The data shown in the captures is not included in the
+repository.
+
+### Gameplay and inventory HUD
+
+![Thief 2 gameplay and inventory HUD](docs/screenshots/gameplay-inventory.png)
+
+### In-game menu
+
+![Thief 2 in-game menu](docs/screenshots/in-game-menu.png)
+
+### Automap
+
+![Thief 2 automap](docs/screenshots/automap.png)
 
 ## Platform status
 
@@ -54,8 +96,9 @@ The game runner retains mission loading, the game UI, inventory, automap, and
 the in-game command console. On Windows it also retains the normal startup and
 movie flow. DromEd can load, inspect, and playtest legacy Thief 2 missions in
 a resizable window, but should still be treated as a viewer rather than a
-dependable editor. Editing and save integrity are not comprehensively
-validated, and NewDark formats and features are only partially supported.
+dependable editor. Editing and mission-authoring integrity are not
+comprehensively validated, and NewDark formats and features are only partially
+supported.
 
 ### Mission compatibility and goals
 
@@ -68,11 +111,11 @@ follows:
 - **Thief II** is the primary and most-tested target. The stock campaign is
   playable on every supported platform; Windows x86 remains the reference
   build, with Windows x64, Linux, and Android receiving progressively broader
-  mission, save/load, and script validation.
+  mission and script validation.
 - **Thief Gold and The Dark Project** stock missions load through the same
   runner, with the Dark 1 service layout selected for legacy scripts. Gold has
   passed initial runner and DromEd smoke tests. TDP and the complete Gold
-  campaign, UI, and save/load paths still need broader coverage.
+  campaign and UI still need broader coverage.
 - **Fan missions** using retail-era data and legacy `.osm` scripts are a core
   compatibility goal. FM-local configuration, NewDark-style path precedence,
   PNG replacement art, and Ogg Vorbis sounds are supported. Individual FMs may
@@ -83,6 +126,9 @@ follows:
   runner understands selected configuration conventions, resources, database
   extensions, and loose Squirrel 3.2 sources, but it does not implement the
   complete NewDark service, renderer, object/property, or authoring surface.
+
+Game-save coverage and format limitations are documented separately under
+[Game saves](#game-saves).
 
 The near-term goal is dependable play of all three stock Thief releases and
 retail-format FMs, followed by measured expansion of NewDark FM compatibility.
@@ -276,9 +322,8 @@ cd "$HOME/Games/Thief 2"
 
 An interactive launch from another directory opens the folder chooser. SDL
 uses relative-pointer input during gameplay and absolute coordinates in menus,
-with native Wayland preferred when available. Saves use the retail `saves`
-directory when writable and otherwise fall back below
-`$XDG_DATA_HOME/DarkEngineRestored/Profiles`.
+with native Wayland preferred when available. See [Game saves](#game-saves) for
+the save location and fallback rules.
 
 ### Android
 
@@ -494,176 +539,105 @@ gameplay; it skips only the briefing and loadout screens:
   mission_loop_test=20 auto_stop=120
 ```
 
-The detected game, original-content mode, and each FM have separate save
-directories under `%LOCALAPPDATA%\DarkEngineRestored\Profiles`. Interactive
-launches require a fresh choice from the content menu. The remembered game
-folder is used only to position the folder dialog; it never selects a game,
-campaign mode, or FM on a later launch.
+Interactive launches require a fresh choice from the content menu. The
+remembered game folder is used only to position the folder dialog; it never
+selects a game, campaign mode, or FM on a later launch.
 
-## DromEd on Windows
+## Game saves
 
-DromEd uses the same working-directory detection as the game runner:
+The in-game Save and Load panels use ordinary Dark tag-file saves. Numbered
+slots are named `game0001.sav`, `game0002.sav`, and so on; the quick-save slot
+is `quick.sav`, and the mission-start checkpoint is `startmis.sav`. A save is a
+snapshot of campaign and current-mission state, but it still depends on the
+same game, campaign or FM, gamesys, scripts, and external resources being
+installed when it is loaded. Moving a save between Windows, Linux, and Android
+is intended to work when that content context is identical, but cross-platform
+and cross-version save compatibility is not yet comprehensively validated.
 
-```bat
-cd /d "C:\Games\Thief Gold"
-"C:\src\darkengine\build\Release\Win32\DromEd\DromEd.exe"
-```
+Save locations are deliberately isolated by detected game and selected
+content:
 
-The first prompt accepts either a named game's base folder (the runnable root
-containing `cam.cfg`) or the recognized GOG Gold collection folder, but not an
-`FMs` child. The next dialog is headed
-**DromEd <game> - Select mission set or FM to work with** and chooses either
-the base/modded game or one installed FM. DromEd then opens without prompting
-for a mission. Its Open/Save dialogs default to that selected base or FM
-directory; use **File > Open** to select the `.mis` or `.cow` to edit. For an
-FM, the selected content context stays active while the mission opens, so its
-referenced `.gam` and its `obj`, `mesh`, `fam`, `snd`, `strings`, and other
-resource directories remain ahead of ordinary mods and retail data.
+- On Windows, new saves are written beneath
+  `%LOCALAPPDATA%\DarkEngineRestored\Profiles\<game>\<content>\saves`. Existing
+  saves in the retail installation's `saves` directory remain visible when a
+  slot is absent from the active profile, but new saves do not appear there.
+- On Linux and Android, the runner prefers the selected game directory's
+  existing `saves` or `SAVES` directory when it is writable. Otherwise it uses
+  `$XDG_DATA_HOME/DarkEngineRestored/Profiles/<game>/<content>/saves`, or the
+  corresponding `$HOME/.local/share` location. An Android installation copied
+  for faster loading therefore keeps its saves in the app-specific game copy;
+  direct-folder mode keeps them beside that installation.
+- `save_path=<directory>` or the `DARK_SAVE_PATH` environment variable selects
+  an explicit save directory for launches and tests.
 
-The DromEd viewer uses the same D3D11 scene renderer and swap-chain presenter
-as the game. Its legacy editor canvas remains 16-bit internally, while the D3D11
-presenter converts it to the resizable 32-bit desktop window. When an editor
-window resize finishes, DromEd recreates that canvas at the client area's
-actual dimensions and scales the four viewports, console, status bar, and
-brush controls independently in each axis. This fills widescreen and portrait
-windows without imposing a 4:3 aspect ratio. `edit_screen_size` in `cam.cfg`
-still selects the initial canvas size. Game preview mode stays in the same
-window and recreates the D3D11 render context for the preview; returning to
-edit mode restores the editor viewport and menu.
+The retail tag-file structure is retained rather than replaced by a
+project-specific save format. Retail Thief saves and the tested subset of
+NewDark saves can be loaded, and newer source blocks that this engine cannot
+interpret are retained where possible during a load/save cycle. This is not
+complete NewDark compatibility: each block is versioned independently, and a
+supported save can still contain one unsupported subsystem block.
 
-Use **Help > Keyboard Shortcuts** to open a resizable, human-readable input
-reference. It includes every active editor binding (including the complete
-built-in fallback set), non-conflicting shortcut annotations from the loaded
-`menus.cfg`, and direct mouse/viewport gestures. Controls are grouped and
-ordered by purpose, with modifier keys shown before the base key.
+In particular, NewDark's `VISITED` 4.0 campaign block uses an undocumented
+encoding for its expanded 32-page by 256-location automap state. The current
+engine does not decode that block, so explored automap locations may be reset
+when loading a NewDark save. Saves written by this engine use the understood
+retail `VISITED` 1.0 layout, limited to 8 pages by 64 locations. This automap
+limitation does not by itself prevent the rest of a NewDark save from loading.
+Do not yet assume that saves written here will round-trip every NewDark-only
+feature or load in an original retail executable.
 
-DromEd keeps its scrollable command console visible in the lower-right editor
-pane. Press `:` or `;` to give its command line keyboard focus; **Escape**
-releases focus without hiding the pane. It uses the same scrollback, command
-history, completion, clipboard controls, and output path as the pop-up console
-in gameplay and play preview.
+## Game settings
 
-The built-in historical editing command registry is present. KCTools lighting
-is exposed directly as `kctools_light`, `kctools_portalize`, and
-`kctools_optimize`; these commands perform a checked save/run/import
-transaction without NewDark's command script or `kctools.osm`. They first use
-the published sidecar beside DromEd, then fall back to the historical
-`Tools\KCTools\KCTools.exe` location. `kctools_path` remains an explicit
-override. Other companion-tool workflows and some familiar external commands
-are still unavailable.
+Configuration is resolved from the selected installation and content context.
+`cam_ext.cfg` supplies installation-wide defaults, `cam.cfg` supplies the
+user's base-game overrides, and `cam_mod.ini` supplies NewDark-style mod and FM
+paths. Included game/editor configuration and the selected FM's `DARK.CFG`,
+`fm.cfg`, and `cam_ext.cfg` are then applied as appropriate. Dark-style
+command-line assignments such as `game_full_screen=0` are parsed last and take
+priority for that launch.
 
-This build is therefore not yet a dependable mission-authoring environment.
-Work from backups and do not rely on it as the only editor or copy of a
-mission. DromEd inventories the version and size of every source chunk and
-preserves that per-chunk target by default. WREXT 0.30, LM_PARAM 0.1, extended
-RENDPARAMS layouts, CELL_MOTION 0.2, and NewDark's 28-face BRLIST records have
-writable paths; untouched raw WREXT data is still replayed exactly. Unknown
-chunks and unowned suffixes remain preservation-only, and AIPATH 3.4 remains
-raw-preserved rather than regenerated, so this is not yet comprehensive
-NewDark authoring support.
-
-Use `db_format_report` to print the current source inventory. The
-`db_write_profile preserve|retail|newdark` command selects an explicit output
-policy; `preserve` is the default and is the only policy intended for normal
-round-trip editing.
-
-`save_mission` writes the mission partitions to `.mis`; `save_gamesys` writes
-the abstract object/game-system partitions to `.gam`; and `save_cow` writes
-both into an editor working file. None of them packages external FM resources.
-Custom models, textures, samples, strings, movies, scripts, and motion data
-remain files in their normal FM directories and must be distributed by the FM
-author.
-
-Sound schema source (`schema\*.sch`, `*.spc`, and `*.arc`) is likewise not
-embedded as source text. `reload_schemas` parses those files into schema
-objects and sample mappings; saving the gamesys persists that compiled object
-data, while the audio samples themselves remain under `snd`. Keep custom
-schema source with an authoring project so it can be rebuilt, and ship the
-custom `.gam` plus every referenced sample. Motion schema source under
-`mschema` is compiled separately into `motiondb.bin`, which is also an
-external FM file.
-
-For a copy-only save/load regression, run:
-
-```powershell
-.\tools\dromed_roundtrip.ps1 `
-  -GameRoot 'C:\Games\Thief 2 1.29' `
-  -FanMission 'Reflections in Red [2025-11-14] T2 FM v1.1b (EN)' `
-  -Mission miss20.mis `
-  -GameSys lakeside.gam
-```
-
-The harness writes only beneath `.codex-build\dromed-roundtrip`. It loads the
-installed source, saves `.mis` and `.gam` copies with the `preserve` profile,
-reloads and saves each again, then launches a second DromEd process for a full
-reload of the resulting mission. `roundtrip-report.json` compares every tag's
-presence, version, size, and SHA-256. Structural compatibility and exact byte
-stability are reported separately because decoded hash/property tables may be
-serialized in a different order without changing their runtime meaning.
-
-Serializer read ceilings are independent from writer versions. Unknown chunks,
-newer read-only chunks, and unowned record suffixes are carried through an
-editor save; this does not imply that their fields are editable.
-
-Engine and file-format capacities are inventoried in `h/darklimit.h`. It keeps
-the retail and NewDark values distinct from the runtime capacity: runtime code
-uses the broadest supported representation, while WR, WREXT, AIPATH, automap,
-and other codecs validate against their explicit on-disk limits. Subsystem
-headers may retain historical names as aliases, but do not own the values.
-
-Every mission and gamesys load appends a chunk-by-chunk report to
-`mission_compatibility.log` in the selected game directory. Each entry is
-classified as `decoded`, `prefix-decoded`, `raw-preserved`, or `unsupported`.
-The report records the stored version and size so unsupported FM data can be
-identified without raising the writer version or silently discarding it.
+On Windows, the game runner stores the Video Options resolution, display mode,
+Fit choice, color depth, and gamma below
+`HKCU\Software\DarkEngineRestored\Thief2`; this keeps runner-specific display
+preferences out of the retail installation. Other writable configuration
+continues to use the selected installation's `cam.cfg`. Control customization
+is stored in `user.bnd`; see [Controls](#controls) for bindings and gamepad
+settings.
 
 If `screen_size` or `game_screen_size` is already defined in `cam.cfg`, that
-size is retained when the display driver supports it. Otherwise, the game
-uses the closest supported mode to the native resolution of the display under
-the mouse pointer at startup. The Video Options list merges the active
-monitor's current Windows display modes with compatibility render sizes,
-including 640x480, 800x600, and widescreen equivalents that fit on that
-display. Resolutions are listed with the highest first; use the arrow buttons
-or mouse wheel to reach lower entries such as 640x480 and 800x600.
-Unsupported 24/32-bit NewDark settings are normalized to the engine's 16-bit
-internal canvas. That canvas is converted to 32-bit color and presented by
-D3D11; Windows is not switched into an obsolete 16-bit display mode. The
-engine's gamma setting is applied by the D3D11 presentation shader using the
-same power curve as the legacy palette correction.
+size is retained when the display driver supports it. Otherwise, the game uses
+the closest supported mode to the native resolution of the display under the
+mouse pointer at startup. The Video Options list merges the active monitor's
+current display modes with compatibility render sizes, including 640x480,
+800x600, and widescreen equivalents that fit on that display. Resolutions are
+listed with the highest first; use the arrow buttons or mouse wheel to reach
+lower entries. Unsupported 24/32-bit NewDark settings are normalized to the
+engine's 16-bit internal canvas. That canvas is converted to 32-bit color for
+presentation; Windows is not switched into an obsolete 16-bit display mode.
 
-The Video Options screen includes a **Display Mode** toggle. **Fullscreen**
-uses a borderless window on the current display. **Windowed** uses a normal,
-resizable window. Display-mode changes take effect immediately; resolution
-changes are applied when **Done** is selected. In Windowed mode, the selected
-resolution is the fixed internal render size, not a maximum window size.
-Entering Windowed mode opens the client area at that size (clamped to the
-monitor work area); resizing the window afterward only resizes the swap-chain
-output and scales that fixed render canvas. Select **Fit** to make the engine's
-3D scene and software overlay canvas follow the window's actual client-pixel
-size. This keeps HUD, tutorial, and console text pixel-aligned instead of
-resampling them from the selected fixed resolution. During an interactive
-window resize, the last completed frame is scaled; the scene, depth buffer,
-and software canvas are rebuilt once when the drag ends. The selected fixed
-resolution is retained for when Fit is disabled. The settings can also be
-changed in `cam.cfg` with `game_full_screen 1` or `game_full_screen 0` and
-`game_screen_fit 1` or `game_screen_fit 0`.
+The Video Options **Display Mode** toggle selects a borderless **Fullscreen**
+window or a normal resizable **Windowed** window. Display-mode changes take
+effect immediately; resolution changes are applied when **Done** is selected.
+In Windowed mode, a selected resolution is the fixed internal render size;
+resizing the window scales that canvas. Select **Fit** to make the 3D scene and
+software overlay follow the window's actual client-pixel size. This keeps HUD,
+tutorial, and console text pixel-aligned. The equivalent `cam.cfg` settings are
+`game_full_screen 0|1` and `game_screen_fit 0|1`.
 
 On a multi-monitor system, the display containing the game window determines
 both the resolution list and the target for borderless fullscreen. To change
-displays, switch to Windowed, move the game window to the other display,
-reopen Video Options, and then select a resolution or Fullscreen. The list is
-queried again for that display; it is not assumed that every connected
-display supports the same modes.
+displays, switch to Windowed, move the window, reopen Video Options, and then
+select a resolution or Fullscreen. The list is queried again for that display.
+The engine's gamma setting is applied in the Windows D3D11 presentation shader
+using the legacy palette-correction power curve.
 
 The retail game writes `skip_intro` after the intro has played. Add
-`always_play_intro` to `cam.cfg` to show the intro on every launch. When the
-retail movie directory contains both formats, the runner uses the H.264 MP4
-through Windows Media Foundation instead of requiring the obsolete Indeo 5
-codec used by the original AVI. If only the AVI exists and DirectShow cannot
-decode it, the Windows runner uses `ffmpeg.exe` to prepare an H.264/AAC copy in
+`always_play_intro` to `cam.cfg` to show it on every launch. When both movie
+formats exist, the Windows runner prefers H.264 MP4 through Media Foundation.
+If only the original Indeo 5 AVI exists and DirectShow cannot decode it, the
+runner uses `ffmpeg.exe` to prepare an H.264/AAC copy beneath
 `%LOCALAPPDATA%\DarkEngineRestored\MovieCache`; it never changes the retail
-movie. The cache key includes the source path, size, and timestamp. Set
-`DARK_MOVIE_CACHE` to override the cache directory.
+movie. Set `DARK_MOVIE_CACHE` to override that cache directory.
 
 ## Controls
 
@@ -739,93 +713,230 @@ it, with automatic failover to another connected controller if it disconnects. T
 state. DromEd editor input remains unchanged; gamepad input is currently enabled
 only in the game-runner target.
 
+## DromEd on Windows
+
+DromEd uses the same working-directory detection as the game runner:
+
+```bat
+cd /d "C:\Games\Thief Gold"
+"C:\src\darkengine\build\Release\Win32\DromEd\DromEd.exe"
+```
+
+The first prompt accepts either a named game's base folder (the runnable root
+containing `cam.cfg`) or the recognized GOG Gold collection folder, but not an
+`FMs` child. The next dialog is headed
+**DromEd <game> - Select mission set or FM to work with** and chooses either
+the base/modded game or one installed FM. DromEd then opens without prompting
+for a mission. Its Open/Save dialogs default to that selected base or FM
+directory; use **File > Open** to select the `.mis` or `.cow` to edit. For an
+FM, the selected content context stays active while the mission opens, so its
+referenced `.gam` and its `obj`, `mesh`, `fam`, `snd`, `strings`, and other
+resource directories remain ahead of ordinary mods and retail data.
+
+### DromEd settings
+
+DromEd reads the selected installation's `cam_ext.cfg` and `cam.cfg`, followed
+by its game and editor includes and any selected FM configuration. Put
+editor-specific overrides in the editor configuration included by that stack;
+command-line assignments still take priority for the current launch.
+
+The DromEd viewer uses the same D3D11 scene renderer and swap-chain presenter
+as the game. Its legacy editor canvas remains 16-bit internally, while the D3D11
+presenter converts it to the resizable 32-bit desktop window. When an editor
+window resize finishes, DromEd recreates that canvas at the client area's
+actual dimensions and scales the four viewports, console, status bar, and
+brush controls independently in each axis. This fills widescreen and portrait
+windows without imposing a 4:3 aspect ratio. `edit_screen_size` in `cam.cfg`
+selects the initial canvas size; it defaults to 1024x768. The editor always
+uses a windowed desktop surface, regardless of legacy fullscreen flags. Game
+preview mode stays in the same window and recreates the D3D11 render context
+for the preview; returning to edit mode restores the editor viewport and menu.
+
+Use **Help > Keyboard Shortcuts** to open a resizable, human-readable input
+reference. It includes every active editor binding (including the complete
+built-in fallback set), non-conflicting shortcut annotations from the loaded
+`menus.cfg`, and direct mouse/viewport gestures. Controls are grouped and
+ordered by purpose, with modifier keys shown before the base key.
+Editor binding overrides share the selected installation's `user.bnd`, using
+the editor input context rather than replacing gameplay bindings.
+
+DromEd keeps its scrollable command console visible in the lower-right editor
+pane. Press `:` or `;` to give its command line keyboard focus; **Escape**
+releases focus without hiding the pane. See [Command console](#command-console)
+for its original behavior, restoration enhancements, controls, and added
+commands.
+
+The built-in historical editing command registry is present. KCTools lighting
+is exposed directly as `kctools_light`, `kctools_portalize`, and
+`kctools_optimize`; these commands perform a checked save/run/import
+transaction without NewDark's command script or `kctools.osm`. They first use
+the published sidecar beside DromEd, then fall back to the historical
+`Tools\KCTools\KCTools.exe` location. `kctools_path` remains an explicit
+override. Other companion-tool workflows and some familiar external commands
+are still unavailable.
+
+### Mission and game-system files
+
+This build is therefore not yet a dependable mission-authoring environment.
+Work from backups and do not rely on it as the only editor or copy of a
+mission. DromEd inventories the version and size of every source chunk and
+preserves that per-chunk target by default. WREXT 0.30, LM_PARAM 0.1, extended
+RENDPARAMS layouts, CELL_MOTION 0.2, and NewDark's 28-face BRLIST records have
+writable paths; untouched raw WREXT data is still replayed exactly. Unknown
+chunks and unowned suffixes remain preservation-only, and AIPATH 3.4 remains
+raw-preserved rather than regenerated, so this is not yet comprehensive
+NewDark authoring support.
+
+Use `db_format_report` to print the current source inventory. The
+`db_write_profile preserve|retail|newdark` command selects an explicit output
+policy; `preserve` is the default and is the only policy intended for normal
+round-trip editing.
+
+`save_mission` writes the mission partitions to `.mis`; `save_gamesys` writes
+the abstract object/game-system partitions to `.gam`; and `save_cow` writes
+both into an editor working file. None of them packages external FM resources.
+Custom models, textures, samples, strings, movies, scripts, and motion data
+remain files in their normal FM directories and must be distributed by the FM
+author.
+
+Sound schema source (`schema\*.sch`, `*.spc`, and `*.arc`) is likewise not
+embedded as source text. `reload_schemas` parses those files into schema
+objects and sample mappings; saving the gamesys persists that compiled object
+data, while the audio samples themselves remain under `snd`. Keep custom
+schema source with an authoring project so it can be rebuilt, and ship the
+custom `.gam` plus every referenced sample. Motion schema source under
+`mschema` is compiled separately into `motiondb.bin`, which is also an
+external FM file.
+
+For a copy-only save/load regression, run:
+
+```powershell
+.\tools\dromed_roundtrip.ps1 `
+  -GameRoot 'C:\Games\Thief 2 1.29' `
+  -FanMission 'Reflections in Red [2025-11-14] T2 FM v1.1b (EN)' `
+  -Mission miss20.mis `
+  -GameSys lakeside.gam
+```
+
+The harness writes only beneath `.codex-build\dromed-roundtrip`. It loads the
+installed source, saves `.mis` and `.gam` copies with the `preserve` profile,
+reloads and saves each again, then launches a second DromEd process for a full
+reload of the resulting mission. `roundtrip-report.json` compares every tag's
+presence, version, size, and SHA-256. Structural compatibility and exact byte
+stability are reported separately because decoded hash/property tables may be
+serialized in a different order without changing their runtime meaning.
+
+Serializer read ceilings are independent from writer versions. Unknown chunks,
+newer read-only chunks, and unowned record suffixes are carried through an
+editor save; this does not imply that their fields are editable.
+
+Engine and file-format capacities are inventoried in `h/darklimit.h`. It keeps
+the retail and NewDark values distinct from the runtime capacity: runtime code
+uses the broadest supported representation, while WR, WREXT, AIPATH, automap,
+and other codecs validate against their explicit on-disk limits. Subsystem
+headers may retain historical names as aliases, but do not own the values.
+
+Every mission and gamesys load appends a chunk-by-chunk report to
+`mission_compatibility.log` in the selected game directory. Each entry is
+classified as `decoded`, `prefix-decoded`, `raw-preserved`, or `unsupported`.
+The report records the stored version and size so unsupported FM data can be
+identified without raising the writer version or silently discarding it.
+
 ## Command console
 
-The console appears as **Console** under **Options > Controls > Customize
-Controls**. It defaults to both `:` and `;` in DromEd, DromEd play preview,
-and game-runner gameplay when those keys are free. Existing commands assigned to
-either key are preserved. The console can be rebound like any other control,
-and the selection is saved in `user.bnd`.
+The command system and command terminal are original Dark Engine features, not
+new facilities invented by this project. Original DromEd kept a one-line
+command entry in the lower-right editor pane. The game player used by DromEd's
+play mode created the same terminal as a hidden one-line pop-up: focusing it
+paused simulation, **Enter** ran the command and dismissed the pop-up, and
+**Escape** cancelled it. Command results were routed through the status line or
+the engine's monochrome diagnostic output rather than retained in the terminal.
 
-The console pauses gameplay while open. Press **Enter** to run a command and
-keep the console open. Use the **mouse wheel**, drag anywhere on the scrollbar
-track, or use **Page Up** and **Page Down** to move through its 4,096-line
-scrollback; **Home** jumps to the oldest retained output and **End** returns to
-the newest.
-Hold **Ctrl** and turn the mouse wheel over the console to change its font
-size. The permanently visible DromEd pane starts with the compact editor font,
-while the pop-up gameplay console starts with a larger font; each profile
-remembers its adjustment for the current run. Clicking the command-entry row
-gives it keyboard focus.
-Press **Ctrl+V** to paste into the command line. **Ctrl+C** copies the command
-line when it is nonempty, or the visible output otherwise; **Ctrl+Shift+C**
-copies all retained output. Press **Escape** to close the console and resume
+The original terminal already provided a 256-command history, saved in
+`loc_hist.hst` and seeded from `pre_hist.hst`. **Ctrl+P** and **Ctrl+N** moved
+through that history, while **Tab** completed from both command history and the
+registered command names. It executed the engine's existing context-sensitive
+command registry, including the original `help`, `run`, and `dump_cmds`
+commands. Those mechanisms and the historical DromEd command set remain in
+use.
+
+This restoration turns that terminal into a practical console in DromEd, its
+game player, and the standalone Thief runner. It adds a retained 4,096-line
+output view, scrollbar and mouse-wheel scrolling, **Page Up**, **Page Down**,
+**Home**, and **End** navigation, clipboard operations, resizable fonts, and
+capture of command output that formerly went only to diagnostic destinations.
+The DromEd pane remains visible and uses a compact font; the gameplay console
+is a larger pop-up and pauses play while open. **Enter** now runs a command
+without closing the gameplay console, while **Escape** closes it and resumes
 play.
 
-`help <keyword>` searches the names, descriptions, and argument types of the
-commands available in the current mode. In gameplay, plain `help` prints a
-short index of command groups; `help <group>` drills into one group, and
-`help all` explicitly prints the complete active registry. Plain `help` in
-DromEd opens its searchable command-reference window.
+The **Console** entry under **Options > Controls > Customize Controls** is the
+bindable launcher shortcut for the console. It invokes the original
+`edit_command` action and saves its binding in `user.bnd`. The restoration
+assigns both `:` and `;` in DromEd, DromEd play mode, and the Thief runner when
+those keys do not already have explicit bindings.
 
-Available commands:
+Click the command-entry row to give it keyboard focus. **Ctrl+V** pastes into
+the command line. **Ctrl+C** copies the command line when it is nonempty, or
+the visible output otherwise; **Ctrl+Shift+C** copies all retained output.
+Hold **Ctrl** and turn the mouse wheel over the console to change its font size
+for the current run.
 
-- `help [keyword]` - search the currently available command help
-- `open_mission [number/shortname]` - start an installed mission
-- `list_missions` - list installed missions and their short names
-- `immunity [on/off]` - prevent player damage
-- `flying [on/off]` - disable or restore player gravity
-- `player_physics [on/off]` - toggle player collision and gravity for noclip
-  free-flight while leaving world physics active
-- `invisible [on/off]` - toggle the existing player-invisibility property
-- `reticle [on/off]` - show or hide the center reticle
-- `reticle_info` - describe the object and mesh under the reticle
-- `list_scripts` - list loaded script classes
-- `debug_scripts [on/off]` - log dispatched script messages to
-  `script-debug.log`
-- `console_copy [visible/all/command]` - copy console text to the clipboard
-- `copy_screen_text` - copy the currently visible tutorial/reticle message and
-  `show_stats` lines to the clipboard
-- `console_diagnostics [on/off]` - optionally include general `mprintf`
-  diagnostic output in the console
+The existing `help` command has also been expanded. In gameplay, plain `help`
+prints a short index of command groups, `help <group>` lists one group,
+`help <keyword>` searches the names, descriptions, and argument types available
+in the current mode, and `help all` prints the complete active registry. In
+DromEd, plain `help` opens the searchable **Command Reference** window; use
+`help <text>` to print matching commands in the console.
 
-In DromEd, bare `help` opens the searchable **Command Reference** window
-instead of printing the complete editor command registry. Use `help <text>`
-to print only matching commands in the console.
+Commands added by this restoration for direct console use are:
 
-Long mission and script listings are appended to `thief-console.log`. Both log
-files are ignored by Git.
+- Mission and player: `open_mission [number/shortname]`, `list_missions`,
+  `immunity [on/off]`, `flying [on/off]`, `player_physics [on/off]`, and
+  `invisible [on/off]`. The first two select or inventory installed missions;
+  the remaining commands expose explicit player-state and movement controls.
+- Rendering and diagnostics: `reticle [on/off]`, `reticle_info [on/off]`,
+  `audit_textures [output file]`, `list_scripts`, and
+  `debug_scripts [on/off]`. With no argument, `reticle_info` reports the
+  terrain, object, or mesh under the reticle once; `on` displays it
+  continuously. Script diagnostics are written to `script-debug.log`.
+- Console and accessibility: `console_copy [visible/all/command]`,
+  `console_diagnostics [on/off]`, and `copy_screen_text`. The last command
+  copies the visible tutorial or reticle message and `show_stats` lines.
+- Input: `gamepad_status`, which reports the active gamepad backend and its
+  normalized state.
+- DromEd database diagnostics: `db_format_report` and
+  `db_write_profile preserve|retail|newdark`, which inspect loaded chunk
+  versions and select the database writer's compatibility target.
+- DromEd tools: `world_size <extent>`, `kctools_light`,
+  `kctools_portalize`, `kctools_optimize`, `show_command_help`, and
+  `show_keyboard_shortcuts`. These set the portalization extent, run the
+  integrated KCTools workflows, or open the two searchable editor references.
 
-## Screenshots
-
-These captures were produced during local runtime verification with external
-retail game data. The data shown in the captures is not included in the
-repository.
-
-### Gameplay and inventory HUD
-
-![Thief 2 gameplay and inventory HUD](docs/screenshots/gameplay-inventory.png)
-
-### In-game menu
-
-![Thief 2 in-game menu](docs/screenshots/in-game-menu.png)
-
-### Automap
-
-![Thief 2 automap](docs/screenshots/automap.png)
+Controller and touch bindings also use new internal action commands, but they
+are not intended as the primary typed console interface. The lists produced by
+`help` remain the authoritative inventory because command availability depends
+on whether the runner, DromEd editor, or DromEd game player is active. Long
+mission and script listings are also appended to `thief-console.log`; generated
+console logs are ignored by Git.
 
 ## Known limitations and remaining work
 
 - The x64 targets build and pass initial smoke tests, but are not yet as fully
-  runtime-validated as Release/x86. The embedded compatibility runtime covers
-  the IA-32 instructions, imports, and engine services exercised by tested
-  legacy `.osm` modules; broader third-party script coverage remains ongoing.
-- Modern rendering is still exposed through Looking Glass's `lgd3d` API as a
-  compatibility facade over the renderer-neutral backend. The unusable
-  Direct3D 2 implementation and its dormant build sources have been removed.
-- The native 64-bit builds still need broader mission and save/load
-  validation. The renderer also still uses a 16-bit internal canvas despite
-  presenting through 32-bit D3D11 or OpenGL output, so full 32-bit scene
+  runtime-validated as Release/x86, including mission transitions and
+  save/load. Their embedded compatibility runtime covers the IA-32
+  instructions, imports, and engine services exercised by tested legacy
+  `.osm` modules; broader third-party script coverage remains ongoing.
+- Game-save compatibility is not yet universal. Retail and representative
+  NewDark saves load, but repeated in-game reloads and saves written by this
+  engine remain under active validation. Gold, TDP, FM, x64, Linux, and
+  Android coverage remains uneven.
+  NewDark `VISITED` 4.0 automap state is not decoded, and saves written here
+  use the smaller retail `VISITED` 1.0 layout. Retaining unknown source blocks
+  does not make their behavior understood or guarantee that another Dark
+  executable can load the resulting save; see [Game saves](#game-saves).
+- The renderer still uses a 16-bit internal compatibility canvas despite
+  presenting through 32-bit D3D11 or OpenGL output. Full 32-bit scene
   rendering remains to be implemented.
 - Native-resolution, window resizing, ultrawide presentation, and the new
   cross-platform high-DPI text scaling need testing across more GPUs, desktop
@@ -836,10 +947,11 @@ repository.
   completed.
 - The first-run picker and startup path need clean-machine testing against the
   common CD, GOG, and Steam directory layouts.
-- Most NewDark mission extensions are not supported. PNG replacement art and
-  FM-local configuration are supported, but extended world/AI/property data
-  still affects the runner's mod compatibility and DromEd's ability to open or
-  preserve NewDark-specific missions.
+- NewDark compatibility is selective. PNG replacement art, FM-local
+  configuration, principal lighting chunks, and several expanded database
+  layouts are supported, but the complete renderer, world, AI, property,
+  service, replacement-model, and uncommon-resource surface is not. A mission
+  being readable or raw-preservable does not imply that every feature works.
 - Stock Thief Gold mission/world and AI-path formats pass initial runner and
   DromEd smoke tests. TDP and broader Gold campaign/UI behavior still need
   validation; System Shock 2 is not a supported game target.
@@ -863,23 +975,12 @@ repository.
   quest, data, and light calls are bridged, but the complete NewDark service
   surface, overlay callbacks, and packaged Squirrel-source archives still need
   broader implementation and mission coverage.
-- Broader NewDark mod compatibility remains to be implemented and tested,
-  including replacement models and less common resource formats.
 - There is no installer or redistributable package. The executable is run
   directly from the build output and uses separately installed retail data.
-- Console scrollback retains the latest 4,096 output lines; command recall is
-  a separate 256-command history. Long mission and script listings are also
-  written to `thief-console.log`.
-- `flying` disables gravity while preserving collision. Use `player_physics off`
-  for noclip free-flight; its movement behavior still needs broader mission
-  testing.
-- `invisible` uses the engine's existing invisibility/render property. AI
-  perception behavior has not been exhaustively verified for every mission.
-- Keyboard-layout behavior for the default `:` and `;` console bindings needs
-  broader testing on non-US layouts.
-- The four Windows Release targets and native Linux game target compile and
-  link with their configured toolchains. Raising warning levels and enabling
-  additional static analysis remain future work.
+- Keyboard-layout behavior for the console itself and default `:` and `;`
+  console bindings needs broader testing on non-US layouts.
+- Raising warning levels and enabling additional static analysis remain future
+  work.
 - Automated runtime tests are limited because licensed retail data cannot be
   included in the repository or continuous-integration environment.
 
