@@ -1199,7 +1199,8 @@ int objmodelGetIdx(char *objName)
    SafeRelease(pResMan);
    if (pRes) {
       idx = IRes_GetAppData(pRes);
-      if (g_aModelHandles[idx].used == TRUE
+      if (IS_VALID_MH_INDEX(idx)
+          && g_aModelHandles[idx].used == TRUE
           && g_aModelHandles[idx].mhandle == pRes)
       {
          SafeRelease(pRes);
@@ -1222,7 +1223,8 @@ int objmodelGetIdx(char *objName)
       SafeRelease(pResMan);
       if (pRes) {
          idx = IRes_GetAppData(pRes);
-         if (g_aModelHandles[idx].used == TRUE
+         if (IS_VALID_MH_INDEX(idx)
+             && g_aModelHandles[idx].used == TRUE
              && g_aModelHandles[idx].mhandle == pRes)
          {
             SafeRelease(pRes);

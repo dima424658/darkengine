@@ -15,6 +15,8 @@
 #include <prophash.h>
 #include <trait.h>
 #include <objquery.h>
+#include <dispatch.h>
+#include <dbasemsg.h>
 
 #include <sdesbase.h>
 #include <sdesc.h>
@@ -94,7 +96,8 @@ public:
       if (msg & kListenPropLoad) 
          return; 
 
-      if (msg & (kListenPropModify|kListenPropUnset))
+      if ((msg & (kListenPropModify|kListenPropUnset)) &&
+          !DispatchInMsg(kMsgDatabase))
       {
          // really, we only want to do this on Concrete, right??
          if (OBJ_IS_CONCRETE(obj))

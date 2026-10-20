@@ -71,6 +71,7 @@ public:
 class IMotionPlan
 {
 public:
+   virtual ~IMotionPlan() {}
    virtual IManeuver *GetFirstManeuver()=0;
    virtual IManeuver *GetLastManeuver()=0;
    virtual IManeuver *PopFirstManeuver()=0;
