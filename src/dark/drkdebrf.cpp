@@ -1489,11 +1489,11 @@ class cLoadingSaveGame: public cLoading
       cLoading::OnLoopMsg(msg,data); 
       switch(msg)
       {
-         case kMsgEnterMode:
-         {
-            NextState(); // start in loading state 
-         }
-         break;
+         case kMsgNormalFrame:
+         case kMsgPauseFrame:
+            if (mState == kWaitForLoad)
+               NextState(); // present the panel before the synchronous load
+            break;
       }
    }
 

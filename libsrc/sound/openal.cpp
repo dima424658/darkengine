@@ -663,7 +663,10 @@ STDMETHODIMP_(void) cALSndSample::CheckStream(void)
 
    ALint state = AL_STOPPED;
    mALMixer->AL().alGetSourcei(mSource, AL_SOURCE_STATE, &state);
-   if (mState == kSndStatePlaying && state != AL_PLAYING && !mQueuedBuffers.empty())
+   // A paused stream remains logically in kSndStatePlaying.  Do not mistake
+   // OpenAL's AL_PAUSED state for an underrun and restart it behind a menu.
+   if (mState == kSndStatePlaying && !(mStateFlags & kSndFlagPaused) &&
+       state != AL_PLAYING && !mQueuedBuffers.empty())
       mALMixer->AL().alSourcePlay(mSource);
 }
 
