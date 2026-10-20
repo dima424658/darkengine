@@ -122,6 +122,19 @@ protected:
       Warning(("VISITED block has unsupported size %u\n", storedSize));
       return FALSE;
    }
+
+   virtual BOOL WriteBlock(ITagFile *file)
+   {
+      // Version 1.0 is the retail layout.  Runtime capacity is larger, but
+      // writing the expanded array under the legacy version makes a save that
+      // neither retail Dark nor NewDark can interpret.
+      sVisitedLegacy legacy = {};
+      for (int mission = 0; mission < MAX_MISSION_MAPS; ++mission)
+         for (int page = 0; page < DARK_LIMIT_AUTOMAP_LEGACY_PAGES; ++page)
+            memcpy(legacy.visited[mission][page],visited[mission][page],
+                   sizeof(legacy.visited[mission][page]));
+      return file->Write((char *)&legacy,sizeof(legacy)) == sizeof(legacy);
+   }
 };
 
 // The actual global variable

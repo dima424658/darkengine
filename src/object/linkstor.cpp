@@ -58,16 +58,15 @@ static BOOL IsLinkSavePartition(LinkID id, ObjID src, ObjID dest, int partition)
    //      return TRUE; 
 
    // otherwise, look at the endpoints 
-   int num_objs_in = 0; 
-   if (gpObjSys->IsObjSavePartition(src,partition))
-      num_objs_in++; 
-   if (gpObjSys->IsObjSavePartition(dest,partition))
+   BOOL src_in = gpObjSys->IsObjSavePartition(src,partition);
+   BOOL dest_in = gpObjSys->IsObjSavePartition(dest,partition);
+   int num_objs_in = (src_in ? 1 : 0) + (dest_in ? 1 : 0);
+   if (!src_in && dest_in)
    {
       // swap src and dest, so we're sure that src is in the partition
       ObjID temp = src; 
       src = dest;
-      dest = src; 
-      num_objs_in++; 
+      dest = temp;
    }
    
    if (num_objs_in == 0) return FALSE;
@@ -84,9 +83,8 @@ static BOOL IsLinkSavePartition(LinkID id, ObjID src, ObjID dest, int partition)
    if ((partition & kObjPartBriefcase) && OBJ_IS_CONCRETE(dest))
       return FALSE; 
 
-   
    // mask out the major-concrete case 
-   destpart &= ~kObjectConcrete; 
+   destpart &= ~kObjPartConcrete;
    if (destpart == 0) return FALSE; 
 
    return (int)destpart < (int)partition;

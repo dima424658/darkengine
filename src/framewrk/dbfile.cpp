@@ -130,6 +130,7 @@ struct sCompatibilityChunk
    eDBCompatibilityStatus status;
    BOOL retainRaw;
    BOOL hasRecordTails;
+   BOOL hasRawCopy;
    char detail[80];
    std::vector<char> bytes;
 };
@@ -237,7 +238,7 @@ BOOL dbCompatibilityUseRawTag(const TagFileTag* tag)
                     chunk->status == kDBCompatRawPreserved ||
                     (chunk->status == kDBCompatPrefixDecoded &&
                      !chunk->hasRecordTails)) &&
-          (chunk->size == 0 || !chunk->bytes.empty());
+          chunk->hasRawCopy;
 }
 
 void dbCompatibilityRewriteTag(const TagFileTag* tag, const char* detail)
@@ -503,6 +504,18 @@ static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
    if (!iter)
       return;
 
+#ifdef EDITOR
+   const BOOL retainSourceBytes = TRUE;
+#else
+   static const TagFileTag saveDescTag = { "SAVEDESC" };
+   // A mission save is a self-contained state snapshot.  Keep its source
+   // blocks so newer data that this runtime can only prefix-decode can be
+   // written back unchanged.  Virgin MIS/GAM files remain reference data and
+   // are not copied into memory or packed into subsequent saves.
+   const BOOL retainSourceBytes =
+      file->BlockSize(&saveDescTag) != kTagNoSuchBlock;
+#endif
+
    BOOL retained = FALSE;
    for (size_t i = 0; i < gCompatibilitySources.size(); ++i)
       if (gCompatibilitySources[i] == file)
@@ -567,7 +580,8 @@ static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
             }
          }
       }
-      if (chunk.size > INT_MAX)
+#endif
+      if (retainSourceBytes && chunk.size > INT_MAX)
       {
          char diagnostic[256];
          _snprintf(diagnostic,sizeof(diagnostic)-1,
@@ -577,24 +591,25 @@ static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
          dbLoadReportFailure("chunk-reader",diagnostic);
          return;
       }
-      chunk.status = kDBCompatRawPreserved;
-      try
+      chunk.status = retainSourceBytes ? kDBCompatRawPreserved
+                                       : kDBCompatUnsupported;
+      if (retainSourceBytes)
       {
-         chunk.bytes.resize(chunk.size);
+         try
+         {
+            chunk.bytes.resize(chunk.size);
+         }
+         catch (const std::bad_alloc&)
+         {
+            char diagnostic[256];
+            _snprintf(diagnostic,sizeof(diagnostic)-1,
+                      "Chunk %.12s requests %lu bytes, which cannot be retained safely",
+                      chunk.tag.label,chunk.size);
+            diagnostic[sizeof(diagnostic)-1] = '\0';
+            dbLoadReportFailure("chunk-reader",diagnostic);
+            return;
+         }
       }
-      catch (const std::bad_alloc&)
-      {
-         char diagnostic[256];
-         _snprintf(diagnostic,sizeof(diagnostic)-1,
-                   "Chunk %.12s requests %lu bytes, which cannot be retained safely",
-                   chunk.tag.label,chunk.size);
-         diagnostic[sizeof(diagnostic)-1] = '\0';
-         dbLoadReportFailure("chunk-reader",diagnostic);
-         return;
-      }
-#else
-      chunk.status = kDBCompatUnsupported;
-#endif
       // VersionNumsCompare is a historical subtract-based comparator; using
       // UINT_MAX would wrap its result back to -1.  INT_MAX is still an
       // effective wildcard for persisted versions and remains ordered.
@@ -602,8 +617,7 @@ static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
       if (SUCCEEDED(file->OpenBlock(tag,&version)))
       {
          chunk.version = version;
-#ifdef EDITOR
-         if (chunk.size)
+         if (retainSourceBytes && chunk.size)
          {
             long read = file->Read(chunk.bytes.data(),(int)chunk.size);
             if (read != (long)chunk.size)
@@ -616,7 +630,8 @@ static void inventory_compatibility_chunks(ITagFile* file, ulong filetype)
                dbLoadReportFailure("chunk-reader",diagnostic);
             }
          }
-#endif
+         if (retainSourceBytes && !dbLoadHasFailed())
+            chunk.hasRawCopy = TRUE;
          file->CloseBlock();
       }
       gCompatibilityChunks.push_back(chunk);
@@ -733,6 +748,11 @@ static void report_compatibility_chunks(const char* phase)
 
 static BOOL suppress_profile_chunk(const TagFileTag& tag)
 {
+   // DarkSaveGame appends a freshly generated checkpoint after dbSaveTagFile
+   // returns.  Replaying the source checkpoint here would reserve MISSTART
+   // first and make that authoritative write collide with it.
+   if (!strcmp(tag.label,"MISSTART"))
+      return TRUE;
    if (gDBWriteProfile == kDBWriteRetail)
       return !strcmp(tag.label,"WREXT") ||
              !strcmp(tag.label,"LM_PARAM");
@@ -743,13 +763,12 @@ static BOOL suppress_profile_chunk(const TagFileTag& tag)
 
 static void replay_compatibility_chunks(ITagFile* file, ulong filetype)
 {
-#ifdef EDITOR
    for (int i = (int)gCompatibilityChunks.size() - 1; i >= 0; --i)
    {
       const sCompatibilityChunk& chunk = gCompatibilityChunks[i];
       if (suppress_profile_chunk(chunk.tag))
          continue;
-      if (!(chunk.filetype & filetype) ||
+      if (!chunk.hasRawCopy || !(chunk.filetype & filetype) ||
           file->BlockSize(&chunk.tag) != kTagNoSuchBlock)
          continue;
       TagVersion version = chunk.version;
@@ -761,6 +780,7 @@ static void replay_compatibility_chunks(ITagFile* file, ulong filetype)
       }
    }
 
+#ifdef EDITOR
    // An external tool may understand and rewrite only a subset of the
    // database.  Restore any source chunk it omitted, while never replacing a
    // block already emitted by a live codec or by the imported tool output.

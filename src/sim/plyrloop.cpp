@@ -62,6 +62,7 @@
 
 #include <mprintf.h>
 #include <stdio.h>
+#include <vector>
 
 // Must be last header 
 #include <dbmem.h>
@@ -74,6 +75,7 @@ static PlayerCreateFunc create_hook = NULL;
 
 static IRelation* gpFactoryRel = NULL;
 static INetManager *gpNetMan = NULL;
+static std::vector<char> gPlayerCamTail;
 
 
 ////////////////////////////////////////////////////////////
@@ -210,6 +212,19 @@ static void load_player_cam_info(ITagFile *pFile)
 
   memcpy(gPlayerCam,cam,sizeof(Camera));
 
+  gPlayerCamTail.clear();
+  ulong tailSize = pFile->TellFromEnd();
+  if (tailSize)
+  {
+     gPlayerCamTail.resize(tailSize);
+     if (pFile->Read(gPlayerCamTail.data(),(int)tailSize) != (long)tailSize)
+     {
+        gPlayerCamTail.clear();
+        dbLoadReportFailure("player-camera",
+                            "Player camera extension is truncated");
+     }
+  }
+
 //closing done by cleanup_tagfile
 
 }
@@ -229,6 +244,8 @@ static void save_player_cam_info(ITagFile *pFile)
   int writeresult;
   writeresult = pFile->Write(cam, sizeof(Camera));
   AssertMsg(writeresult==sizeof(Camera),"Wrote invalid block size trying to save player camera info!");
+  if (!gPlayerCamTail.empty())
+     pFile->Write(gPlayerCamTail.data(),(int)gPlayerCamTail.size());
 
 //and block closing done by cleanup_tagfile
 
@@ -579,6 +596,7 @@ static void db_message(DispatchData* msg)
    {
       case kDatabaseReset:
          // This is here just to make sure the create_hook gets called. 
+         gPlayerCamTail.clear();
          PlayerMovementReset();
          PlayerModeReset();
          PlayerDestroy();
