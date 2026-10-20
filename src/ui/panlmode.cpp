@@ -584,7 +584,17 @@ static void panel_gui_clear(GUIcompose* c, Rect* r)
    if (img)
    {
       grs_bitmap* bm = (grs_bitmap*)img->Lock(); 
+      // A panel background is also the erase surface for exposed gadget
+      // regions.  Mod and FM backgrounds commonly use palette index zero,
+      // which the image loader marks BMF_TRANS.  Transparent blitting then
+      // leaves the old gadget pixels behind instead of restoring the
+      // background (most visibly, selected file-slot borders accumulate).
+      // Draw the erase copy opaquely without changing the resource's normal
+      // rendering flags.
+      const ushort flags = bm->flags;
+      bm->flags &= ~BMF_TRANS;
       gr_bitmap(bm,-c->area.ul.x,-c->area.ul.y); 
+      bm->flags = flags;
       img->Unlock(); 
       SafeRelease(img); 
    }
