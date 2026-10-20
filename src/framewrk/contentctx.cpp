@@ -576,6 +576,10 @@ static void ConfigureSavePath(int argc, const char* argv[],
    else
       JoinPath(gSavePath, sizeof(gSavePath), gBasePath, "saves");
    CreateDirectories(gSavePath);
+   // Keep profile-isolated writes, but allow existing retail saves to remain
+   // visible.  DarkContentMakeLoadPath only uses this location when the file
+   // is absent from the active profile, so profile saves still take priority.
+   JoinPath(gSaveFallbackPath, sizeof(gSaveFallbackPath), gBasePath, "saves");
 #else
    JoinPath(localPath, sizeof(localPath), gBasePath, "saves");
    // Retail installations commonly spell this directory "SAVES".  Reuse

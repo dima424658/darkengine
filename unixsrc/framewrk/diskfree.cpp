@@ -11,19 +11,20 @@ extern "C" int compute_free_diskspace(char *path)
     struct statvfs info = {};
     if (statvfs(path && *path ? path : ".", &info) != 0)
         return -1;
-    const unsigned long long megabytes =
-        static_cast<unsigned long long>(info.f_bavail) * info.f_frsize /
-        (1024ull * 1024ull);
-    return megabytes > INT_MAX ? INT_MAX : static_cast<int>(megabytes);
+    const unsigned long long bytes =
+        static_cast<unsigned long long>(info.f_bavail) * info.f_frsize;
+    return bytes > INT_MAX ? INT_MAX : static_cast<int>(bytes);
 }
 
 extern "C" BOOL CheckForDiskspaceAndMessage(char *path, int minimumMegabytes)
 {
     const int available = compute_free_diskspace(path);
-    if (available < 0 || available >= minimumMegabytes)
+    const unsigned long long required =
+        static_cast<unsigned long long>(minimumMegabytes) * 1024ull * 1024ull;
+    if (available < 0 || static_cast<unsigned long long>(available) >= required)
         return TRUE;
     fprintf(stderr, "Dark Engine needs %d MB free; only %d MB is available.\n",
-            minimumMegabytes, available);
+            minimumMegabytes, available / (1024 * 1024));
     return FALSE;
 }
 

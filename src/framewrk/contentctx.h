@@ -53,8 +53,9 @@ EXTERN const char* DarkContentFMName(void);
 EXTERN const char* DarkContentSearchPath(eDarkContentPath path);
 EXTERN BOOL DarkContentShowPicker(void);
 
-// Savegames use the selected profile directory, except that Linux preserves
-// a writable retail saves directory for compatibility with existing installs.
+// Savegames use the selected profile directory on Windows and fall back to
+// existing retail saves for reads. Unix-like platforms prefer a writable
+// retail saves directory and use the profile directory as needed.
 EXTERN const char* DarkContentSaveDirectory(void);
 EXTERN BOOL DarkContentMakeSavePath(char* destination, int size,
                                     const char* filename);
