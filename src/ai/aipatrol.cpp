@@ -16,6 +16,8 @@
 
 #include <scrptapi.h>
 
+#include <contentctx.h>
+
 #include <linkbase.h>
 #include <lnkquery.h>
 #include <relation.h>
@@ -523,16 +525,22 @@ ObjID cAIPatrol::TargetNextPatrolObj()
    {
       float      distSq,
                  minDistSq = kFloatMax;
-      cMxsVector sourceLoc;
+      cMxsVector patrolLoc;
       const cMxsVector & loc = *m_pAIState->GetLocation();
+      const char * profile = DarkContentProfile();
+      const BOOL useThief1Initialization =
+         (_stricmp(profile, "gold") == 0 || _stricmp(profile, "tdp") == 0);
 
       pLinkQuery = g_pAIPatrolLinks->Query(LINKOBJ_WILDCARD, LINKOBJ_WILDCARD);
 
       for (; !pLinkQuery->Done(); pLinkQuery->Next())
       {
          pLinkQuery->Link(&link);
-         GetObjLocation(link.source, &sourceLoc);
-         distSq = AIDistanceSq(sourceLoc, loc);
+         // Thief 1 chooses the nearest patrol destination directly. Thief 2
+         // chooses the destination following the nearest patrol source.
+         GetObjLocation(useThief1Initialization ? link.dest : link.source,
+                        &patrolLoc);
+         distSq = AIDistanceSq(patrolLoc, loc);
 
          if (distSq < minDistSq)
          {
