@@ -302,6 +302,15 @@ static BOOL doMiscSetResStuff(int new_mode, ulong flags)
    if (grd_screen == NULL)
    {
       grs_screen* screen = gr_alloc_screen(info->w,info->h);
+      if (screen == NULL)
+      {
+         fprintf(stderr, "Screen allocation failed: requested %dx%d, device %dx%d, max height %d.\n",
+            info->w, info->h, grd_cap->w, grd_cap->h, grd_screen_max_height);
+         Warning(("Unable to allocate %dx%d screen (device %dx%d, max height %d).\n",
+            info->w, info->h, grd_cap->w, grd_cap->h, grd_screen_max_height));
+         ScrnUnsetRes();
+         return FALSE;
+      }
       gr_set_screen(screen);
    }
    make_draw_canvas();

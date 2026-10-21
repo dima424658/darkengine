@@ -31,6 +31,11 @@ bool OpenALLoad(sOpenALApi *api)
         // libraries are unversioned, unlike the usual Linux SONAME.
         g_openal = dlopen("libopenal.so", RTLD_NOW | RTLD_LOCAL);
 #endif
+#if defined(__APPLE__)
+        // macOS ships the OpenAL framework under its framework binary name.
+        g_openal = dlopen("/System/Library/Frameworks/OpenAL.framework/OpenAL",
+                          RTLD_NOW | RTLD_LOCAL);
+#endif
         if (!g_openal)
             g_openal = dlopen("libopenal.so.1", RTLD_NOW | RTLD_LOCAL);
     }

@@ -1,6 +1,10 @@
 #include <stdalloc.h>
 
+#if defined(__APPLE__)
+#include <malloc/malloc.h>
+#else
 #include <malloc.h>
+#endif
 #include <stdlib.h>
 
 cStdAlloc::cStdAlloc()
@@ -31,12 +35,18 @@ STDMETHODIMP_(void) cStdAlloc::Free(void *memory)
 
 STDMETHODIMP_(SIZE_T) cStdAlloc::GetSize(void *memory)
 {
-    return memory ? malloc_usable_size(memory) : 0;
+    if (!memory)
+        return 0;
+#if defined(__APPLE__)
+    return malloc_size(memory);
+#else
+    return malloc_usable_size(memory);
+#endif
 }
 
 STDMETHODIMP_(void) cStdAlloc::HeapMinimize()
 {
-#if !defined(__ANDROID__)
+#if defined(__linux__) && !defined(__ANDROID__)
     malloc_trim(0);
 #endif
 }

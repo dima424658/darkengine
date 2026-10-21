@@ -1,5 +1,6 @@
 #pragma pack(push, 8)
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <vector>
 #pragma pack(pop)
@@ -60,7 +61,10 @@ public:
    {
       if (!m_cap || mode < 0 || mode >= GRD_MODES) return E_FAIL;
       const sGrModeInfo &info = grd_mode_info[mode];
-      if (info.bitDepth != 8 && info.bitDepth != 15 && info.bitDepth != 16) return E_FAIL;
+      if (info.bitDepth != 8 && info.bitDepth != 15 && info.bitDepth != 16) {
+         fprintf(stderr, "SDL SetMode rejected depth %d for mode %d (%dx%d).\n", info.bitDepth, mode, info.w, info.h);
+         return E_FAIL;
+      }
       const int rowBytes = info.w * (info.bitDepth == 8 ? 1 : 2);
       m_pixels.assign(static_cast<size_t>(rowBytes) * info.h, 0);
       m_cap->aspect = FIX_UNIT; m_cap->w = info.w; m_cap->h = info.h;
@@ -68,6 +72,7 @@ public:
       IApplication *app = AppGetObj(IApplication); const char *title = app ? app->GetCaption() : "Dark Engine";
       bool opened = DarkRenderOpen(info.w, info.h, title); SafeRelease(app);
       if (!opened || !DarkRenderSetFullscreen(m_kind == kDispFullScreen)) {
+         fprintf(stderr, "SDL SetMode could not open the render surface (opened=%d).\n", opened);
          m_pixels.clear(); std::memset(m_cap, 0, sizeof(*m_cap)); return E_FAIL;
       }
       if (flags & MODE_CLEAR_BIT) std::fill(m_pixels.begin(), m_pixels.end(), 0);

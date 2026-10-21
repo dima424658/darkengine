@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 project(DarkEnginePortability LANGUAGES C CXX)
 
 set(DARK_SDL_PLATFORM OFF)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+   CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR ANDROID)
   set(DARK_SDL_PLATFORM ON)
 endif()
 
@@ -73,7 +74,8 @@ if(DARK_SDL_PLATFORM)
   else()
     find_package(OpenGL REQUIRED)
   endif()
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+     CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     find_package(PNG REQUIRED)
     find_package(SDL2 REQUIRED)
     find_package(PkgConfig QUIET)
@@ -316,8 +318,18 @@ if(DARK_BUILD_ENGINE)
     )
   endif()
   target_link_libraries(dark_namedres PUBLIC dark_compression)
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(dark_namedres PUBLIC PNG::PNG)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+     CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    if(APPLE)
+      # CMake's macOS ZLIB finder may expose the SDK's entire usr/include
+      # directory, which shadows libc++ headers with non-Apple Clang toolchains.
+      # The compiler already searches the SDK sysroot; expose only libpng's
+      # Homebrew include directory and keep the discovered libraries.
+      target_include_directories(dark_namedres PRIVATE "${PNG_PNG_INCLUDE_DIR}")
+      target_link_libraries(dark_namedres PUBLIC ${PNG_LIBRARIES})
+    else()
+      target_link_libraries(dark_namedres PUBLIC PNG::PNG)
+    endif()
   elseif(ANDROID)
     target_include_directories(dark_namedres PRIVATE
       "${DARK_PNG_COMPAT_INCLUDE_DIR}"
@@ -332,34 +344,59 @@ if(DARK_BUILD_ENGINE)
       "${CMAKE_CURRENT_SOURCE_DIR}/../../darkengine-deps/squirrel" CACHE PATH
       "Path to an external Squirrel 3.2 source checkout")
   if(DARK_ENABLE_SQUIRREL)
-    if(NOT EXISTS "${DARK_SQUIRREL_SOURCE}/include/squirrel.h")
-      message(FATAL_ERROR
-        "The normal build requires Squirrel 3.2 at ${DARK_SQUIRREL_SOURCE}. "
-        "Run tools/bootstrap-dependencies.sh game, set DARK_SQUIRREL_SOURCE, "
-        "or explicitly set DARK_ENABLE_SQUIRREL=OFF for a reduced build.")
+    if(EXISTS "${DARK_SQUIRREL_SOURCE}/include/squirrel.h")
+      set(dark_squirrel_sources
+        sqapi.cpp sqbaselib.cpp sqclass.cpp sqcompiler.cpp sqdebug.cpp
+        sqfuncstate.cpp sqlexer.cpp sqmem.cpp sqobject.cpp sqstate.cpp
+        sqtable.cpp sqvm.cpp
+      )
+      list(TRANSFORM dark_squirrel_sources
+        PREPEND "${DARK_SQUIRREL_SOURCE}/squirrel/")
+      set(dark_squirrel_stdlib_sources
+        sqstdaux.cpp sqstdblob.cpp sqstdio.cpp sqstdmath.cpp sqstdrex.cpp
+        sqstdstream.cpp sqstdstring.cpp sqstdsystem.cpp
+      )
+      list(TRANSFORM dark_squirrel_stdlib_sources
+        PREPEND "${DARK_SQUIRREL_SOURCE}/sqstdlib/")
+      add_library(dark_squirrel STATIC
+        ${dark_squirrel_sources}
+        ${dark_squirrel_stdlib_sources}
+      )
+      target_include_directories(dark_squirrel PUBLIC
+        "${DARK_SQUIRREL_SOURCE}/include"
+      )
+    else()
+      # Package managers install Squirrel's headers and libraries without the
+      # source tree expected by the bundled source-build path.
+      find_package(PkgConfig QUIET)
+      if(PkgConfig_FOUND)
+        pkg_check_modules(DARK_SQUIRREL_PC QUIET IMPORTED_TARGET libsquirrel)
+      endif()
+      if(TARGET PkgConfig::DARK_SQUIRREL_PC)
+        add_library(dark_squirrel INTERFACE)
+        target_link_libraries(dark_squirrel INTERFACE
+          PkgConfig::DARK_SQUIRREL_PC)
+      else()
+        find_path(DARK_SQUIRREL_INCLUDE_DIR squirrel.h)
+        find_library(DARK_SQUIRREL_LIBRARY NAMES squirrel)
+        find_library(DARK_SQSTDLIB_LIBRARY NAMES sqstdlib)
+        if(NOT DARK_SQUIRREL_INCLUDE_DIR OR NOT DARK_SQUIRREL_LIBRARY OR
+           NOT DARK_SQSTDLIB_LIBRARY)
+          message(FATAL_ERROR
+            "Squirrel 3.2 source or installed development package was not found. "
+            "Run tools/bootstrap-dependencies.sh game, set DARK_SQUIRREL_SOURCE, "
+            "install the Squirrel development package, or explicitly set "
+            "DARK_ENABLE_SQUIRREL=OFF for a reduced build.")
+        endif()
+        add_library(dark_squirrel INTERFACE)
+        target_include_directories(dark_squirrel INTERFACE
+          "${DARK_SQUIRREL_INCLUDE_DIR}")
+        target_link_libraries(dark_squirrel INTERFACE
+          "${DARK_SQUIRREL_LIBRARY}" "${DARK_SQSTDLIB_LIBRARY}")
+      endif()
     endif()
-    set(dark_squirrel_sources
-      sqapi.cpp sqbaselib.cpp sqclass.cpp sqcompiler.cpp sqdebug.cpp
-      sqfuncstate.cpp sqlexer.cpp sqmem.cpp sqobject.cpp sqstate.cpp
-      sqtable.cpp sqvm.cpp
-    )
-    list(TRANSFORM dark_squirrel_sources
-      PREPEND "${DARK_SQUIRREL_SOURCE}/squirrel/")
-    set(dark_squirrel_stdlib_sources
-      sqstdaux.cpp sqstdblob.cpp sqstdio.cpp sqstdmath.cpp sqstdrex.cpp
-      sqstdstream.cpp sqstdstring.cpp sqstdsystem.cpp
-    )
-    list(TRANSFORM dark_squirrel_stdlib_sources
-      PREPEND "${DARK_SQUIRREL_SOURCE}/sqstdlib/")
-    add_library(dark_squirrel STATIC
-      ${dark_squirrel_sources}
-      ${dark_squirrel_stdlib_sources}
-    )
-    target_include_directories(dark_squirrel PUBLIC
-      "${DARK_SQUIRREL_SOURCE}/include"
-    )
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-      target_compile_definitions(dark_squirrel PUBLIC _SQ64)
+      target_compile_definitions(dark_squirrel INTERFACE _SQ64)
     endif()
     target_compile_definitions(dark_script PRIVATE
       DARK_ENABLE_SQUIRREL=1
@@ -475,18 +512,25 @@ if(DARK_BUILD_ENGINE)
     )
 
     option(DARK_BUILD_THIEF2 "Compile the native SDL Thief 2 game sources" ON)
+    if(APPLE)
+      set(dark_build_dromed_default ON)
+    else()
+      set(dark_build_dromed_default OFF)
+    endif()
+    option(DARK_BUILD_DROMED "Compile the native SDL DromEd editor" ${dark_build_dromed_default})
     if(DARK_BUILD_THIEF2)
-      set(dark_game_sources ${dark_application_sources})
+      set(dark_project_sources ${dark_application_sources})
 
       # The Visual Studio project contains both DromEd and Thief2. Match its
       # BuildThief2 selection without maintaining a second source manifest.
       set(dark_thief2_sources)
-      foreach(source IN LISTS dark_game_sources)
+      foreach(source IN LISTS dark_project_sources)
         file(RELATIVE_PATH source_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${source}")
         file(TO_CMAKE_PATH "${source_rel}" source_rel)
-        if(source_rel MATCHES "^src/(editor|csg)/" OR
-           source_rel MATCHES "^src/framewrk/(initedit|report)[.]cpp$" OR
-           source_rel MATCHES "^src/sound/songedtr[.]cpp$")
+        string(TOLOWER "${source_rel}" source_rel_lower)
+        if(source_rel_lower MATCHES "^src/(editor|csg)/" OR
+           source_rel_lower MATCHES "^src/framewrk/(initedit|report)[.]cpp$" OR
+           source_rel_lower MATCHES "^src/sound/songedtr[.]cpp$")
           continue()
         endif()
         list(APPEND dark_thief2_sources "${source}")
@@ -501,6 +545,23 @@ if(DARK_BUILD_ENGINE)
         "${CMAKE_CURRENT_SOURCE_DIR}/src/framewrk/initgame.cpp"
       )
       list(REMOVE_DUPLICATES dark_game_sources)
+
+      set(dark_dromed_sources ${dark_project_sources})
+      list(FILTER dark_dromed_sources EXCLUDE REGEX "/src/framewrk/initgame[.]cpp$")
+        list(APPEND dark_dromed_sources
+          "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editor_stubs.cpp")
+      list(REMOVE_DUPLICATES dark_dromed_sources)
+
+      # These generated scanners deliberately use the same private helper
+      # names.  The Visual Studio project compiles them with YY_STATIC; keep
+      # that source-level setting when consuming the project from CMake.
+      set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/inclex.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/mschlex.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/schlex.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/songlex.c"
+        PROPERTIES COMPILE_DEFINITIONS YY_STATIC
+      )
 
       add_library(dark_game_core OBJECT ${dark_game_sources})
       target_link_libraries(dark_game_core PRIVATE dark_engine_packed)
@@ -535,9 +596,14 @@ if(DARK_BUILD_ENGINE)
           $<TARGET_OBJECTS:dark_game_core>
         )
       endif()
-      target_link_libraries(thief2 PRIVATE
-        dark_engine_config
-        -Wl,--start-group
+      if(APPLE)
+        # This bootstrap translation unit uses C++ standard-library objects
+        # before entering the legacy engine; keep their ABI naturally aligned.
+        set_source_files_properties(
+          "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
+          PROPERTIES COMPILE_OPTIONS "-fpack-struct=0")
+      endif()
+      set(dark_runner_libraries
         ${dark_engine_targets}
         dark_platform
         dark_compression
@@ -546,9 +612,67 @@ if(DARK_BUILD_ENGINE)
         $<$<TARGET_EXISTS:dark_vorbisfile>:dark_vorbisfile>
         $<$<TARGET_EXISTS:dark_vorbis>:dark_vorbis>
         $<$<TARGET_EXISTS:ogg>:ogg>
-        -Wl,--end-group
-        m
       )
+      # Apple ld rejects the empty template-generator archive's symbol member.
+      list(REMOVE_ITEM dark_runner_libraries dark_templgen)
+
+      if(DARK_BUILD_DROMED)
+        add_library(dark_dromed_core OBJECT ${dark_dromed_sources})
+        target_link_libraries(dark_dromed_core PRIVATE dark_engine_packed)
+        target_compile_definitions(dark_dromed_core PRIVATE
+          EDITOR REPORT PLAYTEST NEW_NETWORK_ENABLED THIEF STRICT=1 PROPERTY_BLAME
+        )
+        target_compile_options(dark_dromed_core PRIVATE
+          $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
+          $<$<COMPILE_LANGUAGE:C>:-fms-extensions>
+          $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
+          "$<$<COMPILE_LANGUAGE:C>:-include${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/platform/editor_compat.h>"
+        )
+        target_include_directories(dark_dromed_core BEFORE PRIVATE
+          "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        )
+        if(TARGET dark_vorbisfile)
+          target_compile_definitions(dark_dromed_core PRIVATE
+            DARK_HAVE_VORBISFILE=1
+          )
+          target_link_libraries(dark_dromed_core PRIVATE dark_vorbisfile)
+        endif()
+
+        add_executable(dromed
+          "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
+          $<TARGET_OBJECTS:dark_dromed_core>
+        )
+        if(APPLE)
+          set_source_files_properties(
+            "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
+            PROPERTIES COMPILE_OPTIONS "-fpack-struct=0")
+          target_link_libraries(dromed PRIVATE dark_engine_config
+            ${dark_runner_libraries} ${dark_runner_libraries} m)
+          target_link_options(dromed PRIVATE -Wl,-no_fixup_chains)
+        else()
+          target_link_libraries(dromed PRIVATE dark_engine_config
+            -Wl,--start-group ${dark_runner_libraries} -Wl,--end-group m)
+        endif()
+        target_link_libraries(dromed PRIVATE pthread)
+        set_target_properties(dromed PROPERTIES OUTPUT_NAME DromEd)
+      endif()
+
+      # The legacy template generator object contains no symbols. Apple ld
+      # rejects the empty archive's GNU-style symbol-table member.
+      list(REMOVE_ITEM dark_runner_libraries dark_templgen)
+      target_link_libraries(thief2 PRIVATE dark_engine_config)
+      if(APPLE)
+        # Apple ld does not support GNU --start-group/--end-group. Repeating
+        # the static archives resolves the same legacy circular references.
+        target_link_libraries(thief2 PRIVATE
+          ${dark_runner_libraries} ${dark_runner_libraries} m)
+        # Chained fixups require naturally aligned pointers. The legacy engine
+        # deliberately packs global descriptors, so use classic dyld fixups.
+        target_link_options(thief2 PRIVATE -Wl,-no_fixup_chains)
+      else()
+        target_link_libraries(thief2 PRIVATE
+          -Wl,--start-group ${dark_runner_libraries} -Wl,--end-group m)
+      endif()
       if(NOT ANDROID)
         target_link_libraries(thief2 PRIVATE pthread)
         set_target_properties(thief2 PROPERTIES OUTPUT_NAME thief-runner)
