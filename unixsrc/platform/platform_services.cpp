@@ -527,7 +527,7 @@ static BOOL gPlatformTextInputActive = FALSE;
 void PlatformSetTextInputActive(BOOL active)
 {
    gPlatformTextInputActive = active;
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
    if (!(SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO))
       return;
 #if defined(__ANDROID__)

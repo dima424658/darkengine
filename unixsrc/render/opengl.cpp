@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include <vector>
 #pragma pack(pop)
 
@@ -131,6 +132,8 @@ bool g_samplerSmooth[2] = {true, true};
 GLuint g_sceneProgram, g_sceneBuffer, g_sceneVertexArray;
 GLint g_viewportUniform, g_useTexture1Uniform, g_fogEnabledUniform;
 GLint g_fogColorUniform, g_alphaTestUniform, g_transparentBlackUniform;
+GLint g_gammaUniform;
+float g_gammaLevel = 1.0f;
 
 void set_window_icon()
 {
@@ -194,6 +197,7 @@ const char kSceneFragmentShader[] =
    "uniform vec3 fogColor;\n"
    "uniform float alphaTest;\n"
    "uniform float transparentBlack;\n"
+   "uniform float gammaLevel;\n"
    "out vec4 fragmentColor;\n"
    "void main(){\n"
    " float weight=max(linearWeight,0.000001);\n"
@@ -204,6 +208,7 @@ const char kSceneFragmentShader[] =
    " if(alphaTest>0.5&&color.a<0.5)discard;\n"
    " if(fogEnabled>0.5)color.rgb=mix(fogColor,color.rgb,"
       "clamp(linearFog/weight,0.0,1.0));\n"
+   " color.rgb=pow(max(color.rgb,vec3(0.0)),vec3(gammaLevel));\n"
    " fragmentColor=color;\n"
    "}\n";
 
@@ -267,6 +272,7 @@ bool create_scene_pipeline()
    g_alphaTestUniform = glGetUniformLocation(g_sceneProgram, "alphaTest");
    g_transparentBlackUniform = glGetUniformLocation(g_sceneProgram,
       "transparentBlack");
+   g_gammaUniform = glGetUniformLocation(g_sceneProgram, "gammaLevel");
 
 #ifdef DARK_APPLE_GL
    if (!g_genVertexArrays || !g_bindVertexArray || !g_deleteVertexArrays) {
@@ -592,6 +598,7 @@ bool draw_vertices(GLenum primitive, const sRenderBackendVertex *vertices,
       ((fogColor >> 8) & 255) / 255.0f, (fogColor & 255) / 255.0f);
    glUniform1f(g_alphaTestUniform, alphaTest ? 1.0f : 0.0f);
    glUniform1f(g_transparentBlackUniform, transparentBlack ? 1.0f : 0.0f);
+   glUniform1f(g_gammaUniform, g_gammaLevel);
    #ifdef DARK_APPLE_GL
    g_bindVertexArray(g_sceneVertexArray);
    #else
@@ -698,6 +705,12 @@ bool DarkRenderOpen(int width, int height, const char *title)
       fprintf(stderr, "SDL video initialization failed: %s\n", SDL_GetError());
       return false;
    }
+#if defined(__APPLE__)
+   // SDL's Cocoa text input path enables macOS press-and-hold accent
+   // selection. Gameplay uses key events, so leave text input off until a
+   // command prompt explicitly requests it.
+   SDL_StopTextInput();
+#endif
 #ifdef DARK_OPENGL_ES
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -1259,6 +1272,11 @@ bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
 
 extern "C" {
 int RenderBackendAvailable(void) { return g_context != nullptr; }
+void RenderBackendSetGamma(float gamma)
+{
+   if (std::isfinite(gamma) && gamma > 0.0f)
+      g_gammaLevel = gamma;
+}
 void RenderBackendSetScaleToWindow(int enabled) { g_scale = enabled != 0; }
 void RenderBackendSetFitToViewport(int enabled) { g_fit = enabled != 0; }
 void RenderBackendSetInteractiveResize(int) {}
