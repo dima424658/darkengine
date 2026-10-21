@@ -1448,8 +1448,10 @@ void dark_init_game(void)
    DarkBookInit(); 
    DarkVoiceOverInit(); 
    DarkMenusInit(); 
+#ifndef EDITOR
    if (DarkContentShowPicker())
       gPrimordialMode = (sLoopInstantiator*)DescribeContentMenuMode();
+#endif
    DarkSaveGameInit(); 
    DarkSaveInitUI();
    DarkReportInit();

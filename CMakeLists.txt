@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(DarkEnginePortability LANGUAGES C CXX)
+if(APPLE)
+  enable_language(OBJCXX)
+endif()
 
 set(DARK_SDL_PLATFORM OFF)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
@@ -548,8 +551,9 @@ if(DARK_BUILD_ENGINE)
 
       set(dark_dromed_sources ${dark_project_sources})
       list(FILTER dark_dromed_sources EXCLUDE REGEX "/src/framewrk/initgame[.]cpp$")
-        list(APPEND dark_dromed_sources
-          "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editor_stubs.cpp")
+      list(APPEND dark_dromed_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editor_macos.mm"
+        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/objedit_macos.cpp")
       list(REMOVE_DUPLICATES dark_dromed_sources)
 
       # These generated scanners deliberately use the same private helper
@@ -628,6 +632,12 @@ if(DARK_BUILD_ENGINE)
           $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
           "$<$<COMPILE_LANGUAGE:C>:-include${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/platform/editor_compat.h>"
         )
+        if(APPLE)
+          set_source_files_properties(
+            "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editor_macos.mm"
+            PROPERTIES COMPILE_OPTIONS "-fpack-struct=0")
+          target_link_libraries(dark_dromed_core PRIVATE "-framework AppKit")
+        endif()
         target_include_directories(dark_dromed_core BEFORE PRIVATE
           "${CMAKE_CURRENT_SOURCE_DIR}/src"
         )
@@ -647,7 +657,7 @@ if(DARK_BUILD_ENGINE)
             "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
             PROPERTIES COMPILE_OPTIONS "-fpack-struct=0")
           target_link_libraries(dromed PRIVATE dark_engine_config
-            ${dark_runner_libraries} ${dark_runner_libraries} m)
+            ${dark_runner_libraries} ${dark_runner_libraries} m "-framework AppKit")
           target_link_options(dromed PRIVATE -Wl,-no_fixup_chains)
         else()
           target_link_libraries(dromed PRIVATE dark_engine_config

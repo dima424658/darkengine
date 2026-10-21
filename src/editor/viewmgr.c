@@ -1459,10 +1459,6 @@ void vm_render_camera(int c)
          if (show_raycasts)
             render_failures();   // ????????
 
-         if (compiled_fallback && c == vm_cur_camera)
-            _vm_rend_compiled_geometry_label(c);
-         else if (_vm_name_corner!=-1)
-            _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
       }
       else restore_bm=TRUE;
    }
@@ -1495,6 +1491,17 @@ void vm_render_camera(int c)
       _vm_restore_camera_bitmap(c) ; // get old bitmap save as background
    else
       _vm_save_camera_bitmap(c);     // here is where to save off "baseline" camera data
+
+   // Keep labels out of the cached camera bitmap. Restoring a pane's saved
+   // background should not make its label appear and disappear with scene
+   // updates.
+   if (camera[c].camera_3d)
+   {
+      if (compiled_fallback && c == vm_cur_camera)
+         _vm_rend_compiled_geometry_label(c);
+      else if (_vm_name_corner!=-1)
+         _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
+   }
 
    if (!camera[c].camera_3d)
       _vm_show_camera_in2d(c);
@@ -1534,6 +1541,35 @@ void vm_render_cameras(void)
 
    redraw = vmRenderAlways;
    new_select = new_camera = new_render = FALSE;
+}
+
+// Repaint the selected 3D pane's label during every editor frame. The portal
+// scene and its cached pane bitmap update on different schedules, so putting
+// this small UI element in either cache lets it blink during partial redraws.
+void vm_redraw_view_label(void)
+{
+   int c=vm_cur_camera;
+   int reg;
+   Region *region;
+
+   if (!vm_display_enable || c<0 || c>=MAX_CAMERAS || !VIS_CAM(c) ||
+       !camera[c].camera_3d)
+      return;
+   if (_vm_name_corner==-1 &&
+       !( _vm_has_compiled_geometry_fallback() && c==vm_cur_camera))
+      return;
+
+   reg=camera_to_region_mapping[c];
+   region=vmGetRegion(reg);
+   if (region==NULL || region->r==NULL)
+      return;
+
+   vm_set_region_canvas(reg);
+   if (_vm_has_compiled_geometry_fallback())
+      _vm_rend_compiled_geometry_label(c);
+   else
+      _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
+   vm_unset_region_canvas();
 }
 
 ////////////////////////////////////////////////////////////

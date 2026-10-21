@@ -51,7 +51,9 @@ public:
    BOOL Exec(const char *command) override { return command&&std::system(command)==0; }
    BOOL SetFlags(int flags) override
    {
-      m_flags=flags;return TRUE;
+      m_flags=flags;
+      DarkRenderShowCursor((flags & kShowNativeCursor) != 0);
+      return TRUE;
    }
    BOOL GetFlags(int *flags) override { if(!flags)return FALSE;*flags=m_flags;return TRUE; }
 private:

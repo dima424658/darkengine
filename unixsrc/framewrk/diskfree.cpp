@@ -27,3 +27,18 @@ extern "C" BOOL CheckForDiskspaceAndMessage(char *path, int minimumMegabytes)
             minimumMegabytes, available / (1024 * 1024));
     return FALSE;
 }
+
+typedef void (*EditorMenuCommandCallback)(unsigned);
+static EditorMenuCommandCallback g_editorMenuCommandCallback;
+
+extern "C" void EditorPlatformSetMenuCommandCallback(
+    EditorMenuCommandCallback callback)
+{
+    g_editorMenuCommandCallback = callback;
+}
+
+extern "C" void MenuCommand(unsigned command)
+{
+    if (g_editorMenuCommandCallback)
+        g_editorMenuCommandCallback(command);
+}

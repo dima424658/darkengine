@@ -155,11 +155,11 @@ static void create_obj_brushes(void)
    for (; !IObjectQuery_Done(query); IObjectQuery_Next(query))
    {
       ObjID obj = IObjectQuery_Object(query); 
-      // When BRLIST is present it is the authoritative record of which
-      // concrete objects the author exposed as editor brushes.  Rebuilding
-      // every object from inherited HasBrush state can resurrect deliberately
-      // hidden brushes after property/link serialization reorders records.
-      if (!editor_BrushDataPresent() || editor_ObjectHasSourceBrush(obj))
+      // BRLIST is the authoritative record of which concrete objects the
+      // author exposed as editor brushes. Retail missions commonly omit it;
+      // those maps use the compiled-geometry display fallback and must not
+      // synthesize an editable brush for every concrete object.
+      if (editor_BrushDataPresent() && editor_ObjectHasSourceBrush(obj))
          editobjCreateBrushfromObj(obj);
    }
    SafeRelease(query);
