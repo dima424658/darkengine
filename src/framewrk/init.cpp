@@ -392,14 +392,22 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
 #ifdef EDITOR
    process_config_includes("editor_" INCLUDE_PREFIX); 
 
-   // Some retail/NewDark installs ship the editor menu definitions as the
-   // optional sample file instead of including them from DromEd.cfg. Prefer
-   // a user-provided menus.cfg, then make the shipped sample the fallback.
+   // cam.cfg's editor_include_dromed_cfg loads DROMED.CFG for editor settings.
+   // The top-level menu definitions are shipped separately as MENUS.CFG.
    if (!config_is_defined("menu_edit"))
    {
-      config_load("menus.cfg");
+      char menuConfig[256];
+      if (!find_file_in_config_path(menuConfig, "MENUS.CFG", "include_path"))
+         strncpy(menuConfig, "MENUS.CFG", sizeof(menuConfig));
+      menuConfig[sizeof(menuConfig) - 1] = '\0';
+      config_load(menuConfig);
       if (!config_is_defined("menu_edit"))
-         config_load("menus-sample.cfg");
+      {
+         if (!find_file_in_config_path(menuConfig, "menus.cfg", "include_path"))
+            strncpy(menuConfig, "menus.cfg", sizeof(menuConfig));
+         menuConfig[sizeof(menuConfig) - 1] = '\0';
+         config_load(menuConfig);
+      }
    }
 #endif 
 

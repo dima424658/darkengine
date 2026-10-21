@@ -574,6 +574,8 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
          }
 
+         vm_redraw_view_label();
+
          break;
 
       case kMsgVisual:

@@ -111,7 +111,7 @@ uchar g_buttons;
 unsigned g_sceneGeneration, g_presentedGeneration, g_hardwareFrameCount;
 Uint64 g_lastPresentTicks;
 bool g_captureComplete;
-bool g_relativeMouse, g_relativeActive, g_focused;
+bool g_relativeMouse, g_relativeActive, g_focused, g_showNativeCursor;
 bool g_wslPointerWorkaround;
 bool g_pointerWarpWarningPrinted;
 int g_swapInterval = -1;
@@ -458,10 +458,17 @@ void update_relative_mouse()
          SDL_SetWindowMouseRect(g_window, nullptr);
       }
    }
-   if (g_invisibleCursor && SDL_GetCursor() != g_invisibleCursor)
-      SDL_SetCursor(g_invisibleCursor);
-   if (SDL_ShowCursor(SDL_QUERY) == SDL_ENABLE)
-      SDL_ShowCursor(SDL_DISABLE);
+   if (active || !g_showNativeCursor) {
+      if (g_invisibleCursor && SDL_GetCursor() != g_invisibleCursor)
+         SDL_SetCursor(g_invisibleCursor);
+      if (SDL_ShowCursor(SDL_QUERY) == SDL_ENABLE)
+         SDL_ShowCursor(SDL_DISABLE);
+   } else {
+      if (SDL_GetCursor() == g_invisibleCursor)
+         SDL_SetCursor(SDL_GetDefaultCursor());
+      if (SDL_ShowCursor(SDL_QUERY) != SDL_ENABLE)
+         SDL_ShowCursor(SDL_ENABLE);
+   }
 
    RenderBackendTrace("mouse-lock requested=%d active=%d focused=%d grabbed=%d",
       g_relativeMouse, g_relativeActive, g_focused,
@@ -744,6 +751,7 @@ bool DarkRenderOpen(int width, int height, const char *title)
    g_quit = false; g_resizePending = false;
    g_focused = (SDL_GetWindowFlags(g_window) & SDL_WINDOW_INPUT_FOCUS) != 0;
    g_focusRefreshPending = false;
+   g_showNativeCursor = false;
    update_relative_mouse();
    if (!create_scene_pipeline()) { DarkRenderClose(); return false; }
    glGenTextures(1, &g_overlayTexture);
@@ -770,6 +778,7 @@ void DarkRenderClose(void)
    g_invisibleCursor = nullptr;
    g_overlayWidth = g_overlayHeight = g_overlayStorage = 0;
    g_relativeActive = false;
+   g_showNativeCursor = false;
    g_wslPointerWorkaround = false;
    g_pointerWarpWarningPrinted = false;
    g_swapInterval = -1;
@@ -1018,7 +1027,22 @@ void DarkRenderEndApplicationFrame(void)
 }
 
 void DarkRenderSetTitle(const char *title) { if (g_window) SDL_SetWindowTitle(g_window, title ? title : "Dark Engine"); }
-void DarkRenderShowCursor(bool) { SDL_ShowCursor(SDL_DISABLE); }
+void DarkRenderShowCursor(bool show)
+{
+   g_showNativeCursor = show;
+   if (g_relativeActive && show)
+      SDL_SetRelativeMouseMode(SDL_FALSE);
+   g_relativeActive = SDL_GetRelativeMouseMode() == SDL_TRUE;
+   if (g_relativeActive || !show) {
+      if (g_invisibleCursor)
+         SDL_SetCursor(g_invisibleCursor);
+      SDL_ShowCursor(SDL_DISABLE);
+   } else {
+      if (g_invisibleCursor && SDL_GetCursor() == g_invisibleCursor)
+         SDL_SetCursor(SDL_GetDefaultCursor());
+      SDL_ShowCursor(SDL_ENABLE);
+   }
+}
 
 void DarkRenderSetMousePosition(int x, int y)
 {
@@ -1281,7 +1305,12 @@ int RenderBackendBeginFrame(void)
    if (!g_context) return 0; SDL_GL_MakeCurrent(g_window, g_context);
    set_swap_interval(1);
    int x,y,w,h; viewport(x,y,w,h); glViewport(x,y,w,h); glClearColor(0,0,0,1);
-   glDepthMask(GL_TRUE); glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+   // DromEd redraws hardware portal panes incrementally. Keep the rendered
+   // scene color in editor mode, while clearing depth so refreshed panes
+   // render against a clean depth buffer.
+   glDepthMask(GL_TRUE);
+   glClear(g_preserve ? GL_DEPTH_BUFFER_BIT
+                      : GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    apply_depth_state(); apply_blend_state();
    g_scene=true;++g_sceneGeneration;return 1;
 }
