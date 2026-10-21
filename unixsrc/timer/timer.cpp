@@ -3,6 +3,7 @@
 #include <platform_services.h>
 
 #pragma pack(push, 8)
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>

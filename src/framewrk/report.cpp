@@ -346,7 +346,7 @@ static void _report_do_type(sReportConfig *report, eReportType type)
          strcpy(temp_output,"");
          if (type==kReportPerObj)
          {  // iterate over obj dynarray, call once per
-            ReportObjCallback realCB=(ReportObjCallback)CBDat->cb;
+            ReportObjCallback realCB=reinterpret_cast<ReportObjCallback>(CBDat->cb);
             realCB(OBJ_NULL, report->warn, CBDat->data, temp_output+strlen(temp_output), kReportPhase_Init);
             for (int i=0; i<curObjs.Size(); i++)
                realCB(curObjs[i], report->warn, CBDat->data, temp_output+strlen(temp_output), kReportPhase_Loop);
@@ -354,7 +354,7 @@ static void _report_do_type(sReportConfig *report, eReportType type)
          }
          else
          {  // just call in once
-            ReportGenCallback realCB=(ReportGenCallback)CBDat->cb;
+            ReportGenCallback realCB=reinterpret_cast<ReportGenCallback>(CBDat->cb);
             realCB(report->warn, CBDat->data, temp_output);
          }
          _buffer_add_to(temp_output);

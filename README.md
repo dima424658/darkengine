@@ -1,13 +1,15 @@
-# Thief: Dark Engine Restored for Windows, Linux, and Android
+# Thief: Dark Engine Restored for Windows, macOS, Linux, and Android
 
 This repository restores the historical Dark Engine sources as a portable,
 working codebase for the Thief and Thief 2 games. It builds the ThiefRunner
-game executable on Windows, Linux, and Android, plus a work-in-progress DromEd
-mission viewer and editor on Windows and Linux. The engine core is shared
-across platforms; operating-system, rendering, input, audio, movie, and
-filesystem services are supplied by platform backends. The engine
-experimentally implements many of the anonymously created but closed-source
-NewDark extensions.
+This repository restores the historical Dark Engine sources as a portable,
+working codebase for the Thief and Thief 2 games. It builds the ThiefRunner
+game executable on Windows, macOS, Linux, and Android, plus work-in-progress
+DromEd mission viewer and editor ports. The engine core is shared across
+platforms; operating-system, rendering, input, audio, movie, and filesystem
+services are supplied by platform backends. The engine experimentally
+implements many of the anonymously created but closed-source NewDark
+extensions.
 
 The repository does not include retail missions, movies, sounds, scripts, or
 other game assets. A legally obtained installation of *Thief: The Dark
@@ -30,6 +32,7 @@ Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
   - [Game runner features](#game-runner-features)
 - [Building and running](#building-and-running)
   - [Windows](#windows)
+  - [macOS](#macos)
   - [Linux](#linux)
   - [Android](#android)
 - [Legacy OSM diagnostics](#legacy-osm-diagnostics)
@@ -64,29 +67,23 @@ repository.
 
 ## Platform status
 
-Windows x86 and the stock Thief II campaign are the reference path. The other
-targets are working ports with less runtime coverage, not claims of complete
-NewDark compatibility. In the table, **playable** means that normal missions
-can be loaded and played; the qualifiers identify where validation is still
-limited.
-
-| Capability | Windows x86 | Windows x64 | Linux x64 | Android ARM64 |
-| --- | --- | --- | --- | --- |
-| Thief 2 | Playable | Playable; broader validation ongoing | Playable early port | Playable early port |
-| Thief Gold/TDP | Playable; less stable than Thief 2 | Playable; less stable than Thief 2 | Playable early port; less stable than Thief 2 | Playable early port; less stable than Thief 2 |
-| Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
-| System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
-| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Early viewer/playtest port | Not built |
-| Graphics | D3D11 | D3D11 | SDL2/OpenGL | SDL2/OpenGL ES 3 |
-| Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft | OpenAL Soft/OpenSL |
-| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg | LibVLC |
-| Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
-| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
-| Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja | Gradle, CMake, and Android NDK |
+| Capability | Windows x86 | Windows x64 | macOS | Linux x64 | Android ARM64 |
+| --- | --- | --- | --- | --- | --- |
+| Thief 2 | Playable | Playable; broader validation ongoing | Build target; runtime unvalidated | Playable early port | Playable early port |
+| Thief Gold/TDP | Playable; less stable than Thief 2 | Playable; less stable than Thief 2 | Build target; runtime unvalidated | Playable early port; less stable than Thief 2 | Playable early port; less stable than Thief 2 |
+| Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Build target; runtime unvalidated | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
+| System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
+| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Viewer/playtest port | Early viewer/playtest port | Not built |
+| Graphics | D3D11 | D3D11 | SDL2/OpenGL | SDL2/OpenGL | SDL2/OpenGL ES 3 |
+| Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL framework | OpenAL Soft | OpenAL Soft/OpenSL |
+| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg when available | FFmpeg | LibVLC |
+| Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
+| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
+| Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja | CMake and Ninja | Gradle, CMake, and Android NDK |
 
 The legacy `.osm` row refers to ordinary compiled mission script modules.
 NewDark's `squirrel.osm` is not loaded through that compatibility path: on all
-four targets it is replaced by the engine's native Squirrel 3.2 provider,
+five targets it is replaced by the engine's native Squirrel 3.2 provider,
 which loads the FM's loose `sq_scripts/*.nut` sources directly.
 
 The source tree also contains historical System Shock 2 code, but this project
@@ -96,8 +93,9 @@ The x86 builds are the established target; native x64 builds compile and run
 but remain under active runtime validation. In particular, x64 relies on the
 IA-32 interpreter and service bridge for 32-bit mission `.osm` binaries, while
 many NewDark FMs rely on the newer Squirrel provider. Both compatibility
-layers need broader mission coverage. The Linux CMake targets build native
-64-bit ELF game and editor executables that can load retail missions.
+layers need broader mission coverage. macOS is an early port with limited runtime
+validation. The Linux CMake target builds a native 64-bit ELF executable that
+can load retail missions and run gameplay.
 
 The game runner retains mission loading, the game UI, inventory, automap, and
 the in-game command console. On Windows it also retains the normal startup and
@@ -290,6 +288,36 @@ The chosen game directory is used in place; retail data is not copied. The picke
 remembers only a starting-folder hint under
 `HKCU\Software\DarkEngineRestored\Launcher`. Use Dark-style assignments such
 as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
+
+### macOS
+
+#### Prerequisites
+
+- macOS with Xcode Command Line Tools, CMake 3.20 or later, and Ninja.
+- SDL2 and libpng development packages. FFmpeg development libraries are
+  optional and enable movie playback; macOS supplies the OpenAL framework.
+- Git, used to bootstrap Squirrel 3.2, and a retail TDP, Thief Gold, or
+  Thief II installation.
+
+With Homebrew:
+
+```sh
+brew install cmake ninja pkgconf sdl2 libpng ffmpeg squirrel-lang
+```
+
+#### Build
+
+```sh
+cmake -S . -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build-macos -j "$(sysctl -n hw.ncpu)"
+```
+
+The result is `build-macos/thief-runner`. The macOS target uses SDL2 and
+desktop OpenGL. It is an initial build target and has not yet received runtime
+validation. CMake uses Homebrew's Squirrel package when available; otherwise
+run `sh tools/bootstrap-dependencies.sh game` to build from its source. Pass
+`-DDARK_ENABLE_SQUIRREL=OFF` for a reduced build without NewDark Squirrel FM
+support.
 
 ### Linux
 

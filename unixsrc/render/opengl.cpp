@@ -7,6 +7,10 @@
 #endif
 #ifdef DARK_OPENGL_ES
 #include <GLES3/gl3.h>
+#elif defined(__APPLE__)
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#define DARK_APPLE_GL 1
 #else
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -26,6 +30,10 @@
 #include <mouse.h>
 #include <platform_services.h>
 #include <render_backend.h>
+
+#if defined(__APPLE__) && !defined(GL_RGB565)
+#define GL_RGB565 0x8D62
+#endif
 
 #include "app_icon_data.h"
 #include "runtime.h"
@@ -80,6 +88,7 @@ SDL_Window *g_window;
 SDL_GLContext g_context;
 SDL_Cursor *g_invisibleCursor;
 int g_width, g_height, g_clientWidth, g_clientHeight;
+int g_drawableWidth, g_drawableHeight;
 bool g_scene, g_scale = true, g_fit = true, g_preserve, g_quit;
 bool g_resizePending;
 bool g_fog, g_alphaTest;
@@ -88,6 +97,12 @@ int g_blendMode = kRenderBackendBlendOpaque;
 uint32_t g_fogColor;
 void *g_textures[2];
 GLuint g_overlayTexture;
+using GLGenVertexArraysProc = void (*)(GLsizei, GLuint *);
+using GLBindVertexArrayProc = void (*)(GLuint);
+using GLDeleteVertexArraysProc = void (*)(GLsizei, const GLuint *);
+GLGenVertexArraysProc g_genVertexArrays;
+GLBindVertexArrayProc g_bindVertexArray;
+GLDeleteVertexArraysProc g_deleteVertexArrays;
 int g_overlayWidth, g_overlayHeight;
 int g_overlayStorage;
 std::vector<uint32_t> g_overlay;
@@ -253,8 +268,17 @@ bool create_scene_pipeline()
    g_transparentBlackUniform = glGetUniformLocation(g_sceneProgram,
       "transparentBlack");
 
+#ifdef DARK_APPLE_GL
+   if (!g_genVertexArrays || !g_bindVertexArray || !g_deleteVertexArrays) {
+      fprintf(stderr, "OpenGL vertex-array entry points are unavailable.\n");
+      return false;
+   }
+   g_genVertexArrays(1, &g_sceneVertexArray);
+   g_bindVertexArray(g_sceneVertexArray);
+#else
    glGenVertexArrays(1, &g_sceneVertexArray);
    glBindVertexArray(g_sceneVertexArray);
+#endif
    glGenBuffers(1, &g_sceneBuffer);
    glBindBuffer(GL_ARRAY_BUFFER, g_sceneBuffer);
    const GLsizei stride = sizeof(sRenderBackendVertex);
@@ -268,24 +292,40 @@ bool create_scene_pipeline()
       glVertexAttribPointer(i, sizes[i], GL_FLOAT, GL_FALSE, stride,
          reinterpret_cast<const void *>(offsets[i]));
    }
-   return g_sceneProgram && g_sceneBuffer && g_sceneVertexArray &&
-      glGetError() == GL_NO_ERROR;
+   const GLenum error = glGetError();
+   if (!g_sceneProgram || !g_sceneBuffer || !g_sceneVertexArray ||
+       error != GL_NO_ERROR) {
+      fprintf(stderr, "OpenGL scene pipeline setup failed (program=%u buffer=%u vao=%u error=0x%x).\n",
+         g_sceneProgram, g_sceneBuffer, g_sceneVertexArray, error);
+      return false;
+   }
+   return true;
 }
 
 void destroy_scene_pipeline()
 {
    if (g_sceneBuffer) glDeleteBuffers(1, &g_sceneBuffer);
-   if (g_sceneVertexArray) glDeleteVertexArrays(1, &g_sceneVertexArray);
+   if (g_sceneVertexArray) {
+#ifdef DARK_APPLE_GL
+      if (g_deleteVertexArrays) g_deleteVertexArrays(1, &g_sceneVertexArray);
+#else
+      glDeleteVertexArrays(1, &g_sceneVertexArray);
+#endif
+   }
    if (g_sceneProgram) glDeleteProgram(g_sceneProgram);
    g_sceneBuffer = g_sceneVertexArray = g_sceneProgram = 0;
 }
 
 void viewport(int &x, int &y, int &w, int &h)
 {
-   x = y = 0; w = g_clientWidth; h = g_clientHeight;
+   x = y = 0; w = g_drawableWidth; h = g_drawableHeight;
    if (!g_scale) {
-      w = std::min(w, g_width);
-      h = std::min(h, g_height);
+      const int pixelWidth = g_clientWidth > 0
+         ? g_width * g_drawableWidth / g_clientWidth : g_width;
+      const int pixelHeight = g_clientHeight > 0
+         ? g_height * g_drawableHeight / g_clientHeight : g_height;
+      w = std::min(w, pixelWidth);
+      h = std::min(h, pixelHeight);
       return;
    }
    // Fit gameplay owns the settled client-sized canvas and fills the output.
@@ -295,6 +335,14 @@ void viewport(int &x, int &y, int &w, int &h)
       if (w * g_height > h * g_width) { int nw = h * g_width / g_height; x = (w - nw) / 2; w = nw; }
       else { int nh = w * g_height / g_width; y = (h - nh) / 2; h = nh; }
    }
+}
+
+void update_window_dimensions()
+{
+   if (!g_window)
+      return;
+   SDL_GetWindowSize(g_window, &g_clientWidth, &g_clientHeight);
+   SDL_GL_GetDrawableSize(g_window, &g_drawableWidth, &g_drawableHeight);
 }
 
 uchar key_scan(SDL_Scancode key)
@@ -335,8 +383,12 @@ uchar key_scan(SDL_Scancode key)
 void logical_point(int &x, int &y)
 {
    int vx, vy, vw, vh; viewport(vx, vy, vw, vh);
-   x = vw ? (x - vx) * g_width / vw : 0;
-   y = vh ? (y - vy) * g_height / vh : 0;
+   const int drawableX = g_clientWidth > 0
+      ? x * g_drawableWidth / g_clientWidth : x;
+   const int drawableY = g_clientHeight > 0
+      ? y * g_drawableHeight / g_clientHeight : y;
+   x = vw ? (drawableX - vx) * g_width / vw : 0;
+   y = vh ? (drawableY - vy) * g_height / vh : 0;
    x = std::clamp(x, 0, std::max(g_width - 1, 0));
    y = std::clamp(y, 0, std::max(g_height - 1, 0));
 }
@@ -533,7 +585,11 @@ bool draw_vertices(GLenum primitive, const sRenderBackendVertex *vertices,
       ((fogColor >> 8) & 255) / 255.0f, (fogColor & 255) / 255.0f);
    glUniform1f(g_alphaTestUniform, alphaTest ? 1.0f : 0.0f);
    glUniform1f(g_transparentBlackUniform, transparentBlack ? 1.0f : 0.0f);
+   #ifdef DARK_APPLE_GL
+   g_bindVertexArray(g_sceneVertexArray);
+   #else
    glBindVertexArray(g_sceneVertexArray);
+   #endif
    glBindBuffer(GL_ARRAY_BUFFER, g_sceneBuffer);
    glBufferData(GL_ARRAY_BUFFER,
       static_cast<GLsizeiptr>(static_cast<size_t>(count) * sizeof(*vertices)),
@@ -564,20 +620,20 @@ void write_u32(FILE *file, uint32_t value)
 
 bool capture_frame(const char *path)
 {
-   const int rowBytes = (g_clientWidth * 3 + 3) & ~3;
-   std::vector<unsigned char> rgba(static_cast<size_t>(g_clientWidth) * g_clientHeight * 4);
+   const int rowBytes = (g_drawableWidth * 3 + 3) & ~3;
+   std::vector<unsigned char> rgba(static_cast<size_t>(g_drawableWidth) * g_drawableHeight * 4);
    std::vector<unsigned char> row(rowBytes);
    FILE *file = fopen(path, "wb");
    if (!file) return false;
-   glReadPixels(0, 0, g_clientWidth, g_clientHeight, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
-   write_u16(file, 0x4d42); write_u32(file, 54 + rowBytes * g_clientHeight);
+   glReadPixels(0, 0, g_drawableWidth, g_drawableHeight, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+   write_u16(file, 0x4d42); write_u32(file, 54 + rowBytes * g_drawableHeight);
    write_u16(file, 0); write_u16(file, 0); write_u32(file, 54); write_u32(file, 40);
-   write_u32(file, g_clientWidth); write_u32(file, g_clientHeight); write_u16(file, 1); write_u16(file, 24);
-   write_u32(file, 0); write_u32(file, rowBytes * g_clientHeight);
+   write_u32(file, g_drawableWidth); write_u32(file, g_drawableHeight); write_u16(file, 1); write_u16(file, 24);
+   write_u32(file, 0); write_u32(file, rowBytes * g_drawableHeight);
    write_u32(file, 0); write_u32(file, 0); write_u32(file, 0); write_u32(file, 0);
-   for (int y = 0; y < g_clientHeight; ++y) {
-      const unsigned char *source = rgba.data() + static_cast<size_t>(y) * g_clientWidth * 4;
-      for (int x = 0; x < g_clientWidth; ++x) {
+   for (int y = 0; y < g_drawableHeight; ++y) {
+      const unsigned char *source = rgba.data() + static_cast<size_t>(y) * g_drawableWidth * 4;
+      for (int x = 0; x < g_drawableWidth; ++x) {
          row[x*3] = source[x*4+2]; row[x*3+1] = source[x*4+1]; row[x*3+2] = source[x*4];
       }
       fwrite(row.data(), row.size(), 1, file);
@@ -600,7 +656,7 @@ bool DarkRenderOpen(int width, int height, const char *title)
       g_lastPixels = nullptr;
       g_width = width; g_height = height;
       DarkRenderSetTitle(title);
-      SDL_GetWindowSize(g_window, &g_clientWidth, &g_clientHeight);
+      update_window_dimensions();
       update_relative_mouse();
       return true;
    }
@@ -661,6 +717,16 @@ bool DarkRenderOpen(int width, int height, const char *title)
    if (g_window) g_context = SDL_GL_CreateContext(g_window);
    if (!g_window || !g_context) { DarkRenderClose(); return false; }
    SDL_GL_MakeCurrent(g_window, g_context);
+#ifdef DARK_APPLE_GL
+   g_genVertexArrays = reinterpret_cast<GLGenVertexArraysProc>(SDL_GL_GetProcAddress("glGenVertexArrays"));
+   g_bindVertexArray = reinterpret_cast<GLBindVertexArrayProc>(SDL_GL_GetProcAddress("glBindVertexArray"));
+   g_deleteVertexArrays = reinterpret_cast<GLDeleteVertexArraysProc>(SDL_GL_GetProcAddress("glDeleteVertexArrays"));
+   if (!g_genVertexArrays || !g_bindVertexArray || !g_deleteVertexArrays) {
+      g_genVertexArrays = reinterpret_cast<GLGenVertexArraysProc>(SDL_GL_GetProcAddress("glGenVertexArraysAPPLE"));
+      g_bindVertexArray = reinterpret_cast<GLBindVertexArrayProc>(SDL_GL_GetProcAddress("glBindVertexArrayAPPLE"));
+      g_deleteVertexArrays = reinterpret_cast<GLDeleteVertexArraysProc>(SDL_GL_GetProcAddress("glDeleteVertexArraysAPPLE"));
+   }
+#endif
    // Loading panels force a present for small progress-dial updates.  Do not
    // serialize hundreds of those updates to WSLg's compositor refresh.  The
    // hardware scene enables vsync when gameplay begins.
@@ -670,10 +736,14 @@ bool DarkRenderOpen(int width, int height, const char *title)
    if (g_invisibleCursor)
       SDL_SetCursor(g_invisibleCursor);
    SDL_ShowCursor(SDL_DISABLE);
-   fprintf(stderr, "Linux video backend: SDL/%s\n", SDL_GetCurrentVideoDriver());
-   g_width = g_clientWidth = width; g_height = g_clientHeight = height;
+   g_width = width; g_height = height;
+   update_window_dimensions();
+   fprintf(stderr, "SDL video backend: %s (%dx%d points, %dx%d pixels)\n",
+      SDL_GetCurrentVideoDriver(), g_clientWidth, g_clientHeight,
+      g_drawableWidth, g_drawableHeight);
    g_quit = false; g_resizePending = false;
    g_focused = (SDL_GetWindowFlags(g_window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+   g_focusRefreshPending = false;
    update_relative_mouse();
    if (!create_scene_pipeline()) { DarkRenderClose(); return false; }
    glGenTextures(1, &g_overlayTexture);
@@ -726,7 +796,7 @@ bool DarkRenderSetFullscreen(bool enabled)
          return false;
       }
    }
-   SDL_GetWindowSize(g_window, &g_clientWidth, &g_clientHeight);
+   update_window_dimensions();
    RenderBackendTrace("sdl-window requested-fullscreen=%d actual-fullscreen=%d client=%dx%d",
       enabled, !!(SDL_GetWindowFlags(g_window) & SDL_WINDOW_FULLSCREEN),
       g_clientWidth, g_clientHeight);
@@ -766,6 +836,20 @@ bool DarkRenderPumpEvents(void)
 #if defined(__ANDROID__)
       handle_android_application_event(event.type);
 #endif
+      // Ignore queued events from a window replaced during a mode change.
+      Uint32 eventWindowId = 0;
+      switch (event.type) {
+      case SDL_WINDOWEVENT: eventWindowId = event.window.windowID; break;
+      case SDL_KEYDOWN:
+      case SDL_KEYUP: eventWindowId = event.key.windowID; break;
+      case SDL_MOUSEMOTION: eventWindowId = event.motion.windowID; break;
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP: eventWindowId = event.button.windowID; break;
+      case SDL_MOUSEWHEEL: eventWindowId = event.wheel.windowID; break;
+      default: break;
+      }
+      if (eventWindowId && eventWindowId != SDL_GetWindowID(g_window))
+         continue;
       if (event.type == SDL_MOUSEMOTION) {
          if (g_relativeActive) {
             relativeX += event.motion.xrel;
@@ -780,6 +864,7 @@ bool DarkRenderPumpEvents(void)
       flushMotion();
       if (event.type == SDL_QUIT) g_quit = true;
       else if (event.type == SDL_WINDOWEVENT) {
+         update_window_dimensions();
          if (event.window.event == SDL_WINDOWEVENT_CLOSE) g_quit = true;
          else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             g_clientWidth = event.window.data1; g_clientHeight = event.window.data2;
@@ -890,12 +975,10 @@ bool DarkRenderPumpMovieEvents(void)
                  event.type == SDL_CONTROLLERBUTTONDOWN) {
          stop = true;
       } else if (event.type == SDL_WINDOWEVENT) {
+         update_window_dimensions();
          if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
             g_quit = true;
             stop = true;
-         } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-            g_clientWidth = event.window.data1;
-            g_clientHeight = event.window.data2;
          } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
             g_focused = true;
          } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
@@ -941,8 +1024,12 @@ void DarkRenderSetMousePosition(int x, int y)
 {
    if (!g_window || g_width <= 0 || g_height <= 0 || g_relativeActive) return;
    int vx, vy, vw, vh; viewport(vx, vy, vw, vh);
-   const int targetX = vx + x * vw / g_width;
-   const int targetY = vy + y * vh / g_height;
+   const int drawableX = vx + x * vw / g_width;
+   const int drawableY = vy + y * vh / g_height;
+   const int targetX = g_drawableWidth > 0
+      ? drawableX * g_clientWidth / g_drawableWidth : drawableX;
+   const int targetY = g_drawableHeight > 0
+      ? drawableY * g_clientHeight / g_drawableHeight : drawableY;
    SDL_WarpMouseInWindow(g_window, targetX, targetY);
 }
 
@@ -971,7 +1058,7 @@ static void present_legacy_frame(const void *pixels, int width, int height,
       // Logical mode changes may alter the aspect-fitted viewport. Clear the
       // whole output so the previously presented menu cannot remain visible
       // in newly exposed bars around the rebuilt canvas.
-      glViewport(0, 0, g_clientWidth, g_clientHeight);
+      glViewport(0, 0, g_drawableWidth, g_drawableHeight);
       glClearColor(0, 0, 0, 1);
       glClear(GL_COLOR_BUFFER_BIT);
    }
@@ -1080,8 +1167,8 @@ bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
    set_swap_interval(1);
    g_scene = false;
 
-   int viewportWidth = g_clientWidth;
-   int viewportHeight = g_clientHeight;
+   int viewportWidth = g_drawableWidth;
+   int viewportHeight = g_drawableHeight;
    const double sourceAspect = (double)width / height;
    const double targetAspect = viewportHeight > 0
       ? (double)viewportWidth / viewportHeight : sourceAspect;
@@ -1089,13 +1176,13 @@ bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
    int viewportY = 0;
    if (targetAspect > sourceAspect) {
       viewportWidth = (int)(viewportHeight * sourceAspect + 0.5);
-      viewportX = (g_clientWidth - viewportWidth) / 2;
+      viewportX = (g_drawableWidth - viewportWidth) / 2;
    } else {
       viewportHeight = (int)(viewportWidth / sourceAspect + 0.5);
-      viewportY = (g_clientHeight - viewportHeight) / 2;
+      viewportY = (g_drawableHeight - viewportHeight) / 2;
    }
 
-   glViewport(0, 0, g_clientWidth, g_clientHeight);
+   glViewport(0, 0, g_drawableWidth, g_drawableHeight);
    glClearColor(0, 0, 0, 1);
    glClear(GL_COLOR_BUFFER_BIT);
    glViewport(viewportX, viewportY, viewportWidth, viewportHeight);
@@ -1164,7 +1251,16 @@ int RenderBackendGetSettledClientSize(int *width, int *height)
    return 1;
 }
 int RenderBackendClientToLogicalPoint(int *x, int *y) { if (!x || !y || !g_context) return 0; logical_point(*x, *y); return 1; }
-int RenderBackendLogicalToClientPoint(int *x, int *y) { int vx,vy,vw,vh; if (!x || !y || !g_context) return 0; viewport(vx,vy,vw,vh); *x=vx+*x*vw/g_width; *y=vy+*y*vh/g_height; return 1; }
+int RenderBackendLogicalToClientPoint(int *x, int *y) {
+   int vx, vy, vw, vh;
+   if (!x || !y || !g_context || !g_width || !g_height) return 0;
+   viewport(vx, vy, vw, vh);
+   const int drawableX = vx + *x * vw / g_width;
+   const int drawableY = vy + *y * vh / g_height;
+   *x = g_drawableWidth > 0 ? drawableX * g_clientWidth / g_drawableWidth : drawableX;
+   *y = g_drawableHeight > 0 ? drawableY * g_clientHeight / g_drawableHeight : drawableY;
+   return 1;
+}
 void RenderBackendPresentProgress(void)
 {
    if (!g_context || !g_deferredPixels)
@@ -1178,6 +1274,7 @@ void RenderBackendPresentProgress(void)
    g_deferredPixels = nullptr;
    present_legacy_frame(pixels, width, height, rowBytes, depth, palette);
    swap_presented_frame();
+}
 }
 int RenderBackendBeginFrame(void)
 {

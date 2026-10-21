@@ -287,7 +287,7 @@ RefTable *ResReadRefTable(Id id)
    read(fd, &numRefs, sizeof(RefIndex));
    prt = (RefTable *) Malloc(REFTABLESIZE(numRefs));
    prt->numRefs = numRefs;
-   read(fd, &prt->offset[0], sizeof(int32) * (numRefs + 1));
+   read(fd, &prt->offset[0], sizeof(int32_t) * (numRefs + 1));
 
    ResThreadUnlock();
    return (prt);
@@ -345,7 +345,7 @@ int ResExtractRefTable(Id id, RefTable * prt, long size)
       ResThreadUnlock();
       return (-1);
    }
-   read(fd, &prt->offset[0], sizeof(int32) * (prt->numRefs + 1));
+   read(fd, &prt->offset[0], sizeof(int32_t) * (prt->numRefs + 1));
 
    ResThreadUnlock();
    return (0);
@@ -412,9 +412,9 @@ void *RefExtract(RefTable * prt, Ref ref, void *buff)
    RefIndex index;
    ResDesc *prd;
    int fd;
-   long refsize;
+   int32_t refsize;
    RefIndex numrefs;
-   long offset;
+   int32_t offset;
    ResThreadLock();
 //  Check id, get file number
 
@@ -436,9 +436,9 @@ void *RefExtract(RefTable * prt, Ref ref, void *buff)
       // seek into the file and find the stuff.
       lseek(fd, RES_OFFSET_DESC2REAL(prd->offset), SEEK_SET);
       read(fd, &numrefs, sizeof(RefIndex));
-      lseek(fd, index * sizeof(long), SEEK_CUR);
-      read(fd, &offset, sizeof(long));
-      read(fd, &refsize, sizeof(long));
+      lseek(fd, index * sizeof(int32_t), SEEK_CUR);
+      read(fd, &offset, sizeof(int32_t));
+      read(fd, &refsize, sizeof(int32_t));
       refsize -= offset;
 //      Warning(("Null reftable size = %d offset = %d numrefs = %d\n",refsize,offset,numrefs));
    }
@@ -511,9 +511,9 @@ void *RefExtractPartial(RefTable * prt, Ref ref, void *buff, long size)
    RefIndex index;
    ResDesc *prd;
    int fd;
-   long refsize;
+   int32_t refsize;
    RefIndex numrefs;
-   long offset;
+   int32_t offset;
    ResThreadLock();
    ValidateRef(ref);
 
@@ -535,9 +535,9 @@ void *RefExtractPartial(RefTable * prt, Ref ref, void *buff, long size)
       // seek into the file and find the stuff.
       lseek(fd, RES_OFFSET_DESC2REAL(prd->offset), SEEK_SET);
       read(fd, &numrefs, sizeof(RefIndex));
-      lseek(fd, index * sizeof(long), SEEK_CUR);
-      read(fd, &offset, sizeof(long));
-      read(fd, &refsize, sizeof(long));
+      lseek(fd, index * sizeof(int32_t), SEEK_CUR);
+      read(fd, &offset, sizeof(int32_t));
+      read(fd, &refsize, sizeof(int32_t));
       refsize -= offset;
 //      Warning(("Null reftable size = %d offset = %d numrefs = %d\n",refsize,offset,numrefs));
    }
@@ -606,9 +606,9 @@ int RefInject(RefTable * prt, Ref ref, void *buff)
    RefIndex index;
    ResDesc *prd;
    int fd;
-   long refsize;
+   int32_t refsize;
    RefIndex numrefs;
-   long offset;
+   int32_t offset;
    ResThreadLock();
 //  Check id, get file number
 
@@ -635,9 +635,9 @@ int RefInject(RefTable * prt, Ref ref, void *buff)
       // seek into the file and find the stuff.
       lseek(fd, RES_OFFSET_DESC2REAL(prd->offset), SEEK_SET);
       read(fd, &numrefs, sizeof(RefIndex));
-      lseek(fd, index * sizeof(long), SEEK_CUR);
-      read(fd, &offset, sizeof(long));
-      read(fd, &refsize, sizeof(long));
+      lseek(fd, index * sizeof(int32_t), SEEK_CUR);
+      read(fd, &offset, sizeof(int32_t));
+      read(fd, &refsize, sizeof(int32_t));
       refsize -= offset;
       Warning(("Null reftable size = %d offset = %d numrefs = %d\n", refsize, offset, numrefs));
    }

@@ -29,8 +29,11 @@
 #include <jni.h>
 #endif
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 #include <SDL2/SDL.h>
+#endif
+
+#if defined(__linux__)
 #include <malloc.h>
 #include <sys/sysinfo.h>
 #endif
@@ -52,7 +55,7 @@ int PlatformGetDisplayModes(ePlatformDisplayScope scope,
 {
    if (native_width) *native_width = 0;
    if (native_height) *native_height = 0;
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
    if (!modes || capacity < 0)
       capacity = 0;
 

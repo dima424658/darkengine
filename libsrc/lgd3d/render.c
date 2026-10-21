@@ -410,7 +410,8 @@ void lgd3d_set_fog_enable(BOOL enable)
 // Called once per frame from lgd3d_start_frame() to initialize render state.
 //
 
-int num_polys, tri_index, num_poly_verts, num_points;
+int num_polys, tri_index, num_poly_verts;
+static int num_points;
 
 void lgd3d_render_start_frame(void)
 {
