@@ -1370,6 +1370,7 @@ void D3D11SetPreserveLegacyCanvas(BOOL enabled) {
 }
 
 extern "C" int RenderBackendAvailable(void) { return g_pPresenter != NULL; }
+extern "C" void RenderBackendSetGamma(float) {}
 extern "C" void RenderBackendSetScaleToWindow(int enabled) {
   D3D11SetScaleToWindow(enabled);
 }

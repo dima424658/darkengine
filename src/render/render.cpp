@@ -99,6 +99,7 @@ EXTERN void set_hardware_gamma_level(float level)
 {
    new_gamma = TRUE;
    gamma_level = level;
+   RenderBackendSetGamma(level);
 
    // The old renderer deferred hardware-ramp changes while simulation was
    // rendering to avoid crashing early D3D devices.  D3D11 gamma is only a

@@ -35,6 +35,7 @@ enum eRenderBackendBlend {
 };
 
 int RenderBackendAvailable(void);
+void RenderBackendSetGamma(float gamma);
 void RenderBackendSetScaleToWindow(int enabled);
 void RenderBackendSetFitToViewport(int enabled);
 void RenderBackendSetInteractiveResize(int resizing);
