@@ -5,7 +5,6 @@
 
 // $Header: r:/t2repos/thief2/src/editor/objedit.cpp,v 1.31 2000/02/24 23:40:12 mahk Exp $
 
-#include <win32_platform.h>
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -1161,6 +1161,9 @@
     <ClInclude Include="editor\Editprop.h">
       <Filter>Editor</Filter>
     </ClInclude>
+    <ClInclude Include="editor\editorplatform.h">
+      <Filter>Editor</Filter>
+    </ClInclude>
     <ClInclude Include="editor\Editprst.h">
       <Filter>Editor</Filter>
     </ClInclude>
@@ -1188,7 +1191,7 @@
     <ClInclude Include="editor\Famedit.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="editor\Filemenu.h">
+    <ClInclude Include="editor\filemenu.h">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="editor\Fvaredit.h">
@@ -1263,7 +1266,7 @@
     <ClInclude Include="editor\Medplay.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="editor\Menus.h">
+    <ClInclude Include="editor\menus.h">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="editor\Modalui.h">
@@ -1669,6 +1672,9 @@
       <Filter>Framework</Filter>
     </ClInclude>
     <ClInclude Include="framewrk\Ctagset.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="framewrk\appmenu.h">
       <Filter>Framework</Filter>
     </ClInclude>
     <ClInclude Include="framewrk\Dappsink.h">
@@ -3705,7 +3711,7 @@
     <ClInclude Include="ui\Cmdterm.h">
       <Filter>UI</Filter>
     </ClInclude>
-    <ClInclude Include="ui\Ged_win.h">
+    <ClInclude Include="ui\ged_win.h">
       <Filter>UI</Filter>
     </ClInclude>
     <ClInclude Include="ui\Joypoll.h">
@@ -3744,7 +3750,7 @@
     <ClInclude Include="ui\Uiloop.h">
       <Filter>UI</Filter>
     </ClInclude>
-    <ClInclude Include="ui\Winui.h">
+    <ClInclude Include="ui\winui.h">
       <Filter>UI</Filter>
     </ClInclude>
     <ClInclude Include="_animtxt.h" />
@@ -4729,7 +4735,7 @@
     <ClCompile Include="editor\Objed.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="..\winsrc\editor\objedit.cpp">
+    <ClCompile Include="editor\objedit.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="editor\Objhistp.cpp">
@@ -4822,7 +4828,7 @@
     <ClCompile Include="editor\Txtrpal.c">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="..\winsrc\editor\uiedit.c">
+    <ClCompile Include="editor\uiedit.c">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="editor\Undoredo.c">
@@ -5012,6 +5018,9 @@
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="framewrk\Ctagset.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="framewrk\appmenu.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
     <ClCompile Include="framewrk\Dappsink.cpp">
@@ -6271,7 +6280,7 @@
     <ClCompile Include="ui\Cmdterm.c">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="..\winsrc\ui\ged_win.c">
+    <ClCompile Include="..\winsrc\editor\ged_win.c">
       <Filter>Win32</Filter>
     </ClCompile>
     <ClCompile Include="ui\Joypoll.cpp">
@@ -6304,7 +6313,10 @@
     <ClCompile Include="ui\Uiloop.cpp">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="..\winsrc\ui\winui.c">
+    <ClCompile Include="..\winsrc\editor\winui.c">
+      <Filter>Win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\winsrc\editor\editorplatform.c">
       <Filter>Win32</Filter>
     </ClCompile>
     <ClCompile Include="generated\Inclex.c">

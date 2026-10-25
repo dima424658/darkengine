@@ -10,13 +10,10 @@
 #define __UIEDIT_H
 #include <guistyle.h>
 #include <uigame.h>
+#include <editorplatform.h>
 
 EXTERN void EditorCreateGUI(void);
 EXTERN void EditorDestroyGUI(void);
-EXTERN void EditorStartWindowResizeTracking(void);
-EXTERN void EditorStopWindowResizeTracking(void);
-EXTERN void EditorRestoreWindowRect(void);
-EXTERN BOOL EditorGetPendingWindowSize(int *width, int *height);
 
 EXTERN void uieditStyleSetup(void);
 EXTERN void uieditStyleCleanup(void); 

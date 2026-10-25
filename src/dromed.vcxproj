@@ -71,19 +71,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)libsrc\input;$(SolutionDir)winsrc\editor;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(DarkLibraryOutputDir);$(SolutionDir)3rdparty\zlib\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)libsrc\input;$(SolutionDir)winsrc\editor;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(DarkLibraryOutputDir);$(SolutionDir)3rdparty\zlib\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)libsrc\input;$(SolutionDir)winsrc\editor;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(DarkLibraryOutputDir);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)winsrc\input;$(SolutionDir)winsrc\wintools;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)inc;$(SolutionDir)h;$(SolutionDir)libsrc\actmovie;$(SolutionDir)libsrc\appcore;$(SolutionDir)libsrc\compapis;$(SolutionDir)libsrc\comtools;$(SolutionDir)libsrc\config;$(SolutionDir)libsrc\cpptools;$(SolutionDir)libsrc\darkloop;$(SolutionDir)libsrc\dev2d;$(SolutionDir)libsrc\dispdev;$(SolutionDir)libsrc\dstruct;$(SolutionDir)libsrc\dump;$(SolutionDir)libsrc\fix;$(SolutionDir)libsrc\font;$(SolutionDir)libsrc\g2;$(SolutionDir)libsrc\gadget;$(SolutionDir)libsrc\gameshel;$(SolutionDir)libsrc\gfile;$(SolutionDir)libsrc\inputbnd;$(SolutionDir)libsrc\lg;$(SolutionDir)libsrc\lgalloc;$(SolutionDir)libsrc\lgd3d;$(SolutionDir)libsrc\matrix;$(SolutionDir)libsrc\md;$(SolutionDir)libsrc\mm;$(SolutionDir)libsrc\mp;$(SolutionDir)libsrc\mprintf;$(SolutionDir)libsrc\namedres;$(SolutionDir)libsrc\net;$(SolutionDir)libsrc\object\property;$(SolutionDir)libsrc\portold;$(SolutionDir)libsrc\prof;$(SolutionDir)libsrc\r3d;$(SolutionDir)libsrc\random;$(SolutionDir)libsrc\recorder;$(SolutionDir)libsrc\ref;$(SolutionDir)libsrc\res;$(SolutionDir)libsrc\res2;$(SolutionDir)libsrc\rnd;$(SolutionDir)libsrc\script;$(SolutionDir)libsrc\sdesc;$(SolutionDir)libsrc\skel;$(SolutionDir)libsrc\sndsrc;$(SolutionDir)libsrc\sndutil;$(SolutionDir)libsrc\sound;$(SolutionDir)libsrc\star;$(SolutionDir)libsrc\tagfile;$(SolutionDir)libsrc\templgen;$(SolutionDir)libsrc\timer;$(SolutionDir)libsrc\ui;$(SolutionDir)libsrc\vec2;$(SolutionDir)libsrc\input;$(SolutionDir)winsrc\editor;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(DarkLibraryOutputDir);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -544,6 +544,7 @@
     <ClInclude Include="editor\Editobj.h" />
     <ClInclude Include="..\winsrc\editor\editplst.h" />
     <ClInclude Include="editor\Editprop.h" />
+    <ClInclude Include="editor\editorplatform.h" />
     <ClInclude Include="editor\Editprst.h" />
     <ClInclude Include="editor\Editsave.h" />
     <ClInclude Include="editor\Edittul_.h" />
@@ -553,7 +554,7 @@
     <ClInclude Include="editor\Edmedmos.h" />
     <ClInclude Include="editor\Edmedmot.h" />
     <ClInclude Include="editor\Famedit.h" />
-    <ClInclude Include="editor\Filemenu.h" />
+    <ClInclude Include="editor\filemenu.h" />
     <ClInclude Include="editor\Fvaredit.h" />
     <ClInclude Include="editor\Gedit.h" />
     <ClInclude Include="editor\Gedmedmo.h" />
@@ -578,7 +579,7 @@
     <ClInclude Include="editor\Mediface.h" />
     <ClInclude Include="editor\Medmenu.h" />
     <ClInclude Include="editor\Medplay.h" />
-    <ClInclude Include="editor\Menus.h" />
+    <ClInclude Include="editor\menus.h" />
     <ClInclude Include="editor\Modalui.h" />
     <ClInclude Include="editor\Motedit.h" />
     <ClInclude Include="editor\Motedit_.h" />
@@ -715,6 +716,7 @@
     <ClInclude Include="framewrk\Ctag.h" />
     <ClInclude Include="framewrk\Ctagnet.h" />
     <ClInclude Include="framewrk\Ctagset.h" />
+    <ClInclude Include="framewrk\appmenu.h" />
     <ClInclude Include="framewrk\Dappsink.h" />
     <ClInclude Include="framewrk\Dbasemsg.h" />
     <ClInclude Include="framewrk\Dbfile.h" />
@@ -1407,7 +1409,7 @@
     <ClInclude Include="ui\Buttpanl.h" />
     <ClInclude Include="ui\Ccompose.h" />
     <ClInclude Include="ui\Cmdterm.h" />
-    <ClInclude Include="ui\Ged_win.h" />
+    <ClInclude Include="ui\ged_win.h" />
     <ClInclude Include="ui\Joypoll.h" />
     <ClInclude Include="ui\Keyiid.h" />
     <ClInclude Include="ui\Movie.h" />
@@ -1420,7 +1422,7 @@
     <ClInclude Include="ui\Uiapp.h" />
     <ClInclude Include="ui\Uigame.h" />
     <ClInclude Include="ui\Uiloop.h" />
-    <ClInclude Include="ui\Winui.h" />
+    <ClInclude Include="ui\winui.h" />
     <ClInclude Include="Version.h" />
     <ClInclude Include="Vhot.h" />
     <ClInclude Include="Vismsg.h" />
@@ -1788,7 +1790,7 @@
     <ClCompile Include="editor\Motedit.cpp" />
     <ClCompile Include="editor\Namenum.c" />
     <ClCompile Include="editor\Objed.cpp" />
-    <ClCompile Include="..\winsrc\editor\objedit.cpp" />
+    <ClCompile Include="editor\objedit.cpp" />
     <ClCompile Include="editor\Objhistp.cpp" />
     <ClCompile Include="editor\Objpnp.c" />
     <ClCompile Include="editor\Otreeed.cpp" />
@@ -1819,7 +1821,7 @@
     <ClCompile Include="editor\Swaptool.c" />
     <ClCompile Include="editor\Txtpnp.c" />
     <ClCompile Include="editor\Txtrpal.c" />
-    <ClCompile Include="..\winsrc\editor\uiedit.c" />
+    <ClCompile Include="editor\uiedit.c" />
     <ClCompile Include="editor\Undoredo.c" />
     <ClCompile Include="editor\Userpnp.c" />
     <ClCompile Include="editor\Vbrush.c" />
@@ -1899,6 +1901,7 @@
     <ClCompile Include="framewrk\Ctag.cpp" />
     <ClCompile Include="framewrk\Ctagnet.cpp" />
     <ClCompile Include="framewrk\Ctagset.cpp" />
+    <ClCompile Include="framewrk\appmenu.cpp" />
     <ClCompile Include="framewrk\Dappsink.cpp" />
     <ClCompile Include="framewrk\Dbfile.cpp" />
     <ClCompile Include="..\winsrc\framewrk\diskfree.c" />
@@ -2493,7 +2496,7 @@
     <ClCompile Include="ui\Bugterm.c" />
     <ClCompile Include="ui\Buttpanl.cpp" />
     <ClCompile Include="ui\Cmdterm.c" />
-    <ClCompile Include="..\winsrc\ui\ged_win.c" />
+    <ClCompile Include="..\winsrc\editor\ged_win.c" />
     <ClCompile Include="ui\Joypoll.cpp" />
     <ClCompile Include="..\winsrc\input\gamepad_xinput.cpp" />
     <ClCompile Include="ui\Movie.cpp" />
@@ -2504,7 +2507,8 @@
     <ClCompile Include="ui\Uiapp.cpp" />
     <ClCompile Include="ui\Uigame.cpp" />
     <ClCompile Include="ui\Uiloop.cpp" />
-    <ClCompile Include="..\winsrc\ui\winui.c" />
+    <ClCompile Include="..\winsrc\editor\winui.c" />
+    <ClCompile Include="..\winsrc\editor\editorplatform.c" />
     <ClCompile Include="Version.c" />
     <ClCompile Include="generated\Inclex.c">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
@@ -2610,11 +2614,11 @@
     <ClCompile Update="editor\**\*.c;editor\**\*.cpp;csg\**\*.c;csg\**\*.cpp;framewrk\Report.cpp;sound\Songedtr.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Update="..\winsrc\editor\objedit.cpp;..\winsrc\editor\uiedit.c">
+    <ClCompile Update="..\winsrc\editor\editorplatform.c;..\winsrc\editor\Filemenu.cpp;..\winsrc\editor\ged_win.c;..\winsrc\editor\menus.cpp;..\winsrc\editor\winui.c">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
     <!-- Small UI/service shims shared by the game command and scripting code. -->
-    <ClCompile Update="editor\Isdesced.cpp;..\winsrc\editor\menus.cpp;editor\Prompts.c;editor\Sdesparm.cpp;editor\Status.c;framewrk\Gameiid.c">
+    <ClCompile Update="editor\Isdesced.cpp;editor\Prompts.c;editor\Sdesparm.cpp;editor\Status.c;framewrk\Gameiid.c">
       <ExcludedFromBuild>false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Update="framewrk\Initedit.cpp">

@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)/libsrc/compapis;$(SolutionDir)/libsrc/comtools;$(SolutionDir)/libsrc/dstruct;$(SolutionDir)/libsrc/fix;$(SolutionDir)/libsrc/lgalloc;$(SolutionDir)/libsrc/mprintf;$(SolutionDir)/winsrc/input;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)/libsrc/compapis;$(SolutionDir)/libsrc/comtools;$(SolutionDir)/libsrc/dstruct;$(SolutionDir)/libsrc/fix;$(SolutionDir)/libsrc/lgalloc;$(SolutionDir)/libsrc/mprintf;$(SolutionDir)/libsrc/input;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)/libsrc/compapis;$(SolutionDir)/libsrc/comtools;$(SolutionDir)/libsrc/dstruct;$(SolutionDir)/libsrc/fix;$(SolutionDir)/libsrc/lgalloc;$(SolutionDir)/libsrc/mprintf;$(SolutionDir)/winsrc/input;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)/libsrc/compapis;$(SolutionDir)/libsrc/comtools;$(SolutionDir)/libsrc/dstruct;$(SolutionDir)/libsrc/fix;$(SolutionDir)/libsrc/lgalloc;$(SolutionDir)/libsrc/mprintf;$(SolutionDir)/libsrc/input;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)/libsrc/compapis;$(SolutionDir)/libsrc/comtools;$(SolutionDir)/libsrc/dstruct;$(SolutionDir)/libsrc/fix;$(SolutionDir)/libsrc/lgalloc;$(SolutionDir)/libsrc/mprintf;$(SolutionDir)/winsrc/input;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)/libsrc/compapis;$(SolutionDir)/libsrc/comtools;$(SolutionDir)/libsrc/dstruct;$(SolutionDir)/libsrc/fix;$(SolutionDir)/libsrc/lgalloc;$(SolutionDir)/libsrc/mprintf;$(SolutionDir)/libsrc/input;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)/libsrc/compapis;$(SolutionDir)/libsrc/comtools;$(SolutionDir)/libsrc/dstruct;$(SolutionDir)/libsrc/fix;$(SolutionDir)/libsrc/lgalloc;$(SolutionDir)/libsrc/mprintf;$(SolutionDir)/winsrc/input;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)h;$(SolutionDir)/libsrc/compapis;$(SolutionDir)/libsrc/comtools;$(SolutionDir)/libsrc/dstruct;$(SolutionDir)/libsrc/fix;$(SolutionDir)/libsrc/lgalloc;$(SolutionDir)/libsrc/mprintf;$(SolutionDir)/libsrc/input;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

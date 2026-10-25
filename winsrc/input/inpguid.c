@@ -5,7 +5,7 @@
 #include <comtools.h>
 #include <initguid.h>
 #include <inpinit.h>
-#include <inpguid.h>
+#include <inputguid.h>
 
 
 

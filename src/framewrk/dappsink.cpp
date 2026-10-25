@@ -16,8 +16,8 @@
 #include <appapi.h>
 #include <loopapi.h>
 
+#include <appmenu.h>
 #include <dappsink.h>
-#include <menus.h>
 
 
 // must be last header
@@ -120,7 +120,7 @@ STDMETHODIMP_(void) cDarkAppAdviseSink::OnQuit()
 
 STDMETHODIMP_(void) cDarkAppAdviseSink::OnCommand(unsigned nCmdId) 
 {
-   MenuCommand(nCmdId);
+   ApplicationMenuCommand(nCmdId);
 }
 
 ///////////////////////////////////////

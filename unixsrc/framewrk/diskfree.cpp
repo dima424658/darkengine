@@ -27,8 +27,3 @@ extern "C" BOOL CheckForDiskspaceAndMessage(char *path, int minimumMegabytes)
             minimumMegabytes, available / (1024 * 1024));
     return FALSE;
 }
-
-extern "C" void MenuCommand(unsigned)
-{
-    // The game build has no native application menu on Linux.
-}

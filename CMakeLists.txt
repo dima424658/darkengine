@@ -225,9 +225,9 @@ if(DARK_BUILD_ENGINE)
     "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/blast"
     "${DARK_PLATFORM_ROOT}"
     ${dark_library_dirs}
-    # Transitional home of legacy keyboard/mouse public headers. Keep this
-    # last so its Windows input GUID header cannot shadow compapis/inpguid.h.
-    "${CMAKE_CURRENT_SOURCE_DIR}/winsrc/input"
+    # Keep the legacy input API after compapis: both contain an inpguid.h,
+    # while inputbnd intentionally consumes the compapis definition.
+    "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/input"
   )
 
   add_library(dark_engine_config INTERFACE)
@@ -432,9 +432,9 @@ if(DARK_BUILD_ENGINE)
       unixsrc/sound/openal_loader.cpp
       unixsrc/sound/platform.cpp
       unixsrc/timer/timer.cpp
-      winsrc/input/inpinit.c
-      winsrc/input/kbasctab.cpp
-      winsrc/input/kbcntry.c
+      libsrc/input/inpinit.c
+      libsrc/input/kbasctab.cpp
+      libsrc/input/kbcntry.c
     )
     target_link_libraries(dark_unix_providers PUBLIC dark_engine_packed)
     target_link_libraries(dark_unix_providers PUBLIC SDL2::SDL2)
