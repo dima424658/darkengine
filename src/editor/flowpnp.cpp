@@ -20,8 +20,8 @@
 #include <edmedmo.h>
 #include <gedmedmo.h>
 
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 
 #include <appagg.h>
 #include <flowarch.h>

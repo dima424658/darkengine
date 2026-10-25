@@ -1033,9 +1033,9 @@ int   g_EdgePropertySampleSize = 12;
 float g_StepClearance          = 1.25;
 
 // forward recl.
-int CheckPathClear(mxs_vector *pV1, mxs_vector *pV2,
-                   float fHeight, float radius,
-                   BOOL bShortCircuitClear, BOOL bShortCircuitHit);
+static int CheckPathClear(mxs_vector *pV1, mxs_vector *pV2,
+                          float fHeight, float radius,
+                          BOOL bShortCircuitClear, BOOL bShortCircuitHit);
 
 static int CellBlockedDirections(int iCellIndex)
 {

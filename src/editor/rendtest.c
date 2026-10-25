@@ -216,8 +216,8 @@ static grs_canvas *rendtest_maybe_build_subcanvas(void)
       y_off=(grd_canvas->bm.h-rtP.view_height)/2;
    if ( (x_off>0) || (y_off>0) )
       return gr_alloc_sub_canvas(grd_canvas,x_off,y_off,
-                               min(grd_canvas->bm.w,rtP.view_width),
-                               min(grd_canvas->bm.h,rtP.view_height));
+                               grd_canvas->bm.w < rtP.view_width ? grd_canvas->bm.w : rtP.view_width,
+                               grd_canvas->bm.h < rtP.view_height ? grd_canvas->bm.h : rtP.view_height);
    return NULL;
 }
 

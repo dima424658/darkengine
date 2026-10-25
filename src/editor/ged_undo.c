@@ -139,7 +139,8 @@ BOOL gedundo_check_texture_delta(editBrush *new_ver, editBrush *old_ver)
    int i;
    
    txt_diff=(new_ver->tx_id!=old_ver->tx_id);
-   for (i=0; i<min(new_ver->num_faces,old_ver->num_faces); i++)
+   int face_count = new_ver->num_faces < old_ver->num_faces ? new_ver->num_faces : old_ver->num_faces;
+   for (i=0; i<face_count; i++)
       if (memcmp(&new_ver->txs[i].tx_rot,&old_ver->txs[i].tx_rot,sizeof(TexInfo)-sizeof(short))!=0)
          align_diff=TRUE;
       else if (new_ver->txs[i].tx_id!=old_ver->txs[i].tx_id)

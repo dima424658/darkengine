@@ -279,7 +279,7 @@ BOOL PrimShape_CreateNGonCyl(primalInfo *new_cyl, int n, BOOL face_align)
    new_cyl->faces=n+2;
    new_cyl->points=2*n;
    new_cyl->edges=3*n;
-   new_cyl->face_stride=max(n+1,4+1);  // in case you have a 3 sided base on a cyl - rect sides have more edges
+   new_cyl->face_stride=(n+1 > 4+1) ? n+1 : 4+1;  // in case you have a 3 sided base on a cyl - rect sides have more edges
    if (!_primalBr_SzCheck(new_cyl)) return FALSE;
    if (!_primalBr_GetMem(new_cyl)) return FALSE;
 

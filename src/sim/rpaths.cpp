@@ -509,7 +509,8 @@ void cAIRoomDB::BuildRoomCellLists()
       pRoom = g_pRooms->GetRoom(i);
 
       // Save off its max size
-      room_max_size_2 = mx_mag2_vec(&pRoom->GetSize());
+      mxs_vector room_size = pRoom->GetSize();
+      room_max_size_2 = mx_mag2_vec(&room_size);
 
       // Find which side is the 'ceiling'
       for (j=0; j<6; j++)

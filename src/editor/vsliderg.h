@@ -38,8 +38,9 @@ typedef struct {
 
 
 #define GenerateVSliderParse(type)                    \
-   bool VSlider##type##Parse(float delta, type##Slider *s, int action) \
+   bool VSlider##type##Parse(float delta, void *data, int action) \
    {                                                  \
+      type##Slider *s = (type##Slider *)data;         \
       switch (action)                                 \
       {                                               \
       case SLIDER_START:                              \

@@ -15,8 +15,8 @@
 #include <comtools.h>
 
 #include <gadblist.h>
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 #include <iobjsys.h>
 #include <objsys.h>
 #include <osysbase.h>
@@ -27,8 +27,6 @@
 
 #include <otreeed.h>
 #include <editinh.h>
-#include <edinhst.h>
-
 #include <modalui.h>
 
 #include <iobjed.h>

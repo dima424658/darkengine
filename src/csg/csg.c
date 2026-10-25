@@ -51,9 +51,9 @@
 
 float REAL_EPSILON = 0.0001f;
 
-// storage for the world rep?  What's this doing here?
-PortalCell *wr_cell[MAX_REGIONS + 1]; // final slot is the transient sky cell
-int wr_num_cells;
+// World-representation storage is owned by sim/wrcell.c.
+extern PortalCell *wr_cell[MAX_REGIONS + 1];
+extern int wr_num_cells;
 
 // for each cell, we have a list of which
 // csg brush&face it came from.  The length
@@ -295,7 +295,7 @@ void ReassignTexture(int br, BOOL texture_only)
 
 extern void emit_portal_polyhedron(PortalPolyhedron *ph);
 extern int num_cells;
-extern int num_points;
+extern int csg_num_points;
 extern int num_poly;
 extern int num_portal;
 extern int subdivide;
@@ -589,7 +589,7 @@ static void PortalizeTree(void *tree, Real world_size)
    pass = 1;
 
    do {
-      num_cells = num_points = num_poly = num_portal = 0;
+      num_cells = csg_num_points = num_poly = num_portal = 0;
       subdivide = 0;
 
       cur_dummy_nodes = num_dummy_nodes;

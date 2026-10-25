@@ -38,7 +38,7 @@
 
 #include <appagg.h>
 #include <iobjsys.h>
-#include <objquery.H>
+#include <objquery.h>
 #include <osysbase.h>
 #include <brestore.h>
 #include <edmedmo.h>

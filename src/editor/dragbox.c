@@ -29,7 +29,7 @@
 #include <viewmgr_.h>
 #include <modalui.h>
 #include <vslider.h>
-#include <brushgfh.H>
+#include <brushgfh.h>
 #include <vbrush.h>
 #include <guistyle.h>
 #include <ccompose.h>

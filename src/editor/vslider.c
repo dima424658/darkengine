@@ -76,7 +76,7 @@ void virtual_slider_mouse_start(void)
 }
 
 #define ForAllRealSliderAxis(exp,n) \
-   for (i=0; i<min(n_axis,n); i++)  \
+   for (i=0; i<(n_axis < (n) ? n_axis : (n)); i++)  \
       if (axis[i]!=NULL) exp
 
 #define parsefunc(i) (slds[i]->parse)

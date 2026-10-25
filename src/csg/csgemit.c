@@ -155,7 +155,7 @@ void compute_3_linear_eq(mxs_vector *x, mxs_vector *M1,
 
 int max_portal_polygons=64;
 int num_cells;
-int num_points;
+int csg_num_points;
 int num_poly;
 int num_portal;
 
@@ -734,7 +734,7 @@ static void emit_cell(int cell, int medium)
 
    num_portal += num_p;
    num_poly += cur_poly - num_p;
-   num_points += num_v;
+   csg_num_points += num_v;
 
    p = wr_cell[cell] = Malloc(sizeof(PortalCell));
    p->num_vertices = num_v;

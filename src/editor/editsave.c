@@ -157,7 +157,7 @@ static BOOL _saveAllBrushes(ITagFile *file, int groupFilter)
 }
 
 // LOAD
-static loadBrushNewGroup=0;   // another hack for save load mini brush list
+static int loadBrushNewGroup = 0;   // another hack for save load mini brush list
 
 // callback for brush load, fills in newbr or returns FALSE if it cant
 static bool _loadSingleBrush(editBrush *newbr)

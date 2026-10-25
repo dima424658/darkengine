@@ -68,7 +68,7 @@ static sStairParms static_stair_parms;
 static BOOL        _stairs_inuse=FALSE;
 
 // this is at the bottom of the code, but called by prop_cb on done, of course
-BOOL stair_build(sStairParms *s);
+static BOOL stair_build(sStairParms *s);
 
 ///////////////////////////
 // dialog controllers

@@ -52,7 +52,7 @@ BOOL stupid_event_handler(uiEvent* ev, Region* reg, void* data)
 
 bool get_stupid_ui_event(uiEvent* ev)
 {
-   static fail_once_per_frame = TRUE;
+   static int fail_once_per_frame = TRUE;
    if (qout >= qin)
    {
       if (fail_once_per_frame) {

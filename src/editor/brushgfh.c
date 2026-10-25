@@ -350,9 +350,9 @@ static void root_draw_call(void* data, LGadBox* vb)
 // GFH API FUNCTIONS
 ////////////////////////////////////////////////////////////
 
-void brushGFH_OpenPnPs(int n);
-void brushGFH_ClosePnPs(void);
-void brushGFH_UpdatePnPs(GFHUpdateOp op, editBrush *brush);
+static void brushGFH_OpenPnPs(int n);
+static void brushGFH_ClosePnPs(void);
+static void brushGFH_UpdatePnPs(GFHUpdateOp op, editBrush *brush);
 static void set_pnp_mode(int n);
 
 static bool New_Brush_Hack=FALSE;     // so setcur sets it, update does it

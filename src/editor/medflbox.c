@@ -19,7 +19,7 @@
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
-EXTERN leftMark=0, rightMark=0;
+int leftMark = 0, rightMark = 0;
 static int num_slots=0;
 EXTERN LGadBox *flag_box;
 

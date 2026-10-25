@@ -54,6 +54,8 @@ typedef enum _CycleActionKinds
 
 #define CYCLE_MAKE_ACTION(kind,data) (((kind) << CYCLE_KIND_SHF) | (data))
 
+struct _CycleGadg;
+struct _CycleGadgDesc;
 typedef bool (*CycleCallback)(struct _CycleGadg* gadg, ulong action, eCyclePart part, void* var, struct _CycleGadgDesc *desc);
 
 //

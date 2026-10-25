@@ -18,8 +18,8 @@
 #include <csgbrush.h>
 #include <csg.h>
 
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 #include <swappnp.h>
 #include <texmem.h>
 

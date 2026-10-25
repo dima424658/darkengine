@@ -20,8 +20,8 @@
 
 #include <animlit.h>
 
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 
 #include <mprintf.h>
 #include <memall.h>

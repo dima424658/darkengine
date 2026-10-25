@@ -43,7 +43,7 @@ static PortalEdge cube_edge[12] =
    { { -1,-1,-1 }, { -1,-1, 1 } }
 };
 
-static cube_poly_edgelist[6][4] =
+static int cube_poly_edgelist[6][4] =
 {
    { 0,1,2,3 },         //  0 1 2 3
    { 4,5,6,3 },         //  3 4 5 6      3

@@ -345,7 +345,7 @@ int        NamenumSimpleMenuChooseTag(sNameNum *ss)
 #ifdef MONO_MENUS
    choice=PickMenu(list,cnt);
 #else
-   choice=PickFromStringList(ss->sys_name,list,cnt);
+   choice=PickFromStringList(ss->sys_name,(const char * const *)list,cnt);
 #endif
    if (choice!=NAMENUM_NO_TAG)
       choice=tags[choice];

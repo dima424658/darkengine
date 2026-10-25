@@ -22,8 +22,8 @@
 #include <vbrush.h>
 #include <status.h>
 
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 
 #include <areapnp.h>
 #include <namenum.h>

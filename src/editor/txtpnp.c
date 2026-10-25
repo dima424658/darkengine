@@ -27,8 +27,8 @@
 #include <ged_csg.h>
 #include <brinfo.h>
 
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 #include <swappnp.h>
 #include <txtrpal.h>
 #include <texmem.h>

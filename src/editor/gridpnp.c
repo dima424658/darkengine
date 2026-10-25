@@ -14,8 +14,8 @@
 #include <editor.h>
 #include <editbr.h>
 
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 #include <swappnp.h>
 
 #include <mprintf.h>

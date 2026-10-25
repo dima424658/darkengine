@@ -95,23 +95,25 @@ void AIConvDescPropSetStep(int step)
    // field 0 is abort level
    for (int i=0; i<kAIMaxConvActions; i++)
    {
+      const ulong actionOffset = FieldOffset(cAIConversationDesc, steps)
+         + (step * kAIMaxConvActions + i) * sizeof(sAIConvAction);
       // actor
       pField = &_g_AIConversationStructDesc.fields[i*6];
-      pField->offset = FieldOffset(cAIConversationDesc, steps[step][i].actor);
+      pField->offset = actionOffset + FieldOffset(sAIConvAction, actor);
       // flags
       pField = &_g_AIConversationStructDesc.fields[i*6+1];
-      pField->offset = FieldOffset(cAIConversationDesc, steps[step][i].flags);
+      pField->offset = actionOffset + FieldOffset(sAIConvAction, flags);
       // psuedo-script
       // action type
       pField = &_g_AIConversationStructDesc.fields[i*6+2];
-      pField->offset = FieldOffset(cAIConversationDesc, steps[step][i].act.type);
+      pField->offset = actionOffset + FieldOffset(sAIConvAction, act) + FieldOffset(sAIPsdScrAct, type);
       // action args
       pField = &_g_AIConversationStructDesc.fields[i*6+3];
-      pField->offset = FieldOffset(cAIConversationDesc, steps[step][i].act.args[0]);
+      pField->offset = actionOffset + FieldOffset(sAIConvAction, act) + FieldOffset(sAIPsdScrAct, args[0]);
       pField = &_g_AIConversationStructDesc.fields[i*6+4];
-      pField->offset = FieldOffset(cAIConversationDesc, steps[step][i].act.args[1]);
+      pField->offset = actionOffset + FieldOffset(sAIConvAction, act) + FieldOffset(sAIPsdScrAct, args[1]);
       pField = &_g_AIConversationStructDesc.fields[i*6+5];
-      pField->offset = FieldOffset(cAIConversationDesc, steps[step][i].act.args[2]);
+      pField->offset = actionOffset + FieldOffset(sAIConvAction, act) + FieldOffset(sAIPsdScrAct, args[2]);
    }
 }
 

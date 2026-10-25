@@ -35,7 +35,9 @@
 #include <iobjsys.h>
 #include <objnotif.h>
 #include <objedit.h>
+#ifdef EDITOR
 #include <editobj.h>
+#endif
 #include <iobjnet.h>
 
 #include <parttype.h>
@@ -289,6 +291,7 @@ typedef cSpecificProperty<IBitmapWorldspaceProperty,
    &IID_IBitmapWorldspaceProperty, sBitmapWorldspace *,
    cBitmapWorldspaceStore> cBaseBitmapWorldspaceProperty;
 
+#ifdef EDITOR
 static void UpdateObjBrush(ObjID obj)
 {
    mxs_vector Scale;
@@ -297,6 +300,7 @@ static void UpdateObjBrush(ObjID obj)
    mx_mk_vec(&Scale, 1, 1, 1);
    editobjUpdateBrushFromObjScale(obj, &Scale);
 }
+#endif
 
 class cBitmapWorldspaceProperty : public cBaseBitmapWorldspaceProperty
 {

@@ -296,7 +296,11 @@ BOOL brushSetupDraw(int flags, int camera)
    switch (brush_color_mode)
    {
    case brFlag_COLOR_TIME:
-      cur_scale=(float)max(blistCount()-blistGetPos(),blistGetPos());
+      {
+         int brushes_after = blistCount() - blistGetPos();
+         int brushes_before = blistGetPos();
+         cur_scale = (float)(brushes_after > brushes_before ? brushes_after : brushes_before);
+      }
       cur_lo=0.0;       // scale is max distance from current time
       break;
    case brFlag_COLOR_DIST:

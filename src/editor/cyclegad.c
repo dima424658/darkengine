@@ -458,7 +458,10 @@ bool string_cycle_cb(CycleGadg* gadg, ulong _action, eCyclePart part, void* _var
          *var %= sdesc->num;
       }
       else
-         *var = max(0,min(*var,sdesc->num-1));
+         if (*var < 0)
+            *var = 0;
+         else if (*var >= sdesc->num)
+            *var = sdesc->num - 1;
 
       string_cycle_update(gadg,_action, part);
    }
@@ -554,8 +557,14 @@ void string_cycle_popup_menu(CycleGadg* gadg, Point pos, int item)
    pos.y -= item*eh + eh/2;
    
    // clip the menu against the bounds.  
-   pos.x = max(bounds.ul.x,min(pos.x,bounds.lr.x - mw));
-   pos.y = max(bounds.ul.y,min(pos.y,bounds.lr.y - mh));
+   if (pos.x < bounds.ul.x)
+      pos.x = bounds.ul.x;
+   else if (pos.x > bounds.lr.x - mw)
+      pos.x = bounds.lr.x - mw;
+   if (pos.y < bounds.ul.y)
+      pos.y = bounds.ul.y;
+   else if (pos.y > bounds.lr.y - mh)
+      pos.y = bounds.lr.y - mh;
 
    menu = LGadCreateMenuArgs(NULL,NULL, pos.x, pos.y, mw, mh, sdesc->num,sdesc->num, 
             elems, string_menu_cb, 0, menuflags, drawflags, NULL, 0); 

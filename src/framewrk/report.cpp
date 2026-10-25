@@ -62,18 +62,20 @@
 
 #define kReportFlg_IsObj (kReportPrivate<<0)
 
+typedef void (*ReportCallback)();
+
 struct sReportCallback
 {
    char *name;   // what system am i calling myself
    int   flags;  // what is my type
-   void *cb;     // the callback itself
+   ReportCallback cb; // the callback itself
    void *data;   // a void * i want returned to me
 };
 
 typedef cSimpleDList<sReportCallback *> cCBChain;
 static cCBChain callbackChain;
 
-static BOOL _register_cb(void *cb, int flags, const char *name, void *data)
+static BOOL _register_cb(ReportCallback cb, int flags, const char *name, void *data)
 {
    sReportCallback *newCb=new sReportCallback;
    newCb->flags=flags;
@@ -85,7 +87,7 @@ static BOOL _register_cb(void *cb, int flags, const char *name, void *data)
    return TRUE;
 }
 
-static BOOL _unregister_cb(void *cb, int flags, void *data)
+static BOOL _unregister_cb(ReportCallback cb, int flags, void *data)
 {
    cCBChain::cIter cbiter;
    for (cbiter=callbackChain.Iter(); !cbiter.Done(); cbiter.Next())
@@ -105,24 +107,24 @@ static BOOL _unregister_cb(void *cb, int flags, void *data)
 // register a callback into the report system
 BOOL ReportRegisterObjCallback(ReportObjCallback cb, const char *name, void *data)
 {
-   return _register_cb(cb,kReportPerObj|kReportFlg_IsObj,name,data);
+   return _register_cb(reinterpret_cast<ReportCallback>(cb),kReportPerObj|kReportFlg_IsObj,name,data);
 }
 
 BOOL ReportRegisterGenCallback(ReportGenCallback cb, eReportType type, const char *name, void *data)
 {
-   return _register_cb(cb,type,name,data);   
+   return _register_cb(reinterpret_cast<ReportCallback>(cb),type,name,data);
 }
 
 // unregister a callback from the report system
 //  (is it ok to just use name/cb for identity, or do we need data too?)
 BOOL ReportUnRegisterObjCallback(ReportObjCallback cb, void *data)
 {
-   return _unregister_cb(cb,kReportPerObj|kReportFlg_IsObj,data);
+   return _unregister_cb(reinterpret_cast<ReportCallback>(cb),kReportPerObj|kReportFlg_IsObj,data);
 }
 
 BOOL ReportUnRegisterGenCallback(ReportGenCallback cb, eReportType type, void *data)
 {
-   return _unregister_cb(cb,type,data);
+   return _unregister_cb(reinterpret_cast<ReportCallback>(cb),type,data);
 }
 
 ////////////////////////////////////

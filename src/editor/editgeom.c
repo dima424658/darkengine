@@ -310,7 +310,7 @@ extern bool surface_cache, skip_clip;
 extern bool surf_256;  // false all surfaces to row == 256
 extern bool show_span_lengths, show_render_times;
 extern bool portal_clip_poly, portal_clip_fast, poly_clip_fast;
-extern palette_light, project_space, cache_feedback;
+extern int palette_light, project_space, cache_feedback;
 extern float light_scale;
 extern float dynamic_light_min;
 extern int player_light;

@@ -1093,7 +1093,7 @@ void gedit_cam_to_brush(void)
          }
 }
 
-static bool gedit_allow_lazy_updates=FALSE;
+bool gedit_allow_lazy_updates=FALSE;
 static bool gedit_lazy_oldstate;
 static BOOL gedit_drag_happening=FALSE;
 static BOOL cur_sel_changed=FALSE;

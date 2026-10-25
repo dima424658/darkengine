@@ -20,8 +20,8 @@
 #include <guistyle.h>
 #include <uiedit.h>
 
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 #include <pnptool_.h>
 #include <pnpvslid.h>
 #include <vslider.h>
@@ -384,7 +384,7 @@ static bool vslider_cb(short action, void* arg, LGadBox* vb)
    if (data != NULL && action & (MOUSE_LDOWN|MOUSE_RDOWN|MOUSE_CDOWN))
    {
       the_slider_data = data;
-      virtual_slider(1,&data->slider,pnp_vslider_func);
+      virtual_slider(1,(void**)&data->slider,pnp_vslider_func);
       return TRUE;
    }
    return FALSE;

@@ -28,8 +28,8 @@
 #include <traitman.h>
 #include <otreeed.h>
 
-#include <brushGFH.h>
-#include <PnPtools.h>
+#include <brushgfh.h>
+#include <pnptools.h>
 #include <objsys.h>
 
 #include <objedit.h>

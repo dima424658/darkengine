@@ -155,8 +155,8 @@ void CreateTexturePalette(TexturePalCall update)
       }
       for (i = 0; i < TP_EXTRA_BUTTONS; i++)
        { xr += 32; yr += 32; }   // hack to try and get rid of tiny tiny palette??
-      ratio.x = (short)max(RectWidth(box)*n/xr,1);
-      ratio.y = (short)max(RectHeight(box)*n/yr,1);
+      ratio.x = (short)(RectWidth(box)*n/xr > 1 ? RectWidth(box)*n/xr : 1);
+      ratio.y = (short)(RectHeight(box)*n/yr > 1 ? RectHeight(box)*n/yr : 1);
       dims = ratio;
       
       // scale dimensions until we have enough
