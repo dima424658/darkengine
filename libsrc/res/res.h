@@ -83,7 +83,7 @@ void ResSetFreeCallback(tResFreeCallback *);
 typedef struct
 {
    RefIndex numRefs;                             // # items in compound resource
-   long     offset[1];                           // offset to each item (numRefs + 1 of them)
+   int32    offset[1];                           // 32-bit on-disk offsets (numRefs + 1 of them)
 } RefTable;
 
 void *  RefLock(Ref ref);                        // lock compound res, get ptr to item
@@ -101,7 +101,7 @@ void *     RefExtractPartial(RefTable *prt, Ref ref, void *buff, long size);
 
 int        ResNumRefs(Id id);                           // returns the number of refs in a resource, extracting if necessary.
 
-#define    REFTABLESIZE(numrefs) (sizeof(RefIndex) + (((numrefs)+1) * sizeof(long)))
+#define    REFTABLESIZE(numrefs) (sizeof(RefIndex) + (((numrefs)+1) * sizeof(int32)))
 #define    REFPTR(prt,index) (((uchar *) prt) + prt->offset[index])
 
 #define    RefLockString(ref) ((const char *)RefLock(ref))
@@ -327,13 +327,13 @@ typedef struct
    char  signature[16];                          // "LG ResFile v2.0\n",
    char  comment[96];                            // user comment, terminated with '\z'
    uchar reserved[12];                           // reserved for future use, must be 0
-   long  dirOffset;                              // file offset of directory
+   int32 dirOffset;                              // file offset of directory
 } ResFileHeader;                                 // total 128 bytes (why not?)
 
 typedef struct
 {
    ushort numEntries;                            // # items referred to by directory
-   long   dataOffset;                            // file offset at which data resides
+   int32  dataOffset;                            // file offset at which data resides
                                                  // directory entries follow immediately
                                                  // (numEntries of them)
 } ResDirHeader;
@@ -345,7 +345,7 @@ typedef struct
    ulong flags: 8;                               // resource flags (RDF_XXX)
    ulong csize: 24;                              // compressed size (size on disk)
                                                  // (this size is valid disk size even if not comp.)
-   long type: 8;                                 // resource type
+   int32 type: 8;                                // resource type
 } ResDirEntry;
 
 //  Active resource file table

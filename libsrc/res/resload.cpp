@@ -144,13 +144,13 @@ void *ResLoadResource(Id id, unsigned flags, unsigned partialRefIndex)
       RefTable *prt = (RefTable *)prd->ptr;
       lseek(fd, RES_OFFSET_DESC2REAL(prd->offset), SEEK_SET);
       read(fd, &prt->numRefs, sizeof(RefIndex));
-      read(fd, &prt->offset[0], sizeof(long) * (prt->numRefs + 1));
+      read(fd, &prt->offset[0], sizeof(int32) * (prt->numRefs + 1));
 
       RefExtract(prt,
                  MKREF(id, partialRefIndex),
                  ((uchar *)(prd->ptr)) +
                   (sizeof(RefIndex) +
-                   sizeof(long) * (prt->numRefs + 1)));
+                   sizeof(int32) * (prt->numRefs + 1)));
 
       prd2->flags |= RDF_PARTIAL;
    }
@@ -219,8 +219,8 @@ bool ResRetrieve(Id id, void *buffer)
       read(fd, p, sizeof(short));
       numRefs = *(short *) p;
       p += sizeof(short);
-      read(fd, p, sizeof(long) * (numRefs + 1));
-      p += sizeof(long) * (numRefs + 1);
+      read(fd, p, sizeof(int32) * (numRefs + 1));
+      p += sizeof(int32) * (numRefs + 1);
       size -= REFTABLESIZE(numRefs);
    }
 

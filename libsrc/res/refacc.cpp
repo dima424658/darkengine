@@ -287,7 +287,7 @@ RefTable *ResReadRefTable(Id id)
    read(fd, &numRefs, sizeof(RefIndex));
    prt = (RefTable *) Malloc(REFTABLESIZE(numRefs));
    prt->numRefs = numRefs;
-   read(fd, &prt->offset[0], sizeof(long) * (numRefs + 1));
+   read(fd, &prt->offset[0], sizeof(int32) * (numRefs + 1));
 
    ResThreadUnlock();
    return (prt);
@@ -345,7 +345,7 @@ int ResExtractRefTable(Id id, RefTable * prt, long size)
       ResThreadUnlock();
       return (-1);
    }
-   read(fd, &prt->offset[0], sizeof(long) * (prt->numRefs + 1));
+   read(fd, &prt->offset[0], sizeof(int32) * (prt->numRefs + 1));
 
    ResThreadUnlock();
    return (0);

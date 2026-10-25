@@ -177,7 +177,7 @@ void ResAddRef(Ref ref, void *pitem, long itemSize)
 
       // Extend resource for new offset(s) and data item
 
-      sizeItemOffsets = sizeof(long) * ((index + 1) - prt->numRefs);
+      sizeItemOffsets = sizeof(int32) * ((index + 1) - prt->numRefs);
       prd->size += sizeItemOffsets + itemSize;
       prd->ptr = Realloc(prd->ptr, prd->size);
       prt = (RefTable *) prd->ptr;
