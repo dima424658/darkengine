@@ -2,11 +2,12 @@
 
 This repository restores the historical Dark Engine sources as a portable,
 working codebase for the Thief and Thief 2 games. It builds the ThiefRunner
-game executable on Windows, Linux, and Android, plus a work-in-progress Windows
-DromEd mission viewer and editor. The engine core is shared across platforms;
-operating-system, rendering, input, audio, movie, and filesystem services are
-supplied by platform backends. The engine experimentally implements many of the
-anonymously created but closed-source NewDark extensions.
+game executable on Windows, Linux, and Android, plus a work-in-progress DromEd
+mission viewer and editor on Windows and Linux. The engine core is shared
+across platforms; operating-system, rendering, input, audio, movie, and
+filesystem services are supplied by platform backends. The engine
+experimentally implements many of the anonymously created but closed-source
+NewDark extensions.
 
 The repository does not include retail missions, movies, sounds, scripts, or
 other game assets. A legally obtained installation of *Thief: The Dark
@@ -36,7 +37,7 @@ Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
 - [Game saves](#game-saves)
 - [Game settings](#game-settings)
 - [Controls](#controls)
-- [DromEd on Windows](#dromed-on-windows)
+- [DromEd](#dromed)
   - [DromEd settings](#dromed-settings)
   - [Mission and game-system files](#mission-and-game-system-files)
 - [Command console](#command-console)
@@ -69,7 +70,7 @@ repository.
 | Thief Gold/TDP | Playable; less stable than Thief 2 | Playable; less stable than Thief 2 | Playable early port; less stable than Thief 2 | Playable early port; less stable than Thief 2 |
 | Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
 | System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
-| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Not implemented | Not implemented |
+| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Early viewer/playtest port | Not built |
 | Graphics | D3D11 | D3D11 | SDL2/OpenGL | SDL2/OpenGL ES 3 |
 | Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft | OpenAL Soft/OpenSL |
 | Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg | LibVLC |
@@ -89,8 +90,8 @@ The x86 builds are the established target; native x64 builds compile and run
 but remain under active runtime validation. In particular, x64 relies on the
 IA-32 interpreter and service bridge for 32-bit mission `.osm` binaries, while
 many NewDark FMs rely on the newer Squirrel provider. Both compatibility
-layers need broader mission coverage. The Linux CMake target builds a native
-64-bit ELF executable that can load retail missions and run gameplay.
+layers need broader mission coverage. The Linux CMake targets build native
+64-bit ELF game and editor executables that can load retail missions.
 
 The game runner retains mission loading, the game UI, inventory, automap, and
 the in-game command console. On Windows it also retains the normal startup and
@@ -139,9 +140,19 @@ until its editing and round-trip behavior is comprehensively validated.
 ### Cross-platform architecture
 
 The shared renderer sends the same engine drawing commands to D3D11 on Windows
-and to SDL2/OpenGL on Linux and Android; Android uses OpenGL ES. Platform code
-lives under `winsrc` and `unixsrc`, while the game and editor continue to use
-Looking Glass's `lgd3d` interface.
+and to SDL2/OpenGL on Linux and Android; Android uses OpenGL ES. General
+platform backends live under `winsrc` and `unixsrc`; Android intentionally uses
+the Unix/SDL backend. Shared editor logic lives under `src/editor`, while its
+platform providers live under `winsrc/editor` and `unixsrc/editor`. Shared
+input interfaces and keyboard tables live under `libsrc/input`. The game and
+editor continue to use Looking Glass's `lgd3d` interface.
+
+For now CMake derives the common source inventory from the established Visual
+Studio projects, then selects the game or editor platform providers explicitly.
+Desktop Linux always builds `dromed` alongside `thief-runner`: a Linux DromEd
+that can load a retail mission, construct its editor UI, and render a portal
+viewport is a portability requirement, not an optional future target. Android
+shares the Unix/SDL runtime but does not build the desktop editor.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
 synchronization, and filesystem operations cross `platform_services.h` and
@@ -303,8 +314,8 @@ cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build-linux -j "$(nproc)"
 ```
 
-The result is `build-linux/thief-runner`. Desktop OpenGL 3.3 is the
-default. Install GLES development headers and configure with
+The results are `build-linux/thief-runner` and `build-linux/dromed`. Desktop
+OpenGL 3.3 is the default. Install GLES development headers and configure with
 `-DDARK_OPENGL_ES=ON` to exercise the OpenGL ES 3 path. Normal builds include
 the native Squirrel provider. Use `-DDARK_SQUIRREL_SOURCE=/path/to/squirrel`
 for a non-default checkout, or explicitly pass `-DDARK_ENABLE_SQUIRREL=OFF`
@@ -319,6 +330,22 @@ The launcher accepts the current directory, `DARK_GAME_PATH`, or
 cd "$HOME/Games/Thief 2"
 /path/to/darkengine/build-linux/thief-runner quickstart=MISS1.MIS
 ```
+
+Run DromEd from the same retail directory. It accepts the same editor command
+line used on Windows, including deterministic viewport inspection:
+
+```sh
+/path/to/darkengine/build-linux/dromed file=MISS1.MIS
+/path/to/darkengine/build-linux/dromed render_test=MISS1.MIS \
+  render_test_pos=37.43,100.15,18.97 render_test_angles=-35,90,0
+```
+
+The Linux editor uses SDL for its window and input, SDL message boxes for
+editor prompts, and `zenity` when available for graphical Open/Save dialogs;
+it falls back to a terminal path prompt. The in-engine editor panes, command
+console, and keyboard bindings work, but the Unix provider does not yet supply
+a desktop application menu bar. Use the command console and shortcuts for
+commands that are menu-only on Windows.
 
 An interactive launch from another directory opens the folder chooser. SDL
 uses relative-pointer input during gameplay and absolute coordinates in menus,
@@ -713,9 +740,13 @@ it, with automatic failover to another connected controller if it disconnects. T
 state. DromEd editor input remains unchanged; gamepad input is currently enabled
 only in the game-runner target.
 
-## DromEd on Windows
+## DromEd
 
-DromEd uses the same working-directory detection as the game runner:
+Windows provides the complete native application menu and common-dialog
+provider. Linux uses the SDL/Unix provider described in the Linux running
+instructions; editor logic and mission behavior are shared.
+
+On Windows, DromEd uses the same working-directory detection as the game runner:
 
 ```bat
 cd /d "C:\Games\Thief Gold"
@@ -740,17 +771,19 @@ by its game and editor includes and any selected FM configuration. Put
 editor-specific overrides in the editor configuration included by that stack;
 command-line assignments still take priority for the current launch.
 
-The DromEd viewer uses the same D3D11 scene renderer and swap-chain presenter
-as the game. Its legacy editor canvas remains 16-bit internally, while the D3D11
-presenter converts it to the resizable 32-bit desktop window. When an editor
-window resize finishes, DromEd recreates that canvas at the client area's
-actual dimensions and scales the four viewports, console, status bar, and
-brush controls independently in each axis. This fills widescreen and portrait
-windows without imposing a 4:3 aspect ratio. `edit_screen_size` in `cam.cfg`
-selects the initial canvas size; it defaults to 1024x768. The editor always
-uses a windowed desktop surface, regardless of legacy fullscreen flags. Game
-preview mode stays in the same window and recreates the D3D11 render context
-for the preview; returning to edit mode restores the editor viewport and menu.
+The DromEd viewer uses the same hardware scene API as the game: D3D11 on
+Windows and OpenGL on Linux. Its legacy editor canvas remains 16-bit internally,
+while the platform presenter converts it to the resizable desktop window.
+When an editor window resize finishes, DromEd recreates that canvas at the
+client area's actual dimensions and scales the four viewports, console,
+status bar, and brush controls independently in each axis. This fills
+widescreen and portrait windows without imposing a 4:3 aspect ratio.
+`edit_screen_size` in `cam.cfg` selects the initial canvas size; it defaults
+to 1024x768. The editor always uses a windowed desktop surface, regardless of
+legacy fullscreen flags. Game preview mode stays in the same window and
+recreates the D3D11 render context for the preview; returning to edit mode
+restores the editor viewport and menu state. Linux uses the corresponding
+SDL/OpenGL context and editor provider.
 
 Use **Help > Keyboard Shortcuts** to open a resizable, human-readable input
 reference. It includes every active editor binding (including the complete
@@ -961,6 +994,11 @@ console logs are ignored by Git.
   but the complete external DromEd/NewDark command environment is not. NewDark
   reading and preservation coverage still does not imply universal authoring
   or save compatibility.
+- Linux DromEd can load a retail mission and render the editor viewport, but
+  its Unix platform provider does not yet implement the desktop application
+  menu bar. SDL prompts and `zenity`/terminal file selection are available;
+  menu-only commands must currently be invoked through the editor console or
+  keyboard bindings. Linux play-preview transitions need broader validation.
 - DromEd mission loads currently report phases in the status field but do not
   show the game's animated loading progress. Play preview remains unstable:
   returning to the editor can still crash, and a resolution selected in the
