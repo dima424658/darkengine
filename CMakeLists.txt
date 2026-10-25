@@ -458,10 +458,25 @@ if(DARK_BUILD_ENGINE)
       target_link_libraries(dark_unix_providers PUBLIC OpenGL::GL)
     endif()
 
+    # Both SDL executables consume the same project inventory. DromEd is a
+    # required Linux deliverable: keeping it in the default graph prevents
+    # shared editor code from silently acquiring Windows dependencies.
+    dark_sources_from_vcxproj(dark_application_sources
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/dromed.vcxproj")
+
+    # These generated scanners deliberately use the same private helper
+    # names. Match the Visual Studio source-level definition for both apps.
+    set_source_files_properties(
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/inclex.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/mschlex.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/schlex.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/songlex.c"
+      PROPERTIES COMPILE_DEFINITIONS YY_STATIC
+    )
+
     option(DARK_BUILD_THIEF2 "Compile the native SDL Thief 2 game sources" ON)
     if(DARK_BUILD_THIEF2)
-      dark_sources_from_vcxproj(dark_game_sources
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/dromed.vcxproj")
+      set(dark_game_sources ${dark_application_sources})
 
       # The Visual Studio project contains both DromEd and Thief2. Match its
       # BuildThief2 selection without maintaining a second source manifest.
@@ -486,17 +501,6 @@ if(DARK_BUILD_ENGINE)
         "${CMAKE_CURRENT_SOURCE_DIR}/src/framewrk/initgame.cpp"
       )
       list(REMOVE_DUPLICATES dark_game_sources)
-
-      # These generated scanners deliberately use the same private helper
-      # names.  The Visual Studio project compiles them with YY_STATIC; keep
-      # that source-level setting when consuming the project from CMake.
-      set_source_files_properties(
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/inclex.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/mschlex.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/schlex.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/songlex.c"
-        PROPERTIES COMPILE_DEFINITIONS YY_STATIC
-      )
 
       add_library(dark_game_core OBJECT ${dark_game_sources})
       target_link_libraries(dark_game_core PRIVATE dark_engine_packed)
@@ -565,6 +569,54 @@ if(DARK_BUILD_ENGINE)
         set_target_properties(thief2 PROPERTIES OUTPUT_NAME main)
         add_dependencies(thief2 OpenAL)
       endif()
+    endif()
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+      set(dark_editor_sources ${dark_application_sources})
+      list(APPEND dark_editor_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/dialogs.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editorplatform.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/filemenu.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/menus.cpp"
+      )
+
+      add_library(dark_editor_core OBJECT ${dark_editor_sources})
+      target_link_libraries(dark_editor_core PRIVATE dark_engine_packed)
+      target_compile_definitions(dark_editor_core PRIVATE
+        EDITOR PLAYTEST NEW_NETWORK_ENABLED THIEF PROPERTY_BLAME REPORT STRICT=1
+      )
+      target_include_directories(dark_editor_core BEFORE PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor"
+      )
+      if(TARGET dark_vorbisfile)
+        target_compile_definitions(dark_editor_core PRIVATE
+          DARK_HAVE_VORBISFILE=1
+        )
+        target_link_libraries(dark_editor_core PRIVATE dark_vorbisfile)
+      endif()
+
+      add_executable(dromed
+        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
+        $<TARGET_OBJECTS:dark_editor_core>
+      )
+      target_link_libraries(dromed PRIVATE
+        dark_engine_config
+        -Wl,--start-group
+        ${dark_engine_targets}
+        dark_platform
+        dark_compression
+        dark_unix_providers
+        $<$<TARGET_EXISTS:dark_squirrel>:dark_squirrel>
+        $<$<TARGET_EXISTS:dark_vorbisfile>:dark_vorbisfile>
+        $<$<TARGET_EXISTS:dark_vorbis>:dark_vorbis>
+        $<$<TARGET_EXISTS:ogg>:ogg>
+        -Wl,--end-group
+        m
+        pthread
+      )
+      set_target_properties(dromed PROPERTIES OUTPUT_NAME dromed)
+      install(TARGETS dromed RUNTIME DESTINATION bin)
     endif()
   endif()
 endif()

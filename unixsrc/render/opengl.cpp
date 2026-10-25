@@ -43,6 +43,7 @@ SDL_GLContext g_context;
 SDL_Cursor *g_invisibleCursor;
 int g_width, g_height, g_clientWidth, g_clientHeight;
 bool g_scene, g_scale = true, g_fit = true, g_preserve, g_quit;
+bool g_resizePending;
 bool g_fog, g_alphaTest;
 bool g_depthCompare, g_depthWrite;
 int g_blendMode = kRenderBackendBlendOpaque;
@@ -383,7 +384,16 @@ void swap_presented_frame()
 {
    if (!g_context || !g_presentPending)
       return;
-   SDL_GL_SwapWindow(g_window);
+   // Automated capture only needs the completed back buffer.  Some headless
+   // compositors (notably WSLg during CI-style runs) can block indefinitely
+   // in the window-system swap before the editor reaches its first hardware
+   // frame.  Keep ordinary interactive presentation unchanged and make the
+   // no-swap behavior an explicit test-only opt-in.
+   const char *headlessCapture = getenv("DARK_RENDER_CAPTURE_HEADLESS");
+   if (headlessCapture && atoi(headlessCapture) != 0)
+      glFlush();
+   else
+      SDL_GL_SwapWindow(g_window);
 
    // A working swap interval already paces gameplay. The old unconditional
    // post-swap delay occasionally added an extra millisecond (or a full
@@ -608,7 +618,8 @@ bool DarkRenderOpen(int width, int height, const char *title)
    SDL_ShowCursor(SDL_DISABLE);
    fprintf(stderr, "Linux video backend: SDL/%s\n", SDL_GetCurrentVideoDriver());
    g_width = g_clientWidth = width; g_height = g_clientHeight = height;
-   g_quit = false; g_focused = (SDL_GetWindowFlags(g_window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+   g_quit = false; g_resizePending = false;
+   g_focused = (SDL_GetWindowFlags(g_window) & SDL_WINDOW_INPUT_FOCUS) != 0;
    update_relative_mouse();
    if (!create_scene_pipeline()) { DarkRenderClose(); return false; }
    glGenTextures(1, &g_overlayTexture);
@@ -642,6 +653,7 @@ void DarkRenderClose(void)
    g_unsupportedSwapIntervals = 0;
    g_applicationFrameDepth = 0;
    g_presentPending = false;
+   g_resizePending = false;
    g_deferredPixels = nullptr;
    SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
    if (g_trace) { fclose(g_trace); g_trace = nullptr; }
@@ -699,6 +711,7 @@ bool DarkRenderPumpEvents(void)
          if (event.window.event == SDL_WINDOWEVENT_CLOSE) g_quit = true;
          else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             g_clientWidth = event.window.data1; g_clientHeight = event.window.data2;
+            g_resizePending = true;
          } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
             g_focused = true; update_relative_mouse();
          } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
@@ -760,6 +773,18 @@ bool DarkRenderPumpEvents(void)
       }
    }
    return g_quit;
+}
+
+bool DarkRenderTakeResize(int *width, int *height)
+{
+   if (!g_resizePending)
+      return false;
+   if (width)
+      *width = g_clientWidth;
+   if (height)
+      *height = g_clientHeight;
+   g_resizePending = false;
+   return true;
 }
 
 bool DarkRenderPumpMovieEvents(void)
