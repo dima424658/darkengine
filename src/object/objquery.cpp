@@ -102,7 +102,7 @@ public:
       {
          SafeRelease(Queries[i]);
       }
-      delete Queries;
+      delete [] Queries;
    }
 
    STDMETHOD_(BOOL,Done)() 

@@ -329,7 +329,7 @@ class ConstrainedPropertySorter : public cPropertyManagerKnower
 
    ~ConstrainedPropertySorter()
    {
-      delete Seen;
+      delete [] Seen;
    }
 
 public:

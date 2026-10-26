@@ -99,6 +99,10 @@ static void* wrAlloc(ulong size)
 {
    if (MemBuf.next == NULL || MemBuf.buf == NULL)
       return DoMalloc(size);
+   // Do not return the arena's one-past-end pointer.  wrFree uses the usual
+   // half-open address range to distinguish arena storage from spill blocks.
+   if (size == 0 && MemBuf.next == MemBuf.buf + MemBuf.size)
+      return DoMalloc(1);
    if (MemBuf.next + size > MemBuf.buf + MemBuf.size)
    {
       if (MemBuf.overflow == 0)

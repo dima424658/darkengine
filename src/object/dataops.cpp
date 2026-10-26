@@ -195,7 +195,7 @@ STDMETHODIMP cFixedSizeDataOps::Read(sDatum* pdat, IDataOpsFile* file, int versi
 
    int size = (mSize < version) ? mSize : version; 
    memcpy(pdat->value,buf,size); 
-   delete buf; 
+   delete [] buf;
    return S_OK; 
 }
 
