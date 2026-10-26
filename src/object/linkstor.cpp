@@ -52,6 +52,12 @@ static eObjPartition partition_masks[] = { kObjPartAbstract, kObjPartMission, kO
 
 static BOOL IsLinkSavePartition(LinkID id, ObjID src, ObjID dest, int partition)
 {
+   // Relation notifications include kObjNotifyDatabase in the high bit.
+   // Keep only the object partition before doing the signed ordering test
+   // below; otherwise concrete-to-abstract links (notably MetaProp donor
+   // links) are incorrectly rejected whenever an editor saves a mission.
+   partition &= OBJ_PARTITION_MASK;
+
    // currently, we ignore the partition field of the link id. 
    // that's because we're going to recompute it anyway. 
    //   if (partition_masks[LINKID_PARTITION(id)] & partition)
