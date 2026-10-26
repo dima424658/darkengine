@@ -18,6 +18,7 @@
 #include <bowscrpt.h>
 #include <camscrs.h>
 #include <contscrs.h>
+#include <contscrm.h>
 #include <damgscrm.h>
 #include <damgscrs.h>
 #include <datascrs.h>
@@ -44,6 +45,7 @@
 #include <plyscrpt.h>
 #include <pupscrpt.h>
 #include <quesscpt.h>
+#include <rooscrpt.h>
 #include <scrguid.h>
 #include <scrptman.h>
 #include <simscrm.h>
@@ -1075,6 +1077,37 @@ static SQInteger NativeGetMessage(HSQUIRRELVM vm)
       const sSlayMsg* slain = static_cast<const sSlayMsg*>(message);
       SetSlotInteger(vm, -1, "culprit", slain->culprit);
       SetSlotInteger(vm, -1, "kind", slain->kind);
+   }
+   else if (MessageIs(message, "Container"))
+   {
+      const sContainerScrMsg* container =
+         static_cast<const sContainerScrMsg*>(message);
+      SetSlotInteger(vm, -1, "event", container->event);
+      SetSlotInteger(vm, -1, "containee", container->containee);
+   }
+   else if (MessageIs(message, "Contained"))
+   {
+      const sContainedScrMsg* contained =
+         static_cast<const sContainedScrMsg*>(message);
+      SetSlotInteger(vm, -1, "event", contained->event);
+      SetSlotInteger(vm, -1, "container", contained->container);
+   }
+   else if (MessageIs(message, "Combine"))
+   {
+      const sCombineScrMsg* combine =
+         static_cast<const sCombineScrMsg*>(message);
+      SetSlotInteger(vm, -1, "combiner", combine->combiner);
+   }
+   else if (MessageEndsWith(message, "RoomEnter") ||
+            MessageEndsWith(message, "RoomExit") ||
+            MessageIs(message, "ObjRoomTransit"))
+   {
+      const sRoomMsg* room = static_cast<const sRoomMsg*>(message);
+      SetSlotInteger(vm, -1, "FromObjId", room->FromObjId);
+      SetSlotInteger(vm, -1, "ToObjId", room->ToObjId);
+      SetSlotInteger(vm, -1, "MoveObjId", room->MoveObjId);
+      SetSlotInteger(vm, -1, "ObjType", room->ObjType);
+      SetSlotInteger(vm, -1, "TransitionType", room->TransitionType);
    }
    else if (MessageIs(message, "TweqComplete"))
    {
