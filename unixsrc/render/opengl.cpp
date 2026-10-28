@@ -1100,7 +1100,66 @@ void *RenderBackendCreateTexture(int width,int height,const void *rgba,int rowBy
    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);return t;
 }
 int RenderBackendUpdateTexture(void *handle,int width,int height,const void *rgba,int rowBytes)
-{ Texture*t=static_cast<Texture*>(handle);if(!t||width<=0||height<=0||!rgba||rowBytes<width*4)return 0;std::vector<uint8_t>storage;const void*pixels=tight_texture_pixels(width,height,rgba,rowBytes,storage);glBindTexture(GL_TEXTURE_2D,t->name);if(t->width==width&&t->height==height)glTexSubImage2D(GL_TEXTURE_2D,0,0,0,width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);else glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);t->width=width;t->height=height;return 1; }
+{
+   Texture *texture = static_cast<Texture *>(handle);
+   if (!g_context || !texture || width <= 0 || height <= 0 || !rgba ||
+       rowBytes < width * 4)
+      return 0;
+
+   std::vector<uint8_t> storage;
+   const void *pixels = tight_texture_pixels(width, height, rgba, rowBytes,
+      storage);
+
+   // Lightmap atlases are updated while the legacy renderer is logically on
+   // texture stage one, but OpenGL's active unit is independent of that
+   // state.  Do the upload on a known unit and restore all state that affects
+   // client-memory texture transfers.  In particular, never claim that an
+   // animated-light reload succeeded when the GLES driver rejected it.
+   GLint previousActive = GL_TEXTURE0;
+   GLint previousBinding = 0;
+   GLint previousAlignment = 4;
+   GLint previousRowLength = 0;
+   glGetIntegerv(GL_ACTIVE_TEXTURE, &previousActive);
+   glActiveTexture(GL_TEXTURE0);
+   glGetIntegerv(GL_TEXTURE_BINDING_2D, &previousBinding);
+   glGetIntegerv(GL_UNPACK_ALIGNMENT, &previousAlignment);
+   glGetIntegerv(GL_UNPACK_ROW_LENGTH, &previousRowLength);
+
+   glBindTexture(GL_TEXTURE_2D, texture->name);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   while (glGetError() != GL_NO_ERROR) {}
+
+   if (texture->width == width && texture->height == height)
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
+         GL_UNSIGNED_BYTE, pixels);
+   else
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+         GL_UNSIGNED_BYTE, pixels);
+
+   GLenum error = glGetError();
+   if (error != GL_NO_ERROR && texture->width == width &&
+       texture->height == height) {
+      // Some GLES drivers can lose mutable texture storage across a context
+      // transition.  Reallocate the same texture object so existing Dark
+      // texture IDs and bindings remain valid.
+      while (glGetError() != GL_NO_ERROR) {}
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+         GL_UNSIGNED_BYTE, pixels);
+      error = glGetError();
+   }
+
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, previousRowLength);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, previousAlignment);
+   glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(previousBinding));
+   glActiveTexture(static_cast<GLenum>(previousActive));
+
+   if (error != GL_NO_ERROR)
+      return 0;
+   texture->width = width;
+   texture->height = height;
+   return 1;
+}
 void RenderBackendDestroyTexture(void *handle) { Texture*t=static_cast<Texture*>(handle);if(!t)return;for(void*&bound:g_textures)if(bound==t)bound=nullptr;glDeleteTextures(1,&t->name);delete t; }
 void RenderBackendBindTexture(int level,void *texture) { if(level>=0&&level<2){g_textures[level]=texture;bind_texture(level,static_cast<Texture*>(texture));} }
 int RenderBackendDraw(int primitive,const sRenderBackendVertex *vertices,int count,int second)

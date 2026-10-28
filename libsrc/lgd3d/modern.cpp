@@ -164,8 +164,13 @@ static void ReloadTexture(tdrv_texture_info *info) {
     return;
   if (!RenderBackendUpdateTexture(g_ModernTextures[info->id], info->w, info->h,
                                 pixels, info->w * 4)) {
-    if (g_ModernTextures[info->id])
+    if (g_ModernTextures[info->id]) {
+      // Replacing a failed animated-light atlas must invalidate the legacy
+      // stage cache as well as the backend binding. Otherwise the unchanged
+      // texture ID prevents the newly created object from being rebound.
+      UnsetTextureId(info->id);
       RenderBackendDestroyTexture(g_ModernTextures[info->id]);
+    }
     g_ModernTextures[info->id] =
         RenderBackendCreateTexture(info->w, info->h, pixels, info->w * 4);
   }
