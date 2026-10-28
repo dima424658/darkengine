@@ -212,6 +212,12 @@ class cRopeOps : public cClassDataOps<sPhysRopeProp>
 {
 public:
    STDMETHOD_(int,Version)() { return 1001; };
+   STDMETHOD(Read)(sDatum* pdat, IDataOpsFile* file, int)
+   {
+      // 1001 is this property's schema revision, not its serialized size.
+      return cClassDataOps<sPhysRopeProp>::Read(
+         pdat,file,sizeof(sPhysRopeProp));
+   }
 };
  
 typedef cHashPropertyStore<cRopeOps> cPhysRopeStore;
