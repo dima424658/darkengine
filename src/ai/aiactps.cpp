@@ -82,7 +82,16 @@ static void CreateLinks(IRelation * pRelation, ObjID source, const cDynArray<Obj
          for (i = 0; i < destinations.Size(); i++)
          {
             if (destinations[i] != LINKOBJ_WILDCARD)
-               pRelation->Add(source, destinations[i]);
+            {
+               // AI_SaveConverse deliberately restarts conversations from
+               // the beginning after load while their link effects remain
+               // in the saved relation database.  Pseudo-script Add Link has
+               // no operation for selecting among parallel links, so treat
+               // its source/destination pair as already satisfied.  The
+               // relation API retains its normal multiset semantics elsewhere.
+               if (!pRelation->AnyLinks(source, destinations[i]))
+                  pRelation->Add(source, destinations[i]);
+            }
          }
       }
    }
