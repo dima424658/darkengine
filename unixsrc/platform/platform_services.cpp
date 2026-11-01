@@ -35,6 +35,17 @@
 #include <sys/sysinfo.h>
 #endif
 
+namespace
+{
+#if defined(__ANDROID__)
+std::mutex g_applicationClockMutex;
+std::chrono::steady_clock::time_point g_applicationClockSuspendedAt;
+std::chrono::steady_clock::duration g_applicationClockSuspendedDuration{};
+bool g_applicationClockSuspended = false;
+uint32 g_applicationResumeGeneration = 0;
+#endif
+}
+
 int PlatformGetDisplayModes(ePlatformDisplayScope scope,
                             sPlatformDisplayMode *modes, int capacity,
                             int *native_width, int *native_height)
@@ -293,7 +304,55 @@ int PlatformPopupMenu(const char *const *, int, int, int) { return 0; }
 uint32 PlatformMilliseconds(void)
 {
    using namespace std::chrono;
-   return (uint32)duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+   const steady_clock::time_point now = steady_clock::now();
+#if defined(__ANDROID__)
+   std::lock_guard<std::mutex> lock(g_applicationClockMutex);
+   const steady_clock::time_point effectiveNow = g_applicationClockSuspended
+      ? g_applicationClockSuspendedAt : now;
+   return (uint32)duration_cast<milliseconds>(
+      effectiveNow.time_since_epoch() -
+      g_applicationClockSuspendedDuration).count();
+#else
+   return (uint32)duration_cast<milliseconds>(now.time_since_epoch()).count();
+#endif
+}
+
+void PlatformSuspendApplicationClock(void)
+{
+#if defined(__ANDROID__)
+   std::lock_guard<std::mutex> lock(g_applicationClockMutex);
+   if (!g_applicationClockSuspended)
+   {
+      g_applicationClockSuspendedAt = std::chrono::steady_clock::now();
+      g_applicationClockSuspended = true;
+   }
+#endif
+}
+
+void PlatformResumeApplicationClock(void)
+{
+#if defined(__ANDROID__)
+   const std::chrono::steady_clock::time_point now =
+      std::chrono::steady_clock::now();
+   std::lock_guard<std::mutex> lock(g_applicationClockMutex);
+   if (g_applicationClockSuspended)
+   {
+      g_applicationClockSuspendedDuration +=
+         now - g_applicationClockSuspendedAt;
+      g_applicationClockSuspended = false;
+      ++g_applicationResumeGeneration;
+   }
+#endif
+}
+
+uint32 PlatformApplicationResumeGeneration(void)
+{
+#if defined(__ANDROID__)
+   std::lock_guard<std::mutex> lock(g_applicationClockMutex);
+   return g_applicationResumeGeneration;
+#else
+   return 0;
+#endif
 }
 
 uint64_t PlatformCurrentThreadId(void)
@@ -438,18 +497,56 @@ int PlatformGetClipboardText(char *text, int capacity)
 #endif
 }
 
+#if defined(__ANDROID__)
+static void set_android_console_frame_visible(BOOL visible)
+{
+   JNIEnv *environment = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+   jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+   if (environment && activity)
+   {
+      jclass activityClass = environment->GetObjectClass(activity);
+      jmethodID setVisible = activityClass ? environment->GetMethodID(
+         activityClass, "setConsoleFrameVisible", "(Z)V") : NULL;
+      if (setVisible)
+         environment->CallVoidMethod(activity, setVisible,
+            visible ? JNI_TRUE : JNI_FALSE);
+      if (environment->ExceptionCheck())
+         environment->ExceptionClear();
+      if (activityClass)
+         environment->DeleteLocalRef(activityClass);
+      environment->DeleteLocalRef(activity);
+   }
+}
+#endif
+
+static BOOL gPlatformTextInputActive = FALSE;
+
 void PlatformSetTextInputActive(BOOL active)
 {
+   gPlatformTextInputActive = active;
 #if defined(__linux__)
    if (!(SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO))
       return;
+#if defined(__ANDROID__)
+   if (active)
+      set_android_console_frame_visible(TRUE);
+#endif
    if (active)
       SDL_StartTextInput();
    else
       SDL_StopTextInput();
+#if defined(__ANDROID__)
+   if (!active)
+      set_android_console_frame_visible(FALSE);
+#endif
 #else
    (void)active;
 #endif
+}
+
+BOOL PlatformTextInputActive(void)
+{
+   return gPlatformTextInputActive;
 }
 
 BOOL PlatformGetCurrentDirectory(char *path, int capacity)

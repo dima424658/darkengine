@@ -85,13 +85,15 @@ final class TouchControlsView extends View {
     private final RectF weaponBounds = new RectF();
     private final RectF inventoryBounds = new RectF();
     private boolean controlsVisible;
+    private boolean consoleSuppressed;
     private boolean weaponDown;
     private boolean inventoryDown;
 
     private final Runnable visibilityPoll = new Runnable() {
         @Override
         public void run() {
-            boolean active = ThiefActivity.nativeTouchControlsActive();
+            boolean active = ThiefActivity.nativeTouchControlsActive() &&
+                             !consoleSuppressed;
             boolean visible = active && ThiefActivity.nativeTouchControlsVisible();
             if (visible != controlsVisible) {
                 if (controlsVisible && !visible) {
@@ -107,6 +109,19 @@ final class TouchControlsView extends View {
             handler.postDelayed(this, 200L);
         }
     };
+
+    void setConsoleSuppressed(boolean suppressed) {
+        consoleSuppressed = suppressed;
+        if (suppressed) {
+            releaseAll();
+            controlsVisible = false;
+            setVisibility(View.GONE);
+        } else {
+            setVisibility(ThiefActivity.nativeTouchControlsActive()
+                ? View.VISIBLE : View.INVISIBLE);
+        }
+        invalidate();
+    }
 
     private final TouchButton[] buttons = {
         new TouchButton(BUTTON_LB, "LEAN L"),

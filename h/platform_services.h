@@ -81,6 +81,13 @@ EXTERN BOOL PlatformAskYesNo(const char *title, const char *message);
 EXTERN int PlatformPopupMenu(const char *const *items, int count,
                              int client_x, int client_y);
 EXTERN uint32 PlatformMilliseconds(void);
+// Excludes an OS-level application suspension from the engine clock. These
+// calls are idempotent so duplicate lifecycle notifications remain harmless.
+EXTERN void PlatformSuspendApplicationClock(void);
+EXTERN void PlatformResumeApplicationClock(void);
+// Changes once for each completed OS-level application suspension. UI modes
+// can use this to rebuild content lost with a platform presentation surface.
+EXTERN uint32 PlatformApplicationResumeGeneration(void);
 EXTERN uint64_t PlatformCurrentThreadId(void);
 EXTERN int PlatformReadKey(void);
 EXTERN size_t PlatformAllocationSize(void *allocation);
@@ -108,6 +115,9 @@ EXTERN void PlatformExitProcess(int status);
 EXTERN BOOL PlatformSetClipboardText(const char *text);
 EXTERN int PlatformGetClipboardText(char *text, int capacity);
 EXTERN void PlatformSetTextInputActive(BOOL active);
+// Reports the engine's explicit text-input request, independent of SDL's
+// internal Android EditText state.
+EXTERN BOOL PlatformTextInputActive(void);
 EXTERN BOOL PlatformGetCurrentDirectory(char *path, int capacity);
 EXTERN BOOL PlatformGetExecutableDirectory(char *path, int capacity);
 // Runs one child synchronously with an explicit argument vector and working

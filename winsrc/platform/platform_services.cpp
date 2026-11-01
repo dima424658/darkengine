@@ -263,6 +263,19 @@ uint32 PlatformMilliseconds(void)
    return (uint32)GetTickCount();
 }
 
+void PlatformSuspendApplicationClock(void)
+{
+}
+
+void PlatformResumeApplicationClock(void)
+{
+}
+
+uint32 PlatformApplicationResumeGeneration(void)
+{
+   return 0;
+}
+
 uint64_t PlatformCurrentThreadId(void)
 {
    return (uint64_t)GetCurrentThreadId();
@@ -445,7 +458,17 @@ int PlatformGetClipboardText(char *text, int capacity)
    return length;
 }
 
-void PlatformSetTextInputActive(BOOL) {}
+static BOOL gPlatformTextInputActive = FALSE;
+
+void PlatformSetTextInputActive(BOOL active)
+{
+   gPlatformTextInputActive = active;
+}
+
+BOOL PlatformTextInputActive(void)
+{
+   return gPlatformTextInputActive;
+}
 
 BOOL PlatformGetCurrentDirectory(char *path, int capacity)
 {

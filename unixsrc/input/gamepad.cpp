@@ -14,6 +14,7 @@
 
 #if defined(__ANDROID__)
 extern "C" int DarkInputRelativeMouseActive(void);
+extern "C" void DarkInputKey(uchar scan, int down);
 #endif
 
 namespace
@@ -391,6 +392,17 @@ Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeSetConsoleButton(
       g_androidDesiredButtons &= ~mask;
       g_androidPendingReleases |= mask;
    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeSendConsoleEscape(
+   JNIEnv *, jclass)
+{
+   // The portable keyboard queue is mutex-protected. Queue the native scan
+   // code directly so Android Back and the overlay button behave exactly like
+   // a physical Escape key even while SDL's IME owns the Java key path.
+   DarkInputKey(0x01, 1);
+   DarkInputKey(0x01, 0);
 }
 
 extern "C" JNIEXPORT jboolean JNICALL

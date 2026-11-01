@@ -545,8 +545,8 @@ static void cmdterm_scrollbar_draw(void* data, LGadBox* box)
    }
 }
 
-static bool cmdterm_scrollbar_mouse(short x, short y, short action,
-                                    short wheel, LGadBox* box)
+static uchar cmdterm_scrollbar_mouse(short x, short y, short action,
+                                     short wheel, LGadBox* box)
 {
    int thumb_top;
    int thumb_height;
@@ -605,7 +605,7 @@ static bool cmdterm_scrollbar_mouse(short x, short y, short action,
    return FALSE;
 }
 
-static bool cmdterm_scrollbar_motion(short x, short y, LGadBox* box)
+static uchar cmdterm_scrollbar_motion(short x, short y, LGadBox* box)
 {
    int thumb_top;
    int thumb_height;
@@ -1113,7 +1113,7 @@ static short speckeys[] =
 
 static char last_prefix[sizeof(CmdTerm.cmdbuf)]=" ";
 
-bool cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, void* data)
+uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, void* data)
 {
    char  help_buf[256], *help_ptr=NULL;
    char* text = LGadTextBoxText(box);
@@ -1340,7 +1340,6 @@ bool cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
             }
          }
          LGadUnfocusTextBox(box);
-         PlatformSetTextInputActive(FALSE);
          if (CmdTerm.flags & kCmdTermHideUnfocused)
             region_set_invisible(LGadBoxRegion(&CmdTerm.root),TRUE);
          if (CmdTerm.statebits & kStatePaused)
@@ -1351,6 +1350,11 @@ bool cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, vo
          if (cmdterm_is_scrollable())
             cmdterm_restore_canvas();
          cmdterm_set_popup_cursor(FALSE);
+         // Keep Android's console presentation path active until the popup
+         // region and redirected canvas are gone. Otherwise the final gadget
+         // flush can reach the rotated EGL SurfaceView and briefly expose its
+         // tiled console buffer before gameplay redraws.
+         PlatformSetTextInputActive(FALSE);
       }
       else if (!(CmdTerm.flags & kCmdTermNoPause) &&
                !(CmdTerm.statebits & kStatePaused))
@@ -1615,7 +1619,6 @@ void DestroyCommandTerminal(void)
    ulong context;
    int i;
 
-   PlatformSetTextInputActive(FALSE);
    cmdterm_set_popup_cursor(FALSE);
    if (CmdTerm.statebits & kStatePaused)
    {
@@ -1652,6 +1655,9 @@ void DestroyCommandTerminal(void)
    cmdterm_capture_flush_locked();
    cmdterm_model_unlock();
    cmdterm_remove_output_hook();
+   // Do not release the platform console surface until every console gadget
+   // has been removed; destruction itself may flush the retained canvas.
+   PlatformSetTextInputActive(FALSE);
    
 }
 

@@ -1,6 +1,10 @@
 #define GL_GLEXT_PROTOTYPES
 #pragma pack(push, 8)
 #include <SDL2/SDL.h>
+#if defined(__ANDROID__)
+#include <jni.h>
+#include <SDL2/SDL_system.h>
+#endif
 #ifdef DARK_OPENGL_ES
 #include <GLES3/gl3.h>
 #else
@@ -20,6 +24,7 @@
 
 #include <kb.h>
 #include <mouse.h>
+#include <platform_services.h>
 #include <render_backend.h>
 
 #include "app_icon_data.h"
@@ -31,6 +36,39 @@ extern "C" void DarkInputMouseRelative(int x, int y, uchar buttons);
 
 static void present_legacy_frame(const void *pixels, int width, int height,
    int rowBytes, int depth, const uint8_t *palette);
+
+#if defined(__ANDROID__)
+static void present_android_console_frame(const void *pixels, int width,
+   int height, int rowBytes)
+{
+   static Uint64 lastPresent = 0;
+   const Uint64 now = SDL_GetTicks64();
+   if (now - lastPresent < 100)
+      return;
+   lastPresent = now;
+
+   JNIEnv *environment = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+   jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+   if (!environment || !activity)
+      return;
+   jclass activityClass = environment->GetObjectClass(activity);
+   jmethodID present = activityClass ? environment->GetMethodID(
+      activityClass, "presentConsoleFrame", "(Ljava/nio/ByteBuffer;III)V") :
+      nullptr;
+   jobject buffer = environment->NewDirectByteBuffer(
+      const_cast<void *>(pixels), static_cast<jlong>(rowBytes) * height);
+   if (present && buffer)
+      environment->CallVoidMethod(activity, present, buffer, width, height,
+                                  rowBytes);
+   if (environment->ExceptionCheck())
+      environment->ExceptionClear();
+   if (buffer)
+      environment->DeleteLocalRef(buffer);
+   if (activityClass)
+      environment->DeleteLocalRef(activityClass);
+   environment->DeleteLocalRef(activity);
+}
+#endif
 
 namespace {
 struct Texture {
@@ -69,6 +107,10 @@ bool g_presentPending;
 const void *g_deferredPixels;
 const uint8_t *g_deferredPalette;
 int g_deferredWidth, g_deferredHeight, g_deferredRowBytes, g_deferredDepth;
+const void *g_lastPixels;
+const uint8_t *g_lastPalette;
+int g_lastWidth, g_lastHeight, g_lastRowBytes, g_lastDepth;
+bool g_focusRefreshPending;
 bool g_samplerWrap[2];
 bool g_samplerSmooth[2] = {true, true};
 GLuint g_sceneProgram, g_sceneBuffer, g_sceneVertexArray;
@@ -545,6 +587,9 @@ bool capture_frame(const char *path)
 }
 }
 
+static void present_legacy_frame(const void *pixels, int width, int height,
+   int rowBytes, int depth, const uint8_t *palette);
+
 bool DarkRenderOpen(int width, int height, const char *title)
 {
    if (g_context) {
@@ -552,6 +597,7 @@ bool DarkRenderOpen(int width, int height, const char *title)
       // pixel vector during an application frame. Do not retain a pointer to
       // the preceding mode's canvas.
       g_deferredPixels = nullptr;
+      g_lastPixels = nullptr;
       g_width = width; g_height = height;
       DarkRenderSetTitle(title);
       SDL_GetWindowSize(g_window, &g_clientWidth, &g_clientHeight);
@@ -600,9 +646,17 @@ bool DarkRenderOpen(int width, int height, const char *title)
 #endif
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+   Uint32 windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE |
+      SDL_WINDOW_ALLOW_HIGHDPI;
+#if defined(__ANDROID__)
+   // Android is always presented fullscreen. Creating a smaller window and
+   // promoting it after EGL has allocated its first buffer can leave a
+   // rotated/stale SurfaceView buffer on some devices when the IME appears.
+   windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+#endif
    g_window = SDL_CreateWindow(title ? title : "Dark Engine",
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-      SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+      windowFlags);
    if (g_window) set_window_icon();
    if (g_window) g_context = SDL_GL_CreateContext(g_window);
    if (!g_window || !g_context) { DarkRenderClose(); return false; }
@@ -655,6 +709,8 @@ void DarkRenderClose(void)
    g_presentPending = false;
    g_resizePending = false;
    g_deferredPixels = nullptr;
+   g_lastPixels = nullptr;
+   g_focusRefreshPending = false;
    SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
    if (g_trace) { fclose(g_trace); g_trace = nullptr; }
 }
@@ -677,6 +733,19 @@ bool DarkRenderSetFullscreen(bool enabled)
    return true;
 }
 
+#if defined(__ANDROID__)
+static void handle_android_application_event(Uint32 type)
+{
+   if (type == SDL_APP_WILLENTERBACKGROUND ||
+       type == SDL_APP_DIDENTERBACKGROUND) {
+      PlatformSuspendApplicationClock();
+   } else if (type == SDL_APP_WILLENTERFOREGROUND ||
+              type == SDL_APP_DIDENTERFOREGROUND) {
+      PlatformResumeApplicationClock();
+   }
+}
+#endif
+
 bool DarkRenderPumpEvents(void)
 {
    if (!g_window) return false;
@@ -694,6 +763,9 @@ bool DarkRenderPumpEvents(void)
       motionX = motionY = 0;
    };
    while (SDL_PollEvent(&event)) {
+#if defined(__ANDROID__)
+      handle_android_application_event(event.type);
+#endif
       if (event.type == SDL_MOUSEMOTION) {
          if (g_relativeActive) {
             relativeX += event.motion.xrel;
@@ -713,7 +785,9 @@ bool DarkRenderPumpEvents(void)
             g_clientWidth = event.window.data1; g_clientHeight = event.window.data2;
             g_resizePending = true;
          } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-            g_focused = true; update_relative_mouse();
+            g_focused = true;
+            g_focusRefreshPending = true;
+            update_relative_mouse();
          } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
             g_focused = false; update_relative_mouse();
          }
@@ -755,6 +829,17 @@ bool DarkRenderPumpEvents(void)
    // in progress. Reconcile the requested gameplay mode with SDL's actual
    // state after all pending window events have been handled.
    update_relative_mouse();
+   if (g_focusRefreshPending) {
+      g_focusRefreshPending = false;
+      // Android and some compositors do not preserve the window-system back
+      // buffer while another surface has focus. Menus have no hardware scene
+      // to redraw it, so present their retained CPU canvas immediately.
+      if (!g_scene && g_lastPixels) {
+         present_legacy_frame(g_lastPixels, g_lastWidth, g_lastHeight,
+                              g_lastRowBytes, g_lastDepth, g_lastPalette);
+         swap_presented_frame();
+      }
+   }
    if (g_relativeActive && g_wslPointerWorkaround) {
       int mouseX, mouseY, windowX, windowY;
       SDL_GetGlobalMouseState(&mouseX, &mouseY);
@@ -794,6 +879,9 @@ bool DarkRenderPumpMovieEvents(void)
    SDL_Event event;
    bool stop = false;
    while (SDL_PollEvent(&event)) {
+#if defined(__ANDROID__)
+      handle_android_application_event(event.type);
+#endif
       if (event.type == SDL_QUIT) {
          g_quit = true;
          stop = true;
@@ -868,6 +956,16 @@ static void present_legacy_frame(const void *pixels, int width, int height,
    int rowBytes, int depth, const uint8_t *palette)
 {
    if (!g_context || !pixels) return; SDL_GL_MakeCurrent(g_window, g_context);
+#if defined(__ANDROID__)
+   if (depth == 16 && PlatformTextInputActive()) {
+      present_android_console_frame(pixels, width, height, rowBytes);
+      // The Android view now owns console presentation. Do not submit the
+      // same frame through the rotated EGL SurfaceView: affected Qualcomm
+      // compositors can briefly expose that buffer's 128-pixel tile layout
+      // before the ordinary view is composed above it.
+      return;
+   }
+#endif
    int vx, vy, vw, vh; viewport(vx, vy, vw, vh);
    if (!g_scene) {
       // Logical mode changes may alter the aspect-fitted viewport. Clear the
@@ -950,6 +1048,12 @@ static void present_legacy_frame(const void *pixels, int width, int height,
 void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes,
                        int depth, const uint8_t *palette)
 {
+   g_lastPixels = pixels;
+   g_lastPalette = palette;
+   g_lastWidth = width;
+   g_lastHeight = height;
+   g_lastRowBytes = rowBytes;
+   g_lastDepth = depth;
    if (g_applicationFrameDepth > 0) {
       // Cursor save-under and the end-of-frame page flip can both flush the
       // same stable display canvas. Retain only its final state; uploading
@@ -1061,6 +1165,20 @@ int RenderBackendGetSettledClientSize(int *width, int *height)
 }
 int RenderBackendClientToLogicalPoint(int *x, int *y) { if (!x || !y || !g_context) return 0; logical_point(*x, *y); return 1; }
 int RenderBackendLogicalToClientPoint(int *x, int *y) { int vx,vy,vw,vh; if (!x || !y || !g_context) return 0; viewport(vx,vy,vw,vh); *x=vx+*x*vw/g_width; *y=vy+*y*vh/g_height; return 1; }
+void RenderBackendPresentProgress(void)
+{
+   if (!g_context || !g_deferredPixels)
+      return;
+   const void *pixels = g_deferredPixels;
+   const uint8_t *palette = g_deferredPalette;
+   const int width = g_deferredWidth;
+   const int height = g_deferredHeight;
+   const int rowBytes = g_deferredRowBytes;
+   const int depth = g_deferredDepth;
+   g_deferredPixels = nullptr;
+   present_legacy_frame(pixels, width, height, rowBytes, depth, palette);
+   swap_presented_frame();
+}
 int RenderBackendBeginFrame(void)
 {
    if (!g_context) return 0; SDL_GL_MakeCurrent(g_window, g_context);

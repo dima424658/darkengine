@@ -47,6 +47,10 @@ void RenderBackendSetWindowedClientSizeHint(int width, int height);
 int RenderBackendGetSettledClientSize(int *width, int *height);
 int RenderBackendClientToLogicalPoint(int *x, int *y);
 int RenderBackendLogicalToClientPoint(int *x, int *y);
+// Presents a legacy-canvas update immediately when the platform normally
+// defers those updates until the enclosing application frame ends.  Intended
+// for throttled progress UI inside synchronous loading work.
+void RenderBackendPresentProgress(void);
 int RenderBackendBeginFrame(void);
 void RenderBackendEndFrame(void);
 void RenderBackendDeactivateScene(void);

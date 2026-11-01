@@ -170,5 +170,39 @@ if (!hidSource.contains("private void registerReceiverCompat")) {
     hidManager.setText(hidSource.replace(anchor, helper + anchor), "UTF-8")
 }
 
+// SDL's hidden text editor consumes Back before the Activity sees it whenever
+// the soft keyboard is visible. Add a virtual pre-IME hook so Thief can close
+// its command terminal instead of merely dismissing the keyboard.
+def sdlActivity = new File(sdlRoot,
+    "android-project/app/src/main/java/org/libsdl/app/SDLActivity.java")
+def activitySource = sdlActivity.getText("UTF-8")
+if (!activitySource.contains("protected boolean onTextInputBackPressed")) {
+    def activityAnchor = "    // Called by JNI from SDL.\n    public static void manualBackButton()"
+    def activityHook = """    protected boolean onTextInputBackPressed(KeyEvent event) {
+        return false;
+    }
+
+"""
+    if (!activitySource.contains(activityAnchor)) {
+        throw new GradleException("SDL text-input Back hook insertion point is missing")
+    }
+    activitySource = activitySource.replace(activityAnchor,
+        activityHook + activityAnchor)
+
+    def preImeAnchor = "        // As seen on StackOverflow: http://stackoverflow.com/questions/7634346/keyboard-hide-event"
+    def preImeHook = """        if (keyCode == KeyEvent.KEYCODE_BACK &&
+            SDLActivity.mSingleton != null &&
+            SDLActivity.mSingleton.onTextInputBackPressed(event)) {
+            return true;
+        }
+
+"""
+    if (!activitySource.contains(preImeAnchor)) {
+        throw new GradleException("SDL pre-IME Back interception point is missing")
+    }
+    sdlActivity.setText(activitySource.replace(preImeAnchor,
+        preImeHook + preImeAnchor), "UTF-8")
+}
+
 rootProject.name = "DarkEngineRestored"
 include(":app")

@@ -1389,6 +1389,9 @@ extern "C" int RenderBackendClientToLogicalPoint(int *x, int *y) {
 extern "C" int RenderBackendLogicalToClientPoint(int *x, int *y) {
   return g_pPresenter && g_pPresenter->LogicalToClientPoint(x, y);
 }
+extern "C" void RenderBackendPresentProgress(void) {
+  // Legacy FlushRect presentation is already immediate on D3D11.
+}
 extern "C" int RenderBackendBeginFrame(void) {
   return g_pPresenter && g_pPresenter->BeginHardwareFrame();
 }
