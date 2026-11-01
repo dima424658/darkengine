@@ -64,6 +64,12 @@ repository.
 
 ## Platform status
 
+Windows x86 and the stock Thief II campaign are the reference path. The other
+targets are working ports with less runtime coverage, not claims of complete
+NewDark compatibility. In the table, **playable** means that normal missions
+can be loaded and played; the qualifiers identify where validation is still
+limited.
+
 | Capability | Windows x86 | Windows x64 | Linux x64 | Android ARM64 |
 | --- | --- | --- | --- | --- |
 | Thief 2 | Playable | Playable; broader validation ongoing | Playable early port | Playable early port |
@@ -139,13 +145,15 @@ until its editing and round-trip behavior is comprehensively validated.
 
 ### Cross-platform architecture
 
-The shared renderer sends the same engine drawing commands to D3D11 on Windows
-and to SDL2/OpenGL on Linux and Android; Android uses OpenGL ES. General
-platform backends live under `winsrc` and `unixsrc`; Android intentionally uses
-the Unix/SDL backend. Shared editor logic lives under `src/editor`, while its
-platform providers live under `winsrc/editor` and `unixsrc/editor`. Shared
-input interfaces and keyboard tables live under `libsrc/input`. The game and
-editor continue to use Looking Glass's `lgd3d` interface.
+The portability work keeps the original engine and game logic shared while
+replacing their operating-system dependencies. The renderer sends the same
+engine drawing commands to D3D11 on Windows and to SDL2/OpenGL on Linux and
+Android; Android uses OpenGL ES. General platform backends live under `winsrc`
+and `unixsrc`; Android intentionally uses the Unix/SDL backend. Shared editor
+logic lives under `src/editor`, while its platform providers live under
+`winsrc/editor` and `unixsrc/editor`. Shared input interfaces and keyboard
+tables live under `libsrc/input`. The game and editor continue to use Looking
+Glass's `lgd3d` interface.
 
 For now CMake derives the common source inventory from the established Visual
 Studio projects, then selects the game or editor platform providers explicitly.
@@ -394,7 +402,9 @@ direct-mission debugging, and touch-control details.
 
 ## Legacy OSM diagnostics
 
-The portable OSM loader selects a fixed guest ABI when each module is loaded:
+Compiled `.osm` modules supply much of a mission's scripted behavior. They are
+32-bit Windows binaries, so non-x86 targets run them through the portable OSM
+loader. It selects a fixed guest ABI when each module is loaded:
 `gold` and `tdp` use the Dark 1 service layout, while `thief2` uses Dark 2.
 Set `DARK_OSM32_TRACE=1` to log the selected ABI, service calls, and imports
 that are not implemented by the guest runtime.
@@ -414,8 +424,11 @@ test because service calls and message traffic depend on retail mission data.
 
 ## Content selection and diagnostics
 
-The runner identifies TDP, Gold, or Thief II from the installed stock mission
-set. It also recognizes GOG's current Gold collection layout: a common folder
+Retail campaigns, installed mods, and fan missions can all provide files with
+the same names, so the selected content determines configuration and resource
+precedence for the whole run. The runner identifies TDP, Gold, or Thief II from
+the installed stock mission set. It also recognizes GOG's current Gold
+collection layout: a common folder
 containing complete `Thief Gold` and `Thief The Dark Project` child installs
 plus a shared `FMs` folder. Selecting that common folder presents Gold and TDP,
 each in base-resource and configured-mod form, followed by the shared fan
@@ -471,10 +484,9 @@ The available content modes are:
   `FMs` folder. Its files are inserted between `uber_mod_path` and `mod_path`,
   matching NewDark path precedence. An FM's `DARK.CFG`, `fm.cfg`, and
   `cam_ext.cfg` are loaded when Play is chosen. Before the themed picker is
-  shown, a narrow bootstrap pass scans those files only for fixed-capacity
-  limits and reserves the largest installed reference and sound pools. Play
-  before the first database is built. The picker pre-reserves the largest
-  installed object, reference, and sound capacities, then Play applies the FM
+  shown, a narrow bootstrap pass scans the installed FM configurations for
+  fixed-capacity limits and reserves the largest required object, reference,
+  and sound pools before the first database is built. Play then applies the FM
   configuration and refreshes resource and script paths in place. The logical
   mode changes to the main menu while the top-level window and presentation
   surface remain persistent.
@@ -668,10 +680,11 @@ movie. Set `DARK_MOVIE_CACHE` to override that cache directory.
 
 ## Controls
 
-This project's game runner replaces the original game's legacy DirectInput
-joystick polling with a platform-neutral gamepad layer: runtime-loaded XInput
-on Windows and SDL GameController on Linux and Android. SDL accepts compatible
-controllers regardless of branding; the default bindings merely use the familiar
+The original keyboard, mouse, and binding systems remain in use. The game
+runner replaces only the legacy DirectInput joystick polling with a
+platform-neutral gamepad layer: runtime-loaded XInput on Windows and SDL
+GameController on Linux and Android. SDL accepts compatible controllers
+regardless of branding; the default bindings merely use the familiar
 Xbox-style button names and layout. One controller owns gameplay input at a
 time and can be connected, disconnected, or reconnected while the game runs.
 The selected modern controller is excluded from the legacy joystick fallback,
@@ -742,9 +755,12 @@ only in the game-runner target.
 
 ## DromEd
 
-Windows provides the complete native application menu and common-dialog
-provider. Linux uses the SDL/Unix provider described in the Linux running
-instructions; editor logic and mission behavior are shared.
+DromEd is the original Dark Engine mission editor. This restoration currently
+treats it as a viewer and playtest tool first because safe editing and file
+round-tripping are not yet comprehensively validated. Windows provides the
+complete native application menu and common-dialog provider. Linux uses the
+SDL/Unix provider described in the Linux running instructions; editor logic
+and mission behavior are shared.
 
 On Windows, DromEd uses the same working-directory detection as the game runner:
 
