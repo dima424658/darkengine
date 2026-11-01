@@ -64,6 +64,8 @@
 #include <missiondiag.h>
 #include <dataguard.h>
 #include <gameapp.h>
+#include <platform_services.h>
+#include <render_backend.h>
 
 #include <btffact.h>
 
@@ -831,6 +833,9 @@ public:
         mFileTotal(1),
         mFileCur(0),
         mDialRate(kFineDialRate),
+        mLastDialPresent(0),
+        mDisplayedFineFrame(-1),
+        mDisplayedCoarseFrame(-1),
         mStateLocked(FALSE)
    {
       for (int i = 0; i < kNumDials; ++i)
@@ -934,7 +939,6 @@ public:
       // then indexed before mpDialImages and called through a null pointer.
       if (bytes <= 0)
          return;
-      uint64_t old = mFileCur;
       uint64_t updated = 0;
       if (DarkCheckedAddU64(mFileCur,(unsigned int)bytes,&updated))
          mFileCur = updated;
@@ -943,40 +947,39 @@ public:
 
       //ConfigSpew("dial_spew",("bytes = %d delta = %d\n",mFileCur,bytes)); 
 
-      // update fine dial 
+      const int fineFrame = (int)((mFileCur/(unsigned int)mDialRate) %
+                                  kNumDialImages);
+      const uint64_t total = mFileTotal ? mFileTotal : 1;
+      const uint64_t current = mFileCur < total ? mFileCur : total;
+      uint64_t product = 0;
+      const int coarseFrame = DarkCheckedMulU64(current,kFineDialFrames,
+                                                &product) ?
+         (int)(product/total) :
+         (int)((long double)current*kFineDialFrames/(long double)total);
+
+      // Reads can be very small and frequent.  Cap progress presentation so
+      // it remains responsive without turning every tag-file read into a
+      // swap-chain wait.
+      const uint32 now = PlatformMilliseconds();
+      if (fineFrame == mDisplayedFineFrame &&
+          coarseFrame == mDisplayedCoarseFrame)
+         return;
+      if (mLastDialPresent != 0 && now-mLastDialPresent < 33)
+         return;
+
+      if (fineFrame != mDisplayedFineFrame)
       {
-         int frame = (int)((mFileCur/(unsigned int)mDialRate) %
-                           kNumDialImages);
-         int oldframe = (int)((old/(unsigned int)mDialRate) %
-                              kNumDialImages);
-         if (frame != oldframe)
-         {
-            DrawDialImage(kFineDial,frame); 
-
-         }
+         DrawDialImage(kFineDial,fineFrame);
+         mDisplayedFineFrame = fineFrame;
       }
-
-      // update coarse dial 
+      if (coarseFrame != mDisplayedCoarseFrame)
       {
-         const uint64_t total = mFileTotal ? mFileTotal : 1;
-         const uint64_t current = mFileCur < total ? mFileCur : total;
-         const uint64_t previous = old < total ? old : total;
-         uint64_t product = 0;
-         uint64_t oldProduct = 0;
-         int frame = DarkCheckedMulU64(current,kFineDialFrames,&product) ?
-            (int)(product/total) :
-            (int)((long double)current*kFineDialFrames/(long double)total);
-         int oldframe = DarkCheckedMulU64(previous,kFineDialFrames,&oldProduct) ?
-            (int)(oldProduct/total) :
-            (int)((long double)previous*kFineDialFrames/(long double)total);
-         if (frame != oldframe)
-         {
-            DrawDialImage(kCoarseDial,frame); 
-         }
+         DrawDialImage(kCoarseDial,coarseFrame);
+         mDisplayedCoarseFrame = coarseFrame;
       }
-
-      // pump events
-      pGameShell->PumpEvents(kPumpAll);             
+      mLastDialPresent = now;
+      RenderBackendPresentProgress();
+      pGameShell->PumpEvents(kPumpAll);
    }
 
 
@@ -1065,6 +1068,9 @@ protected:
    uint64_t mFileTotal;
    uint64_t mFileCur;
    int mDialRate;
+   uint32 mLastDialPresent;
+   int mDisplayedFineFrame;
+   int mDisplayedCoarseFrame;
    BOOL mStateLocked; //sigh.  If TRUE, kGoOn cannot use NextState. 
                       //set false on every frame.  Prevents kGoOn button
                       //from changing state while frame locked.
@@ -1329,6 +1335,9 @@ protected:
                   // Load the mission, then go to next state
                   mFileCur = 1; // reset dial state 
                   mFileTotal = 1; // no dividing by zero 
+                  mLastDialPresent = 0;
+                  mDisplayedFineFrame = -1;
+                  mDisplayedCoarseFrame = -1;
 
                   // Set up the file factory 
                   cLoadingFileFactory fact(this); 
@@ -1341,7 +1350,10 @@ protected:
                   {
                      DoFileLoad(file);
                      if (mState != kQuit)
+                     {
                         DrawDialImage(kCoarseDial,kNumDialImages-1);
+                        RenderBackendPresentProgress();
+                     }
                   }
                   else
                      SetState(kQuit);
