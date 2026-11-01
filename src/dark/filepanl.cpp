@@ -232,7 +232,10 @@ void cFilePanel::RedrawDisplay()
    for (int i = 0; i < kNumSlots; i++)
       RedrawSlot(i); 
 
-   // @TODO: update screen shot 
+   // The message is drawn directly rather than owned by a gadget, so retain
+   // and repaint it when a platform surface has to be reconstructed.
+   cStr message = mMessage;
+   Message(message);
 }
 
 //----------------------------------------
@@ -289,7 +292,8 @@ void cFilePanel::OnLoopMsg(eLoopMessage msg, tLoopMessageData data)
 
 void cFilePanel::Message(const char* msg)
 {
-   cStr str = msg;  // copy the string 
+   mMessage = msg ? msg : "";
+   cStr str = mMessage;  // copy the string
    char* s = (char*)(const char*)str;  // get a mutable pointer
 
    Rect& r = mRects[(int)kMessage]; 

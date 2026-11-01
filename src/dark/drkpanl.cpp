@@ -19,6 +19,8 @@
 #include <panlguid.h>
 
 #include <dispapi.h>
+#include <render_backend.h>
+#include <platform_services.h>
 
 #include <drkuires.h>
 #include <imgsrc.h>
@@ -246,11 +248,31 @@ void cDarkPanel::OnLoopMsg(eLoopMessage msg, tLoopMessageData data)
    {
       case kMsgEnterMode:
       case kMsgResumeMode:
+         // Dark panels always use their fixed logical canvas.  Presenter
+         // policy is process-global, so do not inherit an unscaled or Fit
+         // policy from a movie, editor, or gameplay transition.
+         RenderBackendSetScaleToWindow(TRUE);
+         RenderBackendSetFitToViewport(FALSE);
+         RenderBackendSetPreserveCanvas(FALSE);
          RedrawDisplay();
          break;
 
       case kMsgNormalFrame:
+      {
+         const uint32 generation = PlatformApplicationResumeGeneration();
+         if (generation != mApplicationResumeGeneration)
+         {
+            mApplicationResumeGeneration = generation;
+            RedrawDisplay();
+            // The recreated Android EGL surface starts with two undefined
+            // buffers. Seed both from the completed panel canvas so the next
+            // incremental hover/click redraw cannot swap a black buffer in.
+            ScrnForceUpdate();
+            RenderBackendPresentProgress();
+            ScrnForceUpdate();
+         }
          SFX_Frame(NULL,NULL);
+      }
          break;
    }   
 }
@@ -330,8 +352,9 @@ IDataSource* cDarkPanel::CursorPalette()
 
 cDarkPanel::cDarkPanel(const sDarkPanelDesc* desc, const char* respath)
    : cModalButtonPanel(sTempDesc(desc), &Descriptor),
+     sDarkPanelDesc(*desc),
      mpFontRes(NULL),
-     sDarkPanelDesc(*desc)
+     mApplicationResumeGeneration(PlatformApplicationResumeGeneration())
 {
    SetResPath(respath); 
 }

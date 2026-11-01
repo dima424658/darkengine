@@ -116,6 +116,7 @@ protected:
    // styles
    guiStyle mSlotStyle; 
    guiStyle mMessageStyle; 
+   cStr mMessage;
 
    int mCurSlot; 
    int mFileOp; 

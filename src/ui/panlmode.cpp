@@ -19,6 +19,7 @@
 #include <scrnloop.h>
 #include <dispapi.h>
 #include <gcompose.h>
+#include <gadbox.h>
 
 extern "C"
 {
@@ -48,6 +49,7 @@ extern "C"
 #include <dev2d.h>
 
 #include <simstate.h>
+#include <platform_services.h>
 
 
 // Include these last
@@ -69,6 +71,7 @@ class cPanelLoopClient : public cCTUnaggregated<ILoopClient, &IID_ILoopClient, k
 {
    IPanelMode* mpPanel; 
    GUImethods* mpOldGUImethods; 
+   uint32 mApplicationResumeGeneration;
 
 public:
 
@@ -76,7 +79,8 @@ public:
 
 
    cPanelLoopClient(IPanelMode* panel) 
-      : mpPanel(panel)
+      : mpPanel(panel),
+        mApplicationResumeGeneration(PlatformApplicationResumeGeneration())
    {
       if (mpPanel)
          mpPanel->AddRef(); 
@@ -227,10 +231,29 @@ STDMETHODIMP_(eLoopMessageResult) cPanelLoopClient::ReceiveMessage(eLoopMessage 
 
       case kMsgNormalFrame:
       case kMsgPauseFrame:
+      {
+         const uint32 generation = PlatformApplicationResumeGeneration();
+         if (generation != mApplicationResumeGeneration)
+         {
+            mApplicationResumeGeneration = generation;
+            // Android discards the EGL surface while this mode remains on
+            // the loop stack. Rebuild the generic panel layers here; the
+            // owning panel client redraws its custom state later this frame.
+#ifdef GRABBG_WORKS_IN_HARDWARE
+            if (desc->flags & kPanelClearScreen)
+#endif
+               if (!(desc->flags & kPanelPreserveScreen))
+                  gr_clear(0);
+            DrawImage(kPanelBG, desc->flags & kPanelCenterBG);
+            DrawImage(kPanelFG, desc->flags & kPanelCenterFG);
+            LGadDrawBox(VB(LGadCurrentRoot()), NULL);
+            ScrnForceUpdate();
+         }
          if (desc->flags & kPanelAutoExit)
          {
             mpPanel->Exit(); 
          }
+      }
          break;
 
       case kMsgExitMode:
