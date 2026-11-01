@@ -366,7 +366,7 @@ HRESULT CALLBACK
 
 ///////////////////////////////////////
 
-BOOL cDDProvider::DoProcessMessage(UINT msg, WPARAM /*wParam*/, LPARAM /*lParam*/, LRESULT * pRetVal)
+BOOL cDDProvider::DoProcessMessage(UINT msg, WPARAM wParam, LPARAM /*lParam*/, LRESULT * pRetVal)
 {
     // If we haven't been initialized...
     if (!m_pDisplayDevice->IsModeSet())
@@ -383,7 +383,23 @@ BOOL cDDProvider::DoProcessMessage(UINT msg, WPARAM /*wParam*/, LPARAM /*lParam*
             RenderBackendSetInteractiveResize(FALSE);
             break;
 
+        case WM_CANCELMODE:
+            // Windows does not guarantee WM_EXITSIZEMOVE when a sizing
+            // operation is cancelled or loses capture.  Do not leave Fit
+            // mode permanently waiting for a resize that already ended.
+            RenderBackendSetInteractiveResize(FALSE);
+            break;
+
+        case WM_ACTIVATEAPP:
+            // Losing application focus terminates any effective resize even
+            // on window-manager paths which omit WM_EXITSIZEMOVE.
+            if (!wParam)
+                RenderBackendSetInteractiveResize(FALSE);
+            break;
+
         case WM_SIZE:
+            if (wParam == SIZE_MINIMIZED || wParam == SIZE_MAXIMIZED)
+                RenderBackendSetInteractiveResize(FALSE);
             if (m_pModeOps && (m_pModeOps->GetModeInfoEx().flags & kGrModeIsWindowed))
             {
                 if (m_pModeOps->HandlesWindowResize())
