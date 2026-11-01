@@ -161,6 +161,13 @@ int cLoop::Go(sLoopInstantiator* loop)
 			m_pCurrentDispatch->GetProfile(&m_TempProfileSet, &m_pTempProfileClientId);
 			if (!(m_fState & 0x40))
 				m_pCurrentDispatch->Release();
+
+			// 0x40 describes only how the mode being left by this transition is
+			// treated. A push suspends that outgoing mode, while its stack entry
+			// carries 0x80 so EndMode can resume it later. If 0x40 survives into
+			// the pushed mode, popping a panel suspends it instead of exiting it,
+			// leaking both the panel dispatch and its SimState pause.
+			m_fState &= ~0x40;
 		}
 	}
 

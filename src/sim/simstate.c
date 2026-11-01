@@ -7,6 +7,11 @@
 
 #include <simstate.h>
 #include <simbase.h>
+#ifdef __ANDROID__
+#include <stdio.h>
+#include <simtime.h>
+#include <platform_services.h>
+#endif
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -19,6 +24,22 @@ static SimState PausedValues = { 0 }; // intial values for the "paused" state
 
 static ulong PauseCount = 0;
 
+#ifdef __ANDROID__
+static void trace_sim_state(const char* action)
+{
+   char buffer[192];
+   const SimFlags flags = TheSimState ? TheSimState->flags : 0;
+   const SimFlags savedFlags = SaveSimState ? SaveSimState->flags : 0;
+   snprintf(buffer, sizeof(buffer),
+            "[sim-pause] %s depth=%u flags=0x%08x saved=0x%08x time=%u\n",
+            action, (unsigned)PauseCount, (unsigned)flags,
+            (unsigned)savedFlags, (unsigned)GetSimTime());
+   PlatformDebugOutput(buffer);
+}
+#else
+#define trace_sim_state(action) ((void)0)
+#endif
+
 ////////////////////////////////////////
 
 void SimStateSet(SimState* state)
@@ -27,6 +48,7 @@ void SimStateSet(SimState* state)
       TheSimState = &DefaultState;
    else
       TheSimState = state;
+   trace_sim_state("set");
 }
 
 ////////////////////////////////////////
@@ -64,8 +86,14 @@ EXTERN void SimStatePause()
       PausedState = PausedValues;
       // Save the sim state
       SaveSimState = TheSimState;
-      TheSimState = &PausedState;
    }
+
+   // Mode transitions are allowed to install their own SimState while a
+   // panel is suspended.  A later nested panel pause must therefore
+   // reassert the paused state even though the outer pause count is still
+   // active.  Only the outermost pause owns SaveSimState.
+   TheSimState = &PausedState;
+   trace_sim_state("pause");
 
 }
 
@@ -78,6 +106,7 @@ EXTERN void SimStateUnpause()
          TheSimState = SaveSimState;
    }
    PauseCount -= 2;
+   trace_sim_state("unpause");
 }
 
 
