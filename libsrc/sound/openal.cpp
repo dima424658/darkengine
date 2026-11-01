@@ -311,7 +311,12 @@ STDMETHODIMP_(BOOL) cALSndMixer::Get3DReverbSettings(ReverbSettings *settings)
    return TRUE;
 }
 
-STDMETHODIMP_(BOOL) cALSndMixer::Have3DOcclusion(void) { return mEffectsAvailable; }
+STDMETHODIMP_(BOOL) cALSndMixer::Have3DOcclusion(void)
+{
+   // Match the legacy DirectSound behavior when 3D audio/EAX is disabled.
+   // Merely loading EFX does not mean the game has opted into occlusion.
+   return mEffectsAvailable && mReverbEnabled && m3DMixMethod != kSnd3DMethodNone;
+}
 STDMETHODIMP_(const char *) cALSndMixer::GetBackendName(void) { return "openal"; }
 
 STDMETHODIMP_(uint32) cALSndMixer::GetCapabilities(void)
@@ -788,8 +793,9 @@ void cALSndSample::UpdateEffectRouting(void)
       al.alGenFilters(1, &mSendFilter);
       al.alFilteri(mSendFilter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
    }
+   const int32 activeOcclusion = mALMixer->Have3DOcclusion() ? mOcclusion : 0;
    al.alFilterf(mFilter, AL_LOWPASS_GAIN, 1.0f);
-   al.alFilterf(mFilter, AL_LOWPASS_GAINHF, MillibelsToGain(mOcclusion));
+   al.alFilterf(mFilter, AL_LOWPASS_GAINHF, MillibelsToGain(activeOcclusion));
    al.alSourcei(mSource, AL_DIRECT_FILTER, static_cast<ALint>(mFilter));
 
    const float wet = mALMixer->ReverbEnabled() ? mReverbMix : 0.0f;

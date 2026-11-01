@@ -13,6 +13,7 @@
 #include <dataops_.h>
 #include <proplist.h>
 #include <objnotif.h>
+#include <stdint.h>
 
 #include <sdesbase.h>
 #include <sdestool.h>
@@ -93,16 +94,67 @@ public:
    cESndTagOps() : cParent(kNoFlags) {} ; 
    STDMETHOD(Read)(THIS_ sDatum* dat, IDataOpsFile* file, int version)
    {
+      // Retail files store this nominally 256-byte property as a 32-bit
+      // pointer placeholder followed by 252 bytes of tag text.  Reading it
+      // directly into the native structure shifts the text by four bytes on
+      // a 64-bit target, turning names such as "Material" into "rial" and
+      // making every environmental-sound lookup fail.
+      if (version <= 0 || version > 64 * 1024 * 1024)
+         return E_FAIL;
+      char *raw = new (std::nothrow) char[version];
+      if (!raw)
+         return E_OUTOFMEMORY;
+      if (file->Read(raw,version) != version)
+      {
+         delete [] raw;
+         return E_FAIL;
+      }
+
       if (!dat->value)
          *dat = New(); 
-      sOpsList* list = (sOpsList*)dat->value; 
-      sESndTagList tmp;
-      memset(&tmp,0,sizeof(tmp)); 
-      // we derive from cClassDataOps, thus version == size; 
-      int sz = (version < sizeof(tmp)) ? version : sizeof(tmp); 
-      Verify(file->Read(&tmp,sz) == sz); 
-      *list = tmp; 
+      sOpsList* list = (sOpsList*)dat->value;
+
+      const int legacyOffset = 4;
+      int textOffset = legacyOffset;
+      if (sizeof(cTagSet*) > legacyOffset && version > (int)sizeof(cTagSet*))
+      {
+         // Accept properties written by an older 64-bit restoration build as
+         // well.  Its raw class serializer placed the text after an 8-byte
+         // pointer.  A retail string at +4 is always at least as long as the
+         // same string viewed at +8; a short pointer tail followed by a real
+         // string at +8 has the opposite shape.
+         const size_t legacyLen = strnlen(raw + legacyOffset,
+            (size_t)(version - legacyOffset));
+         const int nativeOffset = (int)sizeof(cTagSet*);
+         const size_t nativeLen = strnlen(raw + nativeOffset,
+            (size_t)(version - nativeOffset));
+         if (legacyLen < 4 && nativeLen > legacyLen)
+            textOffset = nativeOffset;
+      }
+
+      const size_t available = version > textOffset ?
+         (size_t)(version - textOffset) : 0;
+      const size_t copyLen = available < sizeof(list->m_TagStrings) - 1 ?
+         available : sizeof(list->m_TagStrings) - 1;
+      memcpy(list->m_TagStrings,raw + textOffset,copyLen);
+      list->m_TagStrings[copyLen] = '\0';
+      list->m_pTagSet->FromString(list->m_TagStrings);
+      delete [] raw;
       return S_OK; 
+   }
+
+   STDMETHOD(Write)(THIS_ sDatum dat, IDataOpsFile* file)
+   {
+      enum { kDiskSize = 256, kDiskPointerSize = 4 };
+      char raw[kDiskSize] = {};
+      const sOpsList *list = (const sOpsList*)dat.value;
+      if (list)
+      {
+         strncpy(raw + kDiskPointerSize,list->m_TagStrings,
+                 kDiskSize - kDiskPointerSize - 1);
+         raw[kDiskSize - 1] = '\0';
+      }
+      return file->Write(raw,kDiskSize) == kDiskSize ? S_OK : E_FAIL;
    }
 
 }; 
