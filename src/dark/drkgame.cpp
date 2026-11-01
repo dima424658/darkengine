@@ -732,28 +732,35 @@ static void console_format_retinfo(char* message, int size)
       int lightMin = 31;
       int lightMax = 0;
       int lightAverage = 0;
-      if (PortalRaycastCell != CELL_INVALID && polygon != POLY_INVALID)
+      if (PortalRaycastCell >= 0 && PortalRaycastCell < wr_num_cells &&
+          polygon >= 0)
       {
          PortalCell* cell = WR_CELL(PortalRaycastCell);
-         PortalLightMap* lightmap = &cell->light_list[polygon];
-         int lightSamples = 0;
-         int lightTotal = 0;
-         texture = cell->render_list[polygon].texture_id;
-         flags = cell->poly_list[polygon].flags;
-         lightWidth = lightmap->w;
-         lightHeight = lightmap->h;
-         lightRow = lightmap->pixel_row;
-         for (int y = 0; lightmap->data && y < lightHeight; ++y)
-            for (int x = 0; x < lightWidth; ++x)
-            {
-               int sample = lightmap->data[y * lightRow + x] & 0x1f;
-               if (sample < lightMin) lightMin = sample;
-               if (sample > lightMax) lightMax = sample;
-               lightTotal += sample;
-               ++lightSamples;
-            }
-         if (lightSamples)
-            lightAverage = lightTotal / lightSamples;
+         if (cell && polygon < cell->num_render_polys &&
+             cell->render_list && cell->poly_list && cell->light_list)
+         {
+            PortalLightMap* lightmap = &cell->light_list[polygon];
+            int lightSamples = 0;
+            int lightTotal = 0;
+            texture = cell->render_list[polygon].texture_id;
+            flags = cell->poly_list[polygon].flags;
+            lightWidth = lightmap->w;
+            lightHeight = lightmap->h;
+            lightRow = lightmap->pixel_row;
+            if (lightWidth > 0 && lightHeight > 0 &&
+                lightRow >= lightWidth)
+               for (int y = 0; lightmap->data && y < lightHeight; ++y)
+                  for (int x = 0; x < lightWidth; ++x)
+                  {
+                     int sample = lightmap->data[y * lightRow + x] & 0x1f;
+                     if (sample < lightMin) lightMin = sample;
+                     if (sample > lightMax) lightMax = sample;
+                     lightTotal += sample;
+                     ++lightSamples;
+                  }
+            if (lightSamples)
+               lightAverage = lightTotal / lightSamples;
+         }
       }
       _snprintf(message, size - 1,
                 "Terrain: cell %d, polygon %d, texture %d, flags %d, lightmap %dx%d/%d RGB5 %d-%d avg %d",
@@ -773,15 +780,15 @@ static void console_format_retinfo(char* message, int size)
    }
 
    target = g_ObjCastObjID;
-   if (target == OBJ_NULL)
+   AutoAppIPtr_(ObjectSystem, pObjectSystem);
+   if (target == OBJ_NULL || !pObjectSystem->Exists(target))
    {
       _snprintf(message, size - 1,
-                "Reticle target: raycast returned no object");
+                "Reticle target: raycast returned an invalid object");
       message[size - 1] = '\0';
       return;
    }
 
-   AutoAppIPtr_(ObjectSystem, pObjectSystem);
    name = pObjectSystem->GetName(target);
    ObjGetModelName(target, model);
    _snprintf(message, size - 1, "%s object %d: %s, model %s",
