@@ -24,6 +24,8 @@ void SynchD3D(void) {}
 static uchar g_palettes[MODERN_MAX_PALETTES][768];
 static uchar *g_textureClut = NULL;
 static ushort *g_alphaPalette = NULL;
+static tdrv_texture_info g_ModernTextureInfo[LGD3D_MAX_TEXTURES];
+static BOOL g_ModernTextureInfoValid[LGD3D_MAX_TEXTURES];
 // Dark's portal and model UVs routinely extend beyond the base texture and
 // rely on the primary texture stage repeating.  Starting stage zero clamped
 // turns every out-of-range surface into a stretched edge row/column until a
@@ -155,6 +157,10 @@ static int LoadTexture(tdrv_texture_info *info) {
       RenderBackendCreateTexture(info->w, info->h, pixels, info->w * 4);
   free(pixels);
   g_ModernBitmaps[info->id] = info->bm;
+  if (g_ModernTextures[info->id]) {
+    g_ModernTextureInfo[info->id] = *info;
+    g_ModernTextureInfoValid[info->id] = TRUE;
+  }
   return g_ModernTextures[info->id] ? TDRV_SUCCESS : TDRV_FAILURE;
 }
 static void ReloadTexture(tdrv_texture_info *info) {
@@ -176,10 +182,16 @@ static void ReloadTexture(tdrv_texture_info *info) {
   }
   free(pixels);
   g_ModernBitmaps[info->id] = info->bm;
+  if (g_ModernTextures[info->id]) {
+    g_ModernTextureInfo[info->id] = *info;
+    g_ModernTextureInfoValid[info->id] = TRUE;
+  }
 }
 static void UnloadTexture(int id) {
-  if (id >= 0 && id < LGD3D_MAX_TEXTURES)
+  if (id >= 0 && id < LGD3D_MAX_TEXTURES) {
     g_ModernBitmaps[id] = NULL;
+    g_ModernTextureInfoValid[id] = FALSE;
+  }
 }
 static void ReleaseTexture(int id) {
   if (id >= 0 && id < LGD3D_MAX_TEXTURES) {
@@ -188,6 +200,7 @@ static void ReleaseTexture(int id) {
       RenderBackendDestroyTexture(g_ModernTextures[id]);
     g_ModernTextures[id] = NULL;
     g_ModernBitmaps[id] = NULL;
+    g_ModernTextureInfoValid[id] = FALSE;
   }
 }
 static void Synchronize(void) {}
@@ -246,6 +259,7 @@ extern "C" BOOL lgd3d_init(lgd3ds_device_info *info) {
     return FALSE;
   memset(g_ModernTextures, 0, sizeof(g_ModernTextures));
   memset(g_ModernBitmaps, 0, sizeof(g_ModernBitmaps));
+  memset(g_ModernTextureInfoValid, 0, sizeof(g_ModernTextureInfoValid));
   for (i = 0; i < MODERN_MAX_PALETTES; ++i)
     memcpy(g_palettes[i], grd_pal, 768);
   g_defaultBitmap = gr_alloc_bitmap(BMT_FLAT8, 0, 2, 2);
@@ -346,8 +360,12 @@ static void ReloadPaletteTextures(int slot) {
   for (i = 0; i < LGD3D_MAX_TEXTURES; ++i) {
     grs_bitmap *bm = g_ModernBitmaps[i];
     if (bm && bm->type == BMT_FLAT8 && bm->align == slot &&
-        (bm->flags & BMF_LOADED))
-      g_tmgr->reload_texture(bm);
+        (bm->flags & BMF_LOADED) && g_ModernTextureInfoValid[i])
+      // Do not ask the legacy manager to recook this texture.  Its cookie
+      // depends on the current global fill mode, which need not match the
+      // mode used when this resident texture was loaded.  Reuse the original
+      // upload description and only re-expand its palette indices.
+      ReloadTexture(&g_ModernTextureInfo[i]);
   }
 }
 
