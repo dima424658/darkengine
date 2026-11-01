@@ -48,6 +48,8 @@
 #include <sdesbase.h>
 #include <vhot.h>
 
+#include <tagfile.h>
+
 #include <iobjsys.h>
 
 #include <litprop.h>
@@ -466,6 +468,50 @@ BOOL ObjAnimLightSet(ObjID obj, sAnimLightProp *light)
 {
    g_AnimLightProp->Set(obj, light);
    return TRUE;
+}
+
+void ObjAnimLightRebindNewDarkSaveMappings(ITagFile* mission, ITagFile* save)
+{
+   static const TagFileTag tag = { "P$AnimLight" };
+   TagVersion version = { 2, 0x7fffffff };
+   if (!save || FAILED(save->OpenBlock(&tag, &version)))
+      return;
+   save->CloseBlock();
+
+   const uint valueVersion = version.minor & 0xffff;
+   if (valueVersion <= sizeof(sAnimLightProp))
+      return;
+
+   version.minor = 0x7fffffff;
+   if (!mission || FAILED(mission->OpenBlock(&tag, &version)))
+      return;
+
+   while (mission->TellFromEnd() >= 8)
+   {
+      ObjID obj;
+      ulong length;
+      sAnimLightProp source = {};
+      if (mission->Read((char*)&obj, sizeof(obj)) != sizeof(obj) ||
+          mission->Read((char*)&length, sizeof(length)) != sizeof(length) ||
+          length > mission->TellFromEnd())
+         break;
+
+      const ulong read = length < sizeof(source) ? length : sizeof(source);
+      if (mission->Read((char*)&source, read) != (long)read)
+         break;
+
+      sAnimLightProp* loaded;
+      if (read >= 26 && ObjAnimLightGet(obj, &loaded))
+      {
+         loaded->animation.first_light_to_cell = source.animation.first_light_to_cell;
+         loaded->animation.num_cells_reached = source.animation.num_cells_reached;
+         loaded->animation.light_data_index = source.animation.light_data_index;
+         ObjAnimLightSet(obj, loaded);
+      }
+      if (length > read && FAILED(mission->Seek(length - read, kTagSeekFromHere)))
+         break;
+   }
+   mission->CloseBlock();
 }
 
 

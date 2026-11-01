@@ -53,6 +53,12 @@ struct sDoorProp
    mxs_vector base_open_location;
 
    mxs_vector base_location;
+
+   // NewDark door records place this opaque vector between base_location and
+   // base_angle.  It is not used by the retail Thief 2 door simulation, but
+   // retaining it keeps imported missions and saves format-complete when the
+   // live door state is written again.
+   mxs_vector newdark_extension;
    mxs_angvec base_angle;
 
    mxs_real   base;

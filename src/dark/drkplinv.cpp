@@ -439,12 +439,16 @@ public:
       switch(msg.kind)
       {
          case kSimInit:
-         case kSimResume:
          {
-            // Clear selections
+            // A new simulation has no saved inventory focus to preserve.
+            // Save-game loads, however, restore mInHand and mCurSel before
+            // the suspended simulation emits kSimResume.
             for (int i = 0; i < kNumItemSels; i++)
                ClearSelection((eWhichInvObj)i);
-
+         }
+         // Fall through and normalize the physical state of carried objects.
+         case kSimResume:
+         {
             sContainIter* iter = mpContainSys->IterStart(PlayerObject());
             for(; !iter->finished; mpContainSys->IterNext(iter))
             {
@@ -453,6 +457,31 @@ public:
                PhysDeregisterModel(iter->containee);
             }
             mpContainSys->IterEnd(iter);
+
+            if (msg.kind == kSimResume)
+            {
+               // PlayerInv is loaded before the simulation resumes.  Keep
+               // valid selections and discard only stale/corrupt references;
+               // clearing everything here made the serialized state useless.
+               if (mInHand < kCurrentWeapon || mInHand >= kNumItemSels)
+                  mInHand = kCurrentWeapon;
+
+               for (int i = 0; i < kNumItemSels; i++)
+               {
+                  ObjID obj = mCurSel[i].obj;
+                  int type;
+
+                  if (obj == OBJ_NULL)
+                     continue;
+
+                  type = GetType(obj);
+                  if (!mpContainSys->Contains(PlayerObject(), obj) ||
+                      type < kInvTypeJunk || type > kInvTypeWeapon ||
+                      type_to_slot[type] != (eWhichInvObj)i)
+                     mCurSel[i].obj = OBJ_NULL;
+               }
+               Focus();
+            }
 
             mInSim = TRUE;
 

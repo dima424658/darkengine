@@ -14,6 +14,8 @@
 #include <litpropt.h>
 #include <matrixs.h>
 
+F_DECLARE_INTERFACE(ITagFile);
+
 #define PROP_SPOTLIGHT_NAME "Spotlight"
 #define PROP_SPOTLIGHTAMB_NAME "SpotAmb"
 
@@ -106,6 +108,10 @@ EXTERN void ObjAnimLightFrameUpdate(long time_change);
 // call this to reset the states of all walls/cells to current prop vals
 // i hope
 EXTERN void ObjAnimLightReset(void);
+
+// Rebind NewDark save lights to the world tables loaded from the mission.
+EXTERN void ObjAnimLightRebindNewDarkSaveMappings(ITagFile* mission,
+                                                  ITagFile* save);
 
 EXTERN ILightProperty *g_LightProp;
 EXTERN IAnimLightProperty *g_AnimLightProp;

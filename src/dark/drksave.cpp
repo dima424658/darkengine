@@ -44,6 +44,8 @@
 #include <config.h>
 #include <contentctx.h>
 
+#include <litprop.h>
+
 #include <mprintf.h>
 
 #include <btffact.h>
@@ -281,11 +283,14 @@ HRESULT DarkLoadGameInternal(ITagFile* file)
          return kDarkSaveMission; 
       }
 
-      SafeRelease(missfile); 
-
       // Now merge-load the mission (& all concretes) from the save game 
       if (dbMergeLoadTagFile(file,kFiletypeMIS|kObjPartTerrain) == 0)
+      {
+         SafeRelease(missfile);
          return kDarkSaveMission;
+      }
+      ObjAnimLightRebindNewDarkSaveMappings(missfile, file);
+      SafeRelease(missfile);
 
       // send the final post load
       DispatchData msg = { kDatabasePostLoad, 0 }; 

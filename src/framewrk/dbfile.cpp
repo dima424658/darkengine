@@ -232,6 +232,20 @@ void dbCompatibilityRetainRawTag(const TagFileTag* tag, const char* detail)
 BOOL dbCompatibilityUseRawTag(const TagFileTag* tag)
 {
    sCompatibilityChunk* chunk = find_compatibility_chunk(tag);
+#ifndef EDITOR
+   // A save game is live mutable state, not a mission round-trip artifact.
+   // If a newer property codec was prefix-decoded successfully, its normal
+   // writer must serialize the current values. Replaying the source block
+   // here restores the older snapshot, which resets doors, animated lights,
+   // and other changed state after the next load. Keep this exception scoped
+   // to P$ blocks: opaque world/file chunks still need exact raw round trips.
+   // DromEd retains the raw property block below because preserving unknown
+   // authoring data is its job.
+   if (gCompatibilitySaveMask && chunk &&
+       tag->label[0] == 'P' && tag->label[1] == '$' &&
+       chunk->status == kDBCompatPrefixDecoded)
+      return FALSE;
+#endif
    return chunk && ((chunk->size == 0 &&
                      gDBWriteProfile == kDBWritePreserveSource) ||
                     chunk->retainRaw ||
