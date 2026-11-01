@@ -264,6 +264,10 @@ class cOptions: public cDarkPanel
 public:
    cOptions() : cDarkPanel(&gDesc)
    {
+      mNumBasicVideoButtons = kNumBasicVideoButts;
+      mNumGameButtons = kNumGameRects;
+      mHasAmbientVolumeSlider = false;
+
       // These gadgets are created lazily as the user changes subpanels.
       // LGadCreateBoxInternal checks the active flag before initializing its
       // Region, so an uninitialized list can be mistaken for a live gadget.
@@ -512,6 +516,9 @@ protected:
    //slider stuff
    LGadSlider mSliders[kNumSubPanelSlides];
    bool mSlidersOn[kNumSubPanelSlides];
+   int mNumBasicVideoButtons;
+   int mNumGameButtons;
+   bool mHasAmbientVolumeSlider;
    DrawElement mSliderBaseBmp;
 
    ulong m_old_context;
@@ -538,9 +545,9 @@ protected:
       //load in the tab and subpanel rectangles
       AppendRects ("optiontr", mTabRects);//tabs
       AppendRects ("optioncr", mSubPanelRects);//controls
-      AppendRects ("optnbvr", mSubPanelRects);//basic video
-      AppendRects ("optionar", mSubPanelRects);//audio
-      AppendRects ("optiongr", mSubPanelRects);//game
+      AppendVideoRects (mSubPanelRects);//basic video
+      AppendAudioRects (mSubPanelRects);//audio
+      AppendGameRects (mSubPanelRects);//game
       AppendRects ("optionbr", mSubPanelRects);//bindings
       AppendRects ("optionlr", mSubPanelRects);//list
 
@@ -845,7 +852,7 @@ protected:
    {
       InitButtonList ( &mSubPanelDesc[kSubBasicVideo], &mSubPanelButtons[kSubBasicVideo],
                        &mSubPanelRects[(int)kDisplayMode], &mSubPanelElems[(int)kDisplayMode],
-                       OnSubPanelButton, &mSubPanelStrs[(int)kDisplayMode], "videob_", kNumBasicVideoButts, 0);
+                       OnSubPanelButton, &mSubPanelStrs[(int)kDisplayMode], "videob_", mNumBasicVideoButtons, 0);
       mPerSubRectNum [(int)kSubBasicVideo] = kNumBasicVideoRects;
       
       //let's get some info about the video card
@@ -917,7 +924,7 @@ protected:
    {
       InitButtonList ( &mSubPanelDesc[kSubGame], &mSubPanelButtons[kSubGame],
                        &mSubPanelRects[(int)kClimbTouch], &mSubPanelElems[(int)kClimbTouch], OnSubPanelButton,
-                       &mSubPanelStrs[(int)kClimbTouch], "gameopt_", kNumGameRects, 0);
+                       &mSubPanelStrs[(int)kClimbTouch], "gameopt_", mNumGameButtons, 0);
 
       mPerSubRectNum [(int)kSubGame] = kNumGameRects;
 		      
@@ -1583,6 +1590,123 @@ protected:
 
    //////////////////////////////////////////////////////
 
+   void AppendVideoRects (cRectArray &old_rects)
+   {
+      cRectArray video_rects;
+      FetchUIRects("optnbvr", video_rects, mResPath);
+
+      const long old_sz = old_rects.Size();
+      const long video_sz = video_rects.Size();
+      old_rects.SetSize(old_sz + kNumBasicVideoRects);
+
+      Rect empty_rect = {};
+      for (long i = 0; i < kNumBasicVideoRects; ++i)
+         old_rects[old_sz + i] = empty_rect;
+
+      if (video_sz == 6)
+      {
+         // Original Thief Gold has Hardware, Resolution, Character Detail,
+         // and an obsolete Advanced Options entry followed by the gamma
+         // slider and label. The restored panel implements the first three;
+         // reserve the newer Weather/Sky slots and move gamma into the
+         // indices expected by the shared code.
+         for (long i = 0; i < 3; ++i)
+            old_rects[old_sz + i] = video_rects[i];
+         old_rects[old_sz + kGammaSliderRect - kDisplayMode] = video_rects[4];
+         old_rects[old_sz + kGammaSliderText - kDisplayMode] = video_rects[5];
+         mNumBasicVideoButtons = 3;
+      }
+      else
+      {
+         const long copy_sz = video_sz < kNumBasicVideoRects ?
+                              video_sz : kNumBasicVideoRects;
+         for (long i = 0; i < copy_sz; ++i)
+            old_rects[old_sz + i] = video_rects[i];
+         mNumBasicVideoButtons = copy_sz < kNumBasicVideoButts ?
+                                 (int)copy_sz : kNumBasicVideoButts;
+         if (video_sz != kNumBasicVideoRects)
+            Warning(("Video options resource has %ld rectangles; expected 6 or %d\n",
+                     video_sz, kNumBasicVideoRects));
+      }
+   }
+
+   //////////////////////////////////////////////////////
+
+   void AppendAudioRects (cRectArray &old_rects)
+   {
+      cRectArray audio_rects;
+      FetchUIRects("optionar", audio_rects, mResPath);
+
+      const long old_sz = old_rects.Size();
+      const long audio_sz = audio_rects.Size();
+
+      // Thief Gold's original OPTIONAR.BIN has seven rectangles. Thief 2
+      // split the channel/EAX row and added the ambient-volume slider and
+      // label, bringing the total to nine. The controls are implemented by
+      // shared code, so upgrade the old resource geometry instead of hiding
+      // features merely because the installed interface archive predates
+      // them.
+      old_rects.SetSize(old_sz + kNumAudioRects);
+
+      Rect empty_rect = {};
+      for (long i = 0; i < kNumAudioRects; ++i)
+         old_rects[old_sz + i] = empty_rect;
+
+      if (audio_sz == 7)
+      {
+         static const Rect modern_audio_rects[kNumAudioRects] = {
+            {{78, 152}, {559, 179}},
+            {{78, 186}, {559, 213}},
+            {{78, 220}, {559, 247}},
+            {{78, 255}, {317, 282}},
+            {{332, 255}, {559, 282}},
+            {{175, 303}, {473, 325}},
+            {{81, 330}, {562, 357}},
+            {{176, 372}, {474, 394}},
+            {{82, 399}, {563, 426}},
+         };
+         for (long i = 0; i < kNumAudioRects; ++i)
+            old_rects[old_sz + i] = modern_audio_rects[i];
+         mHasAmbientVolumeSlider = true;
+      }
+      else
+      {
+         const long copy_sz = audio_sz < kNumAudioRects ?
+                              audio_sz : kNumAudioRects;
+         for (long i = 0; i < copy_sz; ++i)
+            old_rects[old_sz + i] = audio_rects[i];
+         mHasAmbientVolumeSlider = audio_sz >= kNumAudioRects;
+      }
+
+      if (audio_sz != 7 && audio_sz != kNumAudioRects)
+         Warning(("Audio options resource has %ld rectangles; expected 7 or %d\n",
+                  audio_sz, kNumAudioRects));
+   }
+
+   //////////////////////////////////////////////////////
+
+   void AppendGameRects (cRectArray &old_rects)
+   {
+      cRectArray game_rects;
+      FetchUIRects("optiongr", game_rects, mResPath);
+
+      const long old_sz = old_rects.Size();
+      const long game_sz = game_rects.Size();
+      old_rects.SetSize(old_sz + kNumGameRects);
+
+      Rect empty_rect = {};
+      for (long i = 0; i < kNumGameRects; ++i)
+         old_rects[old_sz + i] = i < game_sz ? game_rects[i] : empty_rect;
+
+      mNumGameButtons = game_sz < kNumGameRects ?
+                        (int)game_sz : kNumGameRects;
+      if (game_sz != 4 && game_sz != kNumGameRects)
+         Warning(("Game options resource has %ld rectangles; expected 4 or %d\n",
+                  game_sz, kNumGameRects));
+   }
+
+   //////////////////////////////////////////////////////
+
    void CreateSlider (int slider_num, int rect_num, int *val_ptr, int num_notches, int inc)
    {
       LGadSlider *slider = &mSliders[slider_num];
@@ -1664,8 +1788,10 @@ protected:
          case kSubAudio:
             DrawSlider ((int)kVolumeSlider, (int)kVolumeSliderRect);
             DrawString ("volume", kVolumeSliderText);
-            DrawSlider ((int)kAmbientVolumeSlider, (int)kAmbientVolumeSliderRect);
-            DrawString ("ambient_volume", kAmbientVolumeSliderText);
+            if (mHasAmbientVolumeSlider) {
+               DrawSlider ((int)kAmbientVolumeSlider, (int)kAmbientVolumeSliderRect);
+               DrawString ("ambient_volume", kAmbientVolumeSliderText);
+            }
          break;
 
          case kSubGame:
@@ -1729,6 +1855,15 @@ protected:
 
    //////////////////////////////////////////////////////
 
+   void RedrawWholePanel ()
+   {
+      Rect panel_rect = {{0, 0}, {640, 480}};
+      region_expose(LGadBoxRegion(LGadCurrentRoot()), &panel_rect);
+      RedrawDisplay();
+   }
+
+   //////////////////////////////////////////////////////
+
    void FillBlack (int rect_num)
    {
       ushort old_fcolor = (ushort)grd_canvas->gc.fcolor;
@@ -1776,9 +1911,11 @@ protected:
          DrawSlider ((int)kVolumeSlider, (int)kVolumeSliderRect, FALSE);
          CreateSlider ((int)kVolumeSlider, (int)kVolumeSliderRect, &m_volume, kVolumeSliderNotches - 1, 1);
 
-         DrawSlider ((int)kAmbientVolumeSlider, (int)kAmbientVolumeSliderRect, FALSE);
-         CreateSlider ((int)kAmbientVolumeSlider, (int)kAmbientVolumeSliderRect,
-                       &m_ambientVolume, kAmbientVolumeSliderNotches - 1, 1);
+         if (mHasAmbientVolumeSlider) {
+            DrawSlider ((int)kAmbientVolumeSlider, (int)kAmbientVolumeSliderRect, FALSE);
+            CreateSlider ((int)kAmbientVolumeSlider, (int)kAmbientVolumeSliderRect,
+                          &m_ambientVolume, kAmbientVolumeSliderNotches - 1, 1);
+         }
 
          if (! CanChangeSoundDeviceNow ()) {
          mSubPanelDesc[kSubAudio].button_elems[kAudioChannels - kSpeakerTest].fcolor = (ushort)mGreyStyle.colors[0];
@@ -2133,6 +2270,10 @@ protected:
                sprintf (buf, "%d", sfx_use_channels);
                mSubPanelStrs[(int)kAudioChannels] += buf;
                SetUIString (mSubPanelStrs[(int)kAudioChannels], mSubPanelElems[(int)kAudioChannels], "audio_3", buf);
+               // Restarting the provider can span several UI frames. Redraw
+               // from the panel background instead of relying on a retained
+               // dirty rectangle which may no longer be the visible frame.
+               RedrawWholePanel();
             }
             break;
 
