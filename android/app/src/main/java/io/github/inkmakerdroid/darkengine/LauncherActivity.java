@@ -1,9 +1,7 @@
 package io.github.inkmakerdroid.darkengine;
 
 import android.Manifest;
-import android.app.AlarmManager;
 import android.app.Activity;
-import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.Intent;
@@ -78,6 +76,18 @@ public final class LauncherActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // Starting the launcher while SDL is retained must resume that exact
+        // engine instance. Restarting it here used to leave an inexact alarm
+        // behind; after an idle/sleep interval that alarm could arrive over a
+        // replacement SDL activity and start an endless crash/relaunch cycle.
+        // Folder selection is different: applying a new directory still needs
+        // a fresh native process because Dark's global subsystems cannot be
+        // instantiated a second time in one process.
+        if (!isFolderSelectionRequested(getIntent()) &&
+            ThiefActivity.isRunning()) {
+            finish();
+            return;
+        }
 
         if (savedInstanceState != null) {
             String treeUri = savedInstanceState.getString(STATE_PENDING_TREE_URI);
@@ -105,6 +115,10 @@ public final class LauncherActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        if (!isFolderSelectionRequested(intent) && ThiefActivity.isRunning()) {
+            finish();
+            return;
+        }
         if (!isFolderSelectionRequested(intent)) {
             File activeGame = activeGameDirectory();
             if (activeGame != null) {
@@ -779,18 +793,17 @@ public final class LauncherActivity extends Activity {
     }
 
     private void restartApplication() {
-        Intent relaunch = new Intent(this, LauncherActivity.class);
-        relaunch.setAction(Intent.ACTION_MAIN);
-        relaunch.addCategory(Intent.CATEGORY_LAUNCHER);
-        relaunch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                          Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pending = PendingIntent.getActivity(
-            this, 0, relaunch,
-            PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        AlarmManager alarms = (AlarmManager)getSystemService(ALARM_SERVICE);
-        alarms.set(AlarmManager.ELAPSED_REALTIME,
-                   SystemClock.elapsedRealtime() + 250L, pending);
-        android.os.Process.killProcess(android.os.Process.myPid());
+        // A directory change requires a clean native process because Dark's
+        // global subsystems cannot be instantiated twice. Keep the handoff in
+        // a separate, visible process: it can clear the old task and relaunch
+        // synchronously without a delayed alarm or a background activity
+        // start, both of which are unreliable after the device has slept.
+        Intent restart = new Intent(this, RestartActivity.class);
+        restart.putExtra(RestartActivity.EXTRA_ENGINE_PID,
+                         android.os.Process.myPid());
+        restart.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                         Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(restart);
     }
 
     private static void copyDebugStringExtra(Intent source,

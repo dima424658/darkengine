@@ -50,7 +50,8 @@
             android:exported="false"
             android:launchMode="singleTop"
             android:preferMinimalPostProcessing="true"
-            android:screenOrientation="sensorLandscape" />
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="adjustNothing" />
 
         <activity
             android:name=".LauncherActivity"
@@ -66,5 +67,14 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+
+        <activity
+            android:name=".RestartActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:process=":restart"
+            android:screenOrientation="sensorLandscape"
+            android:taskAffinity="${applicationId}.restart" />
     </application>
 </manifest>
