@@ -42,6 +42,8 @@ EXTERN invRendState *invRendBuildStateFromType(int flags, struct sInvRenderType*
 
 EXTERN void invRendDrawUpdate(invRendState *us);
 EXTERN void invRendFreeState(invRendState *us);
+// Remove a queued state without drawing one stale frame, then free it.
+EXTERN void invRendDiscardState(invRendState *us);
 
 EXTERN void invRendSetRect(invRendState *us, const Rect *r);
 EXTERN void invRendSetCanvas(invRendState* us, grs_canvas* canv);
@@ -55,6 +57,8 @@ EXTERN void invRendUpdateState(invRendState *us, int flags, ObjID o_id, const Re
 
 EXTERN void invRendGetView(const invRendState* us, sInvRendView * view); 
 EXTERN void invRendSetView(invRendState* us, const sInvRendView * view);
+// Scale model camera distance without affecting bitmap-backed render states.
+EXTERN void invRendScaleModelView(invRendState* us, float scale);
 
 // Flush list of hardware rendered objects queued by calls to invRendDrawUpdate()
 EXTERN void invRendFlushQueue(void);

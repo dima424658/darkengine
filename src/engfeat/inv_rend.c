@@ -521,9 +521,26 @@ void invRendUpdateState(invRendState *us, int flags, ObjID o_id, const Rect *r, 
    }
 }
 
-#define QUEUE_SIZE 25
+// The gamepad inventory radial can display both 32-entry rings alongside the
+// two ordinary HUD selections. Keep enough room for that supported maximum.
+#define QUEUE_SIZE 66
 static invRendState *objQueue[QUEUE_SIZE];
 static int numObjs=0;
+
+void invRendDiscardState(invRendState *us)
+{
+   int i;
+   for (i = 0; i < numObjs; ++i)
+      if (objQueue[i] == us)
+      {
+         memmove(&objQueue[i], &objQueue[i + 1],
+                 (numObjs - i - 1) * sizeof(objQueue[0]));
+         --numObjs;
+         us->flags &= ~INVREND_IN_QUEUE;
+         break;
+      }
+   invRendFreeState(us);
+}
 
 ///////////////////
 // draw/update control
@@ -583,6 +600,12 @@ void invRendDrawUpdate(invRendState *us)
 void invRendSetView(invRendState* us, const sInvRendView* view)
 {
    us->view = *view;
+}
+
+void invRendScaleModelView(invRendState* us, float scale)
+{
+   if (us->flags & INVREND_MODEL)
+      us->view.cam_dist *= scale;
 }
 
 // Flush objects queued for hardware rendering

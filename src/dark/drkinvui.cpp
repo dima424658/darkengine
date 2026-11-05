@@ -17,6 +17,7 @@
 #include <playrobj.h>
 
 #include <command.h>
+#include <gen_bind.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -122,6 +123,8 @@ static ObjID gLastObjPickedUp = OBJ_NULL;
 struct sInvRadialRing
 {
    ObjID entries[INV_RADIAL_MAX_ENTRIES];
+   invRendState* renders[INV_RADIAL_MAX_ENTRIES];
+   float angles[INV_RADIAL_MAX_ENTRIES];
    int count;
    int selected;
    int current;
@@ -129,10 +132,18 @@ struct sInvRadialRing
    float y;
 };
 
+struct sInvRadialLayout
+{
+   ObjID entries[INV_RADIAL_MAX_ENTRIES - 1];
+   float angles[INV_RADIAL_MAX_ENTRIES - 1];
+   int count;
+};
+
 static BOOL gInvRadialActive = FALSE;
 static float gInvRadialSavedTimeScale = 1.0f;
 static float gInvRadialTimeScale = 0.15f;
 static sInvRadialRing gInvRadial[INV_RADIAL_STICK_COUNT];
+static sInvRadialLayout gInvRadialLayout[INV_RADIAL_STICK_COUNT];
 static IRes* gInvRadialFontRes = NULL;
 static char gInvRadialFontName[64];
 static ObjID gGamepadLastWeapon = OBJ_NULL;
@@ -946,8 +957,227 @@ static int radial_find(const sInvRadialRing& ring, ObjID obj)
    return 0;
 }
 
+static void radial_free_render_states(void)
+{
+   for (int stick = 0; stick < INV_RADIAL_STICK_COUNT; ++stick)
+      for (int i = 0; i < INV_RADIAL_MAX_ENTRIES; ++i)
+      {
+         if (gInvRadial[stick].renders[i])
+         {
+            invRendDiscardState(gInvRadial[stick].renders[i]);
+            gInvRadial[stick].renders[i] = NULL;
+         }
+      }
+}
+
+static const char* radial_cycle_order(ObjID obj,
+                                      IStringProperty* cycleOrder,
+                                      ITraitManager* traitManager,
+                                      IObjectSystem* objectSystem)
+{
+   const char* order = NULL;
+   if (cycleOrder && cycleOrder->Get(obj, &order) && order)
+      return order;
+
+   // Match cInventory::CycleOrder: authored order wins, followed by the
+   // first symbolic name in the archetype chain.
+   for (; obj != OBJ_NULL; obj = traitManager->GetArchetype(obj))
+   {
+      order = objectSystem->GetName(obj);
+      if (order)
+         return order;
+   }
+   return "";
+}
+
+static void radial_weapon_bindings(ObjID slots[9],
+                                   IObjectSystem* objectSystem)
+{
+   memset(slots, 0, 9 * sizeof(slots[0]));
+   if (!g_pInputBinder)
+      return;
+
+   static const char selectCommand[] = "inv_select";
+   for (int number = 1; number <= 9; ++number)
+   {
+      char control[2] = { (char)('0' + number), '\0' };
+      char binding[128] = "";
+      g_pInputBinder->QueryBind(control, binding, sizeof(binding));
+
+      char* command = binding;
+      while (isspace((unsigned char)*command))
+         ++command;
+      const int commandLength = sizeof(selectCommand) - 1;
+      if (strnicmp(command, selectCommand, commandLength) ||
+          !isspace((unsigned char)command[commandLength]))
+         continue;
+
+      char* target = command + commandLength;
+      while (isspace((unsigned char)*target))
+         ++target;
+      char* end = target + strlen(target);
+      while (end > target && isspace((unsigned char)end[-1]))
+         *--end = '\0';
+      if (end - target >= 2 && target[0] == '"' && end[-1] == '"')
+      {
+         ++target;
+         *--end = '\0';
+      }
+      if (*target)
+         slots[number - 1] = objectSystem->GetObjectNamed(target);
+   }
+}
+
+static int radial_weapon_number(ObjID obj, const ObjID slots[9],
+                                ITraitManager* traitManager)
+{
+   for (int number = 0; number < 9; ++number)
+      if (slots[number] != OBJ_NULL &&
+          (obj == slots[number] ||
+           traitManager->ObjHasDonor(obj, slots[number])))
+         return number;
+   return 9;
+}
+
+static int radial_compare(ObjID left, ObjID right,
+                          IStringProperty* cycleOrder,
+                          ITraitManager* traitManager,
+                          IObjectSystem* objectSystem,
+                          const ObjID* weaponSlots)
+{
+   if (weaponSlots)
+   {
+      const int leftNumber = radial_weapon_number(left, weaponSlots,
+                                                   traitManager);
+      const int rightNumber = radial_weapon_number(right, weaponSlots,
+                                                    traitManager);
+      if (leftNumber != rightNumber)
+         return leftNumber - rightNumber;
+   }
+
+   const char* leftOrder = radial_cycle_order(left, cycleOrder,
+                                               traitManager, objectSystem);
+   const char* rightOrder = radial_cycle_order(right, cycleOrder,
+                                                traitManager, objectSystem);
+   const int compare = strcmp(leftOrder, rightOrder);
+   return compare ? compare : left - right;
+}
+
+static void radial_sort(sInvRadialRing& ring,
+                        IStringProperty* cycleOrder,
+                        ITraitManager* traitManager,
+                        IObjectSystem* objectSystem,
+                        const ObjID* weaponSlots)
+{
+   // Slot zero is deliberately fixed at twelve o'clock for the empty-hand
+   // choice. Weapons follow their active 1-9 bindings; items follow the same
+   // authored order as Tab cycling. Unbound weapons use that authored order
+   // as a stable fallback.
+   for (int i = 2; i < ring.count; ++i)
+   {
+      const ObjID entry = ring.entries[i];
+      int insert = i;
+      while (insert > 1 &&
+             radial_compare(entry, ring.entries[insert - 1], cycleOrder,
+                            traitManager, objectSystem, weaponSlots) < 0)
+      {
+         ring.entries[insert] = ring.entries[insert - 1];
+         --insert;
+      }
+      ring.entries[insert] = entry;
+   }
+}
+
+static int radial_layout_find(const sInvRadialLayout& layout, ObjID obj)
+{
+   for (int i = 0; i < layout.count; ++i)
+      if (layout.entries[i] == obj)
+         return i;
+   return -1;
+}
+
+static void radial_assign_angles(int stick)
+{
+   const float twoPi = 6.28318530717958647692f;
+   sInvRadialRing& ring = gInvRadial[stick];
+   sInvRadialLayout& layout = gInvRadialLayout[stick];
+   BOOL known[INV_RADIAL_MAX_ENTRIES] = {};
+   int knownCount = 0;
+
+   ring.angles[0] = 0.0f;
+   for (int i = 1; i < ring.count; ++i)
+   {
+      const int old = radial_layout_find(layout, ring.entries[i]);
+      if (old >= 0)
+      {
+         ring.angles[i] = layout.angles[old];
+         known[i] = TRUE;
+         ++knownCount;
+      }
+   }
+
+   // If every object is new, establish an even, cycle-ordered layout. Later
+   // pickups are inserted between their surviving cycle-order neighbors, so
+   // objects already learned by the player never move around the ring.
+   if (!knownCount)
+   {
+      for (int i = 1; i < ring.count; ++i)
+         ring.angles[i] = twoPi * i / ring.count;
+   }
+   else
+   {
+      float lastKnown = 0.0f;
+      BOOL orderValid = TRUE;
+      for (int i = 1; i < ring.count; ++i)
+         if (known[i])
+         {
+            if (ring.angles[i] <= lastKnown || ring.angles[i] >= twoPi)
+            {
+               orderValid = FALSE;
+               break;
+            }
+            lastKnown = ring.angles[i];
+         }
+
+      if (!orderValid)
+      {
+         for (int i = 1; i < ring.count; ++i)
+            ring.angles[i] = twoPi * i / ring.count;
+      }
+      else
+      {
+         int anchor = 0;
+         float anchorAngle = 0.0f;
+         while (anchor < ring.count)
+         {
+            int next = anchor + 1;
+            while (next < ring.count && !known[next])
+               ++next;
+            const float nextAngle = next < ring.count
+               ? ring.angles[next] : twoPi;
+            const int divisions = next - anchor;
+            for (int i = anchor + 1; i < next; ++i)
+               ring.angles[i] = anchorAngle +
+                  (nextAngle - anchorAngle) * (i - anchor) / divisions;
+            if (next >= ring.count)
+               break;
+            anchor = next;
+            anchorAngle = ring.angles[anchor];
+         }
+      }
+   }
+
+   layout.count = ring.count - 1;
+   for (int i = 0; i < layout.count; ++i)
+   {
+      layout.entries[i] = ring.entries[i + 1];
+      layout.angles[i] = ring.angles[i + 1];
+   }
+}
+
 static void radial_build(void)
 {
+   radial_free_render_states();
    memset(gInvRadial, 0, sizeof(gInvRadial));
    for (int stick = 0; stick < INV_RADIAL_STICK_COUNT; ++stick)
    {
@@ -965,6 +1195,27 @@ static void radial_build(void)
          ring.entries[ring.count++] = obj;
    }
    pContainSys->IterEnd(iter);
+
+   AutoAppIPtr_(PropertyManager, propertyManager);
+   AutoAppIPtr_(TraitManager, traitManager);
+   AutoAppIPtr_(ObjectSystem, objectSystem);
+   IStringProperty* cycleOrder = NULL;
+   IProperty* property = propertyManager->GetPropertyNamed(
+      PROP_CYCLE_ORDER_NAME);
+   if (property)
+   {
+      property->QueryInterface(IID_IStringProperty, (void**)&cycleOrder);
+      SafeRelease(property);
+   }
+   ObjID weaponSlots[9];
+   radial_weapon_bindings(weaponSlots, objectSystem);
+   for (int stick = 0; stick < INV_RADIAL_STICK_COUNT; ++stick)
+   {
+      radial_sort(gInvRadial[stick], cycleOrder, traitManager, objectSystem,
+                  stick == 0 ? weaponSlots : NULL);
+      radial_assign_angles(stick);
+   }
+   SafeRelease(cycleOrder);
 
    gInvRadial[0].current = radial_find(gInvRadial[0],
       pInventory->Selection(kCurrentWeapon));
@@ -1021,6 +1272,7 @@ static void radial_close(BOOL apply)
       InvUIRefresh();
    }
    gInvRadialActive = FALSE;
+   radial_free_render_states();
    SetSimTimeScale(gInvRadialSavedTimeScale);
 }
 
@@ -1065,7 +1317,20 @@ void InvUIRadialSetStick(int stick, float x, float y)
    double angle = atan2((double)x, (double)y);
    if (angle < 0.0)
       angle += twoPi;
-   ring.selected = ((int)(angle * ring.count / twoPi + 0.5)) % ring.count;
+   int nearest = 0;
+   double nearestDistance = twoPi;
+   for (int i = 0; i < ring.count; ++i)
+   {
+      double distance = fabs(angle - ring.angles[i]);
+      if (distance > twoPi / 2.0)
+         distance = twoPi - distance;
+      if (distance < nearestDistance)
+      {
+         nearest = i;
+         nearestDistance = distance;
+      }
+   }
+   ring.selected = nearest;
 }
 
 // select the last item the user picked up
@@ -1458,8 +1723,60 @@ static void radial_label(ObjID obj, const char *emptyLabel,
       sprintf(buffer, "Object %d", obj);
 }
 
-static void render_radial_ring(const sInvRadialRing& ring, int centerX,
-                               int centerY, int radius, const char *title,
+static int radial_entry_size(const sInvRadialRing& ring, int radius)
+{
+   int size = radius * 3 / 4;
+   if (ring.count > 1)
+   {
+      const double twoPi = 6.28318530717958647692;
+      double smallestGap = twoPi;
+      for (int i = 0; i < ring.count; ++i)
+      {
+         const double next = i + 1 < ring.count
+            ? ring.angles[i + 1] : ring.angles[0] + twoPi;
+         const double gap = next - ring.angles[i];
+         if (gap < smallestGap)
+            smallestGap = gap;
+      }
+      const int spacing = (int)(2.0 * radius * sin(smallestGap / 2.0));
+      if (size > spacing * 9 / 10)
+         size = spacing * 9 / 10;
+   }
+   if (size < 18)
+      size = 18;
+   if (size > 192)
+      size = 192;
+   return size;
+}
+
+static void render_radial_entry(sInvRadialRing& ring, int index,
+                                int x, int y, int size)
+{
+   const ObjID obj = ring.entries[index];
+   const int half = size / 2;
+   Rect draw = {
+      (short)(x - half), (short)(y - half),
+      (short)(x + half), (short)(y + half)
+   };
+
+   if (obj == OBJ_NULL)
+      return;
+
+   const int flags = INVREND_ROTATE | INVREND_SET | INVREND_HARDWARE_QUEUE;
+   if (ring.renders[index])
+      invRendUpdateState(ring.renders[index], flags, obj, &draw, NULL);
+   else
+   {
+      ring.renders[index] = invRendBuildState(flags, obj, &draw, NULL);
+      // Halving camera distance makes the model roughly twice as large while
+      // leaving the tightly packed radial slot itself unchanged.
+      invRendScaleModelView(ring.renders[index], 0.5f);
+   }
+   invRendDrawUpdate(ring.renders[index]);
+}
+
+static void render_radial_ring(sInvRadialRing& ring, int centerX,
+                               int centerY, int radius,
                                const char *emptyLabel)
 {
    const double twoPi = 6.28318530717958647692;
@@ -1469,39 +1786,44 @@ static void render_radial_ring(const sInvRadialRing& ring, int centerX,
    const int bg = guiStyleGetColor(NULL, StyleColorBG2);
 
    short textW, textH;
-   gr_set_fcolor(bright);
-   gr_string_size((char *)title, &textW, &textH);
-   gr_string((char *)title, centerX - textW / 2,
-             centerY - radius - textH - 8);
 
+   const int entrySize = radial_entry_size(ring, radius);
    for (int i = 0; i < ring.count; ++i)
    {
-      const double angle = twoPi * i / ring.count - twoPi / 4.0;
+      const double angle = ring.angles[i] - twoPi / 4.0;
       const int x = centerX + (int)(cos(angle) * radius);
       const int y = centerY + (int)(sin(angle) * radius);
+      const int half = entrySize / 2;
+      render_radial_entry(ring, i, x, y, entrySize);
       if (i == ring.selected)
       {
          gr_set_fcolor(bright);
-         gr_rect(x - 5, y - 5, x + 5, y + 5);
+         gr_box(x - half - 2, y - half - 2,
+                x + half + 2, y + half + 2);
          gr_int_line(centerX, centerY, x, y);
       }
       else
       {
          gr_set_fcolor(i == ring.current ? fg : dim);
-         gr_box(x - 3, y - 3, x + 3, y + 3);
+         gr_box(x - half, y - half,
+                x + half, y + half);
+      }
+      if (ring.entries[i] == OBJ_NULL)
+      {
+         gr_int_line(x - half / 2, y - half / 2,
+                     x + half / 2, y + half / 2);
+         gr_int_line(x - half / 2, y + half / 2,
+                     x + half / 2, y - half / 2);
       }
    }
 
    char label[80];
    radial_label(ring.entries[ring.selected], emptyLabel,
                 label, sizeof(label));
-   if (strlen(label) > 31)
-   {
-      label[28] = '.';
-      label[29] = '.';
-      label[30] = '.';
-      label[31] = '\0';
-   }
+   int labelWidth = radius * 2 - entrySize - 16;
+   if (labelWidth < 48)
+      labelWidth = 48;
+   gr_font_string_wrap(gr_get_font(), label, (short)labelWidth);
    gr_string_size(label, &textW, &textH);
    const int pad = 5;
    gr_set_fcolor(bg);
@@ -1530,9 +1852,18 @@ static void render_radial_menu(void)
    grs_font* styleFont = gr_get_font();
    grs_font* radialFont = NULL;
    {
-      char font[64] = "";
-      uiGameGetReadableOverlayFont("gamepad_radial_font", font,
-                                   sizeof(font));
+      // Use the next established AA face for the radial headings and selected
+      // item label. The shared resolver still applies the same system text-
+      // scale/presentation-scale policy used by messages and consoles,
+      // including explicit font overrides.
+      char font[64] = "fontaa20";
+      char readableFont[64];
+      if (uiGameGetReadableOverlayFont("gamepad_radial_font", readableFont,
+                                       sizeof(readableFont)))
+      {
+         strncpy(font, readableFont, sizeof(font));
+         font[sizeof(font) - 1] = '\0';
+      }
       if (stricmp(font, gInvRadialFontName))
       {
          SafeRelease(gInvRadialFontRes);
@@ -1557,10 +1888,25 @@ static void render_radial_menu(void)
       if (radialFont)
          gr_set_font(radialFont);
    }
+
+   const char* titles[INV_RADIAL_STICK_COUNT] = {
+      "WEAPONS - LEFT STICK", "ITEMS - RIGHT STICK"
+   };
+   const int titleCenters[INV_RADIAL_STICK_COUNT] = {
+      width * 3 / 10, width * 7 / 10
+   };
+   for (int stick = 0; stick < INV_RADIAL_STICK_COUNT; ++stick)
+   {
+      short titleW, titleH;
+      gr_string_size((char*)titles[stick], &titleW, &titleH);
+      gr_set_fcolor(guiStyleGetColor(NULL, StyleColorBright));
+      gr_string((char*)titles[stick], titleCenters[stick] - titleW / 2, 8);
+   }
+
    render_radial_ring(gInvRadial[0], width * 3 / 10, height / 2,
-                      radius, "WEAPONS - LEFT STICK", "NO WEAPON");
+                      radius, "NO WEAPON");
    render_radial_ring(gInvRadial[1], width * 7 / 10, height / 2,
-                      radius, "ITEMS - RIGHT STICK", "NO ITEM");
+                      radius, "NO ITEM");
    if (radialFont)
    {
       gr_set_font(styleFont);
@@ -2264,6 +2610,7 @@ void InvUITerm(void)
 void InvUIClearState()
 {
    radial_close(FALSE);
+   memset(gInvRadialLayout, 0, sizeof(gInvRadialLayout));
    InvUIAbortAllFrobs();
 
    pInventory->ClearSelection(kCurrentWeapon);
