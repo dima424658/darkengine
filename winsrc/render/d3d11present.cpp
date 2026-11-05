@@ -557,11 +557,15 @@ BOOL cD3D11Presenter::EnsureSceneSize() {
 BOOL cD3D11Presenter::ResizeOutput(DWORD width, DWORD height) {
   ID3D11ShaderResourceView *nulls[2] = {NULL, NULL};
   HRESULT hr;
+  DWORD oldWidth, oldHeight;
 
   if (!m_pImpl || !m_pImpl->swapChain || !width || !height)
     return FALSE;
   if (width == m_pImpl->targetWidth && height == m_pImpl->targetHeight)
     return TRUE;
+
+  oldWidth = m_pImpl->targetWidth;
+  oldHeight = m_pImpl->targetHeight;
 
   m_pImpl->ReleaseQueuedCommands();
   m_pImpl->context->PSSetShaderResources(0, 2, nulls);
@@ -577,6 +581,8 @@ BOOL cD3D11Presenter::ResizeOutput(DWORD width, DWORD height) {
 
   m_pImpl->targetWidth = width;
   m_pImpl->targetHeight = height;
+  RenderBackendTrace("output-size old=%lux%lu new=%lux%lu",
+                     oldWidth, oldHeight, width, height);
   m_pImpl->hardwareFrame = FALSE;
   m_pImpl->sceneOpen = FALSE;
   return EnsureSceneSize();

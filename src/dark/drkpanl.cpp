@@ -254,12 +254,34 @@ void cDarkPanel::OnLoopMsg(eLoopMessage msg, tLoopMessageData data)
          RenderBackendSetScaleToWindow(TRUE);
          RenderBackendSetFitToViewport(FALSE);
          RenderBackendSetPreserveCanvas(FALSE);
+         RenderBackendGetSettledClientSize(&mPresentationWidth,
+                                           &mPresentationHeight);
          RedrawDisplay();
          break;
 
       case kMsgNormalFrame:
       {
          const uint32 generation = PlatformApplicationResumeGeneration();
+         int presentationWidth;
+         int presentationHeight;
+         if (RenderBackendGetSettledClientSize(&presentationWidth,
+                                               &presentationHeight))
+         {
+            if (mPresentationWidth > 0 && mPresentationHeight > 0 &&
+                (presentationWidth != mPresentationWidth ||
+                 presentationHeight != mPresentationHeight))
+            {
+               // Retained panels may have no dirty UI rectangle after a
+               // native maximize, restore, or focus-driven resize. Redraw
+               // and present from the panel frame so the fixed 640x480
+               // canvas is composed against the new client viewport without
+               // racing UI drawing.
+               RedrawDisplay();
+               ScrnForceUpdate();
+            }
+            mPresentationWidth = presentationWidth;
+            mPresentationHeight = presentationHeight;
+         }
          if (generation != mApplicationResumeGeneration)
          {
             mApplicationResumeGeneration = generation;
@@ -354,7 +376,9 @@ cDarkPanel::cDarkPanel(const sDarkPanelDesc* desc, const char* respath)
    : cModalButtonPanel(sTempDesc(desc), &Descriptor),
      sDarkPanelDesc(*desc),
      mpFontRes(NULL),
-     mApplicationResumeGeneration(PlatformApplicationResumeGeneration())
+     mApplicationResumeGeneration(PlatformApplicationResumeGeneration()),
+     mPresentationWidth(0),
+     mPresentationHeight(0)
 {
    SetResPath(respath); 
 }

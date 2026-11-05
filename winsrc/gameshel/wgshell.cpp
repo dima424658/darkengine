@@ -844,7 +844,12 @@ LRESULT cWinGameShell::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         
         case WM_GAMESHELL_BRINGTOFRONT:
         {
-            ShowWindow(m_hWnd, SW_RESTORE);
+            // SW_RESTORE also takes a maximized window back to its saved
+            // normal rectangle.  Display mode changes and focus recovery use
+            // this message merely to reveal and activate the host window, so
+            // preserve the user's maximized state unless Windows says the
+            // window is actually minimized.
+            ShowWindow(m_hWnd, IsIconic(m_hWnd) ? SW_RESTORE : SW_SHOW);
             SetForegroundWindow(m_hWnd);
             SetFocus(m_hWnd);
             

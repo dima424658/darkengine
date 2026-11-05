@@ -118,6 +118,8 @@ protected:
    cStr mResPath; 
    guiStyle mStyle; 
    uint32 mApplicationResumeGeneration;
+   int mPresentationWidth;
+   int mPresentationHeight;
 };
 
 // TRUE:  We're headed into Thief 2's game mode.
