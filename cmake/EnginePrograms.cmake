@@ -130,7 +130,7 @@ if(DARK_BUILD_THIEF2)
   if(MSVC)
     set(dark_entry_pack_option "/Zp8")
   else()
-    set(dark_entry_pack_option "-fpack-struct=0")
+    set(dark_entry_pack_option "-fno-pack-struct")
   endif()
   set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"

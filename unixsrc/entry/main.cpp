@@ -19,7 +19,9 @@
 #include <movie_backend.h>
 #include <platform_services.h>
 
+#pragma pack(push, 8)
 #include <SDL3/SDL_main.h>
+#pragma pack(pop)
 
 #include "../../libsrc/lgd3d/runtime.h"
 

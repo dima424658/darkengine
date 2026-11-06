@@ -1,6 +1,7 @@
 #include "../win32_platform.h"
 
 #include <platform_services.h>
+#include <platform_io.h>
 
 #include <stdio.h>
 #include <cstdio>
@@ -11,6 +12,11 @@
 #include <mutex>
 #include <string>
 #include <vector>
+
+EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
+{
+   return std::fopen(path, mode);
+}
 
 struct sDisplayModeCollector
 {

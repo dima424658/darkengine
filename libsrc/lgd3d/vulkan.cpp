@@ -52,6 +52,8 @@ bool g_relativeActive;
 bool g_focused;
 float g_pumpRelativeX;
 float g_pumpRelativeY;
+bool g_pendingAbsoluteMotion;
+short g_pendingMouseX, g_pendingMouseY;
 std::atomic<bool> g_windowMinimized;
 std::atomic<bool> g_appInBackground;
 std::atomic<bool> g_lifecycleResizePending;
@@ -458,6 +460,13 @@ bool DarkRenderSetFullscreen(bool enabled)
    return true;
 }
 
+static void flush_absolute_mouse_motion()
+{
+   if (!g_pendingAbsoluteMotion) return;
+   g_pendingAbsoluteMotion = false;
+   DarkInputMouse(g_pendingMouseX, g_pendingMouseY, MOUSE_MOTION, g_buttons, 0);
+}
+
 bool DarkRenderBeginEventPump(void)
 {
    if (!g_window) return false;
@@ -493,6 +502,10 @@ void DarkRenderHandleEvent(const SDL_Event *event)
    }
    if (eventWindowId && eventWindowId != SDL_GetWindowID(g_window))
       return;
+   // Cursor callbacks redraw immediately. Skip intermediate absolute positions
+   // within a burst, but deliver motion before clicks, wheel, or mode changes.
+   if (event->type != SDL_EVENT_MOUSE_MOTION)
+      flush_absolute_mouse_motion();
    if (event->type == SDL_EVENT_QUIT ||
        event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
       g_quit = true;
@@ -533,8 +546,9 @@ void DarkRenderHandleEvent(const SDL_Event *event)
          int x = static_cast<int>(event->motion.x);
          int y = static_cast<int>(event->motion.y);
          logical_point(x, y);
-         DarkInputMouse(static_cast<short>(x), static_cast<short>(y),
-            MOUSE_MOTION, g_buttons, 0);
+         g_pendingMouseX = static_cast<short>(x);
+         g_pendingMouseY = static_cast<short>(y);
+         g_pendingAbsoluteMotion = true;
       }
    }
    else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
@@ -576,6 +590,7 @@ void DarkRenderHandleEvent(const SDL_Event *event)
 
 bool DarkRenderEndEventPump(void)
 {
+   flush_absolute_mouse_motion();
    process_pending_lifecycle_resize();
    if (g_relativeActive && (g_pumpRelativeX != 0 || g_pumpRelativeY != 0))
       DarkInputMouseRelative(static_cast<int>(g_pumpRelativeX),
