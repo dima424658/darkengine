@@ -32,7 +32,6 @@
 
 #include <wdispdd.h>
 #include <wddmode.h>
-#include "../render/d3d11present.h"
 
 #ifdef MONO_SPEW
 #define put_mono(c) (*((uchar *)0xb0078)) = (c)
@@ -788,7 +787,6 @@ BOOL cPhoney512ModeOps::DoUnlock()
 
 cOffVideoDDModeOps::~cOffVideoDDModeOps()
 {
-    delete m_pPresenter;
 }
 
 BOOL cOffVideoDDModeOps::DoSetGamma(double gamma)
@@ -796,11 +794,7 @@ BOOL cOffVideoDDModeOps::DoSetGamma(double gamma)
     if (gamma <= 0.0)
         return FALSE;
 
-    // Gamma is loaded before the first display mode may have created the
-    // presenter. Retain it across that startup ordering and later mode changes.
-    m_Gamma = gamma;
-    if (m_pPresenter)
-        return m_pPresenter->SetGamma(gamma);
+    // The legacy DirectDraw display path has no hardware gamma ramp.
     return TRUE;
 }
 
@@ -808,31 +802,22 @@ BOOL cOffVideoDDModeOps::StartMode(const sGrModeInfo & modeInfo, int flags, sGrM
 {
     HRESULT result;
     const BOOL wasDesktopPresentation = m_UseDesktopPresentation;
-    const BOOL wasD3D11Presentation = m_UseD3D11Presentation;
     BEGIN_DEBUG_MSG("cOffVideoDDModeOps::StartMode()");
 
     const int realBitsPerPixel = (modeInfo.bitDepth != 15) ? modeInfo.bitDepth : 16;
 
     // Release the previous mode, if any
     DebugMsgEx(SETMODE, "Releasing previous surfaces, if any...");
-    // The desktop primary is not the modern renderer's output. Keep the one
-    // compatibility object alive across logical mode changes; only the
-    // lockable CPU canvas below needs dimensions matching the new mode.
-    if (!wasD3D11Presentation)
-        SafeRelease(m_pPrimarySurface);
+    SafeRelease(m_pPrimarySurface);
     SafeRelease(m_pSecondarySurface);
     m_UseDesktopPresentation = FALSE;
-    m_UseD3D11Presentation = FALSE;
 
-    // The engine still renders its legacy 16-bit canvas, but modern Windows
-    // presents it through a normal 32-bit desktop swap chain. Do not request
-    // obsolete exclusive 16-bit display modes from the OS.
+    // Keep legacy DirectDraw modes on their software/GDI presentation path.
     if (!(flags & kGrSetWindowed) && realBitsPerPixel <= 16)
     {
-        // The HWND and swap chain already cover the monitor when only the
-        // engine's logical canvas size changes (for example 640x480 menu to
-        // native-resolution gameplay). Avoid restyling/repositioning the
-        // window and invalidating its retained frame during that transition.
+        // The borderless display window already covers the monitor when only
+        // the engine's logical canvas size changes. Avoid restyling it during
+        // that transition.
         if (!wasDesktopPresentation)
             EnableDesktopPresentation();
         m_UseDesktopPresentation = TRUE;
@@ -980,21 +965,6 @@ BOOL cOffVideoDDModeOps::StartMode(const sGrModeInfo & modeInfo, int flags, sGrM
 
     DebugMsgDesc(m_SecondaryDesc);
 
-    if (realBitsPerPixel <= 16)
-    {
-        if (!m_pPresenter)
-            m_pPresenter = new cD3D11Presenter;
-        if (m_pPresenter)
-        {
-            m_pPresenter->SetGamma(m_Gamma);
-            m_UseD3D11Presentation = m_pPresenter->Start(
-                m_pOuter->GetMainWnd(),
-                m_SecondaryDesc.dwWidth,
-                m_SecondaryDesc.dwHeight,
-                m_pSecondarySurface);
-        }
-    }
-
     // Store info about the render target
     SetModeInfoFromSurfaceDesc(m_SecondaryDesc,
                                (flags & kGrSetWindowed) ? kGrModeIsWindowed :
@@ -1027,7 +997,7 @@ BOOL cOffVideoDDModeOps::StartMode(const sGrModeInfo & modeInfo, int flags, sGrM
     // surface. But that's ok here.
     if (!(m_ModeInfoEx.flags & kGrModeIsWindowed))
     {
-        if (!m_UseD3D11Presentation && !IsModeX())
+        if (!IsModeX())
             WipeSurface(m_pPrimarySurface);
         WipeSurface(m_pSecondarySurface);
     }
@@ -1135,14 +1105,7 @@ void cOffVideoDDModeOps::DoFlushRect(int x0Source, int y0Source, int x1Source, i
         }
 
         HRESULT result = E_NOTIMPL;
-        if (m_UseD3D11Presentation && m_pPresenter &&
-            m_pPresenter->Present(m_pSecondarySurface, sourceRect.left,
-                                  sourceRect.top, sourceRect.right,
-                                  sourceRect.bottom))
-        {
-            result = DD_OK;
-        }
-        else if (!m_UseDesktopPresentation)
+        if (!m_UseDesktopPresentation)
         {
             result = m_pPrimarySurface->Blt(&destRect, m_pSecondarySurface, &sourceRect, DDBLT_WAIT, NULL);
             if (result == DDERR_SURFACELOST)

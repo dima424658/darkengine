@@ -26,7 +26,7 @@ public:
    ~cUnixDisplayDevice() override
    {
       // Display-device objects are transient across Dark's logical canvas
-      // changes.  The SDL window and GL context are process-owned and must
+      // changes.  The SDL window and Vulkan context are process-owned and must
       // survive those changes; the OS releases them at process shutdown.
       Close();
    }
@@ -52,7 +52,7 @@ public:
    HRESULT Close() override
    {
       // Dark treats this as a logical display-device close during ordinary
-      // mode changes.  Keep the native window and GL context alive so menus,
+      // mode changes. Keep the native window and Vulkan context alive so menus,
       // movies, and gameplay all use one presentation surface.
       m_pixels.clear(); m_mode = -1;
       if (m_cap) std::memset(m_cap, 0, sizeof(*m_cap)); return S_OK;

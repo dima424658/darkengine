@@ -74,12 +74,12 @@ repository.
 | Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Build target; runtime unvalidated | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
 | System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
 | DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Viewer/playtest port | Early viewer/playtest port | Not built |
-| Graphics | D3D11 | D3D11 | SDL2/OpenGL | SDL2/OpenGL | SDL2/OpenGL ES 3 |
+| Graphics | SDL3/Vulkan (CMake); DirectDraw/GDI software fallback (legacy VS) | SDL3/Vulkan (CMake); DirectDraw/GDI software fallback (legacy VS) | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan |
 | Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL framework | OpenAL Soft | OpenAL Soft/OpenSL |
 | Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg when available | FFmpeg | LibVLC |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
 | Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
-| Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja | CMake and Ninja | Gradle, CMake, and Android NDK |
+| Build system | CMake SDL3/Vulkan; legacy VS software fallback | CMake SDL3/Vulkan; legacy VS software fallback | CMake and Ninja | CMake and Ninja | Gradle, CMake, and Android NDK |
 
 The legacy `.osm` row refers to ordinary compiled mission script modules.
 NewDark's `squirrel.osm` is not loaded through that compatibility path: on all
@@ -143,22 +143,12 @@ until its editing and round-trip behavior is comprehensively validated.
 
 ### Cross-platform architecture
 
-The portability work keeps the original engine and game logic shared while
-replacing their operating-system dependencies. The renderer sends the same
-engine drawing commands to D3D11 on Windows and to SDL2/OpenGL on Linux and
-Android; Android uses OpenGL ES. General platform backends live under `winsrc`
-and `unixsrc`; Android intentionally uses the Unix/SDL backend. Shared editor
-logic lives under `src/editor`, while its platform providers live under
-`winsrc/editor` and `unixsrc/editor`. Shared input interfaces and keyboard
-tables live under `libsrc/input`. The game and editor continue to use Looking
-Glass's `lgd3d` interface.
-
-For now CMake derives the common source inventory from the established Visual
-Studio projects, then selects the game or editor platform providers explicitly.
-Desktop Linux always builds `dromed` alongside `thief-runner`: a Linux DromEd
-that can load a retail mission, construct its editor UI, and render a portal
-viewport is a portability requirement, not an optional future target. Android
-shares the Unix/SDL runtime but does not build the desktop editor.
+The CMake runner uses the shared `RenderBackend` Vulkan renderer through SDL3
+on Windows, macOS, Linux, and Android. The legacy Visual Studio DirectDraw
+target retains software/GDI presentation only; SDL3/Vulkan is the supported
+Windows hardware-rendering path. `winsrc` continues to provide Windows
+platform services while the CMake game and editor use Looking Glass's `lgd3d`
+interface.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
 synchronization, and filesystem operations cross `platform_services.h` and
@@ -184,7 +174,7 @@ cannot initialize, so the standard executable has no OpenAL dependency.
 Movie playback is exposed through the platform-neutral engine movie API. The
 Windows Media Foundation, DirectShow, and legacy DirectDraw implementation is
 isolated under `winsrc/movie`; Linux uses FFmpeg for video/audio decoding and
-the existing SDL/OpenGL presentation surface. Android uses LibVLC on a native
+the existing SDL3/Vulkan presentation surface in CMake builds. Android uses LibVLC on a native
 Android surface while retaining the engine's synchronous movie lifecycle.
 
 Legacy PKWARE DCL-compressed resources are decoded in-process with Mark
@@ -216,6 +206,8 @@ The runner currently provides:
   development with C++** workload, MSVC v143 x86/x64 tools, and a Windows 10
   or 11 SDK.
 - Git, used by the dependency bootstrap.
+- For the CMake SDL3/Vulkan build: CMake 3.21 or later, SDL3's CMake
+  package, the Vulkan SDK (including `glslc`), and libpng development files.
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
 - Optional: `ffmpeg.exe` on `PATH` for stock Indeo 5 AVIs when Windows has no
@@ -239,6 +231,22 @@ with `/p:DotNetExecutable=...`.
 Both integrations can be omitted only by opting out explicitly:
 `/p:EnableSquirrel=false` for the game or `/p:EnableKCTools=false` for DromEd.
 Omitting those properties enables the corresponding integration.
+
+The supported SDL3/Vulkan Windows route uses CMake. With SDL3, libpng, and the
+Vulkan SDK available to CMake, configure and build either architecture with
+the provided Visual Studio generator presets:
+
+```powershell
+cmake --preset windows-x64-vulkan
+cmake --build --preset windows-x64-vulkan-release
+
+cmake --preset windows-x86-vulkan
+cmake --build --preset windows-x86-vulkan-release
+```
+
+The CMake Windows route uses the same SDL3 surface and Vulkan renderer as the
+macOS and Linux CMake builds. When SDL3 is shared, CMake copies `SDL3.dll`
+beside both executables and installs it under `bin`.
 
 Ogg Vorbis FM sounds are loaded through libsndfile at runtime. To package it on
 Windows, place the official architecture-matched libsndfile 1.2.2 release in
@@ -294,15 +302,16 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 #### Prerequisites
 
 - macOS with Xcode Command Line Tools, CMake 3.20 or later, and Ninja.
-- SDL2 and libpng development packages. FFmpeg development libraries are
-  optional and enable movie playback; macOS supplies the OpenAL framework.
+- SDL3, the Vulkan SDK (including `glslc`), and libpng development packages.
+  FFmpeg development libraries are optional and enable movie playback; macOS
+  supplies the OpenAL framework.
 - Git, used to bootstrap Squirrel 3.2, and a retail TDP, Thief Gold, or
   Thief II installation.
 
 With Homebrew:
 
 ```sh
-brew install cmake ninja pkgconf sdl2 libpng ffmpeg squirrel-lang
+brew install cmake ninja pkgconf sdl3 libpng ffmpeg squirrel-lang
 ```
 
 #### Build
@@ -312,9 +321,8 @@ cmake -S . -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build-macos -j "$(sysctl -n hw.ncpu)"
 ```
 
-The result is `build-macos/thief-runner`. The macOS target uses SDL2 and
-desktop OpenGL. It is an initial build target and has not yet received runtime
-validation. CMake uses Homebrew's Squirrel package when available; otherwise
+The result is `build-macos/thief-runner`. The macOS target uses SDL3 and Vulkan.
+CMake uses Homebrew's Squirrel package when available; otherwise
 run `sh tools/bootstrap-dependencies.sh game` to build from its source. Pass
 `-DDARK_ENABLE_SQUIRREL=OFF` for a reduced build without NewDark Squirrel FM
 support.
@@ -325,7 +333,7 @@ support.
 
 - A 64-bit Linux distribution, GCC, CMake 3.20 or later, and Ninja.
 - Git, used to bootstrap Squirrel 3.2.
-- SDL2, OpenGL, and libpng development packages.
+- SDL3, the Vulkan SDK (including `glslc`), and libpng development packages.
 - OpenAL Soft and libsndfile at runtime. Both are loaded dynamically; libsndfile
   enables Ogg Vorbis sounds used by many FMs.
 - FFmpeg development libraries (`libavformat`, `libavcodec`, `libavutil`,
@@ -337,7 +345,7 @@ For Ubuntu/Debian:
 
 ```sh
 sudo apt update
-sudo apt install build-essential cmake ninja-build libsdl2-dev libgl-dev \
+sudo apt install build-essential cmake ninja-build libsdl3-dev libvulkan-dev glslc \
   libpng-dev libopenal1 libsndfile1 libavformat-dev libavcodec-dev \
   libavutil-dev libswscale-dev libswresample-dev
 ```
@@ -350,10 +358,9 @@ cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build-linux -j "$(nproc)"
 ```
 
-The results are `build-linux/thief-runner` and `build-linux/dromed`. Desktop
-OpenGL 3.3 is the default. Install GLES development headers and configure with
-`-DDARK_OPENGL_ES=ON` to exercise the OpenGL ES 3 path. Normal builds include
-the native Squirrel provider. Use `-DDARK_SQUIRREL_SOURCE=/path/to/squirrel`
+The result is `build-linux/thief-runner`. SDL3 and Vulkan are used for
+presentation and scene rendering. Normal builds include the native Squirrel
+provider. Use `-DDARK_SQUIRREL_SOURCE=/path/to/squirrel`
 for a non-default checkout, or explicitly pass `-DDARK_ENABLE_SQUIRREL=OFF`
 for a reduced build without NewDark Squirrel FM support.
 
@@ -395,26 +402,24 @@ the save location and fallback rules.
 - JDK 17 or later.
 - Android SDK platform and build tools 36.
 - Android SDK CMake 3.31.6 and NDK 30.0.16248370.
-- Git, used to bootstrap Squirrel 3.2.
+- Vulkan SDK with `glslc` available on `PATH` or through `VULKAN_SDK`.
 - An ARM64 device running Android 8.0 (API 26) or later and a retail game
   folder available to Android's system folder picker.
 
 #### Build
 
-Bootstrap Squirrel, then use the checked-in Gradle wrapper:
+Use the checked-in Gradle wrapper:
 
 ```powershell
-.\tools\bootstrap-dependencies.ps1 -Target Game
 Set-Location android
 .\gradlew.bat assembleDebug
 ```
 
-On a Linux host, use `sh tools/bootstrap-dependencies.sh game`, then
-`cd android && ./gradlew assembleDebug`. Gradle downloads SDL 2.32.10, OpenAL
-Soft 1.25.2, libpng 1.6.59, libogg 1.3.5, and libvorbis 1.3.7 from their
-official releases and verifies pinned SHA-256 digests. LibVLC 3.6.5 is resolved
-through Maven. The APK is written under
-`android/app/build/outputs/apk/debug`.
+On a Linux host, run `cd android && ./gradlew assembleDebug`. Gradle downloads
+the SDL3 Android AAR, Vulkan-Headers, Squirrel 3.2, OpenAL Soft 1.25.2, libpng
+1.6.59, libogg 1.3.5, and libvorbis 1.3.7 from their official releases and
+verifies pinned SHA-256 digests. LibVLC 3.6.5 is resolved through Maven. The APK
+is written under `android/app/build/outputs/apk/debug`.
 
 #### Running
 
@@ -695,8 +700,9 @@ On a multi-monitor system, the display containing the game window determines
 both the resolution list and the target for borderless fullscreen. To change
 displays, switch to Windowed, move the window, reopen Video Options, and then
 select a resolution or Fullscreen. The list is queried again for that display.
-The engine's gamma setting is applied in the Windows D3D11 presentation shader
-using the legacy palette-correction power curve.
+The engine's gamma setting is applied in the SDL3/Vulkan scene shader using the
+legacy palette-correction power curve. The legacy DirectDraw/GDI fallback has
+no hardware gamma adjustment.
 
 The retail game writes `skip_intro` after the intro has played. Add
 `always_play_intro` to `cam.cfg` to show it on every launch. When both movie
@@ -815,19 +821,17 @@ by its game and editor includes and any selected FM configuration. Put
 editor-specific overrides in the editor configuration included by that stack;
 command-line assignments still take priority for the current launch.
 
-The DromEd viewer uses the same hardware scene API as the game: D3D11 on
-Windows and OpenGL on Linux. Its legacy editor canvas remains 16-bit internally,
-while the platform presenter converts it to the resizable desktop window.
-When an editor window resize finishes, DromEd recreates that canvas at the
-client area's actual dimensions and scales the four viewports, console,
-status bar, and brush controls independently in each axis. This fills
-widescreen and portrait windows without imposing a 4:3 aspect ratio.
-`edit_screen_size` in `cam.cfg` selects the initial canvas size; it defaults
-to 1024x768. The editor always uses a windowed desktop surface, regardless of
-legacy fullscreen flags. Game preview mode stays in the same window and
-recreates the D3D11 render context for the preview; returning to edit mode
-restores the editor viewport and menu state. Linux uses the corresponding
-SDL/OpenGL context and editor provider.
+The CMake DromEd viewer uses the same SDL3/Vulkan scene renderer and presenter
+as the game. The editor canvas remains 16-bit internally, while the presenter
+converts it to a resizable 32-bit desktop window. When an editor
+window resize finishes, DromEd recreates that canvas at the client area's
+actual dimensions and scales the four viewports, console, status bar, and
+brush controls independently in each axis. This fills widescreen and portrait
+windows without imposing a 4:3 aspect ratio. `edit_screen_size` in `cam.cfg`
+selects the initial canvas size; it defaults to 1024x768. The editor always
+uses a windowed desktop surface, regardless of legacy fullscreen flags. Game
+preview mode stays in the same window and recreates the render context for the
+preview; returning to edit mode restores the editor viewport and menu.
 
 Use **Help > Keyboard Shortcuts** to open a resizable, human-readable input
 reference. It includes every active editor binding (including the complete
@@ -1013,15 +1017,14 @@ console logs are ignored by Git.
   does not make their behavior understood or guarantee that another Dark
   executable can load the resulting save; see [Game saves](#game-saves).
 - The renderer still uses a 16-bit internal compatibility canvas despite
-  presenting through 32-bit D3D11 or OpenGL output. Full 32-bit scene
+  presenting through 32-bit Vulkan output on the CMake route. Full 32-bit scene
   rendering remains to be implemented.
 - Native-resolution, window resizing, ultrawide presentation, and the new
   cross-platform high-DPI text scaling need testing across more GPUs, desktop
   scales, Android font-size settings, and display configurations.
-- Gamma correction is implemented in the Windows D3D11 presentation path.
-  Equivalent Linux/OpenGL behavior and broader visual comparison of shadow
-  detail, lightmaps, and emissive-looking light-source textures remain to be
-  completed.
+- Gamma correction is implemented in the SDL3/Vulkan renderer. Broader visual
+  comparison of shadow detail, lightmaps, and emissive-looking light-source
+  textures remains to be completed.
 - The first-run picker and startup path need clean-machine testing against the
   common CD, GOG, and Steam directory layouts.
 - NewDark compatibility is selective. PNG replacement art, FM-local

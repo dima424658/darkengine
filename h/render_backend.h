@@ -5,9 +5,8 @@
 
 // Platform-neutral rendering boundary used by the legacy lgd3d facade and
 // higher-level engine code.  A platform renderer owns the window/surface and
-// implements these operations; the current Windows provider is D3D11.  An
-// OpenGL provider can implement the same contract without exposing GL types
-// to the engine.
+// implements these operations without exposing graphics API types to the
+// engine.  SDL3/Vulkan is the shared renderer for CMake platform builds.
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +55,8 @@ int RenderBackendBeginFrame(void);
 void RenderBackendEndFrame(void);
 void RenderBackendDeactivateScene(void);
 void RenderBackendClearDepth(void);
+// Clear a logical canvas rectangle in the active hardware scene.
+void RenderBackendClearCanvasRegion(int x, int y, int width, int height);
 void RenderBackendSetDepth(int compareEnabled, int writeEnabled);
 void RenderBackendSetBlend(int blendMode);
 void RenderBackendSetAlphaTest(int enabled);

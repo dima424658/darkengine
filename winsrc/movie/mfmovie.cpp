@@ -731,8 +731,8 @@ static BOOL PlayMFPlayMovie(const WCHAR *moviePath, HWND hwnd, int volume)
 // The retail AVIs already build a valid DirectShow graph on supported Thief 2
 // installations.  Let that graph keep its normal video renderer.  The legacy
 // player used to remove it and insert the LG renderer, forcing every decoded
-// frame back through Dark's 16-bit canvas before the D3D11 presenter uploaded
-// it again.  A child video window gives DirectShow ownership of presentation
+// frame back through Dark's 16-bit canvas before the display provider presents
+// it. A child video window gives DirectShow ownership of presentation
 // and clocking while preserving the game's normal input-to-skip behavior.
 static BOOL PlayDirectShowMovie(const WCHAR *moviePath, HWND hwnd, int volume)
 {

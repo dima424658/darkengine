@@ -5,20 +5,21 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <filesystem>
 #include <iostream>
-#include <limits.h>
 #include <string>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <vector>
+#if defined(_WIN32)
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 #pragma pack(pop)
 
 #include <movie_backend.h>
 #include <platform_services.h>
 
-#ifdef __ANDROID__
-#include <SDL2/SDL_main.h>
-#endif
+#include <SDL3/SDL_main.h>
 
 #include "../render/runtime.h"
 
@@ -30,17 +31,44 @@ int _g_referenceEntryPoint = 0;
 
 namespace
 {
+namespace fs = std::filesystem;
+constexpr size_t kResolvedPathCapacity = 4096;
+
+bool IsInteractiveStdin()
+{
+#if defined(_WIN32)
+    return _isatty(_fileno(stdin)) != 0;
+#else
+    return isatty(STDIN_FILENO) != 0;
+#endif
+}
+
+bool SetEnvironmentValue(const char *name, const char *value)
+{
+#if defined(_WIN32)
+    return _putenv_s(name, value ? value : "") == 0;
+#else
+    return setenv(name, value ? value : "", 1) == 0;
+#endif
+}
+
+void UnsetEnvironmentValue(const char *name)
+{
+#if defined(_WIN32)
+    (void)_putenv_s(name, "");
+#else
+    (void)unsetenv(name);
+#endif
+}
+
 bool FileExistsInDirectory(const std::string &directory, const char *name)
 {
-    std::string path = directory;
-    if (!path.empty() && path.back() != '/')
-        path.push_back('/');
-    path += name;
-
-    char resolved[PATH_MAX];
-    struct stat status;
-    return PlatformResolvePath(path.c_str(), resolved, sizeof(resolved)) &&
-           stat(resolved, &status) == 0 && S_ISREG(status.st_mode);
+    const std::string path = (fs::path(directory) / name).string();
+    char resolved[kResolvedPathCapacity];
+    if (!PlatformResolvePath(path.c_str(), resolved, sizeof(resolved)))
+        return false;
+    std::error_code error;
+    return fs::is_regular_file(fs::path(resolved), error) && !error;
 }
 
 const char *DetectGameProfile(const std::string &directory)
@@ -66,18 +94,22 @@ bool ResolveDirectory(const char *candidate, std::string &directory)
         (expanded.size() == 1 || expanded[1] == '/'))
     {
         const char *home = std::getenv("HOME");
+#if defined(_WIN32)
+        if (!home || !home[0])
+            home = std::getenv("USERPROFILE");
+#endif
         if (home && home[0])
             expanded.replace(0, 1, home);
     }
 
-    char resolved[PATH_MAX];
-    char canonical[PATH_MAX];
-    struct stat status;
-    if (!PlatformResolvePath(expanded.c_str(), resolved, sizeof(resolved)) ||
-        stat(resolved, &status) != 0 || !S_ISDIR(status.st_mode) ||
-        !realpath(resolved, canonical))
+    char resolved[kResolvedPathCapacity];
+    if (!PlatformResolvePath(expanded.c_str(), resolved, sizeof(resolved)))
         return false;
-    directory = canonical;
+    std::error_code error;
+    const fs::path canonical = fs::canonical(fs::path(resolved), error);
+    if (error || !fs::is_directory(canonical, error) || error)
+        return false;
+    directory = canonical.string();
     return true;
 }
 
@@ -113,9 +145,10 @@ bool SelectGameDirectory(const char *requested, bool interactive,
     }
     else
     {
-        char current[PATH_MAX];
-        if (getcwd(current, sizeof(current)) &&
-            ResolveDirectory(current, directory))
+        std::error_code currentPathError;
+        const fs::path current = fs::current_path(currentPathError);
+        if (!currentPathError &&
+            ResolveDirectory(current.string().c_str(), directory))
             profile = DetectGameProfile(directory);
         if (profile)
             return true;
@@ -128,7 +161,7 @@ bool SelectGameDirectory(const char *requested, bool interactive,
             return true;
     }
 
-    if (!interactive || !isatty(STDIN_FILENO))
+    if (!interactive || !IsInteractiveStdin())
     {
         std::fprintf(stderr,
             "Dark Engine requires a retail Thief installation containing "
@@ -167,15 +200,16 @@ bool PrepareDarkDataDirectory(const char *requested, bool interactive)
     const char *profile = nullptr;
     if (!SelectGameDirectory(requested, interactive, directory, profile))
         return false;
-    if (chdir(directory.c_str()) != 0)
+    std::error_code error;
+    fs::current_path(fs::path(directory), error);
+    if (error)
     {
         std::fprintf(stderr, "Dark Engine: cannot enter '%s': %s\n",
-                     directory.c_str(), std::strerror(errno));
+                     directory.c_str(), error.message().c_str());
         return false;
     }
-    setenv("DARK_GAME_PROFILE", profile, 1);
-    setenv("DARK_GAME_PATH", directory.c_str(), 1);
-    return true;
+    return SetEnvironmentValue("DARK_GAME_PROFILE", profile) &&
+       SetEnvironmentValue("DARK_GAME_PATH", directory.c_str());
 }
 }
 
@@ -246,17 +280,18 @@ int main(int argc, char *argv[])
     if (interactive ||
         (!explicitContent &&
          (!environmentContentMode || !environmentContentMode[0])))
-        setenv("DARK_CONTENT_MODE", "vanilla", 1);
+        SetEnvironmentValue("DARK_CONTENT_MODE", "vanilla");
 
     if (interactive)
     {
-        setenv("DARK_CONTENT_PICKER", "1", 1);
+        SetEnvironmentValue("DARK_CONTENT_PICKER", "1");
     }
     else
-        unsetenv("DARK_CONTENT_PICKER");
+        UnsetEnvironmentValue("DARK_CONTENT_PICKER");
 
     PlatformDiagnosticsStartSession(engineArgc > 0 ? arguments[0] : nullptr,
                                     engineArgc, arguments.data());
+    PlatformDiagnosticsInstallCrashHandlers();
     const int result = _AppMain(engineArgc, arguments.data());
 #ifdef __ANDROID__
     char resultMessage[96];

@@ -589,7 +589,6 @@ bool testgeom_inner(void)
    mxs_vector *loc;
    mxs_angvec *ang;
    bool have_spot;
-
    have_spot=vm_spotlight_loc(&loc, &ang);
 
    reset_dynamic_lights();

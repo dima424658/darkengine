@@ -30,9 +30,6 @@
     <ClInclude Include="..\..\winsrc\dispdev\dddynf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\winsrc\render\d3d11present.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="dispbase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -80,7 +77,7 @@
     <ClCompile Include="..\..\winsrc\dispdev\dddynf.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\winsrc\render\d3d11present.cpp">
+    <ClCompile Include="..\..\winsrc\render\render_backend_stub.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dispbase.cpp">

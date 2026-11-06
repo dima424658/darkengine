@@ -486,8 +486,8 @@ sScrnMode* ScrnModeGetConfig(sScrnMode* targ, const char* prefix)
          targ->flags &= ~(kScrnMode3dDriver);
    }
 
-   // D3D11 supports hardware rendering in either windowed or fullscreen
-   // presentation. Preserve the separately selected display mode.
+   // The modern backend supports hardware rendering in either windowed or
+   // fullscreen presentation. Preserve the separately selected display mode.
    if (fullScreenSetting == 0)
    {
       targ->flags &= ~kScrnModeFullScreen;
@@ -537,8 +537,8 @@ void ScrnModeValidate(sScrnMode* targ)
          targ->flags &= ~kScrnMode3dDriver;
    }
 
-   // The legacy canvas remains 16-bit, but D3D11 works in both windowed and
-   // fullscreen presentation modes.
+   // The legacy canvas remains 16-bit, while the modern backend works in
+   // both windowed and fullscreen presentation modes.
    if (VALID(targ,Flags) && (targ->flags & kScrnMode3dDriver))
    {
       targ->flags |= kScrnMode2dDriver;

@@ -15,6 +15,9 @@
 #include <event.h>
 #include <region.h>
 #include <reg.h>
+#include <appagg.h>
+#include <gshelapi.h>
+#include <pumpenum.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -53,6 +56,9 @@ BOOL stupid_event_handler(uiEvent* ev, Region* reg, void* data)
 bool get_stupid_ui_event(uiEvent* ev)
 {
    static int fail_once_per_frame = TRUE;
+#if !defined(_WIN32)
+   IGameShell *gameShell;
+#endif
    if (qout >= qin)
    {
       if (fail_once_per_frame) {
@@ -63,6 +69,17 @@ bool get_stupid_ui_event(uiEvent* ev)
       qout = qin = 0;
       uiGrabFocus(&stupid_region,ALL_EVENTS);
       region_flush_sequence(TRUE);
+#if !defined(_WIN32)
+      // Unix editor modal interactions run inside the normal UI dispatch.
+      // Their nested uiPoll() cannot reach the outer game loop that pumps SDL,
+      // so fetch platform events here or a mouse-up can never end a drag.
+      gameShell = AppGetObj(IGameShell);
+      if (gameShell)
+      {
+         IGameShell_PumpEvents(gameShell,kPumpAll);
+         SafeRelease(gameShell);
+      }
+#endif
       uiPoll();
       uiReleaseFocus(&stupid_region,ALL_EVENTS);
    }

@@ -154,7 +154,6 @@
     <ClInclude Include="..\..\winsrc\dispdev\aggddraw.h" />
     <ClInclude Include="..\..\winsrc\dispdev\cbchain.h" />
     <ClInclude Include="..\..\winsrc\dispdev\dddynf.h" />
-    <ClInclude Include="..\..\winsrc\render\d3d11present.h" />
     <ClInclude Include="dispbase.h" />
     <ClInclude Include="..\..\winsrc\dispdev\wdcreate.h" />
     <ClInclude Include="..\..\winsrc\dispdev\wddmode.h" />
@@ -173,7 +172,7 @@
     <ClCompile Include="..\..\winsrc\dispdev\aggddraw.cpp" />
     <ClCompile Include="..\..\winsrc\dispdev\cbchain.cpp" />
     <ClCompile Include="..\..\winsrc\dispdev\dddynf.cpp" />
-    <ClCompile Include="..\..\winsrc\render\d3d11present.cpp" />
+    <ClCompile Include="..\..\winsrc\render\render_backend_stub.cpp" />
     <ClCompile Include="dispbase.cpp" />
     <ClCompile Include="..\..\winsrc\dispdev\wdcreate.cpp" />
     <ClCompile Include="..\..\winsrc\dispdev\wddmode.cpp" />

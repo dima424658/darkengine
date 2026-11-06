@@ -1,5 +1,6 @@
 #pragma pack(push, 8)
-#include <SDL2/SDL.h>
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
 
 #include <algorithm>
 #include <cstring>
@@ -108,12 +109,13 @@ void RefreshControllers(bool force)
           !SDL_GameControllerGetAttached(g_slots[i].controller))
          CloseSlot(i);
 
-   const int devices = SDL_NumJoysticks();
-   for (int device = 0; device < devices; ++device)
+   int deviceCount = 0;
+   SDL_JoystickID *devices = SDL_GetJoysticks(&deviceCount);
+   for (int device = 0; device < deviceCount; ++device)
    {
-      if (!SDL_IsGameController(device))
+      const SDL_JoystickID instance = devices[device];
+      if (!SDL_IsGamepad(instance))
          continue;
-      const SDL_JoystickID instance = SDL_JoystickGetDeviceInstanceID(device);
       if (instance < 0 || HasInstance(instance))
          continue;
 
@@ -127,7 +129,7 @@ void RefreshControllers(bool force)
       if (slot == physicalSlots)
          break;
 
-      SDL_GameController *controller = SDL_GameControllerOpen(device);
+      SDL_GameController *controller = SDL_GameControllerOpen(instance);
       if (!controller)
          continue;
       g_slots[slot].controller = controller;
@@ -137,6 +139,7 @@ void RefreshControllers(bool force)
       SDL_Log("Dark Engine gamepad %u: %s", slot,
               SDL_GameControllerName(controller));
    }
+   SDL_free(devices);
 }
 
 int InvertAxis(Sint16 value)
@@ -162,9 +165,9 @@ int SDLBackendInit()
 {
    for (unsigned i = 0; i < GAMEPAD_MAX_CONTROLLERS; ++i)
       g_slots[i].instance = -1;
-   if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
+   if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC))
       return 0;
-   SDL_GameControllerEventState(SDL_ENABLE);
+   SDL_SetGamepadEventsEnabled(true);
    RefreshControllers(true);
    return 1;
 }

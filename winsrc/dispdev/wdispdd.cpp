@@ -404,9 +404,8 @@ BOOL cDDProvider::DoProcessMessage(UINT msg, WPARAM wParam, LPARAM /*lParam*/, L
             {
                 if (m_pModeOps->HandlesWindowResize())
                 {
-                    // The D3D11 presenter resizes its swap chain on the next
-                    // frame. Fixed modes retain their canvas; Fit mode asks
-                    // game mode to rebuild it after an interactive drag.
+                    // Fixed modes retain their canvas; Fit mode asks game
+                    // mode to rebuild it after an interactive drag.
                     m_pModeOps->SetScaleFactor(0);
                 }
                 else

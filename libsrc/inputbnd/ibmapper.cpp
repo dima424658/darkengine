@@ -40,9 +40,13 @@ void cCmdCtrlHash::DestroyAll()
 	m_nItems = 0;
 }
 
-typedef struct _input_code
+// This table is accessed as an array by the input mapper. The legacy engine
+// compiles records with byte packing, which would otherwise give this
+// pointer-bearing record a one-byte alignment and a 10-byte stride. Keep the
+// pointer and each record naturally aligned even in that build mode.
+typedef struct alignas(void*) _input_code
 {
-	const char* name;
+	alignas(void*) const char* name;
 	short code;
 } input_code;
 

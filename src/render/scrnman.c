@@ -75,7 +75,7 @@ ScrnMode ScrnFindModeFlags(short w, short h, ubyte depth,ulong flags)
    if (i!=-1)
       return i;
 
-   // The D3D11 path renders into an emulated off-screen surface, so it can
+   // The modern path renders into an emulated off-screen surface, so it can
    // use canvas dimensions that DirectDraw did not advertise as physical
    // display modes. gr_register_mode() adds those dimensions to the global
    // mode table, but the legacy lookup above only searches the display
@@ -294,8 +294,8 @@ static BOOL doMiscSetResStuff(int new_mode, ulong flags)
 
    // The original renderer derives a pixel aspect from the assumption that
    // every display is physically 4:3.  That makes horizontal and vertical
-   // units differ in arbitrary-sized D3D11 windows (circles become ovals).
-   // Modern swap-chain pixels are square regardless of the window's aspect.
+   // units differ in arbitrary-sized SDL windows (circles become ovals).
+   // Swapchain pixels are square regardless of the window's aspect.
    if (g_lgd3d)
       grd_cap->aspect = FIX_UNIT;
 
@@ -384,7 +384,7 @@ BOOL ScrnSetRes(ScrnMode mode,ulong flags)
             // Success! Now we just need to make the draw canvas, etc.
             goto ScrnSetResMisc;
 
-         // The D3D11 off-screen path intentionally presents on Flush and
+         // The modern off-screen path intentionally presents on Flush and
          // therefore never reports a legacy flip chain.  Treat that as the
          // already-configured modern mode instead of tearing it down and
          // rebuilding it on every repeated resolution request.
@@ -413,7 +413,7 @@ BOOL ScrnSetRes(ScrnMode mode,ulong flags)
       g_page_flip = SET_FLIP(pDispDev, TRUE);
       if (!g_page_flip)
       {
-         // The D3D11 presenter deliberately uses a lockable compatibility
+         // The modern presenter deliberately uses a lockable compatibility
          // canvas, not a DirectDraw flipping pair.  Hardware 3D remains
          // active and Flush composites that canvas over the GPU scene.  Do
          // not reject the hardware mode merely because legacy page flipping
@@ -437,7 +437,7 @@ BOOL ScrnSetRes(ScrnMode mode,ulong flags)
 ScrnSetResMisc:
    retval = doMiscSetResStuff(new_mode, flags);
    if (!retval)
-      strcpy(g_last_set_res_error, "The Direct3D renderer could not initialize for the selected screen mode.");
+      strcpy(g_last_set_res_error, "The graphics renderer could not initialize for the selected screen mode.");
    else
       g_last_set_res_error[0] = '\0';
 
@@ -711,7 +711,7 @@ void ScrnClear(void)
    if (grd_mode < 0 || _cur_res < 0) 
       return; 
 
-   // A zero-valued compatibility pixel is transparent while a retained D3D11
+   // A zero-valued compatibility pixel is transparent while a retained GPU
    // scene is active.  A screen clear must discard that scene so the cleared
    // canvas presents as black, but unlike ScrnBlacken it preserves the active
    // indexed palette for a suspended menu to use when it resumes.
@@ -751,7 +751,7 @@ void ScrnBlacken(void)
    BOOL have_canv = grd_visible_canvas != NULL;
    IDisplayDevice* pDisp = NULL; 
 
-   // A zero-valued compatibility pixel is transparent while a retained D3D11
+   // A zero-valued compatibility pixel is transparent while a retained GPU
    // scene is active.  An explicit blacken operation must discard that scene
    // first or the cleared canvas simply reveals the previous menu/game frame
    // during movie and mode transitions.

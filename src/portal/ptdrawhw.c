@@ -737,6 +737,7 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
             uv_save[2*i+1] = final[i]->grp.v;
          }
          ptlgd3d_recalc_uv_vlist(n, final, &info);
+         lgd3d_set_texture_wrapping(0, FALSE);
          r3_set_texture(hw.lm);
          r3_draw_poly(n, final);
          for (i=0; i<n; i++) {
@@ -760,6 +761,7 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
       goto poly_done;
    }
 
+   lgd3d_set_texture_wrapping(0, TRUE);
    r3_set_texture(hw.tex);
 
    if (zsky) {
@@ -1093,10 +1095,14 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
             uv2[i].v = final[i]->grp.v;
             puv2[i] = &uv2[i];
          }
-         // lgd3d_set_light_map_method(LGD3DTB_MODULATE);
          lgd3d_set_light_map_method( LGD3D_MULTITEXTURE_COLOR );
          ptlgd3d_recalc_uv(n, uv2, &info);
 
+         // Portal base textures repeat across world-space texture vectors;
+         // the lightmap sampler addresses an atlas and must clamp. Reassert
+         // both modes because other draws can change sampler state.
+         lgd3d_set_texture_wrapping(1, FALSE);
+         lgd3d_set_texture_wrapping(0, TRUE);
          lgd3d_set_texture_level(1);
          lgd3d_set_texture(hw.lm);
          lgd3d_set_texture_level(0);
@@ -1114,6 +1120,7 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
          else
             render_water_poly(hw.tex, n, final);
       } else {
+         lgd3d_set_texture_wrapping(0, TRUE);
          r3_set_texture(hw.tex);
          if (zsky) {
             int i;
@@ -1370,6 +1377,8 @@ void draw_surface_texture_only(PortalPolygonCore *poly, PortalPolygonRenderInfo 
       goto poly_done_texture;
    }
 
+   // World texture coordinates can span multiple tiles in this fallback path.
+   lgd3d_set_texture_wrapping(0, TRUE);
    r3_set_texture(hw.tex);
 
    if (zsky) {
@@ -1515,11 +1524,13 @@ void draw_surface_lightmap_only(PortalPolygonCore *poly, PortalPolygonRenderInfo
 
 #ifndef SHIP
    if (show_lightmap) {
+      lgd3d_set_texture_wrapping(0, FALSE);
       r3_set_texture(hw.lm);
       r3_draw_poly(n, final);
    } else
 #endif
    {
+      lgd3d_set_texture_wrapping(0, FALSE);
       r3_set_texture(hw.lm);
       r3_draw_poly(n, final);
    }

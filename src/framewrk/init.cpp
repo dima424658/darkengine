@@ -120,8 +120,8 @@ static void RegisterDisplayModes(void)
    int i;
 
    // Register the union of modes exposed by every connected monitor before
-   // screen-mode configuration is read.  D3D11 presents these as internal
-   // render sizes, so no exclusive legacy display-mode switch is required.
+   // screen-mode configuration is read. The modern renderer presents these
+   // as internal render sizes, so no exclusive legacy mode switch is required.
    count = PlatformGetDisplayModes(kPlatformAllDisplays, modes,
                                    sizeof(modes) / sizeof(modes[0]),
                                    NULL, NULL);
@@ -484,7 +484,7 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
 #ifdef EDITOR
    // The editor is a desktop application.  Use the native pointer instead of
    // the legacy framebuffer cursor, which is not reliably presented while an
-   // otherwise-idle D3D11 viewport is on screen.
+   // otherwise-idle hardware viewport is on screen.
    opt |= kShowNativeCursor;
 #endif
    if (config_is_defined("multithread"))
@@ -600,14 +600,14 @@ tResult LGAPI CoreEngineAppInit()
 
    tm_init();
 
-   // D3D11 presents these as render-canvas sizes instead of requesting
-   // obsolete exclusive desktop modes.  Both flavors of the shared project,
+   // The modern renderer presents these as render-canvas sizes instead of
+   // requesting obsolete exclusive desktop modes. Both flavors of the project,
    // including DromEd, need the same compatibility mode list.
    RegisterDisplayModes();
 
 #ifdef THIEF2_GAME
-   // The modern lgd3d implementation uses D3D11. Prefer it for new runner
-   // configurations while retaining an explicit user override.
+   // Prefer hardware rendering for new runner configurations while retaining
+   // an explicit user override.
    if (!config_is_defined("game_hardware"))
       config_set_int("game_hardware", 1);
 
@@ -620,7 +620,7 @@ tResult LGAPI CoreEngineAppInit()
       config_set_int("game_screen_fit", 1);
 #endif
 
-   // The D3D11 scene is 32-bit, while the retained 2D UI/movie canvas is
+   // The hardware scene is 32-bit, while the retained 2D UI/movie canvas is
    // 16-bit. Normalize NewDark configuration values to that canvas format.
    {
       int depth;

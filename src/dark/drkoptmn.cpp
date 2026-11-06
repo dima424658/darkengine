@@ -221,7 +221,7 @@ static int GetDisplayResolutions(sDisplayResolution *resolutions, int capacity)
    }
 
    // Merge the monitor's advertised modes with a guaranteed compatibility
-   // set. The D3D11 presenter can scale these internal render sizes without
+   // set. The modern presenter can scale these internal render sizes without
    // asking Windows to switch the physical display mode.
    {
       int i;

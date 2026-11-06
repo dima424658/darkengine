@@ -1,7 +1,8 @@
 #pragma pack(push, 8)
-#include <SDL2/SDL.h>
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
 #ifdef __ANDROID__
-#include <SDL2/SDL_system.h>
+#include <SDL3/SDL_system.h>
 #include <jni.h>
 #endif
 
@@ -182,8 +183,8 @@ bool WaitForFrame(MovieClock::time_point start, double seconds)
 bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
 {
 #ifdef __ANDROID__
-    JNIEnv *environment = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
-    jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+    JNIEnv *environment = static_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+    jobject activity = static_cast<jobject>(SDL_GetAndroidActivity());
     if (!environment || !activity || !legacyPath)
         return false;
 

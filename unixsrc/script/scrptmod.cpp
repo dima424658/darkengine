@@ -2,11 +2,11 @@
 #include <allocapi.h>
 #include <filespec.h>
 #include <mprintf.h>
+#include <platform_services.h>
 #include <osm_emu/osm32mod.h>
 #include <squirrel/squirrelhost.h>
 
 #pragma pack(push, 8)
-#include <dlfcn.h>
 #include <stdlib.h>
 #include <string>
 #pragma pack(pop)
@@ -36,15 +36,15 @@ BOOL cScriptMan::LoadModule(const cFileSpec &module, sScrModuleInfo *info)
         return FALSE;
     }
 
-    info->hModule = dlopen(module.GetName(), RTLD_NOW | RTLD_LOCAL);
+    info->hModule = PlatformLoadLibrary(module.GetName());
     if (info->hModule)
     {
         auto init = reinterpret_cast<tScriptModuleInitFunc>(
-            dlsym(info->hModule, "ScriptModuleInit"));
+            PlatformFindSymbol(info->hModule, "ScriptModuleInit"));
         if (init && init(module.GetFileName(), this, m_pfnPrint, g_pMalloc,
                          &info->pModule))
             return TRUE;
-        dlclose(info->hModule);
+        PlatformUnloadLibrary(info->hModule);
         info->hModule = nullptr;
     }
 
@@ -59,7 +59,7 @@ void cScriptMan::FreeModule(sScrModuleInfo *info)
     SafeRelease(info->pModule);
     if (info->hModule)
     {
-        dlclose(info->hModule);
+        PlatformUnloadLibrary(info->hModule);
         info->hModule = nullptr;
     }
 }
