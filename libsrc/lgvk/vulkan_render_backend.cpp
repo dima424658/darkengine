@@ -172,6 +172,9 @@ int RenderBackendBeginFrame(void)
    return 1;
 }
 void RenderBackendEndFrame(void) {}
+// Vulkan presentation is owned by DarkRenderEndApplicationFrame. Loading
+// progress callbacks run inside that frame and cannot submit a second one.
+void RenderBackendPresentProgress(void) {}
 void RenderBackendDeactivateScene(void) { g_sceneActive = false; }
 void RenderBackendClearDepth(void)
 { if (g_renderer && g_commandBuffer) g_renderer->ClearDepth(g_commandBuffer); }
