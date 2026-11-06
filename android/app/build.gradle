@@ -33,7 +33,6 @@ def nativeArguments = [
     "-DDARK_BUILD_ENGINE=ON",
     "-DDARK_BUILD_THIEF2=ON",
     "-DDARK_COMPILE_VULKAN_SHADERS=OFF",
-    "-DDARK_BUILD_LGVK=ON",
     "-DDARK_VULKAN_HEADERS_SOURCE=${vulkanHeadersRoot.absolutePath.replace('\\', '/')}",
     "-DDARK_OPENAL_SOFT_SOURCE=${openalRoot.absolutePath.replace('\\', '/')}",
     "-DDARK_PNG_SOURCE=${pngRoot.absolutePath.replace('\\', '/')}",
