@@ -1120,6 +1120,7 @@ set(dark_engine_program_sources
   src/framewrk/filetool.c
   src/framewrk/filevar.cpp
   src/framewrk/fltang.cpp
+  src/framewrk/appmenu.cpp
   src/framewrk/gameapp.c
   src/framewrk/gameinfo.c
   src/framewrk/gamepad.cpp
