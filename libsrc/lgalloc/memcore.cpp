@@ -12,8 +12,6 @@
 #include <memcore.h>
 #include <multpool.h>
 #include <heap.h>
-#include <dbgalloc.h>
-#include <memtimer.h>
 #include <primallc.h>
 #include <stdalloc.h>
 #include <nullallc.h>
@@ -70,11 +68,6 @@ extern void AllocThreadUnlock(void)
 IAllocator *        g_pMalloc;
 
 #ifndef SHIP
-sAllocLimits *      g_pAllocLimits;
-
-cHeapDebug *        g_pHeapDebug;
-BOOL                g_bAllocDumpLeaks;
-cMemAllocTimer *    g_pMemAllocTimer;
 ///////////////////////////////////////////////////////////////////////////////
 //
 // CLASS: cMemCore
@@ -115,11 +108,6 @@ public:
         m_StdAlloc.Init();
         pNext = &m_StdAlloc;
 
-#ifndef SHIP
-        g_pAllocLimits = &m_PrimaryMalloc;
-
-#endif
-
         m_PrimaryMalloc.SetNext(pNext);
         g_pMalloc = &m_PrimaryMalloc;
     }
@@ -141,10 +129,6 @@ public:
     cStdAlloc      m_StdAlloc;
     cHeap          m_Heap;
     cMultiPool     m_MultiPool;
-#ifndef SHIP
-    cMemAllocTimer m_MemAllocTimer;
-    cHeapDebug     m_HeapDebug;
-#endif
     cPrimaryMalloc m_PrimaryMalloc;
 
 };

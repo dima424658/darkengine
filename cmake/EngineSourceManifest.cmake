@@ -385,12 +385,10 @@ set(dark_sources_lg
 
 set(dark_sources_lgalloc
   libsrc/lgalloc/allcguid.cpp
-  libsrc/lgalloc/dbgalloc.cpp
   libsrc/lgalloc/heap.cpp
   libsrc/lgalloc/memall.c
   libsrc/lgalloc/membase.cpp
   libsrc/lgalloc/memcore.cpp
-  libsrc/lgalloc/memtimer.cpp
   libsrc/lgalloc/multpool.cpp
   libsrc/lgalloc/nonover.cpp
   libsrc/lgalloc/nullallc.cpp
