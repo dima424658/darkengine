@@ -408,7 +408,16 @@ cFilePath cFileSpec::AnchorPath;
 
 cFileSpec::cFileSpec(const cFileSpec &other) { pName = DuplicateString(other.pName); Kind = other.Kind; }
 cFileSpec::cFileSpec(const sFileDesc &other) { pName = DuplicateString(other.pName); Kind = other.Kind; }
-cFileSpec::cFileSpec(const char *name) { pName = nullptr; Kind = kSpecKindUnknown; SetOwnedName(*this, NativePath(name)); }
+cFileSpec::cFileSpec(const char *name)
+{
+    pName = nullptr;
+    Kind = kSpecKindUnknown;
+    // Preserve the supplied name. Filesystem lookup belongs at I/O boundaries;
+    // resolving a bare archive name here can select a different file in cwd.
+    std::string text = name ? name : "";
+    std::replace(text.begin(), text.end(), '\\', '/');
+    SetOwnedName(*this, text);
+}
 cFileSpec::cFileSpec(const cFilePath &path, const char *name) { pName = nullptr; Kind = kSpecKindUnknown; Set(path, name); }
 cFileSpec::cFileSpec(eFileSpecKind kind, const char *name) { pName = DuplicateString(name); Kind = pName ? kind : kSpecKindUnknown; }
 cFileSpec::~cFileSpec() { free(pName); }
@@ -449,8 +458,10 @@ const char *cFileSpec::GetFileName() const
 }
 
 void cFileSpec::GetFileName(cStr &result) const { result = GetFileName(); }
-void cFileSpec::GetFileRoot(cStr &result) const { result = fs::path(NativePath(GetFileName())).stem().string().c_str(); }
-void cFileSpec::GetFileExtension(cStr &result) const { result = fs::path(NativePath(GetFileName())).extension().string().c_str(); }
+// Filename components are lexical: resolving against the current directory can
+// change their case to match an unrelated file and break archive factory lookup.
+void cFileSpec::GetFileRoot(cStr &result) const { result = fs::path(GetFileName() ? GetFileName() : "").stem().string().c_str(); }
+void cFileSpec::GetFileExtension(cStr &result) const { result = fs::path(GetFileName() ? GetFileName() : "").extension().string().c_str(); }
 
 const char *cFileSpec::GetFileExtension() const
 {

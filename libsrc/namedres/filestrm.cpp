@@ -92,7 +92,7 @@ BOOL cFileStream::Open()
 	char* pFileName;
 	GetName(&pFileName);
 
-	m_pFile = fopen(pFileName, "rb");
+	m_pFile = PlatformFopen(pFileName, "rb");
 
 	Free(pFileName);
 
@@ -183,7 +183,7 @@ long cFileStream::GetSize()
 	char* pFileName;
 	GetName(&pFileName);
 
-	m_pFile = fopen(pFileName, "rb");
+	m_pFile = PlatformFopen(pFileName, "rb");
 
 	Free(pFileName);
 
