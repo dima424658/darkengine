@@ -3,14 +3,15 @@
 ## Current state
 
 The SDL3/Vulkan runtime is wired to the legacy `RenderBackend` API on macOS,
-Linux, Win32, and Android. The macOS game/editor targets and Android ARM64 APK
-build successfully. The Visual Studio DirectDraw target uses the software/GDI
-fallback and has no hardware renderer; the supported Windows hardware path is
-the CMake SDL3/Vulkan build. Windows and Linux builds and device/runtime parity
-remain unverified. A macOS visual spot-check loaded Thief Gold `MISS1.MIS`; its
-world surfaces appeared coherently textured with no obvious stretching. This
-does not replace checks across more missions and GPUs. The OpenGL, D3D11, and
-SDL2 renderer implementations have been removed.
+Linux, Win32, and Android. All Vulkan implementation files now live under
+`libsrc/lgvk` and are built into the `lgvk` library. Windows uses the same
+SDL3/Vulkan display path as the other desktop platforms; the Win32
+DirectDraw/GDI provider and renderer stub have been removed. Windows and Linux
+builds and device/runtime parity remain unverified. A macOS visual spot-check
+loaded Thief Gold `MISS1.MIS`; its world surfaces appeared coherently textured
+with no obvious stretching. This does not replace checks across more missions
+and GPUs. The OpenGL, D3D11, SDL2, and legacy Win32 display renderer
+implementations have been removed.
 
 ## Goal
 
@@ -61,9 +62,8 @@ that final image.
 2. Validate Android Vulkan surface startup, touch/gamepad input, and movie
    overlay on a Vulkan-capable device; the ARM64 APK now builds with packaged
    SPIR-V.
-3. Retire the legacy Visual Studio DirectDraw build path or replace it with the
-   shared SDL3/Vulkan runtime; it currently provides software/GDI presentation
-   only.
+3. Validate Windows SDL3/Vulkan startup and rendering on physical hardware;
+   the legacy DirectDraw/GDI display path is retired.
 
 Parity checks cover game rendering, editor viewport redraw and preserve
 semantics, textures, movies/software UI composition, gamma, resizing/HiDPI,

@@ -74,7 +74,6 @@
 #include <netman.h>
 #include <iobjnet.h>
 #include <movie.h>
-#include <arqapi.h>
 #include <diskfree.h>
 #include <platform_services.h>
 #include <dyntex.h>
@@ -524,7 +523,6 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    VoiceOverCreate(); 
    CampaignCreate(); 
    InputBinderCreate (&g_pInputBinder);
-   AsyncReadQueueCreate();
    DynTextureCreate();
 
    // @TODO: move these out to an "engine features" app object creation function,

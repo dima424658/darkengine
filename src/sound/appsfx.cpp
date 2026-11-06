@@ -458,18 +458,6 @@ BOOL SFXInit(void)
                                     &attribs) == kSndOk;
    }
 
-   // "auto" means the native provider first, then the portable provider if
-   // the native device cannot be initialized. OpenAL remains opt-in on a
-   // healthy Windows system and is loaded only at runtime.
-   if (!initialized && !strcmpi(backendName, "auto")) {
-      SafeRelease(pSndMixer);
-      if (SndCreateMixerNamed(&pSndMixer, NULL, "openal")) {
-         pSndMixer->Set3DMethod(sfx3DMethod);
-         initialized = pSndMixer->Init(NULL,
-            sfx_use_channels + SFX_BONUSCHANNELS, &attribs) == kSndOk;
-      }
-   }
-
    if (initialized) {
       TIMELOG_INIT( 16384 );
       if (sgMixerTimeout != -1)

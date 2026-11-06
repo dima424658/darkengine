@@ -21,7 +21,7 @@
 
 #include <SDL3/SDL_main.h>
 
-#include "../render/runtime.h"
+#include "../../libsrc/lgvk/runtime.h"
 
 extern "C" int LGAPI _AppMain(int argc, const char *argv[]);
 

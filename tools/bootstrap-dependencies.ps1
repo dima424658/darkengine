@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('All', 'Game', 'DromEd')]
+    [ValidateSet('All', 'Game')]
     [string]$Target = 'All'
 )
 
@@ -41,12 +41,4 @@ if ($Target -in @('All', 'Game')) {
         -Repository 'https://github.com/albertodemichelis/squirrel.git' `
         -Tag 'v3.2' `
         -RequiredFile 'include\squirrel.h'
-}
-
-if ($Target -in @('All', 'DromEd')) {
-    Install-GitDependency `
-        -Name 'kctools' `
-        -Repository 'https://github.com/JarrodDoyle/KCTools.git' `
-        -Tag 'v1.3.4' `
-        -RequiredFile 'KCTools.slnx'
 }

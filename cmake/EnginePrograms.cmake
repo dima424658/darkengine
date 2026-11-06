@@ -5,70 +5,51 @@ if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$" OR ANDROID OR WIN32)
     unixsrc/dispdev/display.cpp
     unixsrc/framewrk/diskfree.cpp
     unixsrc/gameshel/gameshell.cpp
-    unixsrc/input/gamepad.cpp
-    unixsrc/input/guids.c
-    unixsrc/input/input.cpp
-    unixsrc/movie/movie.cpp
-    unixsrc/render/vulkan.cpp
+    libsrc/input/gamepad.cpp
+    libsrc/input/guids.c
+    libsrc/input/input.cpp
+    libsrc/actmovie/movie.cpp
     unixsrc/script/scrptmod.cpp
-    unixsrc/sound/factory.cpp
-    unixsrc/sound/openal_loader.cpp
-    unixsrc/sound/platform.cpp
-    unixsrc/timer/timer.cpp
-    winsrc/input/inpinit.c
-    winsrc/input/kbasctab.cpp
-    winsrc/input/kbcntry.c
+    libsrc/timer/timer.cpp
+    libsrc/input/inpinit.c
+    libsrc/input/kbasctab.cpp
+    libsrc/input/kbcntry.c
   )
   if(WIN32)
-    # Keep SDL3/Vulkan presentation and input on Windows while selecting the
-    # native OpenAL loader. The POSIX providers include unistd.h, statvfs,
-    # and dlfcn and cannot be compiled by MSVC.
+    # Keep SDL3/Vulkan presentation and input on Windows. POSIX providers
+    # include unistd.h and statvfs and cannot be compiled by MSVC.
     list(REMOVE_ITEM dark_sdl_provider_sources
       unixsrc/appcore/appcore.cpp
       unixsrc/framewrk/diskfree.cpp
-      unixsrc/sound/openal_loader.cpp
-      unixsrc/timer/timer.cpp
     )
     list(APPEND dark_sdl_provider_sources
       winsrc/appcore/wappcore.cpp
       winsrc/framewrk/diskfree.c
-      winsrc/sound/openal_loader.cpp
-      winsrc/timer/tmwin32.c)
+    )
   endif()
-  add_library(dark_unix_providers STATIC ${dark_sdl_provider_sources})
-  target_link_libraries(dark_unix_providers PUBLIC dark_engine_packed)
-  target_link_libraries(dark_unix_providers PUBLIC ${DARK_SDL_TARGET})
+  add_library(dark_sdl_providers STATIC ${dark_sdl_provider_sources})
+  # lgvk contains the Vulkan runtime bridge as well as the Vulkan-Hpp core.
+  # Give it engine declarations and platform includes without the legacy
+  # byte-packing options propagated by dark_engine_packed.
+  target_link_libraries(lgvk PUBLIC dark_engine_config)
+  target_link_libraries(dark_sdl_providers PUBLIC dark_engine_packed)
+  target_link_libraries(dark_sdl_providers PUBLIC ${DARK_SDL_TARGET})
   if(WIN32)
-    target_include_directories(dark_unix_providers PRIVATE
+    target_include_directories(dark_sdl_providers PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/winsrc"
       "${CMAKE_CURRENT_SOURCE_DIR}/winsrc/appcore")
   endif()
-  # This translation unit owns Vulkan-Hpp objects whose layout must match
-  # the normally packed Vulkan foundation. The legacy engine's
-  # -fpack-struct=1 option is propagated through dark_engine_packed; without
-  # this override it corrupts the context/renderer state (including image
-  # sampling state and shutdown handles).
-  if(MSVC)
-    set(dark_vulkan_runtime_pack_option "/Zp8")
-  else()
-    set(dark_vulkan_runtime_pack_option "-fpack-struct=0")
-  endif()
-  set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/render/vulkan.cpp"
-    PROPERTIES COMPILE_OPTIONS "${dark_vulkan_runtime_pack_option}")
-  target_compile_definitions(dark_unix_providers PRIVATE
-    DARK_VULKAN_SHADER_DIR="${DARK_VULKAN_SHADER_DIR}")
-  target_link_libraries(dark_unix_providers PUBLIC dark_vulkan_foundation)
+  target_link_libraries(dark_sdl_providers PUBLIC lgvk)
   if(TARGET dark_vulkan_shaders)
-    add_dependencies(dark_unix_providers dark_vulkan_shaders)
+    add_dependencies(dark_sdl_providers dark_vulkan_shaders)
   endif()
   if(TARGET dark_squirrel)
-    target_compile_definitions(dark_unix_providers PRIVATE
+    target_compile_definitions(dark_sdl_providers PRIVATE
       DARK_ENABLE_SQUIRREL=1)
   endif()
   if(FFMPEG_FOUND)
-    target_compile_definitions(dark_unix_providers PRIVATE DARK_HAVE_FFMPEG=1)
-    target_link_libraries(dark_unix_providers PUBLIC PkgConfig::FFMPEG)
+    target_compile_definitions(dark_sdl_providers PRIVATE DARK_HAVE_FFMPEG=1)
+    target_link_libraries(dark_sdl_providers PUBLIC PkgConfig::FFMPEG)
   else()
     message(WARNING "FFmpeg development libraries were not found; movie playback will be disabled")
   endif()
@@ -80,14 +61,12 @@ if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$" OR ANDROID OR WIN32)
   endif()
   option(DARK_BUILD_DROMED "Compile the native SDL DromEd editor" ${dark_build_dromed_default})
   if(DARK_BUILD_THIEF2)
-    dark_sources_from_vcxproj(dark_project_sources
-      "${CMAKE_CURRENT_SOURCE_DIR}/src/dromed.vcxproj")
-
-    # The Visual Studio project contains both DromEd and Thief2. Match its
-    # BuildThief2 selection without maintaining a second source manifest.
+    # The shared source manifest contains both the game and editor. Build the
+    # game target without editor-only sources, then add its game bootstrap.
     set(dark_thief2_sources)
-    foreach(source IN LISTS dark_project_sources)
-      file(RELATIVE_PATH source_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${source}")
+    foreach(source IN LISTS dark_engine_program_sources)
+      file(RELATIVE_PATH source_rel "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
       file(TO_CMAKE_PATH "${source_rel}" source_rel)
       string(TOLOWER "${source_rel}" source_rel_lower)
       if(source_rel_lower MATCHES "^src/(editor|csg)/" OR
@@ -108,7 +87,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$" OR ANDROID OR WIN32)
     )
     list(REMOVE_DUPLICATES dark_game_sources)
 
-    set(dark_dromed_sources ${dark_project_sources})
+    set(dark_dromed_sources ${dark_engine_program_sources})
     list(FILTER dark_dromed_sources EXCLUDE REGEX "/src/framewrk/initgame[.]cpp$")
     if(APPLE)
       list(APPEND dark_dromed_sources
@@ -118,8 +97,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$" OR ANDROID OR WIN32)
     list(REMOVE_DUPLICATES dark_dromed_sources)
 
     # These generated scanners deliberately use the same private helper
-    # names.  The Visual Studio project compiles them with YY_STATIC; keep
-    # that source-level setting when consuming the project from CMake.
+    # names, so keep their scanner helpers static to each translation unit.
     set_source_files_properties(
       "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/inclex.c"
       "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/mschlex.c"
@@ -177,7 +155,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$" OR ANDROID OR WIN32)
       ${dark_engine_targets}
       dark_platform
       dark_compression
-      dark_unix_providers
+      dark_sdl_providers
       $<$<TARGET_EXISTS:dark_squirrel>:dark_squirrel>
       $<$<TARGET_EXISTS:dark_vorbisfile>:dark_vorbisfile>
       $<$<TARGET_EXISTS:dark_vorbis>:dark_vorbis>

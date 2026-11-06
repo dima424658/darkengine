@@ -74,12 +74,12 @@ repository.
 | Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Build target; runtime unvalidated | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
 | System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
 | DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Viewer/playtest port | Early viewer/playtest port | Not built |
-| Graphics | SDL3/Vulkan (CMake); DirectDraw/GDI software fallback (legacy VS) | SDL3/Vulkan (CMake); DirectDraw/GDI software fallback (legacy VS) | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan |
-| Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL framework | OpenAL Soft | OpenAL Soft/OpenSL |
-| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg when available | FFmpeg | LibVLC |
+| Graphics | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan |
+| Audio | OpenAL | OpenAL | OpenAL framework | OpenAL Soft | OpenAL Soft/OpenSL |
+| Movies | FFmpeg when available | FFmpeg when available | FFmpeg when available | FFmpeg when available | Native Android player |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
 | Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
-| Build system | CMake SDL3/Vulkan; legacy VS software fallback | CMake SDL3/Vulkan; legacy VS software fallback | CMake and Ninja | CMake and Ninja | Gradle, CMake, and Android NDK |
+| Build system | CMake SDL3/Vulkan | CMake SDL3/Vulkan | CMake and Ninja | CMake and Ninja | Gradle, CMake, and Android NDK |
 
 The legacy `.osm` row refers to ordinary compiled mission script modules.
 NewDark's `squirrel.osm` is not loaded through that compatibility path: on all
@@ -143,10 +143,9 @@ until its editing and round-trip behavior is comprehensively validated.
 
 ### Cross-platform architecture
 
-The CMake runner uses the shared `RenderBackend` Vulkan renderer through SDL3
-on Windows, macOS, Linux, and Android. The legacy Visual Studio DirectDraw
-target retains software/GDI presentation only; SDL3/Vulkan is the supported
-Windows hardware-rendering path. `winsrc` continues to provide Windows
+The CMake runner uses the shared `lgvk` Vulkan renderer through SDL3 on
+Windows, macOS, Linux, and Android. The Win32 DirectDraw/GDI display provider
+and renderer stub have been removed. `winsrc` continues to provide Windows
 platform services while the CMake game and editor use Looking Glass's `lgd3d`
 interface.
 
@@ -164,18 +163,17 @@ manager and service interfaces in place of the game-specific NewDark
 `squirrel.osm` binary. Both bridges are still being expanded and validated
 against third-party scripts.
 
-Audio follows the same provider model. Windows uses DirectSound 3D by default,
-with native I3DL2 environmental reverb. An OpenAL provider supplies positional
-audio, EFX reverb, and per-source occlusion when `OpenAL32.dll` is available;
-set `sfx_backend openal` in `cam.cfg` to select it explicitly. The default
-`auto` setting tries DirectSound first and uses OpenAL only if native audio
-cannot initialize, so the standard executable has no OpenAL dependency.
+Audio uses the shared OpenAL provider on every platform. It supplies
+positional audio, EFX reverb, and per-source occlusion. The runtime loads
+`OpenAL32.dll` on Windows, the system OpenAL framework on macOS, and OpenAL
+Soft on Linux and Android. `sfx_backend auto` and `sfx_backend openal` both
+select this provider.
 
 Movie playback is exposed through the platform-neutral engine movie API. The
-Windows Media Foundation, DirectShow, and legacy DirectDraw implementation is
-isolated under `winsrc/movie`; Linux uses FFmpeg for video/audio decoding and
-the existing SDL3/Vulkan presentation surface in CMake builds. Android uses LibVLC on a native
-Android surface while retaining the engine's synchronous movie lifecycle.
+shared SDL3 backend in `libsrc/actmovie` uses FFmpeg for video and audio
+decoding on desktop platforms and the SDL3/Vulkan presentation surface.
+Android delegates playback to its native player while retaining the engine's
+synchronous movie lifecycle.
 
 Legacy PKWARE DCL-compressed resources are decoded in-process with Mark
 Adler's small `blast` decoder under `3rdparty/blast`; newly written resources
@@ -202,39 +200,25 @@ The runner currently provides:
 #### Prerequisites
 
 - 64-bit Windows 10 or Windows 11.
-- Visual Studio 2022 or Visual Studio 2022 Build Tools with the **Desktop
-  development with C++** workload, MSVC v143 x86/x64 tools, and a Windows 10
-  or 11 SDK.
+- MSVC v143 x86/x64 build tools and a Windows 10 or 11 SDK.
 - Git, used by the dependency bootstrap.
 - For the CMake SDL3/Vulkan build: CMake 3.21 or later, SDL3's CMake
   package, the Vulkan SDK (including `glslc`), and libpng development files.
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
-- Optional: `ffmpeg.exe` on `PATH` for stock Indeo 5 AVIs when Windows has no
-  compatible DirectShow decoder. H.264 MP4 siblings do not require it.
-
-Normal game builds include the native Squirrel 3.2 provider, and normal DromEd
-builds include the KCTools v1.3.4 sidecar. Both are external source checkouts;
-bootstrap the pinned versions with:
+Normal builds require the native Squirrel 3.2 provider. Bootstrap its pinned
+source checkout with:
 
 ```powershell
 .\tools\bootstrap-dependencies.ps1
 ```
 
-The default locations are `../../darkengine-deps/squirrel` and
-`../../darkengine-deps/kctools`. Use `-Target Game` or `-Target DromEd` to
-bootstrap only one variant. DromEd also requires the .NET 10 SDK to publish its
-self-contained KCTools sidecar. Override the checkouts with
-`/p:SquirrelSourceDir=...` or `/p:KCToolsSourceDir=...`, and override `dotnet`
-with `/p:DotNetExecutable=...`.
+The default source location is `../../darkengine-deps/squirrel`. Override it
+with `-DDARK_SQUIRREL_SOURCE=C:/path/to/squirrel`; a reduced build without
+Squirrel can be selected with `-DDARK_ENABLE_SQUIRREL=OFF`.
 
-Both integrations can be omitted only by opting out explicitly:
-`/p:EnableSquirrel=false` for the game or `/p:EnableKCTools=false` for DromEd.
-Omitting those properties enables the corresponding integration.
-
-The supported SDL3/Vulkan Windows route uses CMake. With SDL3, libpng, and the
-Vulkan SDK available to CMake, configure and build either architecture with
-the provided Visual Studio generator presets:
+The SDL3/Vulkan Windows build uses CMake presets. With SDL3, libpng, and the
+Vulkan SDK available to CMake, configure and build either architecture:
 
 ```powershell
 cmake --preset windows-x64-vulkan
@@ -244,41 +228,12 @@ cmake --preset windows-x86-vulkan
 cmake --build --preset windows-x86-vulkan-release
 ```
 
-The CMake Windows route uses the same SDL3 surface and Vulkan renderer as the
-macOS and Linux CMake builds. When SDL3 is shared, CMake copies `SDL3.dll`
-beside both executables and installs it under `bin`.
+Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
+When SDL3 is shared, CMake copies `SDL3.dll` beside both executables and
+installs it under `bin`.
 
-Ogg Vorbis FM sounds are loaded through libsndfile at runtime. To package it on
-Windows, place the official architecture-matched libsndfile 1.2.2 release in
-the default `../../darkengine-deps/libsndfile-1.2.2-win32` or `-win64` folder
-and build with `/p:EnableSndFileRuntime=true`; use
-`/p:SndFileRuntimeDir=C:\path\to\bin` for another location.
-
-#### Build
-
-In Visual Studio, open `thief2.sln`, select `Release` and `x86`, then choose
-**Build > Build Solution**. From a regular PowerShell prompt, the equivalent
-explicit commands are:
-
-```powershell
-$msbuild = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe'
-& $msbuild src\dromed.vcxproj /m /t:Build /p:Configuration=Release /p:Platform=Win32 /p:BuildThief2=true
-& $msbuild src\dromed.vcxproj /m /t:Build /p:Configuration=Release /p:Platform=Win32 /p:BuildThief2=false
-```
-
-Use `Platform=x64` for native 64-bit builds. Outputs are separated by
-architecture and application:
-
-```text
-build\Release\Win32\ThiefRunner\ThiefRunner.exe
-build\Release\Win32\DromEd\DromEd.exe
-build\Release\x64\ThiefRunner\ThiefRunner.exe
-build\Release\x64\DromEd\DromEd.exe
-```
-
-The game and editor share `src\dromed.vcxproj`; `BuildThief2` selects their
-different source sets. Static libraries are shared within an architecture and
-must not vary with that property.
+The executables are written under `build-win32-vulkan/Release` or
+`build-win64-vulkan/Release` as `thief-runner.exe` and `DromEd.exe`.
 
 #### Running
 
@@ -701,29 +656,16 @@ both the resolution list and the target for borderless fullscreen. To change
 displays, switch to Windowed, move the window, reopen Video Options, and then
 select a resolution or Fullscreen. The list is queried again for that display.
 The engine's gamma setting is applied in the SDL3/Vulkan scene shader using the
-legacy palette-correction power curve. The legacy DirectDraw/GDI fallback has
-no hardware gamma adjustment.
+legacy palette-correction power curve.
 
 The retail game writes `skip_intro` after the intro has played. Add
-`always_play_intro` to `cam.cfg` to show it on every launch. When both movie
-formats exist, the Windows runner prefers H.264 MP4 through Media Foundation.
-If only the original Indeo 5 AVI exists and DirectShow cannot decode it, the
-runner uses `ffmpeg.exe` to prepare an H.264/AAC copy beneath
-`%LOCALAPPDATA%\DarkEngineRestored\MovieCache`; it never changes the retail
-movie. Set `DARK_MOVIE_CACHE` to override that cache directory.
+`always_play_intro` to `cam.cfg` to show it on every launch. Desktop movie
+playback requires FFmpeg development libraries at build time; Android uses its
+native movie player.
 
 ## Controls
 
-The original keyboard, mouse, and binding systems remain in use. The game
-runner replaces only the legacy DirectInput joystick polling with a
-platform-neutral gamepad layer: runtime-loaded XInput on Windows and SDL
-GameController on Linux and Android. SDL accepts compatible controllers
-regardless of branding; the default bindings merely use the familiar
-Xbox-style button names and layout. One controller owns gameplay input at a
-time and can be connected, disconnected, or reconnected while the game runs.
-The selected modern controller is excluded from the legacy joystick fallback,
-avoiding duplicate input. Keyboard and mouse remain active on every platform,
-and Android touch controls remain active alongside them and the gamepad.
+This project replaces the original DirectInput joystick polling with SDL GameController on Windows, macOS, Linux, and Android. SDL supports compatible controllers regardless of branding; the default bindings use familiar Xbox-style button names and layout. One controller owns gameplay input at a time and can be connected, disconnected, or reconnected while the game runs. Keyboard and mouse remain active on every platform, and Android touch controls remain active alongside them and the gamepad.
 
 The default layout follows the modern Thief radial-menu scheme. Left stick
 moves and right stick looks; A jumps, B crouches, X uses the selected item, RT
@@ -1050,10 +992,9 @@ console logs are ignored by Git.
   show the game's animated loading progress. Play preview remains unstable:
   returning to the editor can still crash, and a resolution selected in the
   gameplay Video Options menu may not take effect in the preview window.
-- Environmental audio now maps the original EAX room presets onto DirectSound
-  I3DL2 or OpenAL EFX. DirectSound provides room reverb while the optional
-  OpenAL provider also supplies per-source low-pass occlusion; both paths need
-  broader in-mission acoustic comparison against the original game.
+- Environmental audio maps the original EAX room presets onto OpenAL EFX and
+  applies per-source low-pass occlusion. In-mission acoustic comparison
+  against the original game still needs broader validation.
 - Game builds load NewDark-style loose
   `sq_scripts/*.nut` sources with the native Squirrel 3.2 provider. Core
   object, property, link, physics, Act/React, door, lock, damage, containment,

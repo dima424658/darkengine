@@ -1,72 +1,5 @@
-# Legacy engine libraries and source manifest integration.
-# Keep the Visual Studio manifests as the single source of truth.  This
-# deliberately small reader understands the simple ClCompile entries used
-# by the legacy projects and ignores files disabled in every configuration.
-function(dark_resolve_source out_var source base_dir)
-  string(REPLACE "\\" "/" source "${source}")
-  string(REPLACE "/" ";" source_parts "${source}")
-  cmake_path(NORMAL_PATH base_dir OUTPUT_VARIABLE resolved)
-  foreach(part IN LISTS source_parts)
-    if(part STREQUAL "" OR part STREQUAL ".")
-      continue()
-    elseif(part STREQUAL "..")
-      get_filename_component(resolved "${resolved}" DIRECTORY)
-      continue()
-    endif()
-
-    if(EXISTS "${resolved}/${part}")
-      set(resolved "${resolved}/${part}")
-      continue()
-    endif()
-
-    string(TOLOWER "${part}" part_lower)
-    file(GLOB siblings "${resolved}/*")
-    foreach(candidate IN LISTS siblings)
-      get_filename_component(candidate_name "${candidate}" NAME)
-      string(TOLOWER "${candidate_name}" candidate_name_lower)
-      if(candidate_name_lower STREQUAL part_lower)
-        set(resolved "${candidate}")
-        break()
-      endif()
-    endforeach()
-  endforeach()
-  cmake_path(NORMAL_PATH resolved)
-  # Keep manifest paths in CMake's portable slash form so the source filters
-  # behave identically on Windows and Linux hosts.
-  file(TO_CMAKE_PATH "${resolved}" resolved)
-  set(${out_var} "${resolved}" PARENT_SCOPE)
-endfunction()
-
-function(dark_sources_from_vcxproj out_var project_file)
-  get_filename_component(project_dir "${project_file}" DIRECTORY)
-  file(STRINGS "${project_file}" project_lines)
-  set(result)
-  set(current_source)
-  set(current_excluded FALSE)
-  foreach(line IN LISTS project_lines)
-    if(line MATCHES "<ClCompile Include=\"([^\"]+)\"[ ]*/>")
-      set(source "${CMAKE_MATCH_1}")
-      string(REPLACE "\\" "/" source "${source}")
-      if(NOT source MATCHES "(^|/)winsrc/")
-        dark_resolve_source(source "${source}" "${project_dir}")
-        list(APPEND result "${source}")
-      endif()
-    elseif(line MATCHES "<ClCompile Include=\"([^\"]+)\"[ ]*>")
-      set(current_source "${CMAKE_MATCH_1}")
-      set(current_excluded FALSE)
-    elseif(current_source AND line MATCHES "<ExcludedFromBuild[^>]*>true</ExcludedFromBuild>")
-      set(current_excluded TRUE)
-    elseif(current_source AND line MATCHES "</ClCompile>")
-      string(REPLACE "\\" "/" current_source "${current_source}")
-      if(NOT current_excluded AND NOT current_source MATCHES "(^|/)winsrc/")
-        dark_resolve_source(current_source "${current_source}" "${project_dir}")
-        list(APPEND result "${current_source}")
-      endif()
-      unset(current_source)
-    endif()
-  endforeach()
-  set(${out_var} "${result}" PARENT_SCOPE)
-endfunction()
+# Load the explicit, CMake-owned source lists for the engine targets.
+include("${CMAKE_CURRENT_LIST_DIR}/EngineSourceManifest.cmake")
 
 file(GLOB dark_library_dirs LIST_DIRECTORIES TRUE "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/*")
 list(FILTER dark_library_dirs INCLUDE REGEX "[^.]$")
@@ -97,9 +30,10 @@ set(dark_include_dirs
   "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/blast"
   "${DARK_PLATFORM_ROOT}"
   ${dark_library_dirs}
-  # Transitional home of legacy keyboard/mouse public headers. Keep this
-  # last so its Windows input GUID header cannot shadow compapis/inpguid.h.
-  "${CMAKE_CURRENT_SOURCE_DIR}/winsrc/input"
+  # Shared SDL input providers and retained legacy keyboard/mouse headers.
+  # Keep this last so its Windows input GUID header cannot shadow
+  # compapis/inpguid.h.
+  "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/input"
 )
 
 add_library(dark_engine_config INTERFACE)
@@ -144,26 +78,20 @@ else()
 endif()
 
 set(dark_library_projects
-  appcore arq compapis comtools config cpptools darkloop dev2d dispdev
+  appcore compapis comtools config cpptools darkloop dev2d dispdev
   dstruct dump fix font g2 gadget gfile inputbnd lg lgalloc lgd3d matrix md
   mm mp mprintf namedres net prof r3d random recorder ref res rnd script
   sdesc skel sndsrc sndutil sound star tagfile templgen timer ui vec2
 )
 foreach(library IN LISTS dark_library_projects)
-  set(project_file "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/${library}/${library}.vcxproj")
-  dark_sources_from_vcxproj(library_sources "${project_file}")
+  set(source_variable "dark_sources_${library}")
+  set(library_sources ${${source_variable}})
   if(library STREQUAL "appcore" AND NOT WIN32)
     list(FILTER library_sources EXCLUDE REGEX "/dappcore\\.cpp$")
   endif()
-  if(library STREQUAL "dev2d" AND NOT WIN32)
-    # Hardware-specific DOS/VGA device tables.  The portable CPU canvas
-    # remains; these backends cannot run on a protected-mode host.
-    list(FILTER library_sources EXCLUDE REGEX "/(fl8dtab|svgainit|vesac|vgadtab|vsadtab|w32dtab)\\.c$")
-  endif()
-  if(library STREQUAL "g2" AND NOT WIN32)
-    # These wrappers patch constants embedded in the retired x86 rasterizer
-    # assembly and have no native implementation to call on Linux.
-    list(FILTER library_sources EXCLUDE REGEX "/(f16fl8ll|fl8fl8ll|svgainit)\\.c$")
+  if(library STREQUAL "g2")
+    # Drop DOS/VGA initialization and retired x86 rasterizer patch wrappers.
+    list(FILTER library_sources EXCLUDE REGEX "/(f16fl8ll|fl8fl8ll)\\.c$")
   endif()
   if(library STREQUAL "gfile")
     list(FILTER library_sources EXCLUDE REGEX "/gftest\\.c$")
@@ -179,12 +107,9 @@ foreach(library IN LISTS dark_library_projects)
 endforeach()
 
 target_link_libraries(dark_cpptools PUBLIC dark_platform)
-if(NOT WIN32)
-  target_sources(dark_cpptools PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/cpptools/filesystem.cpp"
-  )
-  target_sources(dark_lgalloc PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/lgalloc/stdalloc.cpp"
+if(WIN32)
+  target_compile_definitions(dark_lgalloc PRIVATE
+    DARKENGINE_MODERN_CRT_ALLOCATOR=1
   )
 endif()
 target_link_libraries(dark_namedres PUBLIC dark_compression)

@@ -214,7 +214,7 @@ doubleSamples( void     *pSrc,
 //  frequency doubling is being done?  Level above LoadBufferIndirect
 //  could force sample count to be even when doubling is on, but
 //  can we be sure that there is never going to be an odd sample
-//  count because of DirectSound buffer wraparound?
+//  count because of the output buffer wrapping around?
 
 void *
 cSndSegment::GetData( void    *pDst,

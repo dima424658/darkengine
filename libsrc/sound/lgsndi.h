@@ -27,9 +27,6 @@
 
 #include <timelog.h>
 
-F_DECLARE_INTERFACE(IDisplayDevice);
-F_DECLARE_INTERFACE(IWinDisplayDevice);
-
 // sound flag bits 16 through 31 are for internal use
 enum {
    kSndFlagPleaseStop   = (1<<16),  // sample should be stopped at next mixer update
@@ -157,10 +154,6 @@ public:
 
    uint32 Get3DDeferFlag(void);
 
-   int BlockDisplay();
-   void ReleaseDisplay(int cookie);
-   void InitPlatformState();
-   void ReleasePlatformState();
    void TBD( char *message );
 
 protected:
@@ -169,7 +162,7 @@ protected:
 	void CleanUpFinishedSamples(void);
 
 protected:
-   sSndAttribs mPrimaryAttribs;              // attribs of primary DirectSound obj
+   sSndAttribs mPrimaryAttribs;              // primary output format
 
    int32 mGroupVolumes[kSndNumGroups+1];                    // volumes of sample groups
    int32 mMasterVolume;                                     // mixer master volume
@@ -182,10 +175,10 @@ protected:
 
    // sample allocation stuff
 
-	int32 mNumMixerChans;						      // total DirectSoundBuffers available
-   int32 mNumFreeMixerChans;                  // number of free DirectSoundBuffers
+	int32 mNumMixerChans;						      // total backend channels
+   int32 mNumFreeMixerChans;                  // available backend channels
 
-   // the audible list holds samples which have a DirectSoundBuffer,
+   // the audible list holds samples which have a backend buffer,
    // the inaudible list holds samples which don't.
 	// all samples are in one of these two lists
 	cSndSample  *mpAudibleListHead;
@@ -210,9 +203,6 @@ protected:
 
    eSndTimerState          mTimerState;
    uint32                  mTimerLastTick;
-
-   IDisplayDevice          *mpDisplayDevice;
-   IWinDisplayDevice       *mpWinDisplayDevice;
 
    sSndVector              m3DPosition;
    sSndVector              m3DFrontVector;
@@ -556,7 +546,7 @@ protected:
 
    static uint32        mNumAudible;      // #samples in audible list
    static uint32        mNumInaudible;    // #samples in inaudible list
-   int32                mInitBuffPos;     // initial DSound buffer position
+   int32                mInitBuffPos;     // initial backend buffer position
    int32                mPriority;        // app specified priority level
    char                 *mpName;          // sample name ptr
 

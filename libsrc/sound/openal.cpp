@@ -129,8 +129,6 @@ STDMETHODIMP_(eSndError) cALSndMixer::Init(sSndSetup *, uint32 channels,
    mGroupFadesActive = FALSE;
    mMasterVolume = 0;
    mTimerState = eSndTimerUnknown;
-   InitPlatformState();
-
    mAL.alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
    Set3DPosition(&m3DPosition);
    Set3DOrientation(&m3DFrontVector, &m3DTopVector);

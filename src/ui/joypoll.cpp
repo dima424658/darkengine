@@ -433,7 +433,7 @@ static void ResetGamepadActions(void)
 
 // Convert physical buttons into the stateful layout used by the radial-menu
 // controller scheme.  Keeping this above the binding layer makes tap/hold
-// timing and chords identical for XInput, SDL, and Android's SDL backend.
+// timing and chords identical across SDL desktop and Android backends.
 static uint32_t TranslateGamepadButtons(const sGamepadState *state, ulong now)
 {
    const uint32_t yBit = 1u << kGamepadButtonY;
