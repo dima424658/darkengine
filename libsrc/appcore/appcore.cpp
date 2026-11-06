@@ -6,7 +6,6 @@
 //
 
 #include <lg.h>
-#include <codewrit.h>
 
 #include <appagg.h>
 #include <objcguid.h>
@@ -80,10 +79,6 @@ int LGAPI _AppMain(int argc, const char *argv[])
 
     // Force link of main/WinMain/LibMain
     _g_referenceEntryPoint = 1;
-
-    // Allow our code to be self-modifying
-    if (g_fAppStartupFlags & kASF_MakeCodeWritable)
-        MakeAllCodeWritable();
 
     // Increase the number of available handles in the standard buffered i/o
     #ifdef __WATCOMC__

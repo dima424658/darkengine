@@ -8,22 +8,22 @@
 #include <appagg.h>
 #include <appapi.h>
 #include <dispapi.h>
-#include "../../libsrc/dispdev/dispbase.h"
+#include "dispbase.h"
 #include <fix.h>
 #include <grd.h>
 #include <mode.h>
 
-#include "../../libsrc/lgd3d/runtime.h"
+#include "../lgd3d/runtime.h"
 
-class cUnixDisplayDevice : public cDisplayDevice
+class cSDLDisplayDevice : public cDisplayDevice
 {
 public:
-   cUnixDisplayDevice(IUnknown *outer, eDisplayDeviceKind kind, int flags)
+   cSDLDisplayDevice(IUnknown *outer, eDisplayDeviceKind kind, int flags)
       : cDisplayDevice(outer, kind, flags), m_kind(kind), m_options(flags)
    {
       for (int i = 0; i < 256; ++i) m_palette[i*3] = m_palette[i*3+1] = m_palette[i*3+2] = static_cast<unsigned char>(i);
    }
-   ~cUnixDisplayDevice() override
+   ~cSDLDisplayDevice() override
    {
       // Display-device objects are transient across Dark's logical canvas
       // changes.  The SDL window and Vulkan context are process-owned and must
@@ -116,5 +116,5 @@ private:
 extern "C" tResult LGAPI _DisplayDeviceCreate(REFIID, IDisplayDevice **,
    IUnknown *outer, eDisplayDeviceKind kind, int flags)
 {
-   return new cUnixDisplayDevice(outer, kind, flags) ? S_OK : E_FAIL;
+   return new cSDLDisplayDevice(outer, kind, flags) ? S_OK : E_FAIL;
 }

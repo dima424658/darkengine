@@ -28,9 +28,6 @@
 #include <resagg.h>
 #include <string.h>
 #include <cfgtool.h>
-#ifdef _WIN32
-#include <breakkey.h>
-#endif
 #include <iobjsys.h>
 #include <scrptapi.h>
 #include <scrnmode.h>
@@ -589,11 +586,6 @@ tResult LGAPI CoreEngineAppInit()
    {
       DbgMonoConfig ();
    }
-#endif
-
-#ifdef _WIN32
-   if (config_is_defined("breakkey"))
-      BreakKeyActivate(VK_F12,VK_F11);
 #endif
 
    tm_init();

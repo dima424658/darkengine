@@ -22,6 +22,7 @@
 #include <render_backend.h>
 
 #include "runtime.h"
+#include "event_bridge.h"
 #include "vulkan_context.hpp"
 #include "vulkan_render_backend.hpp"
 #include "vulkan_sdl.hpp"
@@ -49,6 +50,8 @@ bool g_quit;
 bool g_relativeRequested;
 bool g_relativeActive;
 bool g_focused;
+float g_pumpRelativeX;
+float g_pumpRelativeY;
 std::atomic<bool> g_windowMinimized;
 std::atomic<bool> g_appInBackground;
 std::atomic<bool> g_lifecycleResizePending;
@@ -455,121 +458,128 @@ bool DarkRenderSetFullscreen(bool enabled)
    return true;
 }
 
-bool DarkRenderPumpEvents(void)
+bool DarkRenderBeginEventPump(void)
 {
    if (!g_window) return false;
    process_pending_lifecycle_resize();
-   SDL_Event event;
-   float relativeX = 0.0f, relativeY = 0.0f;
-   while (SDL_PollEvent(&event))
+   g_pumpRelativeX = g_pumpRelativeY = 0.0f;
+   return true;
+}
+
+void DarkRenderHandleEvent(const SDL_Event *event)
+{
+   if (!event || !g_window) return;
+
+   SDL_WindowID eventWindowId = 0;
+   switch (event->type)
    {
-      SDL_WindowID eventWindowId = 0;
-      switch (event.type)
+   case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+   case SDL_EVENT_WINDOW_FOCUS_GAINED:
+   case SDL_EVENT_WINDOW_FOCUS_LOST:
+   case SDL_EVENT_WINDOW_MINIMIZED:
+   case SDL_EVENT_WINDOW_RESTORED:
+   case SDL_EVENT_WINDOW_RESIZED:
+   case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+      eventWindowId = event->window.windowID; break;
+   case SDL_EVENT_KEY_DOWN: case SDL_EVENT_KEY_UP:
+      eventWindowId = event->key.windowID; break;
+   case SDL_EVENT_MOUSE_MOTION:
+      eventWindowId = event->motion.windowID; break;
+   case SDL_EVENT_MOUSE_BUTTON_DOWN: case SDL_EVENT_MOUSE_BUTTON_UP:
+      eventWindowId = event->button.windowID; break;
+   case SDL_EVENT_MOUSE_WHEEL:
+      eventWindowId = event->wheel.windowID; break;
+   default: break;
+   }
+   if (eventWindowId && eventWindowId != SDL_GetWindowID(g_window))
+      return;
+   if (event->type == SDL_EVENT_QUIT ||
+       event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
+      g_quit = true;
+   else if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ||
+            event->type == SDL_EVENT_WINDOW_RESIZED)
+      update_window_dimensions();
+   else if (event->type == SDL_EVENT_WINDOW_MINIMIZED)
+   {
+      g_windowMinimized = true;
+      update_window_dimensions();
+   }
+   else if (event->type == SDL_EVENT_WINDOW_RESTORED)
+   {
+      g_windowMinimized = false;
+      update_window_dimensions();
+   }
+   else if (event->type == SDL_EVENT_WINDOW_FOCUS_GAINED)
+   {
+      g_focused = true;
+      g_windowMinimized = false;
+      update_window_dimensions();
+      update_relative_mouse();
+   }
+   else if (event->type == SDL_EVENT_WINDOW_FOCUS_LOST)
+   { g_focused = false; update_relative_mouse(); }
+   else if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP)
+   {
+      const uchar scan = key_scan(event->key.scancode);
+      if (scan != KBC_NONE && !event->key.repeat)
+         DarkInputKey(scan, event->type == SDL_EVENT_KEY_DOWN);
+   }
+   else if (event->type == SDL_EVENT_MOUSE_MOTION)
+   {
+      if (g_relativeActive)
+      { g_pumpRelativeX += event->motion.xrel; g_pumpRelativeY += event->motion.yrel; }
+      else
       {
-      case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-      case SDL_EVENT_WINDOW_FOCUS_GAINED:
-      case SDL_EVENT_WINDOW_FOCUS_LOST:
-      case SDL_EVENT_WINDOW_MINIMIZED:
-      case SDL_EVENT_WINDOW_RESTORED:
-      case SDL_EVENT_WINDOW_RESIZED:
-      case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-         eventWindowId = event.window.windowID; break;
-      case SDL_EVENT_KEY_DOWN: case SDL_EVENT_KEY_UP:
-         eventWindowId = event.key.windowID; break;
-      case SDL_EVENT_MOUSE_MOTION:
-         eventWindowId = event.motion.windowID; break;
-      case SDL_EVENT_MOUSE_BUTTON_DOWN: case SDL_EVENT_MOUSE_BUTTON_UP:
-         eventWindowId = event.button.windowID; break;
-      case SDL_EVENT_MOUSE_WHEEL:
-         eventWindowId = event.wheel.windowID; break;
-      default: break;
-      }
-      if (eventWindowId && eventWindowId != SDL_GetWindowID(g_window))
-         continue;
-      if (event.type == SDL_EVENT_QUIT ||
-          event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
-         g_quit = true;
-      else if (event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ||
-               event.type == SDL_EVENT_WINDOW_RESIZED)
-         update_window_dimensions();
-      else if (event.type == SDL_EVENT_WINDOW_MINIMIZED)
-      {
-         g_windowMinimized = true;
-         update_window_dimensions();
-      }
-      else if (event.type == SDL_EVENT_WINDOW_RESTORED)
-      {
-         g_windowMinimized = false;
-         update_window_dimensions();
-      }
-      else if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED)
-      {
-         g_focused = true;
-         g_windowMinimized = false;
-         update_window_dimensions();
-         update_relative_mouse();
-      }
-      else if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST)
-      { g_focused = false; update_relative_mouse(); }
-      else if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP)
-      {
-         const uchar scan = key_scan(event.key.scancode);
-         if (scan != KBC_NONE && !event.key.repeat)
-            DarkInputKey(scan, event.type == SDL_EVENT_KEY_DOWN);
-      }
-      else if (event.type == SDL_EVENT_MOUSE_MOTION)
-      {
-         if (g_relativeActive)
-         { relativeX += event.motion.xrel; relativeY += event.motion.yrel; }
-         else
-         {
-            int x = static_cast<int>(event.motion.x);
-            int y = static_cast<int>(event.motion.y);
-            logical_point(x, y);
-            DarkInputMouse(static_cast<short>(x), static_cast<short>(y),
-               MOUSE_MOTION, g_buttons, 0);
-         }
-      }
-      else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
-               event.type == SDL_EVENT_MOUSE_BUTTON_UP)
-      {
-         const int logical = event.button.button == SDL_BUTTON_LEFT ? 0 :
-            event.button.button == SDL_BUTTON_RIGHT ? 1 :
-            event.button.button == SDL_BUTTON_MIDDLE ? 2 : -1;
-         if (logical >= 0)
-         {
-            const bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
-            const uchar bit = static_cast<uchar>(1 << logical);
-            if (down) g_buttons |= bit; else g_buttons &= ~bit;
-            const uchar type = static_cast<uchar>(1 << (1 + 2 * logical + !down));
-            int x = static_cast<int>(event.button.x);
-            int y = static_cast<int>(event.button.y);
-            if (g_relativeActive) { x = g_width / 2; y = g_height / 2; }
-            else logical_point(x, y);
-            DarkInputMouse(static_cast<short>(x), static_cast<short>(y),
-               type, g_buttons, 0);
-         }
-      }
-      else if (event.type == SDL_EVENT_MOUSE_WHEEL)
-      {
-         int x = g_width / 2, y = g_height / 2;
-         if (!g_relativeActive)
-         {
-            x = static_cast<int>(event.wheel.mouse_x);
-            y = static_cast<int>(event.wheel.mouse_y);
-            logical_point(x, y);
-         }
-         const int direction = event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -1 : 1;
-         const int wheel = std::clamp(static_cast<int>(std::lround(event.wheel.y)) * direction,
-            -127, 127);
-         if (wheel) DarkInputMouse(static_cast<short>(x), static_cast<short>(y),
-            MOUSE_WHEEL, g_buttons, static_cast<char>(wheel));
+         int x = static_cast<int>(event->motion.x);
+         int y = static_cast<int>(event->motion.y);
+         logical_point(x, y);
+         DarkInputMouse(static_cast<short>(x), static_cast<short>(y),
+            MOUSE_MOTION, g_buttons, 0);
       }
    }
+   else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+            event->type == SDL_EVENT_MOUSE_BUTTON_UP)
+   {
+      const int logical = event->button.button == SDL_BUTTON_LEFT ? 0 :
+         event->button.button == SDL_BUTTON_RIGHT ? 1 :
+         event->button.button == SDL_BUTTON_MIDDLE ? 2 : -1;
+      if (logical >= 0)
+      {
+         const bool down = event->type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+         const uchar bit = static_cast<uchar>(1 << logical);
+         if (down) g_buttons |= bit; else g_buttons &= ~bit;
+         const uchar type = static_cast<uchar>(1 << (1 + 2 * logical + !down));
+         int x = static_cast<int>(event->button.x);
+         int y = static_cast<int>(event->button.y);
+         if (g_relativeActive) { x = g_width / 2; y = g_height / 2; }
+         else logical_point(x, y);
+         DarkInputMouse(static_cast<short>(x), static_cast<short>(y),
+            type, g_buttons, 0);
+      }
+   }
+   else if (event->type == SDL_EVENT_MOUSE_WHEEL)
+   {
+      int x = g_width / 2, y = g_height / 2;
+      if (!g_relativeActive)
+      {
+         x = static_cast<int>(event->wheel.mouse_x);
+         y = static_cast<int>(event->wheel.mouse_y);
+         logical_point(x, y);
+      }
+      const int direction = event->wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -1 : 1;
+      const int wheel = std::clamp(static_cast<int>(std::lround(event->wheel.y)) * direction,
+         -127, 127);
+      if (wheel) DarkInputMouse(static_cast<short>(x), static_cast<short>(y),
+         MOUSE_WHEEL, g_buttons, static_cast<char>(wheel));
+   }
+}
+
+bool DarkRenderEndEventPump(void)
+{
    process_pending_lifecycle_resize();
-   if (g_relativeActive && (relativeX != 0 || relativeY != 0))
-      DarkInputMouseRelative(static_cast<int>(relativeX),
-         static_cast<int>(relativeY), g_buttons);
+   if (g_relativeActive && (g_pumpRelativeX != 0 || g_pumpRelativeY != 0))
+      DarkInputMouseRelative(static_cast<int>(g_pumpRelativeX),
+         static_cast<int>(g_pumpRelativeY), g_buttons);
    update_relative_mouse();
    return g_quit;
 }

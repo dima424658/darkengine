@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef _WIN32
-#include "../winsrc/lg/thrdtool.h"
-#else
-
 #include <condition_variable>
 #include <mutex>
 #include <chrono>
@@ -83,5 +79,3 @@ private:
    std::mutex m_mutex;
    std::condition_variable m_condition;
 };
-
-#endif

@@ -1,9 +1,9 @@
 # SDL3/Vulkan runner and DromEd executable targets.
 set(dark_sdl_provider_sources
-  unixsrc/appcore/appcore.cpp
-  unixsrc/dispdev/display.cpp
   unixsrc/framewrk/diskfree.cpp
-  unixsrc/gameshel/gameshell.cpp
+  libsrc/appcore/sdl_appcore.cpp
+  libsrc/dispdev/display.cpp
+  libsrc/gameshel/gameshell.cpp
   libsrc/input/gamepad.cpp
   libsrc/input/guids.c
   libsrc/input/input.cpp
@@ -17,23 +17,14 @@ set(dark_sdl_provider_sources
 if(WIN32)
   # Keep SDL3/Vulkan presentation and input on Windows. POSIX providers
   # include unistd.h and statvfs and cannot be compiled by MSVC.
-  list(REMOVE_ITEM dark_sdl_provider_sources
-    unixsrc/appcore/appcore.cpp
-    unixsrc/framewrk/diskfree.cpp
-  )
+  list(REMOVE_ITEM dark_sdl_provider_sources unixsrc/framewrk/diskfree.cpp)
   list(APPEND dark_sdl_provider_sources
-    winsrc/appcore/wappcore.cpp
     winsrc/framewrk/diskfree.c
   )
 endif()
 add_library(dark_sdl_providers STATIC ${dark_sdl_provider_sources})
 target_link_libraries(dark_sdl_providers PUBLIC dark_engine_packed)
 target_link_libraries(dark_sdl_providers PUBLIC ${DARK_SDL_TARGET})
-if(WIN32)
-  target_include_directories(dark_sdl_providers PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/winsrc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/winsrc/appcore")
-endif()
 target_link_libraries(dark_sdl_providers PUBLIC dark_lgd3d)
 if(TARGET dark_vulkan_shaders)
   add_dependencies(dark_sdl_providers dark_vulkan_shaders)
