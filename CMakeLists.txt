@@ -13,8 +13,6 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Vulkan.cmake")
-
 if(WIN32)
   set(DARK_PLATFORM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/winsrc/platform")
   set(DARK_PLATFORM_SOURCE "${DARK_PLATFORM_ROOT}/platform_services.cpp")
@@ -22,6 +20,8 @@ else()
   set(DARK_PLATFORM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/platform")
   set(DARK_PLATFORM_SOURCE "${DARK_PLATFORM_ROOT}/platform_services.cpp")
 endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Vulkan.cmake")
 
 add_library(dark_platform STATIC
   ${DARK_PLATFORM_SOURCE}

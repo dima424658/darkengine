@@ -32,7 +32,7 @@ extern "C" {
 #include <movieapi.h>
 #include <platform_services.h>
 
-#include "../lgvk/runtime.h"
+#include "../lgd3d/runtime.h"
 
 class cSDLMoviePlayer final : public IMoviePlayer1
 {

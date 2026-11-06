@@ -9,7 +9,7 @@
 #include <dispapi.h>
 #include <gshelapi.h>
 
-#include "../../libsrc/lgvk/runtime.h"
+#include "../../libsrc/lgd3d/runtime.h"
 
 class cUnixGameShell : public IGameShell
 {

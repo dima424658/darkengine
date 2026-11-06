@@ -4,7 +4,7 @@
 
 The SDL3/Vulkan runtime is wired to the legacy `RenderBackend` API on macOS,
 Linux, Win32, and Android. All Vulkan implementation files now live under
-`libsrc/lgvk` and are built into the `lgvk` library. Windows uses the same
+`libsrc/lgd3d` and are built into the `dark_lgd3d` library. Windows uses the same
 SDL3/Vulkan display path as the other desktop platforms; the Win32
 DirectDraw/GDI provider and renderer stub have been removed. Windows and Linux
 builds and device/runtime parity remain unverified. A macOS visual spot-check

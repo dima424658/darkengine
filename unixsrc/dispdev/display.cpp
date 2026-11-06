@@ -13,7 +13,7 @@
 #include <grd.h>
 #include <mode.h>
 
-#include "../../libsrc/lgvk/runtime.h"
+#include "../../libsrc/lgd3d/runtime.h"
 
 class cUnixDisplayDevice : public cDisplayDevice
 {

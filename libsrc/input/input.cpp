@@ -17,7 +17,7 @@
 #include <mouse.h>
 #include <mousevel.h>
 
-#include "../lgvk/runtime.h"
+#include "../lgd3d/runtime.h"
 
 namespace {
 std::mutex g_mutex;

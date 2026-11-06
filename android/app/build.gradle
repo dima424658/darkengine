@@ -16,7 +16,7 @@ dependencies {
 }
 
 def vulkanShaderAssets = layout.buildDirectory.dir("generated/vulkan-assets").get().asFile
-def vulkanShaderSources = new File(repositoryRoot, "libsrc/lgvk/shaders")
+def vulkanShaderSources = new File(repositoryRoot, "libsrc/lgd3d/shaders")
 def vulkanSdk = System.getenv("VULKAN_SDK")
 def isWindowsHost = System.getProperty("os.name").toLowerCase().contains("windows")
 def glslc = vulkanSdk
