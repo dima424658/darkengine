@@ -346,7 +346,7 @@ static tmap_chain *calc_size(tdrv_texture_info *info)
 
    if ((i>=MAX_SIZE)||(j>=MAX_SIZE)) {
       // The original hardware manager enumerated only power-of-two textures
-      // through 256x256.  Modern D3D/OpenGL backends accept larger and NPOT
+      // through 256x256. Modern hardware backends accept larger and NPOT
       // resources, including NewDark's 2048x512 distant-sky panoramas.  Ask
       // the driver for the actual storage size and give that size its normal
       // swap chain instead of substituting the checkerboard default.

@@ -1371,7 +1371,7 @@ void vm_render_camera(int c)
          // Draw the construction grid in the hardware scene so its color and
          // pane coordinates remain correct.  It is an editor overlay, not
          // world geometry: terrain must not depth-clip it into the finite
-         // patch that appeared after the D3D11 conversion.
+         // patch that appeared after the modern-renderer conversion.
          hardware_grid = show_grid && g_lgd3d &&
                          (mode & RM_SOLID_PORTAL) && gedcsg_level_valid;
          _vm_rend_start(c,show_grid && !hardware_grid);
@@ -1399,7 +1399,6 @@ void vm_render_camera(int c)
                   // screen position and give the pane its own hardware frame.
                   lgd3d_set_offsets(screen_rect.ul.x, screen_rect.ul.y);
                   lgd3d_start_frame(vm_lgd3d_frame++);
-
                   // The editor's grids, brush outlines, and object markers
                   // are drawn into its legacy sub-canvas, so editor UI code
                   // normally leaves R3 using the software primitive table.
@@ -1519,7 +1518,11 @@ void vm_render_cameras(void)
 {
    int i;
 
-   if (!(redraw || new_select || new_camera || new_render))
+   // The Vulkan editor view is rendered directly into the current swapchain
+   // image. Unlike the legacy display backbuffer, that image is not retained
+   // between frames, so portal scenes must be submitted again every frame.
+   if (!(redraw || new_select || new_camera || new_render ||
+         RenderBackendAvailable()))
       return;
 
    // i really really dont get this?
@@ -1539,7 +1542,7 @@ void vm_render_cameras(void)
 
    update_links = TRUE;
 
-   redraw = vmRenderAlways;
+   redraw = vmRenderAlways || RenderBackendAvailable();
    new_select = new_camera = new_render = FALSE;
 }
 

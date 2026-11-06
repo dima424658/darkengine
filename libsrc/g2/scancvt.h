@@ -6,8 +6,8 @@
 
 // The software texture mapper indexes its scan-conversion workspaces by the
 // destination scanline. The original 768-row ceiling corrupts adjacent global
-// data at modern resolutions such as 1920x1080. Feature level 10, the minimum
-// accepted by the D3D11 presenter, supports textures up to 8192 pixels high.
+// data at modern resolutions such as 1920x1080. Keep the workspace at the
+// maximum scanline height accepted by the renderer.
 #define G2C_MAX_HEIGHT 8192
 
 extern void g2_reset_scan_buffer(void);

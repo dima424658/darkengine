@@ -102,8 +102,8 @@ EXTERN void set_hardware_gamma_level(float level)
    RenderBackendSetGamma(level);
 
    // The old renderer deferred hardware-ramp changes while simulation was
-   // rendering to avoid crashing early D3D devices.  D3D11 gamma is only a
-   // composite-shader constant, so changing it is safe at any time.  Apply it
+   // rendering to avoid crashing early graphics devices. Modern gamma is a
+   // composite-shader constant, so changing it is safe at any time. Apply it
    // immediately so a paused/in-game options menu responds while its slider
    // is moving instead of waiting for gameplay rendering to resume.
    if (RenderBackendAvailable())

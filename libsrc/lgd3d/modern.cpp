@@ -238,19 +238,9 @@ extern "C" int lgd3d_enumerate_devices(void) {
                        LGD3DF_CAN_DO_ITERATE_ALPHA;
   return 1;
 }
-extern "C" int lgd3d_enumerate_devices_capable_of(ulong flags) {
-  return lgd3d_enumerate_devices();
-}
-extern "C" void lgd3d_unenumerate_devices(void) {}
 extern "C" lgd3ds_device_info *lgd3d_get_device_info(int device) {
   return device == 0 ? &g_deviceInfo : NULL;
 }
-extern "C" void lgd3d_set_hardware(void) {}
-extern "C" void lgd3d_set_software(void) {}
-extern "C" void lgd3d_set_RGB(void) {}
-extern "C" BOOL lgd3d_is_RGB(void) { return TRUE; }
-extern "C" BOOL lgd3d_is_hardware(void) { return TRUE; }
-extern "C" void lgd3d_texture_set_RGB(bool isRGB) {}
 
 extern "C" BOOL lgd3d_init(lgd3ds_device_info *info) {
   uint32 white = 0xffffffff;
@@ -323,15 +313,11 @@ extern "C" void lgd3d_end_frame(void) {
   RenderBackendEndFrame();
 }
 extern "C" void lgd3d_scene_suspend(void) { RenderBackendDeactivateScene(); }
-extern "C" BOOL lgd3d_attach_to_lgsurface(ILGSurface *surface) {
-  return RenderBackendAvailable();
-}
 extern "C" void lgd3d_clean_render_surface(BOOL depth) {
   if (depth)
     RenderBackendClearDepth();
 }
 extern "C" BOOL lgd3d_overlays_master_switch(BOOL on) { return TRUE; }
-extern "C" void lgd3d_blit(void) {}
 
 extern "C" void lgd3d_set_texture_clut(uchar *clut) {
   g_textureClut = lgd3d_clut = clut;
@@ -431,19 +417,4 @@ extern "C" BOOL lgd3d_set_shading(BOOL smooth) {
   return old;
 }
 extern "C" BOOL lgd3d_is_smooth_shading_on(void) { return g_shading; }
-extern "C" BOOL lgd3d_enable_specular(BOOL use) { return FALSE; }
-extern "C" void lgd3d_set_texture_map_method(ulong flag) {}
 extern "C" void lgd3d_set_light_map_method(ulong flag) {}
-extern "C" void lgd3d_get_texblending_modes(ulong *a, ulong *b) {
-  if (a)
-    *a = LGD3DTB_MODULATE;
-  if (b)
-    *b = LGD3D_MULTITEXTURE_COLOR;
-}
-extern "C" BOOL lgd3d_get_error(uint32 *code, uint32 *result) {
-  if (code)
-    *code = LGD3D_EC_OK;
-  if (result)
-    *result = 0;
-  return FALSE;
-}

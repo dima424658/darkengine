@@ -8,8 +8,6 @@
 #ifndef __WDDMODE_H
 #define __WDDMODE_H
 
-class cD3D11Presenter;
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // CLASS: cDDModeOpsBase
@@ -238,9 +236,6 @@ public:
     cOffVideoDDModeOps(cWinDisplayDevice * pDisplayDevice, cDDProvider * pOuter, LPDIRECTDRAWPALETTE pPalette)
       : cDDModeOpsBase(pDisplayDevice, pOuter, pPalette)
       , m_UseDesktopPresentation(FALSE)
-      , m_UseD3D11Presentation(FALSE)
-      , m_pPresenter(NULL)
-      , m_Gamma(1.0)
     {
     }
 
@@ -253,14 +248,11 @@ public:
     virtual BOOL DoSetGamma(double gamma);
     virtual BOOL HandlesWindowResize() const
     {
-        return m_UseD3D11Presentation;
+        return FALSE;
     }
 
 private:
     BOOL m_UseDesktopPresentation;
-    BOOL m_UseD3D11Presentation;
-    cD3D11Presenter *m_pPresenter;
-    double m_Gamma;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

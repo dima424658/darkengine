@@ -1,0 +1,59 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-vulkan-base",
+      "hidden": true,
+      "displayName": "Windows SDL3 + Vulkan",
+      "description": "Common SDL3/Vulkan game and DromEd configuration for Visual Studio 2022.",
+      "generator": "Visual Studio 17 2022",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "DARK_BUILD_ENGINE": "ON",
+        "DARK_BUILD_THIEF2": "ON",
+        "DARK_BUILD_DROMED": "ON",
+        "DARK_BUILD_VULKAN_FOUNDATION": "ON",
+        "DARK_COMPILE_VULKAN_SHADERS": "ON"
+      }
+    },
+    {
+      "name": "windows-x64-vulkan",
+      "inherits": "windows-vulkan-base",
+      "displayName": "Windows x64 SDL3 + Vulkan",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build-win64-vulkan"
+    },
+    {
+      "name": "windows-x86-vulkan",
+      "inherits": "windows-vulkan-base",
+      "displayName": "Windows x86 SDL3 + Vulkan",
+      "architecture": "Win32",
+      "binaryDir": "${sourceDir}/build-win32-vulkan"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-x64-vulkan-release",
+      "displayName": "Windows x64 SDL3 + Vulkan Release",
+      "configurePreset": "windows-x64-vulkan",
+      "configuration": "Release",
+      "targets": ["thief2", "dromed"]
+    },
+    {
+      "name": "windows-x86-vulkan-release",
+      "displayName": "Windows x86 SDL3 + Vulkan Release",
+      "configurePreset": "windows-x86-vulkan",
+      "configuration": "Release",
+      "targets": ["thief2", "dromed"]
+    }
+  ]
+}

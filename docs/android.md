@@ -8,21 +8,21 @@ is not an Android target.
 
 - Android 8.0 (API 26) or later.
 - ARM64 (`arm64-v8a`) only for the first bring-up.
-- SDL 2.32.10, OpenGL ES 3, and OpenAL Soft 1.25.2 using Android OpenSL.
+- SDL3 3.4.18, Vulkan 1.1, and OpenAL Soft 1.25.2 using Android OpenSL.
 - Native Squirrel 3.2 scripts, PNG replacement resources, and Ogg Vorbis
   fan-mission sounds.
 - A folder picker that can use retail TDP, Gold, or Thief 2 files directly or
   import a performance copy into the app-specific `game` directory.
 - Retail movie playback through the packaged LibVLC backend.
 
-SDL, OpenAL Soft, libpng, libogg, and libvorbis are downloaded from their official
-releases during the first Gradle run and verified against pinned SHA-256
-digests. They are extracted only under the ignored
-`.codex-build/android-deps` directory. Bootstrap the required Squirrel 3.2
-checkout with `tools/bootstrap-dependencies.ps1` on Windows or
-`sh tools/bootstrap-dependencies.sh game` on Linux; it is stored at
-`../../darkengine-deps/squirrel`. The APK obtains LibVLC 3.6.5 from Maven
-Central through the normal Gradle dependency resolution process.
+The SDL3 Android AAR, Vulkan-Headers, Squirrel, OpenAL Soft, libpng, libogg,
+and libvorbis are downloaded from their official releases during Gradle
+configuration/build and verified against pinned SHA-256 digests. They are
+stored only under the ignored `android/build/android-deps` directory. Gradle
+compiles the Vulkan shaders with `glslc` and packages them as app assets.
+Install the Vulkan SDK and make `glslc` available on `PATH` or set
+`VULKAN_SDK`. The APK obtains LibVLC 3.6.5 from Maven Central through the normal
+Gradle dependency resolution process.
 
 ## Toolchain
 
