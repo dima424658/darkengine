@@ -16,13 +16,6 @@ EXTERN IDebugMalloc * g_pMalloc;
 EXTERN IMalloc *      g_pMalloc;
 #endif
 
-class cHeapDebug;
-extern cHeapDebug *   g_pHeapDebug;
-extern BOOL           g_bAllocDumpLeaks;
-
-class cMemAllocTimer;
-extern cMemAllocTimer * g_pMemAllocTimer;
-
 extern void AllocThreadLock(void);
 extern void AllocThreadUnlock(void);
 
