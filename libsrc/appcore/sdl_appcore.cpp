@@ -1,10 +1,10 @@
 #pragma pack(push, 8)
+#include <SDL3/SDL.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
-#include <unistd.h>
 #pragma pack(pop)
 
 #include <aggmemb.h>
@@ -19,11 +19,14 @@ public:
    cUnixApplication(IUnknown *outer, const char *name, const char *defaultPath)
       : m_caption(name ? name : "Dark Engine"), m_defaultPath(defaultPath ? defaultPath : ".")
    {
-      char path[4096]; ssize_t count = readlink("/proc/self/exe", path, sizeof(path) - 1);
-      if (count > 0) { path[count] = 0; m_fullName = path; }
-      else m_fullName = "thief-runner";
-      std::string::size_type slash = m_fullName.rfind('/');
-      m_path = slash == std::string::npos ? "." : m_fullName.substr(0, slash);
+      const char *basePath = SDL_GetBasePath();
+      if (basePath) {
+         m_path = basePath;
+         m_fullName = m_path + "thief-runner";
+      } else {
+         m_path = ".";
+         m_fullName = "thief-runner";
+      }
       INIT_AGGREGATION_1(outer, IID_IApplication, this, kPriorityReserved, nullptr);
    }
    ~cUnixApplication() { for (auto *sink : m_sinks) if (sink) sink->Release(); }

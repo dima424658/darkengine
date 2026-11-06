@@ -1,4 +1,5 @@
 #pragma pack(push, 8)
+#include <SDL3/SDL.h>
 #include <chrono>
 #include <cstdlib>
 #pragma pack(pop)
@@ -9,7 +10,17 @@
 #include <dispapi.h>
 #include <gshelapi.h>
 
-#include "../../libsrc/lgd3d/runtime.h"
+#include "../lgd3d/runtime.h"
+#include "../lgd3d/event_bridge.h"
+
+bool DarkPumpEvents(void)
+{
+   if (!DarkRenderBeginEventPump()) return false;
+   SDL_Event event;
+   while (SDL_PollEvent(&event))
+      DarkRenderHandleEvent(&event);
+   return DarkRenderEndEventPump();
+}
 
 class cUnixGameShell : public IGameShell
 {
@@ -34,7 +45,7 @@ public:
    HRESULT Obsolete1() override { return S_OK; }
    void PumpEvents(int) override
    {
-      if(DarkRenderPumpEvents()&&(m_flags&kExitOnQuitEvent)){auto*app=AppGetObj(IApplication);if(app)app->Quit();}
+      if(DarkPumpEvents()&&(m_flags&kExitOnQuitEvent)){auto*app=AppGetObj(IApplication);if(app)app->Quit();}
    }
    int DisplayLock() override { auto*d=AppGetObj(IDisplayDevice);int n=d?d->Lock():0;SafeRelease(d);return n; }
    int DisplayUnlock() override { auto*d=AppGetObj(IDisplayDevice);int n=d?d->Unlock():0;SafeRelease(d);return n; }

@@ -96,9 +96,7 @@ EXTERN tResult  LGAPI AppExit();
 
 enum eAppStartupFlags
 {
-    kASF_MakeCodeWritable = 0x01,
-
-    kASF_Default = (kASF_MakeCodeWritable)
+    kASF_Default = 0
 };
 
 EXTERN unsigned g_fAppStartupFlags;
