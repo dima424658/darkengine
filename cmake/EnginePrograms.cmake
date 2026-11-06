@@ -27,10 +27,6 @@ if(WIN32)
   )
 endif()
 add_library(dark_sdl_providers STATIC ${dark_sdl_provider_sources})
-# lgvk contains the Vulkan runtime bridge as well as the Vulkan-Hpp core.
-# Give it engine declarations and platform includes without the legacy
-# byte-packing options propagated by dark_engine_packed.
-target_link_libraries(lgvk PUBLIC dark_engine_config)
 target_link_libraries(dark_sdl_providers PUBLIC dark_engine_packed)
 target_link_libraries(dark_sdl_providers PUBLIC ${DARK_SDL_TARGET})
 if(WIN32)
@@ -38,7 +34,7 @@ if(WIN32)
     "${CMAKE_CURRENT_SOURCE_DIR}/winsrc"
     "${CMAKE_CURRENT_SOURCE_DIR}/winsrc/appcore")
 endif()
-target_link_libraries(dark_sdl_providers PUBLIC lgvk)
+target_link_libraries(dark_sdl_providers PUBLIC dark_lgd3d)
 if(TARGET dark_vulkan_shaders)
   add_dependencies(dark_sdl_providers dark_vulkan_shaders)
 endif()

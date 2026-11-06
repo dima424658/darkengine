@@ -143,7 +143,7 @@ until its editing and round-trip behavior is comprehensively validated.
 
 ### Cross-platform architecture
 
-The CMake runner uses the shared `lgvk` Vulkan renderer through SDL3 on
+The CMake runner uses the shared `lgd3d` Vulkan renderer through SDL3 on
 Windows, macOS, Linux, and Android. The Win32 DirectDraw/GDI display provider
 and renderer stub have been removed. `winsrc` continues to provide Windows
 platform services while the CMake game and editor use Looking Glass's `lgd3d`

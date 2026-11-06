@@ -15,7 +15,7 @@ if(DARK_COMPILE_VULKAN_SHADERS)
   file(MAKE_DIRECTORY "${DARK_VULKAN_SHADER_OUTPUT_DIR}")
   set(DARK_VULKAN_SHADER_OUTPUTS)
   foreach(shader scene.vert scene.frag)
-    set(shader_source "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgvk/shaders/${shader}")
+    set(shader_source "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgd3d/shaders/${shader}")
     set(shader_output "${DARK_VULKAN_SHADER_OUTPUT_DIR}/${shader}.spv")
     add_custom_command(OUTPUT "${shader_output}"
       COMMAND "${DARK_GLSLC_EXECUTABLE}" --target-env=vulkan1.1
@@ -34,40 +34,16 @@ elseif(DARK_COMPILE_VULKAN_SHADERS)
   set(DARK_VULKAN_SHADER_DIR "generated/vulkan")
 endif()
 if(NOT CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$" AND NOT ANDROID AND NOT WIN32)
-  message(FATAL_ERROR "lgvk requires SDL3 surface support")
+  message(FATAL_ERROR "lgd3d requires SDL3 surface support")
 endif()
 if(ANDROID AND (NOT DARK_VULKAN_HEADERS_SOURCE OR
    NOT EXISTS "${DARK_VULKAN_HEADERS_SOURCE}/include/vulkan/vulkan.hpp"))
   message(FATAL_ERROR
     "Android requires DARK_VULKAN_HEADERS_SOURCE to name the extracted Khronos Vulkan-Headers tree")
 endif()
-set(dark_lgvk_sources
-  libsrc/lgvk/vulkan.cpp
-  libsrc/lgvk/vulkan_context.cpp
-  libsrc/lgvk/vulkan_render_backend.cpp
-  libsrc/lgvk/vulkan_scene_renderer.cpp)
-list(APPEND dark_lgvk_sources
-  libsrc/lgvk/vulkan_sdl.cpp)
-add_library(lgvk STATIC ${dark_lgvk_sources})
-target_include_directories(lgvk PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgvk"
-  "${CMAKE_CURRENT_SOURCE_DIR}/h")
-if(ANDROID)
-  target_include_directories(lgvk SYSTEM PUBLIC
-    "${DARK_VULKAN_HEADERS_SOURCE}/include")
-endif()
-target_link_libraries(lgvk PUBLIC Vulkan::Vulkan)
-if(DARK_SDL_TARGET)
-  target_link_libraries(lgvk PUBLIC ${DARK_SDL_TARGET})
-endif()
-if(DARK_COMPILE_VULKAN_SHADERS)
-  add_dependencies(lgvk dark_vulkan_shaders)
-endif()
-if(DEFINED DARK_VULKAN_SHADER_DIR)
-  target_compile_definitions(lgvk PRIVATE
-    DARK_VULKAN_SHADER_DIR="${DARK_VULKAN_SHADER_DIR}")
-endif()
-if(WIN32)
-  target_compile_definitions(lgvk PUBLIC
-    NOMINMAX WIN32_LEAN_AND_MEAN)
-endif()
+set(dark_lgd3d_vulkan_sources
+  libsrc/lgd3d/vulkan.cpp
+  libsrc/lgd3d/vulkan_context.cpp
+  libsrc/lgd3d/vulkan_render_backend.cpp
+  libsrc/lgd3d/vulkan_scene_renderer.cpp
+  libsrc/lgd3d/vulkan_sdl.cpp)

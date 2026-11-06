@@ -106,6 +106,32 @@ foreach(library IN LISTS dark_library_projects)
   endif()
 endforeach()
 
+# Compile the Vulkan implementation with the native ABI settings, then fold
+# its objects into lgd3d, whose legacy sources require byte-packed records.
+add_library(dark_lgd3d_vulkan OBJECT ${dark_lgd3d_vulkan_sources})
+target_link_libraries(dark_lgd3d_vulkan PRIVATE dark_engine_config)
+target_link_libraries(dark_lgd3d_vulkan PRIVATE Vulkan::Vulkan ${DARK_SDL_TARGET})
+target_include_directories(dark_lgd3d_vulkan PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgd3d"
+  "${CMAKE_CURRENT_SOURCE_DIR}/h")
+if(ANDROID)
+  target_include_directories(dark_lgd3d_vulkan SYSTEM PRIVATE
+    "${DARK_VULKAN_HEADERS_SOURCE}/include")
+endif()
+if(DEFINED DARK_VULKAN_SHADER_DIR)
+  target_compile_definitions(dark_lgd3d_vulkan PRIVATE
+    DARK_VULKAN_SHADER_DIR="${DARK_VULKAN_SHADER_DIR}")
+endif()
+if(WIN32)
+  target_compile_definitions(dark_lgd3d_vulkan PRIVATE
+    NOMINMAX WIN32_LEAN_AND_MEAN)
+endif()
+target_sources(dark_lgd3d PRIVATE $<TARGET_OBJECTS:dark_lgd3d_vulkan>)
+target_link_libraries(dark_lgd3d PUBLIC Vulkan::Vulkan ${DARK_SDL_TARGET})
+if(TARGET dark_vulkan_shaders)
+  add_dependencies(dark_lgd3d_vulkan dark_vulkan_shaders)
+endif()
+
 target_link_libraries(dark_cpptools PUBLIC dark_platform)
 if(WIN32)
   target_compile_definitions(dark_lgalloc PRIVATE
