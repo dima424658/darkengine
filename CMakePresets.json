@@ -21,7 +21,6 @@
         "DARK_BUILD_ENGINE": "ON",
         "DARK_BUILD_THIEF2": "ON",
         "DARK_BUILD_DROMED": "ON",
-        "DARK_BUILD_LGVK": "ON",
         "DARK_COMPILE_VULKAN_SHADERS": "ON"
       }
     },

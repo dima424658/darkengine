@@ -113,22 +113,20 @@ if(WIN32)
   )
 endif()
 target_link_libraries(dark_namedres PUBLIC dark_compression)
-if(CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$" OR ANDROID OR WIN32)
-  if(ANDROID)
-    target_include_directories(dark_namedres PRIVATE
-      "${DARK_PNG_COMPAT_INCLUDE_DIR}"
-    )
-    target_link_libraries(dark_namedres PUBLIC png_static)
-  elseif(APPLE)
-    # CMake's macOS ZLIB finder may expose the SDK's entire usr/include
-    # directory, which shadows libc++ headers with non-Apple Clang toolchains.
-    # The compiler already searches the SDK sysroot; expose only libpng's
-    # Homebrew include directory and keep the discovered libraries.
-    target_include_directories(dark_namedres PRIVATE "${PNG_PNG_INCLUDE_DIR}")
-    target_link_libraries(dark_namedres PUBLIC ${PNG_LIBRARIES})
-  else()
-    target_link_libraries(dark_namedres PUBLIC PNG::PNG)
-  endif()
+if(ANDROID)
+  target_include_directories(dark_namedres PRIVATE
+    "${DARK_PNG_COMPAT_INCLUDE_DIR}"
+  )
+  target_link_libraries(dark_namedres PUBLIC png_static)
+elseif(APPLE)
+  # CMake's macOS ZLIB finder may expose the SDK's entire usr/include
+  # directory, which shadows libc++ headers with non-Apple Clang toolchains.
+  # The compiler already searches the SDK sysroot; expose only libpng's
+  # Homebrew include directory and keep the discovered libraries.
+  target_include_directories(dark_namedres PRIVATE "${PNG_PNG_INCLUDE_DIR}")
+  target_link_libraries(dark_namedres PUBLIC ${PNG_LIBRARIES})
+else()
+  target_link_libraries(dark_namedres PUBLIC PNG::PNG)
 endif()
 target_link_libraries(dark_res PUBLIC dark_compression)
 
