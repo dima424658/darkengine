@@ -13,13 +13,7 @@
 #include <dev2d.h>
 
 extern int g2_init();
-extern int g2_svga_init();
-
-#ifdef __DOS4G
-#define gr_init g2_svga_init
-#else
 #define gr_init g2_init
-#endif
 
 extern int g2_close();
 #define gr_close g2_close
@@ -27,9 +21,9 @@ extern int g2_close();
 // obsolete
 #define g2_com_init g2_init
 #define gr_com_init g2_init
-#define gr_tnova_init g2_svga_init
-#define gr_flight_init g2_svga_init
-#define gr_flat8_init g2_svga_init
-#define gr_vga_init g2_svga_init
+#define gr_tnova_init g2_init
+#define gr_flight_init g2_init
+#define gr_flat8_init g2_init
+#define gr_vga_init g2_init
 
 #endif

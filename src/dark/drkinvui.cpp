@@ -114,8 +114,8 @@ static IContainSys* pContainSys = NULL;
 // last object player picked up
 static ObjID gLastObjPickedUp = OBJ_NULL;
 
-// The native radial lives in the engine inventory layer so XInput, SDL and
-// Android all see exactly the same inventory contents and selection rules.
+// The native radial lives in the engine inventory layer so SDL and Android
+// all see exactly the same inventory contents and selection rules.
 #define INV_RADIAL_MAX_ENTRIES 32
 #define INV_RADIAL_STICK_COUNT 2
 #define INV_RADIAL_DEADZONE 0.45f

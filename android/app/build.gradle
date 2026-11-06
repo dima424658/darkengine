@@ -16,7 +16,7 @@ dependencies {
 }
 
 def vulkanShaderAssets = layout.buildDirectory.dir("generated/vulkan-assets").get().asFile
-def vulkanShaderSources = new File(repositoryRoot, "unixsrc/render/shaders")
+def vulkanShaderSources = new File(repositoryRoot, "libsrc/lgvk/shaders")
 def vulkanSdk = System.getenv("VULKAN_SDK")
 def isWindowsHost = System.getProperty("os.name").toLowerCase().contains("windows")
 def glslc = vulkanSdk
@@ -33,7 +33,7 @@ def nativeArguments = [
     "-DDARK_BUILD_ENGINE=ON",
     "-DDARK_BUILD_THIEF2=ON",
     "-DDARK_COMPILE_VULKAN_SHADERS=OFF",
-    "-DDARK_BUILD_VULKAN_FOUNDATION=ON",
+    "-DDARK_BUILD_LGVK=ON",
     "-DDARK_VULKAN_HEADERS_SOURCE=${vulkanHeadersRoot.absolutePath.replace('\\', '/')}",
     "-DDARK_OPENAL_SOFT_SOURCE=${openalRoot.absolutePath.replace('\\', '/')}",
     "-DDARK_PNG_SOURCE=${pngRoot.absolutePath.replace('\\', '/')}",

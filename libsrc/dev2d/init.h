@@ -18,8 +18,6 @@ extern "C" {
 #endif
 
 extern int gd_init();
-extern void gd_use_svga();
-extern int gd_svga_init();
 
 extern void gd_use_com();
 
@@ -35,7 +33,7 @@ extern int gd_flat8_init();
 extern void gd_use_flat16();
 extern int gd_flat16_init();
 
-#define dev2d_init gd_svga_init
+#define dev2d_init gd_init
 
 extern void gd_release_com();
 

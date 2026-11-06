@@ -67,8 +67,6 @@ class cFileSpec;
 
 #if defined(_WIN32)
 #define FSKDEFFILSYS kNTFSFileSystem
-#elif defined(_WINDOWS)
-#define FSKDEFFILSYS kFATFileSystem
 #else
 #define FSKDEFFILSYS kUnknownFileSystem
 #endif
@@ -82,9 +80,7 @@ enum eFileSystemKind
     kDefaultFileSystem = FSKDEFFILSYS
 };
 
-// cFilePath encapsulates a file location. On DOS, the
-// cFilePath contains the drive and path as text, on the
-// Mac this could be a volume and dir ID.
+// cFilePath encapsulates a filesystem location as a path string.
 
 class __CPPTOOLSAPI cFilePath
     {

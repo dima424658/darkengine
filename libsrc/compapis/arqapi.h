@@ -37,24 +37,6 @@ typedef struct sARQStreamRequest  sARQStreamRequest;
 // Asynchronous Read Queue API
 //
 
-//
-// Create an asynchronous read queue and add it to the global app-object
-//
-#define AsyncReadQueueCreate() \
-{ \
-    IUnknown * pAppUnknown = AppGetObj(IUnknown); \
-    _AsyncReadQueueCreate(IID_TO_REFIID(IID_IAsyncReadQueue), NULL, pAppUnknown); \
-    COMRelease(pAppUnknown); \
-}
-
-
-//
-// Creates an asynchronous read queue, aggregating it with specfied pOuter,
-// use IAggregate protocol if ppAsyncReadQueue is NULL, else self-init
-//
-EXTERN tResult LGAPI _AsyncReadQueueCreate(REFIID, IAsyncReadQueue ** ppAsyncReadQueue, IUnknown * pOuter);
-
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Read request structures

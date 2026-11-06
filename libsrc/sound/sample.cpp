@@ -246,8 +246,7 @@ cSndSample::Init( sSndAttribs    *pAttribs,
 //
 // Internal version of play, called by Play, Resume, Loop & UnMute
 // NOTE: mInitBuffPos is sort of a secret parameter - it is a sample
-//   position which is set after the buffer is loaded but before the
-//   DirectSound Play is done
+//   position which is set after the buffer is loaded but before playback.
 
 eSndError
 cSndSample::Start( void )
@@ -407,7 +406,7 @@ cSndSample::DeferredStop()
 //
 // Stops the sound from playing without telling the mixer.
 // This will have several side effects:
-//    1. DirectSound will now report that the sound is not playing,
+//    1. The mixer will report that the sound is not playing,
 //       therefore it wont show up in the iterator
 //    2. If it is never told to resume it will never go away
 
@@ -483,7 +482,7 @@ STDMETHODIMP_(void) cSndSample::Loop()
 ////////////////////////////////////
 //
 // Mute - Make a sound inaudible - this
-//  frees the associated dsound object
+//  frees the associated backend buffer
 //
 
 STDMETHODIMP_(void)
@@ -496,7 +495,7 @@ cSndSample::Mute()
    }
 
    if ( IS_AUDIBLE ) {
-      // switch from position being based on where DSound play cursor is
+      // switch from position being based on the backend play cursor
       //  to position being estimated based on time
       mBasePos = GetPosition();
    }
@@ -514,7 +513,7 @@ cSndSample::Mute()
 ////////////////////////////////////
 //
 // UnMute - make a muted sound audible - this actually reallocates
-// a dsound object and resyncs/reloads the source stream
+// a backend buffer and resyncs/reloads the source stream
 //
 STDMETHODIMP_(void)
 cSndSample::UnMute()
@@ -1175,7 +1174,7 @@ STDMETHODIMP_(void) cSndSample::RegisterEndCallback( SndEndCallback newCB, void 
 //
 // RegisterPreemptCallback - register callback which is called when
 //   a sample is Preempt()ed - this callback must either Mute or Stop
-//   the sample - it must somehow free its DirectSoundBuffer
+//   the sample - it must somehow free its backend buffer
 //
 STDMETHODIMP_(void)
 cSndSample::RegisterPreemptCallback( SndEndCallback   newCB,

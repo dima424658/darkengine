@@ -94,7 +94,6 @@ DEFINE_OLEGUID(IID_IExternalConnection, 0x00000019L, 0, 0);
 // Windows providers:
 #include <wappguid.h>
 #include <wnshguid.h>
-#include <wdspguid.h>
 #include <inpguid.h>
 #endif
 

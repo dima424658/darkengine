@@ -65,12 +65,8 @@ void cAsynchMovie::TermUI()
    MovieOnExit();
 }
 
-// Keep looping and testing to see if the movie is done.
-// If so, start it up again.  Ideally, you wouldn't have to 
-// close the movie and start it again, but the actmovie stuff
-// is broken somewhere in the allocator, and this is the hack
-// to fix it.
-// @HACK the actmovie allocator is broken, you can't call ->play after ->stop
+// Keep looping and testing to see if the movie is done. If it ends, start it
+// again through the platform movie backend.
 void cAsynchMovie::OnLoopMsg(eLoopMessage msg, tLoopMessageData data) 
 {
    // Keep the movie looping

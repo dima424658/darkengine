@@ -34,7 +34,7 @@ target_include_directories(dark_platform PUBLIC
 )
 if(WIN32)
   target_link_libraries(dark_platform PUBLIC
-    advapi32 comctl32 gdi32 user32 winmm ws2_32)
+    advapi32 user32 ws2_32)
 endif()
 if(NOT WIN32)
   target_link_libraries(dark_platform PUBLIC ${CMAKE_DL_LIBS})

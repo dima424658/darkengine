@@ -509,11 +509,11 @@ CreateMemSoundSource( ISndMixer        *pMixer,          // your mixer
 
    //
    // Da Magic:  When we create a raw sample of type "Normal" (a JohnB-ism),
-   //  this usually creates the DirectSoundBuffer and copies the data directly
+   //  this usually creates the backend buffer and copies the data directly
    //  to it - but since we pass in NULL for the sound data address, it calls
    //  the stream refill callback, which in this case is sndsrc code which will read
    //  compressed data from the passed-in memory buffer, and will decompress
-   //  directly to the DirectSoundBuffer.
+   //  directly to the backend buffer.
    //
    pSample = ISndMixer_CreateRawSample( pMixer, kSndSampleNormal, NULL,
                                         finalDataLen, totalSamples, &attribs );
@@ -699,11 +699,11 @@ CreateMemSoundSourceLooped( ISndMixer           *pMixer,          // your mixer
 
    //
    // Da Magic:  When we create a raw sample of type "Normal" (a JohnB-ism),
-   //  this usually creates the DirectSoundBuffer and copies the data directly
+   //  this usually creates the backend buffer and copies the data directly
    //  to it - but since we pass in NULL for the sound data address, it calls
    //  the stream refill callback, which in this case is sndsrc code which will read
    //  compressed data from the passed-in memory buffer, and will decompress
-   //  directly to the DirectSoundBuffer.
+   //  directly to the backend buffer.
    //
    pSample = ISndMixer_CreateRawSample( pMixer, kSndSampleStream, NULL,
                                         finalDataLen, totalSamples, &attribs );
@@ -863,11 +863,11 @@ CreateNRezStreamedSoundSource( ISndMixer           *pMixer,          // your mix
 
    //
    // Da Magic:  When we create a raw sample of type "Normal" (a JohnB-ism),
-   //  this usually creates the DirectSoundBuffer and copies the data directly
+   //  this usually creates the backend buffer and copies the data directly
    //  to it - but since we pass in NULL for the sound data address, it calls
    //  the stream refill callback, which in this case is sndsrc code which will read
    //  compressed data from the passed-in memory buffer, and will decompress
-   //  directly to the DirectSoundBuffer.
+   //  directly to the backend buffer.
    //
    int streamBufSize = (int)(attribs.sampleRate * kAUXSND_SecondsOfBuffer * (attribs.bitsPerSample >> 3));
    *ppStreamBuffer = new char[streamBufSize];
@@ -1056,11 +1056,11 @@ CreateSongSoundSource ( ISndMixer           *pMixer,
 
    //
    // Da Magic:  When we create a raw sample of type "Normal" (a JohnB-ism),
-   //  this usually creates the DirectSoundBuffer and copies the data directly
+   //  this usually creates the backend buffer and copies the data directly
    //  to it - but since we pass in NULL for the sound data address, it calls
    //  the stream refill callback, which in this case is sndsrc code which will read
    //  compressed data from the passed-in memory buffer, and will decompress
-   //  directly to the DirectSoundBuffer.
+   //  directly to the backend buffer.
    //
    int streamBufSize = (int)(attribs.sampleRate * kAUXSND_SecondsOfBuffer * (attribs.bitsPerSample >> 3));
    *ppStreamBuffer = new char[streamBufSize];
