@@ -1,7 +1,7 @@
 #include <lg.h>
 #include <editorplatform.h>
 
-#include "../render/runtime.h"
+#include "../lgd3d/runtime.h"
 
 namespace {
 bool g_tracking;

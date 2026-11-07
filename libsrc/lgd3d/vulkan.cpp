@@ -62,6 +62,7 @@ bool g_showNativeCursor;
 bool g_frameActive;
 bool g_canvasChanged;
 bool g_resizePending;
+bool g_windowSizeChanged;
 bool g_exitHookRegistered;
 uchar g_buttons;
 void *g_canvasTexture;
@@ -106,7 +107,11 @@ uchar key_scan(SDL_Scancode key)
 void update_window_dimensions()
 {
    if (!g_window) return;
+   const int oldWidth = g_clientWidth, oldHeight = g_clientHeight;
    (void)SDL_GetWindowSize(g_window, &g_clientWidth, &g_clientHeight);
+   if (g_clientWidth > 0 && g_clientHeight > 0 &&
+       (g_clientWidth != oldWidth || g_clientHeight != oldHeight))
+      g_windowSizeChanged = true;
    (void)SDL_GetWindowSizeInPixels(g_window, &g_drawableWidth,
       &g_drawableHeight);
    RenderBackendVulkanSetWindowMetrics(g_clientWidth, g_clientHeight,
@@ -465,6 +470,15 @@ static void flush_absolute_mouse_motion()
    if (!g_pendingAbsoluteMotion) return;
    g_pendingAbsoluteMotion = false;
    DarkInputMouse(g_pendingMouseX, g_pendingMouseY, MOUSE_MOTION, g_buttons, 0);
+}
+
+bool DarkRenderTakeResize(int *width, int *height)
+{
+   if (!g_window || !g_windowSizeChanged || !width || !height) return false;
+   *width = g_clientWidth;
+   *height = g_clientHeight;
+   g_windowSizeChanged = false;
+   return true;
 }
 
 bool DarkRenderBeginEventPump(void)

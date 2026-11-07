@@ -1,5 +1,5 @@
 #pragma pack(push, 8)
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <cstdio>
 #pragma pack(pop)
 
@@ -26,7 +26,7 @@ static BOOL ask_yes_no(const char *message)
       NULL,
    };
    int selected = 0;
-   if (SDL_ShowMessageBox(&data, &selected) != 0)
+   if (!SDL_ShowMessageBox(&data, &selected))
       return FALSE;
    return selected == 1;
 }
