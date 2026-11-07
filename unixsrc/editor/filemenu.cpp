@@ -1,5 +1,5 @@
 #pragma pack(push, 8)
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include <cstdio>
 #include <cstring>
@@ -104,7 +104,7 @@ extern "C" void FileMenu(void)
       NULL,
    };
    int selected = 0;
-   if (SDL_ShowMessageBox(&data, &selected) != 0)
+   if (!SDL_ShowMessageBox(&data, &selected))
       return;
 
    char path[4096] = {};
