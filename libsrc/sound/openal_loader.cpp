@@ -63,6 +63,7 @@ bool OpenALLoad(sOpenALApi *api)
 
 #define LOAD(name) if (!LoadProc(api->name, #name)) { OpenALUnload(); return false; }
     LOAD(alcOpenDevice)
+    LOAD(alcGetIntegerv)
     LOAD(alcCloseDevice)
     LOAD(alcCreateContext)
     LOAD(alcMakeContextCurrent)
