@@ -290,12 +290,14 @@ void simpdbg_mlog(char *str)
 
 void _MallocPushCredit(const char * pszFile, int line)
 {
-   g_pMalloc->PushCredit(pszFile, line);
+   if (g_pMalloc)
+      g_pMalloc->PushCredit(pszFile, line);
 }
 
 void _MallocPopCredit()
 {
-   g_pMalloc->PopCredit();
+   if (g_pMalloc)
+      g_pMalloc->PopCredit();
 }
 
 

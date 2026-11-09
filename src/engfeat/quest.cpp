@@ -134,7 +134,11 @@ class cQuestData: public cCTDelegating<IQuestData>,
 
 public:
    cQuestData(IUnknown* pOuter)
-      : m_filter(NULL)
+      : m_listenerHandle(0),
+        m_filter(NULL),
+        m_pClientData(NULL),
+        m_pCreateMsg(NULL),
+        m_pSetMsg(NULL)
    {
       MI_INIT_AGGREGATION_1(pOuter, IQuestData, kPriorityNormal, gConstraints);
    }
