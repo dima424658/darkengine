@@ -1,0 +1,15 @@
+{
+  "name": "darkengine",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "ffmpeg",
+    "libpng",
+    "squirrel",
+    {
+      "name": "sdl3",
+      "features": [
+        "vulkan"
+      ]
+    }
+  ]
+}
