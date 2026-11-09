@@ -37,7 +37,7 @@ void LGAPI _AddToAggregate(IUnknown * pUnknown, const sAggAddInfo * pAddInfo, un
    AutoConIPtr(Aggregate, pUnknown);
    AssertMsg(pAggregate, "Expected but did not find support for IAggregate");
 
-   if (!pAggregate)
+   if (pAggregate == NULL)
       return;
 
    pAggregate->Add(pAddInfo, nAdd);

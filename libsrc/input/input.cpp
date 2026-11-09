@@ -29,17 +29,30 @@ short g_x, g_y, g_xmax = 1023, g_ymax = 1023;
 int g_vx, g_vy;
 bool g_relativeMode;
 int g_relativeX, g_relativeY;
+#ifdef _WIN32
+fn_mouse_ticks_t g_ticks;
+#else
 ulong *g_ticks;
+#endif
 struct Callback { int id; mouse_callfunc fn; void *data; };
 std::vector<Callback> g_callbacks;
 int g_nextCallback = 1;
 constexpr size_t kMaxInputEvents = 32;
 
-ulong now_ms()
+ulong system_now_ms()
 {
-   if (g_ticks) return *g_ticks;
    using namespace std::chrono;
    return static_cast<ulong>(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count());
+}
+
+ulong now_ms()
+{
+#ifdef _WIN32
+   if (g_ticks) return g_ticks();
+#else
+   if (g_ticks) return *g_ticks;
+#endif
+   return system_now_ms();
 }
 
 void clamp_mouse()
@@ -148,7 +161,12 @@ bool _kb_get_cooked(ushort *key) { return kb_get_cooked(key); }
 
 errtype mouse_init(short x, short y) { return mouse_set_screensize(x, y); }
 void mouse_shutdown(void) { mouse_flush(); }
+#ifdef _WIN32
+ulong default_mouse_ticks() { return system_now_ms(); }
+errtype mouse_set_timestamp_register(fn_mouse_ticks_t ticks) { g_ticks = ticks; return OK; }
+#else
 errtype mouse_set_timestamp_register(ulong *ticks) { g_ticks = ticks; return OK; }
+#endif
 ulong mouse_get_time(void) { return now_ms(); }
 errtype _mouse_get_xy(short *x, short *y)
 {

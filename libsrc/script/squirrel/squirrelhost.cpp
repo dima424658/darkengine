@@ -1977,7 +1977,7 @@ static SQInteger CallListener(HSQUIRRELVM vm, const char* method)
       }
 
       AutoAppIPtr(LinkManager);
-      IRelation* relation = pLinkManager ?
+      IRelation* relation = pLinkManager != NULL ?
          pLinkManager->GetRelation(flavor) : NULL;
       if (!relation || relation->GetID() == RELID_NULL)
       {

@@ -124,8 +124,8 @@ grs_bitmap* ResPngReadImage(IStoreStream* pStream,
       goto cleanup;
 
    if (FAILED(converter->GetSize(&width, &height)) || !width || !height ||
-       width > std::numeric_limits<UINT>::max() / 4 ||
-       height > std::numeric_limits<UINT>::max() / (width * 4))
+       width > (std::numeric_limits<UINT>::max)() / 4 ||
+       height > (std::numeric_limits<UINT>::max)() / (width * 4))
       goto cleanup;
 
    stride = width * 4;
@@ -158,11 +158,11 @@ grs_bitmap* ResPngReadImage(IStoreStream* pStream,
                     partialAlphaPixels * 10 <= pixelCount;
 
    if (pixelCount >
-       (std::numeric_limits<size_t>::max() - sizeof(grs_bitmap)) /
+       ((std::numeric_limits<size_t>::max)() - sizeof(grs_bitmap)) /
           sizeof(uint16))
       goto cleanup;
    allocationSize = sizeof(grs_bitmap) + pixelCount * sizeof(uint16);
-   if (allocationSize > std::numeric_limits<ulong>::max())
+   if (allocationSize > (std::numeric_limits<ulong>::max)())
       goto cleanup;
 
    LGALLOC_PUSH_CREDIT();
@@ -223,8 +223,8 @@ cleanup:
    if (!width || !height ||
        width > static_cast<size_t>(std::numeric_limits<int>::max()) ||
        height > static_cast<size_t>(std::numeric_limits<int>::max()) ||
-       width > std::numeric_limits<size_t>::max() / height ||
-       width * height > std::numeric_limits<size_t>::max() / 4)
+       width > (std::numeric_limits<size_t>::max)() / height ||
+       width * height > (std::numeric_limits<size_t>::max)() / 4)
    {
       png_image_free(&image);
       std::free(encoded);
@@ -263,7 +263,7 @@ cleanup:
       opaquePixels * 5 >= pixelCount * 4 &&
       partialAlphaPixels * 10 <= pixelCount;
    if (pixelCount >
-       (std::numeric_limits<size_t>::max() - sizeof(grs_bitmap)) /
+       ((std::numeric_limits<size_t>::max)() - sizeof(grs_bitmap)) /
           sizeof(uint16))
    {
       std::free(rgba);
@@ -272,7 +272,7 @@ cleanup:
 
    const size_t allocationSize = sizeof(grs_bitmap) +
                                  pixelCount * sizeof(uint16);
-   if (allocationSize > std::numeric_limits<ulong>::max())
+   if (allocationSize > (std::numeric_limits<ulong>::max)())
    {
       std::free(rgba);
       return nullptr;
