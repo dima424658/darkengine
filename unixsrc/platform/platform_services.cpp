@@ -996,16 +996,24 @@ BOOL PlatformResolvePath(const char *path, char *resolved, int capacity)
 
 EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
 {
-   const std::string native = ResolveNativePath(path, nullptr);
+   const bool creates = mode && std::strpbrk(mode, "wax");
+   bool existed = false;
+   // Reads dominate resource lookup. Reuse the same cache as ResolvePath;
+   // writes resolve afresh so newly created files cannot use a cached miss.
+   const std::string native = creates
+      ? ResolveNativePath(path, &existed) : ResolveCachedPath(path, nullptr);
    FILE *file = std::fopen(native.c_str(), mode);
-   if (file && mode && std::strpbrk(mode, "wax"))
+   // Overwriting/appending an existing file does not change directory names.
+   if (file && creates && !existed)
       ClearPathCaches();
    return file;
 }
 
 EXTERN_C int PlatformOpen(const char *path, int flags, ...)
 {
-   const std::string native = ResolveNativePath(path, nullptr);
+   bool existed = false;
+   const std::string native = (flags & O_CREAT)
+      ? ResolveNativePath(path, &existed) : ResolveCachedPath(path, nullptr);
    if ((flags & O_CREAT) == 0)
       return open(native.c_str(), flags);
    va_list arguments;
@@ -1013,14 +1021,14 @@ EXTERN_C int PlatformOpen(const char *path, int flags, ...)
    const mode_t mode = (mode_t)va_arg(arguments, int);
    va_end(arguments);
    const int descriptor = open(native.c_str(), flags, mode);
-   if (descriptor >= 0)
+   if (descriptor >= 0 && !existed)
       ClearPathCaches();
    return descriptor;
 }
 
 EXTERN_C int PlatformAccess(const char *path, int mode)
 {
-   const std::string native = ResolveNativePath(path, nullptr);
+   const std::string native = ResolveCachedPath(path, nullptr);
    return access(native.c_str(), mode);
 }
 
