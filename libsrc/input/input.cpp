@@ -191,6 +191,7 @@ errtype mouse_put_xy(short x, short y)
    }
    return OK;
 }
+#ifndef _WIN32
 errtype mouse_set_relative_mode(bool enabled)
 {
    {
@@ -218,6 +219,7 @@ bool mouse_consume_relative_motion(int *x, int *y)
    g_relativeX = g_relativeY = 0;
    return true;
 }
+#endif
 int DarkInputRelativeMouseActive(void)
 {
    std::lock_guard<std::mutex> lock(g_mutex);
