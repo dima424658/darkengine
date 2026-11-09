@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <string>
 #include <vector>
 #pragma pack(pop)
@@ -12,24 +13,40 @@
 #include <appapi.h>
 #include <platform_services.h>
 
-class cUnixApplication : public IApplication
+#pragma pack(push, 8)
+class cSDLApplication : public IApplication
 {
-   DECLARE_SIMPLE_AGGREGATION(cUnixApplication);
+   DECLARE_SIMPLE_AGGREGATION(cSDLApplication);
+
 public:
-   cUnixApplication(IUnknown *outer, const char *name, const char *defaultPath)
+   cSDLApplication(IUnknown *outer, int argumentCount,
+      const char *arguments[], const char *name, const char *defaultPath)
       : m_caption(name ? name : "Dark Engine"), m_defaultPath(defaultPath ? defaultPath : ".")
    {
-      const char *basePath = SDL_GetBasePath();
-      if (basePath) {
+      char executableDirectory[4096]{};
+      if (PlatformGetExecutableDirectory(executableDirectory,
+            static_cast<int>(sizeof(executableDirectory))))
+         m_path = executableDirectory;
+      else if (const char *basePath = SDL_GetBasePath())
          m_path = basePath;
-         m_fullName = m_path + "thief-runner";
-      } else {
+      else
          m_path = ".";
-         m_fullName = "thief-runner";
-      }
+
+      const char *argumentZero = argumentCount > 0 && arguments
+         ? arguments[0] : nullptr;
+      const std::filesystem::path executableName = argumentZero && *argumentZero
+         ? std::filesystem::path(argumentZero).filename()
+         : std::filesystem::path("thief-runner");
+      m_fullName = (std::filesystem::path(m_path) / executableName).string();
       INIT_AGGREGATION_1(outer, IID_IApplication, this, kPriorityReserved, nullptr);
    }
-   ~cUnixApplication() { for (auto *sink : m_sinks) if (sink) sink->Release(); }
+
+   ~cSDLApplication()
+   {
+      for (auto *sink : m_sinks)
+         if (sink)
+            sink->Release();
+   }
 
    HRESULT QueryQuit() override
    {
@@ -76,11 +93,16 @@ private:
    std::string m_caption, m_defaultPath, m_fullName, m_path;
    std::vector<IAppAdviseSink *> m_sinks;
 };
-IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cUnixApplication);
+static_assert(alignof(cSDLApplication) >= alignof(std::string),
+   "SDL application storage must retain native string alignment");
+IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cSDLApplication);
+#pragma pack(pop)
 
 extern "C" tResult LGAPI _GenericApplicationCreate(REFIID, IApplication **,
-   IUnknown *outer, int, const char *[], const char *name, const char *defaultPath)
+   IUnknown *outer, int argumentCount, const char *arguments[],
+   const char *name, const char *defaultPath)
 {
    USE_EXTENDED_START_UP();
-   return new cUnixApplication(outer, name, defaultPath) ? S_OK : E_FAIL;
+   return new cSDLApplication(outer, argumentCount, arguments, name,
+      defaultPath) ? S_OK : E_FAIL;
 }

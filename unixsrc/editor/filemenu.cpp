@@ -1,80 +1,122 @@
 #pragma pack(push, 8)
 #include <SDL3/SDL.h>
-
-#include <cstdio>
-#include <cstring>
-#include <string>
-#include <unistd.h>
 #pragma pack(pop)
 
 #include <lg.h>
 #include <dbfile.h>
 #include <filemenu.h>
 #include <winui.h>
+#include "../../libsrc/dispdev/sdl_window.h"
+
+#include <chrono>
+#include <condition_variable>
+#include <cstring>
+#include <mutex>
+#include <string>
+#include <vector>
 
 EXTERN void load_file(char *path);
 EXTERN void save_world(char *path);
 
 namespace {
-bool read_zenity_path(eFileMenuMode mode, std::string &path)
+struct sDialogResult
 {
-   const char *command = mode == kFileMenuSave
-      ? "zenity --file-selection --save --confirm-overwrite --title='DromEd: Save' 2>/dev/null"
-      : "zenity --file-selection --title='DromEd: Open' 2>/dev/null";
-   FILE *pipe = popen(command, "r");
-   if (!pipe)
-      return false;
+   std::mutex mutex;
+   std::condition_variable completedCondition;
+   bool completed{};
+   std::string path;
+};
 
-   char line[4096];
-   const bool selected = fgets(line, sizeof(line), pipe) != NULL;
-   const int status = pclose(pipe);
-   if (!selected || status != 0)
-      return false;
-
-   path = line;
-   while (!path.empty() && (path.back() == '\n' || path.back() == '\r'))
-      path.pop_back();
-   return !path.empty();
-}
-
-bool read_terminal_path(eFileMenuMode mode, std::string &path)
+void SDLCALL FileDialogCompleted(void *userdata,
+   const char * const *filelist, int)
 {
-   if (!isatty(STDIN_FILENO))
-      return false;
-   fprintf(stderr, "DromEd %s path (empty to cancel): ",
-           mode == kFileMenuSave ? "save" : "open");
-   fflush(stderr);
-   char line[4096];
-   if (!fgets(line, sizeof(line), stdin))
-      return false;
-   path = line;
-   while (!path.empty() && (path.back() == '\n' || path.back() == '\r'))
-      path.pop_back();
-   return !path.empty();
+   auto *result = static_cast<sDialogResult *>(userdata);
+   {
+      std::lock_guard<std::mutex> lock(result->mutex);
+      if (filelist && filelist[0])
+         result->path = filelist[0];
+      result->completed = true;
+   }
+   result->completedCondition.notify_one();
+}
+
+std::vector<SDL_DialogFileFilter> MakeFilters(const sFileMenuFilter *filters,
+   std::vector<std::string> &patterns)
+{
+   std::vector<SDL_DialogFileFilter> result;
+   if (!filters)
+      return result;
+   for (; filters->text; ++filters)
+   {
+      if (!filters->pattern)
+         continue;
+      std::string pattern = filters->pattern;
+      if (pattern == "*.*")
+         pattern = "*";
+      else if (pattern.size() > 1 && pattern[0] == '*' && pattern[1] == '.')
+         pattern.erase(0, 2);
+      patterns.push_back(std::move(pattern));
+      result.push_back({filters->text, nullptr});
+   }
+   for (size_t i = 0; i < result.size(); ++i)
+      result[i].pattern = patterns[i].c_str();
+   return result;
+}
+
+void AddDefaultExtension(std::string &path, const char *extension)
+{
+   if (!extension || !*extension)
+      return;
+   const size_t separator = path.find_last_of("/\\");
+   const size_t dot = path.find_last_of('.');
+   if (dot == std::string::npos ||
+       (separator != std::string::npos && dot < separator))
+   {
+      path += '.';
+      path += extension;
+   }
 }
 }
 
-extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *,
+extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *filters,
                              const char *defaultExtension,
                              char *buffer, int bufferLength)
 {
    if (!buffer || bufferLength <= 0)
       return NULL;
 
-   std::string path;
-   if (!read_zenity_path(mode, path) && !read_terminal_path(mode, path))
+   std::vector<std::string> patterns;
+   std::vector<SDL_DialogFileFilter> dialogFilters =
+      MakeFilters(filters, patterns);
+   sDialogResult result;
+   SDL_Window *window = SDLDisplayGetWindow();
+   if (mode == kFileMenuSave)
+      SDL_ShowSaveFileDialog(FileDialogCompleted, &result, window,
+         dialogFilters.empty() ? nullptr : dialogFilters.data(),
+         static_cast<int>(dialogFilters.size()), nullptr);
+   else
+      SDL_ShowOpenFileDialog(FileDialogCompleted, &result, window,
+         dialogFilters.empty() ? nullptr : dialogFilters.data(),
+         static_cast<int>(dialogFilters.size()), nullptr, false);
+
+   std::unique_lock<std::mutex> lock(result.mutex);
+   while (!result.completed)
+   {
+      result.completedCondition.wait_for(lock, std::chrono::milliseconds(10));
+      if (!result.completed)
+      {
+         lock.unlock();
+         SDL_PumpEvents();
+         lock.lock();
+      }
+   }
+   std::string path = std::move(result.path);
+   lock.unlock();
+   if (path.empty())
       return NULL;
 
    if (mode == kFileMenuSave && defaultExtension && *defaultExtension)
-   {
-      const size_t slash = path.find_last_of('/');
-      const size_t dot = path.find_last_of('.');
-      if (dot == std::string::npos || (slash != std::string::npos && dot < slash))
-      {
-         path += '.';
-         path += defaultExtension;
-      }
-   }
+      AddDefaultExtension(path, defaultExtension);
 
    if (path.size() >= static_cast<size_t>(bufferLength))
    {

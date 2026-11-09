@@ -32,13 +32,18 @@ target_include_directories(dark_platform PUBLIC
   libsrc/cpptools
   ${DARK_PLATFORM_ROOT}
 )
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  # unixsrc/platform uses POSIX interfaces such as setenv; strict C++17 mode
+  # hides those declarations on glibc unless the default feature set is enabled.
+  target_compile_definitions(dark_platform PRIVATE _DEFAULT_SOURCE)
+endif()
 if(WIN32)
   target_link_libraries(dark_platform PUBLIC
     advapi32 user32 ws2_32)
 endif()
+target_link_libraries(dark_platform PUBLIC ${DARK_SDL_TARGET})
 if(NOT WIN32)
   target_link_libraries(dark_platform PUBLIC ${CMAKE_DL_LIBS})
-  target_link_libraries(dark_platform PUBLIC ${DARK_SDL_TARGET})
   if(ANDROID)
     target_link_libraries(dark_platform PUBLIC "${DARK_ANDROID_LOG_LIBRARY}")
   endif()

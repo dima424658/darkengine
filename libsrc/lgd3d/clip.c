@@ -5,10 +5,27 @@
 #include <memall.h>
 #include <tmpalloc.h>
 
-#include <d3dpoint.h>
 
-static lgd3ds_point *tmp;
-static float (*intersect)(lgd3ds_point *v0, lgd3ds_point *v1);
+typedef struct sClipVertex
+{
+   float sx;
+   float sy;
+   float sz;
+   float rhw;
+   uchar r;
+   uchar g;
+   uchar b;
+   uchar a;
+   uchar flags;
+   uchar sg;
+   uchar sb;
+   uchar sa;
+   float u;
+   float v;
+} sClipVertex;
+
+static sClipVertex *tmp;
+static float (*intersect)(sClipVertex *v0, sClipVertex *v1);
 static float clip_val;
 
 extern float lgd3d_clip[4];
@@ -18,7 +35,7 @@ extern float lgd3d_clip[4];
 #define top lgd3d_clip[2]
 #define bot lgd3d_clip[3]
 
-static void code_xy(lgd3ds_point *v)
+static void code_xy(sClipVertex *v)
 {
    v->flags = 0;
    if (v->sx < left)
@@ -31,7 +48,7 @@ static void code_xy(lgd3ds_point *v)
       v->flags|=CLIP_BOT;
 }
 
-static void code_y(lgd3ds_point *v)
+static void code_y(sClipVertex *v)
 {
    v->flags = 0;
    if (v->sy < top) 
@@ -40,7 +57,7 @@ static void code_y(lgd3ds_point *v)
       v->flags|=CLIP_BOT;
 }
 
-static void clip_func(lgd3ds_point *v0, lgd3ds_point *v1, float r)
+static void clip_func(sClipVertex *v0, sClipVertex *v1, float r)
 {
    float da = (float)v1->a - v0->a;
    float dr = (float)v1->r - v0->r;
@@ -59,7 +76,7 @@ static void clip_func(lgd3ds_point *v0, lgd3ds_point *v1, float r)
    tmp->sz = v0->sz;
 }
 
-static float x_intersect(lgd3ds_point *v0, lgd3ds_point *v1)
+static float x_intersect(sClipVertex *v0, sClipVertex *v1)
 {
    float dy,r;
    tmp->sx = clip_val;
@@ -72,7 +89,7 @@ static float x_intersect(lgd3ds_point *v0, lgd3ds_point *v1)
    return r;
 }
 
-static float y_intersect(lgd3ds_point *v0, lgd3ds_point *v1)
+static float y_intersect(sClipVertex *v0, sClipVertex *v1)
 {
    float dx,r;
    tmp->sy = clip_val;
@@ -84,10 +101,10 @@ static float y_intersect(lgd3ds_point *v0, lgd3ds_point *v1)
    return r;
 }
 
-static uchar get_codes(lgd3ds_point **a, int n)
+static uchar get_codes(sClipVertex **a, int n)
 {
    uchar ccr, cc;
-   lgd3ds_point **last;
+   sClipVertex **last;
 
    last = a + n;
    ccr = CLIP_LEFT|CLIP_RIGHT|CLIP_TOP|CLIP_BOT;
@@ -101,11 +118,11 @@ static uchar get_codes(lgd3ds_point **a, int n)
    return (cc);
 }
 
-static int do_plane(lgd3ds_point **src, lgd3ds_point **dest, int n, uchar code)
+static int do_plane(sClipVertex **src, sClipVertex **dest, int n, uchar code)
 {
    uchar c0;
    int m=0;
-   lgd3ds_point **start, **end, **last;
+   sClipVertex **start, **end, **last;
 
    start = last = src+n-1;
    end = src;
@@ -120,7 +137,7 @@ static int do_plane(lgd3ds_point **src, lgd3ds_point **dest, int n, uchar code)
       }
       // if one's in and one's out, compute the intersection!
       if (c1 ^ c0) {
-         lgd3ds_point *v0, *v1;
+         sClipVertex *v0, *v1;
          float r;
 
          v0 = *start;
@@ -128,13 +145,12 @@ static int do_plane(lgd3ds_point **src, lgd3ds_point **dest, int n, uchar code)
          // sort vertices to avoid cracking.
          if ((v0->sx < v1->sx)||
                (v0->sx==v1->sx)&&(v0->sy<v1->sy)) {
-            lgd3ds_point *swap = v0;
+            sClipVertex *swap = v0;
             v0 = v1;
             v1 = swap;
          }
          r = intersect(v0, v1);
-         if (clip_func != NULL)
-            clip_func(v0, v1, r);
+         clip_func(v0, v1, r);
          *dest = tmp;
          dest++, m++, tmp++;
       }
@@ -146,9 +162,9 @@ static int do_plane(lgd3ds_point **src, lgd3ds_point **dest, int n, uchar code)
 
 #define MAX_TEMP_POINTS 8 // (2 per clipping plane)
 
-int lgd3d_clip_poly(int n, lgd3ds_point **vpl, lgd3ds_point ***pcvpl)
+int lgd3d_clip_poly(int n, sClipVertex **vpl, sClipVertex ***pcvpl)
 {
-   lgd3ds_point **src, **dest, **next; /* lists of vertex pointers */
+   sClipVertex **src, **dest, **next; /* lists of vertex pointers */
    int max_verts, i;                /* max number of output vertexes */
    uchar cc;                        /* aggregate clip codes for entire poly */
 
@@ -172,7 +188,7 @@ int lgd3d_clip_poly(int n, lgd3ds_point **vpl, lgd3ds_point ***pcvpl)
    src = vpl;
    dest = *pcvpl;
    next = dest + max_verts;
-   tmp = (lgd3ds_point *)(next + max_verts);
+   tmp = (sClipVertex *)(next + max_verts);
 
    intersect = x_intersect;
    if (cc&CLIP_LEFT) {

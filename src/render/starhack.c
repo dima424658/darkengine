@@ -43,7 +43,7 @@ int star_base_color=1, star_num_colors=4;
 
 int star_rate=0, star_axis=2;
 
-static bool g_d3d_stars = TRUE;
+static bool g_hardware_stars = TRUE;
 
 static bool g_span_sky = TRUE;
 
@@ -128,7 +128,7 @@ void starfield_renderframe(Position *campos, float zoom)
 
 void starfield_startframe(Position *campos, float zoom)
 {
-   if ((g_lgd3d) && (g_d3d_stars)) {
+   if ((g_lgd3d) && (g_hardware_stars)) {
       if (g_zbuffer) {
          ptsky_set_type(PTSKY_ZBUFFER);
       } else {
@@ -159,7 +159,7 @@ void starfield_startframe(Position *campos, float zoom)
 
 void starfield_endframe(Position *campos, float zoom)
 {
-   if (g_lgd3d && g_d3d_stars && g_zbuffer)
+   if (g_lgd3d && g_hardware_stars && g_zbuffer)
    {
       // The z-buffered star pass runs after terrain and queued objects.  The
       // object renderer leaves depth writes enabled, but its compare state is
@@ -211,7 +211,7 @@ Command star_keys[] =
    { "set_star_axis", VAR_INT, &star_axis, "which axis (0-2) rotates" },
    { "star_base_color", VAR_INT, &star_base_color, "first valid palette " },
    { "star_num_colors", VAR_INT, &star_num_colors, "number of palette colors" },
-   { "d3d_stars", TOGGLE_BOOL, &g_d3d_stars, "toggle doing d3d stars" },
+   { "hardware_stars", TOGGLE_BOOL, &g_hardware_stars, "toggle hardware-rendered stars" },
    { "span_sky", TOGGLE_BOOL, &g_span_sky, "toggle doing span stars" },
 };
 #endif

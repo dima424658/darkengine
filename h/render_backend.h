@@ -35,6 +35,9 @@ enum eRenderBackendBlend {
 
 int RenderBackendAvailable(void);
 void RenderBackendSetGamma(float gamma);
+// Select a Vulkan physical device by the index reported through the legacy
+// lgd3d device enumeration. Negative values restore automatic GPU selection.
+void RenderBackendSetPhysicalDeviceIndex(int index);
 void RenderBackendSetScaleToWindow(int enabled);
 void RenderBackendSetFitToViewport(int enabled);
 void RenderBackendSetInteractiveResize(int resizing);
@@ -45,6 +48,7 @@ void RenderBackendSetWindowedClientSizeHint(int width, int height);
 // resize is in progress the size is intentionally withheld so callers can
 // rebuild expensive engine-owned canvases once, when the drag finishes.
 int RenderBackendGetSettledClientSize(int *width, int *height);
+int RenderBackendGetLogicalSize(int *width, int *height);
 int RenderBackendClientToLogicalPoint(int *x, int *y);
 int RenderBackendLogicalToClientPoint(int *x, int *y);
 // Presents a legacy-canvas update immediately when the platform normally
@@ -55,6 +59,7 @@ int RenderBackendBeginFrame(void);
 void RenderBackendEndFrame(void);
 void RenderBackendDeactivateScene(void);
 void RenderBackendClearDepth(void);
+void RenderBackendClearDepthRect(int x0, int y0, int x1, int y1);
 // Clear a logical canvas rectangle in the active hardware scene.
 void RenderBackendClearCanvasRegion(int x, int y, int width, int height);
 void RenderBackendSetDepth(int compareEnabled, int writeEnabled);

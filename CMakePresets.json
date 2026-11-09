@@ -7,10 +7,46 @@
   },
   "configurePresets": [
     {
-      "name": "windows-vulkan-base",
+      "name": "macos",
+      "displayName": "macOS",
+      "description": "Build the game and DromEd.",
+      "generator": "Ninja",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "binaryDir": "${sourceDir}/build-macos",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "DARK_BUILD_ENGINE": "ON",
+        "DARK_BUILD_THIEF2": "ON",
+        "DARK_BUILD_DROMED": "ON"
+      }
+    },
+    {
+      "name": "linux",
+      "displayName": "Linux",
+      "description": "Build the game and DromEd.",
+      "generator": "Ninja",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "binaryDir": "${sourceDir}/build-linux",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "DARK_BUILD_ENGINE": "ON",
+        "DARK_BUILD_THIEF2": "ON",
+        "DARK_BUILD_DROMED": "ON"
+      }
+    },
+    {
+      "name": "windows-base",
       "hidden": true,
-      "displayName": "Windows SDL3 + Vulkan",
-      "description": "Common SDL3/Vulkan game and DromEd configuration for Visual Studio 2022.",
+      "displayName": "Windows",
+      "description": "Common game and DromEd configuration for Visual Studio 2022.",
       "generator": "Visual Studio 17 2022",
       "condition": {
         "type": "equals",
@@ -20,37 +56,48 @@
       "cacheVariables": {
         "DARK_BUILD_ENGINE": "ON",
         "DARK_BUILD_THIEF2": "ON",
-        "DARK_BUILD_DROMED": "ON",
-        "DARK_COMPILE_VULKAN_SHADERS": "ON"
+        "DARK_BUILD_DROMED": "ON"
       }
     },
     {
-      "name": "windows-x64-vulkan",
-      "inherits": "windows-vulkan-base",
-      "displayName": "Windows x64 SDL3 + Vulkan",
+      "name": "windows-x64",
+      "inherits": "windows-base",
+      "displayName": "Windows x64",
       "architecture": "x64",
-      "binaryDir": "${sourceDir}/build-win64-vulkan"
+      "binaryDir": "${sourceDir}/build-win64"
     },
     {
-      "name": "windows-x86-vulkan",
-      "inherits": "windows-vulkan-base",
-      "displayName": "Windows x86 SDL3 + Vulkan",
+      "name": "windows-x86",
+      "inherits": "windows-base",
+      "displayName": "Windows x86",
       "architecture": "Win32",
-      "binaryDir": "${sourceDir}/build-win32-vulkan"
+      "binaryDir": "${sourceDir}/build-win32"
     }
   ],
   "buildPresets": [
     {
-      "name": "windows-x64-vulkan-release",
-      "displayName": "Windows x64 SDL3 + Vulkan Release",
-      "configurePreset": "windows-x64-vulkan",
+      "name": "macos-release",
+      "displayName": "macOS Release",
+      "configurePreset": "macos",
+      "targets": ["thief2", "dromed"]
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Linux Release",
+      "configurePreset": "linux",
+      "targets": ["thief2", "dromed"]
+    },
+    {
+      "name": "windows-x64-release",
+      "displayName": "Windows x64 Release",
+      "configurePreset": "windows-x64",
       "configuration": "Release",
       "targets": ["thief2", "dromed"]
     },
     {
-      "name": "windows-x86-vulkan-release",
-      "displayName": "Windows x86 SDL3 + Vulkan Release",
-      "configurePreset": "windows-x86-vulkan",
+      "name": "windows-x86-release",
+      "displayName": "Windows x86 Release",
+      "configurePreset": "windows-x86",
       "configuration": "Release",
       "targets": ["thief2", "dromed"]
     }

@@ -20,6 +20,9 @@
 #include <unordered_map>
 #include <vector>
 #include <unistd.h>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 #if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
 #include <execinfo.h>
 #endif
@@ -47,6 +50,39 @@
 
 namespace
 {
+bool GetCurrentExecutablePath(char *path, size_t capacity)
+{
+   if (!path || capacity == 0)
+      return false;
+#if defined(__APPLE__)
+   uint32_t size = static_cast<uint32_t>(capacity);
+   if (_NSGetExecutablePath(path, &size) != 0)
+   {
+      path[0] = '\0';
+      return false;
+   }
+   std::error_code error;
+   const std::filesystem::path resolved =
+      std::filesystem::canonical(path, error);
+   if (error || resolved.string().size() >= capacity)
+   {
+      path[0] = '\0';
+      return false;
+   }
+   std::strcpy(path, resolved.string().c_str());
+   return true;
+#else
+   const ssize_t length = readlink("/proc/self/exe", path, capacity - 1);
+   if (length <= 0 || static_cast<size_t>(length) >= capacity)
+   {
+      path[0] = '\0';
+      return false;
+   }
+   path[length] = '\0';
+   return true;
+#endif
+}
+
 #if defined(__ANDROID__)
 std::mutex g_applicationClockMutex;
 std::chrono::steady_clock::time_point g_applicationClockSuspendedAt;
@@ -672,14 +708,12 @@ BOOL PlatformGetExecutableDirectory(char *path, int capacity)
 {
    if (!path || capacity <= 0)
       return FALSE;
-   const ssize_t length = readlink("/proc/self/exe",path,(size_t)capacity - 1);
-   if (length <= 0 || length >= capacity)
-   {
-      path[0] = '\0';
+   if (!GetCurrentExecutablePath(path, static_cast<size_t>(capacity)))
       return FALSE;
-   }
-   path[length] = '\0';
-   char *separator = strrchr(path,'/');
+   char *separator = strrchr(path, '/');
+   char *alternate = strrchr(path, '\\');
+   if (alternate && (!separator || alternate > separator))
+      separator = alternate;
    if (!separator)
    {
       path[0] = '\0';
@@ -709,11 +743,8 @@ BOOL PlatformRelaunchSelf(const char *const *arguments, int argument_count,
    if (argument_count < 0)
       return FALSE;
    char executable[4096];
-   const ssize_t length = readlink("/proc/self/exe",executable,
-                                   sizeof(executable) - 1);
-   if (length <= 0 || length >= (ssize_t)sizeof(executable))
+   if (!GetCurrentExecutablePath(executable, sizeof(executable)))
       return FALSE;
-   executable[length] = '\0';
 
    const pid_t child = fork();
    if (child < 0)

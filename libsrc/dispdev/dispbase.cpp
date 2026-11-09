@@ -56,17 +56,17 @@ STDMETHODIMP_(eDisplayDeviceKind) cDisplayDevice::GetKind()
 
 ///////////////////////////////////////
 //
-// Query kind, flags, and ddraw guid
+// Query kind, flags, and display provider GUID.
 //
 
-STDMETHODIMP_(void) cDisplayDevice::GetKind2(eDisplayDeviceKind *pKind, int *pFlags, GUID **ppDDrawGuid)
+STDMETHODIMP_(void) cDisplayDevice::GetKind2(eDisplayDeviceKind *pKind, int *pFlags, GUID **ppDisplayGuid)
 {
     if (pKind != NULL)
         *pKind = kDispFullScreen;
     if (pFlags != NULL)
         *pFlags = 0;
-    if (ppDDrawGuid != NULL)
-        *ppDDrawGuid = NULL;
+    if (ppDisplayGuid != NULL)
+        *ppDisplayGuid = NULL;
 }
 
 ///////////////////////////////////////

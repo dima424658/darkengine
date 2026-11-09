@@ -25,25 +25,6 @@
 
 void dispdev_ubitmap(grs_bitmap *bm, int x, int y)
 {
-#ifdef _WIN32
-   // @Note (toml 12-13-96): this is costly, but for now is isolated
-   // to DD in a window so it's probably okay.  Performance sensitive
-   // clients can/should circumvent this function, or we need a
-   // better protocol
-   IDeviceBitmap * dst;
-   IDeviceBitmap * src;
-
-   IDisplayDevice_FindBitmap(g_pDev2dDisplayDevice, &grd_canvas->bm, &dst);
-   IDisplayDevice_FindBitmap(g_pDev2dDisplayDevice, bm, &src);
-
-   AssertMsg1(dst && src, "dispdev_ubitmap() requires 2 device bitmaps, had %d", (!!(dst) + !!(src)));
-
-   if (dst && src)
-      IDeviceBitmap_SimpleBlt(dst, x, y, src);
-
-   SafeRelease(dst);
-   SafeRelease(src);
-#else
    ushort old_canvas_flags, old_bitmap_flags;
    old_canvas_flags = grd_canvas->bm.flags;
    old_bitmap_flags = bm->flags;
@@ -57,7 +38,6 @@ void dispdev_ubitmap(grs_bitmap *bm, int x, int y)
 
    bm->flags = old_bitmap_flags;
    grd_canvas->bm.flags = old_canvas_flags;
-#endif
 }
 
 gdubm_func *dispdev_ubitmap_expose(grs_bitmap *bm, int x, int y)

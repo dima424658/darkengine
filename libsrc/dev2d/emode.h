@@ -105,7 +105,7 @@ enum {
    GRM_400x300x32,      
    GRM_512x384x32,
 
-   // DirectDraw can advertise resolutions that did not exist when this
+   // The active display provider can advertise resolutions that did not exist when this
    // table was written. Keep the original values stable and reserve room
    // for modes discovered at runtime.
    GRD_STATIC_MODES,

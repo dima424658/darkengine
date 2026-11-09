@@ -33,7 +33,9 @@ extern "C" {
 #include <platform_services.h>
 
 #include "../lgd3d/runtime.h"
+#include "../gameshel/sdl_events.h"
 
+#pragma pack(push, 8)
 class cSDLMoviePlayer final : public IMoviePlayer1
 {
 public:
@@ -166,7 +168,7 @@ bool WaitForFrame(MovieClock::time_point start, double seconds)
 {
     for (;;)
     {
-        if (DarkRenderPumpMovieEvents())
+        if (DarkPumpMovieEvents())
             return false;
         const double elapsed = std::chrono::duration<double>(
             MovieClock::now() - start).count();
@@ -365,7 +367,7 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     if (audioStream && audioStarted && keepPlaying)
     {
         while (SDL_GetAudioStreamQueued(audioStream) > 0 &&
-               !DarkRenderPumpMovieEvents())
+               !DarkPumpMovieEvents())
             SDL_Delay(5);
     }
     if (audioStream)
@@ -383,3 +385,4 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     return played;
 #endif
 }
+#pragma pack(pop)

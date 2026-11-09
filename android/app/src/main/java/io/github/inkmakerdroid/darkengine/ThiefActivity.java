@@ -138,12 +138,6 @@ public final class ThiefActivity extends SDLActivity {
         return true;
     }
 
-    @Override
-    protected boolean onTextInputBackPressed(KeyEvent event) {
-        return (consoleFrameVisible || consoleBackGesture) &&
-            handleConsoleBackEvent(event);
-    }
-
     private static final class ConsoleFrameView extends View {
         private final Object frameLock = new Object();
         private final ThiefActivity activity;

@@ -66,8 +66,8 @@ void ScrnModeGet(sScrnMode* current)
 
    eDisplayDeviceKind kind;
    int flags;
-   GUID* pDD = NULL;
-   pDispDev->GetKind2(&kind,&flags,&pDD);
+   GUID* pDisplayGuid = NULL;
+   pDispDev->GetKind2(&kind,&flags,&pDisplayGuid);
 
    // 3d
    if (flags & kDispAttempt3D)
@@ -235,6 +235,7 @@ static void dump_screen_mode(const sScrnMode* mode);
 //
 BOOL ScrnSetModeRaw(const sScrnMode* mode)
 {
+    RenderBackendSetPhysicalDeviceIndex(-1);
     // Check validity
     AssertMsg((mode->valid_fields & kScrnModeAllValid) == kScrnModeAllValid,"ScrnSetModeRaw: Not all fields are valid");
 
@@ -254,7 +255,7 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
 #endif //PLAYTEST
 
     // First, figure out our display
-    GUID *pDD;
+    GUID *pDisplayGuid;
     int flags = 0;
     int kind;
     if (mode->flags & kScrnModeWindowed)
@@ -284,7 +285,8 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
                 flags                = kDispAttemptFlippable | kDispAttempt3D;
                 g_lgd3d_device_index = 0;
                 g_lgd3d              = TRUE;
-                pDD                  = NULL;
+                RenderBackendSetPhysicalDeviceIndex(0);
+                pDisplayGuid                  = NULL;
             }
             else
             {
@@ -295,27 +297,30 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
                 // we're not doing hardware; check if we can preserve our current ddraw...
                 if (ScrnFindModeFlags(mode->w,mode->h,mode->bitdepth,modeflags) != SCR_NOMODE)
                     // OK, preserve current ddraw!
-                    pDD = (GUID*)&SCRNMAN_PRESERVE_DDRAW;  // Direct draw guid
+                    pDisplayGuid = (GUID*)&SCRNMAN_PRESERVE_DISPLAY;  // display provider GUID
                 else
                     // Nope, go for primary!
-                    pDD = NULL;
+                    pDisplayGuid = NULL;
             }
         }
         else
         {
 #endif
-            // @TODO: modularize this out when it comes time for OpenGL or other 3d APIs
             int num_devices = lgd3d_enumerate_devices();
             if (num_devices > 0)
             {
                 int idx = num_devices - 1;
-                if (config_get_int("d3d_driver_index",&idx))
+                const BOOL hasRendererIndex =
+                    config_get_int("d3d_driver_index", &idx);
+                if (hasRendererIndex)
                 {
+                    const int requestedIdx = idx;
                     if (idx < 0) idx += num_devices;
                     if (idx < 0 || idx >= num_devices)
                     {
                         idx = num_devices -1;
-                        Warning(("D3D driver index %d is out of range, using %d",idx));
+                        Warning(("Render device index %d is out of range, using %d",
+                            requestedIdx, idx));
                     }
                 }
 
@@ -323,23 +328,25 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
                 if (kind == kDispFullScreen)
                 {
                     flags |= kDispAttemptFlippable;
-                    pDD = NULL;
+                    pDisplayGuid = NULL;
                 }
                 else
-                    pDD = NULL;
+                    pDisplayGuid = NULL;
 
 #ifndef SHIP
-                if (config_is_defined("d3d_driver_index"))
+                if (hasRendererIndex)
                     mprintf("Using renderer: %s\n", lgd3d_get_device_info(idx)->name);
 #endif
 
                 g_lgd3d_device_index = idx;
                 g_lgd3d = TRUE;
+                RenderBackendSetPhysicalDeviceIndex(
+                    hasRendererIndex ? idx : -1);
             }
             else
             {
                 Warning(("Can't use hardware; no device available.\n"));
-                pDD = NULL;
+                pDisplayGuid = NULL;
             }
 #ifndef SHIP
         }
@@ -348,10 +355,10 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
         // we're not doing hardware; check if we can preserve our current ddraw...
         if (ScrnFindModeFlags(mode->w,mode->h,mode->bitdepth,modeflags) != SCR_NOMODE)
             // OK, preserve current ddraw!
-            pDD = (GUID*)&SCRNMAN_PRESERVE_DDRAW;  // Direct draw guid
+            pDisplayGuid = (GUID*)&SCRNMAN_PRESERVE_DISPLAY;  // display provider GUID
         else
             // Nope, go for primary!
-            pDD = NULL;
+            pDisplayGuid = NULL;
     }
 
 #ifndef SHIP
@@ -366,7 +373,7 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
 
         RenderBackendTrace("screen-display kind=%d display-flags=0x%x lgd3d=%d",
                          kind, flags, g_lgd3d);
-        BOOL match = (ScrnSetDisplay(kind,flags,pDD) == 0);
+        BOOL match = (ScrnSetDisplay(kind,flags,pDisplayGuid) == 0);
 
         //
         // Test against current mode

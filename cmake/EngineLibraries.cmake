@@ -132,6 +132,23 @@ if(TARGET dark_vulkan_shaders)
   add_dependencies(dark_lgd3d_vulkan dark_vulkan_shaders)
 endif()
 
+# SDL surface creation is platform display integration, not renderer state.
+# Compile it with the native C++ ABI and attach its object to dispdev while
+# keeping Vulkan resource ownership in lgd3d.
+add_library(dark_dispdev_vulkan OBJECT libsrc/dispdev/sdl_vulkan.cpp)
+target_link_libraries(dark_dispdev_vulkan PRIVATE dark_engine_config
+  Vulkan::Vulkan ${DARK_SDL_TARGET})
+target_include_directories(dark_dispdev_vulkan PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgd3d"
+  "${CMAKE_CURRENT_SOURCE_DIR}/h")
+if(ANDROID)
+  target_include_directories(dark_dispdev_vulkan SYSTEM PRIVATE
+    "${DARK_VULKAN_HEADERS_SOURCE}/include")
+endif()
+target_sources(dark_dispdev PRIVATE
+  $<TARGET_OBJECTS:dark_dispdev_vulkan>)
+target_link_libraries(dark_dispdev PUBLIC Vulkan::Vulkan ${DARK_SDL_TARGET})
+
 target_link_libraries(dark_cpptools PUBLIC dark_platform)
 if(WIN32)
   target_compile_definitions(dark_lgalloc PRIVATE

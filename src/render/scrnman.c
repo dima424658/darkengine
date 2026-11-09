@@ -76,7 +76,7 @@ ScrnMode ScrnFindModeFlags(short w, short h, ubyte depth,ulong flags)
       return i;
 
    // The modern path renders into an emulated off-screen surface, so it can
-   // use canvas dimensions that DirectDraw did not advertise as physical
+   // use canvas dimensions that the display driver did not advertise as physical
    // display modes. gr_register_mode() adds those dimensions to the global
    // mode table, but the legacy lookup above only searches the display
    // provider's startup list. Make a registered 15/16-bit mode available to
@@ -150,41 +150,42 @@ void _end_shell(void)
 
 static BOOL try_flip = FALSE;
 
-int ScrnSetDisplay(int kind, int flags, GUID *DD)
+int ScrnSetDisplay(int kind, int flags, GUID *displayGuid)
 {
    int dispKind, dispFlags;
    int changed;
-   GUID *curDD;
+   GUID *currentGuid;
    IDisplayDevice *pDispDev = AppGetObj(IDisplayDevice);
-   BOOL different_dd = FALSE;
+   BOOL differentGuid = FALSE;
    BOOL last_flip = try_flip;
 
-   GET_KIND(pDispDev, (eDisplayDeviceKind *)&dispKind, &dispFlags, &curDD);
+   GET_KIND(pDispDev, (eDisplayDeviceKind *)&dispKind, &dispFlags,
+      &currentGuid);
 
-   if (DD && IsEqualGUID(DD,&SCRNMAN_PRESERVE_DDRAW))
-      DD = curDD; 
+   if (displayGuid && IsEqualGUID(displayGuid, &SCRNMAN_PRESERVE_DISPLAY))
+      displayGuid = currentGuid;
 
-   different_dd = DD != curDD; 
+   differentGuid = displayGuid != currentGuid;
 
    // If neither pointer is null, actually compare the guids
-   if (different_dd && DD && curDD)
-      different_dd = !IsEqualGUID(DD,curDD);
+   if (differentGuid && displayGuid && currentGuid)
+      differentGuid = !IsEqualGUID(displayGuid, currentGuid);
 
    try_flip = flags & kDispAttemptFlippable;
 
    // Always attempt flippable! set flipping for real after setting mode!
    flags |= kDispAttemptFlippable;
 
-   if (!different_dd && kind == dispKind)
+   if (!differentGuid && kind == dispKind)
       // add attempt3d if is was there before...
       flags |= (kDispAttempt3D & dispFlags);
 
-   if (different_dd || kind != dispKind || flags != dispFlags) 
+   if (differentGuid || kind != dispKind || flags != dispFlags)
    {
       ConfigSpew("set_display_spew", ("Changing display to %d flags 0x%X\n", kind, flags)); 
       ScrnUnsetRes();
       gr_close();
-      SET_KIND(pDispDev, kind, flags, DD);
+      SET_KIND(pDispDev, kind, flags, displayGuid);
       gr_init();
       grd_mode = -1;
       changed = TRUE;
@@ -414,11 +415,11 @@ BOOL ScrnSetRes(ScrnMode mode,ulong flags)
       if (!g_page_flip)
       {
          // The modern presenter deliberately uses a lockable compatibility
-         // canvas, not a DirectDraw flipping pair.  Hardware 3D remains
+         // canvas, not a legacy flipping pair. Vulkan rendering remains
          // active and Flush composites that canvas over the GPU scene.  Do
          // not reject the hardware mode merely because legacy page flipping
          // is unavailable; aliasing the draw canvas to the replaceable
-         // DirectDraw surface leaves stale pointers across logical mode
+         // replaceable display surface leaves stale pointers across logical mode
          // changes and crashes in flat16_memset.
          if (!RenderBackendAvailable())
          {
@@ -484,89 +485,6 @@ bool g_multitexture;
 //
 // Init/Term 3d accelleration
 //
-#ifdef USE_HARDWARE3D
-
-BOOL ScrnInit3d(void)
-{
-
-   if( g_lgd3d )
-   {
-      int                  num_devices = lgd3d_enumerate_devices();
-      lgd3ds_device_info*  info;
-      ulong                set_flags;
-
-
-      if (num_devices <= 0) {
-         Warning(("No direct 3d devices available."));
-         return FALSE;
-      }
-      
-      if( (g_lgd3d_device_index > num_devices) || (g_lgd3d_device_index < 0) )
-         g_lgd3d_device_index = num_devices-1;
-      
-      info = lgd3d_get_device_info(g_lgd3d_device_index);
-
-      info->request_flags  = LG3D_CF_DITHER | LG3D_SHADER_MODULATE_ALPHA;
-      info->required_flags = LG3D_SHADER_MULTITEX_COLOR;
-
-      if( info->caps & LG3D_CF_SP_MULTI_TEX )
-         info->request_flags |= LG3D_CF_SP_2LEV_TEX;
-      
-      if( g_zbuffer_toggle ) // that's a joke, right?
-         info->required_flags |= LG3D_CF_Z_BUFFER;
-      
-#ifndef SHIP
-      {
-         int spew = 0;
-         config_get_int("lgd3d_spew", &spew);
-         
-         if( spew )
-            info->request_flags |= LG3D_SPEW;
-      }
-      
-      if (config_is_defined("fail_lgd3d_init"))
-         return FALSE;
-
-      if( config_is_defined("lg3d_cache_alpha") )
-         info->request_flags |= LG3D_CF_RND_ALPHA_LAST;
-
-      if( config_is_defined("force_two_passes") )
-         info->request_flags &= ~LG3D_CF_SP_2LEV_TEX;
-
-#endif
-      
-      if( FAILED( lgd3d_init( info, &set_flags ) ) )
-         return FALSE;
-      
-      // make sure our lightmap method is confirmed.
-      if( !(set_flags & LG3D_SHADER_MULTITEX_COLOR) )
-      {
-         lgd3d_shutdown();
-         // set error message?
-         return FALSE;
-      }
-      
-      lgd3d_set_chromakey(255, 0, 255);
-      
-      portal_multitexture = g_multitexture = (set_flags & LG3D_CF_SP_MULTI_TEX) != 0;      
-      g_zbuffer = (set_flags & LG3D_CF_Z_BUFFER) != 0;
-
-      if( !g_zbuffer && g_zbuffer_toggle ) 
-      {
-         Warning(("Couldn't create zbuffer.\n"));
-      }
-
-      if( !g_null_raster )
-         r3_use_lgd3d();
-   }
-   
-#ifdef RGB_LIGHTING
-   portal_setup_light_masks();
-#endif
-   return TRUE;
-}
-
-#else // !USE_HARDWARE3D
 BOOL ScrnInit3d(void)
 {
    if (g_lgd3d)
@@ -575,14 +493,19 @@ BOOL ScrnInit3d(void)
       lgd3ds_device_info *info;
 
       if (num_devices <= 0) {
-         Warning(("No direct 3d devices available."));
+         Warning(("No Vulkan renderer available."));
          return FALSE;
       }
 
-      if ((g_lgd3d_device_index > num_devices)||(g_lgd3d_device_index < 0))
+      if (g_lgd3d_device_index >= num_devices || g_lgd3d_device_index < 0)
          g_lgd3d_device_index = num_devices-1;
 
       info = lgd3d_get_device_info(g_lgd3d_device_index);
+      if (!info)
+      {
+         Warning(("Failed to get Vulkan renderer information."));
+         return FALSE;
+      }
 
       // see if we can single pass multitexture
       if (info->flags & LGD3DF_CAN_DO_SINGLE_PASS_MT)
@@ -672,7 +595,6 @@ BOOL ScrnInit3d(void)
    return TRUE;
 
 }
-#endif
 
 
 void ScrnTerm3d(void)

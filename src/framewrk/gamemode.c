@@ -410,9 +410,6 @@ static BOOL build_fit_screen_mode(sScrnMode* mode)
    int registered;
 
    if (!config_get_int("game_screen_fit", &fit) || !fit ||
-#ifndef __ANDROID__
-       !(selected->flags & kScrnModeWindowed) ||
-#endif
        !RenderBackendGetSettledClientSize(&width, &height) ||
        width < 400 || height < 300 || width > 8191 || height > 8191)
       return FALSE;
@@ -420,7 +417,7 @@ static BOOL build_fit_screen_mode(sScrnMode* mode)
    registered = gr_register_mode(width, height, 16);
    if (registered < 0)
       return FALSE;
-   grd_mode_info[registered].flags |= GRM_CAN_WINDOW;
+   grd_mode_info[registered].flags |= GRM_CAN_WINDOW | GRM_CAN_FULLSCREEN;
 
    *mode = *selected;
    mode->valid_fields |= kScrnModeDimsValid | kScrnModeBitDepthValid;

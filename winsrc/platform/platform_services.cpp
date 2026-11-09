@@ -3,6 +3,10 @@
 #include <platform_services.h>
 #include <platform_io.h>
 
+#pragma pack(push, 8)
+#include <SDL3/SDL.h>
+#pragma pack(pop)
+
 #include <stdio.h>
 #include <cstdio>
 #include <stdlib.h>
@@ -17,13 +21,6 @@ EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
 {
    return std::fopen(path, mode);
 }
-
-struct sDisplayModeCollector
-{
-   sPlatformDisplayMode *modes;
-   int capacity;
-   int count;
-};
 
 struct sWin32FileFind
 {
@@ -48,86 +45,75 @@ static void CopyFileFind(const WIN32_FIND_DATAA *source,
    destination->name[sizeof(destination->name) - 1] = '\0';
 }
 
-static void CollectMonitorModes(HMONITOR monitor, sDisplayModeCollector *collector,
-                                int *native_width, int *native_height)
-{
-   MONITORINFOEXA info = {};
-   DEVMODEA mode = {};
-   DWORD index;
-
-   info.cbSize = sizeof(info);
-   if (!GetMonitorInfoA(monitor, &info))
-      return;
-
-   if (native_width)
-      *native_width = info.rcMonitor.right - info.rcMonitor.left;
-   if (native_height)
-      *native_height = info.rcMonitor.bottom - info.rcMonitor.top;
-
-   for (index = 0; collector->count < collector->capacity; ++index)
-   {
-      int i;
-      memset(&mode, 0, sizeof(mode));
-      mode.dmSize = sizeof(mode);
-      if (!EnumDisplaySettingsExA(info.szDevice, index, &mode, 0))
-         break;
-
-      for (i = 0; i < collector->count; ++i)
-         if (collector->modes[i].width == (int)mode.dmPelsWidth &&
-             collector->modes[i].height == (int)mode.dmPelsHeight &&
-             collector->modes[i].bit_depth == (int)mode.dmBitsPerPel)
-            break;
-      if (i != collector->count)
-         continue;
-
-      sPlatformDisplayMode *output = &collector->modes[collector->count++];
-      output->width = (int)mode.dmPelsWidth;
-      output->height = (int)mode.dmPelsHeight;
-      output->bit_depth = (int)mode.dmBitsPerPel;
-   }
-}
-
-static BOOL CALLBACK CollectAllMonitorModes(HMONITOR monitor, HDC, LPRECT,
-                                            LPARAM context)
-{
-   CollectMonitorModes(monitor, (sDisplayModeCollector *)context, NULL, NULL);
-   return TRUE;
-}
-
 int PlatformGetDisplayModes(ePlatformDisplayScope scope,
                             sPlatformDisplayMode *modes, int capacity,
                             int *native_width, int *native_height)
 {
-   sDisplayModeCollector collector = { modes, capacity, 0 };
-
    if (!modes || capacity < 0)
-      collector.capacity = 0;
+      capacity = 0;
    if (native_width)
       *native_width = 0;
    if (native_height)
       *native_height = 0;
 
-   if (scope == kPlatformAllDisplays)
+   const bool initialized =
+      (SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) != 0;
+   if (!initialized && !SDL_InitSubSystem(SDL_INIT_VIDEO))
+      return 0;
+
+   int displayCount = 0;
+   SDL_DisplayID *displays = SDL_GetDisplays(&displayCount);
+   if (!displays)
+      displayCount = 0;
+   int firstDisplay = 0;
+   if (scope == kPlatformCurrentDisplay && displayCount > 0)
    {
-      EnumDisplayMonitors(NULL, NULL, CollectAllMonitorModes,
-                          (LPARAM)&collector);
-   }
-   else
-   {
-      HMONITOR monitor;
-      HWND window = GetActiveWindow();
-      if (window)
-         monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
-      else
-      {
-         POINT cursor = {};
-         GetCursorPos(&cursor);
-         monitor = MonitorFromPoint(cursor, MONITOR_DEFAULTTOPRIMARY);
-      }
-      CollectMonitorModes(monitor, &collector, native_width, native_height);
+      SDL_Window *window = SDL_GetKeyboardFocus();
+      const SDL_DisplayID current = window
+         ? SDL_GetDisplayForWindow(window) : displays[0];
+      for (int i = 0; i < displayCount; ++i)
+         if (displays[i] == current)
+         {
+            firstDisplay = i;
+            break;
+         }
+      displayCount = 1;
    }
 
-   return collector.count;
+   int count = 0;
+   for (int displayOffset = 0; displayOffset < displayCount; ++displayOffset)
+   {
+      const SDL_DisplayID display = displays[firstDisplay + displayOffset];
+      const SDL_DisplayMode *current = SDL_GetCurrentDisplayMode(display);
+      if (current && scope == kPlatformCurrentDisplay)
+      {
+         if (native_width) *native_width = current->w;
+         if (native_height) *native_height = current->h;
+      }
+
+      int modeCount = 0;
+      SDL_DisplayMode **displayModes = SDL_GetFullscreenDisplayModes(display,
+         &modeCount);
+      for (int i = 0; displayModes && i < modeCount && count < capacity; ++i)
+      {
+         const SDL_DisplayMode &mode = *displayModes[i];
+         const int depth = SDL_BITSPERPIXEL(mode.format);
+         int duplicate = 0;
+         for (; duplicate < count; ++duplicate)
+            if (modes[duplicate].width == mode.w &&
+                modes[duplicate].height == mode.h &&
+                modes[duplicate].bit_depth == depth)
+               break;
+         if (duplicate == count)
+            modes[count++] = {mode.w, mode.h, depth};
+      }
+      SDL_free(displayModes);
+   }
+
+   SDL_free(displays);
+   if (!initialized)
+      SDL_QuitSubSystem(SDL_INIT_VIDEO);
+   return count;
 }
 
 float PlatformGetTextScale(void)
