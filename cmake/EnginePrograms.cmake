@@ -171,7 +171,8 @@ if(DARK_BUILD_THIEF2)
 
   if(DARK_BUILD_DROMED)
     add_library(dark_dromed_core OBJECT ${dark_dromed_sources})
-    target_link_libraries(dark_dromed_core PRIVATE dark_engine_packed)
+    target_link_libraries(dark_dromed_core PRIVATE dark_engine_packed
+      ${DARK_SDL_TARGET})
     target_compile_definitions(dark_dromed_core PRIVATE
       EDITOR REPORT PLAYTEST NEW_NETWORK_ENABLED THIEF STRICT=1 PROPERTY_BLAME
     )

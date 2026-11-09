@@ -8,9 +8,10 @@ endif()
 find_package(Vulkan REQUIRED)
 
 if(DARK_COMPILE_VULKAN_SHADERS)
-  find_program(DARK_GLSLC_EXECUTABLE NAMES glslc
-    HINTS "$ENV{VULKAN_SDK}/bin" "$ENV{VULKAN_SDK}/Bin"
-    REQUIRED)
+  if(NOT Vulkan_GLSLC_EXECUTABLE)
+    message(FATAL_ERROR
+      "Vulkan was found, but FindVulkan could not find glslc. Install the Vulkan SDK or set Vulkan_GLSLC_EXECUTABLE.")
+  endif()
   set(DARK_VULKAN_SHADER_OUTPUT_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/generated/vulkan")
   file(MAKE_DIRECTORY "${DARK_VULKAN_SHADER_OUTPUT_DIR}")
@@ -19,7 +20,7 @@ if(DARK_COMPILE_VULKAN_SHADERS)
     set(shader_source "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgd3d/shaders/${shader}")
     set(shader_output "${DARK_VULKAN_SHADER_OUTPUT_DIR}/${shader}.spv")
     add_custom_command(OUTPUT "${shader_output}"
-      COMMAND "${DARK_GLSLC_EXECUTABLE}" --target-env=vulkan1.1
+      COMMAND "${Vulkan_GLSLC_EXECUTABLE}" --target-env=vulkan1.1
         "${shader_source}" -o "${shader_output}"
       DEPENDS "${shader_source}"
       VERBATIM)
