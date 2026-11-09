@@ -52,6 +52,13 @@ Release
 screen*.pcx
 ReleaseGame/
 .codex-build/
+
+# CMake preset build directories and local preset overrides
+/build-macos/
+/build-linux/
+/build-win64/
+/build-win32/
+/CMakeUserPresets.json
 build/
 .gradle/
 local.properties
