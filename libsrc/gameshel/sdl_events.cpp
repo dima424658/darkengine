@@ -62,6 +62,8 @@ public:
       ResetForWindow();
       if (!SDLDisplayGetWindow())
          return true;
+      if (!DarkRenderBeginEventPump())
+         return true;
       EnsureLifecycleWatch();
 
       SDL_Event event;
@@ -81,6 +83,7 @@ public:
          else
             HandleEvent(event);
       }
+      DarkRenderEndEventPump();
       return stop;
    }
 

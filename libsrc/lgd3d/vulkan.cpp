@@ -443,7 +443,8 @@ void cVulkanRuntime::Close()
 
 bool cVulkanRuntime::TakeResize(int *width, int *height)
 {
-   if (!m_windowOpen || !m_windowSizeChanged || !width || !height) return false;
+   if (!m_windowOpen || !m_windowSizeChanged || !width || !height)
+      return false;
    *width = m_clientWidth;
    *height = m_clientHeight;
    m_windowSizeChanged = false;
@@ -488,7 +489,9 @@ void cVulkanRuntime::ApplicationResumed()
 }
 
 void cVulkanRuntime::EndEventPump()
-{ ProcessPendingLifecycleResize(); }
+{
+   ProcessPendingLifecycleResize();
+}
 
 int cVulkanRuntime::CaptureComplete() const
 { return m_context.FrameCaptureComplete() ? 1 : 0; }
@@ -600,6 +603,16 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    const bool resumeFrame = m_frameActive;
    if (resumeFrame)
       EndApplicationFrame();
+
+   // Movie frames acquire their own swapchain image instead of passing
+   // through BeginApplicationFrame. Apply a resize deferred while the game
+   // frame was active before calculating this movie frame's fit viewport.
+   if (!ApplyPendingResize())
+   {
+      if (resumeFrame)
+         BeginApplicationFrame();
+      return true;
+   }
 
    try
    {

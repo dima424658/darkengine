@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdarg>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -96,7 +97,7 @@ public:
    int Available() const { return m_renderer != nullptr; }
    void SetGamma(float gamma)
    {
-      if (gamma <= 0.0f)
+      if (!std::isfinite(gamma) || gamma <= 0.0f)
          return;
       m_gamma = gamma;
       if (m_renderer)
@@ -104,13 +105,12 @@ public:
    }
    void SetScaleToWindow(bool enabled) { m_scaleToWindow = enabled; }
    void SetFitToViewport(bool enabled) { m_fitToViewport = enabled; }
-   void SetInteractiveResize(bool resizing) { m_interactiveResize = resizing; }
    void SetPreserveCanvas(bool enabled) { m_preserve = enabled; }
    int PreserveCanvas() const { return m_preserve; }
 
    int GetSettledClientSize(int *width, int *height) const
    {
-      if (!width || !height || !m_renderer || m_interactiveResize ||
+      if (!width || !height || !m_renderer ||
           m_clientWidth <= 0 || m_clientHeight <= 0)
          return 0;
       *width = m_clientWidth;
@@ -315,7 +315,6 @@ private:
    bool m_sceneActive{};
    bool m_scaleToWindow{true};
    bool m_fitToViewport{};
-   bool m_interactiveResize{};
    float m_gamma{1.0f};
    FILE *m_trace{};
 };
@@ -391,8 +390,6 @@ void RenderBackendSetScaleToWindow(int enabled)
 { Backend().SetScaleToWindow(enabled != 0); }
 void RenderBackendSetFitToViewport(int enabled)
 { Backend().SetFitToViewport(enabled != 0); }
-void RenderBackendSetInteractiveResize(int resizing)
-{ Backend().SetInteractiveResize(resizing != 0); }
 void RenderBackendSetPreserveCanvas(int enabled)
 { Backend().SetPreserveCanvas(enabled != 0); }
 int RenderBackendPreserveCanvas(void) { return Backend().PreserveCanvas(); }

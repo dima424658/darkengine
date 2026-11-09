@@ -12,6 +12,7 @@
 #include <appagg.h>
 #include <appapi.h>
 #include <platform_services.h>
+#include "../lgd3d/runtime.h"
 
 #pragma pack(push, 8)
 class cSDLApplication : public IApplication
@@ -56,12 +57,14 @@ public:
    void Quit() override
    {
       for (auto *sink : m_sinks) sink->OnQuit();
+      DarkRenderClose();
       std::exit(0);
    }
    void Abort(const char *reason) override
    {
       PlatformShowError(m_caption.c_str(), reason ? reason : "Dark Engine aborted");
       for (auto *sink : m_sinks) sink->OnCriticalError(1);
+      DarkRenderClose();
       std::exit(1);
    }
    void SetCaption(const char *text) override { m_caption = text ? text : ""; }
