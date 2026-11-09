@@ -76,7 +76,7 @@ repository.
 | DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Viewer/playtest port | Early viewer/playtest port | Not built |
 | Graphics | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan |
 | Audio | OpenAL | OpenAL | OpenAL framework | OpenAL Soft | OpenAL Soft/OpenSL |
-| Movies | FFmpeg when available | FFmpeg when available | FFmpeg when available | FFmpeg when available | Native Android player |
+| Movies | FFmpeg | FFmpeg | FFmpeg | FFmpeg | Native Android player (LibVLC) |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
 | Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
 | Build system | CMake SDL3/Vulkan | CMake SDL3/Vulkan | CMake and Ninja | CMake and Ninja | Gradle, CMake, and Android NDK |
@@ -265,9 +265,8 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 #### Prerequisites
 
 - macOS with Xcode Command Line Tools, CMake 3.21 or later, and Ninja.
-- SDL3, the Vulkan SDK (including `glslc`), and libpng development packages.
-  FFmpeg development libraries are optional and enable movie playback; macOS
-  supplies the OpenAL framework.
+- SDL3, the Vulkan SDK (including `glslc`), libpng, and FFmpeg development
+  packages; macOS supplies the OpenAL framework.
 - Git, used to bootstrap Squirrel 3.2, and a retail TDP, Thief Gold, or
   Thief II installation.
 
@@ -300,8 +299,7 @@ support.
 - OpenAL Soft and libsndfile at runtime. Both are loaded dynamically; libsndfile
   enables Ogg Vorbis sounds used by many FMs.
 - FFmpeg development libraries (`libavformat`, `libavcodec`, `libavutil`,
-  `libswscale`, and `libswresample`) for movie playback. The build succeeds
-  without them but reports movies unavailable.
+  `libswscale`, and `libswresample`) for movie playback.
 - A retail TDP, Thief Gold, or Thief II installation.
 
 For Ubuntu/Debian:
@@ -667,9 +665,8 @@ The engine's gamma setting is applied in the SDL3/Vulkan scene shader using the
 legacy palette-correction power curve.
 
 The retail game writes `skip_intro` after the intro has played. Add
-`always_play_intro` to `cam.cfg` to show it on every launch. Desktop movie
-playback requires FFmpeg development libraries at build time; Android uses its
-native movie player.
+`always_play_intro` to `cam.cfg` to show it on every launch. Desktop builds
+require FFmpeg development libraries for movie playback; Android uses LibVLC.
 
 ## Controls
 

@@ -15,7 +15,7 @@
 #include <thread>
 #include <vector>
 
-#ifdef DARK_HAVE_FFMPEG
+#ifndef __ANDROID__
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -54,7 +54,7 @@ public:
     }
     STDMETHOD_(void, Close)() override { m_state = kMP1NothingOpen; }
     STDMETHOD_(BOOL, CanPlay)() override {
-#ifdef DARK_HAVE_FFMPEG
+#ifndef __ANDROID__
         return TRUE;
 #else
         return FALSE;
@@ -91,7 +91,7 @@ extern "C" tResult LGAPI _MoviePlayerCreate(REFIID, void **player,
     return created ? S_OK : E_FAIL;
 }
 
-#ifdef DARK_HAVE_FFMPEG
+#ifndef __ANDROID__
 namespace
 {
 using MovieClock = std::chrono::steady_clock;
@@ -212,17 +212,6 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
         environment->DeleteLocalRef(activityClass);
     environment->DeleteLocalRef(activity);
     return played;
-#elif !defined(DARK_HAVE_FFMPEG)
-    (void)legacyPath;
-    (void)volume;
-    static bool warned = false;
-    if (!warned)
-    {
-        std::fprintf(stderr,
-            "Movie playback requires FFmpeg development libraries at build time.\n");
-        warned = true;
-    }
-    return false;
 #else
     const std::string path = NativeMoviePath(legacyPath);
     AVFormatContext *format = nullptr;
