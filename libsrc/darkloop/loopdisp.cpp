@@ -124,7 +124,7 @@ cLoopDispatch::cLoopDispatch(ILoopMode* loop, sLoopModeInitParmList parmList, tL
 
 	AutoAppIPtr(LoopManager);
 
-	if (pLoopManager)
+	if (pLoopManager != NULL)
 	{
 		auto* pBaseMode = pLoopManager->GetBaseMode();
 		AddClientsFromMode(pBaseMode, constraints);
