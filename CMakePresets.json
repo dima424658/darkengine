@@ -47,7 +47,7 @@
       "hidden": true,
       "displayName": "Windows",
       "description": "Common game and DromEd configuration for Visual Studio 2022.",
-      "generator": "Visual Studio 17 2022",
+      "generator": "Visual Studio 18 2026",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
