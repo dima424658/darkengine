@@ -3,7 +3,6 @@
 #pragma pack(pop)
 
 #include <lg.h>
-#include <ged_win.h>
 #include <winui.h>
 
 static BOOL ask_yes_no(const char *message)
@@ -25,17 +24,6 @@ static BOOL ask_yes_no(const char *message)
    if (!SDL_ShowMessageBox(&data, &selected))
       return FALSE;
    return selected == 1;
-}
-
-extern "C" BOOL ged_winui_GetYorN(char *message)
-{
-   return ask_yes_no(message);
-}
-
-extern "C" void ged_winui_Text(char *message)
-{
-   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "DromEd",
-                            message ? message : "", NULL);
 }
 
 extern "C" BOOL winui_GetYorN(const char *message)

@@ -122,14 +122,14 @@ if(DARK_BUILD_THIEF2)
       "${CMAKE_CURRENT_SOURCE_DIR}/src/editor/uiedit.c"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editorplatform.cpp"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/objedit_macos.cpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/dialogs.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/winui.cpp"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/filemenu.cpp"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/menus.cpp")
   elseif(NOT WIN32)
     list(APPEND dark_dromed_sources
       "${CMAKE_CURRENT_SOURCE_DIR}/src/editor/uiedit.c"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/objedit_macos.cpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/dialogs.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/winui.cpp"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editorplatform.cpp"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/filemenu.cpp"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/menus.cpp")
