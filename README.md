@@ -201,40 +201,27 @@ The runner currently provides:
 
 - 64-bit Windows 10 or Windows 11.
 - MSVC v143 x86/x64 build tools and a Windows 10 or 11 SDK.
-- Git, used by the dependency bootstrap.
-- For the CMake SDL3/Vulkan build: CMake 3.21 or later, SDL3's CMake
-  package, the Vulkan SDK (including `glslc`), and libpng development files.
+- CMake 3.21 or later, vcpkg, and the Vulkan SDK (including `glslc`).
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
-Normal builds require the native Squirrel 3.2 provider. Bootstrap its pinned
-source checkout with:
+
+The SDL3/Vulkan Windows build uses the dependencies in `vcpkg.json`. Set
+`VCPKG_ROOT` to your vcpkg checkout, then configure and build either
+architecture from PowerShell:
 
 ```powershell
-.\tools\bootstrap-dependencies.ps1
-```
-
-The default source location is `../../darkengine-deps/squirrel`. Override it
-with `-DDARK_SQUIRREL_SOURCE=C:/path/to/squirrel`; a reduced build without
-Squirrel can be selected with `-DDARK_ENABLE_SQUIRREL=OFF`.
-
-The SDL3/Vulkan Windows build uses CMake presets. With SDL3, libpng, and the
-Vulkan SDK available to CMake, configure and build either architecture:
-
-```powershell
-cmake --preset windows-x64
+$toolchain = "$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
+cmake --preset windows-x64 -DCMAKE_TOOLCHAIN_FILE="$toolchain"
 cmake --build --preset windows-x64-release
 
-cmake --preset windows-x86
+cmake --preset windows-x86 -DCMAKE_TOOLCHAIN_FILE="$toolchain"
 cmake --build --preset windows-x86-release
 ```
 
-The repository's `vcpkg.json` manifest enables SDL3's Vulkan feature and
-installs FFmpeg, libpng, and the vcpkg Squirrel package. Configure with the
-vcpkg toolchain to install those dependencies automatically. The vcpkg Squirrel
-port may be older than the required 3.2 release; bootstrap Squirrel 3.2 from
-source as described above when that exact version is needed. Without SDL3's
-`vulkan` feature, the engine can compile and link but cannot create a Vulkan
-window surface at runtime.
+The vcpkg manifest installs SDL3 with Vulkan support, FFmpeg, libpng, and
+Squirrel. Install the Vulkan SDK separately; CMake uses its Vulkan package and
+`glslc` shader compiler. Without SDL3's `vulkan` feature, the engine cannot
+create a Vulkan window surface at runtime.
 
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
 When SDL3 is shared, CMake copies `SDL3.dll` beside both executables and
@@ -267,14 +254,15 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 - macOS with Xcode Command Line Tools, CMake 3.21 or later, and Ninja.
 - SDL3, the Vulkan SDK (including `glslc`), libpng, and FFmpeg development
   packages; macOS supplies the OpenAL framework.
-- Git, used to bootstrap Squirrel 3.2, and a retail TDP, Thief Gold, or
-  Thief II installation.
+- A retail TDP, Thief Gold, or Thief II installation.
 
 With Homebrew:
 
 ```sh
 brew install cmake ninja pkgconf sdl3 libpng ffmpeg squirrel-lang
 ```
+
+Install the Vulkan SDK separately, including `glslc`.
 
 #### Build
 
@@ -283,19 +271,16 @@ cmake --preset macos
 cmake --build --preset macos-release -j "$(sysctl -n hw.ncpu)"
 ```
 
-The result is `build-macos/thief-runner`. The macOS target uses SDL3 and Vulkan.
-CMake uses Homebrew's Squirrel package when available; otherwise
-run `sh tools/bootstrap-dependencies.sh game` to build from its source. Pass
-`-DDARK_ENABLE_SQUIRREL=OFF` for a reduced build without NewDark Squirrel FM
-support.
+The result is `build-macos/thief-runner`. The macOS target uses SDL3 and Vulkan;
+CMake finds the Homebrew Squirrel libraries and headers automatically.
 
 ### Linux
 
 #### Prerequisites
 
 - A 64-bit Linux distribution, GCC, CMake 3.21 or later, and Ninja.
-- Git, used to bootstrap Squirrel 3.2.
 - SDL3, the Vulkan SDK (including `glslc`), and libpng development packages.
+- A Squirrel development package that provides its headers and libraries.
 - OpenAL Soft and libsndfile at runtime. Both are loaded dynamically; libsndfile
   enables Ogg Vorbis sounds used by many FMs.
 - FFmpeg development libraries (`libavformat`, `libavcodec`, `libavutil`,
@@ -307,23 +292,22 @@ For Ubuntu/Debian:
 ```sh
 sudo apt update
 sudo apt install build-essential cmake ninja-build libsdl3-dev libvulkan-dev glslc \
-  libpng-dev libopenal1 libsndfile1 libavformat-dev libavcodec-dev \
+  libpng-dev libsquirrel-dev libopenal1 libsndfile1 libavformat-dev libavcodec-dev \
   libavutil-dev libswscale-dev libswresample-dev
 ```
 
 #### Build
 
 ```sh
-sh tools/bootstrap-dependencies.sh game
 cmake --preset linux
 cmake --build --preset linux-release -j "$(nproc)"
 ```
 
 The result is `build-linux/thief-runner`. SDL3 and Vulkan are used for
-presentation and scene rendering. Normal builds include the native Squirrel
-provider. Use `-DDARK_SQUIRREL_SOURCE=/path/to/squirrel`
-for a non-default checkout, or explicitly pass `-DDARK_ENABLE_SQUIRREL=OFF`
-for a reduced build without NewDark Squirrel FM support.
+presentation and scene rendering. CMake finds Squirrel through pkg-config or
+the standard include and library paths. If your distribution does not package
+SDL3 or Squirrel, install them from another package manager or provide a source
+checkout with `-DDARK_SQUIRREL_SOURCE=/path/to/squirrel`.
 
 #### Running
 

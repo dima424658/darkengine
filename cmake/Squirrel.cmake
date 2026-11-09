@@ -42,8 +42,8 @@ if(DARK_ENABLE_SQUIRREL)
          NOT DARK_SQSTDLIB_LIBRARY)
         message(FATAL_ERROR
           "Squirrel 3.2 source or installed development package was not found. "
-          "Run tools/bootstrap-dependencies.sh game, set DARK_SQUIRREL_SOURCE, "
-          "install the Squirrel development package, or explicitly set "
+          "Install the Squirrel development package, set DARK_SQUIRREL_SOURCE, "
+          "or explicitly set "
           "DARK_ENABLE_SQUIRREL=OFF for a reduced build.")
       endif()
       add_library(dark_squirrel INTERFACE)
