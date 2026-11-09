@@ -16,6 +16,8 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <exception>
+#include <cstdlib>
 
 EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
 {
@@ -371,6 +373,45 @@ void PlatformDiagnosticsLogStack(const char *severity, const char *subsystem,
    }
    message[sizeof(message) - 1] = '\0';
    PlatformDiagnosticsLog(severity,subsystem,message);
+}
+
+static volatile LONG gPlatformCrashReported;
+
+static LONG WINAPI PlatformUnhandledExceptionFilter(
+   EXCEPTION_POINTERS *exceptionInfo)
+{
+   if (InterlockedCompareExchange(&gPlatformCrashReported,1,0) == 0)
+   {
+      const DWORD code = exceptionInfo && exceptionInfo->ExceptionRecord
+         ? exceptionInfo->ExceptionRecord->ExceptionCode : 0;
+      const void *address = exceptionInfo && exceptionInfo->ExceptionRecord
+         ? exceptionInfo->ExceptionRecord->ExceptionAddress : NULL;
+      char message[160];
+      _snprintf(message,sizeof(message) - 1,
+                "unhandled Windows exception code=0x%08lx address=%p",
+                (unsigned long)code,address);
+      message[sizeof(message) - 1] = '\0';
+      PlatformDiagnosticsLog("FATAL","crash",message);
+      PlatformDiagnosticsLogStack("FATAL","crash",1);
+   }
+   return EXCEPTION_CONTINUE_SEARCH;
+}
+
+static void PlatformTerminateHandler(void)
+{
+   if (InterlockedCompareExchange(&gPlatformCrashReported,1,0) == 0)
+   {
+      PlatformDiagnosticsLog("FATAL","crash",
+         "uncaught C++ exception / std::terminate");
+      PlatformDiagnosticsLogStack("FATAL","crash",1);
+   }
+   std::abort();
+}
+
+void PlatformDiagnosticsInstallCrashHandlers(void)
+{
+   SetUnhandledExceptionFilter(PlatformUnhandledExceptionFilter);
+   std::set_terminate(PlatformTerminateHandler);
 }
 
 ePlatformAssertAction PlatformShowAssert(const char *message)
