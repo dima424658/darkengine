@@ -22,6 +22,7 @@
 // simple silly initializer
 EXTERN void primalBr_Init(void);
 EXTERN void primalBr_Term(void);
+EXTERN BOOL primalBr_IsValidID(int primal_id);
 
 //////////// new hipper type/side info
 #define primalID_Make(type,sides)          (((type)<<9)+(sides-3))
@@ -31,7 +32,7 @@ EXTERN void primalBr_Term(void);
 #define primalID_GetFaceAlign(id_val)      (((id_val)&PRIMAL_ALIGN_FACE)!=0)
 
 #define primalID_GetSideCode(id_val)       ((id_val)&0xff)
-#define primalID_InternalTypeCode(id_val)  (id_val>>8) /// cheat and know Type/Align are one big thing, eh?
+#define primalID_InternalTypeCode(id_val)  ((id_val)>>8) /// cheat and know Type/Align are one big thing, eh?
 
 #define PRIMAL_ALIGN_FACE     (0x100)
 
