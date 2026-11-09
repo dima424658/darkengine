@@ -6,9 +6,7 @@ if(ANDROID)
   find_library(DARK_ANDROID_LOG_LIBRARY NAMES log REQUIRED)
 else()
   find_package(PNG REQUIRED)
-  find_package(PkgConfig QUIET)
-  if(PkgConfig_FOUND)
-    pkg_check_modules(FFMPEG QUIET IMPORTED_TARGET
-      libavformat libavcodec libavutil libswscale libswresample)
-  endif()
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+    libavformat libavcodec libavutil libswscale libswresample)
 endif()
