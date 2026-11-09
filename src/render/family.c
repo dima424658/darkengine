@@ -63,7 +63,7 @@ static char *_fam_dir_names[2][2]=
 #ifdef THIEF2_GAME
 // Thief 2 ships its mission sky sets only in fam\skyhw.  The PCX data is
 // still usable by the software mapper, so keep loading that canonical set
-// when the legacy D3D path is unavailable on a modern system.
+// when the hardware renderer is unavailable.
 #define get_sky_base()   _fam_dir_names[kDirSky][kDirHW]
 #else
 #define get_sky_base()   _fam_dir_names[kDirSky][cur_render_type]
@@ -150,6 +150,8 @@ BOOL fam_name_examine_dir(char *name, int dir)
    for (j=0; j<2; j++)
    {
    int len=(int)strlen(_fam_dir_names[dir][j]);
+      if ((size_t)(p - name + 1) < (size_t)len)
+         continue;
       s=p-len+1;
       if (strnicmp(_fam_dir_names[dir][j],s,len)==0)
       {

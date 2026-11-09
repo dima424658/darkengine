@@ -3,15 +3,52 @@
 ## Current state
 
 The SDL3/Vulkan runtime is wired to the legacy `RenderBackend` API on macOS,
-Linux, Win32, and Android. All Vulkan implementation files now live under
-`libsrc/lgd3d` and are built into the `dark_lgd3d` library. Windows uses the same
-SDL3/Vulkan display path as the other desktop platforms; the Win32
-DirectDraw/GDI provider and renderer stub have been removed. Windows and Linux
-builds and device/runtime parity remain unverified. A macOS visual spot-check
-loaded Thief Gold `MISS1.MIS`; its world surfaces appeared coherently textured
-with no obvious stretching. This does not replace checks across more missions
-and GPUs. The OpenGL, D3D11, SDL2, and legacy Win32 display renderer
-implementations have been removed.
+Linux, Win32, and Android. The scene renderer lives under `libsrc/lgd3d` and
+the SDL window and Vulkan surface providers live under `libsrc/dispdev`.
+`CMakePresets.json` provides Ninja Release presets for macOS and Linux; the
+macOS and Linux presets build `thief2` and DromEd. Windows presets build both
+targets as well. Both `thief2` and DromEd now build on Debian 13 for x86_64
+and ARM64 with GCC 14 and Vulkan-Hpp 1.4.
+Windows uses the same SDL3/Vulkan display path as the other desktop platforms;
+its DromEd dialogs and resize hooks also use the shared SDL providers. The
+Win32 DirectDraw/GDI provider and renderer stub have been removed. Linux
+builds are verified for x86_64 and ARM64. On x86_64, the game launches and
+renders a mission under Xvfb with lavapipe. DromEd also loads `MISS1.MIS` under
+Xvfb with lavapipe: its perspective viewport shows textured world surfaces,
+and its top, right, and front viewports show editor geometry. On both Linux
+architectures, a mission run exits cleanly with `VK_LAYER_KHRONOS_validation`
+enabled. The x86_64 DromEd render check uses
+`render_test=GOODIES/DROMED/miss1/MISS1.MIS`; the compiled game mission at
+`redist/miss1.mis` does not contain editable source brushes and is not a valid
+fixture for checking all four editor viewports. The editor trace reports a
+valid level with 1,104 world cells, and the captured perspective pane shows
+textured surfaces alongside geometry in the three orthographic panes. Windows builds
+and runtime parity remain unverified. MinGW syntax checks pass for the SDL
+window/event providers, gamepad provider, Vulkan implementation, and DromEd's
+editor platform, dialogs, and menu sources. They do not validate the full
+Windows target; COM-dependent DromEd sources still need an MSVC build. Android
+`assembleDebug` now
+succeeds for ARM64 and packages SDL3,
+the native engine, and Vulkan SPIR-V;
+runtime testing still needs a device. The Android resume path recreates the
+SDL Vulkan surface and swapchain while preserving the logical device and engine
+textures; this lifecycle path still needs device verification. A macOS visual
+capture loaded Thief Gold `MISS1.MIS`; its world surfaces appeared coherently
+textured with no obvious stretching. Legacy texture-manager scale factors are
+now applied during RGBA expansion by repeating source texels and rows, with
+dimension and row-stride validation before upload. RGBA uploads copy rows
+directly to mapped Vulkan staging memory, avoiding a second full-size CPU
+buffer. This does not replace checks across more missions and GPUs. The CPU
+canvas uses one Vulkan texture per
+in-flight frame slot and updates it after that slot's fence completes, avoiding
+image allocation on each changed frame. A macOS `MISS1.MIS` capture after this
+change showed the environment and HUD rendering. Movie playback reuses a Vulkan
+texture for decoded frames instead of waiting for the whole device after
+destroying a per-frame texture. Linux movie playback decoded `B01.AVI` and
+presented it through Vulkan. After resizing the window to 1280x720, an in-game
+capture showed the 4:3 movie centered with black side bars. The OpenGL, D3D11,
+SDL2, and legacy Win32
+display renderer implementations have been removed.
 
 ## Goal
 

@@ -17,8 +17,9 @@
 #include <mouse.h>
 #include <mousevel.h>
 
-#include "../lgd3d/runtime.h"
+#include "../dispdev/display_window.h"
 
+#pragma pack(push, 8)
 namespace {
 std::mutex g_mutex;
 std::deque<kbs_event> g_keys;
@@ -158,7 +159,7 @@ errtype mouse_get_xy(short *x, short *y) { return _mouse_get_xy(x, y); }
 errtype mouse_put_xy(short x, short y)
 {
    g_x = x; g_y = y; clamp_mouse();
-   if (!g_relativeMode) DarkRenderSetMousePosition(g_x, g_y);
+   if (!g_relativeMode) SDLDisplaySetMousePositionLogical(g_x, g_y);
    // Match the legacy input contract: mouseMask suppresses motion generated
    // by programmatic pointer warps, not motion received from the platform.
    // Relative input already supplies a delta around the logical center; its
@@ -186,7 +187,7 @@ errtype mouse_set_relative_mode(bool enabled)
          g_y = static_cast<short>(g_ymax / 2);
       }
    }
-   DarkRenderSetRelativeMouse(enabled);
+   SDLDisplaySetRelativeMouse(enabled);
    return OK;
 }
 bool mouse_consume_relative_motion(int *x, int *y)
@@ -336,3 +337,4 @@ IMPLEMENT_AGGREGATION_SELF_DELETE(cUnixInputManager);
 
 extern "C" tResult LGAPI _InputManagerCreate(IUnknown *outer)
 { return new cUnixInputManager(outer) ? S_OK : E_FAIL; }
+#pragma pack(pop)

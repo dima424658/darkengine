@@ -104,10 +104,10 @@ public:
     //
     STDMETHOD (GetRenderTargets)(sGrRenderTargets *);
 
-    // Set kind with specified ddraw guid (must be outside Open/Close pair)
-    STDMETHOD_(void, SetKind2)(eDisplayDeviceKind, int flags, GUID *pDDrawGuid);
+    // Set kind with a specified display provider GUID (outside Open/Close).
+    STDMETHOD_(void, SetKind2)(eDisplayDeviceKind, int flags, GUID *pDisplayGuid);
 
-    // Query kind, flags, and ddraw guid
+    // Query kind, flags, and display provider GUID.
     STDMETHOD_(void, GetKind2)(eDisplayDeviceKind *, int *, GUID **);
 
     //

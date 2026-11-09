@@ -44,9 +44,7 @@
 #include <dbmem.h>
 
 #include<lgd3d.h>
-#ifndef USE_HARDWARE3D
-   #include<tmgr.h>
-#endif
+#include<tmgr.h>
 
 ISearchPath *MDModelPath;
 ISearchPath *MDModelTexturesPath;

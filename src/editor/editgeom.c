@@ -71,6 +71,8 @@
 #include <dbfile.h>
 #include <dbasemsg.h>
 #include <render.h>
+#include <render_backend.h>
+#include <vumanui.h>
 
     // hacked data file
 #include <texture.h>

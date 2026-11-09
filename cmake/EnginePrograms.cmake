@@ -3,7 +3,9 @@ set(dark_sdl_provider_sources
   unixsrc/framewrk/diskfree.cpp
   libsrc/appcore/sdl_appcore.cpp
   libsrc/dispdev/display.cpp
+  libsrc/dispdev/sdl_window.cpp
   libsrc/gameshel/gameshell.cpp
+  libsrc/gameshel/sdl_events.cpp
   libsrc/input/gamepad.cpp
   libsrc/input/guids.c
   libsrc/input/input.cpp
@@ -79,6 +81,17 @@ if(DARK_BUILD_THIEF2)
     list(APPEND dark_dromed_sources
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editor_macos.mm"
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/objedit_macos.cpp")
+  elseif(WIN32)
+    # DromEd uses the SDL window/input providers on Windows as well. Keep
+    # its dialogs and resize hooks on the shared SDL implementation instead
+    # of linking the retired Win32 editor UI.
+    list(APPEND dark_dromed_sources
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/editor/uiedit.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editorplatform.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/objedit_macos.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/dialogs.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/filemenu.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/menus.cpp")
   elseif(NOT WIN32)
     list(APPEND dark_dromed_sources
       "${CMAKE_CURRENT_SOURCE_DIR}/src/editor/uiedit.c"

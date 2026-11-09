@@ -2853,7 +2853,7 @@ static void rq_render_queue(void)
       // both DromEd and the game render loop, so explicitly restore the
       // hardware table before every queued model.  Otherwise later objects
       // can be drawn through the software fallback as flat, incorrectly
-      // tinted silhouettes instead of textured D3D geometry.
+      // tinted silhouettes instead of textured hardware geometry.
       r3_use_lgd3d();
       rq_real_render_call(
          rqd_queue[i].obj, rqd_queue[i].clut, rqd_queue[i].fragment);

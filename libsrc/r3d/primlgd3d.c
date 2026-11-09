@@ -1,4 +1,4 @@
-// $Header: x:/prj/tech/libsrc/r3d/RCS/primd3d.c 1.7 1998/06/30 18:45:49 buzzard Exp $
+// $Header: x:/prj/tech/libsrc/r3d/RCS/primlgd3d.c 1.7 1998/06/30 18:45:49 buzzard Exp $
 
 #include <dev2d.h>
 #include <lgd3d.h>

@@ -1,253 +1,477 @@
 #include "vulkan_render_backend.hpp"
 #include <render_backend.h>
+#include "runtime.h"
 
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
+#include <exception>
 
 namespace
 {
-cVulkanSceneRenderer *g_renderer;
-vk::CommandBuffer g_commandBuffer;
-int g_width;
-int g_height;
-int g_drawableWidth;
-int g_drawableHeight;
-bool g_preserve;
-bool g_sceneActive;
-int g_clientWidth;
-int g_clientHeight;
-bool g_scaleToWindow = true;
-bool g_fitToViewport;
-bool g_interactiveResize;
-FILE *g_trace;
+class cVulkanRenderBackend
+{
+public:
+   ~cVulkanRenderBackend()
+   {
+      ResetTrace();
+   }
+
+   void SetRenderer(cVulkanSceneRenderer *renderer)
+   {
+      m_renderer = renderer;
+      if (m_renderer)
+         m_renderer->SetGamma(m_gamma);
+      m_commandBuffer = nullptr;
+      m_width = m_height = 0;
+      m_drawableWidth = m_drawableHeight = 0;
+      m_sceneActive = false;
+   }
+
+   void Attach(vk::CommandBuffer commandBuffer, int logicalWidth,
+      int logicalHeight, int clientWidth, int clientHeight,
+      int drawableWidth, int drawableHeight)
+   {
+      m_commandBuffer = commandBuffer;
+      m_width = logicalWidth;
+      m_height = logicalHeight;
+      m_clientWidth = clientWidth;
+      m_clientHeight = clientHeight;
+      m_drawableWidth = drawableWidth;
+      m_drawableHeight = drawableHeight;
+   }
+
+   void Detach() { m_commandBuffer = nullptr; }
+   bool SceneActive() const { return m_sceneActive; }
+
+   void SetWindowMetrics(int clientWidth, int clientHeight,
+      int drawableWidth, int drawableHeight)
+   {
+      m_clientWidth = clientWidth;
+      m_clientHeight = clientHeight;
+      m_drawableWidth = drawableWidth;
+      m_drawableHeight = drawableHeight;
+   }
+
+   void GetViewport(int logicalWidth, int logicalHeight, int drawableWidth,
+      int drawableHeight, bool overlay, int *x, int *y, int *width,
+      int *height) const
+   {
+      if (!x || !y || !width || !height)
+         return;
+      *x = *y = 0;
+      *width = std::max(std::min(logicalWidth, drawableWidth), 0);
+      *height = std::max(std::min(logicalHeight, drawableHeight), 0);
+      if (!logicalWidth || !logicalHeight || !drawableWidth || !drawableHeight)
+         return;
+      if (!m_scaleToWindow)
+      {
+         const double pixelScaleX = m_clientWidth > 0
+            ? static_cast<double>(drawableWidth) / m_clientWidth : 1.0;
+         const double pixelScaleY = m_clientHeight > 0
+            ? static_cast<double>(drawableHeight) / m_clientHeight : 1.0;
+         *width = std::min(drawableWidth,
+            std::max(static_cast<int>(logicalWidth * pixelScaleX), 0));
+         *height = std::min(drawableHeight,
+            std::max(static_cast<int>(logicalHeight * pixelScaleY), 0));
+         return;
+      }
+      if (m_sceneActive && m_fitToViewport && !overlay)
+      {
+         *width = drawableWidth;
+         *height = drawableHeight;
+         return;
+      }
+      const double scale = std::min(
+         static_cast<double>(drawableWidth) / logicalWidth,
+         static_cast<double>(drawableHeight) / logicalHeight);
+      *width = std::max(static_cast<int>(logicalWidth * scale), 1);
+      *height = std::max(static_cast<int>(logicalHeight * scale), 1);
+      *x = (drawableWidth - *width) / 2;
+      *y = (drawableHeight - *height) / 2;
+   }
+
+   int UseLinearCanvasSampling() const { return m_scaleToWindow ? 1 : 0; }
+   int Available() const { return m_renderer != nullptr; }
+   void SetGamma(float gamma)
+   {
+      if (gamma <= 0.0f)
+         return;
+      m_gamma = gamma;
+      if (m_renderer)
+         m_renderer->SetGamma(gamma);
+   }
+   void SetScaleToWindow(bool enabled) { m_scaleToWindow = enabled; }
+   void SetFitToViewport(bool enabled) { m_fitToViewport = enabled; }
+   void SetInteractiveResize(bool resizing) { m_interactiveResize = resizing; }
+   void SetPreserveCanvas(bool enabled) { m_preserve = enabled; }
+   int PreserveCanvas() const { return m_preserve; }
+
+   int GetSettledClientSize(int *width, int *height) const
+   {
+      if (!width || !height || !m_renderer || m_interactiveResize ||
+          m_clientWidth <= 0 || m_clientHeight <= 0)
+         return 0;
+      *width = m_clientWidth;
+      *height = m_clientHeight;
+      return 1;
+   }
+
+   int GetLogicalSize(int *width, int *height) const
+   {
+      if (!width || !height || m_width <= 0 || m_height <= 0)
+         return 0;
+      *width = m_width;
+      *height = m_height;
+      return 1;
+   }
+
+   int ClientToLogicalPoint(int *x, int *y) const
+   {
+      if (!x || !y || !m_renderer || m_width <= 0 || m_height <= 0 ||
+          m_clientWidth <= 0 || m_clientHeight <= 0 ||
+          m_drawableWidth <= 0 || m_drawableHeight <= 0)
+         return 0;
+      const int drawableX = *x * m_drawableWidth / m_clientWidth;
+      const int drawableY = *y * m_drawableHeight / m_clientHeight;
+      int viewportX, viewportY, viewportWidth, viewportHeight;
+      GetViewport(m_width, m_height, m_drawableWidth, m_drawableHeight, true,
+         &viewportX, &viewportY, &viewportWidth, &viewportHeight);
+      if (viewportWidth <= 0 || viewportHeight <= 0)
+         return 0;
+      const int localX = drawableX - viewportX;
+      const int localY = drawableY - viewportY;
+      *x = localX == viewportWidth / 2
+         ? m_width / 2 : localX * m_width / viewportWidth;
+      *y = localY == viewportHeight / 2
+         ? m_height / 2 : localY * m_height / viewportHeight;
+      return 1;
+   }
+
+   int LogicalToClientPoint(int *x, int *y) const
+   {
+      if (!x || !y || !m_renderer || m_width <= 0 || m_height <= 0 ||
+          m_clientWidth <= 0 || m_clientHeight <= 0 ||
+          m_drawableWidth <= 0 || m_drawableHeight <= 0)
+         return 0;
+      int viewportX, viewportY, viewportWidth, viewportHeight;
+      GetViewport(m_width, m_height, m_drawableWidth, m_drawableHeight, true,
+         &viewportX, &viewportY, &viewportWidth, &viewportHeight);
+      if (viewportWidth <= 0 || viewportHeight <= 0)
+         return 0;
+      const int drawableX = viewportX + (*x == m_width / 2
+         ? viewportWidth / 2 : *x * viewportWidth / m_width);
+      const int drawableY = viewportY + (*y == m_height / 2
+         ? viewportHeight / 2 : *y * viewportHeight / m_height);
+      *x = drawableX * m_clientWidth / m_drawableWidth;
+      *y = drawableY * m_clientHeight / m_drawableHeight;
+      return 1;
+   }
+
+   int BeginFrame()
+   {
+      if (!m_renderer || !m_commandBuffer)
+         return 0;
+      if (!m_preserve)
+      {
+         ClearCanvasRegion(0, 0, m_width, m_height);
+         m_renderer->ClearDepth(m_commandBuffer);
+      }
+      m_sceneActive = true;
+      return 1;
+   }
+
+   void EndFrame() {}
+   void PresentProgress() { DarkRenderPresentProgress(); }
+   void DeactivateScene() { m_sceneActive = false; }
+
+   void ClearDepth()
+   {
+      if (m_renderer && m_commandBuffer)
+         m_renderer->ClearDepth(m_commandBuffer);
+   }
+
+   void ClearDepthRect(int x0, int y0, int x1, int y1)
+   {
+      if (!m_renderer || !m_commandBuffer || m_width <= 0 || m_height <= 0)
+         return;
+      const int left = std::clamp(x0, 0, m_width);
+      const int top = std::clamp(y0, 0, m_height);
+      const int right = std::clamp(x1, 0, m_width);
+      const int bottom = std::clamp(y1, 0, m_height);
+      if (right <= left || bottom <= top)
+         return;
+      int viewportX, viewportY, viewportWidth, viewportHeight;
+      GetViewport(m_width, m_height, m_drawableWidth, m_drawableHeight,
+         false, &viewportX, &viewportY, &viewportWidth, &viewportHeight);
+      m_renderer->SetViewport(viewportX, viewportY, viewportWidth,
+         viewportHeight);
+      m_renderer->ClearDepthRect(m_commandBuffer, left, top,
+         right - left, bottom - top, m_width, m_height);
+   }
+
+   void ClearCanvasRegion(int x, int y, int width, int height)
+   {
+      if (!m_renderer || !m_commandBuffer)
+         return;
+      int viewportX, viewportY, viewportWidth, viewportHeight;
+      GetViewport(m_width, m_height, m_drawableWidth, m_drawableHeight,
+         false, &viewportX, &viewportY, &viewportWidth, &viewportHeight);
+      m_renderer->SetViewport(viewportX, viewportY, viewportWidth,
+         viewportHeight);
+      m_renderer->ClearCanvasRegion(m_commandBuffer, x, y, width, height,
+         m_width, m_height);
+   }
+
+   void SetDepth(bool compare, bool write)
+   { if (m_renderer) m_renderer->SetDepth(compare, write); }
+   void SetBlend(int mode) { if (m_renderer) m_renderer->SetBlend(mode); }
+   void SetAlphaTest(bool enabled)
+   { if (m_renderer) m_renderer->SetAlphaTest(enabled); }
+   void SetSampler(int level, bool wrap, bool smooth)
+   { if (m_renderer) m_renderer->SetSampler(level, wrap, smooth); }
+   void SetFog(bool enabled, uint32_t rgb)
+   { if (m_renderer) m_renderer->SetFog(enabled, rgb); }
+
+   void *CreateTexture(int width, int height, const void *rgba, int rowBytes)
+   {
+      return m_renderer
+         ? m_renderer->CreateTexture(width, height, rgba, rowBytes) : nullptr;
+   }
+
+   int UpdateTexture(void *texture, int width, int height,
+      const void *rgba, int rowBytes)
+   {
+      return m_renderer && m_renderer->UpdateTexture(texture, width, height,
+         rgba, rowBytes);
+   }
+
+   void DestroyTexture(void *texture)
+   { if (m_renderer) m_renderer->DestroyTexture(texture); }
+   void BindTexture(int level, void *texture)
+   { if (m_renderer) m_renderer->BindTexture(level, texture); }
+
+   int Draw(int primitive, const sRenderBackendVertex *vertices,
+      int vertexCount, bool useSecondTexture)
+   {
+      if (!m_renderer || !m_commandBuffer)
+         return 0;
+      int x, y, width, height;
+      GetViewport(m_width, m_height, m_drawableWidth, m_drawableHeight,
+         false, &x, &y, &width, &height);
+      m_renderer->SetViewport(x, y, width, height);
+      try
+      {
+         return m_renderer->Draw(m_commandBuffer, vertices, vertexCount,
+            primitive, useSecondTexture, m_width, m_height);
+      }
+      catch (const std::exception &)
+      {
+         return 0;
+      }
+      catch (...)
+      {
+         return 0;
+      }
+   }
+
+   void ResetTrace()
+   {
+      if (m_trace)
+      {
+         std::fclose(m_trace);
+         m_trace = nullptr;
+      }
+   }
+
+   void StartTrace()
+   {
+      ResetTrace();
+      const char *path = std::getenv("DARK_RENDER_TRACE");
+      if (path && *path)
+         m_trace = std::fopen(path, "w");
+   }
+
+   void Trace(const char *format, va_list args)
+   {
+      if (!m_trace || !format)
+         return;
+      std::vfprintf(m_trace, format, args);
+      std::fputc('\n', m_trace);
+      std::fflush(m_trace);
+   }
+
+private:
+   cVulkanSceneRenderer *m_renderer{};
+   vk::CommandBuffer m_commandBuffer{};
+   int m_width{};
+   int m_height{};
+   int m_drawableWidth{};
+   int m_drawableHeight{};
+   int m_clientWidth{};
+   int m_clientHeight{};
+   bool m_preserve{};
+   bool m_sceneActive{};
+   bool m_scaleToWindow{true};
+   bool m_fitToViewport{};
+   bool m_interactiveResize{};
+   float m_gamma{1.0f};
+   FILE *m_trace{};
+};
+
+cVulkanRenderBackend &Backend()
+{
+   static cVulkanRenderBackend backend;
+   return backend;
+}
+
+template <typename TOperation>
+void IgnoreOperationFailure(TOperation &&operation) noexcept
+{
+   try
+   {
+      operation();
+   }
+   catch (...)
+   {
+   }
+}
+
+template <typename TOperation>
+int ReturnZeroOnFailure(TOperation &&operation) noexcept
+{
+   try
+   {
+      return operation();
+   }
+   catch (...)
+   {
+      return 0;
+   }
+}
 }
 
 void RenderBackendVulkanSetRenderer(cVulkanSceneRenderer *renderer)
-{
-   g_renderer = renderer;
-   g_commandBuffer = nullptr;
-   g_width = g_height = 0;
-   g_drawableWidth = g_drawableHeight = 0;
-   g_sceneActive = false;
-}
+{ Backend().SetRenderer(renderer); }
 
 void RenderBackendVulkanAttach(vk::CommandBuffer commandBuffer,
    int logicalWidth, int logicalHeight, int clientWidth, int clientHeight,
    int drawableWidth, int drawableHeight)
 {
-   g_commandBuffer = commandBuffer;
-   g_width = logicalWidth;
-   g_height = logicalHeight;
-   g_clientWidth = clientWidth;
-   g_clientHeight = clientHeight;
-   g_drawableWidth = drawableWidth;
-   g_drawableHeight = drawableHeight;
+   Backend().Attach(commandBuffer, logicalWidth, logicalHeight, clientWidth,
+      clientHeight, drawableWidth, drawableHeight);
 }
 
-void RenderBackendVulkanDetach(void)
-{
-   g_commandBuffer = nullptr;
-}
-
-int RenderBackendVulkanSceneActive(void) { return g_sceneActive; }
+void RenderBackendVulkanDetach(void) { Backend().Detach(); }
+int RenderBackendVulkanSceneActive(void) { return Backend().SceneActive(); }
 
 void RenderBackendVulkanSetWindowMetrics(int clientWidth, int clientHeight,
    int drawableWidth, int drawableHeight)
 {
-   g_clientWidth = clientWidth;
-   g_clientHeight = clientHeight;
-   g_drawableWidth = drawableWidth;
-   g_drawableHeight = drawableHeight;
+   Backend().SetWindowMetrics(clientWidth, clientHeight, drawableWidth,
+      drawableHeight);
 }
 
 void RenderBackendVulkanGetViewport(int logicalWidth, int logicalHeight,
    int drawableWidth, int drawableHeight, int overlay, int *x, int *y,
    int *width, int *height)
 {
-   if (!x || !y || !width || !height) return;
-   *x = *y = 0;
-   *width = std::max(std::min(logicalWidth, drawableWidth), 0);
-   *height = std::max(std::min(logicalHeight, drawableHeight), 0);
-   if (!logicalWidth || !logicalHeight || !drawableWidth || !drawableHeight)
-      return;
-   if (!g_scaleToWindow)
-   {
-      const double pixelScaleX = g_clientWidth > 0
-         ? static_cast<double>(drawableWidth) / g_clientWidth : 1.0;
-      const double pixelScaleY = g_clientHeight > 0
-         ? static_cast<double>(drawableHeight) / g_clientHeight : 1.0;
-      *width = std::min(drawableWidth,
-         std::max(static_cast<int>(logicalWidth * pixelScaleX), 0));
-      *height = std::min(drawableHeight,
-         std::max(static_cast<int>(logicalHeight * pixelScaleY), 0));
-      return;
-   }
-   if (g_sceneActive && g_fitToViewport && !overlay)
-   {
-      *width = drawableWidth;
-      *height = drawableHeight;
-      return;
-   }
-   const double scale = std::min(
-      static_cast<double>(drawableWidth) / logicalWidth,
-      static_cast<double>(drawableHeight) / logicalHeight);
-   *width = std::max(static_cast<int>(logicalWidth * scale), 1);
-   *height = std::max(static_cast<int>(logicalHeight * scale), 1);
-   *x = (drawableWidth - *width) / 2;
-   *y = (drawableHeight - *height) / 2;
+   Backend().GetViewport(logicalWidth, logicalHeight, drawableWidth,
+      drawableHeight, overlay != 0, x, y, width, height);
 }
 
 int RenderBackendVulkanUseLinearCanvasSampling(void)
-{ return g_scaleToWindow ? 1 : 0; }
+{ return Backend().UseLinearCanvasSampling(); }
 
 extern "C" {
-int RenderBackendAvailable(void) { return g_renderer != nullptr; }
-void RenderBackendSetGamma(float gamma)
-{ if (g_renderer) g_renderer->SetGamma(gamma); }
+int RenderBackendAvailable(void) { return Backend().Available(); }
+void RenderBackendSetGamma(float gamma) { Backend().SetGamma(gamma); }
 void RenderBackendSetScaleToWindow(int enabled)
-{ g_scaleToWindow = enabled != 0; }
+{ Backend().SetScaleToWindow(enabled != 0); }
 void RenderBackendSetFitToViewport(int enabled)
-{ g_fitToViewport = enabled != 0; }
+{ Backend().SetFitToViewport(enabled != 0); }
 void RenderBackendSetInteractiveResize(int resizing)
-{ g_interactiveResize = resizing != 0; }
-void RenderBackendSetPreserveCanvas(int enabled) { g_preserve = enabled != 0; }
-int RenderBackendPreserveCanvas(void) { return g_preserve; }
+{ Backend().SetInteractiveResize(resizing != 0); }
+void RenderBackendSetPreserveCanvas(int enabled)
+{ Backend().SetPreserveCanvas(enabled != 0); }
+int RenderBackendPreserveCanvas(void) { return Backend().PreserveCanvas(); }
 int RenderBackendGetSettledClientSize(int *width, int *height)
-{
-   if (!width || !height || !g_renderer || g_interactiveResize ||
-       g_clientWidth <= 0 || g_clientHeight <= 0)
-      return 0;
-   *width = g_clientWidth;
-   *height = g_clientHeight;
-   return 1;
-}
+{ return Backend().GetSettledClientSize(width, height); }
+int RenderBackendGetLogicalSize(int *width, int *height)
+{ return Backend().GetLogicalSize(width, height); }
 int RenderBackendClientToLogicalPoint(int *x, int *y)
-{
-   if (!x || !y || !g_renderer || g_width <= 0 || g_height <= 0 ||
-       g_clientWidth <= 0 || g_clientHeight <= 0 ||
-       g_drawableWidth <= 0 || g_drawableHeight <= 0)
-      return 0;
-   const int drawableX = *x * g_drawableWidth / g_clientWidth;
-   const int drawableY = *y * g_drawableHeight / g_clientHeight;
-   int vx, vy, vw, vh;
-   RenderBackendVulkanGetViewport(g_width, g_height, g_drawableWidth,
-      g_drawableHeight, 1, &vx, &vy, &vw, &vh);
-   if (vw <= 0 || vh <= 0) return 0;
-   const int localX = drawableX - vx;
-   const int localY = drawableY - vy;
-   *x = localX == vw / 2 ? g_width / 2 : localX * g_width / vw;
-   *y = localY == vh / 2 ? g_height / 2 : localY * g_height / vh;
-   return 1;
-}
+{ return Backend().ClientToLogicalPoint(x, y); }
 int RenderBackendLogicalToClientPoint(int *x, int *y)
-{
-   if (!x || !y || !g_renderer || g_width <= 0 || g_height <= 0 ||
-       g_clientWidth <= 0 || g_clientHeight <= 0 ||
-       g_drawableWidth <= 0 || g_drawableHeight <= 0)
-      return 0;
-   int vx, vy, vw, vh;
-   RenderBackendVulkanGetViewport(g_width, g_height, g_drawableWidth,
-      g_drawableHeight, 1, &vx, &vy, &vw, &vh);
-   if (vw <= 0 || vh <= 0) return 0;
-   const int drawableX = vx + (*x == g_width / 2
-      ? vw / 2 : *x * vw / g_width);
-   const int drawableY = vy + (*y == g_height / 2
-      ? vh / 2 : *y * vh / g_height);
-   *x = drawableX * g_clientWidth / g_drawableWidth;
-   *y = drawableY * g_clientHeight / g_drawableHeight;
-   return 1;
-}
+{ return Backend().LogicalToClientPoint(x, y); }
 int RenderBackendBeginFrame(void)
-{
-   if (!g_renderer || !g_commandBuffer)
-      return 0;
-   if (!g_preserve)
-   {
-      RenderBackendClearCanvasRegion(0, 0, g_width, g_height);
-      g_renderer->ClearDepth(g_commandBuffer);
-   }
-   g_sceneActive = true;
-   return 1;
-}
-void RenderBackendEndFrame(void) {}
-// Vulkan presentation is owned by DarkRenderEndApplicationFrame. Loading
-// progress callbacks run inside that frame and cannot submit a second one.
-void RenderBackendPresentProgress(void) {}
-void RenderBackendDeactivateScene(void) { g_sceneActive = false; }
+{ return ReturnZeroOnFailure([] { return Backend().BeginFrame(); }); }
+void RenderBackendEndFrame(void) { Backend().EndFrame(); }
+void RenderBackendPresentProgress(void)
+{ IgnoreOperationFailure([] { Backend().PresentProgress(); }); }
+void RenderBackendDeactivateScene(void) { Backend().DeactivateScene(); }
 void RenderBackendClearDepth(void)
-{ if (g_renderer && g_commandBuffer) g_renderer->ClearDepth(g_commandBuffer); }
+{ IgnoreOperationFailure([] { Backend().ClearDepth(); }); }
+void RenderBackendClearDepthRect(int x0, int y0, int x1, int y1)
+{
+   IgnoreOperationFailure(
+      [=] { Backend().ClearDepthRect(x0, y0, x1, y1); });
+}
 void RenderBackendClearCanvasRegion(int x, int y, int width, int height)
 {
-   if (g_renderer && g_commandBuffer)
-   {
-      int viewportX, viewportY, viewportWidth, viewportHeight;
-      RenderBackendVulkanGetViewport(g_width, g_height, g_drawableWidth,
-         g_drawableHeight, 0, &viewportX, &viewportY, &viewportWidth,
-         &viewportHeight);
-      g_renderer->SetViewport(viewportX, viewportY, viewportWidth,
-         viewportHeight);
-      g_renderer->ClearCanvasRegion(g_commandBuffer, x, y, width, height,
-         g_width, g_height);
-   }
+   IgnoreOperationFailure(
+      [=] { Backend().ClearCanvasRegion(x, y, width, height); });
 }
 void RenderBackendSetDepth(int compare, int write)
-{ if (g_renderer) g_renderer->SetDepth(compare != 0, write != 0); }
-void RenderBackendSetBlend(int mode)
-{ if (g_renderer) g_renderer->SetBlend(mode); }
+{ Backend().SetDepth(compare != 0, write != 0); }
+void RenderBackendSetBlend(int mode) { Backend().SetBlend(mode); }
 void RenderBackendSetAlphaTest(int enabled)
-{ if (g_renderer) g_renderer->SetAlphaTest(enabled != 0); }
+{ Backend().SetAlphaTest(enabled != 0); }
 void RenderBackendSetSampler(int level, int wrap, int smooth)
-{ if (g_renderer) g_renderer->SetSampler(level, wrap != 0, smooth != 0); }
+{ Backend().SetSampler(level, wrap != 0, smooth != 0); }
 void RenderBackendSetFog(int enabled, uint32_t rgb)
-{ if (g_renderer) g_renderer->SetFog(enabled != 0, rgb); }
+{ Backend().SetFog(enabled != 0, rgb); }
 void *RenderBackendCreateTexture(int width, int height, const void *rgba,
    int rowBytes)
-{ return g_renderer ? g_renderer->CreateTexture(width, height, rgba, rowBytes) : nullptr; }
+{
+   try { return Backend().CreateTexture(width, height, rgba, rowBytes); }
+   catch (...) { return nullptr; }
+}
 int RenderBackendUpdateTexture(void *texture, int width, int height,
    const void *rgba, int rowBytes)
-{ return g_renderer && g_renderer->UpdateTexture(texture, width, height, rgba, rowBytes); }
+{
+   try
+   {
+      return Backend().UpdateTexture(texture, width, height, rgba, rowBytes);
+   }
+   catch (...) { return 0; }
+}
 void RenderBackendDestroyTexture(void *texture)
-{ if (g_renderer) g_renderer->DestroyTexture(texture); }
+{
+   try { Backend().DestroyTexture(texture); }
+   catch (...) {}
+}
 void RenderBackendBindTexture(int level, void *texture)
-{ if (g_renderer) g_renderer->BindTexture(level, texture); }
+{ Backend().BindTexture(level, texture); }
 int RenderBackendDraw(int primitive, const sRenderBackendVertex *vertices,
    int vertexCount, int useSecondTexture)
 {
-   if (!g_renderer || !g_commandBuffer)
-      return 0;
-   if (g_renderer && g_commandBuffer)
-   {
-      int x, y, width, height;
-      RenderBackendVulkanGetViewport(g_width, g_height, g_drawableWidth,
-         g_drawableHeight, 0, &x, &y, &width, &height);
-      g_renderer->SetViewport(x, y, width, height);
-   }
    try
    {
-      return g_renderer->Draw(g_commandBuffer, vertices, vertexCount,
-         primitive, useSecondTexture != 0, g_width, g_height);
+      return Backend().Draw(primitive, vertices, vertexCount,
+         useSecondTexture != 0);
    }
-   catch (const std::exception &)
+   catch (...)
    {
       return 0;
    }
 }
-void RenderBackendTraceReset(void)
-{
-   if (g_trace) { std::fclose(g_trace); g_trace = nullptr; }
-   const char *path = std::getenv("DARK_RENDER_TRACE");
-   if (path && *path) g_trace = std::fopen(path, "w");
-}
+void RenderBackendTraceReset(void) { Backend().StartTrace(); }
 void RenderBackendTrace(const char *format, ...)
 {
-   if (!g_trace || !format) return;
    va_list args;
    va_start(args, format);
-   std::vfprintf(g_trace, format, args);
+   Backend().Trace(format, args);
    va_end(args);
-   std::fputc('\n', g_trace);
-   std::fflush(g_trace);
 }
 }

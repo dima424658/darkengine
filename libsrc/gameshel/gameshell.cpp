@@ -1,8 +1,5 @@
-#pragma pack(push, 8)
-#include <SDL3/SDL.h>
 #include <chrono>
 #include <cstdlib>
-#pragma pack(pop)
 
 #include <aggmemb.h>
 #include <appagg.h>
@@ -10,68 +7,146 @@
 #include <dispapi.h>
 #include <gshelapi.h>
 
+#include "../dispdev/display_window.h"
 #include "../lgd3d/runtime.h"
-#include "../lgd3d/event_bridge.h"
+#include "sdl_events.h"
 
+#pragma pack(push, 8)
 bool DarkPumpEvents(void)
 {
-   if (!DarkRenderBeginEventPump()) return false;
-   SDL_Event event;
-   while (SDL_PollEvent(&event))
-      DarkRenderHandleEvent(&event);
-   return DarkRenderEndEventPump();
+   return DarkPumpSDLEvents();
 }
 
-class cUnixGameShell : public IGameShell
+class cSDLGameShell : public IGameShell
 {
-   DECLARE_SIMPLE_AGGREGATION(cUnixGameShell);
+   DECLARE_SIMPLE_AGGREGATION(cSDLGameShell);
+
 public:
-   cUnixGameShell(IUnknown *outer, int flags) : m_flags(flags), m_epoch(clock::now())
-   { INIT_AGGREGATION_1(outer, IID_IGameShell, this, kPriorityLibrary, nullptr); }
+   cSDLGameShell(IUnknown *outer, int flags)
+      : m_flags(flags), m_epoch(clock::now())
+   {
+      INIT_AGGREGATION_1(outer, IID_IGameShell, this, kPriorityLibrary, nullptr);
+   }
+
    void BeginFrame() override
    {
       DarkRenderBeginApplicationFrame();
       PumpEvents(kPumpAll);
-      if(m_flags&kLockFrame)DisplayLock();
+      if (m_flags & kLockFrame)
+         DisplayLock();
    }
+
    void EndFrame() override
    {
-      if(m_flags&kLockFrame)DisplayUnlock();
-      if(m_flags&kFlipOnEndFrame){auto*d=AppGetObj(IDisplayDevice);if(d){d->PageFlip();d->Release();}}
-      else if(m_flags&kFlushOnEndFrame)DisplayFlush();
+      if (m_flags & kLockFrame)
+         DisplayUnlock();
+      if (m_flags & kFlipOnEndFrame)
+      {
+         auto *display = AppGetObj(IDisplayDevice);
+         if (display)
+         {
+            display->PageFlip();
+            display->Release();
+         }
+      }
+      else if (m_flags & kFlushOnEndFrame)
+         DisplayFlush();
       DarkRenderEndApplicationFrame();
    }
+
    HRESULT BringToFront() override { return S_OK; }
    HRESULT Obsolete1() override { return S_OK; }
+
    void PumpEvents(int) override
    {
-      if(DarkPumpEvents()&&(m_flags&kExitOnQuitEvent)){auto*app=AppGetObj(IApplication);if(app)app->Quit();}
+      if (DarkPumpEvents() && (m_flags & kExitOnQuitEvent))
+      {
+         auto *application = AppGetObj(IApplication);
+         if (application)
+         {
+            application->Quit();
+            application->Release();
+         }
+      }
    }
-   int DisplayLock() override { auto*d=AppGetObj(IDisplayDevice);int n=d?d->Lock():0;SafeRelease(d);return n; }
-   int DisplayUnlock() override { auto*d=AppGetObj(IDisplayDevice);int n=d?d->Unlock():0;SafeRelease(d);return n; }
-   void DisplayFlush() override { auto*d=AppGetObj(IDisplayDevice);if(d)d->Flush();SafeRelease(d); }
+
+   int DisplayLock() override
+   {
+      auto *display = AppGetObj(IDisplayDevice);
+      const int result = display ? display->Lock() : 0;
+      SafeRelease(display);
+      return result;
+   }
+
+   int DisplayUnlock() override
+   {
+      auto *display = AppGetObj(IDisplayDevice);
+      const int result = display ? display->Unlock() : 0;
+      SafeRelease(display);
+      return result;
+   }
+
+   void DisplayFlush() override
+   {
+      auto *display = AppGetObj(IDisplayDevice);
+      if (display)
+         display->Flush();
+      SafeRelease(display);
+   }
+
    unsigned long GetTimerTick() override
    {
-      return m_offset+static_cast<unsigned long>(std::chrono::duration_cast<std::chrono::milliseconds>(clock::now()-m_epoch).count());
+      const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+         clock::now() - m_epoch).count();
+      return m_offset + static_cast<unsigned long>(elapsed);
    }
-   void SetTimer(unsigned long value) override { m_offset=value;m_epoch=clock::now(); }
+
+   void SetTimer(unsigned long value) override
+   {
+      m_offset = value;
+      m_epoch = clock::now();
+   }
+
    BOOL ShowHelp(const char *,uint,ulong) override { return FALSE; }
    BOOL SetOSCursor(sGrBitmap *,const Point *) override { return FALSE; }
    BOOL ShowOSCursor(BOOL) override { return FALSE; }
    void SetCursorCallback(tGSCursorCallbackFunc callback) override { m_cursor=callback; }
-   BOOL Exec(const char *command) override { return command&&std::system(command)==0; }
+
+   BOOL Exec(const char *command) override
+   {
+      return command && std::system(command) == 0;
+   }
+
    BOOL SetFlags(int flags) override
    {
-      m_flags=flags;
-      DarkRenderShowCursor((flags & kShowNativeCursor) != 0);
+      m_flags = flags;
+      SDLDisplaySetNativeCursorVisible((flags & kShowNativeCursor) != 0);
       return TRUE;
    }
-   BOOL GetFlags(int *flags) override { if(!flags)return FALSE;*flags=m_flags;return TRUE; }
+
+   BOOL GetFlags(int *flags) override
+   {
+      if (!flags)
+         return FALSE;
+      *flags = m_flags;
+      return TRUE;
+   }
+
 private:
-   using clock=std::chrono::steady_clock;
-   int m_flags; unsigned long m_offset{}; clock::time_point m_epoch; tGSCursorCallbackFunc m_cursor{};
+   using clock = std::chrono::steady_clock;
+
+   int m_flags;
+   unsigned long m_offset{};
+   clock::time_point m_epoch;
+   tGSCursorCallbackFunc m_cursor{};
 };
-IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cUnixGameShell);
+static_assert(alignof(cSDLGameShell) >=
+   alignof(std::chrono::steady_clock::time_point),
+   "SDL game shell must retain native clock alignment");
+IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cSDLGameShell);
+#pragma pack(pop)
 
 extern "C" tResult LGAPI _GameShellCreate(REFIID, IGameShell **, IUnknown *outer, int flags, int)
-{ return new cUnixGameShell(outer,flags)?S_OK:E_FAIL; }
+{
+   return new cSDLGameShell(outer, flags) ? S_OK : E_FAIL;
+}

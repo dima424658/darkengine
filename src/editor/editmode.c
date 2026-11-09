@@ -15,6 +15,7 @@
 #include <config.h>
 #include <uiapp.h>
 #include <mode.h>
+#include <render_backend.h>
 
 #include <hotkey.h>
 #include <menus.h>

@@ -221,19 +221,19 @@ The SDL3/Vulkan Windows build uses CMake presets. With SDL3, libpng, and the
 Vulkan SDK available to CMake, configure and build either architecture:
 
 ```powershell
-cmake --preset windows-x64-vulkan
-cmake --build --preset windows-x64-vulkan-release
+cmake --preset windows-x64
+cmake --build --preset windows-x64-release
 
-cmake --preset windows-x86-vulkan
-cmake --build --preset windows-x86-vulkan-release
+cmake --preset windows-x86
+cmake --build --preset windows-x86-release
 ```
 
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
 When SDL3 is shared, CMake copies `SDL3.dll` beside both executables and
 installs it under `bin`.
 
-The executables are written under `build-win32-vulkan/Release` or
-`build-win64-vulkan/Release` as `thief-runner.exe` and `DromEd.exe`.
+The executables are written under `build-win32/Release` or
+`build-win64/Release` as `thief-runner.exe` and `DromEd.exe`.
 
 #### Running
 
@@ -256,7 +256,7 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 
 #### Prerequisites
 
-- macOS with Xcode Command Line Tools, CMake 3.20 or later, and Ninja.
+- macOS with Xcode Command Line Tools, CMake 3.21 or later, and Ninja.
 - SDL3, the Vulkan SDK (including `glslc`), and libpng development packages.
   FFmpeg development libraries are optional and enable movie playback; macOS
   supplies the OpenAL framework.
@@ -272,8 +272,8 @@ brew install cmake ninja pkgconf sdl3 libpng ffmpeg squirrel-lang
 #### Build
 
 ```sh
-cmake -S . -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build-macos -j "$(sysctl -n hw.ncpu)"
+cmake --preset macos
+cmake --build --preset macos-release -j "$(sysctl -n hw.ncpu)"
 ```
 
 The result is `build-macos/thief-runner`. The macOS target uses SDL3 and Vulkan.
@@ -286,7 +286,7 @@ support.
 
 #### Prerequisites
 
-- A 64-bit Linux distribution, GCC, CMake 3.20 or later, and Ninja.
+- A 64-bit Linux distribution, GCC, CMake 3.21 or later, and Ninja.
 - Git, used to bootstrap Squirrel 3.2.
 - SDL3, the Vulkan SDK (including `glslc`), and libpng development packages.
 - OpenAL Soft and libsndfile at runtime. Both are loaded dynamically; libsndfile
@@ -309,8 +309,8 @@ sudo apt install build-essential cmake ninja-build libsdl3-dev libvulkan-dev gls
 
 ```sh
 sh tools/bootstrap-dependencies.sh game
-cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build-linux -j "$(nproc)"
+cmake --preset linux
+cmake --build --preset linux-release -j "$(nproc)"
 ```
 
 The result is `build-linux/thief-runner`. SDL3 and Vulkan are used for

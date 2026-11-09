@@ -103,8 +103,6 @@ extern "C" {
 
     // initialization and shutdown
 
-    //@TODO change this to return HRESULT error codes and support the message strings for them
-
     extern BOOL lgd3d_init(lgd3ds_device_info* device_info);
     // N.B. If the flag LGD3DF_DEPTH_BUFFER_REQUIRED was set in device_info->flags,
     // and a depth buffer could not be created the call would fail.  To test for this 
@@ -322,33 +320,6 @@ do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
     extern int lgd3d_RGBAlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
     extern int lgd3d_RGBAFoglitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
     extern int lgd3d_DiffuseSpecularMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-
-#define LGD3D_EC_OK                             0L
-#define LGD3D_EC_DD_KAPUT                       1L
-#define LGD3D_EC_RESTORE_ALL_SURFS              2L
-#define LGD3D_EC_QUERY_D3D                      3L
-#define LGD3D_EC_GET_DD_CAPS                    4L
-#define LGD3D_EC_ZBUFF_ENUMERATION              5L
-#define LGD3D_EC_CREATE_3D_DEVICE               6L
-#define LGD3D_EC_CREATE_VIEWPORT                7L
-#define LGD3D_EC_ADD_VIEWPORT                   8L
-#define LGD3D_EC_SET_VIEWPORT                   9L
-#define LGD3D_EC_SET_CURR_VP                    10L
-#define LGD3D_EC_CREATE_BK_MATERIAL             11L
-#define LGD3D_EC_SET_BK_MATERIAL                12L
-#define LGD3D_EC_GET_BK_MAT_HANDLE              13L
-#define LGD3D_EC_GET_SURF_DESC                  14L
-#define LGD3D_EC_GET_3D_CAPS                    15L
-#define LGD3D_EC_VD_MPASS_MT                    16L
-#define LGD3D_EC_VD_S_DEFAULT                   17L
-#define LGD3D_EC_VD_SPASS_MT                    18L
-#define LGD3D_EC_VD_M_DEFAULT                   19L
-#define LGD3D_EC_VD_SPASS_BLENDDIFFUSE          20L
-#define LGD3D_EC_VD_MPASS_BLENDDIFFUSE          21L
-
-
-
-
 
 #ifdef __cplusplus
 }

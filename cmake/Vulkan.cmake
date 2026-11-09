@@ -6,6 +6,7 @@ if(NOT ANDROID AND NOT DARK_COMPILE_VULKAN_SHADERS)
     "Desktop SDL3 builds require Vulkan shader compilation")
 endif()
 find_package(Vulkan REQUIRED)
+
 if(DARK_COMPILE_VULKAN_SHADERS)
   find_program(DARK_GLSLC_EXECUTABLE NAMES glslc
     HINTS "$ENV{VULKAN_SDK}/bin" "$ENV{VULKAN_SDK}/Bin"
@@ -45,5 +46,4 @@ set(dark_lgd3d_vulkan_sources
   libsrc/lgd3d/vulkan.cpp
   libsrc/lgd3d/vulkan_context.cpp
   libsrc/lgd3d/vulkan_render_backend.cpp
-  libsrc/lgd3d/vulkan_scene_renderer.cpp
-  libsrc/lgd3d/vulkan_sdl.cpp)
+  libsrc/lgd3d/vulkan_scene_renderer.cpp)

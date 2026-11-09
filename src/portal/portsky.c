@@ -112,7 +112,7 @@ static void reset_sky_spans(void)
 }
 
 
-// called from portdraw.c in d3d rendering mode only
+// called from portdraw.c in hardware rendering mode only
 int ptsky_calc_spans(int n, r3s_phandle *vp)
 {
    int i,j;

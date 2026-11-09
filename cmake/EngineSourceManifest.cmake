@@ -526,7 +526,7 @@ set(dark_sources_r3d
   libsrc/r3d/object.c
   libsrc/r3d/prim.c
   libsrc/r3d/primconv.c
-  libsrc/r3d/primd3d.c
+  libsrc/r3d/primlgd3d.c
   libsrc/r3d/primface.c
   libsrc/r3d/primfunc.c
   libsrc/r3d/primg2.c
