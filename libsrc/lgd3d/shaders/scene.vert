@@ -30,6 +30,9 @@ void main()
 
     // Vulkan's clip-space depth range is [0, 1], unlike OpenGL's [-1, 1].
     gl_Position = vec4(x * q, y * q, inPosition.z * q, q);
+    // Every pipeline uses this vertex shader, including point-list draws.
+    // Vulkan requires the PointSize built-in for point topologies.
+    gl_PointSize = 1.0;
     linearColor = inColor * q;
     linearFog = inFog * q;
     linearWeight = q;
