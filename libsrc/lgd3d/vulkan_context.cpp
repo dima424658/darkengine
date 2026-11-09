@@ -196,7 +196,10 @@ extern "C" int RenderBackendVulkanEnumeratePhysicalDevices(void)
          extensions.data());
       vk::raii::Instance instance = context.createInstance(instanceInfo);
       for (vk::PhysicalDevice device : (*instance).enumeratePhysicalDevices())
-         names.emplace_back(device.getProperties().deviceName);
+      {
+         const vk::PhysicalDeviceProperties properties = device.getProperties();
+         names.emplace_back(properties.deviceName.data());
+      }
       return static_cast<int>(names.size());
    }
    catch (...)
