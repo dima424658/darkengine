@@ -40,7 +40,6 @@ void RenderBackendSetGamma(float gamma);
 void RenderBackendSetPhysicalDeviceIndex(int index);
 void RenderBackendSetScaleToWindow(int enabled);
 void RenderBackendSetFitToViewport(int enabled);
-void RenderBackendSetInteractiveResize(int resizing);
 void RenderBackendSetPreserveCanvas(int enabled);
 int RenderBackendPreserveCanvas(void);
 void RenderBackendSetWindowedClientSizeHint(int width, int height);

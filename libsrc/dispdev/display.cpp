@@ -11,6 +11,7 @@
 #include <fix.h>
 #include <grd.h>
 #include <mode.h>
+#include <render_backend.h>
 
 #include "dispbase.h"
 #include "display_window.h"
@@ -230,7 +231,11 @@ public:
    }
 
    void FlushRect(int, int, int, int) override { Flush(); }
-   BOOL SetGamma(double) override { return TRUE; }
+   BOOL SetGamma(double gamma) override
+   {
+      RenderBackendSetGamma(static_cast<float>(gamma));
+      return TRUE;
+   }
    BOOL SetFlip(BOOL) override { return FALSE; }
 
 private:
