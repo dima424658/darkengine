@@ -5,7 +5,7 @@ if(NOT ANDROID AND NOT DARK_COMPILE_VULKAN_SHADERS)
   message(FATAL_ERROR
     "Desktop SDL3 builds require Vulkan shader compilation")
 endif()
-find_package(Vulkan REQUIRED)
+find_package(Vulkan MODULE REQUIRED)
 
 if(DARK_COMPILE_VULKAN_SHADERS)
   if(NOT Vulkan_GLSLC_EXECUTABLE)
