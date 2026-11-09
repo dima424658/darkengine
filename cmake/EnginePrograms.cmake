@@ -1,43 +1,79 @@
 # SDL3/Vulkan runner and DromEd executable targets.
-set(dark_sdl_provider_sources
-  unixsrc/framewrk/diskfree.cpp
-  libsrc/appcore/sdl_appcore.cpp
+function(dark_add_sdl_provider target)
+  add_library(${target} STATIC ${ARGN})
+  target_link_libraries(${target} PUBLIC dark_engine_packed)
+endfunction()
+
+dark_add_sdl_provider(dark_sdl_appcore
+  libsrc/appcore/sdl_appcore.cpp)
+target_link_libraries(dark_sdl_appcore PUBLIC ${DARK_SDL_TARGET})
+
+dark_add_sdl_provider(dark_sdl_dispdev
   libsrc/dispdev/display.cpp
-  libsrc/dispdev/sdl_window.cpp
+  libsrc/dispdev/sdl_window.cpp)
+target_link_libraries(dark_sdl_dispdev PUBLIC ${DARK_SDL_TARGET})
+
+dark_add_sdl_provider(dark_sdl_gameshel
   libsrc/gameshel/gameshell.cpp
-  libsrc/gameshel/sdl_events.cpp
+  libsrc/gameshel/sdl_events.cpp)
+target_link_libraries(dark_sdl_gameshel PUBLIC ${DARK_SDL_TARGET})
+
+dark_add_sdl_provider(dark_sdl_input
   libsrc/input/gamepad.cpp
   libsrc/input/guids.c
   libsrc/input/input.cpp
-  libsrc/actmovie/movie.cpp
-  unixsrc/script/scrptmod.cpp
-  libsrc/timer/timer.cpp
   libsrc/input/inpinit.c
   libsrc/input/kbasctab.cpp
-  libsrc/input/kbcntry.c
-)
+  libsrc/input/kbcntry.c)
+target_link_libraries(dark_sdl_input PUBLIC ${DARK_SDL_TARGET})
+
+dark_add_sdl_provider(dark_sdl_movie
+  libsrc/actmovie/movie.cpp)
+target_link_libraries(dark_sdl_movie PUBLIC ${DARK_SDL_TARGET})
+
+dark_add_sdl_provider(dark_sdl_script
+  unixsrc/script/scrptmod.cpp)
+
+dark_add_sdl_provider(dark_sdl_timer
+  libsrc/timer/timer.cpp)
+
 if(WIN32)
-  # Keep SDL3/Vulkan presentation and input on Windows. POSIX providers
-  # include unistd.h and statvfs and cannot be compiled by MSVC.
-  list(REMOVE_ITEM dark_sdl_provider_sources unixsrc/framewrk/diskfree.cpp)
-  list(APPEND dark_sdl_provider_sources
+  # POSIX diskfree includes unistd.h and statvfs and cannot be compiled by
+  # MSVC. Keep the SDL presentation and input providers shared with Windows.
+  dark_add_sdl_provider(dark_sdl_diskfree
     winsrc/framewrk/diskfree.c
   )
+else()
+  dark_add_sdl_provider(dark_sdl_diskfree
+    unixsrc/framewrk/diskfree.cpp)
 endif()
-add_library(dark_sdl_providers STATIC ${dark_sdl_provider_sources})
-target_link_libraries(dark_sdl_providers PUBLIC dark_engine_packed)
-target_link_libraries(dark_sdl_providers PUBLIC ${DARK_SDL_TARGET})
-target_link_libraries(dark_sdl_providers PUBLIC dark_lgd3d)
-if(TARGET dark_vulkan_shaders)
-  add_dependencies(dark_sdl_providers dark_vulkan_shaders)
+
+add_library(dark_sdl_providers INTERFACE)
+target_link_libraries(dark_sdl_providers INTERFACE
+  dark_sdl_appcore
+  dark_sdl_dispdev
+  dark_sdl_gameshel
+  dark_sdl_input
+  dark_sdl_movie
+  dark_sdl_script
+  dark_sdl_timer
+  dark_sdl_diskfree
+  ${DARK_SDL_TARGET})
+# ELF linkers process static archives in order. Keep the renderer and the two
+# provider base classes that follow their providers after those archives;
+# Apple's and MSVC's linkers resolve the engine archive set without repeats.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
+  target_link_libraries(dark_sdl_dispdev PUBLIC dark_dispdev)
+  target_link_libraries(dark_sdl_timer PUBLIC dark_timer)
+  target_link_libraries(dark_sdl_providers INTERFACE dark_lgd3d)
 endif()
 if(TARGET dark_squirrel)
-  target_compile_definitions(dark_sdl_providers PRIVATE
+  target_compile_definitions(dark_sdl_script PRIVATE
     DARK_ENABLE_SQUIRREL=1)
 endif()
 if(FFMPEG_FOUND)
-  target_compile_definitions(dark_sdl_providers PRIVATE DARK_HAVE_FFMPEG=1)
-  target_link_libraries(dark_sdl_providers PUBLIC PkgConfig::FFMPEG)
+  target_compile_definitions(dark_sdl_movie PRIVATE DARK_HAVE_FFMPEG=1)
+  target_link_libraries(dark_sdl_movie PUBLIC PkgConfig::FFMPEG)
 else()
   message(WARNING "FFmpeg development libraries were not found; movie playback will be disabled")
 endif()

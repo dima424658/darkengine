@@ -228,6 +228,14 @@ cmake --preset windows-x86
 cmake --build --preset windows-x86-release
 ```
 
+The repository's `vcpkg.json` manifest enables SDL3's Vulkan feature and
+installs FFmpeg, libpng, and the vcpkg Squirrel package. Configure with the
+vcpkg toolchain to install those dependencies automatically. The vcpkg Squirrel
+port may be older than the required 3.2 release; bootstrap Squirrel 3.2 from
+source as described above when that exact version is needed. Without SDL3's
+`vulkan` feature, the engine can compile and link but cannot create a Vulkan
+window surface at runtime.
+
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
 When SDL3 is shared, CMake copies `SDL3.dll` beside both executables and
 installs it under `bin`.
