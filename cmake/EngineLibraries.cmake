@@ -153,11 +153,6 @@ target_sources(dark_dispdev PRIVATE
 target_link_libraries(dark_dispdev PUBLIC Vulkan::Vulkan ${DARK_SDL_TARGET})
 
 target_link_libraries(dark_cpptools PUBLIC dark_platform)
-if(WIN32)
-  target_compile_definitions(dark_lgalloc PRIVATE
-    DARKENGINE_MODERN_CRT_ALLOCATOR=1
-  )
-endif()
 target_link_libraries(dark_namedres PUBLIC dark_compression)
 if(ANDROID)
   target_include_directories(dark_namedres PRIVATE

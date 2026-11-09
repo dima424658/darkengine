@@ -31,7 +31,6 @@
 
 #include <comtools.h>
 #include <allocapi.h>
-#include <mallocdb.h>
 
 EXTERN BOOL LGAllocOverride()
 {
@@ -93,23 +92,6 @@ size_t msize(void * p)
     return g_pMalloc->GetSize(p);
 }
 
-
-#ifndef SHIP
-void * malloc_db(size_t size, const char * file, int line)
-{
-    return g_pMalloc->AllocEx(size, file, line);
-}
-
-void free_db(void * p, const char * file, int line)
-{
-    g_pMalloc->FreeEx(p, file, line);
-}
-
-void * realloc_db(void * p, size_t size, const char * file, int line)
-{
-    return g_pMalloc->ReallocEx(p, size, file, line);
-}
-#endif
 
 #if defined(__WATCOMC__)
 
