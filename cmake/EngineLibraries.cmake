@@ -45,9 +45,6 @@ target_compile_definitions(dark_engine_config INTERFACE
   RGB_LIGHTING BIG_LIGHTMAPS SOFTWARE_RGB SCHEMA_LOADING
   $<$<PLATFORM_ID:Linux>:_DEFAULT_SOURCE>
 )
-if(WIN32)
-  target_compile_definitions(dark_engine_config INTERFACE NOMINMAX)
-endif()
 # A debuggable APK keeps native symbols without enabling the legacy DEBUG
 # allocator. Do not define SHIP there: some old loop diagnostics are part of
 # the engine ABI even when their debug instrumentation is disabled.
