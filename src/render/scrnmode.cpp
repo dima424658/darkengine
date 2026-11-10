@@ -239,7 +239,14 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
     // Check validity
     AssertMsg((mode->valid_fields & kScrnModeAllValid) == kScrnModeAllValid,"ScrnSetModeRaw: Not all fields are valid");
 
-    if (lgd3d_enumerate_devices() <= 0)
+    if (!(mode->flags & kScrnMode3dDriver))
+    {
+        Warning(("Vulkan rendering is required to set a screen mode.\n"));
+        return FALSE;
+    }
+
+    const int num_devices = lgd3d_enumerate_devices();
+    if (num_devices <= 0)
     {
         Warning(("No Vulkan rendering device is available.\n"));
         return FALSE;
@@ -267,114 +274,43 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
     if (mode->flags & kScrnModeWindowed)
         kind = kDispWindowed;
     else
-        kind = (mode->flags & kScrnMode2dDriver) ? kDispFullScreen : kDispDebug;
+        kind = kDispFullScreen;
     int modeflags = 0;
 
-    if ((kind == kDispFullScreen || kind == kDispWindowed) &&
-        (mode->flags & kScrnMode3dDriver))
+    int idx = num_devices - 1;
+    const BOOL hasRendererIndex = config_get_int("d3d_driver_index", &idx);
+    if (hasRendererIndex)
     {
-
-        //zb:
-#ifndef SHIP
-        //temp
-
-
-        if( config_is_defined("local_debugging") )
+        const int requestedIdx = idx;
+        if (idx < 0) idx += num_devices;
+        if (idx < 0 || idx >= num_devices)
         {
-
-
-            int num_devices = lgd3d_enumerate_devices();
-
-            if( (num_devices > 0) && (lgd3d_get_device_info(0)->flags & LGD3DF_CAN_DO_WINDOWED) )
-            {
-                kind                 = kDispWindowed;
-                flags                = kDispAttemptFlippable | kDispAttempt3D;
-                g_lgd3d_device_index = 0;
-                g_lgd3d              = TRUE;
-                RenderBackendSetPhysicalDeviceIndex(0);
-                pDisplayGuid                  = NULL;
-            }
-            else
-            {
-                Warning(("Can't use hardware debugging in window, trying software.\nComment out \"local_debugging\" in your user.cfg\n"));
-                kind = kDispDebug;
-
-                //copied from below:
-                // we're not doing hardware; check if we can preserve our current ddraw...
-                if (ScrnFindModeFlags(mode->w,mode->h,mode->bitdepth,modeflags) != SCR_NOMODE)
-                    // OK, preserve current ddraw!
-                    pDisplayGuid = (GUID*)&SCRNMAN_PRESERVE_DISPLAY;  // display provider GUID
-                else
-                    // Nope, go for primary!
-                    pDisplayGuid = NULL;
-            }
+            idx = num_devices - 1;
+            Warning(("Render device index %d is out of range, using %d",
+                requestedIdx, idx));
         }
-        else
-        {
-#endif
-            int num_devices = lgd3d_enumerate_devices();
-            if (num_devices > 0)
-            {
-                int idx = num_devices - 1;
-                const BOOL hasRendererIndex =
-                    config_get_int("d3d_driver_index", &idx);
-                if (hasRendererIndex)
-                {
-                    const int requestedIdx = idx;
-                    if (idx < 0) idx += num_devices;
-                    if (idx < 0 || idx >= num_devices)
-                    {
-                        idx = num_devices -1;
-                        Warning(("Render device index %d is out of range, using %d",
-                            requestedIdx, idx));
-                    }
-                }
-
-                flags = kDispAttempt3D;
-                if (kind == kDispFullScreen)
-                {
-                    flags |= kDispAttemptFlippable;
-                    pDisplayGuid = NULL;
-                }
-                else
-                    pDisplayGuid = NULL;
-
-#ifndef SHIP
-                if (hasRendererIndex)
-                    mprintf("Using renderer: %s\n", lgd3d_get_device_info(idx)->name);
-#endif
-
-                g_lgd3d_device_index = idx;
-                g_lgd3d = TRUE;
-                RenderBackendSetPhysicalDeviceIndex(
-                    hasRendererIndex ? idx : -1);
-            }
-            else
-            {
-                Warning(("Can't use hardware; no device available.\n"));
-                pDisplayGuid = NULL;
-            }
-#ifndef SHIP
-        }
-#endif
-    } else {
-        // we're not doing hardware; check if we can preserve our current ddraw...
-        if (ScrnFindModeFlags(mode->w,mode->h,mode->bitdepth,modeflags) != SCR_NOMODE)
-            // OK, preserve current ddraw!
-            pDisplayGuid = (GUID*)&SCRNMAN_PRESERVE_DISPLAY;  // display provider GUID
-        else
-            // Nope, go for primary!
-            pDisplayGuid = NULL;
     }
 
+    flags = kDispAttempt3D;
+    if (kind == kDispFullScreen)
+        flags |= kDispAttemptFlippable;
+    pDisplayGuid = NULL;
+
 #ifndef SHIP
-    if ((!g_lgd3d) && (kind == kDispFullScreen))
-        if (config_is_defined("fake_fullscreen")) {
-            kind = kDispDebug;
-            flags |= kDispStrictMonitors;
-        } else if (config_is_defined("page_flip")) {
-            flags |= kDispAttemptFlippable;
-        }
+    if (hasRendererIndex)
+        mprintf("Using renderer: %s\n", lgd3d_get_device_info(idx)->name);
+#endif
+
+    g_lgd3d_device_index = idx;
+    g_lgd3d = TRUE;
+    RenderBackendSetPhysicalDeviceIndex(hasRendererIndex ? idx : -1);
+
+#ifndef SHIP
+    if (kind == kDispFullScreen && config_is_defined("fake_fullscreen"))
+    {
+        kind = kDispDebug;
+        flags |= kDispStrictMonitors;
+    }
 #endif
 
         RenderBackendTrace("screen-display kind=%d display-flags=0x%x lgd3d=%d",
