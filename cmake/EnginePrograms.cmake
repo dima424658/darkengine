@@ -28,9 +28,11 @@ dark_add_sdl_provider(dark_sdl_input
 target_link_libraries(dark_sdl_input PUBLIC ${DARK_SDL_TARGET})
 
 dark_add_sdl_provider(dark_sdl_movie
-  libsrc/actmovie/movie.cpp)
+  libsrc/actmovie/movie.cpp
+  libsrc/actmovie/movie_audio_output.cpp)
 target_link_libraries(dark_sdl_movie PUBLIC ${DARK_SDL_TARGET})
 target_link_libraries(dark_sdl_movie PUBLIC dark_ffmpeg)
+target_link_libraries(dark_sdl_movie PUBLIC dark_sound)
 add_dependencies(dark_sdl_movie dark_ffmpeg_external)
 
 dark_add_sdl_provider(dark_sdl_script
