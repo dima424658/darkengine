@@ -160,10 +160,12 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
   grs_bitmap decodedBitmap;
   std::vector<uchar> decodedPixels;
   if (bm->type == BMT_RSD8) {
-    if (!bits || bm->row < bm->w || bm->row <= 0 ||
-        bm->h > INT_MAX / bm->row)
+    // RSD8 bitmaps store compressed data, so gr_init_bitmap() gives them a
+    // zero row stride. gd_rsd8_convert() uses row as the decoded output stride
+    // and expects a full flat bitmap buffer in the unpack configuration.
+    if (!bits || bm->w <= 0 || bm->h <= 0 || bm->h > INT_MAX / bm->w)
       return NULL;
-    const size_t decodedSize = (size_t)bm->row * bm->h;
+    const size_t decodedSize = (size_t)bm->w * bm->h;
     try {
       decodedPixels.resize(decodedSize);
     } catch (...) {
@@ -172,6 +174,7 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
 
     grs_bitmap encodedBitmap = *bm;
     encodedBitmap.bits = const_cast<uchar *>(bits);
+    encodedBitmap.row = bm->w;
     gds_rsd_config previousConfig;
     gd_get_rsd_config(&previousConfig);
     gds_rsd_config decodedConfig = {
