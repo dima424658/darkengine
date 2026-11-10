@@ -344,6 +344,29 @@ uses relative-pointer input during gameplay and absolute coordinates in menus,
 with native Wayland preferred when available. See [Game saves](#game-saves) for
 the save location and fallback rules.
 
+### Vulkan screenshot capture
+
+The renderer does not read back swapchain images for screenshots. For
+development captures, install the Vulkan SDK's
+[`VK_LAYER_LUNARG_screenshot` utility layer](https://vulkan.lunarg.com/doc/view/latest/mac/screenshot_layer.html)
+and enable it for the application. On macOS or Linux:
+
+```sh
+mkdir -p captures
+VK_INSTANCE_LAYERS=VK_LAYER_LUNARG_screenshot \
+VK_SCREENSHOT_FRAMES=120 \
+VK_SCREENSHOT_DIR="$PWD/captures" \
+/path/to/darkengine/build-macos/thief-runner quickstart=MISS1.MIS
+```
+
+Change `build-macos` to `build-linux` on Linux. `VK_SCREENSHOT_FRAMES` accepts
+comma-separated frame numbers or a range; set it to `all` to capture every
+presented frame. The layer writes captured images to the selected folder. On
+Windows, set the same three `VK_...` environment variables in PowerShell before
+launching `thief-runner.exe`. For DromEd, use `render_test=...` to load and
+position the mission, then close the editor after the requested frame has been
+captured.
+
 ### Android
 
 #### Prerequisites
