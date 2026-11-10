@@ -3,12 +3,14 @@
 #include <lgd3d.h>
 #include <climits>
 #include <cstddef>
+#include <gdbm.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
 #include <tdrv.h>
 #include <texture.h>
 #include <tmgr.h>
+#include <rsdcfg.h>
 #include <vector>
 
 #define MODERN_MAX_PALETTES 256
@@ -154,8 +156,38 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
   if (!GetTextureStorageSize(info, &outputRowBytes, &totalBytes))
     return NULL;
 
+  const uchar *bits = (bm->flags & BMF_LOADED) ? info->bits : bm->bits;
+  grs_bitmap decodedBitmap;
+  std::vector<uchar> decodedPixels;
+  if (bm->type == BMT_RSD8) {
+    if (!bits || bm->row < bm->w || bm->row <= 0 ||
+        bm->h > INT_MAX / bm->row)
+      return NULL;
+    const size_t decodedSize = (size_t)bm->row * bm->h;
+    try {
+      decodedPixels.resize(decodedSize);
+    } catch (...) {
+      return NULL;
+    }
+
+    grs_bitmap encodedBitmap = *bm;
+    encodedBitmap.bits = const_cast<uchar *>(bits);
+    gds_rsd_config previousConfig;
+    gd_get_rsd_config(&previousConfig);
+    gds_rsd_config decodedConfig = {
+        decodedPixels.data(), (int)decodedSize, (int)decodedSize, 0};
+    gd_set_rsd_config(&decodedConfig);
+    const int result = gd_rsd8_convert(&encodedBitmap, &decodedBitmap);
+    gd_set_rsd_config(&previousConfig);
+    if (result != GR_UNPACK_RSD8_OK)
+      return NULL;
+    decodedBitmap.bits = decodedPixels.data();
+    bm = &decodedBitmap;
+    bits = decodedBitmap.bits;
+  }
+
   size_t sourcePixelBytes = 0;
-  if (bm->type == BMT_FLAT8)
+  if (bm->type == BMT_FLAT8 || bm->type == BMT_TLUC8)
     sourcePixelBytes = 1;
   else if (bm->type == BMT_FLAT16)
     sourcePixelBytes = 2;
@@ -165,7 +197,6 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
       (size_t)bm->row < (size_t)bm->w * sourcePixelBytes)
     return NULL;
 
-  const uchar *bits = (bm->flags & BMF_LOADED) ? info->bits : bm->bits;
   if (sourcePixelBytes && !bits)
     return NULL;
 
@@ -181,7 +212,7 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
       const uchar *source = bits
           ? bits + (size_t)y * sourceRowBytes + (size_t)x * sourcePixelBytes
           : NULL;
-      if (bm->type == BMT_FLAT8) {
+      if (bm->type == BMT_FLAT8 || bm->type == BMT_TLUC8) {
         uchar index = source[0];
         if (g_textureClut && !(info->flags & TF_ALPHA))
           index = g_textureClut[index];
@@ -471,7 +502,8 @@ static void ReloadPaletteTextures(int slot) {
   // retain menu/previous-mission colors while newly loaded terrain is right.
   for (i = 0; i < LGD3D_MAX_TEXTURES; ++i) {
     grs_bitmap *bm = g_ModernBitmaps[i];
-    if (bm && bm->type == BMT_FLAT8 && bm->align == slot &&
+    if (bm && (bm->type == BMT_FLAT8 || bm->type == BMT_TLUC8 ||
+               bm->type == BMT_RSD8) && bm->align == slot &&
         (bm->flags & BMF_LOADED) && g_ModernTextureInfoValid[i])
       // Do not ask the legacy manager to recook this texture.  Its cookie
       // depends on the current global fill mode, which need not match the
