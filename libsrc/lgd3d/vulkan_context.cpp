@@ -200,11 +200,23 @@ extern "C" int RenderBackendVulkanEnumeratePhysicalDevices(void)
          const vk::PhysicalDeviceProperties properties = device.getProperties();
          names.emplace_back(properties.deviceName.data());
       }
+      if (names.empty())
+         std::fprintf(stderr,
+            "Vulkan device enumeration found no physical devices\n");
       return static_cast<int>(names.size());
+   }
+   catch (const std::exception &exception)
+   {
+      names.clear();
+      std::fprintf(stderr, "Vulkan device enumeration failed: %s\n",
+         exception.what());
+      return 0;
    }
    catch (...)
    {
       names.clear();
+      std::fprintf(stderr,
+         "Vulkan device enumeration failed with an unknown error\n");
       return 0;
    }
 }

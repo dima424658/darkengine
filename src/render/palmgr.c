@@ -30,8 +30,6 @@
 #ifndef EDITOR
 #if defined(SHOCK)
 #define HARDWARE_ONLY
-#elif defined(THIEF)
-#define SOFTWARE_MODELS_ONLY
 #endif
 #endif
 
@@ -156,44 +154,7 @@ void calc_ipal(uchar *pal_data, uchar *ipal)
 #define NUM_SHADE_ROWS 16
 #define NUM_BRIGHT_ROWS 8
 #define NUM_BASE_ROWS    (NUM_SHADE_ROWS+NUM_BRIGHT_ROWS)
-#ifdef SOFTWARE_RGB
-   #define NUM_EXTRA_ROWS  get_extra_rows()
-   #define NUM_LIGHT_ROWS  (NUM_BASE_ROWS+NUM_EXTRA_ROWS)
-#else
- #define NUM_LIGHT_ROWS  NUM_BASE_ROWS
-#endif
-
-static int get_extra_rows()
-{
-#if defined(SOFTWARE_RGB)
-   static int init;
-   static BOOL fHardwareOnlyTerrain;
-
-   if (!init)
-   {
-#if defined(SOFTWARE_MODELS_ONLY)
-      // The retail game normally used hardware terrain, but a software
-      // framebuffer still needs the extended RGB lighting rows consumed by
-      // portsurf.c.  Omitting them makes the surface cache index past the
-      // end of every 8-to-16 lighting table.
-      fHardwareOnlyTerrain = g_lgd3d;
-#else
-      fHardwareOnlyTerrain = FALSE;
-#endif
-#ifdef PLAYTEST
-      if (config_is_defined("support_software_terrain_pal"))
-         fHardwareOnlyTerrain = FALSE;
-      if (config_is_defined("disable_software_terrain_pal"))
-         fHardwareOnlyTerrain = TRUE;
-#endif
-
-      init = TRUE;
-   }
-   return (fHardwareOnlyTerrain) ? 0 : (30*8);
-#else
-   return 0;
-#endif
-}
+#define NUM_LIGHT_ROWS  NUM_BASE_ROWS
 
 static void compute_ltab816(ushort *table, uchar *pal_data, grs_rgb_bitmask  *bitmask)
 {
@@ -217,58 +178,6 @@ static void compute_ltab816(ushort *table, uchar *pal_data, grs_rgb_bitmask  *bi
    }
 }
 
-
-#ifdef SOFTWARE_RGB
-extern uchar light_pal[];
-
-static void compute_ltab816_rgb(ushort *table, uchar *pal_data, grs_rgb_bitmask  *bitmask)
-{
-   int low_bits, i, j;
-   uchar bshift;
-   ulong *high_bitmask;
-
-   if (bitmask->blue==0x1f) {
-      low_bits = 2;
-      high_bitmask = &bitmask->red;
-   } else {
-      if (bitmask->red != 0x1f)
-         goto bad_bitmask;
-      low_bits = 0;
-      high_bitmask = &bitmask->blue;
-   }
-   if (bitmask->green==0x3e0) {
-      if (*high_bitmask != 0x7c00)
-         goto bad_bitmask;
-      bshift = 10;
-   } else {
-      if ((bitmask->green!=0x7e0)||(*high_bitmask != 0xf800))
-         goto bad_bitmask;
-      bshift = 11;
-   }
-
-   table += 256 * NUM_BASE_ROWS;
-   for (i=0; i < NUM_EXTRA_ROWS; ++i) {
-      int r2 = light_pal[3*i+low_bits];
-      int g2 = light_pal[3*i+1];
-      int b2 = light_pal[3*i+2-low_bits];
-      for (j=0; j < 256; ++j) {
-         int r = pal_data[3*j+low_bits];
-         int g = pal_data[3*j+1];
-         int b = pal_data[3*j+2-low_bits];
-         r=r*r2/256;
-         g=g*g2/256;
-         b=b*b2/256;
-         r=r>>3, g=g>>(13-bshift), b=b>>3;
-         *table++ = r+(g<<5)+(b<<bshift);
-      }
-   }
-
-   return;
-
-bad_bitmask:
-   Warning(("compute_ltab816_rgb(): invalid bitmask\n"));
-}
-#endif
 
 void palmgr_update_pal_slot(int slot)
 {
@@ -320,9 +229,6 @@ void palmgr_update_pal_slot(int slot)
             // reomputed, even though, the palette may have changed. Bad. Caused T2 "store" bugs.
             //
             compute_ltab816(info->ltab816, info->pal_data, &bmask);
-#ifdef SOFTWARE_RGB
-            compute_ltab816_rgb(info->ltab816, info->pal_data, &bmask);
-#endif
 #else
             Assert_(info->ltab816 == NULL);
 #endif // HARDWARE_ONLY

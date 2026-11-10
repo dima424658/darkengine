@@ -6,7 +6,7 @@
 
 #include <array>
 #include <memory>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 class cVulkanSceneRenderer
@@ -72,7 +72,7 @@ private:
    vk::raii::Sampler m_samplers[2][2]{{nullptr, nullptr}, {nullptr, nullptr}};
    std::vector<vk::raii::Pipeline> m_pipelines;
    std::unique_ptr<sTexture> m_whiteTexture;
-   std::unordered_set<sTexture *> m_textures;
+   std::unordered_map<sTexture *, std::unique_ptr<sTexture>> m_textures;
    std::array<std::vector<std::unique_ptr<sTexture>>,
       kVulkanFramesInFlight> m_deferredTextures;
    std::array<std::unique_ptr<sFrameResources>,
