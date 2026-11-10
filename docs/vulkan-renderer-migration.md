@@ -128,7 +128,9 @@ The macOS `miss8.mis` run with `obj_min=-16384` also exited with status 0 and
 no Vulkan validation or synchronization messages. Its texture preflight found
 27,073 terrain surfaces with no missing terrain or object textures. Three
 object instances could not resolve their models (`CopMos` once and `cop02`
-twice), which the audit separates from the renderer's texture results.
+twice). The current `redist` mission data references these names, but neither
+model is present in any of its CRF or ZIP resource archives, so these three
+instances are a local data-set gap, separate from the Vulkan texture results.
 
 After the SDL providers were split into subsystem-specific CMake libraries,
 the Linux x86_64 build linked both executables, and the Windows MSVC Release
