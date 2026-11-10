@@ -173,6 +173,11 @@ On macOS, a game script invoked `movie intro.avi`; FFmpeg decoded the full
 128.67-second clip and the game exited with status 0 afterward. An in-game
 capture showed the 320x240 movie frame presented across the 1600x1200 HiDPI
 drawable. Synchronization validation reported no Vulkan messages.
+The macOS runner also played the original intro in a 1280x720-point window
+(2560x1440 drawable); an in-game capture shows its 320x240 frame centered with
+black side bars. Khronos synchronization validation emitted no messages during
+the capture. The original `redist/cam.cfg` and `INTRO.AVI` were restored after
+this temporary widescreen run.
 
 ## Goal
 
