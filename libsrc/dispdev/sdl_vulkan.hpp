@@ -1,11 +1,17 @@
 #ifndef DARK_SDL_VULKAN_H
 #define DARK_SDL_VULKAN_H
 
-class cVulkanContext;
+#include <vulkan/vulkan.hpp>
 
-bool VulkanContextInitializeSDL(cVulkanContext &context,
-   int physicalDeviceIndex, char *error, unsigned errorCapacity);
-bool VulkanContextRecreateSDLSurface(cVulkanContext &context, char *error,
+#include <cstdint>
+#include <vector>
+
+bool SDLVulkanGetInstanceExtensions(std::vector<const char *> &extensions,
+   uint32_t &drawableWidth, uint32_t &drawableHeight, char *error,
    unsigned errorCapacity);
+bool SDLVulkanGetDrawableSize(uint32_t &drawableWidth,
+   uint32_t &drawableHeight, char *error, unsigned errorCapacity);
+bool SDLVulkanCreateSurface(vk::Instance instance, vk::SurfaceKHR &surface,
+   char *error, unsigned errorCapacity);
 
 #endif

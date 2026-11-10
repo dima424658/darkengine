@@ -26,6 +26,16 @@
 
 namespace
 {
+vk::SurfaceKHR CreateSDLVulkanSurface(vk::Instance instance,
+   std::string &surfaceError)
+{
+   char error[512]{};
+   vk::SurfaceKHR surface{};
+   if (!SDLVulkanCreateSurface(instance, surface, error, sizeof(error)))
+      surfaceError = error;
+   return surface;
+}
+
 class cVulkanRuntime
 {
 public:
@@ -166,8 +176,21 @@ bool cVulkanRuntime::ApplyPendingResize()
          return false;
       m_nextSurfaceRecreationAttempt = now + std::chrono::milliseconds(250);
       char error[512]{};
-      if (!VulkanContextRecreateSDLSurface(m_context, error, sizeof(error)))
+      uint32_t drawableWidth = 0;
+      uint32_t drawableHeight = 0;
+      std::string surfaceError;
+      if (!SDLVulkanGetDrawableSize(drawableWidth, drawableHeight, error,
+             sizeof(error)) ||
+          !m_context.RecreateSurface(
+             [&surfaceError](vk::Instance instance) {
+                return CreateSDLVulkanSurface(instance, surfaceError);
+             }, drawableWidth, drawableHeight))
       {
+         if (!surfaceError.empty())
+            std::snprintf(error, sizeof(error), "%s", surfaceError.c_str());
+         else if (!error[0])
+            std::snprintf(error, sizeof(error), "%s",
+               "Vulkan surface recreation failed");
          if (error[0] && !m_surfaceRecreationErrorReported)
          {
             std::fprintf(stderr, "Vulkan surface recreation failed: %s\n",
@@ -177,6 +200,8 @@ bool cVulkanRuntime::ApplyPendingResize()
          return false;
       }
       m_surfaceRecreationPending.store(false, std::memory_order_release);
+      m_drawableWidth = static_cast<int>(drawableWidth);
+      m_drawableHeight = static_cast<int>(drawableHeight);
       m_resizePending = false;
       m_nextSurfaceRecreationAttempt = {};
       m_surfaceRecreationErrorReported = false;
@@ -354,13 +379,31 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    m_width = width; m_height = height;
    UpdateWindowDimensions();
    char error[512]{};
-   if (!VulkanContextInitializeSDL(m_context, m_physicalDeviceIndex, error,
-         sizeof(error)))
+   std::vector<const char *> surfaceExtensions;
+   uint32_t drawableWidth = 0;
+   uint32_t drawableHeight = 0;
+   if (!SDLVulkanGetInstanceExtensions(surfaceExtensions, drawableWidth,
+          drawableHeight, error, sizeof(error)))
    {
       std::fprintf(stderr, "Vulkan initialization failed: %s\n", error);
       Close();
       return false;
    }
+   std::string surfaceError;
+   if (!m_context.Initialize(surfaceExtensions,
+         [&surfaceError](vk::Instance instance) {
+            return CreateSDLVulkanSurface(instance, surfaceError);
+         }, drawableWidth, drawableHeight, m_physicalDeviceIndex, error,
+         sizeof(error)))
+   {
+      if (!surfaceError.empty())
+         std::snprintf(error, sizeof(error), "%s", surfaceError.c_str());
+      std::fprintf(stderr, "Vulkan initialization failed: %s\n", error);
+      Close();
+      return false;
+   }
+   m_drawableWidth = static_cast<int>(drawableWidth);
+   m_drawableHeight = static_cast<int>(drawableHeight);
    // Register after Vulkan initialization so this callback runs before any
    // atexit cleanup registered by the Vulkan loader or layers. Exit handlers
    // run in reverse registration order, and Close must use their dispatch
