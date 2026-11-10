@@ -477,7 +477,11 @@ extern "C" void lgd3d_clean_render_surface(BOOL depth) {
   if (depth)
     RenderBackendClearDepth();
 }
-extern "C" BOOL lgd3d_overlays_master_switch(BOOL on) { return TRUE; }
+extern "C" BOOL lgd3d_overlays_master_switch(BOOL on) {
+  const BOOL previous = RenderBackendCanvasOverlayEnabled();
+  RenderBackendSetCanvasOverlayEnabled(on);
+  return previous;
+}
 
 extern "C" void lgd3d_set_texture_clut(uchar *clut) {
   g_textureClut = lgd3d_clut = clut;

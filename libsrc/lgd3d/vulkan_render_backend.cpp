@@ -28,6 +28,7 @@ public:
       m_width = m_height = 0;
       m_drawableWidth = m_drawableHeight = 0;
       m_sceneActive = false;
+      m_canvasOverlayEnabled = true;
    }
 
    void Attach(vk::CommandBuffer commandBuffer, int logicalWidth,
@@ -107,6 +108,8 @@ public:
    void SetFitToViewport(bool enabled) { m_fitToViewport = enabled; }
    void SetPreserveCanvas(bool enabled) { m_preserve = enabled; }
    int PreserveCanvas() const { return m_preserve; }
+   void SetCanvasOverlayEnabled(bool enabled) { m_canvasOverlayEnabled = enabled; }
+   int CanvasOverlayEnabled() const { return m_canvasOverlayEnabled; }
 
    int GetClientSize(int *width, int *height) const
    {
@@ -313,6 +316,7 @@ private:
    int m_clientHeight{};
    bool m_preserve{};
    bool m_sceneActive{};
+   bool m_canvasOverlayEnabled{true};
    bool m_scaleToWindow{true};
    bool m_fitToViewport{};
    float m_gamma{1.0f};
@@ -364,6 +368,8 @@ void RenderBackendVulkanAttach(vk::CommandBuffer commandBuffer,
 
 void RenderBackendVulkanDetach(void) { Backend().Detach(); }
 int RenderBackendVulkanSceneActive(void) { return Backend().SceneActive(); }
+int RenderBackendVulkanCanvasOverlayEnabled(void)
+{ return Backend().CanvasOverlayEnabled(); }
 
 void RenderBackendVulkanSetWindowMetrics(int clientWidth, int clientHeight,
    int drawableWidth, int drawableHeight)
@@ -393,6 +399,10 @@ void RenderBackendSetFitToViewport(int enabled)
 void RenderBackendSetPreserveCanvas(int enabled)
 { Backend().SetPreserveCanvas(enabled != 0); }
 int RenderBackendPreserveCanvas(void) { return Backend().PreserveCanvas(); }
+void RenderBackendSetCanvasOverlayEnabled(int enabled)
+{ Backend().SetCanvasOverlayEnabled(enabled != 0); }
+int RenderBackendCanvasOverlayEnabled(void)
+{ return Backend().CanvasOverlayEnabled(); }
 int RenderBackendGetClientSize(int *width, int *height)
 { return Backend().GetClientSize(width, height); }
 int RenderBackendGetSettledClientSize(int *width, int *height)
