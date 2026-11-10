@@ -188,6 +188,10 @@ and HUD correctly at 1280x960 drawable pixels. After removing the remaining
 software display fallback, `miss6.mis` and `miss10.mis` both loaded and exited
 successfully with synchronization validation enabled; their captures show
 coherent world textures and HUD rendering at 1280x960 drawable pixels.
+A DromEd run on the same macOS build loaded the editable `MISS1.MIS` fixture,
+reconstructed 195 object brushes, captured all four viewports at 2048x1536
+drawable pixels, and exited successfully with synchronization validation
+enabled after the Vulkan-only screen-mode change.
 
 ## Goal
 
