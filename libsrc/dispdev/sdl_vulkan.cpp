@@ -1,21 +1,52 @@
 #include "sdl_vulkan.hpp"
-#include "../lgd3d/vulkan_context.hpp"
 #include "sdl_window.h"
 
 #include <SDL3/SDL_vulkan.h>
 
 #include <cstdio>
-#include <string>
-#include <vector>
 
-bool VulkanContextInitializeSDL(cVulkanContext &context,
-   int physicalDeviceIndex, char *error, unsigned errorCapacity)
+namespace
+{
+void SetError(char *error, unsigned errorCapacity, const char *message)
+{
+   if (error && errorCapacity)
+      std::snprintf(error, errorCapacity, "%s", message ? message : "");
+}
+}
+
+bool SDLVulkanGetDrawableSize(uint32_t &drawableWidth,
+   uint32_t &drawableHeight, char *error, unsigned errorCapacity)
 {
    SDL_Window *window = SDLDisplayGetWindow();
    if (!window)
    {
-      if (error && errorCapacity)
-         std::snprintf(error, errorCapacity, "%s", "SDL window is null");
+      SetError(error, errorCapacity, "SDL window is null");
+      return false;
+   }
+
+   int width = 0;
+   int height = 0;
+   if (!SDL_GetWindowSizeInPixels(window, &width, &height) ||
+       width <= 0 || height <= 0)
+   {
+      SetError(error, errorCapacity, "SDL Vulkan window has no drawable area");
+      return false;
+   }
+
+   drawableWidth = static_cast<uint32_t>(width);
+   drawableHeight = static_cast<uint32_t>(height);
+   SetError(error, errorCapacity, "");
+   return true;
+}
+
+bool SDLVulkanGetInstanceExtensions(std::vector<const char *> &extensions,
+   uint32_t &drawableWidth, uint32_t &drawableHeight, char *error,
+   unsigned errorCapacity)
+{
+   SDL_Window *window = SDLDisplayGetWindow();
+   if (!window)
+   {
+      SetError(error, errorCapacity, "SDL window is null");
       return false;
    }
 
@@ -24,75 +55,37 @@ bool VulkanContextInitializeSDL(cVulkanContext &context,
       SDL_Vulkan_GetInstanceExtensions(&extensionCount);
    if (!requiredExtensions)
    {
-      if (error && errorCapacity)
-         std::snprintf(error, errorCapacity, "%s", SDL_GetError());
+      SetError(error, errorCapacity, SDL_GetError());
       return false;
    }
-   std::vector<const char *> extensions(requiredExtensions,
+   extensions.assign(requiredExtensions,
       requiredExtensions + extensionCount);
-
-   int drawableWidth = 0;
-   int drawableHeight = 0;
-   SDL_GetWindowSizeInPixels(window, &drawableWidth, &drawableHeight);
-   if (drawableWidth <= 0 || drawableHeight <= 0)
-   {
-      if (error && errorCapacity)
-         std::snprintf(error, errorCapacity, "%s",
-            "SDL Vulkan window has no drawable area");
+   if (!SDLVulkanGetDrawableSize(drawableWidth, drawableHeight, error,
+         errorCapacity))
       return false;
-   }
-
-   std::string surfaceError;
-   const bool initialized = context.Initialize(extensions,
-      [&surfaceError, window](vk::Instance instance) {
-         VkSurfaceKHR surface = VK_NULL_HANDLE;
-         if (!SDL_Vulkan_CreateSurface(window,
-               static_cast<VkInstance>(instance), nullptr, &surface))
-            surfaceError = SDL_GetError();
-         return vk::SurfaceKHR(surface);
-      }, static_cast<uint32_t>(drawableWidth),
-      static_cast<uint32_t>(drawableHeight), physicalDeviceIndex, error,
-      errorCapacity);
-   if (!initialized && !surfaceError.empty() && error && errorCapacity)
-      std::snprintf(error, errorCapacity, "%s", surfaceError.c_str());
-   return initialized;
+   SetError(error, errorCapacity, "");
+   return true;
 }
 
-bool VulkanContextRecreateSDLSurface(cVulkanContext &context, char *error,
-   unsigned errorCapacity)
+bool SDLVulkanCreateSurface(vk::Instance instance, vk::SurfaceKHR &surface,
+   char *error, unsigned errorCapacity)
 {
    SDL_Window *window = SDLDisplayGetWindow();
    if (!window)
    {
-      if (error && errorCapacity)
-         std::snprintf(error, errorCapacity, "%s", "SDL window is null");
+      SetError(error, errorCapacity, "SDL window is null");
       return false;
    }
 
-   int drawableWidth = 0;
-   int drawableHeight = 0;
-   if (!SDL_GetWindowSizeInPixels(window, &drawableWidth, &drawableHeight) ||
-       drawableWidth <= 0 || drawableHeight <= 0)
+   VkSurfaceKHR rawSurface = VK_NULL_HANDLE;
+   if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(instance),
+         nullptr, &rawSurface))
    {
-      if (error && errorCapacity)
-         std::snprintf(error, errorCapacity, "%s",
-            "SDL Vulkan window has no drawable area");
+      SetError(error, errorCapacity, SDL_GetError());
       return false;
    }
 
-   std::string surfaceError;
-   const bool recreated = context.RecreateSurface(
-      [&surfaceError, window](vk::Instance instance) {
-         VkSurfaceKHR surface = VK_NULL_HANDLE;
-         if (!SDL_Vulkan_CreateSurface(window,
-               static_cast<VkInstance>(instance), nullptr, &surface))
-            surfaceError = SDL_GetError();
-         return vk::SurfaceKHR(surface);
-      }, static_cast<uint32_t>(drawableWidth),
-      static_cast<uint32_t>(drawableHeight));
-   if (error && errorCapacity)
-      std::snprintf(error, errorCapacity, "%s", recreated ? "" :
-         (surfaceError.empty() ? "Vulkan surface recreation failed" :
-            surfaceError.c_str()));
-   return recreated;
+   surface = vk::SurfaceKHR(rawSurface);
+   SetError(error, errorCapacity, "");
+   return true;
 }
