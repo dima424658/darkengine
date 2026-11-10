@@ -186,14 +186,37 @@ bool cVulkanRuntime::ApplyPendingResize()
 void cVulkanRuntime::ConvertCanvas(const void *pixels, int width, int height, int rowBytes,
    int depth, const uint8_t *palette)
 {
-   if (!pixels || width <= 0 || height <= 0 || rowBytes <= 0) return;
-   m_canvasWidth = width;
-   m_canvasHeight = height;
-   m_canvasPixels.resize(static_cast<size_t>(width) * height * 4);
+   if (!pixels || width <= 0 || height <= 0 || rowBytes <= 0 ||
+       (depth != 8 && depth != 15 && depth != 16) ||
+       (depth == 8 && !palette) ||
+       width > std::numeric_limits<int>::max() / (depth == 8 ? 1 : 2))
+      return;
+
+   const size_t bytesPerPixel = depth == 8 ? 1 : 2;
+   const size_t sourceRowBytes = static_cast<size_t>(rowBytes);
+   const size_t minimumSourceRowBytes =
+      static_cast<size_t>(width) * bytesPerPixel;
+   const size_t canvasWidth = static_cast<size_t>(width);
+   const size_t canvasHeight = static_cast<size_t>(height);
+   const size_t maxSize = std::numeric_limits<size_t>::max();
+   if (sourceRowBytes < minimumSourceRowBytes ||
+       canvasHeight > maxSize / canvasWidth ||
+       canvasWidth * canvasHeight > maxSize / 4 ||
+       (canvasHeight > 1 && canvasHeight - 1 > maxSize / sourceRowBytes))
+      return;
+
+   try
+   {
+      m_canvasPixels.resize(canvasWidth * canvasHeight * 4);
+   }
+   catch (...)
+   {
+      return;
+   }
    for (int y = 0; y < height; ++y)
    {
       const uint8_t *row = static_cast<const uint8_t *>(pixels) +
-         static_cast<size_t>(y) * rowBytes;
+         static_cast<size_t>(y) * sourceRowBytes;
       for (int x = 0; x < width; ++x)
       {
          uint32_t raw;
@@ -201,13 +224,14 @@ void cVulkanRuntime::ConvertCanvas(const void *pixels, int width, int height, in
          if (depth == 8)
          {
             raw = row[x];
-            if (!palette) continue;
             r = palette[raw * 3]; g = palette[raw * 3 + 1];
             b = palette[raw * 3 + 2];
          }
          else
          {
-            const uint16_t value = reinterpret_cast<const uint16_t *>(row)[x];
+            uint16_t value;
+            std::memcpy(&value, row + static_cast<size_t>(x) * 2,
+               sizeof(value));
             raw = value;
             if (depth == 16)
             {
@@ -230,6 +254,8 @@ void cVulkanRuntime::ConvertCanvas(const void *pixels, int width, int height, in
             RenderBackendVulkanSceneActive() && raw == 0 ? 0 : 255;
       }
    }
+   m_canvasWidth = width;
+   m_canvasHeight = height;
    ++m_canvasGeneration;
 }
 

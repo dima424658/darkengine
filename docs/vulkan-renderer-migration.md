@@ -88,8 +88,9 @@ Thief loaded `miss1.mis` and exited cleanly; DromEd loaded the editor mission,
 resized to 1280x900, captured all four panes, and exited cleanly. The Android
 resume path recreates the SDL Vulkan surface and
 swapchain while preserving the logical device and engine textures. On macOS,
-`thief-runner quickstart=miss1.mis auto_stop=180` loads the mission from
-`redist`, renders the textured environment and HUD, and exits with status 0.
+`thief-runner quickstart=miss1.mis auto_stop=180 game_hardware=1` loads the
+mission from `redist`, renders the textured environment and HUD, and exits with
+status 0.
 Its 800x600-point SDL window produces a 1600x1200-pixel drawable capture on
 the HiDPI display. macOS `MISS1.MIS` captures at gamma 0.5
 and 1.5 have mean RGB values of approximately (73.5, 65.2, 59.3) and

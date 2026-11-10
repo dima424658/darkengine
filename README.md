@@ -274,6 +274,17 @@ cmake --build --preset macos-release -j "$(sysctl -n hw.ncpu)"
 The result is `build-macos/thief-runner`. The macOS target uses SDL3 and Vulkan;
 CMake finds the Homebrew Squirrel libraries and headers automatically.
 
+#### Running
+
+Run from the retail game directory. Older retail `cam.cfg` files may set
+`game_hardware 0`, which selects the software renderer; pass
+`game_hardware=1` to use the Vulkan scene renderer:
+
+```sh
+cd "/path/to/Thief II"
+/path/to/darkengine/build-macos/thief-runner quickstart=MISS1.MIS game_hardware=1
+```
+
 ### Linux
 
 #### Prerequisites
