@@ -124,6 +124,11 @@ Vulkan validation errors, warnings, VUIDs, or synchronization reports.
 The `miss12.mis` texture preflight covered 16,222 terrain surfaces and 1,273
 object instances, with no missing terrain textures, object models, object
 textures, checkerboards, or replacements.
+The macOS `miss8.mis` run with `obj_min=-16384` also exited with status 0 and
+no Vulkan validation or synchronization messages. Its texture preflight found
+27,073 terrain surfaces with no missing terrain or object textures. Three
+object instances could not resolve their models (`CopMos` once and `cop02`
+twice), which the audit separates from the renderer's texture results.
 
 After the SDL providers were split into subsystem-specific CMake libraries,
 the Linux x86_64 build linked both executables, and the Windows MSVC Release
