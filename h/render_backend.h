@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 // Platform-neutral rendering boundary used by the legacy lgd3d facade and
-// higher-level engine code.  A platform renderer owns the window/surface and
-// implements these operations without exposing graphics API types to the
-// engine.  SDL3/Vulkan is the shared renderer for CMake platform builds.
+// higher-level engine code. The display provider owns the window and surface;
+// the backend implements these operations without exposing graphics API
+// types to engine callers.
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,17 +35,19 @@ enum eRenderBackendBlend {
 
 int RenderBackendAvailable(void);
 void RenderBackendSetGamma(float gamma);
-// Select a Vulkan physical device by the index reported through the legacy
-// lgd3d device enumeration. Negative values restore automatic GPU selection.
+// Select a physical device by the index reported through the legacy lgd3d
+// device enumeration. Negative values restore automatic device selection.
 void RenderBackendSetPhysicalDeviceIndex(int index);
 void RenderBackendSetScaleToWindow(int enabled);
 void RenderBackendSetFitToViewport(int enabled);
 void RenderBackendSetPreserveCanvas(int enabled);
 int RenderBackendPreserveCanvas(void);
 void RenderBackendSetWindowedClientSizeHint(int width, int height);
-// Returns the drawable client size in physical pixels. While an interactive
-// resize is in progress the size is intentionally withheld so callers can
-// rebuild expensive engine-owned canvases once, when the drag finishes.
+// Returns the current client size in logical points. Use the window metrics
+// passed to the backend for the drawable size in physical pixels.
+int RenderBackendGetClientSize(int *width, int *height);
+// Kept for existing callers that used the former resize-settle API. This now
+// returns the same current size as RenderBackendGetClientSize.
 int RenderBackendGetSettledClientSize(int *width, int *height);
 int RenderBackendGetLogicalSize(int *width, int *height);
 int RenderBackendClientToLogicalPoint(int *x, int *y);
