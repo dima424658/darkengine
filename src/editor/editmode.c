@@ -493,12 +493,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          break;
 
       case kMsgNormalFrame:
-         if (config_is_defined("render_test") &&
-             RenderBackendCaptureComplete())
-         {
-            quit_game();
-            break;
-         }
          {
             int width,height;
 

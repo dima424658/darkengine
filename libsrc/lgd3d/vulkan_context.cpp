@@ -4,8 +4,6 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
-#include <fstream>
-#include <limits>
 #include <set>
 #include <string>
 #include <utility>
@@ -90,78 +88,6 @@ bool SelectSurfaceFormat(vk::PhysicalDevice device,
          return true;
       }
    return false;
-}
-
-void WriteLE16(std::ostream &stream, uint16_t value)
-{
-   const char bytes[] = {static_cast<char>(value),
-      static_cast<char>(value >> 8)};
-   stream.write(bytes, sizeof(bytes));
-}
-
-void WriteLE32(std::ostream &stream, uint32_t value)
-{
-   const char bytes[] = {static_cast<char>(value),
-      static_cast<char>(value >> 8), static_cast<char>(value >> 16),
-      static_cast<char>(value >> 24)};
-   stream.write(bytes, sizeof(bytes));
-}
-
-bool SaveFrameBmp(const std::string &path, const uint8_t *pixels,
-   uint32_t width, uint32_t height, vk::Format format)
-{
-   if (path.empty() || !pixels || !width || !height ||
-       (format != vk::Format::eB8G8R8A8Unorm &&
-        format != vk::Format::eB8G8R8A8Srgb &&
-        format != vk::Format::eR8G8B8A8Unorm &&
-        format != vk::Format::eR8G8B8A8Srgb))
-      return false;
-   const uint64_t dataSize = static_cast<uint64_t>(width) * height * 4;
-   if (dataSize > std::numeric_limits<uint32_t>::max() - 54u)
-      return false;
-
-   std::ofstream file(path, std::ios::binary);
-   if (!file)
-      return false;
-   file.put('B');
-   file.put('M');
-   WriteLE32(file, static_cast<uint32_t>(54 + dataSize));
-   WriteLE16(file, 0);
-   WriteLE16(file, 0);
-   WriteLE32(file, 54);
-   WriteLE32(file, 40);
-   WriteLE32(file, width);
-   WriteLE32(file, 0u - height); // top-down rows
-   WriteLE16(file, 1);
-   WriteLE16(file, 32);
-   WriteLE32(file, 0); // BI_RGB
-   WriteLE32(file, static_cast<uint32_t>(dataSize));
-   WriteLE32(file, 2835);
-   WriteLE32(file, 2835);
-   WriteLE32(file, 0);
-   WriteLE32(file, 0);
-
-   const bool isBgra = format == vk::Format::eB8G8R8A8Unorm ||
-      format == vk::Format::eB8G8R8A8Srgb;
-   std::vector<uint8_t> row(static_cast<size_t>(width) * 4);
-   for (uint32_t y = 0; y < height; ++y)
-   {
-      const uint8_t *source = pixels + static_cast<size_t>(y) * width * 4;
-      if (isBgra)
-         file.write(reinterpret_cast<const char *>(source), row.size());
-      else
-      {
-         for (uint32_t x = 0; x < width; ++x)
-         {
-            row[x * 4] = source[x * 4 + 2];
-            row[x * 4 + 1] = source[x * 4 + 1];
-            row[x * 4 + 2] = source[x * 4];
-            row[x * 4 + 3] = source[x * 4 + 3];
-         }
-         file.write(reinterpret_cast<const char *>(row.data()), row.size());
-      }
-   }
-   return file.good();
 }
 
 std::vector<std::string> &EnumeratedPhysicalDeviceNames()
@@ -478,7 +404,6 @@ void cVulkanContext::Shutdown()
    m_frameIndex = 0;
    m_graphicsQueueFamily = 0;
    m_presentQueueFamily = 0;
-   m_captureSupported = false;
 }
 
 bool cVulkanContext::CreateSwapchain()
@@ -516,10 +441,6 @@ bool cVulkanContext::CreateSwapchain()
    swapchainInfo.imageExtent = m_swapchainExtent;
    swapchainInfo.imageArrayLayers = 1;
    swapchainInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
-   const bool transferSourceSupported = (capabilities.supportedUsageFlags &
-      vk::ImageUsageFlagBits::eTransferSrc) != vk::ImageUsageFlags{};
-   if (transferSourceSupported)
-      swapchainInfo.imageUsage |= vk::ImageUsageFlagBits::eTransferSrc;
    if (m_graphicsQueueFamily != m_presentQueueFamily)
    {
       swapchainInfo.imageSharingMode = vk::SharingMode::eConcurrent;
@@ -550,12 +471,6 @@ bool cVulkanContext::CreateSwapchain()
    swapchainInfo.presentMode = vk::PresentModeKHR::eFifo;
    swapchainInfo.clipped = VK_TRUE;
    m_swapchainFormat = surfaceFormat.format;
-   const bool supportedCaptureFormat =
-      m_swapchainFormat == vk::Format::eB8G8R8A8Unorm ||
-      m_swapchainFormat == vk::Format::eB8G8R8A8Srgb ||
-      m_swapchainFormat == vk::Format::eR8G8B8A8Unorm ||
-      m_swapchainFormat == vk::Format::eR8G8B8A8Srgb;
-   m_captureSupported = transferSourceSupported && supportedCaptureFormat;
    m_swapchain = m_device.createSwapchainKHR(swapchainInfo);
    m_swapchainImages = (*m_device).getSwapchainImagesKHR(*m_swapchain);
    if (m_swapchainImages.empty())
@@ -768,18 +683,6 @@ bool cVulkanContext::Resize(uint32_t drawableWidth, uint32_t drawableHeight)
    }
 }
 
-void cVulkanContext::ConfigureFrameCapture(const char *path,
-   uint32_t targetFrame)
-{
-   m_capturePath = path ? path : "";
-   m_captureTargetFrame = std::max(targetFrame, 1u);
-   m_captureFrameCount = 0;
-   m_captureComplete = false;
-   if (!m_capturePath.empty() && !m_captureSupported)
-      std::fprintf(stderr,
-         "Vulkan frame capture is unavailable: swapchain transfer-source usage is unsupported\n");
-}
-
 bool cVulkanContext::BeginFrame(const std::array<float, 4> &clearColor,
    vk::CommandBuffer *commandBuffer)
 {
@@ -886,79 +789,12 @@ bool cVulkanContext::EndFrame()
 {
    if (!*m_device || !m_frameActive || m_commandBuffers.empty())
       return false;
-   bool captureRecorded = false;
    bool frameSubmitted = false;
-   bool captureMemoryCoherent = false;
-   vk::DeviceSize captureMemorySize = 0;
-   vk::raii::DeviceMemory captureMemory{nullptr};
-   vk::raii::Buffer captureBuffer{nullptr};
    try
    {
       vk::CommandBuffer commandBuffer = *m_commandBuffers[m_frameIndex];
       commandBuffer.endRenderPass();
 
-      if (!m_capturePath.empty() && !m_captureComplete &&
-          ++m_captureFrameCount >= m_captureTargetFrame &&
-          m_captureSupported)
-      {
-         try
-         {
-            const vk::DeviceSize byteCount =
-               static_cast<vk::DeviceSize>(m_swapchainExtent.width) *
-               m_swapchainExtent.height * 4;
-            captureBuffer = m_device.createBuffer(vk::BufferCreateInfo({},
-               byteCount, vk::BufferUsageFlagBits::eTransferDst,
-               vk::SharingMode::eExclusive));
-            const auto requirements =
-               (*m_device).getBufferMemoryRequirements(*captureBuffer);
-            const uint32_t memoryType = FindHostVisibleMemoryType(
-               requirements.memoryTypeBits,
-               &captureMemoryCoherent);
-            captureMemorySize = requirements.size;
-            captureMemory = m_device.allocateMemory(vk::MemoryAllocateInfo(
-               requirements.size, memoryType));
-            (*m_device).bindBufferMemory(*captureBuffer, *captureMemory, 0);
-
-            vk::ImageMemoryBarrier toTransfer{};
-            toTransfer.oldLayout = vk::ImageLayout::ePresentSrcKHR;
-            toTransfer.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-            toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            toTransfer.image = m_swapchainImages[m_acquiredImage];
-            toTransfer.subresourceRange = vk::ImageSubresourceRange(
-               vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-            toTransfer.srcAccessMask =
-               vk::AccessFlagBits::eColorAttachmentWrite;
-            toTransfer.dstAccessMask = vk::AccessFlagBits::eTransferRead;
-            commandBuffer.pipelineBarrier(
-               vk::PipelineStageFlagBits::eColorAttachmentOutput,
-               vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, toTransfer);
-            vk::BufferImageCopy region{};
-            region.imageSubresource = vk::ImageSubresourceLayers(
-               vk::ImageAspectFlagBits::eColor, 0, 0, 1);
-            region.imageExtent = vk::Extent3D(m_swapchainExtent.width,
-               m_swapchainExtent.height, 1);
-            commandBuffer.copyImageToBuffer(
-               m_swapchainImages[m_acquiredImage],
-               vk::ImageLayout::eTransferSrcOptimal, *captureBuffer, region);
-            vk::ImageMemoryBarrier toPresent{};
-            toPresent.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
-            toPresent.newLayout = vk::ImageLayout::ePresentSrcKHR;
-            toPresent.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            toPresent.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            toPresent.image = m_swapchainImages[m_acquiredImage];
-            toPresent.subresourceRange = toTransfer.subresourceRange;
-            toPresent.srcAccessMask = vk::AccessFlagBits::eTransferRead;
-            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-               vk::PipelineStageFlagBits::eBottomOfPipe, {}, {}, {}, toPresent);
-            captureRecorded = true;
-         }
-         catch (const std::exception &)
-         {
-            captureBuffer.clear();
-            captureMemory.clear();
-         }
-      }
       commandBuffer.end();
 
       const vk::Fence frameFence = *m_inFlightFences[m_frameIndex];
@@ -978,25 +814,6 @@ bool cVulkanContext::EndFrame()
       submitInfo.pSignalSemaphores = &signalSemaphore;
       m_graphicsQueue.submit(submitInfo, frameFence);
       frameSubmitted = true;
-
-      if (captureRecorded)
-      {
-         (void)(*m_device).waitForFences(frameFence, VK_TRUE, UINT64_MAX);
-         const vk::DeviceSize byteCount =
-            static_cast<vk::DeviceSize>(m_swapchainExtent.width) *
-            m_swapchainExtent.height * 4;
-         void *mapped = (*m_device).mapMemory(*captureMemory, 0,
-            captureMemorySize);
-         if (!captureMemoryCoherent)
-            (*m_device).invalidateMappedMemoryRanges(
-               vk::MappedMemoryRange(*captureMemory, 0, VK_WHOLE_SIZE));
-         m_captureComplete = SaveFrameBmp(m_capturePath,
-            static_cast<const uint8_t *>(mapped), m_swapchainExtent.width,
-            m_swapchainExtent.height, m_swapchainFormat);
-         (*m_device).unmapMemory(*captureMemory);
-      }
-      captureBuffer.clear();
-      captureMemory.clear();
 
       vk::PresentInfoKHR presentInfo{};
       presentInfo.waitSemaphoreCount = 1;

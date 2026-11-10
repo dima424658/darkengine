@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <limits>
@@ -49,7 +48,6 @@ public:
    void ApplicationSuspended();
    void ApplicationResumed();
    void EndEventPump();
-   int CaptureComplete() const;
    void SetPhysicalDeviceIndex(int index);
    void BeginApplicationFrame();
    void EndApplicationFrame();
@@ -414,14 +412,6 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       std::atexit(DarkRenderClose);
       m_exitHookRegistered = true;
    }
-   const char *capturePath = std::getenv("DARK_RENDER_CAPTURE");
-   const char *captureFrameEnv = std::getenv("DARK_RENDER_CAPTURE_FRAME");
-   const unsigned long parsedCaptureFrame = captureFrameEnv
-      ? std::strtoul(captureFrameEnv, nullptr, 10) : 1ul;
-   const uint32_t captureFrame = parsedCaptureFrame > 0 &&
-      parsedCaptureFrame <= UINT32_MAX
-      ? static_cast<uint32_t>(parsedCaptureFrame) : 1u;
-   m_context.ConfigureFrameCapture(capturePath, captureFrame);
 #ifndef DARK_VULKAN_SHADER_DIR
 #define DARK_VULKAN_SHADER_DIR "generated/vulkan"
 #endif
@@ -573,9 +563,6 @@ void cVulkanRuntime::EndEventPump()
 {
    ProcessPendingLifecycleResize();
 }
-
-int cVulkanRuntime::CaptureComplete() const
-{ return m_context.FrameCaptureComplete() ? 1 : 0; }
 
 void cVulkanRuntime::SetPhysicalDeviceIndex(int index)
 { m_physicalDeviceIndex = index; }
@@ -803,7 +790,5 @@ bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
    int rowBytes)
 { return VulkanRuntime().PresentMovieFrame(rgba, width, height, rowBytes); }
 
-extern "C" int RenderBackendCaptureComplete(void)
-{ return VulkanRuntime().CaptureComplete(); }
 extern "C" void RenderBackendSetPhysicalDeviceIndex(int index)
 { VulkanRuntime().SetPhysicalDeviceIndex(index); }

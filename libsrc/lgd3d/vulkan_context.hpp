@@ -7,7 +7,6 @@
 #include <array>
 #include <functional>
 #include <memory>
-#include <string>
 #include <vector>
 
 class cVulkanSceneRenderer;
@@ -43,8 +42,6 @@ public:
       uint32_t drawableWidth, uint32_t drawableHeight);
    bool NeedsSwapchainRecreation() const { return m_recreateSwapchain; }
    bool NeedsSurfaceRecreation() const { return m_surfaceLost; }
-   void ConfigureFrameCapture(const char *path, uint32_t targetFrame);
-   bool FrameCaptureComplete() const { return m_captureComplete; }
 
    vk::Instance Instance() const { return m_instance; }
    vk::SurfaceKHR Surface() const { return *m_surface; }
@@ -114,11 +111,6 @@ private:
    bool m_frameActive{};
    bool m_recreateSwapchain{};
    bool m_surfaceLost{};
-   bool m_captureSupported{};
-   bool m_captureComplete{};
-   uint32_t m_captureTargetFrame{1};
-   uint32_t m_captureFrameCount{};
-   std::string m_capturePath;
    uint32_t m_drawableWidth{}, m_drawableHeight{};
    vk::PhysicalDeviceProperties m_properties{};
    uint32_t m_graphicsQueueFamily{};

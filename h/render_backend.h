@@ -85,7 +85,6 @@ int RenderBackendDraw(int primitive, const sRenderBackendVertex *vertices,
 // opt in to the plain-text trace; normal game and viewer runs create no log.
 void RenderBackendTraceReset(void);
 void RenderBackendTrace(const char *format, ...);
-int RenderBackendCaptureComplete(void);
 
 #ifdef __cplusplus
 }
