@@ -184,7 +184,10 @@ and produced corrupted world textures on macOS. Screen-mode parsing now ignores
 the obsolete hardware toggle, always selects Vulkan, and fails mode setup when
 no Vulkan device is available instead of falling back to software. A fresh
 `miss6.mis` capture with the unchanged legacy config rendered the environment
-and HUD correctly at 1280x960 drawable pixels.
+and HUD correctly at 1280x960 drawable pixels. After removing the remaining
+software display fallback, `miss6.mis` and `miss10.mis` both loaded and exited
+successfully with synchronization validation enabled; their captures show
+coherent world textures and HUD rendering at 1280x960 drawable pixels.
 
 ## Goal
 
