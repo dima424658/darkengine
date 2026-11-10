@@ -30,6 +30,9 @@ set(dark_vorbis_sources
   codebook.c sharedbook.c lookup.c bitrate.c)
 list(TRANSFORM dark_vorbis_sources PREPEND "${DARK_VORBIS_SOURCE}/lib/")
 add_library(dark_vorbis STATIC ${dark_vorbis_sources})
+if(UNIX)
+  target_compile_definitions(dark_vorbis PRIVATE HAVE_ALLOCA_H)
+endif()
 target_include_directories(dark_vorbis
   PUBLIC "${DARK_VORBIS_SOURCE}/include"
   PRIVATE "${DARK_VORBIS_SOURCE}/lib")
@@ -39,5 +42,8 @@ if(NOT MSVC)
 endif()
 
 add_library(dark_vorbisfile STATIC "${DARK_VORBIS_SOURCE}/lib/vorbisfile.c")
+if(UNIX)
+  target_compile_definitions(dark_vorbisfile PRIVATE HAVE_ALLOCA_H)
+endif()
 target_include_directories(dark_vorbisfile PUBLIC "${DARK_VORBIS_SOURCE}/include")
 target_link_libraries(dark_vorbisfile PUBLIC dark_vorbis)
