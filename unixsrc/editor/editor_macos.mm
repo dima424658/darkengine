@@ -321,7 +321,7 @@ extern "C" int EditorGetPendingWindowSize(int *width, int *height)
 {
    int currentWidth, currentHeight;
    if (!g_resizeTracking || !width || !height ||
-       !RenderBackendGetSettledClientSize(&currentWidth, &currentHeight) ||
+       !RenderBackendGetClientSize(&currentWidth, &currentHeight) ||
        (currentWidth < 400 || currentHeight < 300))
       return FALSE;
    if (g_havePreviousSize && currentWidth == g_pendingWidth &&

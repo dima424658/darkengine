@@ -108,7 +108,7 @@ public:
    void SetPreserveCanvas(bool enabled) { m_preserve = enabled; }
    int PreserveCanvas() const { return m_preserve; }
 
-   int GetSettledClientSize(int *width, int *height) const
+   int GetClientSize(int *width, int *height) const
    {
       if (!width || !height || !m_renderer ||
           m_clientWidth <= 0 || m_clientHeight <= 0)
@@ -393,8 +393,10 @@ void RenderBackendSetFitToViewport(int enabled)
 void RenderBackendSetPreserveCanvas(int enabled)
 { Backend().SetPreserveCanvas(enabled != 0); }
 int RenderBackendPreserveCanvas(void) { return Backend().PreserveCanvas(); }
+int RenderBackendGetClientSize(int *width, int *height)
+{ return Backend().GetClientSize(width, height); }
 int RenderBackendGetSettledClientSize(int *width, int *height)
-{ return Backend().GetSettledClientSize(width, height); }
+{ return RenderBackendGetClientSize(width, height); }
 int RenderBackendGetLogicalSize(int *width, int *height)
 { return Backend().GetLogicalSize(width, height); }
 int RenderBackendClientToLogicalPoint(int *x, int *y)

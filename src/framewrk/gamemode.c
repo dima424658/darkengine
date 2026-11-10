@@ -410,7 +410,7 @@ static BOOL build_fit_screen_mode(sScrnMode* mode)
    int registered;
 
    if (!config_get_int("game_screen_fit", &fit) || !fit ||
-       !RenderBackendGetSettledClientSize(&width, &height) ||
+       !RenderBackendGetClientSize(&width, &height) ||
        width < 400 || height < 300 || width > 8191 || height > 8191)
       return FALSE;
 
@@ -611,7 +611,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          config_get_int("game_screen_fit", &fit);
          // DromEd and the retail game share this loop client. Fixed modes are
          // aspect-fitted to the host; Fit mode replaces the logical canvas
-         // with the settled client size so its CPU HUD overlay stays 1:1.
+         // with the current client size so its CPU HUD overlay stays 1:1.
          RenderBackendSetScaleToWindow(TRUE);
          RenderBackendSetFitToViewport(fit != 0);
          RenderBackendSetPreserveCanvas(FALSE);

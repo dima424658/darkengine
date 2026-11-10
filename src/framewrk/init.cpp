@@ -601,7 +601,7 @@ tResult LGAPI CoreEngineAppInit()
    if (!config_is_defined("game_hardware"))
       config_set_int("game_hardware", 1);
 
-   // Use the settled display size for the gameplay canvas when the user has
+   // Use the current display size for the gameplay canvas when the user has
    // not configured a fit preference. Menus keep their fixed logical size
    // and are aspect-fitted by the presentation backend.
    if (!config_is_defined("game_screen_fit"))
