@@ -121,6 +121,9 @@ messages. A further `miss12.mis` run opened the 800x600-point macOS window,
 captured a textured environment and HUD at 1600x1200 drawable pixels, and
 completed with synchronization validation enabled. Its saved log contains no
 Vulkan validation errors, warnings, VUIDs, or synchronization reports.
+The `miss12.mis` texture preflight covered 16,222 terrain surfaces and 1,273
+object instances, with no missing terrain textures, object models, object
+textures, checkerboards, or replacements.
 
 After the SDL providers were split into subsystem-specific CMake libraries,
 the Linux x86_64 build linked both executables, and the Windows MSVC Release
