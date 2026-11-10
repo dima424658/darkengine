@@ -34,7 +34,7 @@ static const char* flag_names[] =
    "Fullscreen",
    "Windowed",
    "Hardware",
-   "DirectX",
+   "2D display",
 };
 
 static sFieldDesc mode_fields[] = 
