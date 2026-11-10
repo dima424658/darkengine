@@ -1,7 +1,9 @@
 #include <algorithm>
 
 #include <zipstrm.h>
+#pragma pack(push, 8)
 #include <zlib.h>
+#pragma pack(pop)
 
 extern "C"
 {
@@ -268,7 +270,7 @@ BOOL cZipStream::Open()
 			nRealSize = PkExplodeStreamToMem(pRealStream, m_pData, 0, m_pInfo->m_nUncompressedSize);
 
 		if (nRealSize != m_pInfo->m_nUncompressedSize)
-			CriticalMsg2("Zip stream: expected size of %ld, got %ld", m_pInfo->m_nUncompressedSize, nRealSize);
+			CriticalMsg2("Zip stream: expected size of %u, got %d", m_pInfo->m_nUncompressedSize, nRealSize);
 	}
 	else
 	{
