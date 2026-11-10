@@ -111,6 +111,13 @@ capture showed the 4:3 movie centered with black side bars. The OpenGL, D3D11,
 SDL2, and legacy Win32
 display renderer implementations have been removed.
 
+Additional macOS Vulkan captures of `miss3.mis` and `miss4.mis` both rendered
+textured environments at the 1600x1200 HiDPI drawable size and exited with
+status 0. Texture preflight found no missing terrain surfaces, object models,
+object textures, checkerboards, or replacements in either mission. The `miss4`
+run used the Khronos validation layer with synchronization validation enabled;
+its log contained no Vulkan validation messages.
+
 After the SDL providers were split into subsystem-specific CMake libraries,
 the Linux x86_64 build linked both executables, and the Windows MSVC Release
 build linked `thief-runner.exe` and `DromEd.exe`. The Windows game loaded
