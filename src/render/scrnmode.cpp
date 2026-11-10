@@ -578,7 +578,7 @@ static const char* flag_strings[] =
    "FullScreen",
    "Windowed",
    "3d",
-   "DirectX",
+   "2d display",
 };
 
 #define NUM_FLAGS (sizeof(flag_strings)/sizeof(flag_strings[0]))
