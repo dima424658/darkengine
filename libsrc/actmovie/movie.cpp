@@ -30,6 +30,7 @@ extern "C" {
 #include <movie_backend.h>
 #include <movieapi.h>
 #include <platform_services.h>
+#include "movie_audio_output.h"
 
 #include "../lgd3d/runtime.h"
 #include "../gameshel/sdl_events.h"
@@ -165,23 +166,6 @@ std::string NativeMoviePath(const char *legacyPath)
     return legacyPath ? legacyPath : "";
 }
 
-float MovieGain(int volume)
-{
-    if (volume <= -10000)
-        return 0.0f;
-    if (volume >= 0)
-        return 1.0f;
-    return (float)std::pow(10.0, volume / 2000.0);
-}
-
-void ScaleAudio(std::vector<int16_t> &samples, float gain)
-{
-    if (gain >= 0.9999f)
-        return;
-    for (int16_t &sample : samples)
-        sample = (int16_t)std::clamp((int)(sample * gain), -32768, 32767);
-}
-
 bool WaitForFrame(MovieClock::time_point start, double seconds)
 {
     for (;;)
@@ -210,8 +194,8 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     SwrContext *resampler = nullptr;
     AVFrame *frame = nullptr;
     AVPacket *packet = nullptr;
-    SDL_AudioStream *audioStream = nullptr;
-    bool audioStarted = false;
+    cMovieAudioOutput audioOutput;
+    bool audioAvailable = false;
     bool played = false;
     bool keepPlaying = true;
     int64_t firstVideoTimestamp = AV_NOPTS_VALUE;
@@ -246,32 +230,27 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     if (!frame || !packet || !scaler)
         keepPlaying = false;
 
-    if (audio.context && SDL_InitSubSystem(SDL_INIT_AUDIO) == 0)
+    if (audio.context && audioOutput.Open(volume))
     {
-        SDL_AudioSpec wanted{};
-        wanted.freq = 48000;
-        wanted.format = SDL_AUDIO_S16;
-        wanted.channels = 2;
-        audioStream = SDL_OpenAudioDeviceStream(
-            SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &wanted, nullptr, nullptr);
-        if (audioStream)
+        AVChannelLayout outputLayout = AV_CHANNEL_LAYOUT_STEREO;
+        AVChannelLayout inputLayout = audio.context->ch_layout;
+        if (inputLayout.nb_channels > 0 &&
+            inputLayout.order == AV_CHANNEL_ORDER_UNSPEC)
+            av_channel_layout_default(&inputLayout, inputLayout.nb_channels);
+        const int resampleResult = swr_alloc_set_opts2(&resampler,
+            &outputLayout, AV_SAMPLE_FMT_S16, 48000, &inputLayout,
+            audio.context->sample_fmt, audio.context->sample_rate, 0, nullptr);
+        if (resampleResult < 0 || !resampler || swr_init(resampler) < 0)
         {
-            AVChannelLayout outputLayout = AV_CHANNEL_LAYOUT_STEREO;
-            if (swr_alloc_set_opts2(&resampler, &outputLayout,
-                                    AV_SAMPLE_FMT_S16, wanted.freq,
-                                    &audio.context->ch_layout,
-                                    audio.context->sample_fmt,
-                                    audio.context->sample_rate, 0, nullptr) < 0 ||
-                swr_init(resampler) < 0)
-            {
-                swr_free(&resampler);
-                SDL_DestroyAudioStream(audioStream);
-                audioStream = nullptr;
-            }
+            swr_free(&resampler);
+            audioAvailable = false;
         }
+        else
+            audioAvailable = true;
+        if (inputLayout.order != audio.context->ch_layout.order)
+            av_channel_layout_uninit(&inputLayout);
     }
 
-    const float gain = MovieGain(volume);
     while (keepPlaying && av_read_frame(format, packet) >= 0)
     {
         Decoder *decoder = packet->stream_index == video.stream ? &video :
@@ -308,14 +287,9 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
                     played = DarkRenderPresentMovieFrame(
                         rgba.data(), video.context->width,
                         video.context->height, strides[0]);
-                    if (audioStream && !audioStarted)
-                    {
-                        SDL_ResumeAudioStreamDevice(audioStream);
-                        audioStarted = true;
-                    }
                 }
             }
-            else if (audioStream && resampler)
+            else if (audioAvailable && resampler)
             {
                 const int maximum = av_rescale_rnd(
                     swr_get_delay(resampler, audio.context->sample_rate) +
@@ -332,26 +306,20 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
                 if (converted > 0)
                 {
                     samples.resize((size_t)converted * 2);
-                    ScaleAudio(samples, gain);
-                    SDL_PutAudioStreamData(
-                        audioStream, samples.data(),
-                        (int)(samples.size() * sizeof(int16_t)));
+                    audioOutput.Submit(samples.data(), samples.size());
                 }
             }
             av_frame_unref(frame);
         }
     }
 
-    if (audioStream && audioStarted && keepPlaying)
+    if (audioAvailable && keepPlaying)
     {
-        while (SDL_GetAudioStreamQueued(audioStream) > 0 &&
-               !DarkPumpMovieEvents())
+        audioOutput.Finish();
+        while (!audioOutput.IsDrained() && !DarkPumpMovieEvents())
+        {
             SDL_Delay(5);
-    }
-    if (audioStream)
-    {
-        SDL_ClearAudioStream(audioStream);
-        SDL_DestroyAudioStream(audioStream);
+        }
     }
     swr_free(&resampler);
     sws_freeContext(scaler);
