@@ -30,6 +30,8 @@ target_link_libraries(dark_sdl_input PUBLIC ${DARK_SDL_TARGET})
 dark_add_sdl_provider(dark_sdl_movie
   libsrc/actmovie/movie.cpp)
 target_link_libraries(dark_sdl_movie PUBLIC ${DARK_SDL_TARGET})
+target_link_libraries(dark_sdl_movie PUBLIC dark_ffmpeg)
+add_dependencies(dark_sdl_movie dark_ffmpeg_external)
 
 dark_add_sdl_provider(dark_sdl_script
   src/script/scrptmod.cpp)
@@ -62,11 +64,6 @@ endif()
 if(TARGET dark_squirrel)
   target_compile_definitions(dark_sdl_script PRIVATE
     DARK_ENABLE_SQUIRREL=1)
-endif()
-if(APPLE)
-  target_link_libraries(dark_sdl_movie PUBLIC dark_ffmpeg)
-elseif(NOT ANDROID)
-  target_link_libraries(dark_sdl_movie PUBLIC PkgConfig::FFMPEG)
 endif()
 option(DARK_BUILD_THIEF2 "Compile the native SDL Thief 2 game sources" ON)
 if(APPLE OR WIN32)

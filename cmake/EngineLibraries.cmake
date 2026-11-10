@@ -27,7 +27,7 @@ set(dark_include_dirs
   "${CMAKE_CURRENT_SOURCE_DIR}/src/deepc"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/deepc/motion"
   "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/object/property"
-  "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/blast"
+  "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/zlib/contrib/blast"
   "${DARK_PLATFORM_ROOT}"
   ${dark_library_dirs}
   # Shared SDL input providers and retained legacy keyboard/mouse headers.
@@ -154,21 +154,9 @@ target_link_libraries(dark_dispdev PUBLIC Vulkan::Vulkan ${DARK_SDL_TARGET})
 
 target_link_libraries(dark_cpptools PUBLIC dark_platform)
 target_link_libraries(dark_namedres PUBLIC dark_compression)
-if(ANDROID)
-  target_include_directories(dark_namedres PRIVATE
-    "${DARK_PNG_COMPAT_INCLUDE_DIR}"
-  )
-  target_link_libraries(dark_namedres PUBLIC png_static)
-elseif(APPLE)
-  # CMake's macOS ZLIB finder may expose the SDK's entire usr/include
-  # directory, which shadows libc++ headers with non-Apple Clang toolchains.
-  # The compiler already searches the SDK sysroot; expose only libpng's
-  # Homebrew include directory and keep the discovered libraries.
-  target_include_directories(dark_namedres PRIVATE "${PNG_PNG_INCLUDE_DIR}")
-  target_link_libraries(dark_namedres PUBLIC ${PNG_LIBRARIES})
-else()
-  target_link_libraries(dark_namedres PUBLIC PNG::PNG)
-endif()
+target_include_directories(dark_namedres BEFORE PRIVATE
+  "${DARK_PNG_SOURCE}")
+target_link_libraries(dark_namedres PUBLIC png_static zlibstatic)
 target_link_libraries(dark_res PUBLIC dark_compression)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Squirrel.cmake")

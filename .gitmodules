@@ -1,0 +1,21 @@
+[submodule "3rdparty/zlib"]
+	path = 3rdparty/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "3rdparty/libpng"]
+	path = 3rdparty/libpng
+	url = https://github.com/glennrp/libpng.git
+[submodule "3rdparty/squirrel"]
+	path = 3rdparty/squirrel
+	url = https://github.com/albertodemichelis/squirrel.git
+[submodule "3rdparty/SDL"]
+	path = 3rdparty/SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "3rdparty/FFmpeg"]
+	path = 3rdparty/FFmpeg
+	url = https://github.com/FFmpeg/FFmpeg.git
+[submodule "3rdparty/ogg"]
+	path = 3rdparty/ogg
+	url = https://github.com/xiph/ogg.git
+[submodule "3rdparty/vorbis"]
+	path = 3rdparty/vorbis
+	url = https://github.com/xiph/vorbis.git

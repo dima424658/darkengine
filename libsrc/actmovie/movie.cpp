@@ -1,12 +1,9 @@
 #pragma pack(push, 8)
 #define SDL_ENABLE_OLD_NAMES
 #include <SDL3/SDL.h>
-#ifdef __ANDROID__
-#include <SDL3/SDL_system.h>
-#include <jni.h>
-#endif
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -15,7 +12,10 @@
 #include <thread>
 #include <vector>
 
-#ifndef __ANDROID__
+#ifdef __ANDROID__
+#include <jni.h>
+#endif
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -24,7 +24,6 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 }
-#endif
 #pragma pack(pop)
 
 #include <aggmemb.h>
@@ -34,6 +33,32 @@ extern "C" {
 
 #include "../lgd3d/runtime.h"
 #include "../gameshel/sdl_events.h"
+
+namespace
+{
+std::atomic_bool g_movie_playing{false};
+
+class cMoviePlaybackScope
+{
+public:
+    cMoviePlaybackScope() { g_movie_playing.store(true); }
+    ~cMoviePlaybackScope() { g_movie_playing.store(false); }
+};
+}
+
+extern "C" bool DarkMoviePlaybackActive(void)
+{
+    return g_movie_playing.load();
+}
+
+#ifdef __ANDROID__
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeMoviePlaybackActive(
+    JNIEnv *, jclass)
+{
+    return DarkMoviePlaybackActive() ? JNI_TRUE : JNI_FALSE;
+}
+#endif
 
 #pragma pack(push, 8)
 class cSDLMoviePlayer final : public IMoviePlayer1
@@ -53,13 +78,7 @@ public:
         return FALSE;
     }
     STDMETHOD_(void, Close)() override { m_state = kMP1NothingOpen; }
-    STDMETHOD_(BOOL, CanPlay)() override {
-#ifndef __ANDROID__
-        return TRUE;
-#else
-        return FALSE;
-#endif
-    }
+    STDMETHOD_(BOOL, CanPlay)() override { return TRUE; }
     STDMETHOD_(BOOL, Play)(int) override { return FALSE; }
     STDMETHOD_(BOOL, Pause)() override { return FALSE; }
     STDMETHOD_(BOOL, Stop)() override { m_state = kMP1NothingOpen; return TRUE; }
@@ -91,7 +110,6 @@ extern "C" tResult LGAPI _MoviePlayerCreate(REFIID, void **player,
     return created ? S_OK : E_FAIL;
 }
 
-#ifndef __ANDROID__
 namespace
 {
 using MovieClock = std::chrono::steady_clock;
@@ -180,39 +198,10 @@ bool WaitForFrame(MovieClock::time_point start, double seconds)
     }
 }
 }
-#endif
 
 bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
 {
-#ifdef __ANDROID__
-    JNIEnv *environment = static_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
-    jobject activity = static_cast<jobject>(SDL_GetAndroidActivity());
-    if (!environment || !activity || !legacyPath)
-        return false;
-
-    jclass activityClass = environment->GetObjectClass(activity);
-    jmethodID playMovie = activityClass ? environment->GetMethodID(
-        activityClass, "playMovieSynchronously", "(Ljava/lang/String;I)Z") :
-        nullptr;
-    jstring path = environment->NewStringUTF(legacyPath);
-    bool played = false;
-    if (playMovie && path)
-    {
-        played = environment->CallBooleanMethod(activity, playMovie, path,
-                                                 volume) == JNI_TRUE;
-        if (environment->ExceptionCheck())
-        {
-            environment->ExceptionClear();
-            played = false;
-        }
-    }
-    if (path)
-        environment->DeleteLocalRef(path);
-    if (activityClass)
-        environment->DeleteLocalRef(activityClass);
-    environment->DeleteLocalRef(activity);
-    return played;
-#else
+    cMoviePlaybackScope playbackScope;
     const std::string path = NativeMoviePath(legacyPath);
     AVFormatContext *format = nullptr;
     Decoder video;
@@ -372,6 +361,5 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     CloseDecoder(video);
     avformat_close_input(&format);
     return played;
-#endif
 }
 #pragma pack(pop)

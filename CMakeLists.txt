@@ -49,8 +49,9 @@ if(NOT WIN32)
   endif()
 endif()
 
-add_library(dark_compression STATIC 3rdparty/blast/blast.c)
-target_include_directories(dark_compression PUBLIC 3rdparty/blast)
+add_library(dark_compression STATIC 3rdparty/zlib/contrib/blast/blast.c)
+target_include_directories(dark_compression PUBLIC
+  3rdparty/zlib/contrib/blast)
 
 option(DARK_BUILD_ENGINE "Compile the platform-neutral engine libraries" ON)
 

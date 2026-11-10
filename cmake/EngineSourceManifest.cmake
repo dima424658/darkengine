@@ -28,7 +28,6 @@ set(dark_sources_config
 )
 
 set(dark_sources_cpptools
-  3rdparty/blast/blast.c
   libsrc/cpptools/delmlist.cpp
   libsrc/cpptools/dlist.cpp
   libsrc/cpptools/dynarray.cpp
@@ -476,7 +475,6 @@ set(dark_sources_namedres
   libsrc/namedres/mdlrstyp.cpp
   libsrc/namedres/palrstyp.cpp
   libsrc/namedres/pathutil.cpp
-  libsrc/namedres/portableinflate.cpp
   libsrc/namedres/pcx.cpp
   libsrc/namedres/png.cpp
   libsrc/namedres/psd.cpp
