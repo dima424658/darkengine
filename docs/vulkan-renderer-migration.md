@@ -110,6 +110,8 @@ presented it through Vulkan. After resizing the window to 1280x720, an in-game
 capture showed the 4:3 movie centered with black side bars. The OpenGL, D3D11,
 SDL2, and legacy Win32
 display renderer implementations have been removed.
+The current macOS `thief-runner` and `DromEd` binaries link SDL3 and the Vulkan
+loader, with no OpenGL framework dependency or unresolved GL/CGL symbols.
 
 Additional macOS Vulkan captures of `miss3.mis`, `miss4.mis`, and `miss5.mis`
 rendered textured environments at the 1600x1200 HiDPI drawable size and exited
