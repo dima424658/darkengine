@@ -50,6 +50,7 @@ public:
       int rowBytes);
 private:
    void UpdateWindowDimensions();
+   void HandleSwapchainRecreation();
    void ProcessPendingLifecycleResize();
    bool ApplyPendingResize();
    void ConvertCanvas(const void *pixels, int width, int height, int rowBytes,
@@ -131,6 +132,16 @@ void cVulkanRuntime::UpdateWindowDimensions()
          m_resizePending = !resized;
       }
    }
+}
+
+void cVulkanRuntime::HandleSwapchainRecreation()
+{
+   if (!m_context.NeedsSwapchainRecreation())
+      return;
+   if (m_context.NeedsSurfaceRecreation())
+      m_surfaceRecreationPending.store(true, std::memory_order_release);
+   else
+      UpdateWindowDimensions();
 }
 
 void cVulkanRuntime::ProcessPendingLifecycleResize()
@@ -564,13 +575,7 @@ void cVulkanRuntime::EndApplicationFrame()
    (void)m_context.EndFrame();
    m_activeCommandBuffer = nullptr;
    m_frameActive = false;
-   if (m_context.NeedsSwapchainRecreation())
-   {
-      if (m_context.NeedsSurfaceRecreation())
-         m_surfaceRecreationPending.store(true, std::memory_order_release);
-      else
-         UpdateWindowDimensions();
-   }
+   HandleSwapchainRecreation();
 }
 
 void cVulkanRuntime::PresentProgress()
@@ -715,6 +720,7 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
       }
       (void)m_context.EndFrame();
       m_renderer.BindTexture(0, nullptr);
+      HandleSwapchainRecreation();
    }
    if (resumeFrame)
       BeginApplicationFrame();
