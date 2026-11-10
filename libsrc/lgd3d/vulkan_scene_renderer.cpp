@@ -338,14 +338,9 @@ void cVulkanSceneRenderer::Shutdown()
          frame->retiredVertexBuffers.clear();
          frame.reset();
       }
-   for (sTexture *texture : m_textures)
-   {
-      if (texture)
-      {
-         DestroyTextureImage(*texture);
-         delete texture;
-      }
-   }
+   for (auto &entry : m_textures)
+      if (entry.second)
+         DestroyTextureImage(*entry.second);
    m_textures.clear();
    if (m_whiteTexture)
    {
@@ -852,8 +847,9 @@ void *cVulkanSceneRenderer::CreateTexture(int width, int height,
    auto texture = std::make_unique<sTexture>();
    if (!CreateTextureImage(*texture, width, height, rgba, rowBytes))
       return nullptr;
-   m_textures.insert(texture.get());
-   return texture.release();
+   sTexture *handle = texture.get();
+   m_textures.emplace(handle, std::move(texture));
+   return handle;
 }
 
 bool cVulkanSceneRenderer::UpdateTexture(void *handle, int width, int height,
@@ -997,15 +993,14 @@ void cVulkanSceneRenderer::DestroyTexture(void *handle) noexcept
       {
          auto &retiredTextures = m_deferredTextures[m_frameIndex];
          retiredTextures.reserve(retiredTextures.size() + 1);
+         retiredTextures.emplace_back(std::move(found->second));
          m_textures.erase(found);
-         retiredTextures.emplace_back(texture);
       }
       else
       {
          m_context->RaiiDevice().waitIdle();
+         DestroyTextureImage(*found->second);
          m_textures.erase(found);
-         DestroyTextureImage(*texture);
-         delete texture;
       }
    }
    catch (...)

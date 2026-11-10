@@ -42,7 +42,7 @@ endif()
 add_library(dark_engine_config INTERFACE)
 target_include_directories(dark_engine_config INTERFACE ${dark_include_dirs})
 target_compile_definitions(dark_engine_config INTERFACE
-  RGB_LIGHTING BIG_LIGHTMAPS SOFTWARE_RGB SCHEMA_LOADING
+  RGB_LIGHTING BIG_LIGHTMAPS SCHEMA_LOADING
   $<$<PLATFORM_ID:Linux>:_DEFAULT_SOURCE>
 )
 # A debuggable APK keeps native symbols without enabling the legacy DEBUG
