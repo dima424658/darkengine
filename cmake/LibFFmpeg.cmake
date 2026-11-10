@@ -70,7 +70,7 @@ if(ANDROID)
     "--nm=${CMAKE_NM}"
     "--strip=${CMAKE_STRIP}"
     "--sysroot=${CMAKE_SYSROOT}"
-    "--extra-cflags=--target=${dark_ffmpeg_compiler_target}"
+    "--extra-cflags=--target=${dark_ffmpeg_compiler_target} -fvisibility=hidden"
     "--extra-ldflags=--target=${dark_ffmpeg_compiler_target}")
 elseif(WIN32)
   list(APPEND dark_ffmpeg_configure_args --toolchain=msvc)
