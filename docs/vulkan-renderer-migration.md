@@ -218,6 +218,8 @@ hardware scene passes while rendering its viewports. `DarkRenderBegin/EndApplica
 is the outer frame boundary where one swapchain image is acquired, completed,
 and presented. `DarkRenderPresent` contributes the legacy software canvas to
 that final image.
+`lgd3d_overlays_master_switch` controls whether this canvas is composited for a
+frame, preserving the legacy inventory-model rendering behavior.
 
 ## Required behavior
 

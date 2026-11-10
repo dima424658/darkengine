@@ -42,6 +42,8 @@ void RenderBackendSetScaleToWindow(int enabled);
 void RenderBackendSetFitToViewport(int enabled);
 void RenderBackendSetPreserveCanvas(int enabled);
 int RenderBackendPreserveCanvas(void);
+void RenderBackendSetCanvasOverlayEnabled(int enabled);
+int RenderBackendCanvasOverlayEnabled(void);
 void RenderBackendSetWindowedClientSizeHint(int width, int height);
 // Returns the current client size in logical points. Use the window metrics
 // passed to the backend for the drawable size in physical pixels.

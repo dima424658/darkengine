@@ -331,7 +331,8 @@ bool cVulkanRuntime::PrepareCanvasTexture()
 void cVulkanRuntime::DrawCanvas(vk::CommandBuffer commandBuffer, bool transparent)
 {
    const uint32_t slot = m_context.FrameIndex();
-   if (slot >= m_canvasTextures.size() || !m_canvasTextures[slot] ||
+   if (!RenderBackendVulkanCanvasOverlayEnabled() ||
+       slot >= m_canvasTextures.size() || !m_canvasTextures[slot] ||
        !m_canvasWidth || !m_canvasHeight) return;
    m_renderer.SetDepth(false, false);
    m_renderer.SetBlend(kRenderBackendBlendAlpha);

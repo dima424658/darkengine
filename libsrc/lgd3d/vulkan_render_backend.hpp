@@ -9,6 +9,7 @@ void RenderBackendVulkanAttach(vk::CommandBuffer commandBuffer,
    int drawableWidth, int drawableHeight);
 void RenderBackendVulkanDetach(void);
 int RenderBackendVulkanSceneActive(void);
+int RenderBackendVulkanCanvasOverlayEnabled(void);
 void RenderBackendVulkanSetWindowMetrics(int clientWidth, int clientHeight,
    int drawableWidth, int drawableHeight);
 void RenderBackendVulkanGetViewport(int logicalWidth, int logicalHeight,
