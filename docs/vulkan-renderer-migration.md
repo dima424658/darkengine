@@ -119,9 +119,8 @@ missions. The `miss4` and `miss5` runs used the Khronos validation layer with
 synchronization validation enabled; neither log contained Vulkan validation
 messages. A further `miss12.mis` run opened the 800x600-point macOS window,
 captured a textured environment and HUD at 1600x1200 drawable pixels, and
-completed with synchronization validation enabled. Its verbose startup log
-was truncated, so this run adds visual coverage but does not establish a
-validation-clean result.
+completed with synchronization validation enabled. Its saved log contains no
+Vulkan validation errors, warnings, VUIDs, or synchronization reports.
 
 After the SDL providers were split into subsystem-specific CMake libraries,
 the Linux x86_64 build linked both executables, and the Windows MSVC Release
