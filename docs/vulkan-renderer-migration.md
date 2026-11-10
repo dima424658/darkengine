@@ -179,6 +179,13 @@ black side bars. Khronos synchronization validation emitted no messages during
 the capture. The original `redist/cam.cfg` and `INTRO.AVI` were restored after
 this temporary widescreen run.
 
+Legacy `game_hardware=0` settings selected the unsupported software renderer
+and produced corrupted world textures on macOS. Screen-mode parsing now ignores
+the obsolete hardware toggle, always selects Vulkan, and fails mode setup when
+no Vulkan device is available instead of falling back to software. A fresh
+`miss6.mis` capture with the unchanged legacy config rendered the environment
+and HUD correctly at 1280x960 drawable pixels.
+
 ## Goal
 
 Replace the OpenGL/OpenGL ES and D3D11 renderers with one Vulkan renderer that

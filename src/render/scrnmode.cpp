@@ -239,6 +239,12 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
     // Check validity
     AssertMsg((mode->valid_fields & kScrnModeAllValid) == kScrnModeAllValid,"ScrnSetModeRaw: Not all fields are valid");
 
+    if (lgd3d_enumerate_devices() <= 0)
+    {
+        Warning(("No Vulkan rendering device is available.\n"));
+        return FALSE;
+    }
+
     g_lgd3d = FALSE;
     RenderBackendTrace(
         "screen-mode requested=%dx%dx%d flags=0x%lx windowed=%d hardware=%d",
@@ -481,18 +487,6 @@ sScrnMode* ScrnModeGetConfig(sScrnMode* targ, const char* prefix)
       }
    }
 
-   // get separate 3d bit
-   sprintf(var,"%shardware",prefix);
-   if (config_get_int(var,&flag))
-   {
-      targ->valid_fields |= kScrnModeFlagsValid;
-
-      if (flag)
-         targ->flags |= kScrnMode2dDriver|kScrnMode3dDriver;
-      else
-         targ->flags &= ~(kScrnMode3dDriver);
-   }
-
    // The modern backend supports hardware rendering in either windowed or
    // fullscreen presentation. Preserve the separately selected display mode.
    if (fullScreenSetting == 0)
@@ -528,8 +522,6 @@ void ScrnModeSetConfig(const sScrnMode* src, const char* prefix)
       config_set_int(var,src->flags);
       sprintf(var,"%sfull_screen",prefix);
       config_set_int(var,(src->flags & kScrnModeFullScreen)!= 0);
-      sprintf(var,"%shardware",prefix);
-      config_set_int(var,(src->flags & kScrnMode3dDriver)!= 0);
    }
 }
 
@@ -537,18 +529,11 @@ void ScrnModeSetConfig(const sScrnMode* src, const char* prefix)
 void ScrnModeValidate(sScrnMode* targ)
 {
 
-   // strip 3d driver if you have none
-   if (VALID(targ,Flags) && (targ->flags & kScrnMode3dDriver))
+   // Vulkan is the only renderer. Old configuration files may still request
+   // software rendering, so normalize every screen mode to the Vulkan path.
+   if (VALID(targ,Flags))
    {
-      if (config_is_defined("disallow_hardware") || lgd3d_enumerate_devices() == 0)
-         targ->flags &= ~kScrnMode3dDriver;
-   }
-
-   // The legacy canvas remains 16-bit, while the modern backend works in
-   // both windowed and fullscreen presentation modes.
-   if (VALID(targ,Flags) && (targ->flags & kScrnMode3dDriver))
-   {
-      targ->flags |= kScrnMode2dDriver;
+      targ->flags |= kScrnMode2dDriver | kScrnMode3dDriver;
       if (VALID(targ,BitDepth))
       {
          if (targ->bitdepth < MIN_3D_BITDEPTH)

@@ -596,11 +596,6 @@ tResult LGAPI CoreEngineAppInit()
    RegisterDisplayModes();
 
 #ifdef THIEF2_GAME
-   // Prefer hardware rendering for new runner configurations while retaining
-   // an explicit user override.
-   if (!config_is_defined("game_hardware"))
-      config_set_int("game_hardware", 1);
-
    // Use the current display size for the gameplay canvas when the user has
    // not configured a fit preference. Menus keep their fixed logical size
    // and are aspect-fitted by the presentation backend.
