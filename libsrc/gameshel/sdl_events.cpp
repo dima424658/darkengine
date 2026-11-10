@@ -76,7 +76,11 @@ public:
             m_quit = true;
             stop = true;
          }
+         else if (event.type == SDL_EVENT_WILL_ENTER_BACKGROUND ||
+                  event.type == SDL_EVENT_DID_ENTER_BACKGROUND)
+            stop = true;
          else if (event.type == SDL_EVENT_KEY_DOWN ||
+                  event.type == SDL_EVENT_FINGER_DOWN ||
                   event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                   event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN)
             stop = true;

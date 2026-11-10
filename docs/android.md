@@ -13,22 +13,25 @@ is not an Android target.
   fan-mission sounds.
 - A folder picker that can use retail TDP, Gold, or Thief 2 files directly or
   import a performance copy into the app-specific `game` directory.
-- Retail movie playback through the packaged LibVLC backend.
+- Retail movie playback through the statically linked FFmpeg backend.
 
-The SDL3 Android AAR, Vulkan-Headers, Squirrel, OpenAL Soft, libpng, libogg,
-and libvorbis are downloaded from their official releases during Gradle
-configuration/build and verified against pinned SHA-256 digests. They are
-stored only under the ignored `android/build/android-deps` directory. Gradle
-compiles the Vulkan shaders with `glslc` and packages them as app assets.
+The SDL3 Android AAR, Vulkan-Headers, and OpenAL Soft are downloaded from their
+official releases during Gradle configuration/build and verified against pinned
+SHA-256 digests. They are stored only under the ignored
+`android/build/android-deps` directory. libpng, Squirrel 3.2, libogg 1.3.6,
+libvorbis 1.3.7, and FFmpeg are built statically from their source submodules.
+Gradle compiles the Vulkan shaders with `glslc` and packages them as app assets.
 Install the Vulkan SDK and make `glslc` available on `PATH` or set
-`VULKAN_SDK`. The APK obtains LibVLC 3.6.5 from Maven Central through the normal
-Gradle dependency resolution process.
+`VULKAN_SDK`. CMake builds Squirrel, libogg, libvorbis, and FFmpeg for the
+Android ABI from their source submodules.
 
 ## Toolchain
 
 Install JDK 17 or later, Android SDK platform 36, SDK build tools 36, CMake
 3.31.6, and NDK 30.0.16248370. The project intentionally pins these versions
-so Windows and Linux produce the same native configuration.
+so Windows and Linux produce the same native configuration. FFmpeg's source
+build also needs GNU Make and Bash; Windows builds need MSYS2's Make and Bash
+available to CMake.
 
 From PowerShell:
 

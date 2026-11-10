@@ -9,7 +9,7 @@
 #include <dds.h>
 #include <gif.h>
 #include <imagefmt.h>
-#include <png.h>
+#include "png.h"
 #include <pcx.h>
 #include <psd.h>
 #include <tga.h>

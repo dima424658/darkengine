@@ -1,4 +1,4 @@
-#include <png.h>
+#include "png.h"
 
 #include <allocapi.h>
 #include <bitmap.h>
@@ -11,7 +11,7 @@
 #pragma pack(pop)
 #else
 #pragma pack(push, 8)
-#include <libpng16/png.h>
+#include <png.h>
 #pragma pack(pop)
 #endif
 

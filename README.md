@@ -76,7 +76,7 @@ repository.
 | DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Viewer/playtest port | Early viewer/playtest port | Not built |
 | Graphics | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan |
 | Audio | OpenAL | OpenAL | OpenAL framework | OpenAL Soft | OpenAL Soft/OpenSL |
-| Movies | FFmpeg | FFmpeg | FFmpeg | FFmpeg | Native Android player (LibVLC) |
+| Movies | FFmpeg | FFmpeg | FFmpeg | FFmpeg | FFmpeg |
 | Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
 | Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
 | Build system | CMake SDL3/Vulkan | CMake SDL3/Vulkan | CMake and Ninja | CMake and Ninja | Gradle, CMake, and Android NDK |
@@ -201,31 +201,30 @@ The runner currently provides:
 
 - 64-bit Windows 10 or Windows 11.
 - MSVC v143 x86/x64 build tools and a Windows 10 or 11 SDK.
-- CMake 3.21 or later, vcpkg, and the Vulkan SDK (including `glslc`).
+- CMake 3.21 or later, MSYS2 Bash and Make, and the Vulkan SDK (including
+  `glslc`).
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
 
-The SDL3/Vulkan Windows build uses the dependencies in `vcpkg.json`. Set
-`VCPKG_ROOT` to your vcpkg checkout, then configure and build either
-architecture from PowerShell:
+Initialize the pinned source dependencies and configure/build either
+architecture from a Visual Studio Developer PowerShell with MSYS2 tools on
+`PATH`:
 
 ```powershell
-$toolchain = "$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake"
-cmake --preset windows-x64 -DCMAKE_TOOLCHAIN_FILE="$toolchain"
+git submodule update --init --recursive
+cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 
-cmake --preset windows-x86 -DCMAKE_TOOLCHAIN_FILE="$toolchain"
+cmake --preset windows-x86
 cmake --build --preset windows-x86-release
 ```
 
-The vcpkg manifest installs SDL3 with Vulkan support, FFmpeg, libpng, and
-Squirrel. Install the Vulkan SDK separately; CMake uses its Vulkan package and
-`glslc` shader compiler. Without SDL3's `vulkan` feature, the engine cannot
-create a Vulkan window surface at runtime.
+SDL3, zlib, libpng, Squirrel, libogg, libvorbis, FFmpeg, and the PKWARE DCL
+decoder are built statically from pinned submodules. Install the Vulkan SDK
+separately; CMake uses its Vulkan package and `glslc` shader compiler.
 
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
-When SDL3 is shared, CMake copies `SDL3.dll` beside both executables and
-installs it under `bin`.
+SDL3 is linked statically into both executables.
 
 The executables are written under `build-win32/Release` or
 `build-win64/Release` as `thief-runner.exe` and `DromEd.exe`.
@@ -252,27 +251,29 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 #### Prerequisites
 
 - macOS with Xcode Command Line Tools, CMake 3.21 or later, and Ninja.
-- SDL3, the Vulkan SDK (including `glslc`), libpng, and FFmpeg development
-  packages; macOS supplies the OpenAL framework.
+- The Vulkan SDK (including `glslc`) and CMake submodules; macOS supplies the
+  OpenAL framework.
 - A retail TDP, Thief Gold, or Thief II installation.
 
 With Homebrew:
 
 ```sh
-brew install cmake ninja pkgconf sdl3 libpng ffmpeg squirrel-lang
+brew install cmake ninja
 ```
 
+Initialize source dependencies with `git submodule update --init --recursive`.
 Install the Vulkan SDK separately, including `glslc`.
 
 #### Build
 
 ```sh
+git submodule update --init --recursive
 cmake --preset macos
 cmake --build --preset macos-release -j "$(sysctl -n hw.ncpu)"
 ```
 
-The result is `build-macos/thief-runner`. The macOS target uses SDL3 and Vulkan;
-CMake finds the Homebrew Squirrel libraries and headers automatically.
+The result is `build-macos/thief-runner`. SDL3, zlib, libpng, Squirrel, libogg,
+libvorbis, FFmpeg, and blast are built statically from submodules.
 
 #### Running
 
@@ -289,35 +290,30 @@ cd "/path/to/Thief II"
 #### Prerequisites
 
 - A 64-bit Linux distribution, GCC, CMake 3.21 or later, and Ninja.
-- SDL3, the Vulkan SDK (including `glslc`), and libpng development packages.
-- A Squirrel development package that provides its headers and libraries.
-- OpenAL Soft and libsndfile at runtime. Both are loaded dynamically; libsndfile
-  enables Ogg Vorbis sounds used by many FMs.
-- FFmpeg development libraries (`libavformat`, `libavcodec`, `libavutil`,
-  `libswscale`, and `libswresample`) for movie playback.
+- The Vulkan SDK (including `glslc`) and the standard CMake build tools.
+- OpenAL Soft at runtime, loaded dynamically. Ogg Vorbis decoding is built
+  statically from the pinned submodules.
 - A retail TDP, Thief Gold, or Thief II installation.
 
 For Ubuntu/Debian:
 
 ```sh
 sudo apt update
-sudo apt install build-essential cmake ninja-build libsdl3-dev libvulkan-dev glslc \
-  libpng-dev libsquirrel-dev libopenal1 libsndfile1 libavformat-dev libavcodec-dev \
-  libavutil-dev libswscale-dev libswresample-dev
+sudo apt install build-essential cmake ninja-build libvulkan-dev glslc \
+  libopenal1
 ```
 
 #### Build
 
 ```sh
+git submodule update --init --recursive
 cmake --preset linux
 cmake --build --preset linux-release -j "$(nproc)"
 ```
 
-The result is `build-linux/thief-runner`. SDL3 and Vulkan are used for
-presentation and scene rendering. CMake finds Squirrel through pkg-config or
-the standard include and library paths. If your distribution does not package
-SDL3 or Squirrel, install them from another package manager or provide a source
-checkout with `-DDARK_SQUIRREL_SOURCE=/path/to/squirrel`.
+The result is `build-linux/thief-runner`.
+SDL3, zlib, libpng, Squirrel, libogg, libvorbis, and FFmpeg are built statically
+from those submodules.
 
 #### Running
 
@@ -357,24 +353,30 @@ the save location and fallback rules.
 - JDK 17 or later.
 - Android SDK platform and build tools 36.
 - Android SDK CMake 3.31.6 and NDK 30.0.16248370.
+- GNU Make and Bash on the host (`make` and `bash` are available with the
+  standard build tools on macOS/Linux; Windows hosts need MSYS2 tools).
 - Vulkan SDK with `glslc` available on `PATH` or through `VULKAN_SDK`.
 - An ARM64 device running Android 8.0 (API 26) or later and a retail game
   folder available to Android's system folder picker.
 
 #### Build
 
-Use the checked-in Gradle wrapper:
+Initialize the pinned source dependencies, then use the checked-in Gradle
+wrapper:
 
 ```powershell
+git submodule update --init --recursive
 Set-Location android
 .\gradlew.bat assembleDebug
 ```
 
-On a Linux host, run `cd android && ./gradlew assembleDebug`. Gradle downloads
-the SDL3 Android AAR, Vulkan-Headers, Squirrel 3.2, OpenAL Soft 1.25.2, libpng
-1.6.59, libogg 1.3.5, and libvorbis 1.3.7 from their official releases and
-verifies pinned SHA-256 digests. LibVLC 3.6.5 is resolved through Maven. The APK
-is written under `android/app/build/outputs/apk/debug`.
+On a Linux host, run `git submodule update --init --recursive` followed by
+`cd android && ./gradlew assembleDebug`. Gradle downloads
+the SDL3 Android AAR, Vulkan-Headers, and OpenAL Soft 1.25.2 from their official
+releases and verifies pinned SHA-256 digests. libpng, Squirrel 3.2, libogg
+1.3.6, libvorbis 1.3.7, and FFmpeg are built statically from source submodules.
+The APK is written under
+`android/app/build/outputs/apk/debug`.
 
 #### Running
 
@@ -659,8 +661,8 @@ The engine's gamma setting is applied in the SDL3/Vulkan scene shader using the
 legacy palette-correction power curve.
 
 The retail game writes `skip_intro` after the intro has played. Add
-`always_play_intro` to `cam.cfg` to show it on every launch. Desktop builds
-require FFmpeg development libraries for movie playback; Android uses LibVLC.
+`always_play_intro` to `cam.cfg` to show it on every launch. All platforms build
+FFmpeg statically from the pinned source submodule for movie playback.
 
 ## Controls
 
