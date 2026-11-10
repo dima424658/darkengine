@@ -2,8 +2,6 @@
 
 This repository restores the historical Dark Engine sources as a portable,
 working codebase for the Thief and Thief 2 games. It builds the ThiefRunner
-This repository restores the historical Dark Engine sources as a portable,
-working codebase for the Thief and Thief 2 games. It builds the ThiefRunner
 game executable on Windows, macOS, Linux, and Android, plus work-in-progress
 DromEd mission viewer and editor ports. The engine core is shared across
 platforms; operating-system, rendering, input, audio, movie, and filesystem
@@ -722,13 +720,14 @@ gamepad_look_invert_y 0
 gamepad_rumble 1
 ```
 
-`gamepad_backend` accepts `auto`, `xinput`, `legacy`, or `off` on Windows and
-`auto`, `sdl`, `legacy`, or `off` on Linux, while Android uses SDL. One
-configured controller owns gameplay input at a time; `gamepad_index` selects
-it, with automatic failover to another connected controller if it disconnects. The
-`gamepad_status` console command prints the selected backend and normalized
-state. DromEd editor input remains unchanged; gamepad input is currently enabled
-only in the game-runner target.
+`gamepad_backend` accepts `auto`, `sdl`, `legacy`, or `off` on every platform.
+`auto` and `sdl` select the SDL3 gamepad provider; `legacy` disables that
+provider so existing `joy1` and `joy_axis*` bindings can handle input; `off`
+disables gamepad support. One configured controller owns gameplay input at a
+time; `gamepad_index` selects it, with automatic failover to another connected
+controller if it disconnects. The `gamepad_status` console command prints the
+selected backend and normalized state. DromEd editor input remains unchanged;
+gamepad input is currently enabled only in the game-runner target.
 
 ## DromEd
 
