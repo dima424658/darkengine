@@ -32,21 +32,13 @@ dark_add_sdl_provider(dark_sdl_movie
 target_link_libraries(dark_sdl_movie PUBLIC ${DARK_SDL_TARGET})
 
 dark_add_sdl_provider(dark_sdl_script
-  unixsrc/script/scrptmod.cpp)
+  src/script/scrptmod.cpp)
 
 dark_add_sdl_provider(dark_sdl_timer
   libsrc/timer/timer.cpp)
 
-if(WIN32)
-  # POSIX diskfree includes unistd.h and statvfs and cannot be compiled by
-  # MSVC. Keep the SDL presentation and input providers shared with Windows.
-  dark_add_sdl_provider(dark_sdl_diskfree
-    winsrc/framewrk/diskfree.c
-  )
-else()
-  dark_add_sdl_provider(dark_sdl_diskfree
-    unixsrc/framewrk/diskfree.cpp)
-endif()
+dark_add_sdl_provider(dark_sdl_diskfree
+  src/framewrk/diskfree.cpp)
 
 add_library(dark_sdl_providers INTERFACE)
 target_link_libraries(dark_sdl_providers INTERFACE
@@ -71,7 +63,9 @@ if(TARGET dark_squirrel)
   target_compile_definitions(dark_sdl_script PRIVATE
     DARK_ENABLE_SQUIRREL=1)
 endif()
-if(NOT ANDROID)
+if(APPLE)
+  target_link_libraries(dark_sdl_movie PUBLIC dark_ffmpeg)
+elseif(NOT ANDROID)
   target_link_libraries(dark_sdl_movie PUBLIC PkgConfig::FFMPEG)
 endif()
 option(DARK_BUILD_THIEF2 "Compile the native SDL Thief 2 game sources" ON)
