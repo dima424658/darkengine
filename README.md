@@ -383,6 +383,61 @@ Configure with `-DDARK_ENABLE_TRACY=OFF` and rebuild to remove the client and
 compile profiling calls out. New C++ zones can use `ZoneScopedN("name")`
 from `<tracy/Tracy.hpp>`.
 
+### Debug builds
+
+Plain Debug builds are available on all desktop platforms:
+
+| Platform | Configure | Build |
+| --- | --- | --- |
+| macOS | `cmake --preset macos-debug` | `cmake --build --preset macos-debug -j 8` |
+| Linux | `cmake --preset linux-debug` | `cmake --build --preset linux-debug -j 8` |
+| Windows x64 | `cmake --preset windows-x64` | `cmake --build --preset windows-x64-debug` |
+| Windows x86 | `cmake --preset windows-x86` | `cmake --build --preset windows-x86-debug` |
+
+macOS and Linux use `build-macos-debug` and `build-linux-debug`. Visual Studio
+keeps Debug and Release configurations in the same Windows build directory.
+
+#### Sanitizers
+
+On macOS, build the game and DromEd with AddressSanitizer (ASan) and
+UndefinedBehaviorSanitizer (UBSan):
+
+```sh
+cmake --preset macos-sanitizers
+cmake --build --preset macos-sanitizers -j 8
+cd /path/to/retail/game
+/path/to/darkengine/build-macos-sanitizers/thief-runner
+```
+
+On Linux, use the `linux-sanitizers` configure and build presets; the output
+directory is `build-linux-sanitizers`. These Debug builds instrument engine
+code with debug symbols, frame pointers, and `-O1`. Source dependencies keep
+their normal compiler flags. These presets require Clang or GCC.
+
+For Windows x64 with MSVC AddressSanitizer:
+
+```powershell
+cmake --preset windows-x64-sanitizers
+cmake --build --preset windows-x64-sanitizers
+```
+
+This uses `build-win64-sanitizers` and requires the Visual Studio C++
+AddressSanitizer component. MSVC supports `address` in `DARK_SANITIZERS`;
+UBSan is available through the Clang/GCC presets.
+
+`DARK_SANITIZERS` accepts a semicolon-separated list: `address`, `undefined`,
+`thread`, or `leak`. For example, create a separate ThreadSanitizer build with:
+
+```sh
+cmake --preset macos-sanitizers -B build/tsan -DDARK_SANITIZERS=thread
+cmake --build build/tsan --target thief2 dromed -j 8
+```
+
+ThreadSanitizer cannot be combined with ASan or LeakSanitizer. Standalone
+LeakSanitizer is unavailable on macOS. Sanitizer reports go to the terminal;
+use `UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1` to stop on the first
+undefined behavior report with a stack trace.
+
 ### Vulkan screenshot capture
 
 The renderer does not read back swapchain images for screenshots. For
