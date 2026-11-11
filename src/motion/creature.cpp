@@ -523,7 +523,7 @@ void CreatureDebugSaveLoadTest()
    mp_write_multiped(mp,buf);
    mp_free_multiped(mp);
    mp_init_multiped(mp);
-   mp_read_multiped(mp,buf,MotSwizzle);
+   mp_read_multiped(mp,buf,bsize,MotSwizzle);
    delete[] buf;
 }
 
@@ -1571,11 +1571,14 @@ cCreature::cCreature(int type, ObjID objID, fCreatureReadWrite func, int version
       int bufsize;
 
       func((void *)&bufsize,sizeof(int),1);
-      int *buf=new int[bufsize];
+      uchar *buf=new uchar[bufsize];
 
       func((void *)buf,bufsize,1);
 
-      mp_read_multiped(&m_sMultiped,buf,MotSwizzle);
+      const int result = mp_read_multiped(&m_sMultiped,buf,bufsize,MotSwizzle);
+      if (result != MP_READ_OKAY)
+         Warning(("Cannot restore saved motion for creature %d (error %d)\n",
+                  m_ObjID, result));
 
       delete[] buf;
    }

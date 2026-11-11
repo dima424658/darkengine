@@ -42,6 +42,15 @@
 IRotDoorProperty   *g_pRotDoorProperty;
 ITransDoorProperty *g_pTransDoorProperty;
 
+namespace
+{
+template <typename T>
+BOOL WriteDoorField(IDataOpsFile *file, const T &field)
+{
+   return file->Write(&field, sizeof(field)) == sizeof(field);
+}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 sDoorProp *GetDoorProperty(int o_id)
@@ -172,6 +181,7 @@ public:
    STDMETHOD_(int,Version)();
    STDMETHOD_(int,ReadVersion)() { return 1002; };
    STDMETHOD(Read)(sDatum* dat, IDataOpsFile* file, int version);
+   STDMETHOD(Write)(sDatum dat, IDataOpsFile* file);
 };
 
 typedef cHashPropertyStore<cRotDoorOps> cRotDoorStore;
@@ -236,6 +246,34 @@ STDMETHODIMP cRotDoorOps::Read(sDatum* pdat, IDataOpsFile* file, int v)
    }
 
    return S_OK;
+}
+
+STDMETHODIMP cRotDoorOps::Write(sDatum dat, IDataOpsFile* file)
+{
+   const sRotDoorProp &door = *(const sRotDoorProp *)dat.value;
+   const BOOL written =
+      WriteDoorField(file, door.type) &&
+      WriteDoorField(file, door.closed) &&
+      WriteDoorField(file, door.open) &&
+      WriteDoorField(file, door.base_speed) &&
+      WriteDoorField(file, door.axis) &&
+      WriteDoorField(file, door.status) &&
+      WriteDoorField(file, door.hard_limits) &&
+      WriteDoorField(file, door.sound_blocking) &&
+      WriteDoorField(file, door.vision_blocking) &&
+      WriteDoorField(file, door.push_mass) &&
+      WriteDoorField(file, door.base_closed_location) &&
+      WriteDoorField(file, door.base_open_location) &&
+      WriteDoorField(file, door.base_location) &&
+      WriteDoorField(file, door.newdark_extension) &&
+      WriteDoorField(file, door.base_angle) &&
+      WriteDoorField(file, door.base) &&
+      WriteDoorField(file, door.room1) &&
+      WriteDoorField(file, door.room2) &&
+      WriteDoorField(file, door.clockwise) &&
+      WriteDoorField(file, door.base_closed_facing) &&
+      WriteDoorField(file, door.base_open_facing);
+   return written ? S_OK : E_FAIL;
 }
 
 ////////////////////////////////////////
@@ -459,6 +497,7 @@ public:
    STDMETHOD_(int,Version)();
    STDMETHOD_(int,ReadVersion)() { return 1001; };
    STDMETHOD(Read)(sDatum* dat, IDataOpsFile* file, int version);
+   STDMETHOD(Write)(sDatum dat, IDataOpsFile* file);
 };
 
 typedef cHashPropertyStore<cTransDoorOps> cTransDoorStore;
@@ -516,6 +555,31 @@ STDMETHODIMP cTransDoorOps::Read(sDatum* pdat, IDataOpsFile* file, int v)
    file->Read(&pTransDoorProp->room2, sizeof(int));
 
    return S_OK;
+}
+
+STDMETHODIMP cTransDoorOps::Write(sDatum dat, IDataOpsFile* file)
+{
+   const sTransDoorProp &door = *(const sTransDoorProp *)dat.value;
+   const BOOL written =
+      WriteDoorField(file, door.type) &&
+      WriteDoorField(file, door.closed) &&
+      WriteDoorField(file, door.open) &&
+      WriteDoorField(file, door.base_speed) &&
+      WriteDoorField(file, door.axis) &&
+      WriteDoorField(file, door.status) &&
+      WriteDoorField(file, door.hard_limits) &&
+      WriteDoorField(file, door.sound_blocking) &&
+      WriteDoorField(file, door.vision_blocking) &&
+      WriteDoorField(file, door.push_mass) &&
+      WriteDoorField(file, door.base_closed_location) &&
+      WriteDoorField(file, door.base_open_location) &&
+      WriteDoorField(file, door.base_location) &&
+      WriteDoorField(file, door.newdark_extension) &&
+      WriteDoorField(file, door.base_angle) &&
+      WriteDoorField(file, door.base) &&
+      WriteDoorField(file, door.room1) &&
+      WriteDoorField(file, door.room2);
+   return written ? S_OK : E_FAIL;
 }
 
 ////////////////////////////////////////
