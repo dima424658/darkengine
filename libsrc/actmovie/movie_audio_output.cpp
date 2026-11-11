@@ -125,6 +125,11 @@ void cMovieAudioOutput::Fill(ISndSample *sample, void *data, uint32 available)
 
 void cMovieAudioOutput::Close()
 {
+    // The refill callback uses this object's mutex and queue. Stop and join
+    // the mixer worker before unregistering the callback or destroying either.
+    if (mixer && mixerTimeoutChanged)
+        mixer->SetTimeout(~uint32{0});
+
     if (sample)
     {
         sample->RegisterFillCallback(nullptr, nullptr);
