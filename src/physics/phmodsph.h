@@ -16,7 +16,7 @@
 #include <physapi.h>
 #include <phmod.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -141,8 +141,7 @@ inline mxs_real cPhysSphereModel::GetSize() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__PHMODSPH_H */
 

@@ -3,9 +3,7 @@
 #include <platform_services.h>
 #include <platform_io.h>
 
-#pragma pack(push, 8)
 #include <SDL3/SDL.h>
-#pragma pack(pop)
 
 #include <stdio.h>
 #include <cstdio>

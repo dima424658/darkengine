@@ -1,4 +1,3 @@
-#pragma pack(push, 8)
 #define SDL_ENABLE_OLD_NAMES
 #include <SDL3/SDL.h>
 
@@ -24,7 +23,6 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 }
-#pragma pack(pop)
 
 #include <aggmemb.h>
 #include <movie_backend.h>
@@ -61,7 +59,6 @@ Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeMoviePlaybackActive(
 }
 #endif
 
-#pragma pack(push, 8)
 class cSDLMoviePlayer final : public IMoviePlayer1
 {
 public:
@@ -330,4 +327,3 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     avformat_close_input(&format);
     return played;
 }
-#pragma pack(pop)

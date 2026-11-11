@@ -16,7 +16,7 @@
 #include <aitype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -73,7 +73,6 @@ DECLARE_INTERFACE_(IAIInform, IUnknown)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIAPIINF_H */

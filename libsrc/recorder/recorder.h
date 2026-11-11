@@ -16,7 +16,7 @@
 #include <dynarray.h>
 #include <hashset.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -134,8 +134,7 @@ class cRecorder : public IRecorder
     const char *        m_pszLastStreamItem;
     size_t              m_sizeLastItem;
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 ///////////////////////////////////////////////////////////////////////////////
 

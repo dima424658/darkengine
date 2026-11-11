@@ -2,18 +2,15 @@
 #include <tmftab.h>
 #include <platform_services.h>
 
-#pragma pack(push, 8)
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
 #include <mutex>
 #include <thread>
-#pragma pack(pop)
 
 namespace
 {
-#pragma pack(push, 8)
 struct TimerProcess
 {
     pfv callback = nullptr;
@@ -23,7 +20,6 @@ struct TimerProcess
 };
 static_assert(alignof(TimerProcess) >= alignof(std::thread),
     "timer worker storage must retain native thread alignment");
-#pragma pack(pop)
 
 std::array<TimerProcess, 16> g_processes;
 std::mutex g_mutex;

@@ -17,7 +17,7 @@
 #include <aicbrmod.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -53,8 +53,7 @@ inline const char* cAIRangedBackup::GetName(void) const {return "Backup";}
 inline int cAIRangedBackup::GetPriority(void) {return kAIRC_PriNormal;}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRBKP_H */
 

@@ -20,7 +20,7 @@
 #include <iobjsys.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(ITagFile);
 F_DECLARE_INTERFACE(IAvatar);
@@ -44,7 +44,6 @@ DECLARE_INTERFACE_(IAvatar, IUnknown)
    // this just needs to write this avatar out.
    STDMETHOD_(void, WriteTagInfo) (THIS_ ITagFile *file) PURE;
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif // !__IAVATAR_H

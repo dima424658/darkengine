@@ -16,7 +16,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -121,8 +121,7 @@ DECLARE_PROPERTY_INTERFACE(IAICameraProperty)
    DECLARE_PROPERTY_PURE();
    DECLARE_PROPERTY_ACCESSORS(sAICameraParams *);
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIDEVPR_H */
 

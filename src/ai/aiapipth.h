@@ -23,7 +23,7 @@
 #include <aipthtyp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(IAIPathfinder);
 F_DECLARE_INTERFACE(IAIPathfindControl);
@@ -172,7 +172,6 @@ DECLARE_INTERFACE_(IAIPath, IUnknown)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIAPIPTH_H */

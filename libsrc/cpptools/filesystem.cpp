@@ -4,7 +4,6 @@
 #include <platform_services.h>
 #include <str.h>
 
-#pragma pack(push, 8)
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -14,7 +13,6 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
-#pragma pack(pop)
 
 namespace fs = std::filesystem;
 

@@ -16,7 +16,7 @@
 #include <aicbrmod.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -56,8 +56,7 @@ inline eAIRangedModeID cAIRangedFlee::GetModeID(void) const {return kAIRC_FleeMo
 inline const char* cAIRangedFlee::GetName(void) const {return "Flee";}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRFLE_H */
 

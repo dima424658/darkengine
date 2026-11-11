@@ -15,7 +15,7 @@
 #include <aicbrbkp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -39,8 +39,7 @@ inline cAIShockRangedBackup::cAIShockRangedBackup(cAINewRangedSubcombat* pOwner)
 inline const char* cAIShockRangedBackup::GetName(void) const {return "Shock Backup";}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAICRB_H */
 

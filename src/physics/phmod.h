@@ -47,7 +47,7 @@
 #include <phdyn.h>
 #include <phctrl.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -1743,7 +1743,6 @@ inline void cPhysModel::ClearTransLimits()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__PHMOD_H */

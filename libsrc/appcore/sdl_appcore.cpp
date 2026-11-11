@@ -1,4 +1,3 @@
-#pragma pack(push, 8)
 #include <SDL3/SDL.h>
 #include <cstdio>
 #include <cstdlib>
@@ -6,7 +5,6 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#pragma pack(pop)
 
 #include <aggmemb.h>
 #include <appagg.h>
@@ -14,7 +12,6 @@
 #include <platform_services.h>
 #include "../lgd3d/runtime.h"
 
-#pragma pack(push, 8)
 class cSDLApplication : public IApplication
 {
    DECLARE_SIMPLE_AGGREGATION(cSDLApplication);
@@ -99,7 +96,6 @@ private:
 static_assert(alignof(cSDLApplication) >= alignof(std::string),
    "SDL application storage must retain native string alignment");
 IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cSDLApplication);
-#pragma pack(pop)
 
 extern "C" tResult LGAPI _GenericApplicationCreate(REFIID, IApplication **,
    IUnknown *outer, int argumentCount, const char *arguments[],

@@ -26,7 +26,7 @@
 #pragma warning 549 9
 #endif
 
-#pragma pack(4)
+#pragma pack(push, 4)
 #pragma once
 
 typedef int (*tVoidCompareFunc)(const void * pLeft, const void * pRight);
@@ -875,8 +875,7 @@ inline void DYNARRAY_BASE::AppendMemCpy(const T * p, unsigned nItems)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 #if defined(__WATCOMC__)
 #endif
 

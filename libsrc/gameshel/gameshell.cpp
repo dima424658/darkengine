@@ -11,7 +11,6 @@
 #include "../lgd3d/runtime.h"
 #include "sdl_events.h"
 
-#pragma pack(push, 8)
 bool DarkPumpEvents(void)
 {
    return DarkPumpSDLEvents();
@@ -144,7 +143,6 @@ static_assert(alignof(cSDLGameShell) >=
    alignof(std::chrono::steady_clock::time_point),
    "SDL game shell must retain native clock alignment");
 IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cSDLGameShell);
-#pragma pack(pop)
 
 extern "C" tResult LGAPI _GameShellCreate(REFIID, IGameShell **, IUnknown *outer, int flags, int)
 {

@@ -23,7 +23,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 typedef cFixedStack<tAIPathCellID, 16> cAICellStack;
 
@@ -612,7 +612,6 @@ inline ObjID cAI::GetID()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AI_H */

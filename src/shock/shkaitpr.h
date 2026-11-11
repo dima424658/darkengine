@@ -16,7 +16,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -59,8 +59,7 @@ DECLARE_PROPERTY_INTERFACE(IAITurretProperty)
    DECLARE_PROPERTY_PURE();
    DECLARE_PROPERTY_ACCESSORS(sAITurretParams *);
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAITPR_H */
 

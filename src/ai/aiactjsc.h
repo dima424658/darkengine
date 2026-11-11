@@ -17,7 +17,7 @@
 #include <schtype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -93,8 +93,7 @@ inline cAIJointScanAction::cAIJointScanAction(IAIActor * pOwner, DWORD data)
    m_schemaHandle(SCH_HANDLE_NULL)
 {
 }
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTJSC_H */
 

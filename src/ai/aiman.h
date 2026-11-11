@@ -30,7 +30,7 @@
 #include <phlistyp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cAIBehaviorSets;
 class cAIManager;
@@ -404,7 +404,6 @@ inline const cAIArray & cAIManager::AccessAIs() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIMAN_H */

@@ -11,7 +11,7 @@
 #include <dpcaisbs.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -32,6 +32,5 @@ protected:
    virtual void CreateCombatAbilities(cAIComponentPtrs * pComponents);
    virtual void CreateGenericAbilities(cAIComponentPtrs * pComponents);
 };
-
-#pragma pack()
+#pragma pack(pop)
 #endif /* !__DPCAIREB_H */

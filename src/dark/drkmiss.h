@@ -13,11 +13,17 @@
 // DARK MISSION STUFF
 //
 
+#pragma pack(push, 1)
 struct sMissionData
 {
    int num; // mission num 
    char path[9];  // path name 
 }; 
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(sMissionData) == 13, "sMissionData is stored as a 13-byte file variable");
+#endif
 
 typedef struct sMissionData sMissionData; 
 

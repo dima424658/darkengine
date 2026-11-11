@@ -18,7 +18,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(IAIPathfinder);
 F_DECLARE_INTERFACE(IAIPath);
@@ -300,7 +300,6 @@ inline const cMxsVector & cAILocoAction::GetLogicalDest() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTLOC_H */

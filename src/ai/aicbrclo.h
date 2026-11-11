@@ -17,7 +17,7 @@
 #include <aicbrmod.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -60,8 +60,7 @@ inline const char* cAIRangedClose::GetName(void) const {return "Close";}
 inline int cAIRangedClose::GetPriority(void) {return kAIRC_PriLow;}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRCLO_H */
 

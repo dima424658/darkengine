@@ -19,7 +19,7 @@
 #include <aipthedg.h>
 #include <aipthtyp.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,8 +125,7 @@ inline const cAIPathEdge * cAIPath::GetNextPathEdge() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPATH_H */
 

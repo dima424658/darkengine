@@ -3,13 +3,11 @@
 #include <osm_emu/osm32env.h>
 #include <osm_emu/osm32imports.h>
 
-#pragma pack(push, 8)
 #include <chrono>
 #include <cmath>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#pragma pack(pop)
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 namespace
 {

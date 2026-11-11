@@ -1,13 +1,11 @@
 #include <lgsound.h>
 
-#pragma pack(push, 8)
 #if defined(_WIN32)
 #include <string.h>
 #define strcasecmp _stricmp
 #else
 #include <strings.h>
 #endif
-#pragma pack(pop)
 
 extern BOOL SndCreateOpenALMixer(ISndMixer **mixer, IUnknown *outer);
 

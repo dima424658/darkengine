@@ -6,10 +6,8 @@
 #include <osm_emu/osm32mod.h>
 #include <squirrel/squirrelhost.h>
 
-#pragma pack(push, 8)
 #include <stdlib.h>
 #include <string>
-#pragma pack(pop)
 
 BOOL cScriptMan::LoadModule(const cFileSpec &module, sScrModuleInfo *info)
 {

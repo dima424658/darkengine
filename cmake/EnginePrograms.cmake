@@ -1,7 +1,7 @@
 # SDL3/Vulkan runner and DromEd executable targets.
 function(dark_add_sdl_provider target)
   add_library(${target} STATIC ${ARGN})
-  target_link_libraries(${target} PUBLIC dark_engine_packed)
+  target_link_libraries(${target} PUBLIC dark_engine_config)
 endfunction()
 
 dark_add_sdl_provider(dark_sdl_appcore
@@ -140,7 +140,7 @@ if(DARK_BUILD_THIEF2)
   )
 
   add_library(dark_game_core OBJECT ${dark_game_sources})
-  target_link_libraries(dark_game_core PRIVATE dark_engine_packed)
+  target_link_libraries(dark_game_core PRIVATE dark_engine_config)
   target_compile_definitions(dark_game_core PRIVATE
     PLAYTEST NEW_NETWORK_ENABLED THIEF THIEF2_GAME STRICT=1
   )
@@ -172,16 +172,6 @@ if(DARK_BUILD_THIEF2)
       $<TARGET_OBJECTS:dark_game_core>
     )
   endif()
-  # SDL and C++ standard-library headers require their native ABI packing.
-  # Keep the legacy engine's byte packing out of this process entry point.
-  if(MSVC)
-    set(dark_entry_pack_option "/Zp8")
-  else()
-    set(dark_entry_pack_option "-fno-pack-struct")
-  endif()
-  set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
-    PROPERTIES COMPILE_OPTIONS "${dark_entry_pack_option}")
   set(dark_runner_libraries
     ${dark_engine_targets}
     dark_platform
@@ -197,7 +187,7 @@ if(DARK_BUILD_THIEF2)
 
   if(DARK_BUILD_DROMED)
     add_library(dark_dromed_core OBJECT ${dark_dromed_sources})
-    target_link_libraries(dark_dromed_core PRIVATE dark_engine_packed
+    target_link_libraries(dark_dromed_core PRIVATE dark_engine_config
       ${DARK_SDL_TARGET})
     target_compile_definitions(dark_dromed_core PRIVATE
       EDITOR REPORT PLAYTEST NEW_NETWORK_ENABLED THIEF STRICT=1 PROPERTY_BLAME
@@ -214,9 +204,6 @@ if(DARK_BUILD_THIEF2)
       )
     endif()
     if(APPLE)
-      set_source_files_properties(
-        "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/editor/editor_macos.mm"
-        PROPERTIES COMPILE_OPTIONS "-fpack-struct=0")
       target_link_libraries(dark_dromed_core PRIVATE "-framework AppKit")
     endif()
     target_include_directories(dark_dromed_core BEFORE PRIVATE
@@ -233,9 +220,6 @@ if(DARK_BUILD_THIEF2)
       "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
       $<TARGET_OBJECTS:dark_dromed_core>
     )
-    set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/unixsrc/entry/main.cpp"
-      PROPERTIES COMPILE_OPTIONS "${dark_entry_pack_option}")
     if(APPLE)
       target_link_libraries(dromed PRIVATE dark_engine_config
         ${dark_runner_libraries} ${dark_runner_libraries} m "-framework AppKit")

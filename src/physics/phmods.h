@@ -21,7 +21,7 @@
 #include <phmod.h>
 #include <cfgdbg.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 // alignment on this sucks, I know
 struct sDeferredVelocity
@@ -351,7 +351,6 @@ inline void cPhysModels::DecNum(cPhysModel *pModel)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__PHMODS_H */

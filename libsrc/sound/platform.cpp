@@ -1,11 +1,9 @@
-#pragma pack(push, 8)
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
-#pragma pack(pop)
 
 #include <sndplatform.h>
 

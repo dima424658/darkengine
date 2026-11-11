@@ -20,7 +20,7 @@
 #include <aipthtyp.h>
 #include <darklimit.h>
 
-#pragma pack(1)
+#pragma pack(push, 1)
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -253,7 +253,6 @@ struct sAIPathCellLink // 16 bytes
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPTHBAS_H */

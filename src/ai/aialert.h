@@ -15,7 +15,7 @@
 #include <aitype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 
 
@@ -83,7 +83,6 @@ struct sAIAlertCap
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIALERT_H */

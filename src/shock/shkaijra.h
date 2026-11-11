@@ -16,7 +16,7 @@
 #include <aibasact.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -54,8 +54,7 @@ inline cAIJointRotateAction::cAIJointRotateAction(IAIAbility * pOwner, DWORD dat
    m_targetID(OBJ_NULL)
 {
 }
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIJRA_H */
 

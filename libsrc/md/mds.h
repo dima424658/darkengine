@@ -42,6 +42,8 @@ typedef struct mds_sphere {
    float rad;
 } mds_sphere;
 
+#pragma pack(push, 1)
+
 // Model header, the big guy
 typedef struct mds_model {
    char        id[4];   // name of model "LGMD"
@@ -134,6 +136,16 @@ typedef struct mds_mat {
       ulong ipal; // inverse pal lookup
    };
 } mds_mat;        // material info
+
+#ifdef __cplusplus
+static_assert(sizeof(mds_model) == 132,
+              "MD model header must match the packed model file layout");
+static_assert(sizeof(mds_mat) == 26,
+              "MD material records must match the packed model file layout");
+#else
+typedef char sMdsModelSizeCheck[sizeof(mds_model) == 132 ? 1 : -1];
+typedef char sMdsMatSizeCheck[sizeof(mds_mat) == 26 ? 1 : -1];
+#endif
 
 // Which features are used by the model as a whole, these get or'd
 // in mat_flags
@@ -302,6 +314,28 @@ typedef struct mds_node_subobj {
    mde_node type;
    ushort   index;	// which subobj we are starting, this is followed by the next node
 } mds_node_subobj;
+
+#ifdef __cplusplus
+static_assert(sizeof(mds_subobj) == 93 && sizeof(mds_amat) == 16 &&
+              sizeof(mds_uv) == 8 && sizeof(mds_vhot) == 16 &&
+              sizeof(mds_light) == 8,
+              "MD records must match the packed model file layout");
+static_assert(sizeof(mds_pgon) == 12 && sizeof(mds_pgon_aux) == 1 &&
+              sizeof(mds_node_raw) == 19 && sizeof(mds_node_split) == 31 &&
+              sizeof(mds_node_call) == 23 && sizeof(mds_node_vcall) == 19 &&
+              sizeof(mds_node_subobj) == 3,
+              "MD polygon and node records must match the packed model file layout");
+#else
+typedef char sMdsRecordSizeCheck[
+   sizeof(mds_subobj) == 93 && sizeof(mds_amat) == 16 &&
+   sizeof(mds_uv) == 8 && sizeof(mds_vhot) == 16 &&
+   sizeof(mds_light) == 8 && sizeof(mds_pgon) == 12 &&
+   sizeof(mds_pgon_aux) == 1 && sizeof(mds_node_raw) == 19 &&
+   sizeof(mds_node_split) == 31 && sizeof(mds_node_call) == 23 &&
+   sizeof(mds_node_vcall) == 19 && sizeof(mds_node_subobj) == 3 ? 1 : -1];
+#endif
+
+#pragma pack(pop)
 
 typedef struct mds_segment_hit_detect_info {
    mxs_vector *a, *b;         // fill in before calling md_segment_hit_detect()

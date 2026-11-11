@@ -16,7 +16,7 @@
 #include <phmod.h>
 #include <phcontct.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -242,9 +242,7 @@ inline mxs_real cPhysOBBModel::GetPoreSize() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* defined(_MSC_VER) */
 

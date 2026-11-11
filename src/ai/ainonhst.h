@@ -13,7 +13,7 @@
 #define __AINONHST_H
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -38,7 +38,6 @@ enum eAINonHostilityEnum
 typedef unsigned eAINonHostility;
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AINONHST_H */

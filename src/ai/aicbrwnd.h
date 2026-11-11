@@ -17,7 +17,7 @@
 #include <aicbrmod.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -45,8 +45,7 @@ inline const char* cAIRangedWound::GetName(void) const {return "Wound";}
 inline int cAIRangedWound::GetPriority(void) {return kAIRC_PriHigh;}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRWND_H */
 

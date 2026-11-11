@@ -13,7 +13,7 @@
 #define __AICBRLCT_H
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -26,8 +26,7 @@ struct sAIRangedLocation;
 class cAIRangedLocation;
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRLCT_H */
 

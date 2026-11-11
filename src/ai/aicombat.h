@@ -18,7 +18,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cAISubCombat;
 
@@ -134,6 +134,5 @@ inline void cAICombat::SetPlayedReactCharge()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 #endif /* !__AICOMBAT_H */

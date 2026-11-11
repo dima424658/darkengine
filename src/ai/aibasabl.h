@@ -17,7 +17,7 @@
 #include <aictlsig.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cAIPath;
 
@@ -190,7 +190,6 @@ inline BOOL cAIAbility::IsRelevant(IAIAction * pPrevious, IAIAction * pAction) c
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIBASABL_H */

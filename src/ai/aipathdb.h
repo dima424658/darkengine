@@ -18,7 +18,7 @@
 
 #include <dbmem.h>
 
-#pragma pack(1)
+#pragma pack(push, 1)
 #pragma once
 
 #define HUGE_Z    ((float)5.10)
@@ -557,8 +557,7 @@ inline void cAIPathDB::SetZoneOkBits(eAIPathZoneType ZoneType, tAIPathZone zone1
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #include <undbmem.h>
 
