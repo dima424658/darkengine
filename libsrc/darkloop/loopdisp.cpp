@@ -196,12 +196,8 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 		if (fLoopTrack)
 			LoopTrack(message, pszClient);
 
-		cAverageTimer* pTimer = nullptr;
 		if (fLoopTimeThisMsg)
-		{
-			pTimer = &reinterpret_cast<sClientInfo*>(targetList[idx]->pData)->timer;
-			pTimer->Start();
-		}
+			reinterpret_cast<sClientInfo*>(targetList[idx]->pData)->timer.Start();
 
 		eLoopMessageResult clientResult{};
 		if (m_ProfileSet & message)
@@ -210,7 +206,7 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 			clientResult = pClient->ReceiveMessage(message, hData);
 
 		if (fLoopTimeThisMsg)
-			pTimer->Stop();
+			reinterpret_cast<sClientInfo*>(targetList[idx]->pData)->timer.Stop();
 
 		if (fClientHeapchk)
 			PlatformHeapCheck();
