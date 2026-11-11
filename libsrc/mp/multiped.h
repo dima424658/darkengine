@@ -157,7 +157,7 @@ EXTERN BOOL mp_clone_multiped(multiped *dst, multiped *src);
 #define MP_READ_OKAY 1
 #define MP_READ_BAD_CONFIG 0
 #define MP_READ_BAD_MOTIONS -1
-EXTERN int mp_read_multiped(multiped *mp, void *buf, int (*swizzle_func)(int,motion_callback *pcallback));
+EXTERN int mp_read_multiped(multiped *mp, const void *buf, size_t size, int (*swizzle_func)(int,motion_callback *pcallback));
 
 // 
 // Return buffer size necessary to write a multiped
