@@ -68,6 +68,53 @@
       "displayName": "Windows x86",
       "architecture": "Win32",
       "binaryDir": "${sourceDir}/build-win32"
+    },
+    {
+      "name": "macos-sanitizers",
+      "inherits": "macos",
+      "displayName": "macOS Debug with ASan/UBSan",
+      "binaryDir": "${sourceDir}/build-macos-sanitizers",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DARK_SANITIZERS": "address;undefined"
+      }
+    },
+    {
+      "name": "linux-sanitizers",
+      "inherits": "linux",
+      "displayName": "Linux Debug with ASan/UBSan",
+      "binaryDir": "${sourceDir}/build-linux-sanitizers",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DARK_SANITIZERS": "address;undefined"
+      }
+    },
+    {
+      "name": "macos-debug",
+      "inherits": "macos",
+      "displayName": "macOS Debug",
+      "binaryDir": "${sourceDir}/build-macos-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "linux-debug",
+      "inherits": "linux",
+      "displayName": "Linux Debug",
+      "binaryDir": "${sourceDir}/build-linux-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "windows-x64-sanitizers",
+      "inherits": "windows-x64",
+      "displayName": "Windows x64 Debug with ASan",
+      "binaryDir": "${sourceDir}/build-win64-sanitizers",
+      "cacheVariables": {
+        "DARK_SANITIZERS": "address"
+      }
     }
   ],
   "buildPresets": [
@@ -95,6 +142,44 @@
       "displayName": "Windows x86 Release",
       "configurePreset": "windows-x86",
       "configuration": "Release",
+      "targets": ["thief2", "dromed"]
+    },
+    {
+      "name": "macos-sanitizers",
+      "configurePreset": "macos-sanitizers",
+      "targets": ["thief2", "dromed"]
+    },
+    {
+      "name": "linux-sanitizers",
+      "configurePreset": "linux-sanitizers",
+      "targets": ["thief2", "dromed"]
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos-debug",
+      "targets": ["thief2", "dromed"]
+    },
+    {
+      "name": "linux-debug",
+      "configurePreset": "linux-debug",
+      "targets": ["thief2", "dromed"]
+    },
+    {
+      "name": "windows-x64-debug",
+      "configurePreset": "windows-x64",
+      "targets": ["thief2", "dromed"],
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-x86-debug",
+      "configurePreset": "windows-x86",
+      "targets": ["thief2", "dromed"],
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-x64-sanitizers",
+      "configurePreset": "windows-x64-sanitizers",
+      "configuration": "Debug",
       "targets": ["thief2", "dromed"]
     }
   ]
