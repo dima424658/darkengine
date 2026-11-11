@@ -68,7 +68,8 @@ typedef fix fix16;
 typedef ushort fixang;
 
 /* makes a fixed point number with integral part a and fractional part b. */
-#define fix_make(a,b) ((fix) ((((sint32)(a))<<16)|(b)) )
+#define fix_make_pos(a,b) ((fix) ((((sint32)(a))<<16)|(b)) )
+#define fix_make(a,b) (((a) < 0) ? (-fix_make_pos(-(a), (b))) : (fix_make_pos((a), (b))))
 
 #define FIX_UNIT fix_make(1,0)
 
