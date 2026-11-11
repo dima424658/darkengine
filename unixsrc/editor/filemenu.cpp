@@ -1,6 +1,4 @@
-#pragma pack(push, 8)
 #include <SDL3/SDL.h>
-#pragma pack(pop)
 
 #include <lg.h>
 #include <dbfile.h>

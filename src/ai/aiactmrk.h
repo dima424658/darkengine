@@ -22,7 +22,7 @@
 F_DECLARE_INTERFACE(IIntProperty);
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -96,8 +96,7 @@ inline cAIMoveToMarkerAction::cAIMoveToMarkerAction(IAIActor * pOwner, DWORD dat
    m_speed(kAIS_Stopped)
 {
 }
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTMRK */
 

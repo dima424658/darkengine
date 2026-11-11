@@ -17,7 +17,7 @@
 
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -154,8 +154,7 @@ inline int cAILaunchAction::GetLaunchCount() const
 {
    return m_launchCount;
 }
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTLCH */
 

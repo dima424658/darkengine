@@ -24,7 +24,7 @@
 #include <aitype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(ITagFile);
 F_DECLARE_INTERFACE(IAIAbility);
@@ -379,7 +379,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIGOAL_H */

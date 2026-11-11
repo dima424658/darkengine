@@ -69,17 +69,6 @@ else()
   )
 endif()
 
-# Legacy engine records use byte packing, but native platform and library
-# headers must retain their host ABI. Keep packing out of the shared config
-# so providers can safely include SDL3, Vulkan, and the C++ standard library.
-add_library(dark_engine_packed INTERFACE)
-target_link_libraries(dark_engine_packed INTERFACE dark_engine_config)
-if(MSVC)
-  target_compile_options(dark_engine_packed INTERFACE /Zp1)
-else()
-  target_compile_options(dark_engine_packed INTERFACE -fpack-struct=1)
-endif()
-
 set(dark_library_projects
   appcore compapis comtools config cpptools darkloop dev2d dispdev
   dstruct dump fix font g2 gadget gfile inputbnd lg lgalloc lgd3d matrix md
@@ -105,12 +94,12 @@ foreach(library IN LISTS dark_library_projects)
     target_include_directories("dark_${library}" BEFORE PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/${library}"
     )
-    target_link_libraries("dark_${library}" PUBLIC dark_engine_packed)
+    target_link_libraries("dark_${library}" PUBLIC dark_engine_config)
   endif()
 endforeach()
 
-# Compile the Vulkan implementation with the native ABI settings, then fold
-# its objects into lgd3d, whose legacy sources require byte-packed records.
+# Compile Vulkan code with the engine's normal ABI, then fold its objects into
+# lgd3d.
 add_library(dark_lgd3d_vulkan OBJECT ${dark_lgd3d_vulkan_sources})
 target_link_libraries(dark_lgd3d_vulkan PRIVATE dark_engine_config)
 target_link_libraries(dark_lgd3d_vulkan PRIVATE Vulkan::Vulkan ${DARK_SDL_TARGET})

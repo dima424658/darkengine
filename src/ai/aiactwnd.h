@@ -16,7 +16,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 #define kAIWA_InfiniteDur INT_MAX
 
@@ -143,7 +143,6 @@ inline void cAIWanderAction::SetOddsPauseMotion(int pctChance)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTWND_H */

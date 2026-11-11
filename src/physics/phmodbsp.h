@@ -15,7 +15,7 @@
 
 #include <phmod.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -94,8 +94,7 @@ inline mxs_real cPhysBSPModel::GetSize() const
    CriticalMsg("cPhysBSPModel::GetSize: not yet implemented\n");
    return 0;
 }
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* defined(_MSC_VER) */
 

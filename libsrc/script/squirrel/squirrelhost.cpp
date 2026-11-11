@@ -73,7 +73,6 @@
 // The historical script project is compiled with /Zp1 for Dark's persisted
 // and COM-facing structures.  Squirrel's public value types contain native
 // pointers and must retain their normal alignment, especially on x64.
-#pragma pack(push, 8)
 
 #include <squirrel.h>
 #include <sqstdaux.h>
@@ -3729,7 +3728,6 @@ STDMETHODIMP cNativeSquirrelScript::ReceiveMessage(sScrMsg* message,
 
 } // namespace
 
-#pragma pack(pop)
 
 BOOL CreateSquirrelScriptModule(const char* moduleName,
                                 IScriptMan* scriptManager,

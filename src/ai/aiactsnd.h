@@ -16,7 +16,7 @@
 #include <aibasact.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -48,8 +48,7 @@ inline cAISoundAction::cAISoundAction(IAIActor * pOwner, DWORD data)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTSND_H */
 

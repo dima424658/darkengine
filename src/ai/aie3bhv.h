@@ -16,10 +16,8 @@
 #include <aibasabl.h>
 
 #pragma once
-#pragma pack(4)
-
-
-#pragma pack()
+#pragma pack(push, 4)
+#pragma pack(pop)
 #endif /* !__AIE3BHV_H */
 
 

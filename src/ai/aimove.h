@@ -21,7 +21,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class IMotionCoordinator;
 struct sAIMotionRequest;
@@ -201,7 +201,6 @@ protected:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIMOVE_H */

@@ -35,7 +35,7 @@
 
 #include <phystyp2.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -485,6 +485,6 @@ inline void cPhysDynData::MonoPrintVelocity() const
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__PHDYN_H */

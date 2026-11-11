@@ -20,6 +20,7 @@ struct sDirEndRecord
 
 static_assert(sizeof(sDirEndRecord) == 22, "Invalid sDirEndRecord size");
 
+#pragma pack(push, 1)
 struct sDirFileRecord
 {
 	uint32 Signature;
@@ -40,6 +41,7 @@ struct sDirFileRecord
 	uint32 ExternalAttributes;
 	uint32 HeaderOffset;
 };
+#pragma pack(pop)
 
 static_assert(sizeof(sDirFileRecord) == 46, "Invalid sDirFileRecord size");
 

@@ -14,7 +14,7 @@
 #include <aisubabl.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cAIMultiCombat;
 class cAISubcombat;
@@ -224,7 +224,6 @@ inline BOOL cAISubcombat::InControl()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIMULTCB_H */

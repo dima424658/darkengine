@@ -15,12 +15,21 @@
 // Links
 //
 
+#pragma pack(push, 1)
 struct sLink 
 {
    ObjID source; 
    ObjID dest;
    RelationID flavor;
 };
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(sLink) == 10,
+              "saved relation links use the legacy 10-byte layout");
+#else
+typedef char sLinkSizeCheck[sizeof(struct sLink) == 10 ? 1 : -1];
+#endif
 
 //
 // sLinkAndData

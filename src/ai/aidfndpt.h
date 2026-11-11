@@ -15,7 +15,7 @@
 #include <aitype.h>
 #include <aidist.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 #pragma once
 
 struct sAIDefendPoint;
@@ -108,7 +108,6 @@ struct sAIDefendPoint
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIDFNDPT_H */

@@ -1,6 +1,4 @@
-#pragma pack(push, 8)
 #include <SDL3/SDL.h>
-#pragma pack(pop)
 
 #include <algorithm>
 #include <cmath>
@@ -18,7 +16,6 @@ extern "C" void DarkInputMouse(short x, short y, uchar type, uchar buttons,
    char wheel);
 extern "C" void DarkInputMouseRelative(int x, int y, uchar buttons);
 
-#pragma pack(push, 8)
 namespace
 {
 class cSDLEventPump
@@ -375,4 +372,3 @@ bool DarkPumpMovieEvents()
 {
    return EventPump().PumpMovie();
 }
-#pragma pack(pop)

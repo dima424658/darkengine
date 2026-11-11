@@ -17,7 +17,7 @@
 #include <aicbrmod.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -45,8 +45,7 @@ inline const char* cAIRangedStepRight::GetName(void) const {return "Right";}
 inline int cAIRangedStepRight::GetPriority(void) {return kAIRC_PriNormal;}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRSTR_H */
 

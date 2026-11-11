@@ -18,7 +18,7 @@
 #include <shkaitpr.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 typedef int eAITurretState;
 enum eAITurretState_ {kAITurretInactive, kAITurretActive, kAITurretActivating, kAITurretDeactivating};
@@ -55,9 +55,6 @@ private:
    HRESULT DeactivateSuggestActions(cAIGoal * pGoal, const cAIActions & previous, cAIActions * pNew);
    HRESULT ActivateSuggestActions(cAIGoal * pGoal, const cAIActions & previous, cAIActions * pNew);
 };
-
-
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBTRNG_H */

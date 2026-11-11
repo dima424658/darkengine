@@ -17,7 +17,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 struct sAIPsdScrAct;
 struct sAIPsdScrActs;
@@ -69,7 +69,6 @@ inline BOOL cAITriggeredPScripted::IsTriggered() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AITRIG_H */

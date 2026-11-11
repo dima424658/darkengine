@@ -82,6 +82,7 @@ typedef enum {
 ////////////////////////////
 // actual ghost structures
 
+#pragma pack(push, 1)
 typedef struct {
    float      detail;      // detail "slider" - 0.0 means minimal, 2.0 means tons???? dumb!
    int        flags;       // global config flags
@@ -111,6 +112,18 @@ typedef struct {
    ObjID           rel_obj; // 4  - relative object, if we need one (could be 2bytes)
    int             time;    // 4  - local time at which this packet is "fresh"
 } sGhostPos;                // 42 bytes - ack
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(sGhostHeartbeat) == 34,
+              "ghost heartbeat is a 34-byte network packet");
+static_assert(sizeof(sGhostPos) == 42,
+              "ghost position is a 42-byte network record");
+#else
+typedef char sGhostHeartbeatSizeCheck[
+   sizeof(sGhostHeartbeat) == 34 ? 1 : -1];
+typedef char sGhostPosSizeCheck[sizeof(sGhostPos) == 42 ? 1 : -1];
+#endif
 
 //////////////////////////////
 // in case we need this for bandwidth reduction later

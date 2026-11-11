@@ -23,7 +23,7 @@
 #include <physcast.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -217,8 +217,7 @@ inline cAICombatNewRanged::cAICombatNewRanged()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRNEW_H */
 

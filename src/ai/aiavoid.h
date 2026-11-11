@@ -17,7 +17,7 @@
 #include <objtype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(IAIManager);
 
@@ -74,7 +74,6 @@ struct sAIObjectAvoidMark
 void AIGetAllObjMarkDB(cDynArray<sAIObjectAvoidMark> * pResult);
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIAVOID_H */

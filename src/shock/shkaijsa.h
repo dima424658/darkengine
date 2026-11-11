@@ -16,7 +16,7 @@
 #include <aibasact.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -59,8 +59,7 @@ inline cAIJointSlideAction::cAIJointSlideAction(IAIAbility * pOwner, DWORD data)
 inline float cAIJointSlideAction::GetTarget(void) const {return m_target;}
 
 ////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIJSA_H */
 

@@ -34,11 +34,9 @@
 #include <resapp.h>
 #include <scrptprp.h>
 
-#pragma pack(push, 8)
 #include <algorithm>
 #include <string>
 #include <vector>
-#pragma pack(pop)
 
 #include <ctype.h>
 #include <stdio.h>

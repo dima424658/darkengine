@@ -17,7 +17,7 @@
 #include <objtype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(IAIConverse);
 F_DECLARE_INTERFACE(IAIConversation);
@@ -104,7 +104,6 @@ DECLARE_INTERFACE_(IAIConversationManager, IUnknown)
 };
 
 /////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICNVAPI_H */

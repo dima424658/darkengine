@@ -10,7 +10,7 @@
 #include <stimtype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -68,7 +68,6 @@ inline void cAIBiteAction::Set(ObjID object, float biteDist, StimID stimID, tSti
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIBIT_H */

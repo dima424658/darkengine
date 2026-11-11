@@ -1,4 +1,3 @@
-#pragma pack(push, 8)
 #define SDL_ENABLE_OLD_NAMES
 #include <SDL3/SDL.h>
 
@@ -8,12 +7,10 @@
 #if defined(__ANDROID__)
 #include <jni.h>
 #endif
-#pragma pack(pop)
 
 #include <gamepad.h>
 #include <gamepad_backend.h>
 
-#pragma pack(push, 8)
 #if defined(__ANDROID__)
 extern "C" int DarkInputRelativeMouseActive(void);
 extern "C" void DarkInputKey(uchar scan, int down);
@@ -428,4 +425,3 @@ Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeTouchControlsVisible
       ? JNI_TRUE : JNI_FALSE;
 }
 #endif
-#pragma pack(pop)

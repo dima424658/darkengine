@@ -1,10 +1,8 @@
-#pragma pack(push, 8)
 #include <algorithm>
 #include <chrono>
 #include <deque>
 #include <mutex>
 #include <vector>
-#pragma pack(pop)
 
 #include <aggmemb.h>
 #include <appagg.h>
@@ -19,7 +17,6 @@
 
 #include "../dispdev/display_window.h"
 
-#pragma pack(push, 8)
 namespace {
 std::mutex g_mutex;
 std::deque<kbs_event> g_keys;
@@ -357,4 +354,3 @@ IMPLEMENT_AGGREGATION_SELF_DELETE(cUnixInputManager);
 
 extern "C" tResult LGAPI _InputManagerCreate(IUnknown *outer)
 { return new cUnixInputManager(outer) ? S_OK : E_FAIL; }
-#pragma pack(pop)

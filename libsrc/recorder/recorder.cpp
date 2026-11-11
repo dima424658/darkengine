@@ -171,7 +171,7 @@ const uint8 kRecTypeDesc     = 1;
 const uint8 kRecTypedData    = 2;
 const uint8 kRecRawData      = 3;
 
-#pragma pack(1)
+#pragma pack(push, 1)
 struct sRecBlockHeader
 {
     tRecBlockType blockType;
@@ -188,7 +188,7 @@ struct sRecBlockHeader
         uint8 rawSize;
     };
 };
-#pragma pack()
+#pragma pack(pop)
 
 ///////////////////////////////////////
 

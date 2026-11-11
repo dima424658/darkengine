@@ -1,14 +1,10 @@
 #ifdef _WIN32
-#pragma pack(push, 8)
 #include <windows.h>
 #include <string.h>
-#pragma pack(pop)
 #else
-#pragma pack(push, 8)
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
-#pragma pack(pop)
 #endif
 
 #include <openal_api.h>

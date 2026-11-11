@@ -28,13 +28,11 @@
 #include <simscrm.h>
 #include <sndscrpt.h>
 
-#pragma pack(push, 8)
 #include <algorithm>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
 #include <vector>
-#pragma pack(pop)
 
 #include <aiscrptapi.h>
 #include <drkuiscrapi.h>

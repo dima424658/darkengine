@@ -1,6 +1,4 @@
-#pragma pack(push, 8)
 #include <SDL3/SDL.h>
-#pragma pack(pop)
 
 #include <cstdio>
 
@@ -12,7 +10,6 @@
 
 namespace
 {
-#pragma pack(push, 8)
 class cSDLDisplayWindow
 {
 public:
@@ -183,7 +180,6 @@ private:
    bool m_showNativeCursor{};
    bool m_sdlInitialized{};
 };
-#pragma pack(pop)
 
 cSDLDisplayWindow &DisplayWindow()
 {

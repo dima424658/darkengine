@@ -15,7 +15,7 @@
 #include <propface.h>
 #endif // !PROPFACE_H
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 struct sCameraObj
 {
@@ -47,7 +47,6 @@ EXTERN ICameraObjProperty *g_CameraObjProperty;
 
 EXTERN void CameraObjPropertyInit();
 EXTERN void CameraObjPropertyTerm();
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif // __DPCCOBPR_H

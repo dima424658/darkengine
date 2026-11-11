@@ -1,9 +1,7 @@
-#pragma pack(push, 8)
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <vector>
-#pragma pack(pop)
 
 #include <appagg.h>
 #include <appapi.h>
@@ -18,7 +16,6 @@
 #include "../lgd3d/runtime.h"
 #include "../lgd3d/event_bridge.h"
 
-#pragma pack(push, 8)
 class cSDLDisplayDevice : public cDisplayDevice
 {
 public:
@@ -249,7 +246,6 @@ private:
 };
 static_assert(alignof(cSDLDisplayDevice) >= alignof(std::vector<unsigned char>),
    "SDL display storage must retain native vector alignment");
-#pragma pack(pop)
 
 extern "C" tResult LGAPI _DisplayDeviceCreate(REFIID, IDisplayDevice **,
    IUnknown *outer, eDisplayDeviceKind kind, int flags)

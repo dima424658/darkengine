@@ -16,7 +16,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -157,8 +157,7 @@ DECLARE_PROPERTY_INTERFACE(IAIWanderProperty)
    DECLARE_PROPERTY_PURE();
    DECLARE_PROPERTY_ACCESSORS(sAIWanderParams *);
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIPR_H */
 

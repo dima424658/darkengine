@@ -17,7 +17,7 @@
 #include <aitype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 struct sAIMoveSuggestion;
 
@@ -245,7 +245,6 @@ inline void sAIMoveSuggestion::SetWeightedBias(eAIMoveSuggKind newKind, int newB
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIMOVSUG_H */

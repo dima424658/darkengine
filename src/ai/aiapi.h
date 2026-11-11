@@ -21,7 +21,7 @@
 #include <comtools.h>
 #include <simtime.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -195,8 +195,7 @@ DECLARE_INTERFACE_(IAIAppServices, IUnknown)
 {
    STDMETHOD (AddSoundTags)(THIS_ cTagSet * pTagSet) PURE;
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif // cpluscplus
 

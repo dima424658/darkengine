@@ -16,7 +16,7 @@
 #include <crjoint.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -598,7 +598,6 @@ DECLARE_PROPERTY_INTERFACE(IAIModeProperty)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPRAI_H */

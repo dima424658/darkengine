@@ -86,7 +86,6 @@ IAllocator *        g_pMalloc;
 // allocated memory
 //
 
-#pragma pack(8)
 class cMemCore
 {
 public:
@@ -132,7 +131,6 @@ public:
     cPrimaryMalloc m_PrimaryMalloc;
 
 };
-#pragma pack()
 
 static cMemCore g_MemCore;
 

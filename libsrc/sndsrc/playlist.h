@@ -166,11 +166,23 @@ typedef struct _SSPLRawMemDual {
 typedef void (*SndPlaylistCallback)(ISndSource *, uint32 *pNArgs);
 
 // callback
+#pragma pack(push, 4)
 typedef struct _SSPLCallback {
    uint32               op;
    SndPlaylistCallback  func;
    uint32               nArgs;      // number of following longword args
 } SSPLCallback;
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(SSPLCallback) ==
+              sizeof(uint32) + sizeof(SndPlaylistCallback) + sizeof(uint32),
+              "Sound callback record must keep its arguments word-aligned");
+#else
+typedef char sSSPLCallbackSizeCheck[
+   sizeof(SSPLCallback) ==
+      sizeof(uint32) + sizeof(SndPlaylistCallback) + sizeof(uint32) ? 1 : -1];
+#endif
 
 // destination for a branch
 typedef struct _SSPLLabel {

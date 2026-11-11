@@ -18,7 +18,7 @@
 #ifndef __PHCTRL_H
 #define __PHCTRL_H
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cPhysModel;
 
@@ -176,9 +176,7 @@ inline void cPhysCtrlData::SetSubModId(int submod_id)
 }
 
 ///////////////////////////////////////
-
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__PHCTRL_H */
 

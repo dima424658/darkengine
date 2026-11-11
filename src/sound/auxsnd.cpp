@@ -16,9 +16,7 @@
 #include <playlist.h>
 
 #ifdef DARK_HAVE_VORBISFILE
-#pragma pack(push, 8)
 #include <vorbis/vorbisfile.h>
-#pragma pack(pop)
 #endif
 
 #include <auxsnd.h>  // so we get our own EXTERN 

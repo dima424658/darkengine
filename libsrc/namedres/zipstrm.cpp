@@ -1,9 +1,7 @@
 #include <algorithm>
 
 #include <zipstrm.h>
-#pragma pack(push, 8)
 #include <zlib.h>
-#pragma pack(pop)
 
 extern "C"
 {

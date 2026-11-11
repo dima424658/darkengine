@@ -350,8 +350,6 @@ inline const mxs_vector &cPhysClsn::GetClsnPt() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#pragma pack()
-
 #endif /* !__PHCLSN_H */
 
 

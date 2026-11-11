@@ -21,7 +21,7 @@
 #include <comtools.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(IDataSource);
 
@@ -53,7 +53,6 @@ DECLARE_INTERFACE_(IDataSource, IUnknown)
 
 #define IDataSource_Lock(p)          COMCall0(p, Lock)
 #define IDataSource_Unlock(p)        COMCall0(p, Unlock)
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif // !__DATASRC_H

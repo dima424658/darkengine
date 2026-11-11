@@ -5,14 +5,10 @@
 #include <resbastm.h>
 
 #ifdef _WIN32
-#pragma pack(push, 8)
 #include <objbase.h>
 #include <wincodec.h>
-#pragma pack(pop)
 #else
-#pragma pack(push, 8)
 #include <png.h>
-#pragma pack(pop)
 #endif
 
 #include <cstdlib>

@@ -13,7 +13,7 @@
 #include <objtype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ////////////////////////////////////////
 // Events
@@ -74,9 +74,7 @@ struct sAIRangedCombatPhyscastData
 };
 
 ////////////////////////////////////////
-
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRTYP_H */
 
