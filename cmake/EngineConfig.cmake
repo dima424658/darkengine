@@ -59,6 +59,7 @@ set(dark_include_dirs
 )
 
 add_library(dark_engine_config INTERFACE)
+target_link_libraries(dark_engine_config INTERFACE dark_profiling)
 target_include_directories(dark_engine_config INTERFACE ${dark_include_dirs})
 target_compile_definitions(dark_engine_config INTERFACE
   RGB_LIGHTING BIG_LIGHTMAPS SCHEMA_LOADING

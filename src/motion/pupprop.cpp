@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/motion/pupprop.cpp,v 1.5 1998/04/12 16:49:02 mahk Exp $
 
+#include <tracy/Tracy.hpp>
 #include <pupprop.h>
 
 #include <property.h>
@@ -116,6 +117,7 @@ IPuppetProperty *PuppetPropertyInit(void)
 
 void PuppetsUpdate(ulong dt)
 {
+   ZoneScopedN("Puppet animation");
    sPropertyObjIter iter;
    cPuppet* puppet;
    ObjID objID;

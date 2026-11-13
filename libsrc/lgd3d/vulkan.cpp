@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <render_backend.h>
+#include <tracy/Tracy.hpp>
 #include <platform_services.h>
 
 #include "runtime.h"
@@ -569,6 +570,7 @@ void cVulkanRuntime::SetPhysicalDeviceIndex(int index)
 
 void cVulkanRuntime::BeginApplicationFrame()
 {
+   ZoneScopedN("Vulkan begin frame");
    ProcessPendingLifecycleResize();
    if (!m_windowOpen || m_frameActive ||
        m_windowMinimized.load(std::memory_order_acquire) ||
@@ -593,6 +595,7 @@ void cVulkanRuntime::BeginApplicationFrame()
 
 void cVulkanRuntime::EndApplicationFrame()
 {
+   ZoneScopedN("Vulkan present");
    if (!m_frameActive) return;
    if (!PrepareCanvasTexture())
       std::fprintf(stderr, "Vulkan canvas texture update failed\n");

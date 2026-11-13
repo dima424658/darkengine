@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/sound/sndloop.cpp,v 1.27 2000/02/28 17:28:28 toml Exp $
 
+#include <tracy/Tracy.hpp>
 #include <lg.h>
 #include <loopapi.h>
 
@@ -142,6 +143,7 @@ static void db_message(DispatchData * msg)
 
 static void do_frame(void)
 {
+   ZoneScopedN("Sound listener and ambient");
    mxs_vector pos;
    mxs_angvec ang;
    Camera* cam = PlayerCamera();

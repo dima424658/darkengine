@@ -355,6 +355,34 @@ uses relative-pointer input during gameplay and absolute coordinates in menus,
 with native Wayland preferred when available. See [Game saves](#game-saves) for
 the save location and fallback rules.
 
+### Tracy profiling
+
+Tracy v0.15.0 is pinned in `3rdparty/tracy`. CPU profiling is optional and
+is disabled by default. All builds use its headers; the client is linked only
+when profiling is enabled. Initialize the submodule and enable it for a build:
+
+```sh
+git submodule update --init 3rdparty/tracy
+cmake --preset macos -DDARK_ENABLE_TRACY=ON
+cmake --build --preset macos-release
+```
+
+Use the corresponding Linux or Windows presets on those platforms. Launch
+`thief-runner` or `DromEd` normally, then connect the matching Tracy v0.15.0
+profiler to `localhost:8086`. The timeline includes frame markers, loop messages
+and clients, simulation timing and frame pacing, AI scheduling and agent updates,
+physics steps and collision phases, creature and puppet animation, scene and
+overlay rendering, audio updates, script messages and callbacks, database loads
+and saves, and Vulkan frame setup and presentation. The entry thread is named
+`Main`. Plots show the simulation timestep and AI count; AI and script zone
+values identify the object being updated or receiving a message.
+
+Capture is on demand by default: events are collected while a profiler is
+connected. Configure with `-DTRACY_ON_DEMAND=OFF` to retain startup events.
+Configure with `-DDARK_ENABLE_TRACY=OFF` and rebuild to remove the client and
+compile profiling calls out. New C++ zones can use `ZoneScopedN("name")`
+from `<tracy/Tracy.hpp>`.
+
 ### Vulkan screenshot capture
 
 The renderer does not read back swapchain images for screenshots. For

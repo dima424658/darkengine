@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/render/rendloop.c,v 1.95 2000/02/18 17:25:53 MAT Exp $
 
+#include <tracy/TracyC.h>
 #include <lg.h>
 #include <loopapi.h>
 #include <stdio.h>
@@ -436,6 +437,7 @@ static BOOL RenderNewSky(void)
 
 void cam_render_scene(Position *pos, float zoom)
 {
+   TracyCZoneN(sceneZone, "Render scene", 1);
    float alpha;
    uchar rgb[3];
    extern BOOL lgd3d_z_normal;
@@ -471,8 +473,16 @@ void cam_render_scene(Position *pos, float zoom)
    rendobj_init_frame();
    pSkyRenderCallback = RenderNewSky;
 
-   portal_render_scene(pos, zoom);
-   rendobj_finish_object_rendering();
+   {
+      TracyCZoneN(portalZone, "Portal world rendering", 1);
+      portal_render_scene(pos, zoom);
+      TracyCZoneEnd(portalZone);
+   }
+   {
+      TracyCZoneN(objectsZone, "Finish object rendering", 1);
+      rendobj_finish_object_rendering();
+      TracyCZoneEnd(objectsZone);
+   }
 
    // actually, this should come before all translucent rendering
    if ((GetSkyMode() == kSkyModeStars) && !SkyRendererUseEnhanced())
@@ -517,6 +527,7 @@ void cam_render_scene(Position *pos, float zoom)
       if (alpha != 0.0)
          Flash(alpha, (rgb[0]<<16)|(rgb[1]<<8)|rgb[2]);
    }
+   TracyCZoneEnd(sceneZone);
    CTIMER_RETURN(kCTimerRendTotal);
 }
 
@@ -530,6 +541,7 @@ static int nOldMode = -1;
    static const float fRemoteZoom = 0.4f;
 static void do_frame(sLoopFrameInfo* info)
 {
+   TracyCZoneN(frameZone, "Render frame", 1);
    Position campos;              // position of camera for renderer
    mxs_vector pos;               // position of camera
    mxs_angvec ang;               // angle of camera
@@ -594,6 +606,7 @@ static void do_frame(sLoopFrameInfo* info)
    cam_render_scene(&campos,fZoom*game_zoom_factor);
 
    if (g_lgd3d) {
+      TracyCZoneN(overlayZone, "Render overlays and inventory", 1);
       CameraOverlayOnFrame();
       if (CameraIsRemote(cam))
          CameraOverlayRender(FALSE);
@@ -602,6 +615,7 @@ static void do_frame(sLoopFrameInfo* info)
       invRendFlushQueue();
 
       lgd3d_end_frame();
+      TracyCZoneEnd(overlayZone);
    }
 
    // these 3 times are: how long rendering this frame took (render time)
@@ -612,6 +626,7 @@ static void do_frame(sLoopFrameInfo* info)
    //                      (total blit time approximate)
 
    FrameTimeSet(end_rend_time,tm_get_millisec_unrecorded());   // compute time delta
+   TracyCZoneEnd(frameZone);
 }
 
 static void end_frame()

@@ -24,6 +24,7 @@
 
 //#define PROFILE_ON
 
+#include <tracy/Tracy.hpp>
 #include <cfgdbg.h>
 #include <mprintf.h>
 #include <timings.h>
@@ -759,6 +760,7 @@ DECLARE_TIMER(CREAT_Total, Average);
 
 void CreaturesUpdate(const ulong timeDelta)
 {
+   ZoneScopedN("Creature animation");
    AUTO_TIMER(CREAT_Total);
 
    int i;
