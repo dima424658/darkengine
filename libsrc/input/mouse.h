@@ -108,6 +108,20 @@ typedef struct _lgMouseEvent mouse_event;
 #define MOUSE_CUP      64
 #define MOUSE_WHEEL   128
 
+// Side buttons use the spare payload bytes with wheel==0. Keep the legacy
+// event layout and its byte-sized type unchanged.
+#define MOUSE_SIDE_MARKER 0x2000
+#define MOUSE_SIDE_SECOND 0x4000
+#define MOUSE_SIDE_UP     0x8000
+static inline short mouse_event_action(const lgMouseEvent *event)
+{
+   if (event->type == MOUSE_WHEEL && !event->wheel && event->pad[0])
+      return (short)(MOUSE_SIDE_MARKER |
+         (event->pad[0] == 2 ? MOUSE_SIDE_SECOND : 0) |
+         (!event->pad[1] ? MOUSE_SIDE_UP : 0));
+   return event->type;
+}
+
 
 // Mask of events that are allowed into the queue.
 extern ubyte mouseMask;

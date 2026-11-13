@@ -14,6 +14,7 @@
 extern "C" void DarkInputKey(uchar scan, int down);
 extern "C" void DarkInputMouse(short x, short y, uchar type, uchar buttons,
    char wheel);
+extern "C" void DarkInputMouseSide(short x, short y, uchar buttons, int side, int down);
 extern "C" void DarkInputMouseRelative(int x, int y, uchar buttons);
 
 namespace
@@ -39,6 +40,7 @@ public:
          HandleEvent(event);
 
       FlushMotion();
+      FlushWheel();
       if (SDLDisplayRelativeMouseActive())
       {
          const int relativeX = static_cast<int>(m_relativeX);
@@ -84,6 +86,8 @@ public:
          else
             HandleEvent(event);
       }
+      FlushMotion();
+      FlushWheel();
       DarkRenderEndEventPump();
       return stop;
    }
@@ -129,6 +133,8 @@ private:
       m_quit = false;
       m_relativeX = m_relativeY = 0;
       m_pendingMotion = false;
+      m_wheelY = 0;
+      m_pendingWheel = false;
       m_buttons = 0;
    }
 
@@ -153,7 +159,23 @@ private:
       case SDL_SCANCODE_O: return 0x18; case SDL_SCANCODE_P: return 0x19;
       case SDL_SCANCODE_LEFTBRACKET: return 0x1a;
       case SDL_SCANCODE_RIGHTBRACKET: return 0x1b;
-      case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: return 0x1c;
+      case SDL_SCANCODE_RETURN: return 0x1c;
+      case SDL_SCANCODE_KP_ENTER: return 0x9c;
+      case SDL_SCANCODE_KP_DIVIDE: return 0xb5;
+      case SDL_SCANCODE_KP_MULTIPLY: return 0x37;
+      case SDL_SCANCODE_KP_MINUS: return 0x4a;
+      case SDL_SCANCODE_KP_PLUS: return 0x4e;
+      case SDL_SCANCODE_KP_0: return 0x52;
+      case SDL_SCANCODE_KP_1: return 0x4f;
+      case SDL_SCANCODE_KP_2: return 0x50;
+      case SDL_SCANCODE_KP_3: return 0x51;
+      case SDL_SCANCODE_KP_4: return 0x4b;
+      case SDL_SCANCODE_KP_5: return 0x4c;
+      case SDL_SCANCODE_KP_6: return 0x4d;
+      case SDL_SCANCODE_KP_7: return 0x47;
+      case SDL_SCANCODE_KP_8: return 0x48;
+      case SDL_SCANCODE_KP_9: return 0x49;
+      case SDL_SCANCODE_KP_PERIOD: return 0x53;
       case SDL_SCANCODE_LCTRL: return KBC_LCTRL;
       case SDL_SCANCODE_RCTRL: return KBC_RCTRL;
       case SDL_SCANCODE_A: return 0x1e; case SDL_SCANCODE_S: return 0x1f;
@@ -200,8 +222,12 @@ private:
       if (eventWindowId && eventWindowId != m_windowId)
          return;
 
-      if (event.type != SDL_EVENT_MOUSE_MOTION)
+      if (event.type != SDL_EVENT_MOUSE_MOTION && event.type != SDL_EVENT_MOUSE_WHEEL)
          FlushMotion();
+      // Wheel bursts may include pointer motion. Flush before discrete events
+      // so modifier changes and clicks retain their original ordering.
+      if (event.type != SDL_EVENT_MOUSE_MOTION && event.type != SDL_EVENT_MOUSE_WHEEL)
+         FlushWheel();
 
       if (event.type == SDL_EVENT_QUIT ||
           event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
@@ -216,7 +242,7 @@ private:
       {
          const uchar scan = KeyScan(event.key.scancode);
          const bool down = event.type == SDL_EVENT_KEY_DOWN;
-         if (scan != KBC_NONE && !event.key.repeat)
+         if (scan != KBC_NONE && (!event.key.repeat || !SDLDisplayRelativeMouseActive()))
             DarkInputKey(scan, down);
       }
       else if (event.type == SDL_EVENT_MOUSE_MOTION)
@@ -293,7 +319,9 @@ private:
    {
       const int button = event.button == SDL_BUTTON_LEFT ? 0 :
          event.button == SDL_BUTTON_RIGHT ? 1 :
-         event.button == SDL_BUTTON_MIDDLE ? 2 : -1;
+         event.button == SDL_BUTTON_MIDDLE ? 2 :
+         event.button == SDL_BUTTON_X1 ? 3 :
+         event.button == SDL_BUTTON_X2 ? 4 : -1;
       if (button < 0)
          return;
 
@@ -319,12 +347,23 @@ private:
       }
       else
          (void)RenderBackendClientToLogicalPoint(&x, &y);
-      DarkInputMouse(static_cast<short>(x), static_cast<short>(y), type,
-         m_buttons, 0);
+      if (button >= 3)
+         DarkInputMouseSide(static_cast<short>(x), static_cast<short>(y),
+            m_buttons, button - 2, down);
+      else
+         DarkInputMouse(static_cast<short>(x), static_cast<short>(y), type,
+            m_buttons, 0);
    }
 
    void HandleMouseWheel(const SDL_MouseWheelEvent &event)
    {
+      const double delta = event.y *
+         (event.direction == SDL_MOUSEWHEEL_FLIPPED ? -1.0 : 1.0);
+      if (!std::isfinite(delta) || delta == 0)
+         return;
+      if (m_pendingWheel && ((m_wheelY < 0 && delta > 0) ||
+                            (m_wheelY > 0 && delta < 0)))
+         FlushWheel();
       int width = 0;
       int height = 0;
       (void)RenderBackendGetLogicalSize(&width, &height);
@@ -336,11 +375,23 @@ private:
          y = static_cast<int>(event.mouse_y);
          (void)RenderBackendClientToLogicalPoint(&x, &y);
       }
-      const int direction = event.direction == SDL_MOUSEWHEEL_FLIPPED ? -1 : 1;
-      const int wheel = std::clamp(static_cast<int>(std::lround(event.y)) *
-         direction, -127, 127);
+      m_wheelX = static_cast<short>(x);
+      m_wheelMouseY = static_cast<short>(y);
+      // The legacy event stores a signed byte. Saturate a burst instead of
+      // building a backlog of stale inventory/scroll commands.
+      m_wheelY = std::clamp(m_wheelY + delta, -127.0, 127.0);
+      m_pendingWheel = true;
+   }
+
+   void FlushWheel()
+   {
+      if (!m_pendingWheel)
+         return;
+      m_pendingWheel = false;
+      const int wheel = static_cast<int>(m_wheelY);
+      m_wheelY -= wheel; // Retain high-resolution trackpad fractions.
       if (wheel)
-         DarkInputMouse(static_cast<short>(x), static_cast<short>(y),
+         DarkInputMouse(m_wheelX, m_wheelMouseY,
             MOUSE_WHEEL, m_buttons, static_cast<char>(wheel));
    }
 
@@ -350,6 +401,10 @@ private:
    float m_relativeX{};
    float m_relativeY{};
    bool m_pendingMotion{};
+   double m_wheelY{};
+   bool m_pendingWheel{};
+   short m_wheelX{};
+   short m_wheelMouseY{};
    short m_mouseX{};
    short m_mouseY{};
    uchar m_buttons{};
