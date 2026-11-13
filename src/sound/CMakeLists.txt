@@ -17,7 +17,6 @@ set(dark_sound_sources
   schmsg.cpp
   schprop.cpp
   schsamps.cpp
-  schyacc.c
   sndframe.cpp
   sndgen.cpp
   sndloop.cpp

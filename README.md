@@ -201,6 +201,7 @@ The runner currently provides:
 - MSVC v143 x86/x64 build tools and a Windows 10 or 11 SDK.
 - CMake 3.21 or later, MSYS2 Bash and Make, and the Vulkan SDK (including
   `glslc`).
+- Bison 2.3 or later on the build host (`bison` or `win_bison` on `PATH`).
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
 
@@ -248,7 +249,8 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 
 #### Prerequisites
 
-- macOS with Xcode Command Line Tools, CMake 3.21 or later, and Ninja.
+- macOS with Xcode Command Line Tools, CMake 3.21 or later, Ninja, and Bison
+  2.3 or later (the system Bison is sufficient).
 - The Vulkan SDK (including `glslc`) and CMake submodules; macOS supplies the
   OpenAL framework.
 - A retail TDP, Thief Gold, or Thief II installation.
@@ -273,6 +275,11 @@ cmake --build --preset macos-release -j "$(sysctl -n hw.ncpu)"
 Non-Windows builds export `compile_commands.json` into their CMake build
 directory during configuration, including the macOS and Linux presets and
 Android native builds.
+
+CMake generates the include, motion-schema, sound-schema, and song parsers
+from the `.y` grammars in `src/`. Generated C files and token headers live
+in `<build-directory>/src/generated/`; editing a grammar regenerates its
+parser automatically. Set `BISON_EXECUTABLE` if Bison is not on `PATH`.
 
 The result is `build-macos/thief-runner`. SDL3, zlib, libpng, Squirrel, libogg,
 libvorbis, FFmpeg, and blast are built statically from submodules.
@@ -301,7 +308,7 @@ For Ubuntu/Debian:
 
 ```sh
 sudo apt update
-sudo apt install build-essential cmake ninja-build libvulkan-dev glslc \
+sudo apt install build-essential cmake ninja-build bison libvulkan-dev glslc \
   libopenal1
 ```
 
@@ -378,8 +385,8 @@ captured.
 - JDK 17 or later.
 - Android SDK platform and build tools 36.
 - Android SDK CMake 3.31.6 and NDK 30.0.16248370.
-- GNU Make and Bash on the host (`make` and `bash` are available with the
-  standard build tools on macOS/Linux; Windows hosts need MSYS2 tools).
+- GNU Make, Bash, and Bison 2.3 or later on the build host (Windows hosts
+  can use MSYS2 tools or a native `win_bison` executable).
 - Vulkan SDK with `glslc` available on `PATH` or through `VULKAN_SDK`.
 - An ARM64 device running Android 8.0 (API 26) or later and a retail game
   folder available to Android's system folder picker.

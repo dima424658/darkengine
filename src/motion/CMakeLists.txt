@@ -19,7 +19,6 @@ set(dark_motion_sources
   motset.cpp
   mputil.cpp
   mschutil.cpp
-  mschyacc.c
   mskilset.cpp
   mskltree.cpp
   mvrcmbat.cpp
