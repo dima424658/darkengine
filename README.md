@@ -270,6 +270,10 @@ cmake --preset macos
 cmake --build --preset macos-release -j "$(sysctl -n hw.ncpu)"
 ```
 
+Non-Windows builds export `compile_commands.json` into their CMake build
+directory during configuration, including the macOS and Linux presets and
+Android native builds.
+
 The result is `build-macos/thief-runner`. SDL3, zlib, libpng, Squirrel, libogg,
 libvorbis, FFmpeg, and blast are built statically from submodules.
 

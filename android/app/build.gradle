@@ -21,8 +21,6 @@ def openalRoot = new File(dependencyRoot, "openal-soft-1.25.2")
 def vulkanHeadersRoot = new File(dependencyRoot,
     "Vulkan-Headers-vulkan-sdk-1.4.363.0")
 def nativeArguments = [
-    "-DDARK_BUILD_ENGINE=ON",
-    "-DDARK_BUILD_THIEF2=ON",
     "-DDARK_COMPILE_VULKAN_SHADERS=OFF",
     "-DDARK_VULKAN_HEADERS_SOURCE=${vulkanHeadersRoot.absolutePath.replace('\\', '/')}",
     "-DDARK_OPENAL_SOFT_SOURCE=${openalRoot.absolutePath.replace('\\', '/')}",

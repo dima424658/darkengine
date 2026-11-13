@@ -1,0 +1,19 @@
+add_library(dark_matrix STATIC
+  dmat.c
+  matang.c
+  matangd.c
+  matmat.c
+  matmatd.c
+  matrix.cpp
+  matvec.c
+  matvecd.c
+  trans.c
+  transd.c
+  vec2.c
+  vec2d.c
+  vecang.c
+  vecangd.c
+  vecvec.c
+  vecvecd.c
+)
+dark_configure_library(dark_matrix)

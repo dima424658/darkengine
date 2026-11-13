@@ -35,16 +35,11 @@ elseif(DARK_COMPILE_VULKAN_SHADERS)
   # Runtime resolves installed SPIR-V files relative to SDL_GetBasePath().
   set(DARK_VULKAN_SHADER_DIR "generated/vulkan")
 endif()
-if(NOT CMAKE_SYSTEM_NAME MATCHES "^(Linux|Darwin)$" AND NOT ANDROID AND NOT WIN32)
-  message(FATAL_ERROR "lgd3d requires SDL3 surface support")
+if(NOT LINUX AND NOT APPLE AND NOT ANDROID AND NOT WIN32)
+message(FATAL_ERROR "lgd3d requires SDL3 surface support")
 endif()
 if(ANDROID AND (NOT DARK_VULKAN_HEADERS_SOURCE OR
    NOT EXISTS "${DARK_VULKAN_HEADERS_SOURCE}/include/vulkan/vulkan.hpp"))
   message(FATAL_ERROR
     "Android requires DARK_VULKAN_HEADERS_SOURCE to name the extracted Khronos Vulkan-Headers tree")
 endif()
-set(dark_lgd3d_vulkan_sources
-  libsrc/lgd3d/vulkan.cpp
-  libsrc/lgd3d/vulkan_context.cpp
-  libsrc/lgd3d/vulkan_render_backend.cpp
-  libsrc/lgd3d/vulkan_scene_renderer.cpp)
