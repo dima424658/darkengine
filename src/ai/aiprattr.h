@@ -15,7 +15,7 @@
 #include <aiprops.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -82,7 +82,6 @@ DECLARE_PROPERTY_INTERFACE(IAIRatingProperty)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPRATTR_H */

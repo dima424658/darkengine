@@ -1907,7 +1907,7 @@ void cPhysModel::UpdateTargetLocation(mxs_real dt)
    cPhysDynData *pDyn = GetDynamics();
    mxs_matrix facing, rotation, end_facing;
    mxs_vector velocity, rot_vec;
-   mxs_real   rot_mag;
+   mxs_real   rot_mag = 0.0;
 
    if (IsAttached())
    {
@@ -2840,7 +2840,10 @@ BOOL cPhysModel::CheckAngleLimits(mxs_angvec start, mxs_angvec end, mxs_angvec *
       start_dp = mx_dot_vec(&start_mat.vec[m_AngLimitList[i]->axis], &m_AngLimitList[i]->plane_norm);
       end_dp = mx_dot_vec(&end_mat.vec[m_AngLimitList[i]->axis], &m_AngLimitList[i]->plane_norm);
 
-      if (((start_dp * end_dp) < 0) || (end_dp == 0.0 && start_dp != 0.0))
+      // A tilted door can start on its limit plane with a tiny nonzero dot
+      // product. Treat that as zero so departing the limit is not a crossing.
+      if (fabs(start_dp) > 0.000001 &&
+          (((start_dp * end_dp) < 0) || end_dp == 0.0))
       {
          limited = TRUE;
 

@@ -315,6 +315,7 @@ enum eSrcDescVersions
 // Old, pre-padded structures
 //
 
+#pragma pack(push, 1)
 struct sStimSrcPrePad
 {
    PropagatorID propagator;  // propagator to which source belongs
@@ -329,6 +330,10 @@ struct sStimSrcPrePad
    tStimLevel decay_level; // final value after decay
    tStimDuration lifespan;      // time before dying
 };
+#pragma pack(pop)
+
+static_assert(sizeof(sStimSrcPrePad) == 54,
+              "legacy stimulus source records use a packed 54-byte layout");
 
 
 //

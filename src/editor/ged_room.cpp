@@ -40,6 +40,7 @@
 #include <mprintf.h>
 #include <roomtowr.h>
 #include <psnd.h>
+#include <hshpptem.h>
 
 #include <config.h>
 #include <command.h>

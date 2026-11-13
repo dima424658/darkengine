@@ -21,7 +21,7 @@
 #include <aitype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -151,7 +151,6 @@ DECLARE_INTERFACE_(IAIBehaviorSet, IUnknown)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIAPIBHV_H */

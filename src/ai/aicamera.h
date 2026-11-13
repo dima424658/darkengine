@@ -24,7 +24,7 @@
 #include <linkscpt.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cAICamera : public cAIDevice
 {
@@ -64,7 +64,6 @@ struct sAICameraLinkData
 // Init/term
 BOOL AIInitCameraAbility(IAIManager *);
 BOOL AITermCameraAbility(void);
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICAMERA_H */

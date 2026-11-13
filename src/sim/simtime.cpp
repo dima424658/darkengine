@@ -5,6 +5,10 @@
 
 // $Header: r:/t2repos/thief2/src/sim/simtime.cpp,v 1.16 2000/03/17 17:40:22 bfarquha Exp $
 
+#include <chrono>
+#include <thread>
+
+#include <tracy/Tracy.hpp>
 #include <lg.h>
 #include <loopapi.h>
 
@@ -304,9 +308,9 @@ typedef struct _StateRecord
 
 static void SlowFrame(long nMilliseconds)
 {
-   uint32 nStart = PlatformMilliseconds();
-   while ((PlatformMilliseconds()-nStart) < (uint32)nMilliseconds)
-   {}
+   ZoneScopedN("Frame pacing");
+   if (nMilliseconds > 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds(nMilliseconds));
 }
 
 
@@ -347,12 +351,15 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          break;
       }
       case kMsgBeginFrame:
+      {
+         ZoneScopedN("Simulation time");
          // Update sim time at start of frame
          if (IsSimTimePassing())
             gSimTime.dTicks = clamp_frame_time(info.frame->dTicks);
          else
             gSimTime.dTicks = 0;
          gSimTime.nTicks += gSimTime.dTicks;
+         TracyPlot("Simulation frame (ms)", static_cast<int64_t>(gSimTime.dTicks));
 #ifdef DBG_ON
          if (state->spew && gSimTime.dTicks > 0)
             mprintf("[%d] ",gSimTime.nTicks);
@@ -368,6 +375,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
             nLastRealFrameTime = PlatformMilliseconds();
          }
          break;
+      }
 
       case kMsgDatabase:
          db_message(info.dispatch);

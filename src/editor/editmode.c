@@ -15,6 +15,7 @@
 #include <config.h>
 #include <uiapp.h>
 #include <mode.h>
+#include <render_backend.h>
 
 #include <hotkey.h>
 #include <menus.h>
@@ -492,12 +493,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          break;
 
       case kMsgNormalFrame:
-         if (config_is_defined("render_test") &&
-             RenderBackendCaptureComplete())
-         {
-            quit_game();
-            break;
-         }
          {
             int width,height;
 
@@ -573,6 +568,8 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
             }
 
          }
+
+         vm_redraw_view_label();
 
          break;
 

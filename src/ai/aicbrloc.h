@@ -22,7 +22,7 @@
 #include <wrtype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -120,8 +120,7 @@ inline float cAIRangedLocation::GetRangeSq(void) const {return m_rangeSq;}
 inline float cAIRangedLocation::GetScore(void) const {return m_score;}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRLOC_H */
 

@@ -1,0 +1,329 @@
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <thread>
+#include <vector>
+
+#ifdef __ANDROID__
+#include <jni.h>
+#endif
+
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/imgutils.h>
+#include <libswresample/swresample.h>
+#include <libswscale/swscale.h>
+}
+
+#include <aggmemb.h>
+#include <movie_backend.h>
+#include <movieapi.h>
+#include <platform_services.h>
+#include "movie_audio_output.h"
+
+#include "../lgd3d/runtime.h"
+#include "../gameshel/sdl_events.h"
+
+namespace
+{
+std::atomic_bool g_movie_playing{false};
+
+class cMoviePlaybackScope
+{
+public:
+    cMoviePlaybackScope() { g_movie_playing.store(true); }
+    ~cMoviePlaybackScope() { g_movie_playing.store(false); }
+};
+}
+
+extern "C" bool DarkMoviePlaybackActive(void)
+{
+    return g_movie_playing.load();
+}
+
+#ifdef __ANDROID__
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeMoviePlaybackActive(
+    JNIEnv *, jclass)
+{
+    return DarkMoviePlaybackActive() ? JNI_TRUE : JNI_FALSE;
+}
+#endif
+
+class cSDLMoviePlayer final : public IMoviePlayer1
+{
+public:
+    explicit cSDLMoviePlayer(IUnknown *outer)
+        : m_state(kMP1NothingOpen), m_volume(0)
+    {
+        INIT_AGGREGATION_1(outer, IID_IMoviePlayer1, this, kPriorityLibrary, nullptr);
+    }
+
+    DECLARE_SIMPLE_AGGREGATION(cSDLMoviePlayer);
+
+    STDMETHOD_(BOOL, Open)(const char *, int, int, int, int) override
+    {
+        m_state = kMP1NothingOpen;
+        return FALSE;
+    }
+    STDMETHOD_(void, Close)() override { m_state = kMP1NothingOpen; }
+    STDMETHOD_(BOOL, CanPlay)() override { return TRUE; }
+    STDMETHOD_(BOOL, Play)(int) override { return FALSE; }
+    STDMETHOD_(BOOL, Pause)() override { return FALSE; }
+    STDMETHOD_(BOOL, Stop)() override { m_state = kMP1NothingOpen; return TRUE; }
+    STDMETHOD_(BOOL, GetVolume)(long *volume) override
+    {
+        if (volume) *volume = m_volume;
+        return volume != nullptr;
+    }
+    STDMETHOD_(BOOL, SetVolume)(long volume) override { m_volume = volume; return TRUE; }
+    STDMETHOD_(eMP1State, GetState)() override { return m_state; }
+    STDMETHOD_(void, SetTermKeys)(char *) override {}
+
+private:
+    eMP1State m_state;
+    long m_volume;
+};
+
+IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cSDLMoviePlayer);
+
+extern "C" tResult LGAPI _MoviePlayerCreate(REFIID, void **player,
+                                              IUnknown *outer, REFCLSID,
+                                              unsigned)
+{
+    if (!outer)
+        return E_INVALIDARG;
+    auto *created = new cSDLMoviePlayer(outer);
+    if (player)
+        *player = created;
+    return created ? S_OK : E_FAIL;
+}
+
+namespace
+{
+using MovieClock = std::chrono::steady_clock;
+
+struct Decoder
+{
+    AVCodecContext *context{};
+    int stream{-1};
+};
+
+void CloseDecoder(Decoder &decoder)
+{
+    avcodec_free_context(&decoder.context);
+    decoder.stream = -1;
+}
+
+bool OpenDecoder(AVFormatContext *format, AVMediaType type, Decoder &decoder)
+{
+    const int stream = av_find_best_stream(format, type, -1, -1, nullptr, 0);
+    if (stream < 0)
+        return false;
+    const AVCodec *codec = avcodec_find_decoder(
+        format->streams[stream]->codecpar->codec_id);
+    if (!codec)
+        return false;
+    decoder.context = avcodec_alloc_context3(codec);
+    if (!decoder.context ||
+        avcodec_parameters_to_context(decoder.context,
+                                      format->streams[stream]->codecpar) < 0 ||
+        avcodec_open2(decoder.context, codec, nullptr) < 0)
+    {
+        CloseDecoder(decoder);
+        return false;
+    }
+    decoder.stream = stream;
+    return true;
+}
+
+std::string NativeMoviePath(const char *legacyPath)
+{
+    char native[4096];
+    std::string modern = legacyPath ? legacyPath : "";
+    const size_t dot = modern.find_last_of('.');
+    if (dot != std::string::npos)
+    {
+        modern.resize(dot);
+        modern += ".mp4";
+        if (PlatformResolvePath(modern.c_str(), native, sizeof(native)))
+            return native;
+    }
+    if (PlatformResolvePath(legacyPath, native, sizeof(native)))
+        return native;
+    return legacyPath ? legacyPath : "";
+}
+
+bool WaitForFrame(MovieClock::time_point start, double seconds)
+{
+    for (;;)
+    {
+        if (DarkPumpMovieEvents())
+            return false;
+        const double elapsed = std::chrono::duration<double>(
+            MovieClock::now() - start).count();
+        if (elapsed >= seconds)
+            return true;
+        const double remaining = seconds - elapsed;
+        std::this_thread::sleep_for(std::chrono::milliseconds(
+            remaining > 0.010 ? 5 : 1));
+    }
+}
+}
+
+bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
+{
+    cMoviePlaybackScope playbackScope;
+    const std::string path = NativeMoviePath(legacyPath);
+    AVFormatContext *format = nullptr;
+    Decoder video;
+    Decoder audio;
+    SwsContext *scaler = nullptr;
+    SwrContext *resampler = nullptr;
+    AVFrame *frame = nullptr;
+    AVPacket *packet = nullptr;
+    cMovieAudioOutput audioOutput;
+    bool audioAvailable = false;
+    bool played = false;
+    bool keepPlaying = true;
+    int64_t firstVideoTimestamp = AV_NOPTS_VALUE;
+    MovieClock::time_point start;
+
+    if (path.empty() || avformat_open_input(&format, path.c_str(), nullptr,
+                                            nullptr) < 0 ||
+        avformat_find_stream_info(format, nullptr) < 0 ||
+        !OpenDecoder(format, AVMEDIA_TYPE_VIDEO, video))
+    {
+        std::fprintf(stderr, "Could not decode movie: %s\n", path.c_str());
+        if (format)
+            avformat_close_input(&format);
+        return false;
+    }
+    OpenDecoder(format, AVMEDIA_TYPE_AUDIO, audio);
+
+    std::fprintf(stderr,
+        "Playing movie with FFmpeg: %s (%dx%d%s)\n", path.c_str(),
+        video.context->width, video.context->height,
+        audio.context ? ", audio" : "");
+
+    frame = av_frame_alloc();
+    packet = av_packet_alloc();
+    std::vector<uint8_t> rgba((size_t)video.context->width *
+                              video.context->height * 4);
+    scaler = sws_getContext(video.context->width, video.context->height,
+                            video.context->pix_fmt,
+                            video.context->width, video.context->height,
+                            AV_PIX_FMT_RGBA, SWS_BILINEAR, nullptr, nullptr,
+                            nullptr);
+    if (!frame || !packet || !scaler)
+        keepPlaying = false;
+
+    if (audio.context && audioOutput.Open(volume))
+    {
+        AVChannelLayout outputLayout = AV_CHANNEL_LAYOUT_STEREO;
+        AVChannelLayout inputLayout = audio.context->ch_layout;
+        if (inputLayout.nb_channels > 0 &&
+            inputLayout.order == AV_CHANNEL_ORDER_UNSPEC)
+            av_channel_layout_default(&inputLayout, inputLayout.nb_channels);
+        const int resampleResult = swr_alloc_set_opts2(&resampler,
+            &outputLayout, AV_SAMPLE_FMT_S16, 48000, &inputLayout,
+            audio.context->sample_fmt, audio.context->sample_rate, 0, nullptr);
+        if (resampleResult < 0 || !resampler || swr_init(resampler) < 0)
+        {
+            swr_free(&resampler);
+            audioAvailable = false;
+        }
+        else
+            audioAvailable = true;
+        if (inputLayout.order != audio.context->ch_layout.order)
+            av_channel_layout_uninit(&inputLayout);
+    }
+
+    while (keepPlaying && av_read_frame(format, packet) >= 0)
+    {
+        Decoder *decoder = packet->stream_index == video.stream ? &video :
+                           packet->stream_index == audio.stream ? &audio :
+                           nullptr;
+        if (!decoder || avcodec_send_packet(decoder->context, packet) < 0)
+        {
+            av_packet_unref(packet);
+            continue;
+        }
+        av_packet_unref(packet);
+
+        while (keepPlaying && avcodec_receive_frame(decoder->context, frame) == 0)
+        {
+            if (decoder == &video)
+            {
+                uint8_t *planes[] = { rgba.data() };
+                int strides[] = { video.context->width * 4 };
+                sws_scale(scaler, frame->data, frame->linesize, 0,
+                          video.context->height, planes, strides);
+                const int64_t timestamp = frame->best_effort_timestamp;
+                if (firstVideoTimestamp == AV_NOPTS_VALUE)
+                {
+                    firstVideoTimestamp = timestamp == AV_NOPTS_VALUE ? 0 :
+                                          timestamp;
+                    start = MovieClock::now();
+                }
+                const double seconds = timestamp == AV_NOPTS_VALUE ? 0.0 :
+                    (timestamp - firstVideoTimestamp) *
+                    av_q2d(format->streams[video.stream]->time_base);
+                keepPlaying = WaitForFrame(start, std::max(seconds, 0.0));
+                if (keepPlaying)
+                {
+                    played = DarkRenderPresentMovieFrame(
+                        rgba.data(), video.context->width,
+                        video.context->height, strides[0]);
+                }
+            }
+            else if (audioAvailable && resampler)
+            {
+                const int maximum = av_rescale_rnd(
+                    swr_get_delay(resampler, audio.context->sample_rate) +
+                    frame->nb_samples, 48000, audio.context->sample_rate,
+                    AV_ROUND_UP);
+                std::vector<int16_t> samples((size_t)maximum * 2);
+                uint8_t *output[] = {
+                    reinterpret_cast<uint8_t *>(samples.data())
+                };
+                const int converted = swr_convert(
+                    resampler, output, maximum,
+                    (const uint8_t **)frame->extended_data,
+                    frame->nb_samples);
+                if (converted > 0)
+                {
+                    samples.resize((size_t)converted * 2);
+                    audioOutput.Submit(samples.data(), samples.size());
+                }
+            }
+            av_frame_unref(frame);
+        }
+    }
+
+    if (audioAvailable && keepPlaying)
+    {
+        audioOutput.Finish();
+        while (!audioOutput.IsDrained() && !DarkPumpMovieEvents())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+    }
+    swr_free(&resampler);
+    sws_freeContext(scaler);
+    av_packet_free(&packet);
+    av_frame_free(&frame);
+    CloseDecoder(audio);
+    CloseDecoder(video);
+    avformat_close_input(&format);
+    return played;
+}

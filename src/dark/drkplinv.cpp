@@ -283,15 +283,9 @@ public:
       return cmp;
    }
 
-   // @OPTIMIZE: This is the slowest possible implementation
-   STDMETHOD_(ObjID, CycleSelection)(eWhichInvObj which, eCycleDirection dir)
+   ObjID NextSelection(eWhichInvObj which, eCycleDirection dir, ObjID cur)
    {
-      if (WieldingJunk())
-         return WieldedObj();
-
       Assert_(dir != 0);
-
-      ObjID cur = mCurSel[which].obj;
 
       const char* cur_order = CycleOrder(cur);
 
@@ -350,11 +344,37 @@ public:
       if (cur == OBJ_NULL)
          best = bottom;
 
+      return best;
+   }
+
+   STDMETHOD_(ObjID, CycleSelection)(eWhichInvObj which, eCycleDirection dir)
+   {
+      return CycleSelectionSteps(which, dir, 1);
+   }
+
+   ObjID CycleSelectionSteps(eWhichInvObj which, eCycleDirection dir, unsigned count)
+   {
+      if (WieldingJunk())
+         return WieldedObj();
+      const ObjID initial = Selection(which);
+      if (!count || !dir)
+         return initial;
+      ObjID best = initial;
+      for (unsigned i = 0; i < count; ++i)
+      {
+         best = NextSelection(which, dir, best);
+         if (best != OBJ_NULL && GetType(best) == kInvTypeJunk)
+            break;
+      }
+      // Coalesced wheel bursts can contain complete laps of the inventory.
+      // Keep scrolling visibly responsive even when the net slot is unchanged.
+      if (count > 1 && best == initial)
+         best = NextSelection(which, dir, best);
+      // Only the final selection sends InvSelect/InvDeSelect script messages.
       if (best != OBJ_NULL)
          Select(best);
       else
          ClearSelection(which);
-
       return best;
    }
 
@@ -619,6 +639,12 @@ void cInventory::Load(ITagFile* file)
 ////////////////////////////////////////////////////////////
 // Factory
 //
+
+ObjID InventoryCycleSelectionSteps(IInventory *inventory, eWhichInvObj which,
+                                   eCycleDirection dir, unsigned count)
+{
+   return static_cast<cInventory *>(inventory)->CycleSelectionSteps(which, dir, count);
+}
 
 void InventoryCreate()
 {

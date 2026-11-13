@@ -15,11 +15,7 @@
 #include <sndsrc.h>
 #include <playlist.h>
 
-#ifdef DARK_HAVE_VORBISFILE
-#pragma pack(push, 8)
 #include <vorbis/vorbisfile.h>
-#pragma pack(pop)
-#endif
 
 #include <auxsnd.h>  // so we get our own EXTERN 
 
@@ -175,7 +171,6 @@ void WriteU32(uint8 *destination, uint32 value)
    destination[3] = static_cast<uint8>(value >> 24);
 }
 
-#ifdef DARK_HAVE_VORBISFILE
 size_t VorbisRead(void *destination, size_t size, size_t count,
                   void *context)
 {
@@ -294,7 +289,6 @@ void *DecodeOggWithVorbisFile(const void *source, uint32 sourceLen,
    *waveLen = 44u + bytesRead;
    return wave;
 }
-#endif
 
 void *DecodeOggToWave(const void *source, uint32 sourceLen,
                       uint32 *waveLen)
@@ -302,84 +296,7 @@ void *DecodeOggToWave(const void *source, uint32 sourceLen,
    if (sourceLen < 4 || memcmp(source, "OggS", 4) != 0)
       return NULL;
 
-#ifdef DARK_HAVE_VORBISFILE
    return DecodeOggWithVorbisFile(source, sourceLen, waveLen);
-#else
-   static bool warnedMissingDecoder;
-
-   sSndFileApi api;
-   if (!LoadSndFile(&api))
-   {
-      if (!warnedMissingDecoder)
-      {
-         Warning(("Ogg Vorbis audio requires the libsndfile runtime\n"));
-         warnedMissingDecoder = true;
-      }
-      return NULL;
-   }
-
-   SF_VIRTUAL_IO io = { MemoryLength, MemorySeek, MemoryRead,
-                        MemoryWrite, MemoryTell };
-   sMemorySound memory = { static_cast<const uint8 *>(source),
-                           sourceLen, 0 };
-   SF_INFO info = {};
-   SNDFILE *file = api.open_virtual(&io, 0x10, &info, &memory);
-   if (!file || info.frames <= 0 || info.samplerate <= 0 ||
-       (info.channels != 1 && info.channels != 2) ||
-       static_cast<uint64_t>(info.frames) >
-          (UINT32_MAX - 44u) / (static_cast<uint32>(info.channels) * 2u))
-   {
-      if (file)
-         api.close(file);
-      Warning(("Unable to decode Ogg Vorbis sound resource\n"));
-      return NULL;
-   }
-
-   const uint32 frameBytes = static_cast<uint32>(info.channels) * 2u;
-   const uint32 capacity = static_cast<uint32>(info.frames) * frameBytes;
-   uint8 *wave = static_cast<uint8 *>(Malloc(44u + capacity));
-   if (!wave)
-   {
-      api.close(file);
-      return NULL;
-   }
-
-   sf_count_t framesRead = 0;
-   while (framesRead < info.frames)
-   {
-      sf_count_t count = api.readf_short(
-         file, reinterpret_cast<short *>(wave + 44) +
-            framesRead * info.channels,
-         info.frames - framesRead);
-      if (count <= 0)
-         break;
-      framesRead += count;
-   }
-   api.close(file);
-   if (framesRead <= 0)
-   {
-      Free(wave);
-      Warning(("Unable to decode Ogg Vorbis sound resource\n"));
-      return NULL;
-   }
-
-   const uint32 dataBytes = static_cast<uint32>(framesRead) * frameBytes;
-   memcpy(wave, "RIFF", 4);
-   WriteU32(wave + 4, 36u + dataBytes);
-   memcpy(wave + 8, "WAVEfmt ", 8);
-   WriteU32(wave + 16, 16);
-   WriteU16(wave + 20, 1);
-   WriteU16(wave + 22, static_cast<uint16>(info.channels));
-   WriteU32(wave + 24, static_cast<uint32>(info.samplerate));
-   WriteU32(wave + 28,
-            static_cast<uint32>(info.samplerate) * frameBytes);
-   WriteU16(wave + 32, static_cast<uint16>(frameBytes));
-   WriteU16(wave + 34, 16);
-   memcpy(wave + 36, "data", 4);
-   WriteU32(wave + 40, dataBytes);
-   *waveLen = 44u + dataBytes;
-   return wave;
-#endif
 }
 
 bool PrepareSoundBuffer(void *source, uint32 sourceLen, void **prepared,
@@ -509,11 +426,11 @@ CreateMemSoundSource( ISndMixer        *pMixer,          // your mixer
 
    //
    // Da Magic:  When we create a raw sample of type "Normal" (a JohnB-ism),
-   //  this usually creates the DirectSoundBuffer and copies the data directly
+   //  this usually creates the backend buffer and copies the data directly
    //  to it - but since we pass in NULL for the sound data address, it calls
    //  the stream refill callback, which in this case is sndsrc code which will read
    //  compressed data from the passed-in memory buffer, and will decompress
-   //  directly to the DirectSoundBuffer.
+   //  directly to the backend buffer.
    //
    pSample = ISndMixer_CreateRawSample( pMixer, kSndSampleNormal, NULL,
                                         finalDataLen, totalSamples, &attribs );
@@ -699,11 +616,11 @@ CreateMemSoundSourceLooped( ISndMixer           *pMixer,          // your mixer
 
    //
    // Da Magic:  When we create a raw sample of type "Normal" (a JohnB-ism),
-   //  this usually creates the DirectSoundBuffer and copies the data directly
+   //  this usually creates the backend buffer and copies the data directly
    //  to it - but since we pass in NULL for the sound data address, it calls
    //  the stream refill callback, which in this case is sndsrc code which will read
    //  compressed data from the passed-in memory buffer, and will decompress
-   //  directly to the DirectSoundBuffer.
+   //  directly to the backend buffer.
    //
    pSample = ISndMixer_CreateRawSample( pMixer, kSndSampleStream, NULL,
                                         finalDataLen, totalSamples, &attribs );
@@ -863,11 +780,11 @@ CreateNRezStreamedSoundSource( ISndMixer           *pMixer,          // your mix
 
    //
    // Da Magic:  When we create a raw sample of type "Normal" (a JohnB-ism),
-   //  this usually creates the DirectSoundBuffer and copies the data directly
+   //  this usually creates the backend buffer and copies the data directly
    //  to it - but since we pass in NULL for the sound data address, it calls
    //  the stream refill callback, which in this case is sndsrc code which will read
    //  compressed data from the passed-in memory buffer, and will decompress
-   //  directly to the DirectSoundBuffer.
+   //  directly to the backend buffer.
    //
    int streamBufSize = (int)(attribs.sampleRate * kAUXSND_SecondsOfBuffer * (attribs.bitsPerSample >> 3));
    *ppStreamBuffer = new char[streamBufSize];
@@ -1056,11 +973,11 @@ CreateSongSoundSource ( ISndMixer           *pMixer,
 
    //
    // Da Magic:  When we create a raw sample of type "Normal" (a JohnB-ism),
-   //  this usually creates the DirectSoundBuffer and copies the data directly
+   //  this usually creates the backend buffer and copies the data directly
    //  to it - but since we pass in NULL for the sound data address, it calls
    //  the stream refill callback, which in this case is sndsrc code which will read
    //  compressed data from the passed-in memory buffer, and will decompress
-   //  directly to the DirectSoundBuffer.
+   //  directly to the backend buffer.
    //
    int streamBufSize = (int)(attribs.sampleRate * kAUXSND_SecondsOfBuffer * (attribs.bitsPerSample >> 3));
    *ppStreamBuffer = new char[streamBufSize];

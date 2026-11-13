@@ -61,7 +61,7 @@ enum eScrnFlags
 };
 
 // set a new display mode.
-EXTERN int ScrnSetDisplay(int kind, int flags, GUID *pDDrawGuid);
+EXTERN int ScrnSetDisplay(int kind, int flags, GUID *pDisplayGuid);
 
 // set a new screen mode.  Flags are gr_set_mode flags plus eScrnFlags
 // palette or not

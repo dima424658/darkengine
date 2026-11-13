@@ -68,7 +68,8 @@ typedef fix fix16;
 typedef ushort fixang;
 
 /* makes a fixed point number with integral part a and fractional part b. */
-#define fix_make(a,b) ((fix) ((((sint32)(a))<<16)|(b)) )
+#define fix_make_pos(a,b) ((fix) ((((sint32)(a))<<16)|(b)) )
+#define fix_make(a,b) (((a) < 0) ? (-fix_make_pos(-(a), (b))) : (fix_make_pos((a), (b))))
 
 #define FIX_UNIT fix_make(1,0)
 
@@ -161,7 +162,7 @@ extern const fixang asintab[128+1];
    their product is a*b*2^32, and edx is the integral part and eax is the
    fractional part.  the bottom 16 bits or edx and the top 16 bits of eax are
    the 32-bit fixed-point product. */
-__inline fix quick_fix_mul(fix a, fix b)
+static __inline fix quick_fix_mul(fix a, fix b)
 {
    return (fix)(((int64_t)a * (int64_t)b) >> 16);
 }
@@ -170,12 +171,12 @@ __inline fix quick_fix_mul(fix a, fix b)
 // and about 1.4 times slower on a Pentium.
 // i love intel, sadly for now we probably should stay with 486 based optimizations
 // so im defaulting to this one for now....
-__inline fix fast_fix_mul (fix a, fix b)
+static __inline fix fast_fix_mul (fix a, fix b)
 {
    return (fix)(((int64_t)a * (int64_t)b) >> 16);
 }
 
-__inline fix fast_fix_mul_int(fix a, fix b)
+static __inline fix fast_fix_mul_int(fix a, fix b)
 {
    return (fix)(((int64_t)a * (int64_t)b) >> 32);
 }
@@ -188,7 +189,7 @@ extern char mul_test;
 // rail to the top or bottom rails.
 
 fix safe_fix_mul (fix a, fix b);
-__inline fix safe_fix_mul_asm (fix a, fix b)
+static __inline fix safe_fix_mul_asm (fix a, fix b)
 {
    int64_t result = ((int64_t)a * (int64_t)b) >> 16;
    mul_test = 0;
@@ -208,7 +209,7 @@ __inline fix safe_fix_mul_asm (fix a, fix b)
    48 bits, and has to span edx:eax.  the top 16 bits of a*2^16 get put in
    edx and the bottom 16 get shift up in eax.  the quotient is obtained by
    dividing by b*2^16. */
-__inline fix fix_div_fast (fix a, fix b)
+static __inline fix fix_div_fast (fix a, fix b)
 {
    return (fix)(((int64_t)a << 16) / b);
 }
@@ -328,17 +329,17 @@ typedef sint32 fix24;
 #define fix16_to_fix24(n) (fix24_from_fix16(n))
 #define fix24_to_fix16(n) (fix16_from_fix24(n))
 
-__inline fix24 fix24_mul (fix24 a, fix24 b)
+static __inline fix24 fix24_mul (fix24 a, fix24 b)
 {
    return (fix24)(((int64_t)a * (int64_t)b) >> 8);
 }
 
-__inline fix24 fix24_div (fix24 a, fix24 b)
+static __inline fix24 fix24_div (fix24 a, fix24 b)
 {
    return (fix24)(((int64_t)a << 8) / b);
 }
 
-__inline fix24 fix24_mul_div (fix24 m0, fix24 m1, fix24 d)
+static __inline fix24 fix24_mul_div (fix24 m0, fix24 m1, fix24 d)
 {
    return (fix24)(((int64_t)m0 * (int64_t)m1) / d);
 }

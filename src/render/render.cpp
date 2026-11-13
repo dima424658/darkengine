@@ -99,10 +99,11 @@ EXTERN void set_hardware_gamma_level(float level)
 {
    new_gamma = TRUE;
    gamma_level = level;
+   RenderBackendSetGamma(level);
 
    // The old renderer deferred hardware-ramp changes while simulation was
-   // rendering to avoid crashing early D3D devices.  D3D11 gamma is only a
-   // composite-shader constant, so changing it is safe at any time.  Apply it
+   // rendering to avoid crashing early graphics devices. Modern gamma is a
+   // composite-shader constant, so changing it is safe at any time. Apply it
    // immediately so a paused/in-game options menu responds while its slider
    // is moving instead of waiting for gameplay rendering to resume.
    if (RenderBackendAvailable())
@@ -275,15 +276,6 @@ void RendererReset()
 void RendererPalChange()
 {
    init_color_tables();
-#ifdef SOFTWARE_RGB
-   // init_color_tables builds light_pal/light_ipal.  Rebuild the 16-bit
-   // palette tables afterwards so their extended software-RGB rows use the
-   // initialized lighting palette rather than the startup zeroes.
-   if (!g_lgd3d && grd_bpp >= 15) {
-      palmgr_update_pal_slot(0);
-      palmgr_recompute_all();
-   }
-#endif
 }
 ////////////////////////////////////////////////////////////
 // THIS STUFF HERE WAS CUT OUT OF EDITGEOM
@@ -349,7 +341,7 @@ uchar ShadClosestCol(mxs_vector *c, uchar pal[768], bool trans)
 {
    double dist, best_dist = 256*256*3; // bigger than biggest possible
    uchar best=0;
-   uchar j;
+   int j;
 
    for (j = trans?1:0; j<256; ++j)
    {
@@ -406,53 +398,6 @@ uchar compute_color_mix(int a, int r, int g, int b, fix weight)
       return ShadClosestCol(&c,grd_pal,FALSE);
    }
 }
-
-#ifdef SOFTWARE_RGB
-
-#define NUM_R  4
-#define NUM_G  4
-#define NUM_B  3
-#define NUM_SHADES 8
-
-#define MAX_R      (NUM_R-1)
-#define MAX_G      (NUM_G-1)
-#define MAX_B      (NUM_B-1)
-#define MAX_SHADES (NUM_SHADES-1)
-
-EXTERN uchar light_pal[768];
-EXTERN uchar light_ipal[32768];
-uchar light_pal[768] = { 0 };
-uchar light_ipal[32768] = { 0 };
-
-EXTERN void calc_ipal(uchar *pal_data, uchar *ipal);
-void init_lighting_palette(void)
-{
-   int r,g,b;
-   int lum;
-   int n=0;
-   // tesselate the RGB color cube in the following way:
-   //   r: 4 values
-   //   g: 4 values
-   //   b: 3 values
-   // (30 combinations)
-   // make white first
-
-   n = 0;
-   for (r=MAX_R; r >= 0; --r)
-   for (g=MAX_G; g >= 0; --g)
-   for (b=MAX_B; b >= 0; --b) {
-      if (r == MAX_R || g == MAX_G || b == MAX_B) {
-         for (lum=0; lum < NUM_SHADES; ++lum) {
-            light_pal[n++] = r * lum * 256 / NUM_SHADES / NUM_R;
-            light_pal[n++] = g * lum * 256 / NUM_SHADES / NUM_G;
-            light_pal[n++] = b * lum * 256 / NUM_SHADES / NUM_B;
-         }
-      }
-   }
-
-   calc_ipal(light_pal, light_ipal);
-}
-#endif
 
 enum eTLucBanks
 {
@@ -540,9 +485,6 @@ static void init_color_tables(void)
 
       // sigh, can't find the magic water constant anywhere.
       pt_medium_haze_clut[MEDIA_WATER] = GetWaterBankClut(0);
-#ifdef SOFTWARE_RGB
-      init_lighting_palette();
-#endif
    }
    else
    {
@@ -562,30 +504,6 @@ static void init_color_tables(void)
       pt_medium_haze_clut[MEDIA_WATER] = GetWaterBankClut(0);
    }
 
-      /*
-
-   build_tluc_table(g_tluc);
-
-   for (int x = kFirstWaterBank; x < kFirstWaterBank + kNumWaterBanks*kWaterBankSize; x++)
-      pt_clut_list[x] = g_tluc[x];
-
-   gr_set_light_tab(g_tluc[kBlackBank]);
-   g2pt_tluc_table = g_tluc[0];
-
-   // setup our media entry/exit cluts
-   for (x=0; x < 256; ++x) {
-      pt_medium_entry_clut[x] = 0;
-      pt_medium_exit_clut[x] = 0;
-      pt_medium_haze_clut[x] = 0;
-   }
-
-   // sigh, can't find the magic water constant anywhere.
-   pt_medium_haze_clut[MEDIA_WATER] = GetWaterBankClut(0);
-
-#ifdef SOFTWARE_RGB
-   init_lighting_palette();
-#endif
-   */
 }
 
 ////////////////////////////////////////////////////////////

@@ -81,8 +81,6 @@ cSndMixer::cSndMixer()
    mTimeoutMillisecs = ~0;
    fnFreeChannelCB = NULL;
    fnTraceCB = NULL;
-   mpDisplayDevice = NULL;
-   mpWinDisplayDevice = NULL;
    mpInaudibleListHead = NULL;
    mpAudibleListHead = NULL;
 
@@ -116,12 +114,8 @@ cSndMixer::cSndMixer()
 
 cSndMixer::~cSndMixer()
 {
-   int blockCookie = BlockDisplay();
-   ReleaseDisplay(blockCookie);
    // inform nosy app about death of mixer
    DoTrace( NULL, kSndMixerDestroyed );
-
-   ReleasePlatformState();
 }
 
 void
@@ -375,7 +369,7 @@ cSndMixer::CreateSampleFromRez(
 ////////////////////////////////////
 // AllocChannel
 //
-// Allocate a DirectSound channel, call priority func
+// Allocate a mixer channel, call priority func
 // to free one if none available
 // Returns TRUE if allocation succeeds
 //
@@ -757,7 +751,7 @@ cSndMixer::CheckStreams(void)
 // RegisterFreeChannelCallback
 //
 // Register a FreeChannel callback.  The callback will get called
-// when a DirectSound channel is freed.
+// when a mixer channel is freed.
 //
 
 STDMETHODIMP_(void)
@@ -1226,10 +1220,7 @@ cSndMixer::CheckTimer( void )
       if ( (mTimerId == 0) && (mTimerState != eSndTimerBroken) ) {
          // timer is inactive & needed - start it
          mTimerState = eSndTimerBroken;
-         // break the DirectX display lock to avoid hang in timer calls
-         int blockCookie = BlockDisplay();
          mTimerId = SndStartPeriodicTimer(kFadeGranularity, TimerCallback, this);
-         ReleaseDisplay(blockCookie);
 
          if (mTimerId != 0) {
             // the timer SHOULD be working, setup stuff which CheckTimer will

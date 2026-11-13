@@ -21,6 +21,7 @@ void (*grd_set_mode_callback)()=NULL;
 int gr_set_mode(int mode, uint flags)
 {
    short *mode_ptr;
+   int err;
 
    mode_ptr = grd_info.modes;
    do {
@@ -38,8 +39,15 @@ int gr_set_mode(int mode, uint flags)
    grd_mode = mode;
    grd_cap->w = grd_mode_info[mode].w;
    grd_cap->h = grd_mode_info[mode].h;
-   gr_set_screen_mode(mode, flags);
-   gr_init_device(&grd_info);
+   // A failed device mode change leaves grd_cap and the screen-height limit
+   // unset.  Continuing here makes the later screen allocation return NULL
+   // and used to crash in gr_set_screen().
+   err = gr_set_screen_mode(mode, flags);
+   if (err != 0)
+      return -1;
+   err = gr_init_device(&grd_info);
+   if (err != 0)
+      return -1;
    grd_cap->aspect = (grd_cap->w * fix_three_fourths)/grd_cap->h;
    if (grd_set_mode_callback!=NULL)
       grd_set_mode_callback();

@@ -13,7 +13,7 @@
 #define __AICBRMDS_H
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 #include <aicbrtyp.h>
 
@@ -82,8 +82,7 @@ enum eAIRangedModePriority_
    kAIRC_PriNormal = 2,
    kAIRC_PriHigh = 3,
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRMDS_H */
 

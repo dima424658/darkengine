@@ -20,6 +20,7 @@ extern "C"
 
   // types
 
+#pragma pack(push, 1)
 typedef struct Location
 {
    mxs_vector vec;
@@ -36,6 +37,7 @@ typedef struct Position
    Location loc;
    Facing   fac;
 } Position;
+#pragma pack(pop)
 
 typedef mxs_vector Vertex;
 typedef mxs_vector Vector;

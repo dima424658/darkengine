@@ -19,7 +19,9 @@
 #include <str.h>
 #endif
 
-// #include <_ai.h>
+
+// Pathfinding debug source identifier formerly supplied by generated _ai.h.
+#define DSRC_AI_PATHFIND 0x80001000
 
 F_DECLARE_INTERFACE(IInternalAI);
 

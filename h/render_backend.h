@@ -4,10 +4,9 @@
 #include <stdint.h>
 
 // Platform-neutral rendering boundary used by the legacy lgd3d facade and
-// higher-level engine code.  A platform renderer owns the window/surface and
-// implements these operations; the current Windows provider is D3D11.  An
-// OpenGL provider can implement the same contract without exposing GL types
-// to the engine.
+// higher-level engine code. The display provider owns the window and surface;
+// the backend implements these operations without exposing graphics API
+// types to engine callers.
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,16 +34,24 @@ enum eRenderBackendBlend {
 };
 
 int RenderBackendAvailable(void);
+void RenderBackendSetGamma(float gamma);
+// Select a physical device by the index reported through the legacy lgd3d
+// device enumeration. Negative values restore automatic device selection.
+void RenderBackendSetPhysicalDeviceIndex(int index);
 void RenderBackendSetScaleToWindow(int enabled);
 void RenderBackendSetFitToViewport(int enabled);
-void RenderBackendSetInteractiveResize(int resizing);
 void RenderBackendSetPreserveCanvas(int enabled);
 int RenderBackendPreserveCanvas(void);
+void RenderBackendSetCanvasOverlayEnabled(int enabled);
+int RenderBackendCanvasOverlayEnabled(void);
 void RenderBackendSetWindowedClientSizeHint(int width, int height);
-// Returns the drawable client size in physical pixels. While an interactive
-// resize is in progress the size is intentionally withheld so callers can
-// rebuild expensive engine-owned canvases once, when the drag finishes.
+// Returns the current client size in logical points. Use the window metrics
+// passed to the backend for the drawable size in physical pixels.
+int RenderBackendGetClientSize(int *width, int *height);
+// Kept for existing callers that used the former resize-settle API. This now
+// returns the same current size as RenderBackendGetClientSize.
 int RenderBackendGetSettledClientSize(int *width, int *height);
+int RenderBackendGetLogicalSize(int *width, int *height);
 int RenderBackendClientToLogicalPoint(int *x, int *y);
 int RenderBackendLogicalToClientPoint(int *x, int *y);
 // Presents a legacy-canvas update immediately when the platform normally
@@ -55,6 +62,9 @@ int RenderBackendBeginFrame(void);
 void RenderBackendEndFrame(void);
 void RenderBackendDeactivateScene(void);
 void RenderBackendClearDepth(void);
+void RenderBackendClearDepthRect(int x0, int y0, int x1, int y1);
+// Clear a logical canvas rectangle in the active hardware scene.
+void RenderBackendClearCanvasRegion(int x, int y, int width, int height);
 void RenderBackendSetDepth(int compareEnabled, int writeEnabled);
 void RenderBackendSetBlend(int blendMode);
 void RenderBackendSetAlphaTest(int enabled);
@@ -75,7 +85,6 @@ int RenderBackendDraw(int primitive, const sRenderBackendVertex *vertices,
 // opt in to the plain-text trace; normal game and viewer runs create no log.
 void RenderBackendTraceReset(void);
 void RenderBackendTrace(const char *format, ...);
-int RenderBackendCaptureComplete(void);
 
 #ifdef __cplusplus
 }

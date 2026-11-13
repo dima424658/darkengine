@@ -14,7 +14,7 @@
 #include <aicbhtoh.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -35,7 +35,6 @@ protected:
 
    virtual BOOL IsValidTarget(ObjID object);
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIMC_H */

@@ -1,11 +1,17 @@
 #include <render_backend.h>
 #include <dev2d.h>
 #include <lgd3d.h>
+#include <climits>
+#include <cstddef>
+#include <gdbm.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <tdrv.h>
 #include <texture.h>
 #include <tmgr.h>
+#include <rsdcfg.h>
+#include <vector>
 
 #define MODERN_MAX_PALETTES 256
 
@@ -18,7 +24,6 @@ int g_ModernTextureLevel = 0;
 BOOL lgd3d_blend_trans = TRUE;
 BOOL b_SS2_UseSageTexManager = FALSE;
 uchar *lgd3d_clut = NULL;
-void SynchD3D(void) {}
 }
 
 static uchar g_palettes[MODERN_MAX_PALETTES][768];
@@ -36,11 +41,13 @@ static BOOL g_smooth[2] = {TRUE, TRUE};
 static BOOL g_dither = FALSE, g_antialias = FALSE, g_shading = TRUE;
 static int g_chromaR = 255, g_chromaG = 0, g_chromaB = 255;
 static grs_bitmap *g_defaultBitmap = NULL;
-static lgd3ds_device_info g_deviceInfo;
+static std::vector<lgd3ds_device_info> g_deviceInfos;
+static std::vector<std::string> g_deviceNames;
 static short g_supportedModes[GRD_MODES + 1];
-static const char g_deviceName[] = "Modern renderer";
 
 extern "C" {
+extern int RenderBackendVulkanEnumeratePhysicalDevices(void);
+extern const char *RenderBackendVulkanPhysicalDeviceName(int index);
 extern void SetTextureId(int n);
 extern void UnsetTextureId(int n);
 extern void lgd3d_render_init(lgd3ds_device_info *info);
@@ -83,18 +90,133 @@ static void Decode16(ushort p, ushort flags, uchar *r, uchar *g, uchar *b,
   }
 }
 
+static BOOL MatchesChromaKey16(ushort pixel, ushort flags) {
+  ushort key;
+  ushort mask;
+  switch (flags & 0x7f00) {
+  case BMF_RGB_565:
+    key = (ushort)(((g_chromaR >> 3) << 11) |
+                   ((g_chromaG >> 2) << 5) | (g_chromaB >> 3));
+    mask = 0xffff;
+    break;
+  case BMF_RGB_4444:
+    key = (ushort)(((g_chromaR >> 4) << 8) |
+                   ((g_chromaG >> 4) << 4) | (g_chromaB >> 4));
+    mask = 0x0fff;
+    break;
+  case BMF_RGB_1555:
+    key = (ushort)(((g_chromaR >> 3) << 10) |
+                   ((g_chromaG >> 3) << 5) | (g_chromaB >> 3));
+    mask = 0x7fff;
+    break;
+  default:
+    key = (ushort)(((g_chromaR >> 3) << 10) |
+                   ((g_chromaG >> 3) << 5) | (g_chromaB >> 3));
+    mask = 0x7fff;
+    break;
+  }
+  return (pixel & mask) == key;
+}
+
+static BOOL GetTextureStorageSize(const tdrv_texture_info *info,
+                                 size_t *rowBytes, size_t *totalBytes) {
+  if (!info || !info->bm || info->bm->w <= 0 || info->bm->h <= 0 ||
+      info->w <= 0 || info->h <= 0 || info->scale_w < 0 ||
+      info->scale_h < 0 || !rowBytes || !totalBytes)
+    return FALSE;
+
+  size_t expectedWidth = (size_t)info->bm->w;
+  size_t expectedHeight = (size_t)info->bm->h;
+  for (int i = 0; i < info->scale_w; ++i) {
+    if (expectedWidth > (size_t)INT_MAX / 2)
+      return FALSE;
+    expectedWidth *= 2;
+  }
+  for (int i = 0; i < info->scale_h; ++i) {
+    if (expectedHeight > (size_t)INT_MAX / 2)
+      return FALSE;
+    expectedHeight *= 2;
+  }
+  if (expectedWidth != (size_t)info->w ||
+      expectedHeight != (size_t)info->h ||
+      expectedWidth > (size_t)INT_MAX / 4)
+    return FALSE;
+
+  const size_t stride = expectedWidth * 4;
+  if (expectedHeight > (size_t)INT_MAX / stride)
+    return FALSE;
+  *rowBytes = stride;
+  *totalBytes = stride * expectedHeight;
+  return TRUE;
+}
+
 static uchar *ConvertTexture(tdrv_texture_info *info) {
-  grs_bitmap *bm = info->bm;
-  int w = info->w, h = info->h, x, y;
+  grs_bitmap *bm = info ? info->bm : NULL;
+  size_t outputRowBytes, totalBytes;
+  if (!GetTextureStorageSize(info, &outputRowBytes, &totalBytes))
+    return NULL;
+
   const uchar *bits = (bm->flags & BMF_LOADED) ? info->bits : bm->bits;
-  uchar *out = (uchar *)malloc(w * h * 4);
+  grs_bitmap decodedBitmap;
+  std::vector<uchar> decodedPixels;
+  if (bm->type == BMT_RSD8) {
+    // RSD8 bitmaps store compressed data, so gr_init_bitmap() gives them a
+    // zero row stride. gd_rsd8_convert() uses row as the decoded output stride
+    // and expects a full flat bitmap buffer in the unpack configuration.
+    if (!bits || bm->w <= 0 || bm->h <= 0 || bm->h > INT_MAX / bm->w)
+      return NULL;
+    const size_t decodedSize = (size_t)bm->w * bm->h;
+    try {
+      decodedPixels.resize(decodedSize);
+    } catch (...) {
+      return NULL;
+    }
+
+    grs_bitmap encodedBitmap = *bm;
+    encodedBitmap.bits = const_cast<uchar *>(bits);
+    encodedBitmap.row = bm->w;
+    gds_rsd_config previousConfig;
+    gd_get_rsd_config(&previousConfig);
+    gds_rsd_config decodedConfig = {
+        decodedPixels.data(), (int)decodedSize, (int)decodedSize, 0};
+    gd_set_rsd_config(&decodedConfig);
+    const int result = gd_rsd8_convert(&encodedBitmap, &decodedBitmap);
+    gd_set_rsd_config(&previousConfig);
+    if (result != GR_UNPACK_RSD8_OK)
+      return NULL;
+    decodedBitmap.bits = decodedPixels.data();
+    bm = &decodedBitmap;
+    bits = decodedBitmap.bits;
+  }
+
+  size_t sourcePixelBytes = 0;
+  if (bm->type == BMT_FLAT8 || bm->type == BMT_TLUC8)
+    sourcePixelBytes = 1;
+  else if (bm->type == BMT_FLAT16)
+    sourcePixelBytes = 2;
+  else if (bm->type == BMT_FLAT24)
+    sourcePixelBytes = 3;
+  if (sourcePixelBytes &&
+      (size_t)bm->row < (size_t)bm->w * sourcePixelBytes)
+    return NULL;
+
+  if (sourcePixelBytes && !bits)
+    return NULL;
+
+  const size_t scaleWidth = (size_t)1 << info->scale_w;
+  const size_t scaleHeight = (size_t)1 << info->scale_h;
+  const size_t sourceRowBytes = bm->row;
+  uchar *out = (uchar *)malloc(totalBytes);
   if (!out)
     return NULL;
-  for (y = 0; y < h; ++y)
-    for (x = 0; x < w; ++x) {
+  for (int y = 0; y < bm->h; ++y)
+    for (int x = 0; x < bm->w; ++x) {
       uchar r = 255, g = 255, b = 255, a = 255;
-      if (bm->type == BMT_FLAT8) {
-        uchar index = bits[y * bm->row + x];
+      const uchar *source = bits
+          ? bits + (size_t)y * sourceRowBytes + (size_t)x * sourcePixelBytes
+          : NULL;
+      if (bm->type == BMT_FLAT8 || bm->type == BMT_TLUC8) {
+        uchar index = source[0];
         if (g_textureClut && !(info->flags & TF_ALPHA))
           index = g_textureClut[index];
         if (info->flags & TF_ALPHA) {
@@ -112,29 +234,48 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
             a = 0;
         }
       } else if (bm->type == BMT_FLAT16) {
-        ushort p = ((const ushort *)(bits + y * bm->row))[x];
+        ushort p;
+        memcpy(&p, source, sizeof(p));
         Decode16(p, bm->flags, &r, &g, &b, &a);
-        if ((info->flags & TF_TRANS) && p == 0)
+        if ((info->flags & TF_TRANS) && MatchesChromaKey16(p, bm->flags))
           a = 0;
       } else if (bm->type == BMT_FLAT24) {
-        const uchar *p = bits + y * bm->row + x * 3;
-        b = p[0];
-        g = p[1];
-        r = p[2];
+        // The PCX decoder interleaves its red, green, and blue planes in
+        // RGB order.  Vulkan uploads the expanded RGBA data unchanged.
+        r = source[0];
+        g = source[1];
+        b = source[2];
+        if ((info->flags & TF_TRANS) && r == g_chromaR &&
+            g == g_chromaG && b == g_chromaB)
+          a = 0;
       }
-      out[(y * w + x) * 4] = r;
-      out[(y * w + x) * 4 + 1] = g;
-      out[(y * w + x) * 4 + 2] = b;
-      out[(y * w + x) * 4 + 3] = a;
+      const size_t destination =
+          ((size_t)y * scaleHeight * (size_t)info->w +
+           (size_t)x * scaleWidth) * 4;
+      for (size_t repeatY = 0; repeatY < scaleHeight; ++repeatY)
+        for (size_t repeatX = 0; repeatX < scaleWidth; ++repeatX) {
+          uchar *pixel = out + destination +
+              repeatY * outputRowBytes + repeatX * 4;
+          pixel[0] = r;
+          pixel[1] = g;
+          pixel[2] = b;
+          pixel[3] = a;
+        }
     }
   return out;
 }
 
 static void CookInfo(tdrv_texture_info *info) {
+  if (!info)
+    return;
   // The texture manager owns flags, dimensions, scaling, and the original
   // bits pointer. In particular, loaded bitmaps temporarily store a texture
   // ID in bm->bits; replacing info->bits here corrupts animated reloads.
-  info->size = info->w * info->h * 4;
+  size_t rowBytes, totalBytes;
+  info->size = GetTextureStorageSize(info, &rowBytes, &totalBytes)
+      ? (int)totalBytes : 0;
+  if (!info->bm)
+    return;
   // Size chains can contain different dimensions with the same byte count
   // (2048x512 and 1024x1024, for example).  Hash complete dimensions rather
   // than truncating both to eight bits, or a swapped-out large texture can be
@@ -230,27 +371,36 @@ extern "C" int lgd3d_enumerate_devices(void) {
   for (i = 0; i < supportedModeCount && i < GRD_MODES; ++i)
     g_supportedModes[i] = (short)gr_get_registered_mode(i, 16);
   g_supportedModes[i] = -1;
-  memset(&g_deviceInfo, 0, sizeof(g_deviceInfo));
-  g_deviceInfo.supported_modes = g_supportedModes;
-  g_deviceInfo.name = g_deviceName;
-  g_deviceInfo.flags = LGD3DF_CAN_DO_ZBUFFER | LGD3DF_CAN_DO_VERTEX_FOG |
-                       LGD3DF_CAN_DO_SINGLE_PASS_MT | LGD3DF_CAN_DO_WINDOWED |
-                       LGD3DF_CAN_DO_ITERATE_ALPHA;
-  return 1;
+  const int deviceCount = RenderBackendVulkanEnumeratePhysicalDevices();
+  if (deviceCount <= 0)
+    return 0;
+  try {
+    g_deviceInfos.resize((size_t)deviceCount);
+    g_deviceNames.resize((size_t)deviceCount);
+    for (int device = 0; device < deviceCount; ++device) {
+      const char *name = RenderBackendVulkanPhysicalDeviceName(device);
+      g_deviceNames[(size_t)device] = name ? name : "Vulkan device";
+    }
+    for (int device = 0; device < deviceCount; ++device) {
+      lgd3ds_device_info &info = g_deviceInfos[(size_t)device];
+      memset(&info, 0, sizeof(info));
+      info.supported_modes = g_supportedModes;
+      info.name = g_deviceNames[(size_t)device].c_str();
+      info.flags = LGD3DF_CAN_DO_ZBUFFER | LGD3DF_CAN_DO_VERTEX_FOG |
+                   LGD3DF_CAN_DO_SINGLE_PASS_MT | LGD3DF_CAN_DO_WINDOWED |
+                   LGD3DF_CAN_DO_ITERATE_ALPHA;
+    }
+    return deviceCount;
+  } catch (...) {
+    g_deviceInfos.clear();
+    g_deviceNames.clear();
+    return 0;
+  }
 }
-extern "C" int lgd3d_enumerate_devices_capable_of(ulong flags) {
-  return lgd3d_enumerate_devices();
-}
-extern "C" void lgd3d_unenumerate_devices(void) {}
 extern "C" lgd3ds_device_info *lgd3d_get_device_info(int device) {
-  return device == 0 ? &g_deviceInfo : NULL;
+  return device >= 0 && (size_t)device < g_deviceInfos.size()
+      ? &g_deviceInfos[(size_t)device] : NULL;
 }
-extern "C" void lgd3d_set_hardware(void) {}
-extern "C" void lgd3d_set_software(void) {}
-extern "C" void lgd3d_set_RGB(void) {}
-extern "C" BOOL lgd3d_is_RGB(void) { return TRUE; }
-extern "C" BOOL lgd3d_is_hardware(void) { return TRUE; }
-extern "C" void lgd3d_texture_set_RGB(bool isRGB) {}
 
 extern "C" BOOL lgd3d_init(lgd3ds_device_info *info) {
   uint32 white = 0xffffffff;
@@ -323,15 +473,15 @@ extern "C" void lgd3d_end_frame(void) {
   RenderBackendEndFrame();
 }
 extern "C" void lgd3d_scene_suspend(void) { RenderBackendDeactivateScene(); }
-extern "C" BOOL lgd3d_attach_to_lgsurface(ILGSurface *surface) {
-  return RenderBackendAvailable();
-}
 extern "C" void lgd3d_clean_render_surface(BOOL depth) {
   if (depth)
     RenderBackendClearDepth();
 }
-extern "C" BOOL lgd3d_overlays_master_switch(BOOL on) { return TRUE; }
-extern "C" void lgd3d_blit(void) {}
+extern "C" BOOL lgd3d_overlays_master_switch(BOOL on) {
+  const BOOL previous = RenderBackendCanvasOverlayEnabled();
+  RenderBackendSetCanvasOverlayEnabled(on);
+  return previous;
+}
 
 extern "C" void lgd3d_set_texture_clut(uchar *clut) {
   g_textureClut = lgd3d_clut = clut;
@@ -351,7 +501,7 @@ static void ReloadPaletteTextures(int slot) {
   if (!g_tmgr)
     return;
 
-  // The legacy palettized texture path attached a DirectDraw palette to each
+  // The legacy palettized texture path attached a palette to each
   // loaded surface, so SetEntries recolored existing textures immediately.
   // This backend expands indices to RGBA during upload; reproduce the same
   // semantics by re-expanding every resident bitmap that uses the changed
@@ -359,7 +509,8 @@ static void ReloadPaletteTextures(int slot) {
   // retain menu/previous-mission colors while newly loaded terrain is right.
   for (i = 0; i < LGD3D_MAX_TEXTURES; ++i) {
     grs_bitmap *bm = g_ModernBitmaps[i];
-    if (bm && bm->type == BMT_FLAT8 && bm->align == slot &&
+    if (bm && (bm->type == BMT_FLAT8 || bm->type == BMT_TLUC8 ||
+               bm->type == BMT_RSD8) && bm->align == slot &&
         (bm->flags & BMF_LOADED) && g_ModernTextureInfoValid[i])
       // Do not ask the legacy manager to recook this texture.  Its cookie
       // depends on the current global fill mode, which need not match the
@@ -400,9 +551,9 @@ extern "C" BOOL lgd3d_set_texture_wrapping(uint level, BOOL wrap) {
   return old;
 }
 extern "C" void lgd3d_set_chromakey(int r, int g, int b) {
-  g_chromaR = r;
-  g_chromaG = g;
-  g_chromaB = b;
+  g_chromaR = r < 0 ? 0 : r > 255 ? 255 : r;
+  g_chromaG = g < 0 ? 0 : g > 255 ? 255 : g;
+  g_chromaB = b < 0 ? 0 : b > 255 ? 255 : b;
 }
 extern "C" void lgd3d_get_opaque_texture_bitmask(grs_rgb_bitmask *m) {
   m->red = 0xf800;
@@ -431,19 +582,4 @@ extern "C" BOOL lgd3d_set_shading(BOOL smooth) {
   return old;
 }
 extern "C" BOOL lgd3d_is_smooth_shading_on(void) { return g_shading; }
-extern "C" BOOL lgd3d_enable_specular(BOOL use) { return FALSE; }
-extern "C" void lgd3d_set_texture_map_method(ulong flag) {}
 extern "C" void lgd3d_set_light_map_method(ulong flag) {}
-extern "C" void lgd3d_get_texblending_modes(ulong *a, ulong *b) {
-  if (a)
-    *a = LGD3DTB_MODULATE;
-  if (b)
-    *b = LGD3D_MULTITEXTURE_COLOR;
-}
-extern "C" BOOL lgd3d_get_error(uint32 *code, uint32 *result) {
-  if (code)
-    *code = LGD3D_EC_OK;
-  if (result)
-    *result = 0;
-  return FALSE;
-}

@@ -8,27 +8,32 @@ is not an Android target.
 
 - Android 8.0 (API 26) or later.
 - ARM64 (`arm64-v8a`) only for the first bring-up.
-- SDL 2.32.10, OpenGL ES 3, and OpenAL Soft 1.25.2 using Android OpenSL.
+- SDL3 3.4.18, Vulkan 1.1, and OpenAL Soft 1.25.2 using Android OpenSL.
 - Native Squirrel 3.2 scripts, PNG replacement resources, and Ogg Vorbis
   fan-mission sounds.
 - A folder picker that can use retail TDP, Gold, or Thief 2 files directly or
   import a performance copy into the app-specific `game` directory.
-- Retail movie playback through the packaged LibVLC backend.
+- Retail movie playback through the statically linked FFmpeg backend.
 
-SDL, OpenAL Soft, libpng, libogg, and libvorbis are downloaded from their official
-releases during the first Gradle run and verified against pinned SHA-256
-digests. They are extracted only under the ignored
-`.codex-build/android-deps` directory. Bootstrap the required Squirrel 3.2
-checkout with `tools/bootstrap-dependencies.ps1` on Windows or
-`sh tools/bootstrap-dependencies.sh game` on Linux; it is stored at
-`../../darkengine-deps/squirrel`. The APK obtains LibVLC 3.6.5 from Maven
-Central through the normal Gradle dependency resolution process.
+The SDL3 Android AAR, Vulkan-Headers, and OpenAL Soft are downloaded from their
+official releases during Gradle configuration/build and verified against pinned
+SHA-256 digests. They are stored only under the ignored
+`android/build/android-deps` directory. libpng, Squirrel 3.2, libogg 1.3.6,
+libvorbis 1.3.7, and FFmpeg are built statically from their source submodules.
+Gradle compiles the Vulkan shaders with `glslc` and packages them as app assets.
+Install the Vulkan SDK and make `glslc` available on `PATH` or set
+`VULKAN_SDK`. CMake builds Squirrel, libogg, libvorbis, and FFmpeg for the
+Android ABI from their source submodules.
 
 ## Toolchain
 
 Install JDK 17 or later, Android SDK platform 36, SDK build tools 36, CMake
 3.31.6, and NDK 30.0.16248370. The project intentionally pins these versions
-so Windows and Linux produce the same native configuration.
+so Windows and Linux produce the same native configuration. FFmpeg's source
+build also needs GNU Make and Bash. Parser generation needs Bison 2.3 or
+later on the build host, rather than an Android executable. Windows builds
+need MSYS2's Make and Bash plus `bison` or `win_bison` available to CMake.
+Set `BISON_EXECUTABLE` when the parser generator is outside `PATH`.
 
 From PowerShell:
 

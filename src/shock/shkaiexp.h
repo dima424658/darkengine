@@ -17,7 +17,7 @@
 #include <aiactmot.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -53,8 +53,7 @@ inline cAIExplodeAction::cAIExplodeAction(IAIActor * pOwner, DWORD data)
    type = kAIAT_Explode;
    AddTags("RangedCombat");
 }
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIEXP_H */
 

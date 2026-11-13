@@ -4,8 +4,6 @@
 
 #ifndef __MXLATCH_H
 #define __MXLATCH_H
-#include <vgareg.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

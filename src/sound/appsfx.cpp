@@ -1,6 +1,7 @@
 // $Header: r:/t2repos/thief2/src/sound/appsfx.cpp,v 1.127 2000/03/24 22:57:27 adurant Exp $
 // remedial sound system for DromEd/Dark/AIR/So on
 
+#include <tracy/Tracy.hpp>
 #include <string.h>
 
 #include <dynarray.h>
@@ -456,18 +457,6 @@ BOOL SFXInit(void)
       pSndMixer->Set3DMethod(sfx3DMethod);
       initialized = pSndMixer->Init(NULL, sfx_use_channels + SFX_BONUSCHANNELS,
                                     &attribs) == kSndOk;
-   }
-
-   // "auto" means the native provider first, then the portable provider if
-   // the native device cannot be initialized. OpenAL remains opt-in on a
-   // healthy Windows system and is loaded only at runtime.
-   if (!initialized && !strcmpi(backendName, "auto")) {
-      SafeRelease(pSndMixer);
-      if (SndCreateMixerNamed(&pSndMixer, NULL, "openal")) {
-         pSndMixer->Set3DMethod(sfx3DMethod);
-         initialized = pSndMixer->Init(NULL,
-            sfx_use_channels + SFX_BONUSCHANNELS, &attribs) == kSndOk;
-      }
    }
 
    if (initialized) {
@@ -1207,6 +1196,7 @@ static int sfx_ptr=0;
 
 void SFX_Frame(mxs_vector *pos, mxs_angvec *ang)
 {
+   ZoneScopedN("Sound effects and mixer");
    static ulong cur_time;     // current time, updated each frame
    mxs_matrix orient;
    BOOL init;

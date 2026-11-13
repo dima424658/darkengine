@@ -16,7 +16,7 @@
 #include <aiprops.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 struct sAISoundType;
 F_DECLARE_INTERFACE(IAISoundTypeProperty);
@@ -79,8 +79,7 @@ EXTERN IBoolProperty * g_pStimKnockoutProperty;
         
 EXTERN void SetAIShootsThrough(ObjID object, BOOL shootsthrough);
 EXTERN BOOL GetAIShootsThrough(ObjID object);
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPRUTL_H */
 

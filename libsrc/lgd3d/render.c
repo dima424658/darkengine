@@ -59,6 +59,8 @@ BOOL lgd3d_save_poly;
 BOOL lgd3d_z_normal = TRUE;
 
 static float fog_tabledensity;
+static float fog_linear_distance;
+static int fog_linear_table = TRUE;
 
 typedef struct cliprect {
    float left, right, top, bot;
@@ -83,13 +85,15 @@ static double inv_z_far = 1.0 / 200.0;
 static double z1 = 200.0 / 199.0; // z_far / (z_far - z_near)
 static double z2 = 200.0 / 199.0; // z_near * z_far / (z_far - z_near)
 static double zbias = 0.0;
+static double zbias_stack[LGD3D_ZBIAS_STACK_DEPTH];
+static int zbias_stack_depth;
 static BOOL zbuffer;
 static BOOL zwrite;
 static BOOL zcompare;
 
 void lgd3d_clear_z_rect(int x0, int y0, int x1, int y1)
 {
-   RenderBackendClearDepth();
+   RenderBackendClearDepthRect(x0, y0, x1, y1);
 }
 
 void lgd3d_set_z(float z)
@@ -122,12 +126,28 @@ double lgd3d_set_zbias(double new_bias)
 
 void lgd3d_push_zbias_i(int nZBias)
 {
-    // TODO
+   if (zbias_stack_depth >= LGD3D_ZBIAS_STACK_DEPTH)
+   {
+      Warning(("lgd3d: z-bias stack overflow\n"));
+      return;
+   }
+   if (nZBias < 0 || nZBias > 16)
+   {
+      Warning(("lgd3d: z-bias %d outside supported range 0..16\n", nZBias));
+      nZBias = nZBias < 0 ? 0 : 16;
+   }
+   zbias_stack[zbias_stack_depth++] = zbias;
+   lgd3d_set_zbias(zbias + (double)nZBias / 65536.0);
 }
 
 void lgd3d_pop_zbias(void)
 {
-    // TODO
+   if (zbias_stack_depth <= 0)
+   {
+      Warning(("lgd3d: z-bias stack underflow\n"));
+      return;
+   }
+   lgd3d_set_zbias(zbias_stack[--zbias_stack_depth]);
 }
 
 
@@ -387,6 +407,9 @@ void lgd3d_render_init(lgd3ds_device_info *info)
 {
    zbuffer = info->flags&LGD3DF_ZBUFFER;
    fog_tabledensity = 0.025f;
+   fog_linear_distance = 0.0f;
+   zbias_stack_depth = 0;
+   lgd3d_set_zbias(0.0);
    zwrite = FALSE;
    zcompare = FALSE;
    RenderBackendSetDepth(zcompare, zwrite);
@@ -410,7 +433,8 @@ void lgd3d_set_fog_enable(BOOL enable)
 // Called once per frame from lgd3d_start_frame() to initialize render state.
 //
 
-int num_polys, tri_index, num_poly_verts, num_points;
+int num_polys, tri_index, num_poly_verts;
+static int num_points;
 
 void lgd3d_render_start_frame(void)
 {
@@ -445,13 +469,27 @@ int lgd3d_is_fog_on(void)
 
 int lgd3d_use_linear_table_fog(int bUseIt)
 {
-    // TODO
-    return 0;
+    // The shared renderer evaluates legacy table fog per vertex, using the
+    // reciprocal view-space depth carried by the transformed vertex.
+    int old = fog_linear_table;
+    int enabled = bUseIt != 0;
+    if (old != enabled) {
+       Flush();
+       fog_linear_table = enabled;
+    }
+    return old;
 }
 
 void lgd3d_set_linear_fog_distance(float fDistance)
 {
-    // TODO
+    // Dark's portal renderer specifies the distance where fog becomes fully
+    // opaque.  A non-positive value disables the distance ramp and preserves
+    // the per-vertex fog level supplied by legacy callers.
+    float distance = fDistance > 0.0f ? fDistance : 0.0f;
+    if (fog_linear_distance != distance) {
+       Flush();
+       fog_linear_distance = distance;
+    }
 }
 
 void lgd3d_set_texture_level(int n)
@@ -540,11 +578,8 @@ static void doPolySetup(int n)
 
 void UnsetTextureId(int n)
 {
-   extern void SynchD3D(void);
-
    if (n==tex_id) {
       doPolySetup(tex_id=TDRV_ID_SOLID);
-      SynchD3D(); // flush it, cause the old handle's about to be released!
    }
    if (n==modern_tex_id1) {
       Flush();
@@ -594,6 +629,15 @@ static void ModernConvertVertex(sRenderBackendVertex *d, const sLgd3dVertex *s)
    d->b=(s->color&255)/255.0f;
    d->a=((s->color>>24)&255)/255.0f;
    d->fog=((s->specular>>24)&255)/255.0f;
+   if (fog_linear_table && fog_linear_distance > 0.0f) {
+      float depth = s->rhw > 0.0f ? 1.0f / s->rhw : fog_linear_distance;
+      float visibility = 1.0f - depth / fog_linear_distance;
+      if (visibility < 0.0f)
+         visibility = 0.0f;
+      else if (visibility > 1.0f)
+         visibility = 1.0f;
+      d->fog *= visibility;
+   }
    d->u0=s->tu; d->v0=s->tv; d->u1=d->v1=0.0f;
 }
 

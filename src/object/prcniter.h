@@ -18,7 +18,7 @@
 #include <osysbase.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(ITrait);
 F_DECLARE_INTERFACE(IObjectQuery);
@@ -147,7 +147,6 @@ inline void cConcreteIter::Stop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__PRCNITER_H */

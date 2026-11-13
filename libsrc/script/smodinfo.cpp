@@ -11,6 +11,12 @@
 
 #include <lg.h>
 #include <smodinfo.h>
+#include <hshsttem.h>
+
+// Clang does not emit this inherited virtual template member implicitly from
+// the derived table's vtable, so provide the specialization explicitly.
+template void cHashSet<sScrClassDesc *, const char *,
+                       cCaselessStringHashFuncs>::DestroyAll();
 
 ///////////////////////////////////////////////////////////////////////////////
 //

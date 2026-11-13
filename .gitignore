@@ -52,13 +52,24 @@ Release
 screen*.pcx
 ReleaseGame/
 .codex-build/
+
+# CMake preset build directories and local preset overrides
+/build-macos/
+/build-linux/
+/build-macos-sanitizers/
+/build-linux-sanitizers/
+/build-macos-debug/
+/build-linux-debug/
+/build-win64-sanitizers/
+/build-win64/
+/build-win32/
+/CMakeUserPresets.json
 build/
 .gradle/
 local.properties
 
 # Optional local source checkouts; keep external dependencies out of the
 # repository.
-/3rdparty/squirrel/
 /3rdparty/kctools/
 
 # Local game state and diagnostics. Retail Thief 2 data is never part of this

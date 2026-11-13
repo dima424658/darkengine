@@ -114,8 +114,8 @@ static IContainSys* pContainSys = NULL;
 // last object player picked up
 static ObjID gLastObjPickedUp = OBJ_NULL;
 
-// The native radial lives in the engine inventory layer so XInput, SDL and
-// Android all see exactly the same inventory contents and selection rules.
+// The native radial lives in the engine inventory layer so SDL and Android
+// all see exactly the same inventory contents and selection rules.
 #define INV_RADIAL_MAX_ENTRIES 32
 #define INV_RADIAL_STICK_COUNT 2
 #define INV_RADIAL_DEADZONE 0.45f
@@ -500,7 +500,7 @@ void prev_weapon_command( int count )
 // CYCLE ITEM COMMAND
 //
 
-void cycle_item_command(int dir)
+void cycle_item_command(int dir, unsigned count = 1)
 {
    BOOL expired = is_expired(kCurrentItem);
    set_expiration(kCurrentItem);
@@ -517,13 +517,13 @@ void cycle_item_command(int dir)
       FrobSendInvSelectionMsg(kFrobLocInv,kFrobLevFocus,OBJ_NULL,item);
     }
 
-   if (item == OBJ_NULL) {
-      if ( dir != 0 ) {
-         item = pInventory->CycleSelection(kCurrentItem,(eCycleDirection)dir);
-      } else {
-         item = pInventory->Selection( kCurrentItem );
-      }
-   }
+   if (expired && item != OBJ_NULL && count)
+      --count;
+   if (dir != 0 && count)
+      item = InventoryCycleSelectionSteps(pInventory, kCurrentItem,
+                                         (eCycleDirection)dir, count);
+   else if (item == OBJ_NULL)
+      item = pInventory->Selection(kCurrentItem);
 
    if (gItemStartTime != NO_START_TIME
        && gItemStartFrob.src_loc == kFrobLocInv
@@ -537,7 +537,7 @@ void cycle_item_command(int dir)
 
 void next_item_command( int count )
 {
-   int i, dir;
+   int dir;
 
    if ( count == 0 ) {
       count = 1;
@@ -546,14 +546,12 @@ void next_item_command( int count )
    dir = ( count < 0 ) ? -1 : 1;
    count = abs( count );
 
-   for ( i = 0; i < count; i++ ) {
-      cycle_item_command( dir );
-   }
+   cycle_item_command(dir, (unsigned)count);
 }
 
 void prev_item_command( int count )
 {
-   int i, dir;
+   int dir;
 
    if ( count == 0 ) {
       count = 1;
@@ -562,9 +560,7 @@ void prev_item_command( int count )
    dir = ( count < 0 ) ? 1 : -1;
    count = abs( count );
 
-   for ( i = 0; i < count; i++ ) {
-      cycle_item_command( dir );
-   }
+   cycle_item_command(dir, (unsigned)count);
 }
 
 // Touch HUD regions are persistent selectors, rather than keyboard-style

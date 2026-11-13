@@ -1,13 +1,13 @@
-# Thief: Dark Engine Restored for Windows, Linux, and Android
+# Thief: Dark Engine Restored for Windows, macOS, Linux, and Android
 
 This repository restores the historical Dark Engine sources as a portable,
 working codebase for the Thief and Thief 2 games. It builds the ThiefRunner
-game executable on Windows, Linux, and Android, plus a work-in-progress DromEd
-mission viewer and editor on Windows and Linux. The engine core is shared
-across platforms; operating-system, rendering, input, audio, movie, and
-filesystem services are supplied by platform backends. The engine
-experimentally implements many of the anonymously created but closed-source
-NewDark extensions.
+game executable on Windows, macOS, Linux, and Android, plus work-in-progress
+DromEd mission viewer and editor ports. The engine core is shared across
+platforms; operating-system, rendering, input, audio, movie, and filesystem
+services are supplied by platform backends. The engine experimentally
+implements many of the anonymously created but closed-source NewDark
+extensions.
 
 The repository does not include retail missions, movies, sounds, scripts, or
 other game assets. A legally obtained installation of *Thief: The Dark
@@ -30,6 +30,7 @@ Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
   - [Game runner features](#game-runner-features)
 - [Building and running](#building-and-running)
   - [Windows](#windows)
+  - [macOS](#macos)
   - [Linux](#linux)
   - [Android](#android)
 - [Legacy OSM diagnostics](#legacy-osm-diagnostics)
@@ -64,29 +65,23 @@ repository.
 
 ## Platform status
 
-Windows x86 and the stock Thief II campaign are the reference path. The other
-targets are working ports with less runtime coverage, not claims of complete
-NewDark compatibility. In the table, **playable** means that normal missions
-can be loaded and played; the qualifiers identify where validation is still
-limited.
-
-| Capability | Windows x86 | Windows x64 | Linux x64 | Android ARM64 |
-| --- | --- | --- | --- | --- |
-| Thief 2 | Playable | Playable; broader validation ongoing | Playable early port | Playable early port |
-| Thief Gold/TDP | Playable; less stable than Thief 2 | Playable; less stable than Thief 2 | Playable early port; less stable than Thief 2 | Playable early port; less stable than Thief 2 |
-| Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
-| System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
-| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Early viewer/playtest port | Not built |
-| Graphics | D3D11 | D3D11 | SDL2/OpenGL | SDL2/OpenGL ES 3 |
-| Audio | DirectSound 3D or OpenAL | DirectSound 3D or OpenAL | OpenAL Soft | OpenAL Soft/OpenSL |
-| Movies | Media Foundation with legacy fallbacks | Media Foundation with legacy fallbacks | FFmpeg | LibVLC |
-| Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
-| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
-| Build system | Visual Studio 2022 | Visual Studio 2022 | CMake and Ninja | Gradle, CMake, and Android NDK |
+| Capability | Windows x86 | Windows x64 | macOS | Linux x64 | Android ARM64 |
+| --- | --- | --- | --- | --- | --- |
+| Thief 2 | Playable | Playable; broader validation ongoing | Build target; runtime unvalidated | Playable early port | Playable early port |
+| Thief Gold/TDP | Playable; less stable than Thief 2 | Playable; less stable than Thief 2 | Build target; runtime unvalidated | Playable early port; less stable than Thief 2 | Playable early port; less stable than Thief 2 |
+| Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Build target; runtime unvalidated | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
+| System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
+| DromEd | Viewer and playtest | Viewer and playtest; broader validation ongoing | Viewer/playtest port | Early viewer/playtest port | Not built |
+| Graphics | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan | SDL3/Vulkan |
+| Audio | OpenAL | OpenAL | OpenAL framework | OpenAL Soft | OpenAL Soft/OpenSL |
+| Movies | FFmpeg | FFmpeg | FFmpeg | FFmpeg | FFmpeg |
+| Legacy `.osm` scripts | Native PE32 modules | IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime | Partial IA-32 compatibility runtime |
+| Squirrel scripts | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider | Native Squirrel 3.2 provider |
+| Build system | CMake SDL3/Vulkan | CMake SDL3/Vulkan | CMake and Ninja | CMake and Ninja | Gradle, CMake, and Android NDK |
 
 The legacy `.osm` row refers to ordinary compiled mission script modules.
 NewDark's `squirrel.osm` is not loaded through that compatibility path: on all
-four targets it is replaced by the engine's native Squirrel 3.2 provider,
+five targets it is replaced by the engine's native Squirrel 3.2 provider,
 which loads the FM's loose `sq_scripts/*.nut` sources directly.
 
 The source tree also contains historical System Shock 2 code, but this project
@@ -96,8 +91,9 @@ The x86 builds are the established target; native x64 builds compile and run
 but remain under active runtime validation. In particular, x64 relies on the
 IA-32 interpreter and service bridge for 32-bit mission `.osm` binaries, while
 many NewDark FMs rely on the newer Squirrel provider. Both compatibility
-layers need broader mission coverage. The Linux CMake targets build native
-64-bit ELF game and editor executables that can load retail missions.
+layers need broader mission coverage. macOS is an early port with limited runtime
+validation. The Linux CMake target builds a native 64-bit ELF executable that
+can load retail missions and run gameplay.
 
 The game runner retains mission loading, the game UI, inventory, automap, and
 the in-game command console. On Windows it also retains the normal startup and
@@ -145,22 +141,11 @@ until its editing and round-trip behavior is comprehensively validated.
 
 ### Cross-platform architecture
 
-The portability work keeps the original engine and game logic shared while
-replacing their operating-system dependencies. The renderer sends the same
-engine drawing commands to D3D11 on Windows and to SDL2/OpenGL on Linux and
-Android; Android uses OpenGL ES. General platform backends live under `winsrc`
-and `unixsrc`; Android intentionally uses the Unix/SDL backend. Shared editor
-logic lives under `src/editor`, while its platform providers live under
-`winsrc/editor` and `unixsrc/editor`. Shared input interfaces and keyboard
-tables live under `libsrc/input`. The game and editor continue to use Looking
-Glass's `lgd3d` interface.
-
-For now CMake derives the common source inventory from the established Visual
-Studio projects, then selects the game or editor platform providers explicitly.
-Desktop Linux always builds `dromed` alongside `thief-runner`: a Linux DromEd
-that can load a retail mission, construct its editor UI, and render a portal
-viewport is a portability requirement, not an optional future target. Android
-shares the Unix/SDL runtime but does not build the desktop editor.
+The CMake runner uses the shared `lgd3d` Vulkan renderer through SDL3 on
+Windows, macOS, Linux, and Android. The Win32 DirectDraw/GDI display provider
+and renderer stub have been removed. `winsrc` continues to provide Windows
+platform services while the CMake game and editor use Looking Glass's `lgd3d`
+interface.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
 synchronization, and filesystem operations cross `platform_services.h` and
@@ -176,18 +161,17 @@ manager and service interfaces in place of the game-specific NewDark
 `squirrel.osm` binary. Both bridges are still being expanded and validated
 against third-party scripts.
 
-Audio follows the same provider model. Windows uses DirectSound 3D by default,
-with native I3DL2 environmental reverb. An OpenAL provider supplies positional
-audio, EFX reverb, and per-source occlusion when `OpenAL32.dll` is available;
-set `sfx_backend openal` in `cam.cfg` to select it explicitly. The default
-`auto` setting tries DirectSound first and uses OpenAL only if native audio
-cannot initialize, so the standard executable has no OpenAL dependency.
+Audio uses the shared OpenAL provider on every platform. It supplies
+positional audio, EFX reverb, and per-source occlusion. The runtime loads
+`OpenAL32.dll` on Windows, the system OpenAL framework on macOS, and OpenAL
+Soft on Linux and Android. `sfx_backend auto` and `sfx_backend openal` both
+select this provider.
 
 Movie playback is exposed through the platform-neutral engine movie API. The
-Windows Media Foundation, DirectShow, and legacy DirectDraw implementation is
-isolated under `winsrc/movie`; Linux uses FFmpeg for video/audio decoding and
-the existing SDL/OpenGL presentation surface. Android uses LibVLC on a native
-Android surface while retaining the engine's synchronous movie lifecycle.
+shared SDL3 backend in `libsrc/actmovie` uses FFmpeg for video and audio
+decoding on desktop platforms and the SDL3/Vulkan presentation surface.
+Android delegates playback to its native player while retaining the engine's
+synchronous movie lifecycle.
 
 Legacy PKWARE DCL-compressed resources are decoded in-process with Mark
 Adler's small `blast` decoder under `3rdparty/blast`; newly written resources
@@ -214,65 +198,35 @@ The runner currently provides:
 #### Prerequisites
 
 - 64-bit Windows 10 or Windows 11.
-- Visual Studio 2022 or Visual Studio 2022 Build Tools with the **Desktop
-  development with C++** workload, MSVC v143 x86/x64 tools, and a Windows 10
-  or 11 SDK.
-- Git, used by the dependency bootstrap.
+- MSVC v143 x86/x64 build tools and a Windows 10 or 11 SDK.
+- CMake 3.21 or later, MSYS2 Bash and Make, and the Vulkan SDK (including
+  `glslc`).
+- Bison 2.3 or later on the build host (`bison` or `win_bison` on `PATH`).
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
-- Optional: `ffmpeg.exe` on `PATH` for stock Indeo 5 AVIs when Windows has no
-  compatible DirectShow decoder. H.264 MP4 siblings do not require it.
 
-Normal game builds include the native Squirrel 3.2 provider, and normal DromEd
-builds include the KCTools v1.3.4 sidecar. Both are external source checkouts;
-bootstrap the pinned versions with:
+Initialize the pinned source dependencies and configure/build either
+architecture from a Visual Studio Developer PowerShell with MSYS2 tools on
+`PATH`:
 
 ```powershell
-.\tools\bootstrap-dependencies.ps1
+git submodule update --init --recursive
+cmake --preset windows-x64
+cmake --build --preset windows-x64-release
+
+cmake --preset windows-x86
+cmake --build --preset windows-x86-release
 ```
 
-The default locations are `../../darkengine-deps/squirrel` and
-`../../darkengine-deps/kctools`. Use `-Target Game` or `-Target DromEd` to
-bootstrap only one variant. DromEd also requires the .NET 10 SDK to publish its
-self-contained KCTools sidecar. Override the checkouts with
-`/p:SquirrelSourceDir=...` or `/p:KCToolsSourceDir=...`, and override `dotnet`
-with `/p:DotNetExecutable=...`.
+SDL3, zlib, libpng, Squirrel, libogg, libvorbis, FFmpeg, and the PKWARE DCL
+decoder are built statically from pinned submodules. Install the Vulkan SDK
+separately; CMake uses its Vulkan package and `glslc` shader compiler.
 
-Both integrations can be omitted only by opting out explicitly:
-`/p:EnableSquirrel=false` for the game or `/p:EnableKCTools=false` for DromEd.
-Omitting those properties enables the corresponding integration.
+Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
+SDL3 is linked statically into both executables.
 
-Ogg Vorbis FM sounds are loaded through libsndfile at runtime. To package it on
-Windows, place the official architecture-matched libsndfile 1.2.2 release in
-the default `../../darkengine-deps/libsndfile-1.2.2-win32` or `-win64` folder
-and build with `/p:EnableSndFileRuntime=true`; use
-`/p:SndFileRuntimeDir=C:\path\to\bin` for another location.
-
-#### Build
-
-In Visual Studio, open `thief2.sln`, select `Release` and `x86`, then choose
-**Build > Build Solution**. From a regular PowerShell prompt, the equivalent
-explicit commands are:
-
-```powershell
-$msbuild = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe'
-& $msbuild src\dromed.vcxproj /m /t:Build /p:Configuration=Release /p:Platform=Win32 /p:BuildThief2=true
-& $msbuild src\dromed.vcxproj /m /t:Build /p:Configuration=Release /p:Platform=Win32 /p:BuildThief2=false
-```
-
-Use `Platform=x64` for native 64-bit builds. Outputs are separated by
-architecture and application:
-
-```text
-build\Release\Win32\ThiefRunner\ThiefRunner.exe
-build\Release\Win32\DromEd\DromEd.exe
-build\Release\x64\ThiefRunner\ThiefRunner.exe
-build\Release\x64\DromEd\DromEd.exe
-```
-
-The game and editor share `src\dromed.vcxproj`; `BuildThief2` selects their
-different source sets. Static libraries are shared within an architecture and
-must not vary with that property.
+The executables are written under `build-win32/Release` or
+`build-win64/Release` as `thief-runner.exe` and `DromEd.exe`.
 
 #### Running
 
@@ -291,43 +245,84 @@ remembers only a starting-folder hint under
 `HKCU\Software\DarkEngineRestored\Launcher`. Use Dark-style assignments such
 as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 
+### macOS
+
+#### Prerequisites
+
+- macOS with Xcode Command Line Tools, CMake 3.21 or later, Ninja, and Bison
+  2.3 or later (the system Bison is sufficient).
+- The Vulkan SDK (including `glslc`) and CMake submodules; macOS supplies the
+  OpenAL framework.
+- A retail TDP, Thief Gold, or Thief II installation.
+
+With Homebrew:
+
+```sh
+brew install cmake ninja
+```
+
+Initialize source dependencies with `git submodule update --init --recursive`.
+Install the Vulkan SDK separately, including `glslc`.
+
+#### Build
+
+```sh
+git submodule update --init --recursive
+cmake --preset macos
+cmake --build --preset macos-release -j "$(sysctl -n hw.ncpu)"
+```
+
+Non-Windows builds export `compile_commands.json` into their CMake build
+directory during configuration, including the macOS and Linux presets and
+Android native builds.
+
+CMake generates the include, motion-schema, sound-schema, and song parsers
+from the `.y` grammars in `src/`. Generated C files and token headers live
+in `<build-directory>/src/generated/`; editing a grammar regenerates its
+parser automatically. Set `BISON_EXECUTABLE` if Bison is not on `PATH`.
+
+The result is `build-macos/thief-runner`. SDL3, zlib, libpng, Squirrel, libogg,
+libvorbis, FFmpeg, and blast are built statically from submodules.
+
+#### Running
+
+Run from the retail game directory. The Vulkan renderer is always used; old
+`game_hardware` settings in retail configuration files are ignored:
+
+```sh
+cd "/path/to/Thief II"
+/path/to/darkengine/build-macos/thief-runner quickstart=MISS1.MIS
+```
+
 ### Linux
 
 #### Prerequisites
 
-- A 64-bit Linux distribution, GCC, CMake 3.20 or later, and Ninja.
-- Git, used to bootstrap Squirrel 3.2.
-- SDL2, OpenGL, and libpng development packages.
-- OpenAL Soft and libsndfile at runtime. Both are loaded dynamically; libsndfile
-  enables Ogg Vorbis sounds used by many FMs.
-- FFmpeg development libraries (`libavformat`, `libavcodec`, `libavutil`,
-  `libswscale`, and `libswresample`) for movie playback. The build succeeds
-  without them but reports movies unavailable.
+- A 64-bit Linux distribution, GCC, CMake 3.21 or later, and Ninja.
+- The Vulkan SDK (including `glslc`) and the standard CMake build tools.
+- OpenAL Soft at runtime, loaded dynamically. Ogg Vorbis decoding is built
+  statically from the pinned submodules.
 - A retail TDP, Thief Gold, or Thief II installation.
 
 For Ubuntu/Debian:
 
 ```sh
 sudo apt update
-sudo apt install build-essential cmake ninja-build libsdl2-dev libgl-dev \
-  libpng-dev libopenal1 libsndfile1 libavformat-dev libavcodec-dev \
-  libavutil-dev libswscale-dev libswresample-dev
+sudo apt install build-essential cmake ninja-build bison libvulkan-dev glslc \
+  libopenal1
 ```
 
 #### Build
 
 ```sh
-sh tools/bootstrap-dependencies.sh game
-cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build-linux -j "$(nproc)"
+git submodule update --init --recursive
+cmake --preset linux
+cmake --build --preset linux-release -j "$(nproc)"
 ```
 
-The results are `build-linux/thief-runner` and `build-linux/dromed`. Desktop
-OpenGL 3.3 is the default. Install GLES development headers and configure with
-`-DDARK_OPENGL_ES=ON` to exercise the OpenGL ES 3 path. Normal builds include
-the native Squirrel provider. Use `-DDARK_SQUIRREL_SOURCE=/path/to/squirrel`
-for a non-default checkout, or explicitly pass `-DDARK_ENABLE_SQUIRREL=OFF`
-for a reduced build without NewDark Squirrel FM support.
+The result is `build-linux/thief-runner`.
+SDL3, zlib, libpng, Squirrel, libogg, libvorbis, and FFmpeg are built statically
+from those submodules.
 
 #### Running
 
@@ -360,6 +355,112 @@ uses relative-pointer input during gameplay and absolute coordinates in menus,
 with native Wayland preferred when available. See [Game saves](#game-saves) for
 the save location and fallback rules.
 
+### Tracy profiling
+
+Tracy v0.15.0 is pinned in `3rdparty/tracy`. CPU profiling is optional and
+is disabled by default. All builds use its headers; the client is linked only
+when profiling is enabled. Initialize the submodule and enable it for a build:
+
+```sh
+git submodule update --init 3rdparty/tracy
+cmake --preset macos -DDARK_ENABLE_TRACY=ON
+cmake --build --preset macos-release
+```
+
+Use the corresponding Linux or Windows presets on those platforms. Launch
+`thief-runner` or `DromEd` normally, then connect the matching Tracy v0.15.0
+profiler to `localhost:8086`. The timeline includes frame markers, loop messages
+and clients, simulation timing and frame pacing, AI scheduling and agent updates,
+physics steps and collision phases, creature and puppet animation, scene and
+overlay rendering, audio updates, script messages and callbacks, database loads
+and saves, and Vulkan frame setup and presentation. The entry thread is named
+`Main`. Plots show the simulation timestep and AI count; AI and script zone
+values identify the object being updated or receiving a message.
+
+Capture is on demand by default: events are collected while a profiler is
+connected. Configure with `-DTRACY_ON_DEMAND=OFF` to retain startup events.
+Configure with `-DDARK_ENABLE_TRACY=OFF` and rebuild to remove the client and
+compile profiling calls out. New C++ zones can use `ZoneScopedN("name")`
+from `<tracy/Tracy.hpp>`.
+
+### Debug builds
+
+Plain Debug builds are available on all desktop platforms:
+
+| Platform | Configure | Build |
+| --- | --- | --- |
+| macOS | `cmake --preset macos-debug` | `cmake --build --preset macos-debug -j 8` |
+| Linux | `cmake --preset linux-debug` | `cmake --build --preset linux-debug -j 8` |
+| Windows x64 | `cmake --preset windows-x64` | `cmake --build --preset windows-x64-debug` |
+| Windows x86 | `cmake --preset windows-x86` | `cmake --build --preset windows-x86-debug` |
+
+macOS and Linux use `build-macos-debug` and `build-linux-debug`. Visual Studio
+keeps Debug and Release configurations in the same Windows build directory.
+
+#### Sanitizers
+
+On macOS, build the game and DromEd with AddressSanitizer (ASan) and
+UndefinedBehaviorSanitizer (UBSan):
+
+```sh
+cmake --preset macos-sanitizers
+cmake --build --preset macos-sanitizers -j 8
+cd /path/to/retail/game
+/path/to/darkengine/build-macos-sanitizers/thief-runner
+```
+
+On Linux, use the `linux-sanitizers` configure and build presets; the output
+directory is `build-linux-sanitizers`. These Debug builds instrument engine
+code with debug symbols, frame pointers, and `-O1`. Source dependencies keep
+their normal compiler flags. These presets require Clang or GCC.
+
+For Windows x64 with MSVC AddressSanitizer:
+
+```powershell
+cmake --preset windows-x64-sanitizers
+cmake --build --preset windows-x64-sanitizers
+```
+
+This uses `build-win64-sanitizers` and requires the Visual Studio C++
+AddressSanitizer component. MSVC supports `address` in `DARK_SANITIZERS`;
+UBSan is available through the Clang/GCC presets.
+
+`DARK_SANITIZERS` accepts a semicolon-separated list: `address`, `undefined`,
+`thread`, or `leak`. For example, create a separate ThreadSanitizer build with:
+
+```sh
+cmake --preset macos-sanitizers -B build/tsan -DDARK_SANITIZERS=thread
+cmake --build build/tsan --target thief2 dromed -j 8
+```
+
+ThreadSanitizer cannot be combined with ASan or LeakSanitizer. Standalone
+LeakSanitizer is unavailable on macOS. Sanitizer reports go to the terminal;
+use `UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1` to stop on the first
+undefined behavior report with a stack trace.
+
+### Vulkan screenshot capture
+
+The renderer does not read back swapchain images for screenshots. For
+development captures, install the Vulkan SDK's
+[`VK_LAYER_LUNARG_screenshot` utility layer](https://vulkan.lunarg.com/doc/view/latest/mac/screenshot_layer.html)
+and enable it for the application. On macOS or Linux:
+
+```sh
+mkdir -p captures
+VK_INSTANCE_LAYERS=VK_LAYER_LUNARG_screenshot \
+VK_SCREENSHOT_FRAMES=120 \
+VK_SCREENSHOT_DIR="$PWD/captures" \
+/path/to/darkengine/build-macos/thief-runner quickstart=MISS1.MIS
+```
+
+Change `build-macos` to `build-linux` on Linux. `VK_SCREENSHOT_FRAMES` accepts
+comma-separated frame numbers or a range; set it to `all` to capture every
+presented frame. The layer writes captured images to the selected folder. On
+Windows, set the same three `VK_...` environment variables in PowerShell before
+launching `thief-runner.exe`. For DromEd, use `render_test=...` to load and
+position the mission, then close the editor after the requested frame has been
+captured.
+
 ### Android
 
 #### Prerequisites
@@ -367,25 +468,29 @@ the save location and fallback rules.
 - JDK 17 or later.
 - Android SDK platform and build tools 36.
 - Android SDK CMake 3.31.6 and NDK 30.0.16248370.
-- Git, used to bootstrap Squirrel 3.2.
+- GNU Make, Bash, and Bison 2.3 or later on the build host (Windows hosts
+  can use MSYS2 tools or a native `win_bison` executable).
+- Vulkan SDK with `glslc` available on `PATH` or through `VULKAN_SDK`.
 - An ARM64 device running Android 8.0 (API 26) or later and a retail game
   folder available to Android's system folder picker.
 
 #### Build
 
-Bootstrap Squirrel, then use the checked-in Gradle wrapper:
+Initialize the pinned source dependencies, then use the checked-in Gradle
+wrapper:
 
 ```powershell
-.\tools\bootstrap-dependencies.ps1 -Target Game
+git submodule update --init --recursive
 Set-Location android
 .\gradlew.bat assembleDebug
 ```
 
-On a Linux host, use `sh tools/bootstrap-dependencies.sh game`, then
-`cd android && ./gradlew assembleDebug`. Gradle downloads SDL 2.32.10, OpenAL
-Soft 1.25.2, libpng 1.6.59, libogg 1.3.5, and libvorbis 1.3.7 from their
-official releases and verifies pinned SHA-256 digests. LibVLC 3.6.5 is resolved
-through Maven. The APK is written under
+On a Linux host, run `git submodule update --init --recursive` followed by
+`cd android && ./gradlew assembleDebug`. Gradle downloads
+the SDL3 Android AAR, Vulkan-Headers, and OpenAL Soft 1.25.2 from their official
+releases and verifies pinned SHA-256 digests. libpng, Squirrel 3.2, libogg
+1.3.6, libvorbis 1.3.7, and FFmpeg are built statically from source submodules.
+The APK is written under
 `android/app/build/outputs/apk/debug`.
 
 #### Running
@@ -667,29 +772,16 @@ On a multi-monitor system, the display containing the game window determines
 both the resolution list and the target for borderless fullscreen. To change
 displays, switch to Windowed, move the window, reopen Video Options, and then
 select a resolution or Fullscreen. The list is queried again for that display.
-The engine's gamma setting is applied in the Windows D3D11 presentation shader
-using the legacy palette-correction power curve.
+The engine's gamma setting is applied in the SDL3/Vulkan scene shader using the
+legacy palette-correction power curve.
 
 The retail game writes `skip_intro` after the intro has played. Add
-`always_play_intro` to `cam.cfg` to show it on every launch. When both movie
-formats exist, the Windows runner prefers H.264 MP4 through Media Foundation.
-If only the original Indeo 5 AVI exists and DirectShow cannot decode it, the
-runner uses `ffmpeg.exe` to prepare an H.264/AAC copy beneath
-`%LOCALAPPDATA%\DarkEngineRestored\MovieCache`; it never changes the retail
-movie. Set `DARK_MOVIE_CACHE` to override that cache directory.
+`always_play_intro` to `cam.cfg` to show it on every launch. All platforms build
+FFmpeg statically from the pinned source submodule for movie playback.
 
 ## Controls
 
-The original keyboard, mouse, and binding systems remain in use. The game
-runner replaces only the legacy DirectInput joystick polling with a
-platform-neutral gamepad layer: runtime-loaded XInput on Windows and SDL
-GameController on Linux and Android. SDL accepts compatible controllers
-regardless of branding; the default bindings merely use the familiar
-Xbox-style button names and layout. One controller owns gameplay input at a
-time and can be connected, disconnected, or reconnected while the game runs.
-The selected modern controller is excluded from the legacy joystick fallback,
-avoiding duplicate input. Keyboard and mouse remain active on every platform,
-and Android touch controls remain active alongside them and the gamepad.
+This project replaces the original DirectInput joystick polling with SDL GameController on Windows, macOS, Linux, and Android. SDL supports compatible controllers regardless of branding; the default bindings use familiar Xbox-style button names and layout. One controller owns gameplay input at a time and can be connected, disconnected, or reconnected while the game runs. Keyboard and mouse remain active on every platform, and Android touch controls remain active alongside them and the gamepad.
 
 The default layout follows the modern Thief radial-menu scheme. Left stick
 moves and right stick looks; A jumps, B crouches, X uses the selected item, RT
@@ -745,13 +837,14 @@ gamepad_look_invert_y 0
 gamepad_rumble 1
 ```
 
-`gamepad_backend` accepts `auto`, `xinput`, `legacy`, or `off` on Windows and
-`auto`, `sdl`, `legacy`, or `off` on Linux, while Android uses SDL. One
-configured controller owns gameplay input at a time; `gamepad_index` selects
-it, with automatic failover to another connected controller if it disconnects. The
-`gamepad_status` console command prints the selected backend and normalized
-state. DromEd editor input remains unchanged; gamepad input is currently enabled
-only in the game-runner target.
+`gamepad_backend` accepts `auto`, `sdl`, `legacy`, or `off` on every platform.
+`auto` and `sdl` select the SDL3 gamepad provider; `legacy` disables that
+provider so existing `joy1` and `joy_axis*` bindings can handle input; `off`
+disables gamepad support. One configured controller owns gameplay input at a
+time; `gamepad_index` selects it, with automatic failover to another connected
+controller if it disconnects. The `gamepad_status` console command prints the
+selected backend and normalized state. DromEd editor input remains unchanged;
+gamepad input is currently enabled only in the game-runner target.
 
 ## DromEd
 
@@ -787,19 +880,17 @@ by its game and editor includes and any selected FM configuration. Put
 editor-specific overrides in the editor configuration included by that stack;
 command-line assignments still take priority for the current launch.
 
-The DromEd viewer uses the same hardware scene API as the game: D3D11 on
-Windows and OpenGL on Linux. Its legacy editor canvas remains 16-bit internally,
-while the platform presenter converts it to the resizable desktop window.
-When an editor window resize finishes, DromEd recreates that canvas at the
-client area's actual dimensions and scales the four viewports, console,
-status bar, and brush controls independently in each axis. This fills
-widescreen and portrait windows without imposing a 4:3 aspect ratio.
-`edit_screen_size` in `cam.cfg` selects the initial canvas size; it defaults
-to 1024x768. The editor always uses a windowed desktop surface, regardless of
-legacy fullscreen flags. Game preview mode stays in the same window and
-recreates the D3D11 render context for the preview; returning to edit mode
-restores the editor viewport and menu state. Linux uses the corresponding
-SDL/OpenGL context and editor provider.
+The CMake DromEd viewer uses the same SDL3/Vulkan scene renderer and presenter
+as the game. The editor canvas remains 16-bit internally, while the presenter
+converts it to a resizable 32-bit desktop window. When an editor
+window resize finishes, DromEd recreates that canvas at the client area's
+actual dimensions and scales the four viewports, console, status bar, and
+brush controls independently in each axis. This fills widescreen and portrait
+windows without imposing a 4:3 aspect ratio. `edit_screen_size` in `cam.cfg`
+selects the initial canvas size; it defaults to 1024x768. The editor always
+uses a windowed desktop surface, regardless of legacy fullscreen flags. Game
+preview mode stays in the same window and recreates the render context for the
+preview; returning to edit mode restores the editor viewport and menu.
 
 Use **Help > Keyboard Shortcuts** to open a resizable, human-readable input
 reference. It includes every active editor binding (including the complete
@@ -985,15 +1076,14 @@ console logs are ignored by Git.
   does not make their behavior understood or guarantee that another Dark
   executable can load the resulting save; see [Game saves](#game-saves).
 - The renderer still uses a 16-bit internal compatibility canvas despite
-  presenting through 32-bit D3D11 or OpenGL output. Full 32-bit scene
+  presenting through 32-bit Vulkan output on the CMake route. Full 32-bit scene
   rendering remains to be implemented.
 - Native-resolution, window resizing, ultrawide presentation, and the new
   cross-platform high-DPI text scaling need testing across more GPUs, desktop
   scales, Android font-size settings, and display configurations.
-- Gamma correction is implemented in the Windows D3D11 presentation path.
-  Equivalent Linux/OpenGL behavior and broader visual comparison of shadow
-  detail, lightmaps, and emissive-looking light-source textures remain to be
-  completed.
+- Gamma correction is implemented in the SDL3/Vulkan renderer. Broader visual
+  comparison of shadow detail, lightmaps, and emissive-looking light-source
+  textures remains to be completed.
 - The first-run picker and startup path need clean-machine testing against the
   common CD, GOG, and Steam directory layouts.
 - NewDark compatibility is selective. PNG replacement art, FM-local
@@ -1019,10 +1109,9 @@ console logs are ignored by Git.
   show the game's animated loading progress. Play preview remains unstable:
   returning to the editor can still crash, and a resolution selected in the
   gameplay Video Options menu may not take effect in the preview window.
-- Environmental audio now maps the original EAX room presets onto DirectSound
-  I3DL2 or OpenAL EFX. DirectSound provides room reverb while the optional
-  OpenAL provider also supplies per-source low-pass occlusion; both paths need
-  broader in-mission acoustic comparison against the original game.
+- Environmental audio maps the original EAX room presets onto OpenAL EFX and
+  applies per-source low-pass occlusion. In-mission acoustic comparison
+  against the original game still needs broader validation.
 - Game builds load NewDark-style loose
   `sq_scripts/*.nut` sources with the native Squirrel 3.2 provider. Core
   object, property, link, physics, Act/React, door, lock, damage, containment,

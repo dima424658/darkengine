@@ -71,6 +71,8 @@
 #include <dbfile.h>
 #include <dbasemsg.h>
 #include <render.h>
+#include <render_backend.h>
+#include <vumanui.h>
 
     // hacked data file
 #include <texture.h>
@@ -310,7 +312,7 @@ extern bool surface_cache, skip_clip;
 extern bool surf_256;  // false all surfaces to row == 256
 extern bool show_span_lengths, show_render_times;
 extern bool portal_clip_poly, portal_clip_fast, poly_clip_fast;
-extern int palette_light, project_space, cache_feedback;
+extern bool palette_light, project_space, cache_feedback;
 extern float light_scale;
 extern float dynamic_light_min;
 extern int player_light;
@@ -589,7 +591,6 @@ bool testgeom_inner(void)
    mxs_vector *loc;
    mxs_angvec *ang;
    bool have_spot;
-
    have_spot=vm_spotlight_loc(&loc, &ang);
 
    reset_dynamic_lights();

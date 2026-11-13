@@ -24,7 +24,7 @@ This file has been moved to aigunact.h  AMSD
 #include <shkgnbas.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -81,8 +81,7 @@ inline BOOL cAIGunAction::CheckTarget(void)
 }
 
 ////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIGNA_H */
 

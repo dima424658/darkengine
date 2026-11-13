@@ -18,7 +18,7 @@
 
 #include <matrixs.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -178,7 +178,6 @@ inline cPhysTerrVertex::cPhysTerrVertex(cPhysTerrVertex *pTerrVertex)
 }
 
 ////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__PHTERR_H */

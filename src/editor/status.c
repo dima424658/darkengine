@@ -154,12 +154,13 @@ void StatusField(int x, const char *s)
 {
    int cur_sz;
 
-   if (x < 0 || x > MAX_FIELDS)
+   if (x < 0 || x >= MAX_FIELDS)
       Error(1, "Invalid status field parameter %d\n", x);
    if (!strcmp(status_string[x], s))
       return;
 
-   strncpy(status_string[x], s, MAX_FIELD_SIZE);
+   strncpy(status_string[x], s, MAX_FIELD_SIZE - 1);
+   status_string[x][MAX_FIELD_SIZE - 1] = '\0';
 
    if (!status) {
       redraw = TRUE;
@@ -181,6 +182,13 @@ void StatusField(int x, const char *s)
 #if 0
    }
 #endif
+}
+
+const char *StatusGetField(int x)
+{
+   if (x < 0 || x >= MAX_FIELDS)
+      return "";
+   return status_string[x];
 }
 
 void Status(const char *s)

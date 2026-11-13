@@ -760,6 +760,7 @@ cZipStorage::~cZipStorage()
 
 ///////////////////////////////////////
 
+#pragma pack(push, 1)
 struct sLocalFileHeader
 {
 	uint32 Signature;
@@ -774,6 +775,7 @@ struct sLocalFileHeader
 	uint16 FilenameLen;
 	uint16 ExtraLen;
 };
+#pragma pack(pop)
 
 static_assert(sizeof(sLocalFileHeader) == 30, "Invalid sLocalFileHeader size");
 

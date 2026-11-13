@@ -145,7 +145,7 @@
 #include <storcnst.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(IStore);
 F_DECLARE_INTERFACE(IStoreHierarchy);
@@ -946,7 +946,6 @@ DECLARE_INTERFACE_(ISearchPath, IUnknown)
 #define ISearchPath_Iterate(p, a, b, c)      COMCall3(p, Iterate, a, b, c)
 
 //////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__STOREAPI_H */

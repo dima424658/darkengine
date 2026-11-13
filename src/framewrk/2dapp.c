@@ -15,9 +15,8 @@
 #include <2dapp.h>
 #include <init.h>
 
-#include <mallocdb.h>
-#include <memall.h>
-#include <dbmem.h>   // must be last header! 
+#include <stdlib.h>
+#include <dbmem.h>   // must be last header!
 
 //////////////////////////////////////////////////////////////
 // ALLOCATION OVERRIDES
@@ -26,12 +25,12 @@
 
 void * dark_gr_malloc(int n)
 {
-   return malloc_db((size_t)n, "gr_malloc()", 0);
+   return malloc((size_t)n);
 }
 
 void dark_gr_free(void *p)
 {
-   free_db(p, "gr_free()", 0);
+   free(p);
 }
 
 #endif

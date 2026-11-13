@@ -102,6 +102,7 @@ EXTERN void PlatformDebugOutput(const char *text);
 EXTERN void PlatformDiagnosticsStartSession(const char *application,
                                             int argc,
                                             const char *const *argv);
+EXTERN void PlatformDiagnosticsInstallCrashHandlers(void);
 EXTERN void PlatformDiagnosticsLog(const char *severity,
                                    const char *subsystem,
                                    const char *message);

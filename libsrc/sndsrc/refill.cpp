@@ -51,7 +51,7 @@
 //  returns where the data was actually returned
 
 // SSrc::GetData will be called twice within a single LoadBufferIndirect
-//  if the data passed to DirectSound wraps around the end of the buffer
+//  if the data passed to the output backend wraps around the end of its buffer
 //  and the source offset must be advanced each time
 
 

@@ -40,6 +40,32 @@ void primalBr_SetFastUnsafePrimal(int primal_id)
    primalBrs_FastUnsafe=getPrimInfo(primal_id);
 }
 
+BOOL primalBr_IsValidID(int primal_id)
+{
+   int type_code, side_code;
+   primalInfo *primal;
+
+   if (primal_id<0)
+      return FALSE;
+
+   type_code=primalID_InternalTypeCode(primal_id);
+   side_code=primalID_GetSideCode(primal_id);
+   if ((type_code<0)||(type_code>=2*USED_PRIMAL_TYPES)||
+       (side_code<0)||(side_code>=USED_PRIMAL_SIDES-2))
+      return FALSE;
+
+   primal=primals_list[type_code][side_code];
+   if (primal==NULL || primal->points<=0 || primal->points>MAX_PRIMAL_PTS ||
+       primal->edges<=0 || primal->edges>MAX_PRIMAL_EDGES ||
+       primal->faces<=0 || primal->faces>MAX_PRIMAL_FACES ||
+       primal->face_stride<=0 || primal->face_stride>MAX_PRIMAL_FACES ||
+       primal->pt_array==NULL || primal->edge_list==NULL ||
+       primal->face_pts_list==NULL || primal->face_edge_list==NULL)
+      return FALSE;
+
+   return TRUE;
+}
+
 /////////////////////
 // internal utility stuff
 

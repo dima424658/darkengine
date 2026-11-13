@@ -51,6 +51,8 @@
 %token LOCAL_SPATIAL
 
 %{
+
+extern int yylex(void);
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -95,7 +97,7 @@ ObjID g_SchemaID;
 static ObjID baseSchemaID;
 
 // schema parameters
-static schemaParamsSet;
+static BOOL schemaParamsSet;
 static sSchemaPlayParams schemaPlayParams;
 static ISchemaPlayParamsProperty *pPropSchemaPlayParams;
 
@@ -114,7 +116,7 @@ static ObjID archID;
 #define SAMPLE_NAME_LEN 20      // max sample file name length
 static char sampleNames[SCHEMA_SAMPLES_MAX][SAMPLE_NAME_LEN];
 static uchar sampleFreqs[SCHEMA_SAMPLES_MAX];
-static char *pSampleNames[SCHEMA_SAMPLES_MAX];
+static const char *pSampleNames[SCHEMA_SAMPLES_MAX];
 static uchar sampleFreq;
 static int samplesNum = 0;
 static BOOL freqSet;

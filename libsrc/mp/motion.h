@@ -30,6 +30,7 @@
 // If not, it's a torso_frame struct.
 //
 
+#pragma pack(push, 1)
 typedef struct torso
 {
    int			joint;
@@ -68,6 +69,15 @@ typedef struct limb
    // Seg lengths for scaling unit vectors.
    mxs_real 	seg_len[NUM_LIMB_SEGS];
 } limb;
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(torso) == 268, "torso records use the legacy packed file layout");
+static_assert(sizeof(limb) == 302, "limb records use the legacy packed file layout");
+#else
+_Static_assert(sizeof(torso) == 268, "torso records use the legacy packed file layout");
+_Static_assert(sizeof(limb) == 302, "limb records use the legacy packed file layout");
+#endif
 
 //
 // This is silly, all we need is a quaternion per joint per frame for

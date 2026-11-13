@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/sound/schema.cpp,v 1.89 2000/01/14 10:44:35 MAT Exp $
 
+#include <tracy/Tracy.hpp>
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
@@ -78,6 +79,8 @@ inline const char* OBJ_NAME(ObjID obj)
 #define SCHEMA_LOOP_NEXT_TIME(time, pLoopParams) \
    ((time)+(pLoopParams)->intervalMin+(int)(SchemaRand()* \
     ((pLoopParams)->intervalMax-(pLoopParams)->intervalMin)))
+
+#define SCHEMA_TIME_NEVER ((ulong)~0u)
 
 // This is the condition for special case zero delay schemas to loop
 // over a single sample using the sound library rather than the schema
@@ -170,7 +173,7 @@ struct sSchemaPlay : public SchemaPlayListNode
    void *userData;              // for callbacks
    Label msg;
    long msgData[3];
-   int nextTime;                // when to start next sample (if looping)
+   ulong nextTime;              // when to start next sample (if looping)
 };
 
 SchemaPlayList playingSchemas;
@@ -388,7 +391,7 @@ sSchemaPlay *SchemaPlayGet()
       pSchemaPlay->count = 0;
       pSchemaPlay->loopCount = 0;
       pSchemaPlay->pSamples = NULL;
-      pSchemaPlay->nextTime = INT_MAX;
+      pSchemaPlay->nextTime = SCHEMA_TIME_NEVER;
       playingSchemas.Append(pSchemaPlay);
    }
    else
@@ -436,7 +439,7 @@ sSchemaPlay *SchemaPlayAdd(ObjID schemaID, const sSchemaCallParams *pCallParams)
 #define SAMPLE_END   1
 void SchemaLoopSetupNextTime(sSchemaPlay *pSchemaPlay, 
                              sSchemaLoopParams *pLoopParams,
-                             long currentTime, int start_end)
+                             ulong currentTime, int start_end)
 {
    if (((start_end == SAMPLE_START) && (pLoopParams->flags & SCHEMA_LOOP_POLY))
     || ((start_end == SAMPLE_END) && !(pLoopParams->flags & SCHEMA_LOOP_POLY)))
@@ -450,7 +453,7 @@ void SchemaLoopSetupNextTime(sSchemaPlay *pSchemaPlay,
          return;
 
       pSchemaPlay->nextTime = SCHEMA_LOOP_NEXT_TIME(currentTime, pLoopParams);
-      ConfigSpew("SchemaTiming", ("Scheduled next sample for %s for %d\n",
+      ConfigSpew("SchemaTiming", ("Scheduled next sample for %s for %u\n",
                                   OBJ_NAME(pSchemaPlay->schemaID),
                                   pSchemaPlay->nextTime));
    }
@@ -1273,7 +1276,7 @@ void SchemaLoopStartNext(sSchemaPlay *pSchemaPlay)
    sSchemaLoopParams *pSchemaLoopParams
       = SchemaLoopParamsGet(pSchemaPlay->schemaID);
 
-   pSchemaPlay->nextTime = INT_MAX;
+   pSchemaPlay->nextTime = SCHEMA_TIME_NEVER;
    if (pSchemaLoopParams)
    {
       int n;
@@ -1320,8 +1323,9 @@ static void ExtractCallbacks(ulong *pNumCallbacks, const char *pszLabel,
 // per frame function
 void SchemaFrame()
 {
+   ZoneScopedN("Sound schemas");
    sSchemaPlay *pSchemaPlay;
-   long currentTime = SchemaGetTime();
+   ulong currentTime = SchemaGetTime();
    BOOL startNew;
 
 #ifndef SHIP
@@ -1428,7 +1432,8 @@ void SchemaFrame()
    while (pSchemaPlay != NULL)
    {
       // check to see if we're scheduled to start a new sample
-      startNew = (pSchemaPlay->nextTime < currentTime);
+      startNew = pSchemaPlay->nextTime != SCHEMA_TIME_NEVER &&
+                 (slong)(currentTime - pSchemaPlay->nextTime) >= 0;
 #ifndef SHIP
       if (pRecorder)
       {

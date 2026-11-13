@@ -34,11 +34,9 @@
 #include <resapp.h>
 #include <scrptprp.h>
 
-#pragma pack(push, 8)
 #include <algorithm>
 #include <string>
 #include <vector>
-#pragma pack(pop)
 
 #include <ctype.h>
 #include <stdio.h>
@@ -149,7 +147,7 @@ static void MakeContentPath(char* output, int size, const char* root,
    {
       if (!text || used >= (size_t)size - 1)
          return;
-      const size_t count = std::min(strlen(text),
+      const size_t count = (std::min)(strlen(text),
                                     (size_t)size - used - 1);
       memcpy(output + used, text, count);
       used += count;

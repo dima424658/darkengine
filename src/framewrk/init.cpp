@@ -28,9 +28,6 @@
 #include <resagg.h>
 #include <string.h>
 #include <cfgtool.h>
-#ifdef _WIN32
-#include <breakkey.h>
-#endif
 #include <iobjsys.h>
 #include <scrptapi.h>
 #include <scrnmode.h>
@@ -74,7 +71,6 @@
 #include <netman.h>
 #include <iobjnet.h>
 #include <movie.h>
-#include <arqapi.h>
 #include <diskfree.h>
 #include <platform_services.h>
 #include <dyntex.h>
@@ -120,8 +116,8 @@ static void RegisterDisplayModes(void)
    int i;
 
    // Register the union of modes exposed by every connected monitor before
-   // screen-mode configuration is read.  D3D11 presents these as internal
-   // render sizes, so no exclusive legacy display-mode switch is required.
+   // screen-mode configuration is read. The modern renderer presents these
+   // as internal render sizes, so no exclusive legacy mode switch is required.
    count = PlatformGetDisplayModes(kPlatformAllDisplays, modes,
                                    sizeof(modes) / sizeof(modes[0]),
                                    NULL, NULL);
@@ -392,14 +388,22 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
 #ifdef EDITOR
    process_config_includes("editor_" INCLUDE_PREFIX); 
 
-   // Some retail/NewDark installs ship the editor menu definitions as the
-   // optional sample file instead of including them from DromEd.cfg. Prefer
-   // a user-provided menus.cfg, then make the shipped sample the fallback.
+   // cam.cfg's editor_include_dromed_cfg loads DROMED.CFG for editor settings.
+   // The top-level menu definitions are shipped separately as MENUS.CFG.
    if (!config_is_defined("menu_edit"))
    {
-      config_load("menus.cfg");
+      char menuConfig[256];
+      if (!find_file_in_config_path(menuConfig, "MENUS.CFG", "include_path"))
+         strncpy(menuConfig, "MENUS.CFG", sizeof(menuConfig));
+      menuConfig[sizeof(menuConfig) - 1] = '\0';
+      config_load(menuConfig);
       if (!config_is_defined("menu_edit"))
-         config_load("menus-sample.cfg");
+      {
+         if (!find_file_in_config_path(menuConfig, "menus.cfg", "include_path"))
+            strncpy(menuConfig, "menus.cfg", sizeof(menuConfig));
+         menuConfig[sizeof(menuConfig) - 1] = '\0';
+         config_load(menuConfig);
+      }
    }
 #endif 
 
@@ -476,7 +480,7 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
 #ifdef EDITOR
    // The editor is a desktop application.  Use the native pointer instead of
    // the legacy framebuffer cursor, which is not reliably presented while an
-   // otherwise-idle D3D11 viewport is on screen.
+   // otherwise-idle hardware viewport is on screen.
    opt |= kShowNativeCursor;
 #endif
    if (config_is_defined("multithread"))
@@ -516,7 +520,6 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    VoiceOverCreate(); 
    CampaignCreate(); 
    InputBinderCreate (&g_pInputBinder);
-   AsyncReadQueueCreate();
    DynTextureCreate();
 
    // @TODO: move these out to an "engine features" app object creation function,
@@ -585,34 +588,21 @@ tResult LGAPI CoreEngineAppInit()
    }
 #endif
 
-#ifdef _WIN32
-   if (config_is_defined("breakkey"))
-      BreakKeyActivate(VK_F12,VK_F11);
-#endif
-
    tm_init();
 
-   // D3D11 presents these as render-canvas sizes instead of requesting
-   // obsolete exclusive desktop modes.  Both flavors of the shared project,
+   // The modern renderer presents these as render-canvas sizes instead of
+   // requesting obsolete exclusive desktop modes. Both flavors of the project,
    // including DromEd, need the same compatibility mode list.
    RegisterDisplayModes();
 
 #ifdef THIEF2_GAME
-   // The modern lgd3d implementation uses D3D11. Prefer it for new runner
-   // configurations while retaining an explicit user override.
-   if (!config_is_defined("game_hardware"))
-      config_set_int("game_hardware", 1);
-
-#ifdef __ANDROID__
-   // Android always owns a fullscreen surface.  Fit therefore means using
-   // that surface's settled pixel dimensions for the gameplay canvas, not
-   // stretching a legacy 4:3 canvas across it.  Menus keep their fixed
-   // logical size and are aspect-fitted by the presentation backend.
+   // Use the current display size for the gameplay canvas when the user has
+   // not configured a fit preference. Menus keep their fixed logical size
+   // and are aspect-fitted by the presentation backend.
    if (!config_is_defined("game_screen_fit"))
       config_set_int("game_screen_fit", 1);
-#endif
 
-   // The D3D11 scene is 32-bit, while the retained 2D UI/movie canvas is
+   // The hardware scene is 32-bit, while the retained 2D UI/movie canvas is
    // 16-bit. Normalize NewDark configuration values to that canvas format.
    {
       int depth;

@@ -32,7 +32,7 @@
 #include <phystyp2.h>
 #include <dbmem.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cPhysModel;
 class cPhysOBBModel;
@@ -368,8 +368,7 @@ inline cPhysObjContactLinks::cPhysObjContactLinks(void)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #include <undbmem.h>
 

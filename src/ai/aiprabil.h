@@ -18,7 +18,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -134,7 +134,6 @@ DECLARE_PROPERTY_INTERFACE(IAINonCombatDmgRespProperty)
 #define PROP_AI_NONCOMBATDMGRESP "AI_NCDmgRsp"
 
 EXTERN IAINonCombatDmgRespProperty* g_pAINonCombatDmgRespProperty;
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPRABL_H */

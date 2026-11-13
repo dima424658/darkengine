@@ -19,7 +19,7 @@
 #include <objnotif.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -85,8 +85,7 @@ inline cAIJointRotateAction::cAIJointRotateAction(IAIActor * pOwner, DWORD data)
    m_listener(0)
 {
 }
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTJR_H */
 

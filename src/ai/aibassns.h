@@ -19,7 +19,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 typedef int32 LinkID;
 struct sAIVisionCone;
@@ -195,7 +195,6 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIBASSNS_H */

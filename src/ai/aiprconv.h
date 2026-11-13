@@ -16,7 +16,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -63,8 +63,7 @@ void AITermConversationProps(void);
 void AIConvDescPropSetStep(int step);  // set which conversation step we are editing
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPRCONV_H */
 

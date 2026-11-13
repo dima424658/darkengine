@@ -80,7 +80,7 @@ extern "C"  {
 //	be cleared to 0 prior to use (static instances are clear at init already).
 
 #define NUM_DATAPATHS DARK_LIMIT_RUNTIME_DATA_PATHS
-#pragma pack(4)
+#pragma pack(push, 4)
 typedef struct Datapath
 {
 	uchar numDatapaths;					// # valid paths
@@ -89,7 +89,7 @@ typedef struct Datapath
 	char *datapath[NUM_DATAPATHS];	// ptrs to paths, malloc'ed
    int   find_flags;                // flags for find
 } Datapath;
-#pragma pack()
+#pragma pack(pop)
 
 //	DatapathClear() clears a datapath (not needed for static/global ones)
 //	DatapathFree() frees all alloc'ed paths and clears a datapath

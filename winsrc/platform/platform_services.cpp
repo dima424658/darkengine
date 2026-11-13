@@ -1,6 +1,9 @@
 #include "../win32_platform.h"
 
 #include <platform_services.h>
+#include <platform_io.h>
+
+#include <SDL3/SDL.h>
 
 #include <stdio.h>
 #include <cstdio>
@@ -11,13 +14,13 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <exception>
+#include <cstdlib>
 
-struct sDisplayModeCollector
+EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
 {
-   sPlatformDisplayMode *modes;
-   int capacity;
-   int count;
-};
+   return std::fopen(path, mode);
+}
 
 struct sWin32FileFind
 {
@@ -42,86 +45,75 @@ static void CopyFileFind(const WIN32_FIND_DATAA *source,
    destination->name[sizeof(destination->name) - 1] = '\0';
 }
 
-static void CollectMonitorModes(HMONITOR monitor, sDisplayModeCollector *collector,
-                                int *native_width, int *native_height)
-{
-   MONITORINFOEXA info = {};
-   DEVMODEA mode = {};
-   DWORD index;
-
-   info.cbSize = sizeof(info);
-   if (!GetMonitorInfoA(monitor, &info))
-      return;
-
-   if (native_width)
-      *native_width = info.rcMonitor.right - info.rcMonitor.left;
-   if (native_height)
-      *native_height = info.rcMonitor.bottom - info.rcMonitor.top;
-
-   for (index = 0; collector->count < collector->capacity; ++index)
-   {
-      int i;
-      memset(&mode, 0, sizeof(mode));
-      mode.dmSize = sizeof(mode);
-      if (!EnumDisplaySettingsExA(info.szDevice, index, &mode, 0))
-         break;
-
-      for (i = 0; i < collector->count; ++i)
-         if (collector->modes[i].width == (int)mode.dmPelsWidth &&
-             collector->modes[i].height == (int)mode.dmPelsHeight &&
-             collector->modes[i].bit_depth == (int)mode.dmBitsPerPel)
-            break;
-      if (i != collector->count)
-         continue;
-
-      sPlatformDisplayMode *output = &collector->modes[collector->count++];
-      output->width = (int)mode.dmPelsWidth;
-      output->height = (int)mode.dmPelsHeight;
-      output->bit_depth = (int)mode.dmBitsPerPel;
-   }
-}
-
-static BOOL CALLBACK CollectAllMonitorModes(HMONITOR monitor, HDC, LPRECT,
-                                            LPARAM context)
-{
-   CollectMonitorModes(monitor, (sDisplayModeCollector *)context, NULL, NULL);
-   return TRUE;
-}
-
 int PlatformGetDisplayModes(ePlatformDisplayScope scope,
                             sPlatformDisplayMode *modes, int capacity,
                             int *native_width, int *native_height)
 {
-   sDisplayModeCollector collector = { modes, capacity, 0 };
-
    if (!modes || capacity < 0)
-      collector.capacity = 0;
+      capacity = 0;
    if (native_width)
       *native_width = 0;
    if (native_height)
       *native_height = 0;
 
-   if (scope == kPlatformAllDisplays)
+   const bool initialized =
+      (SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) != 0;
+   if (!initialized && !SDL_InitSubSystem(SDL_INIT_VIDEO))
+      return 0;
+
+   int displayCount = 0;
+   SDL_DisplayID *displays = SDL_GetDisplays(&displayCount);
+   if (!displays)
+      displayCount = 0;
+   int firstDisplay = 0;
+   if (scope == kPlatformCurrentDisplay && displayCount > 0)
    {
-      EnumDisplayMonitors(NULL, NULL, CollectAllMonitorModes,
-                          (LPARAM)&collector);
-   }
-   else
-   {
-      HMONITOR monitor;
-      HWND window = GetActiveWindow();
-      if (window)
-         monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
-      else
-      {
-         POINT cursor = {};
-         GetCursorPos(&cursor);
-         monitor = MonitorFromPoint(cursor, MONITOR_DEFAULTTOPRIMARY);
-      }
-      CollectMonitorModes(monitor, &collector, native_width, native_height);
+      SDL_Window *window = SDL_GetKeyboardFocus();
+      const SDL_DisplayID current = window
+         ? SDL_GetDisplayForWindow(window) : displays[0];
+      for (int i = 0; i < displayCount; ++i)
+         if (displays[i] == current)
+         {
+            firstDisplay = i;
+            break;
+         }
+      displayCount = 1;
    }
 
-   return collector.count;
+   int count = 0;
+   for (int displayOffset = 0; displayOffset < displayCount; ++displayOffset)
+   {
+      const SDL_DisplayID display = displays[firstDisplay + displayOffset];
+      const SDL_DisplayMode *current = SDL_GetCurrentDisplayMode(display);
+      if (current && scope == kPlatformCurrentDisplay)
+      {
+         if (native_width) *native_width = current->w;
+         if (native_height) *native_height = current->h;
+      }
+
+      int modeCount = 0;
+      SDL_DisplayMode **displayModes = SDL_GetFullscreenDisplayModes(display,
+         &modeCount);
+      for (int i = 0; displayModes && i < modeCount && count < capacity; ++i)
+      {
+         const SDL_DisplayMode &mode = *displayModes[i];
+         const int depth = SDL_BITSPERPIXEL(mode.format);
+         int duplicate = 0;
+         for (; duplicate < count; ++duplicate)
+            if (modes[duplicate].width == mode.w &&
+                modes[duplicate].height == mode.h &&
+                modes[duplicate].bit_depth == depth)
+               break;
+         if (duplicate == count)
+            modes[count++] = {mode.w, mode.h, depth};
+      }
+      SDL_free(displayModes);
+   }
+
+   SDL_free(displays);
+   if (!initialized)
+      SDL_QuitSubSystem(SDL_INIT_VIDEO);
+   return count;
 }
 
 float PlatformGetTextScale(void)
@@ -379,6 +371,45 @@ void PlatformDiagnosticsLogStack(const char *severity, const char *subsystem,
    }
    message[sizeof(message) - 1] = '\0';
    PlatformDiagnosticsLog(severity,subsystem,message);
+}
+
+static volatile LONG gPlatformCrashReported;
+
+static LONG WINAPI PlatformUnhandledExceptionFilter(
+   EXCEPTION_POINTERS *exceptionInfo)
+{
+   if (InterlockedCompareExchange(&gPlatformCrashReported,1,0) == 0)
+   {
+      const DWORD code = exceptionInfo && exceptionInfo->ExceptionRecord
+         ? exceptionInfo->ExceptionRecord->ExceptionCode : 0;
+      const void *address = exceptionInfo && exceptionInfo->ExceptionRecord
+         ? exceptionInfo->ExceptionRecord->ExceptionAddress : NULL;
+      char message[160];
+      _snprintf(message,sizeof(message) - 1,
+                "unhandled Windows exception code=0x%08lx address=%p",
+                (unsigned long)code,address);
+      message[sizeof(message) - 1] = '\0';
+      PlatformDiagnosticsLog("FATAL","crash",message);
+      PlatformDiagnosticsLogStack("FATAL","crash",1);
+   }
+   return EXCEPTION_CONTINUE_SEARCH;
+}
+
+static void PlatformTerminateHandler(void)
+{
+   if (InterlockedCompareExchange(&gPlatformCrashReported,1,0) == 0)
+   {
+      PlatformDiagnosticsLog("FATAL","crash",
+         "uncaught C++ exception / std::terminate");
+      PlatformDiagnosticsLogStack("FATAL","crash",1);
+   }
+   std::abort();
+}
+
+void PlatformDiagnosticsInstallCrashHandlers(void)
+{
+   SetUnhandledExceptionFilter(PlatformUnhandledExceptionFilter);
+   std::set_terminate(PlatformTerminateHandler);
 }
 
 ePlatformAssertAction PlatformShowAssert(const char *message)

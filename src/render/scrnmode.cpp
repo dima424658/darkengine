@@ -66,8 +66,8 @@ void ScrnModeGet(sScrnMode* current)
 
    eDisplayDeviceKind kind;
    int flags;
-   GUID* pDD = NULL;
-   pDispDev->GetKind2(&kind,&flags,&pDD);
+   GUID* pDisplayGuid = NULL;
+   pDispDev->GetKind2(&kind,&flags,&pDisplayGuid);
 
    // 3d
    if (flags & kDispAttempt3D)
@@ -235,8 +235,22 @@ static void dump_screen_mode(const sScrnMode* mode);
 //
 BOOL ScrnSetModeRaw(const sScrnMode* mode)
 {
+    RenderBackendSetPhysicalDeviceIndex(-1);
     // Check validity
     AssertMsg((mode->valid_fields & kScrnModeAllValid) == kScrnModeAllValid,"ScrnSetModeRaw: Not all fields are valid");
+
+    if (!(mode->flags & kScrnMode3dDriver))
+    {
+        Warning(("Vulkan rendering is required to set a screen mode.\n"));
+        return FALSE;
+    }
+
+    const int num_devices = lgd3d_enumerate_devices();
+    if (num_devices <= 0)
+    {
+        Warning(("No Vulkan rendering device is available.\n"));
+        return FALSE;
+    }
 
     g_lgd3d = FALSE;
     RenderBackendTrace(
@@ -254,119 +268,54 @@ BOOL ScrnSetModeRaw(const sScrnMode* mode)
 #endif //PLAYTEST
 
     // First, figure out our display
-    GUID *pDD;
+    GUID *pDisplayGuid;
     int flags = 0;
     int kind;
     if (mode->flags & kScrnModeWindowed)
         kind = kDispWindowed;
     else
-        kind = (mode->flags & kScrnMode2dDriver) ? kDispFullScreen : kDispDebug;
+        kind = kDispFullScreen;
     int modeflags = 0;
 
-    if ((kind == kDispFullScreen || kind == kDispWindowed) &&
-        (mode->flags & kScrnMode3dDriver))
+    int idx = num_devices - 1;
+    const BOOL hasRendererIndex = config_get_int("d3d_driver_index", &idx);
+    if (hasRendererIndex)
     {
-
-        //zb:
-#ifndef SHIP
-        //temp
-
-
-        if( config_is_defined("local_debugging") )
+        const int requestedIdx = idx;
+        if (idx < 0) idx += num_devices;
+        if (idx < 0 || idx >= num_devices)
         {
-
-
-            int num_devices = lgd3d_enumerate_devices();
-
-            if( (num_devices > 0) && (lgd3d_get_device_info(0)->flags & LGD3DF_CAN_DO_WINDOWED) )
-            {
-                kind                 = kDispWindowed;
-                flags                = kDispAttemptFlippable | kDispAttempt3D;
-                g_lgd3d_device_index = 0;
-                g_lgd3d              = TRUE;
-                pDD                  = NULL;
-            }
-            else
-            {
-                Warning(("Can't use hardware debugging in window, trying software.\nComment out \"local_debugging\" in your user.cfg\n"));
-                kind = kDispDebug;
-
-                //copied from below:
-                // we're not doing hardware; check if we can preserve our current ddraw...
-                if (ScrnFindModeFlags(mode->w,mode->h,mode->bitdepth,modeflags) != SCR_NOMODE)
-                    // OK, preserve current ddraw!
-                    pDD = (GUID*)&SCRNMAN_PRESERVE_DDRAW;  // Direct draw guid
-                else
-                    // Nope, go for primary!
-                    pDD = NULL;
-            }
+            idx = num_devices - 1;
+            Warning(("Render device index %d is out of range, using %d",
+                requestedIdx, idx));
         }
-        else
-        {
-#endif
-            // @TODO: modularize this out when it comes time for OpenGL or other 3d APIs
-            int num_devices = lgd3d_enumerate_devices();
-            if (num_devices > 0)
-            {
-                int idx = num_devices - 1;
-                if (config_get_int("d3d_driver_index",&idx))
-                {
-                    if (idx < 0) idx += num_devices;
-                    if (idx < 0 || idx >= num_devices)
-                    {
-                        idx = num_devices -1;
-                        Warning(("D3D driver index %d is out of range, using %d",idx));
-                    }
-                }
-
-                flags = kDispAttempt3D;
-                if (kind == kDispFullScreen)
-                {
-                    flags |= kDispAttemptFlippable;
-                    pDD = NULL;
-                }
-                else
-                    pDD = NULL;
-
-#ifndef SHIP
-                if (config_is_defined("d3d_driver_index"))
-                    mprintf("Using renderer: %s\n", lgd3d_get_device_info(idx)->name);
-#endif
-
-                g_lgd3d_device_index = idx;
-                g_lgd3d = TRUE;
-            }
-            else
-            {
-                Warning(("Can't use hardware; no device available.\n"));
-                pDD = NULL;
-            }
-#ifndef SHIP
-        }
-#endif
-    } else {
-        // we're not doing hardware; check if we can preserve our current ddraw...
-        if (ScrnFindModeFlags(mode->w,mode->h,mode->bitdepth,modeflags) != SCR_NOMODE)
-            // OK, preserve current ddraw!
-            pDD = (GUID*)&SCRNMAN_PRESERVE_DDRAW;  // Direct draw guid
-        else
-            // Nope, go for primary!
-            pDD = NULL;
     }
 
+    flags = kDispAttempt3D;
+    if (kind == kDispFullScreen)
+        flags |= kDispAttemptFlippable;
+    pDisplayGuid = NULL;
+
 #ifndef SHIP
-    if ((!g_lgd3d) && (kind == kDispFullScreen))
-        if (config_is_defined("fake_fullscreen")) {
-            kind = kDispDebug;
-            flags |= kDispStrictMonitors;
-        } else if (config_is_defined("page_flip")) {
-            flags |= kDispAttemptFlippable;
-        }
+    if (hasRendererIndex)
+        mprintf("Using renderer: %s\n", lgd3d_get_device_info(idx)->name);
+#endif
+
+    g_lgd3d_device_index = idx;
+    g_lgd3d = TRUE;
+    RenderBackendSetPhysicalDeviceIndex(hasRendererIndex ? idx : -1);
+
+#ifndef SHIP
+    if (kind == kDispFullScreen && config_is_defined("fake_fullscreen"))
+    {
+        kind = kDispDebug;
+        flags |= kDispStrictMonitors;
+    }
 #endif
 
         RenderBackendTrace("screen-display kind=%d display-flags=0x%x lgd3d=%d",
                          kind, flags, g_lgd3d);
-        BOOL match = (ScrnSetDisplay(kind,flags,pDD) == 0);
+        BOOL match = (ScrnSetDisplay(kind,flags,pDisplayGuid) == 0);
 
         //
         // Test against current mode
@@ -474,20 +423,8 @@ sScrnMode* ScrnModeGetConfig(sScrnMode* targ, const char* prefix)
       }
    }
 
-   // get separate 3d bit
-   sprintf(var,"%shardware",prefix);
-   if (config_get_int(var,&flag))
-   {
-      targ->valid_fields |= kScrnModeFlagsValid;
-
-      if (flag)
-         targ->flags |= kScrnMode2dDriver|kScrnMode3dDriver;
-      else
-         targ->flags &= ~(kScrnMode3dDriver);
-   }
-
-   // D3D11 supports hardware rendering in either windowed or fullscreen
-   // presentation. Preserve the separately selected display mode.
+   // The modern backend supports hardware rendering in either windowed or
+   // fullscreen presentation. Preserve the separately selected display mode.
    if (fullScreenSetting == 0)
    {
       targ->flags &= ~kScrnModeFullScreen;
@@ -521,8 +458,6 @@ void ScrnModeSetConfig(const sScrnMode* src, const char* prefix)
       config_set_int(var,src->flags);
       sprintf(var,"%sfull_screen",prefix);
       config_set_int(var,(src->flags & kScrnModeFullScreen)!= 0);
-      sprintf(var,"%shardware",prefix);
-      config_set_int(var,(src->flags & kScrnMode3dDriver)!= 0);
    }
 }
 
@@ -530,18 +465,11 @@ void ScrnModeSetConfig(const sScrnMode* src, const char* prefix)
 void ScrnModeValidate(sScrnMode* targ)
 {
 
-   // strip 3d driver if you have none
-   if (VALID(targ,Flags) && (targ->flags & kScrnMode3dDriver))
+   // Vulkan is the only renderer. Old configuration files may still request
+   // software rendering, so normalize every screen mode to the Vulkan path.
+   if (VALID(targ,Flags))
    {
-      if (config_is_defined("disallow_hardware") || lgd3d_enumerate_devices() == 0)
-         targ->flags &= ~kScrnMode3dDriver;
-   }
-
-   // The legacy canvas remains 16-bit, but D3D11 works in both windowed and
-   // fullscreen presentation modes.
-   if (VALID(targ,Flags) && (targ->flags & kScrnMode3dDriver))
-   {
-      targ->flags |= kScrnMode2dDriver;
+      targ->flags |= kScrnMode2dDriver | kScrnMode3dDriver;
       if (VALID(targ,BitDepth))
       {
          if (targ->bitdepth < MIN_3D_BITDEPTH)
@@ -571,7 +499,7 @@ static const char* flag_strings[] =
    "FullScreen",
    "Windowed",
    "3d",
-   "DirectX",
+   "2d display",
 };
 
 #define NUM_FLAGS (sizeof(flag_strings)/sizeof(flag_strings[0]))

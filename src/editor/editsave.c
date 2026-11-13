@@ -34,6 +34,7 @@
 #include <brrend.h>
 #include <brlist.h>
 #include <saveload.h>
+#include <primal.h>
 #include <vbrush.h>
 #include <gridsnap.h>
 #include <gedit.h>
@@ -168,6 +169,12 @@ static bool _loadSingleBrush(editBrush *newbr)
    {
       if (brushGetType(newbr)==brType_TERRAIN)
       {
+         if (!primalBr_IsValidID(newbr->primal_id))
+         {
+            Warning(("BRLIST brush %d has invalid primal ID %d; using cube\n",
+                     newbr->br_id,newbr->primal_id));
+            newbr->primal_id=PRIMAL_CUBE_IDX;
+         }
          if (newbr->num_faces > EDITBR_MAX_FACES)
          {
             Warning(("BRLIST brush %d has %u faces; this build supports at most %u\n",

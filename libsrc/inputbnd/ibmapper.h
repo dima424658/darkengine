@@ -39,7 +39,7 @@ public:
 };
 
 
-#pragma pack(1)
+#pragma pack(push, 1)
 class cIBInputMapper
 {
 public:
@@ -98,4 +98,4 @@ public:
 	cAnsiStrNode* m_pCtrlIterNode;
 	unsigned int m_valid_events;
 };
-#pragma pack()
+#pragma pack(pop)

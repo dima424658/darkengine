@@ -225,7 +225,7 @@ int gr_mode_from_info(int w, int h, int bitDepth)
    return -1;
 }
 
-// Add a mode reported by DirectDraw to the engine's enumerated mode table.
+// Add a mode reported by the active display provider to the engine's table.
 // Width, height, and scanline sizes are stored in 16-bit fields throughout
 // dev2d, so reject values that those structures cannot represent safely.
 int gr_register_mode(int w, int h, int bitDepth)

@@ -12,24 +12,13 @@
 
 #ifndef __DTABFCN_H
 #define __DTABFCN_H
-#include <vga.h>
-#include <vesa.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void flat8_set_mode();
-
 extern void save_gen_state();
 extern void restore_gen_state();
-extern void vbe_get_mode();
-extern void vbe_stat_htrace();
-extern void vbe_stat_vtrace();
-
-extern void win32_set_mode();
-extern void win32_set_pal();
-extern void win32_get_pal();
 
 extern void com_init();
 extern void com_close();

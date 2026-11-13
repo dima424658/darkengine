@@ -4,6 +4,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdint.h>
 #include <lg.h>
 #include <multiped.h>
 #include <motstruc.h>
@@ -241,86 +242,223 @@ static int mp_motlist_num_writeable_motions(mps_motion_list *list,
    return 0;
 }
 
+// Retail saves use 32-bit pointer slots and byte packing. Pointer slots are
+// placeholders on disk, never addresses in the current process. Older ports
+// also wrote a byte-packed 64-bit variant or the native aligned structure.
+#define MP_DISK_NODE_FIELDS(pointer_type) \
+   pointer_type prev, next; \
+   int32_t type; \
+   float time; \
+   int32_t handle, start_frame; \
+   float frame; \
+   struct { \
+      uint32_t flags; \
+      float duration_scalar, bend, stretch, vstretch, vinc; \
+      struct { \
+         pointer_type limb; \
+         float start_approach_time, placement_time; \
+         float placement_duration, trans_out_duration; \
+         mxs_vector pos; \
+         mxs_matrix orient; \
+         uint8_t use_orient, absolute, stick; \
+      } ep; \
+      float fixed_duration; \
+      pointer_type mirror; \
+   } params; \
+   mxs_vector base_pos; \
+   quat base_orient; \
+   mxs_vector offset; \
+   pointer_type callback; \
+   int32_t callback_num, callback_frame; \
+   pointer_type targets; \
+   int32_t flag_index
+
+#pragma pack(push, 1)
+typedef struct { MP_DISK_NODE_FIELDS(uint32_t); } sMotionDisk32;
+typedef struct { MP_DISK_NODE_FIELDS(uint64_t); } sMotionDisk64;
+#pragma pack(pop)
+#undef MP_DISK_NODE_FIELDS
+
+_Static_assert(sizeof(sMotionDisk32) == 191, "retail motion record layout");
+_Static_assert(sizeof(sMotionDisk64) == 215, "packed 64-bit motion record layout");
+
+// New records encode the effector limb as an index rather than an address.
+#define MP_MOTLIST_INDEXED_LIMB UINT32_C(0x80000000)
+
+// Copy values only. Links, callbacks, mirror functions, limbs and target buffers
+// must be supplied by the current process, never copied from a saved address.
+#define MP_COPY_MOTION_VALUES(dst, src) do { \
+   (dst)->type = (src)->type; \
+   (dst)->time = (src)->time; \
+   (dst)->handle = (src)->handle; \
+   (dst)->start_frame = (src)->start_frame; \
+   (dst)->frame = (src)->frame; \
+   (dst)->params.flags = (src)->params.flags; \
+   (dst)->params.duration_scalar = (src)->params.duration_scalar; \
+   (dst)->params.bend = (src)->params.bend; \
+   (dst)->params.stretch = (src)->params.stretch; \
+   (dst)->params.vstretch = (src)->params.vstretch; \
+   (dst)->params.vinc = (src)->params.vinc; \
+   (dst)->params.ep.start_approach_time = (src)->params.ep.start_approach_time; \
+   (dst)->params.ep.placement_time = (src)->params.ep.placement_time; \
+   (dst)->params.ep.placement_duration = (src)->params.ep.placement_duration; \
+   (dst)->params.ep.trans_out_duration = (src)->params.ep.trans_out_duration; \
+   (dst)->params.ep.pos = (src)->params.ep.pos; \
+   (dst)->params.ep.orient = (src)->params.ep.orient; \
+   (dst)->params.ep.use_orient = (src)->params.ep.use_orient; \
+   (dst)->params.ep.absolute = (src)->params.ep.absolute; \
+   (dst)->params.ep.stick = (src)->params.ep.stick; \
+   (dst)->params.fixed_duration = (src)->params.fixed_duration; \
+   (dst)->base_pos = (src)->base_pos; \
+   (dst)->base_orient = (src)->base_orient; \
+   (dst)->offset = (src)->offset; \
+   (dst)->callback_num = (src)->callback_num; \
+   (dst)->callback_frame = (src)->callback_frame; \
+   (dst)->flag_index = (src)->flag_index; \
+} while (0)
+
 static int mp_get_write_motlist_bufsize(mps_motion_list *list)
 {
-   return 3 * sizeof(uint) +
-      mp_motlist_num_writeable_motions(list, NULL) * sizeof(mps_motion_node);
+   return 3 * sizeof(uint32_t) +
+      mp_motlist_num_writeable_motions(list, NULL) * sizeof(sMotionDisk32);
 }
 
-static void mp_write_motlist(mps_motion_list *list, uchar *buf)
+static void mp_write_motlist(multiped *mp, uchar *buf)
 {
-   uint *header = (uint *)buf;
+   mps_motion_list *list = &mp->main_motion;
+   uint32_t header[3];
    mps_motion_node *motion = NULL;
-   int count;
+   int count = mp_motlist_num_writeable_motions(list, &motion);
 
    header[0] = list->signature;
    header[1] = list->flags;
-   count = mp_motlist_num_writeable_motions(list, &motion);
-   header[2] = count;
+   header[2] = count | MP_MOTLIST_INDEXED_LIMB;
+   memcpy(buf, header, sizeof(header));
    if (count)
-      memcpy(header + 3, motion, sizeof(*motion));
+   {
+      sMotionDisk32 disk = {0};
+      MP_COPY_MOTION_VALUES(&disk, motion);
+      // Zero means no limb; indices are stored plus one.
+      if (motion->params.flags & MP_PLACE_EFFECTOR)
+      {
+         int i;
+         for (i = 0; i < mp->num_limbs; ++i)
+            if (motion->params.ep.l == &mp->limbs[i])
+               disk.params.ep.limb = i + 1;
+      }
+      memcpy(buf + sizeof(header), &disk, sizeof(disk));
+   }
 }
 
-static int mp_read_motlist(mps_motion_list *list, const uchar *buf,
+static int mp_read_motlist(multiped *mp, const uchar *buf, size_t size,
                            int(*swizzle_func)(int, motion_callback *pcallback))
 {
-   const uint *header = (const uint *)buf;
-   int count;
-   int motion_num;
+   uint32_t header[3];
+   uint32_t count, limb_index = 0;
+   mps_motion_node value = {0};
    mps_motion_node *motion;
+   int motion_num;
 
-   if (!list)
-      return MP_READ_OKAY;
+   if (size < sizeof(header))
+      return MP_READ_BAD_CONFIG;
+   memcpy(header, buf, sizeof(header));
+   count = header[2] & ~MP_MOTLIST_INDEXED_LIMB;
+   size -= sizeof(header);
+   buf += sizeof(header);
+   if (count > 1 || (!count && size != 0))
+      return MP_READ_BAD_CONFIG;
+   if (count)
+   {
+      if (size == sizeof(sMotionDisk32))
+      {
+         sMotionDisk32 disk;
+         memcpy(&disk, buf, sizeof(disk));
+         MP_COPY_MOTION_VALUES(&value, &disk);
+         if (header[2] & MP_MOTLIST_INDEXED_LIMB)
+            limb_index = disk.params.ep.limb;
+      }
+      else if (!(header[2] & MP_MOTLIST_INDEXED_LIMB) && size == sizeof(sMotionDisk64))
+      {
+         sMotionDisk64 disk;
+         memcpy(&disk, buf, sizeof(disk));
+         MP_COPY_MOTION_VALUES(&value, &disk);
+      }
+      else if (!(header[2] & MP_MOTLIST_INDEXED_LIMB) && size == sizeof(mps_motion_node))
+      {
+         mps_motion_node disk;
+         memcpy(&disk, buf, sizeof(disk));
+         MP_COPY_MOTION_VALUES(&value, &disk);
+      }
+      else
+         return MP_READ_BAD_CONFIG;
 
-   mp_list_init(list);
-   list->signature = header[0];
-   list->flags = header[1];
-   count = header[2];
-   AssertMsg(count == 0 || count == 1,
-             "mp_read_motlist: invalid saved motion count");
+      // The old format never saved enough information to reconstruct mirror
+      // functions or the limb referenced by an effector placement. Reject only
+      // such motions, rather than restoring a dangling process pointer.
+      if (value.type != MN_MOTION || (value.params.flags & MP_MIRROR) ||
+          ((value.params.flags & MP_PLACE_EFFECTOR) &&
+           (limb_index == 0 || limb_index > mp->num_limbs)))
+         return MP_READ_BAD_MOTIONS;
+
+      motion_num = MP_MOTNUM_FROM_NODE_HANDLE(value.handle);
+      if (swizzle_func)
+         motion_num = swizzle_func(motion_num, &value.callback);
+      if (motion_num < 0 || motion_num >= mp_num_motions)
+         return MP_READ_BAD_MOTIONS;
+      value.handle = motion_num | (value.handle & (MP_KILL_FLAG | MP_END_FLAG));
+      if (value.params.flags & MP_PLACE_EFFECTOR)
+         value.params.ep.l = &mp->limbs[limb_index - 1];
+   }
+
+   mp_list_init(&mp->main_motion);
+   mp->main_motion.signature = header[0];
+   mp->main_motion.flags = header[1];
    if (!count)
       return MP_READ_OKAY;
 
    motion = (mps_motion_node *)mp_alloc(sizeof(*motion), __FILE__, __LINE__);
    if (!motion)
       return MP_READ_BAD_MOTIONS;
-   memcpy(motion, header + 3, sizeof(*motion));
-
-   motion_num = MP_MOTNUM_FROM_NODE_HANDLE(motion->handle);
-   if (swizzle_func)
-      motion_num = swizzle_func(motion_num, &motion->callback);
-   if (motion_num == -1)
+   *motion = value;
+   mp_list_add(&mp->main_motion, (mps_stack_node *)motion);
+   if (motion->params.flags & MP_PLACE_EFFECTOR)
    {
-      mp_free(motion);
-      return MP_READ_BAD_MOTIONS;
+      const int handle = motion->handle;
+      motion->handle = motion_num;
+      mp_compute_ep(mp, motion);
+      motion->handle = handle;
    }
-
-   motion->handle = motion_num |
-      (motion->handle & (MP_KILL_FLAG | MP_END_FLAG));
-   mp_list_add(list, (mps_stack_node *)motion);
    return MP_READ_OKAY;
 }
+#undef MP_COPY_MOTION_VALUES
 
-int mp_read_multiped(multiped* mp, void* buf, int(*swizzle_func)(int, motion_callback* pcallback))
+int mp_read_multiped(multiped* mp, const void* buf, size_t size,
+                     int(*swizzle_func)(int, motion_callback* pcallback))
 {
-   uchar *curpos = (uchar *)buf;
+   const uchar *curpos = (const uchar *)buf;
    int num_joints;
    mxs_vector xlat;
+   quat rotations[MAX_JOINTS + 1];
+   size_t prefix;
 
-   mx_copy_mat(&mp->global_orient, (mxs_matrix *)curpos);
-   curpos += sizeof(mxs_matrix);
-   memcpy(&num_joints, curpos, sizeof(num_joints));
-   curpos += sizeof(num_joints);
-   if (num_joints != mp->num_joints)
+   if (size < sizeof(mxs_matrix) + sizeof(num_joints))
+      return MP_READ_BAD_CONFIG;
+   memcpy(&num_joints, curpos + sizeof(mxs_matrix), sizeof(num_joints));
+   if (num_joints < 0 || num_joints > MAX_JOINTS || num_joints != mp->num_joints)
+      return MP_READ_BAD_CONFIG;
+   prefix = sizeof(mxs_matrix) + sizeof(num_joints) + num_joints +
+      sizeof(quat) * (num_joints + 1);
+   if (size < prefix)
       return MP_READ_BAD_CONFIG;
 
-   memcpy(mp->joint_map, curpos, mp->num_joints);
-   curpos += mp->num_joints;
+   memcpy(&mp->global_orient, curpos, sizeof(mxs_matrix));
+   curpos += sizeof(mxs_matrix) + sizeof(num_joints);
+   memcpy(mp->joint_map, curpos, num_joints);
+   curpos += num_joints;
+   memcpy(rotations, curpos, sizeof(quat) * (num_joints + 1));
    mx_zero_vec(&xlat);
-   mp_apply_motion(mp, (quat *)curpos, &xlat, -1);
-   curpos += sizeof(quat) * (mp->num_joints + 1);
-
-   return mp_read_motlist(&mp->main_motion, curpos, swizzle_func);
+   mp_apply_motion(mp, rotations, &xlat, -1);
+   return mp_read_motlist(mp, (const uchar *)buf + prefix, size - prefix, swizzle_func);
 }
 
 int mp_get_write_buffsize(multiped* mp)
@@ -334,7 +472,7 @@ void mp_write_multiped(multiped* mp, void* buf)
 {
    uchar *curpos = (uchar *)buf;
 
-   mx_copy_mat((mxs_matrix *)curpos, &mp->global_orient);
+   memcpy(curpos, &mp->global_orient, sizeof(mxs_matrix));
    curpos += sizeof(mxs_matrix);
    memcpy(curpos, &mp->num_joints, sizeof(mp->num_joints));
    curpos += sizeof(mp->num_joints);
@@ -342,7 +480,7 @@ void mp_write_multiped(multiped* mp, void* buf)
    curpos += mp->num_joints;
    memcpy(curpos, mp->rel_orients, sizeof(quat) * (mp->num_joints + 1));
    curpos += sizeof(quat) * (mp->num_joints + 1);
-   mp_write_motlist(&mp->main_motion, curpos);
+   mp_write_motlist(mp, curpos);
 }
 
 void mp_get_multiped_motions(multiped* mp, int* mots, int* max_mots)

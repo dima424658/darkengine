@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <csignal>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -19,24 +20,69 @@
 #include <unordered_map>
 #include <vector>
 #include <unistd.h>
-#if defined(__linux__) && !defined(__ANDROID__)
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+#if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
 #include <execinfo.h>
 #endif
 
 #if defined(__ANDROID__)
 #include <android/log.h>
-#include <SDL2/SDL_system.h>
+#include <SDL3/SDL_system.h>
 #include <jni.h>
 #endif
 
+#if defined(__linux__) || defined(__APPLE__) || defined(__ANDROID__)
+#define SDL_ENABLE_OLD_NAMES
+#include <SDL3/SDL.h>
+#endif
+
+#if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
+#include <exception>
+#include <signal.h>
+#endif
+
 #if defined(__linux__)
-#include <SDL2/SDL.h>
 #include <malloc.h>
 #include <sys/sysinfo.h>
 #endif
 
 namespace
 {
+bool GetCurrentExecutablePath(char *path, size_t capacity)
+{
+   if (!path || capacity == 0)
+      return false;
+#if defined(__APPLE__)
+   uint32_t size = static_cast<uint32_t>(capacity);
+   if (_NSGetExecutablePath(path, &size) != 0)
+   {
+      path[0] = '\0';
+      return false;
+   }
+   std::error_code error;
+   const std::filesystem::path resolved =
+      std::filesystem::canonical(path, error);
+   if (error || resolved.string().size() >= capacity)
+   {
+      path[0] = '\0';
+      return false;
+   }
+   std::strcpy(path, resolved.string().c_str());
+   return true;
+#else
+   const ssize_t length = readlink("/proc/self/exe", path, capacity - 1);
+   if (length <= 0 || static_cast<size_t>(length) >= capacity)
+   {
+      path[0] = '\0';
+      return false;
+   }
+   path[length] = '\0';
+   return true;
+#endif
+}
+
 #if defined(__ANDROID__)
 std::mutex g_applicationClockMutex;
 std::chrono::steady_clock::time_point g_applicationClockSuspendedAt;
@@ -52,7 +98,7 @@ int PlatformGetDisplayModes(ePlatformDisplayScope scope,
 {
    if (native_width) *native_width = 0;
    if (native_height) *native_height = 0;
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
    if (!modes || capacity < 0)
       capacity = 0;
 
@@ -62,42 +108,42 @@ int PlatformGetDisplayModes(ePlatformDisplayScope scope,
       // Pick the compositor-native provider before the first SDL video call.
       // This startup query runs before the renderer creates its window.
       if (std::getenv("WAYLAND_DISPLAY") && !std::getenv("SDL_VIDEODRIVER"))
-         SDL_setenv("SDL_VIDEODRIVER", "wayland", 0);
-      if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
+         setenv("SDL_VIDEODRIVER", "wayland", 0);
+      if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
          return 0;
    }
 
+   int displayCount = 0;
+   SDL_DisplayID *displays = SDL_GetDisplays(&displayCount);
+   if (!displays)
+      displayCount = 0;
    int firstDisplay = 0;
-   int displayCount = SDL_GetNumVideoDisplays();
    if (scope == kPlatformCurrentDisplay && displayCount > 0)
    {
       SDL_Window *window = SDL_GetKeyboardFocus();
-      int display = window ? SDL_GetWindowDisplayIndex(window) : 0;
-      if (display < 0 || display >= displayCount)
-         display = 0;
-      firstDisplay = display;
+      const SDL_DisplayID current = window ? SDL_GetDisplayForWindow(window)
+                                           : displays[0];
+      for (int i = 0; i < displayCount; ++i)
+         if (displays[i] == current) { firstDisplay = i; break; }
       displayCount = 1;
    }
 
    int count = 0;
    for (int displayOffset = 0; displayOffset < displayCount; ++displayOffset)
    {
-      const int display = firstDisplay + displayOffset;
-      SDL_DisplayMode current{};
-      if (SDL_GetCurrentDisplayMode(display, &current) == 0 &&
-          scope == kPlatformCurrentDisplay)
+      const SDL_DisplayID display = displays[firstDisplay + displayOffset];
+      const SDL_DisplayMode *current = SDL_GetCurrentDisplayMode(display);
+      if (current && scope == kPlatformCurrentDisplay)
       {
-         if (native_width) *native_width = current.w;
-         if (native_height) *native_height = current.h;
+         if (native_width) *native_width = current->w;
+         if (native_height) *native_height = current->h;
       }
-
-      const int modeCount = SDL_GetNumDisplayModes(display);
-      for (int modeIndex = 0; modeIndex < modeCount && count < capacity;
-           ++modeIndex)
+      int modeCount = 0;
+      SDL_DisplayMode **displayModes = SDL_GetFullscreenDisplayModes(display,
+         &modeCount);
+      for (int i = 0; displayModes && i < modeCount && count < capacity; ++i)
       {
-         SDL_DisplayMode mode{};
-         if (SDL_GetDisplayMode(display, modeIndex, &mode) != 0)
-            continue;
+         const SDL_DisplayMode &mode = *displayModes[i];
          const int depth = SDL_BITSPERPIXEL(mode.format);
          int duplicate = 0;
          for (; duplicate < count; ++duplicate)
@@ -105,11 +151,12 @@ int PlatformGetDisplayModes(ePlatformDisplayScope scope,
                 modes[duplicate].height == mode.h &&
                 modes[duplicate].bit_depth == depth)
                break;
-         if (duplicate != count)
-            continue;
-         modes[count++] = {mode.w, mode.h, depth};
+         if (duplicate == count)
+            modes[count++] = {mode.w, mode.h, depth};
       }
+      SDL_free(displayModes);
    }
+   SDL_free(displays);
 
    if (!initialized)
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -127,8 +174,8 @@ float PlatformGetTextScale(void)
 #if defined(__ANDROID__)
    // density describes device scaling. scaledDensity additionally includes
    // the user's system font-size preference, which is the value text needs.
-   JNIEnv *environment = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
-   jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+   JNIEnv *environment = static_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+   jobject activity = static_cast<jobject>(SDL_GetAndroidActivity());
    float density = 0.0f;
    float scaledDensity = 0.0f;
    jclass activityClass = NULL;
@@ -196,8 +243,9 @@ float PlatformGetTextScale(void)
       if (current >= 0)
          display = current;
    }
-   if (SDL_GetDisplayDPI(display, &displayDpi, NULL, NULL) == 0 &&
-       displayDpi > 0.0f)
+   displayDpi = SDL_GetDisplayContentScale(static_cast<SDL_DisplayID>(display))
+      * 96.0f;
+   if (displayDpi > 0.0f)
       return std::max(0.5f, std::min(8.0f, displayDpi / 160.0f));
 
    // A conservative 2x fallback is preferable to silently reverting to
@@ -216,7 +264,7 @@ float PlatformGetTextScale(void)
          int drawableWidth = 0;
          int drawableHeight = 0;
          SDL_GetWindowSize(window, &windowWidth, &windowHeight);
-         SDL_GL_GetDrawableSize(window, &drawableWidth, &drawableHeight);
+         SDL_GetWindowSizeInPixels(window, &drawableWidth, &drawableHeight);
          if (windowWidth > 0 && windowHeight > 0 &&
              drawableWidth > 0 && drawableHeight > 0)
          {
@@ -236,8 +284,9 @@ float PlatformGetTextScale(void)
             display = current;
       }
       float displayDpi = 0.0f;
-      if (SDL_GetDisplayDPI(display, &displayDpi, NULL, NULL) == 0 &&
-          displayDpi > 0.0f)
+      displayDpi = SDL_GetDisplayContentScale(
+         static_cast<SDL_DisplayID>(display)) * 96.0f;
+      if (displayDpi > 0.0f)
          return std::max(0.5f, std::min(8.0f, displayDpi / 96.0f));
    }
    return 1.0f;
@@ -436,25 +485,123 @@ static unsigned long long PlatformDiagnosticProcessId(void)
 void PlatformDiagnosticsLogStack(const char *severity, const char *subsystem,
                                  int skip_frames)
 {
-#if defined(__linux__) && !defined(__ANDROID__)
+#if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
    void *frames[24] = {};
    const int count = backtrace(frames,(int)(sizeof(frames) / sizeof(frames[0])));
-   char message[1024];
+   char **symbols = backtrace_symbols(frames, count);
+   char message[8192];
    int used = snprintf(message,sizeof(message),"stack");
    const int first = std::max(0,skip_frames + 1);
-   for (int i = first; i < count && used < (int)sizeof(message) - 24; ++i)
+   for (int i = first; symbols && i < count &&
+        used < (int)sizeof(message) - 8; ++i)
    {
       const int written = snprintf(message + used,sizeof(message) - used,
-                                   " %p",frames[i]);
+                                   "\n  %s",symbols[i]);
       if (written <= 0)
          break;
       used += written;
    }
+   std::free(symbols);
    message[sizeof(message) - 1] = '\0';
    PlatformDiagnosticsLog(severity,subsystem,message);
 #else
    (void)skip_frames;
    PlatformDiagnosticsLog(severity,subsystem,"stack unavailable");
+#endif
+}
+
+#if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
+namespace
+{
+int g_crashReportFd = STDERR_FILENO;
+volatile sig_atomic_t g_crashReported;
+alignas(16) char g_crashSignalStack[64 * 1024];
+
+void WriteCrashReport(const char *reason)
+{
+   char message[256];
+   const int length = std::snprintf(message, sizeof(message),
+      "\nFATAL: %s (pid %llu)\nBacktrace:\n", reason,
+      PlatformDiagnosticProcessId());
+   if (length > 0)
+   {
+      const size_t count = static_cast<size_t>(std::min<int>(length,
+         static_cast<int>(sizeof(message) - 1)));
+      (void)write(STDERR_FILENO, message, count);
+      if (g_crashReportFd != STDERR_FILENO)
+         (void)write(g_crashReportFd, message, count);
+   }
+
+   void *frames[64] = {};
+   const int frameCount = backtrace(frames,
+      static_cast<int>(sizeof(frames) / sizeof(frames[0])));
+   if (frameCount > 0)
+   {
+      backtrace_symbols_fd(frames, frameCount, STDERR_FILENO);
+      if (g_crashReportFd != STDERR_FILENO)
+         backtrace_symbols_fd(frames, frameCount, g_crashReportFd);
+   }
+   const char newline = '\n';
+   (void)write(STDERR_FILENO, &newline, 1);
+   if (g_crashReportFd != STDERR_FILENO)
+      (void)write(g_crashReportFd, &newline, 1);
+}
+
+void CrashSignalHandler(int signalNumber, siginfo_t *, void *)
+{
+   if (g_crashReported)
+      _exit(128 + signalNumber);
+   g_crashReported = 1;
+   char reason[64];
+   std::snprintf(reason, sizeof(reason), "fatal signal %d", signalNumber);
+   WriteCrashReport(reason);
+
+   struct sigaction defaultAction = {};
+   defaultAction.sa_handler = SIG_DFL;
+   sigemptyset(&defaultAction.sa_mask);
+   (void)sigaction(signalNumber, &defaultAction, nullptr);
+   (void)raise(signalNumber);
+   _exit(128 + signalNumber);
+}
+
+void CrashTerminateHandler()
+{
+   if (!g_crashReported)
+   {
+      g_crashReported = 1;
+      WriteCrashReport("uncaught C++ exception / std::terminate");
+   }
+   _exit(134);
+}
+}
+#endif
+
+void PlatformDiagnosticsInstallCrashHandlers(void)
+{
+#if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
+   const char *path = PlatformDiagnosticsPath();
+   if (path && path[0])
+   {
+      const int fd = open(path, O_WRONLY | O_APPEND);
+      if (fd >= 0)
+         g_crashReportFd = fd;
+   }
+
+   stack_t signalStack = {};
+   signalStack.ss_sp = g_crashSignalStack;
+   signalStack.ss_size = sizeof(g_crashSignalStack);
+   if (sigaltstack(&signalStack, nullptr) != 0)
+      PlatformDiagnosticsLog("WARN", "crash", "could not install alternate signal stack");
+
+   const int signals[] = {SIGSEGV, SIGABRT, SIGBUS, SIGILL, SIGFPE};
+   struct sigaction action = {};
+   action.sa_sigaction = CrashSignalHandler;
+   action.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_RESETHAND;
+   sigemptyset(&action.sa_mask);
+   for (int signalNumber : signals)
+      (void)sigaction(signalNumber, &action, nullptr);
+
+   std::set_terminate(CrashTerminateHandler);
 #endif
 }
 
@@ -524,17 +671,20 @@ static BOOL gPlatformTextInputActive = FALSE;
 void PlatformSetTextInputActive(BOOL active)
 {
    gPlatformTextInputActive = active;
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
    if (!(SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO))
       return;
 #if defined(__ANDROID__)
    if (active)
       set_android_console_frame_visible(TRUE);
 #endif
+   SDL_Window *window = SDL_GetKeyboardFocus();
+   if (!window)
+      return;
    if (active)
-      SDL_StartTextInput();
+      SDL_StartTextInput(window);
    else
-      SDL_StopTextInput();
+      SDL_StopTextInput(window);
 #if defined(__ANDROID__)
    if (!active)
       set_android_console_frame_visible(FALSE);
@@ -558,14 +708,12 @@ BOOL PlatformGetExecutableDirectory(char *path, int capacity)
 {
    if (!path || capacity <= 0)
       return FALSE;
-   const ssize_t length = readlink("/proc/self/exe",path,(size_t)capacity - 1);
-   if (length <= 0 || length >= capacity)
-   {
-      path[0] = '\0';
+   if (!GetCurrentExecutablePath(path, static_cast<size_t>(capacity)))
       return FALSE;
-   }
-   path[length] = '\0';
-   char *separator = strrchr(path,'/');
+   char *separator = strrchr(path, '/');
+   char *alternate = strrchr(path, '\\');
+   if (alternate && (!separator || alternate > separator))
+      separator = alternate;
    if (!separator)
    {
       path[0] = '\0';
@@ -595,11 +743,8 @@ BOOL PlatformRelaunchSelf(const char *const *arguments, int argument_count,
    if (argument_count < 0)
       return FALSE;
    char executable[4096];
-   const ssize_t length = readlink("/proc/self/exe",executable,
-                                   sizeof(executable) - 1);
-   if (length <= 0 || length >= (ssize_t)sizeof(executable))
+   if (!GetCurrentExecutablePath(executable, sizeof(executable)))
       return FALSE;
-   executable[length] = '\0';
 
    const pid_t child = fork();
    if (child < 0)
@@ -851,16 +996,24 @@ BOOL PlatformResolvePath(const char *path, char *resolved, int capacity)
 
 EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
 {
-   const std::string native = ResolveNativePath(path, nullptr);
+   const bool creates = mode && std::strpbrk(mode, "wax");
+   bool existed = false;
+   // Reads dominate resource lookup. Reuse the same cache as ResolvePath;
+   // writes resolve afresh so newly created files cannot use a cached miss.
+   const std::string native = creates
+      ? ResolveNativePath(path, &existed) : ResolveCachedPath(path, nullptr);
    FILE *file = std::fopen(native.c_str(), mode);
-   if (file && mode && std::strpbrk(mode, "wax"))
+   // Overwriting/appending an existing file does not change directory names.
+   if (file && creates && !existed)
       ClearPathCaches();
    return file;
 }
 
 EXTERN_C int PlatformOpen(const char *path, int flags, ...)
 {
-   const std::string native = ResolveNativePath(path, nullptr);
+   bool existed = false;
+   const std::string native = (flags & O_CREAT)
+      ? ResolveNativePath(path, &existed) : ResolveCachedPath(path, nullptr);
    if ((flags & O_CREAT) == 0)
       return open(native.c_str(), flags);
    va_list arguments;
@@ -868,14 +1021,14 @@ EXTERN_C int PlatformOpen(const char *path, int flags, ...)
    const mode_t mode = (mode_t)va_arg(arguments, int);
    va_end(arguments);
    const int descriptor = open(native.c_str(), flags, mode);
-   if (descriptor >= 0)
+   if (descriptor >= 0 && !existed)
       ClearPathCaches();
    return descriptor;
 }
 
 EXTERN_C int PlatformAccess(const char *path, int mode)
 {
-   const std::string native = ResolveNativePath(path, nullptr);
+   const std::string native = ResolveCachedPath(path, nullptr);
    return access(native.c_str(), mode);
 }
 

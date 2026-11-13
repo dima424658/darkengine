@@ -17,7 +17,7 @@
 #include <aitrginf.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -131,8 +131,7 @@ inline const cAIState* cAIRangedMode::GetState(void) const {return m_pOwner->m_p
 inline ObjID cAIRangedMode::GetID(void) const {return m_pOwner->m_pAI->GetState()->GetID();};
 
 EXTERN int g_AIRangedCombatModeWeights[kAIRC_NumApplicabilities];
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRMOD_H */
 

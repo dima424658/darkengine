@@ -1371,7 +1371,7 @@ void vm_render_camera(int c)
          // Draw the construction grid in the hardware scene so its color and
          // pane coordinates remain correct.  It is an editor overlay, not
          // world geometry: terrain must not depth-clip it into the finite
-         // patch that appeared after the D3D11 conversion.
+         // patch that appeared after the modern-renderer conversion.
          hardware_grid = show_grid && g_lgd3d &&
                          (mode & RM_SOLID_PORTAL) && gedcsg_level_valid;
          _vm_rend_start(c,show_grid && !hardware_grid);
@@ -1399,7 +1399,6 @@ void vm_render_camera(int c)
                   // screen position and give the pane its own hardware frame.
                   lgd3d_set_offsets(screen_rect.ul.x, screen_rect.ul.y);
                   lgd3d_start_frame(vm_lgd3d_frame++);
-
                   // The editor's grids, brush outlines, and object markers
                   // are drawn into its legacy sub-canvas, so editor UI code
                   // normally leaves R3 using the software primitive table.
@@ -1459,10 +1458,6 @@ void vm_render_camera(int c)
          if (show_raycasts)
             render_failures();   // ????????
 
-         if (compiled_fallback && c == vm_cur_camera)
-            _vm_rend_compiled_geometry_label(c);
-         else if (_vm_name_corner!=-1)
-            _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
       }
       else restore_bm=TRUE;
    }
@@ -1496,6 +1491,17 @@ void vm_render_camera(int c)
    else
       _vm_save_camera_bitmap(c);     // here is where to save off "baseline" camera data
 
+   // Keep labels out of the cached camera bitmap. Restoring a pane's saved
+   // background should not make its label appear and disappear with scene
+   // updates.
+   if (camera[c].camera_3d)
+   {
+      if (compiled_fallback && c == vm_cur_camera)
+         _vm_rend_compiled_geometry_label(c);
+      else if (_vm_name_corner!=-1)
+         _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
+   }
+
    if (!camera[c].camera_3d)
       _vm_show_camera_in2d(c);
 
@@ -1512,7 +1518,11 @@ void vm_render_cameras(void)
 {
    int i;
 
-   if (!(redraw || new_select || new_camera || new_render))
+   // The Vulkan editor view is rendered directly into the current swapchain
+   // image. Unlike the legacy display backbuffer, that image is not retained
+   // between frames, so portal scenes must be submitted again every frame.
+   if (!(redraw || new_select || new_camera || new_render ||
+         RenderBackendAvailable()))
       return;
 
    // i really really dont get this?
@@ -1532,8 +1542,37 @@ void vm_render_cameras(void)
 
    update_links = TRUE;
 
-   redraw = vmRenderAlways;
+   redraw = vmRenderAlways || RenderBackendAvailable();
    new_select = new_camera = new_render = FALSE;
+}
+
+// Repaint the selected 3D pane's label during every editor frame. The portal
+// scene and its cached pane bitmap update on different schedules, so putting
+// this small UI element in either cache lets it blink during partial redraws.
+void vm_redraw_view_label(void)
+{
+   int c=vm_cur_camera;
+   int reg;
+   Region *region;
+
+   if (!vm_display_enable || c<0 || c>=MAX_CAMERAS || !VIS_CAM(c) ||
+       !camera[c].camera_3d)
+      return;
+   if (_vm_name_corner==-1 &&
+       !( _vm_has_compiled_geometry_fallback() && c==vm_cur_camera))
+      return;
+
+   reg=camera_to_region_mapping[c];
+   region=vmGetRegion(reg);
+   if (region==NULL || region->r==NULL)
+      return;
+
+   vm_set_region_canvas(reg);
+   if (_vm_has_compiled_geometry_fallback())
+      _vm_rend_compiled_geometry_label(c);
+   else
+      _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
+   vm_unset_region_canvas();
 }
 
 ////////////////////////////////////////////////////////////

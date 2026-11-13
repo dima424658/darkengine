@@ -10,14 +10,8 @@ These diagnostics check the two independent parts of movie playback:
 
 They do not require Thief 2 data in the repository.
 
-From a Visual Studio developer prompt:
-
-```powershell
-msbuild tools\media_decode_probe\media_decode_probe.vcxproj /p:Configuration=Release /p:Platform=Win32
-msbuild tools\media_decode_probe\mf_session_present_probe.vcxproj /p:Configuration=Release /p:Platform=Win32
-tools\media_decode_probe\Release\media_decode_probe.exe "D:\Games\Thief2\MOVIES\INTRO.mp4"
-tools\media_decode_probe\Release\mf_session_present_probe.exe "D:\Games\Thief2\MOVIES\INTRO.mp4"
-```
+These standalone probes are not part of the CMake game/editor build and
+currently have no CMake targets.
 
 The decode probe processes five seconds without displaying it. The presentation
 probe opens a window for ten seconds and obtains images from EVR after

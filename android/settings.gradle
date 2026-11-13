@@ -16,24 +16,23 @@ dependencyResolutionManagement {
 
 import java.security.MessageDigest
 
-def sdlVersion = "2.32.10"
-def sdlArchiveHash = "12b2dc2eb8f2836100a7916b5d394a0c82f1f7e32693f95f98305403af242f08"
+def sdlVersion = "3.4.18"
+def sdlArchiveHash = "e09e4d6593335d089ba124375e8b8abd0fd75173dffcd2c17012b45af121d4e9"
+def sdlAarHash = "bea5cbd6ec56a247196d70c3626860e0d6f36163e562e20a33041bee2fb339f8"
 def openalVersion = "1.25.2"
 def openalArchiveHash = "fb27e5839aa11f0e5b9d33756965291fad5d6909ab928ea1f796f4a1a6877894"
-def oggVersion = "1.3.5"
-def oggArchiveHash = "f6f1b04cfa4e98b70ffe775d5e302d9c6b98541f05159af6de2d6617817ed7d6"
-def vorbisVersion = "1.3.7"
-def vorbisArchiveHash = "270c76933d0934e42c5ee0a54a36280e2d87af1de3cc3e584806357e237afd13"
-def repositoryRoot = file("..").canonicalFile
-def dependencyRoot = new File(repositoryRoot, ".codex-build/android-deps")
-def sdlRoot = new File(dependencyRoot, "SDL2-${sdlVersion}")
-def archive = new File(dependencyRoot, "SDL2-${sdlVersion}.zip")
+def vulkanHeadersVersion = "1.4.363.0"
+def vulkanHeadersArchiveHash = "4a078be12bef21cfebc09d878b77a63cff9d68f899254a0b00d0e37ef73e7f7e"
+def dependencyRoot = new File(settingsDir, "build/android-deps")
+def sdlArchiveName = "SDL3-devel-${sdlVersion}-android.zip"
+def sdlArchive = new File(dependencyRoot, sdlArchiveName)
+def sdlAar = new File(dependencyRoot, "SDL3-${sdlVersion}.aar")
 def openalRoot = new File(dependencyRoot, "openal-soft-${openalVersion}")
 def openalArchive = new File(dependencyRoot, "openal-soft-${openalVersion}.tar.gz")
-def oggRoot = new File(dependencyRoot, "ogg-${oggVersion}")
-def oggArchive = new File(dependencyRoot, "ogg-${oggVersion}.tar.gz")
-def vorbisRoot = new File(dependencyRoot, "vorbis-${vorbisVersion}")
-def vorbisArchive = new File(dependencyRoot, "vorbis-${vorbisVersion}.tar.gz")
+def vulkanHeadersRoot = new File(dependencyRoot,
+    "Vulkan-Headers-vulkan-sdk-${vulkanHeadersVersion}")
+def vulkanHeadersArchive = new File(dependencyRoot,
+    "Vulkan-Headers-vulkan-sdk-${vulkanHeadersVersion}.tar.gz")
 
 def sha256 = { File file ->
     def digest = MessageDigest.getInstance("SHA-256")
@@ -48,27 +47,32 @@ def sha256 = { File file ->
     digest.digest().collect { String.format("%02x", it & 0xff) }.join()
 }
 
-if (!new File(sdlRoot, "CMakeLists.txt").isFile()) {
-    dependencyRoot.mkdirs()
-    if (!archive.isFile() || sha256(archive) != sdlArchiveHash) {
-        archive.delete()
-        def temporary = new File(dependencyRoot, archive.name + ".part")
+dependencyRoot.mkdirs()
+if (!sdlArchive.isFile() || sha256(sdlArchive) != sdlArchiveHash) {
+    sdlArchive.delete()
+    def temporary = new File(dependencyRoot, sdlArchive.name + ".part")
+    temporary.delete()
+    new URL("https://github.com/libsdl-org/SDL/releases/download/release-${sdlVersion}/${sdlArchive.name}")
+        .withInputStream { input ->
+            temporary.withOutputStream { output -> output << input }
+        }
+    if (sha256(temporary) != sdlArchiveHash) {
         temporary.delete()
-        new URL("https://github.com/libsdl-org/SDL/releases/download/release-${sdlVersion}/${archive.name}")
-            .withInputStream { input ->
-                temporary.withOutputStream { output -> output << input }
-            }
-        if (sha256(temporary) != sdlArchiveHash) {
-            temporary.delete()
-            throw new GradleException("SDL ${sdlVersion} download failed its SHA-256 check")
-        }
-        if (!temporary.renameTo(archive)) {
-            throw new GradleException("Could not move the verified SDL archive into place")
-        }
+        throw new GradleException("SDL3 ${sdlVersion} Android archive failed its SHA-256 check")
     }
+    if (!temporary.renameTo(sdlArchive)) {
+        throw new GradleException("Could not move the verified SDL archive into place")
+    }
+}
+if (!sdlAar.isFile() || sha256(sdlAar) != sdlAarHash) {
     copy {
-        from zipTree(archive)
+        from zipTree(sdlArchive)
+        include("SDL3-${sdlVersion}.aar")
         into dependencyRoot
+    }
+    if (sha256(sdlAar) != sdlAarHash) {
+        sdlAar.delete()
+        throw new GradleException("SDL3 ${sdlVersion} AAR failed its SHA-256 check")
     }
 }
 
@@ -116,92 +120,15 @@ def downloadVerifiedArchive = { String label, String url, File destination,
     }
 }
 
-if (!new File(oggRoot, "CMakeLists.txt").isFile()) {
+if (!new File(vulkanHeadersRoot, "include/vulkan/vulkan.hpp").isFile()) {
     dependencyRoot.mkdirs()
-    downloadVerifiedArchive("libogg ${oggVersion}",
-        "https://github.com/xiph/ogg/archive/refs/tags/v${oggVersion}.tar.gz",
-        oggArchive, oggArchiveHash)
+    downloadVerifiedArchive("Vulkan-Headers ${vulkanHeadersVersion}",
+        "https://github.com/KhronosGroup/Vulkan-Headers/archive/vulkan-sdk-${vulkanHeadersVersion}/Vulkan-Headers-vulkan-sdk-${vulkanHeadersVersion}.tar.gz",
+        vulkanHeadersArchive, vulkanHeadersArchiveHash)
     copy {
-        from tarTree(resources.gzip(oggArchive))
+        from tarTree(resources.gzip(vulkanHeadersArchive))
         into dependencyRoot
     }
-}
-
-if (!new File(vorbisRoot, "CMakeLists.txt").isFile()) {
-    dependencyRoot.mkdirs()
-    downloadVerifiedArchive("libvorbis ${vorbisVersion}",
-        "https://github.com/xiph/vorbis/archive/refs/tags/v${vorbisVersion}.tar.gz",
-        vorbisArchive, vorbisArchiveHash)
-    copy {
-        from tarTree(resources.gzip(vorbisArchive))
-        into dependencyRoot
-    }
-}
-
-// SDL 2.32.10 predates Android 13's explicit dynamic-receiver flags. Apply the
-// small compatibility change already present on SDL's SDL2 maintenance branch
-// so the USB HID path remains usable when targeting Android 16.
-def hidManager = new File(sdlRoot,
-    "android-project/app/src/main/java/org/libsdl/app/HIDDeviceManager.java")
-def hidSource = hidManager.getText("UTF-8")
-if (!hidSource.contains("private void registerReceiverCompat")) {
-    def oldRegistration = "mContext.registerReceiver(mUsbBroadcast, filter);"
-    if (!hidSource.contains(oldRegistration)) {
-        throw new GradleException("SDL HID receiver compatibility patch no longer applies")
-    }
-    hidSource = hidSource.replace(oldRegistration,
-        "registerReceiverCompat(mUsbBroadcast, filter);")
-    hidSource = hidSource.replace(
-        "mContext.registerReceiver(mBluetoothBroadcast, filter);",
-        "registerReceiverCompat(mBluetoothBroadcast, filter);")
-    def anchor = "    // Chromebooks do not pass along ACTION_ACL_CONNECTED / ACTION_ACL_DISCONNECTED properly."
-    def helper = """    private void registerReceiverCompat(BroadcastReceiver receiver, IntentFilter filter) {
-        if (Build.VERSION.SDK_INT >= 33) {
-            mContext.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            mContext.registerReceiver(receiver, filter);
-        }
-    }
-
-"""
-    if (!hidSource.contains(anchor)) {
-        throw new GradleException("SDL HID receiver compatibility insertion point is missing")
-    }
-    hidManager.setText(hidSource.replace(anchor, helper + anchor), "UTF-8")
-}
-
-// SDL's hidden text editor consumes Back before the Activity sees it whenever
-// the soft keyboard is visible. Add a virtual pre-IME hook so Thief can close
-// its command terminal instead of merely dismissing the keyboard.
-def sdlActivity = new File(sdlRoot,
-    "android-project/app/src/main/java/org/libsdl/app/SDLActivity.java")
-def activitySource = sdlActivity.getText("UTF-8")
-if (!activitySource.contains("protected boolean onTextInputBackPressed")) {
-    def activityAnchor = "    // Called by JNI from SDL.\n    public static void manualBackButton()"
-    def activityHook = """    protected boolean onTextInputBackPressed(KeyEvent event) {
-        return false;
-    }
-
-"""
-    if (!activitySource.contains(activityAnchor)) {
-        throw new GradleException("SDL text-input Back hook insertion point is missing")
-    }
-    activitySource = activitySource.replace(activityAnchor,
-        activityHook + activityAnchor)
-
-    def preImeAnchor = "        // As seen on StackOverflow: http://stackoverflow.com/questions/7634346/keyboard-hide-event"
-    def preImeHook = """        if (keyCode == KeyEvent.KEYCODE_BACK &&
-            SDLActivity.mSingleton != null &&
-            SDLActivity.mSingleton.onTextInputBackPressed(event)) {
-            return true;
-        }
-
-"""
-    if (!activitySource.contains(preImeAnchor)) {
-        throw new GradleException("SDL pre-IME Back interception point is missing")
-    }
-    sdlActivity.setText(activitySource.replace(preImeAnchor,
-        preImeHook + preImeAnchor), "UTF-8")
 }
 
 rootProject.name = "DarkEngineRestored"

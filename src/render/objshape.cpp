@@ -581,7 +581,7 @@ static float GetHeatRadius(ObjID obj, int idx)
 
    if (ObjHeatDiskGet(obj, &cluster)) {
 
-      mxs_real bounding_radius = std::max(cluster->start_radius, cluster->end_radius) + cluster->height;
+      mxs_real bounding_radius = (std::max)(cluster->start_radius, cluster->end_radius) + cluster->height;
 
       mxs_vector start_minus_radius, end_plus_radius;
       mxs_vector plus, minus, diagonal;
@@ -614,7 +614,7 @@ static int GetHeatObjRelBBox(ObjID obj, int /*idx*/,
 
       // This radius can be too large, but should be pretty close
       // since we expect the height to be small.
-      mxs_real bounding_radius = std::max(cluster->start_radius, cluster->end_radius) + cluster->height;
+      mxs_real bounding_radius = (std::max)(cluster->start_radius, cluster->end_radius) + cluster->height;
       mxs_vector start_minus_radius, start_plus_radius;
       mxs_vector end_minus_radius, end_plus_radius;
       mxs_vector plus, minus;
@@ -628,13 +628,13 @@ static int GetHeatObjRelBBox(ObjID obj, int /*idx*/,
       mx_add_vec(&end_plus_radius, &cluster->end_offset, &plus);
       mx_add_vec(&end_minus_radius, &cluster->end_offset, &minus);
 
-      bmin->x = std::min(start_minus_radius.x, end_minus_radius.x);
-      bmin->y = std::min(start_minus_radius.y, end_minus_radius.y);
-      bmin->z = std::min(start_minus_radius.z, end_minus_radius.z);
+      bmin->x = (std::min)(start_minus_radius.x, end_minus_radius.x);
+      bmin->y = (std::min)(start_minus_radius.y, end_minus_radius.y);
+      bmin->z = (std::min)(start_minus_radius.z, end_minus_radius.z);
 
-      bmax->x = std::max(start_plus_radius.x, end_plus_radius.x);
-      bmax->y = std::max(start_plus_radius.y, end_plus_radius.y);
-      bmax->z = std::max(start_plus_radius.z, end_plus_radius.z);
+      bmax->x = (std::max)(start_plus_radius.x, end_plus_radius.x);
+      bmax->y = (std::max)(start_plus_radius.y, end_plus_radius.y);
+      bmax->z = (std::max)(start_plus_radius.z, end_plus_radius.z);
       return OBJ_BBOX_TYPE_OBJREL;
    }
    return OBJ_BBOX_TYPE_NONE;

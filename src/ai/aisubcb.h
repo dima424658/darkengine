@@ -18,7 +18,7 @@
 #include <aibasabl.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cAICombat;
 
@@ -79,6 +79,5 @@ inline cAISubCombat::cAISubCombat()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 #endif /* !__AISUBCB_H */

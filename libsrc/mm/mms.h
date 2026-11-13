@@ -17,6 +17,7 @@ enum _mme_layout
 typedef uchar mme_layout;
 
 // Model header, where it all starts
+#pragma pack(push, 1)
 typedef struct _mms_model
 {
    char        id[4];   // name of model "LGMM"
@@ -42,6 +43,14 @@ typedef struct _mms_model
    ulong vert_uvn_off;  // offset to array of other vertex data - (u,v)'s, normals etc
    ulong weight_off;
 } mms_model;
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(mms_model) == 68,
+              "MM model header must match the packed model file layout");
+#else
+typedef char sMmsModelSizeCheck[sizeof(mms_model) == 68 ? 1 : -1];
+#endif
 
 
 typedef struct _mms_attachment
@@ -72,6 +81,7 @@ typedef float mms_weight;
 
 typedef uchar mms_mapping;
 
+#pragma pack(push, 1)
 typedef struct _mms_uvn
 {
    float u,v;
@@ -168,6 +178,21 @@ typedef struct _mms_smatseg
    ushort smatr_id;
    ushort seg_id;
 } mms_smatseg;
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(mms_uvn) == 12 && sizeof(mms_pgon) == 16 &&
+              sizeof(mms_data_chunk) == 12 && sizeof(mms_ssmatr) == 40 &&
+              sizeof(mms_smatr) == 56 && sizeof(mms_segment) == 20 &&
+              sizeof(mms_smatseg) == 16,
+              "MM records must match the packed model file layout");
+#else
+typedef char sMmsRecordSizeCheck[
+   sizeof(mms_uvn) == 12 && sizeof(mms_pgon) == 16 &&
+   sizeof(mms_data_chunk) == 12 && sizeof(mms_ssmatr) == 40 &&
+   sizeof(mms_smatr) == 56 && sizeof(mms_segment) == 20 &&
+   sizeof(mms_smatseg) == 16 ? 1 : -1];
+#endif
 
 typedef struct _mms_polysort_elt
 {

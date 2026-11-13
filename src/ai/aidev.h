@@ -18,7 +18,7 @@
 #include <rendprop.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 typedef int eAIDeviceState;
 enum eAIDeviceState_ {kAIDeviceInactive, kAIDeviceActive, kAIDeviceActivating, kAIDeviceDeactivating};
@@ -67,9 +67,6 @@ private:
    BOOL ReadyToDeactivate(void);
    BOOL ReadyToActivate(void);
 };
-
-
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBTRNG_H */

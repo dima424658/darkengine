@@ -11,6 +11,7 @@
 // actually do.
 
 
+#include <tracy/Tracy.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <filespec.h>
@@ -663,6 +664,8 @@ HRESULT cScriptMan::DoSendMessage(cScrObj * pScrObj, sScrMsg * pMsg, sMultiParm 
    {
       if (pInfo->pScript)
       {
+         ZoneScopedN("Script callback");
+         ZoneName(pInfo->className, strlen(pInfo->className));
          if (DoSendDirect(pInfo->pScript, pMsg, pReply) != S_OK)
             result = E_FAIL;
          if (pMsg->flags & kSMF_MsgBlock)
@@ -678,6 +681,10 @@ HRESULT cScriptMan::DoSendMessage(cScrObj * pScrObj, sScrMsg * pMsg, sMultiParm 
 
 STDMETHODIMP cScriptMan::SendMessage(sScrMsg * pMsg, sMultiParm * pReply)
 {
+   ZoneScopedN("Script message");
+   if (pMsg->message)
+      ZoneName(pMsg->message, strlen(pMsg->message));
+   ZoneValue(pMsg->to);
    HRESULT result = S_OK;
 
    if (!m_ActiveObjs.IsEmpty())
@@ -850,6 +857,7 @@ STDMETHODIMP_(void) cScriptMan::KillTimedMessage(tScrTimer timer)
 
 STDMETHODIMP_(int) cScriptMan::PumpMessages()
 {
+   ZoneScopedN("Script message pump");
    int             i;
    cMultiParm      reply;
    sScrTimedMsg *  pTimedMsg;

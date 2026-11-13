@@ -86,11 +86,10 @@ static void setup_edit_mode(void)
    memset(&desc,0,sizeof(desc));
    ScrnModeGetConfig(&mode,"edit_");
 
-   // DromEd shares the modern renderer with the game executable.  Keep the
-   // legacy canvas at a layout the editor understands, but render its 3D
-   // views through lgd3d's D3D11 implementation and present them in a normal
-   // resizable desktop window.  An explicit edit_screen_size remains useful
-   // for choosing another editor layout.
+   // DromEd shares the modern renderer with the game executable. Keep the
+   // legacy canvas at a layout the editor understands, render its 3D views
+   // through lgd3d, and present them in a normal resizable desktop window.
+   // An explicit edit_screen_size remains useful for choosing another layout.
    if (!(mode.valid_fields & kScrnModeDimsValid))
    {
       mode.w = 1024;
@@ -120,8 +119,8 @@ static void setup_game_mode(void)
 static void constrain_editor_game_mode(sScrnMode* mode)
 {
    // Game mode is a preview hosted by DromEd, not a separate exclusive-mode
-   // application. Keep the legacy render canvas compatible with the D3D11
-   // presenter and retain the editor's normal resizable top-level window.
+   // application. Keep the legacy render canvas compatible with the shared
+   // hardware renderer and retain the editor's normal resizable window.
    mode->bitdepth = 16;
    mode->flags &= ~kScrnModeFullScreen;
    mode->flags |= kScrnModeWindowed | kScrnMode2dDriver | kScrnMode3dDriver;

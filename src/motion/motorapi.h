@@ -16,6 +16,7 @@
 #include <objpos.h> // XXX for inline functions
 #include <fix.h>
 
+#pragma pack(push, 1)
 struct sMotorState
 {
    mxs_vector position;
@@ -27,6 +28,15 @@ struct sMotorState
    ObjID focus;
    int ballisticRefCount;
 };
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(sMotorState) == 44,
+              "motor state is stored in the legacy packed creature record");
+#else
+_Static_assert(sizeof(sMotorState) == 44,
+               "motor state is stored in the legacy packed creature record");
+#endif
 
 #define kMotStartFlag_ForceBlend 0x1 // blend the motion even if it doesn't by default
 #define kMotStartFlag_SetStartFrame 0x2 // start frame is given as optional param

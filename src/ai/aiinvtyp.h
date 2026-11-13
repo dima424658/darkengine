@@ -13,7 +13,7 @@
 #define __AIINVTYP_H
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -33,7 +33,6 @@ enum eAIInvestKindEnum
 typedef unsigned eAIInvestKind;
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIINVTYP_H */
