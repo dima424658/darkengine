@@ -315,7 +315,7 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
         audioOutput.Finish();
         while (!audioOutput.IsDrained() && !DarkPumpMovieEvents())
         {
-            SDL_Delay(5);
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
     }
     swr_free(&resampler);
