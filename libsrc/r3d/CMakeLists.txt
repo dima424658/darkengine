@@ -1,0 +1,34 @@
+add_library(dark_r3d STATIC
+  block.c
+  clip.c
+  clipclip.c
+  clipglob.c
+  clipplan.c
+  clipproj.c
+  cliptest.c
+  clipunsc.c
+  ctxtguts.c
+  ctxtmang.c
+  ctxtmult.c
+  frame.c
+  init.c
+  object.c
+  prim.c
+  primconv.c
+  primlgd3d.c
+  primface.c
+  primfunc.c
+  primg2.c
+  primmisc.c
+  primnull.c
+  primpoly.c
+  space.c
+  utils.c
+  view.c
+  xfrmclip.c
+  xfrmglob.c
+  xfrmlin.c
+  xfrmproj.c
+  xfrmunsc.c
+)
+dark_configure_library(dark_r3d)

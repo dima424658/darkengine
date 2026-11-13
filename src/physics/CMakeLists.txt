@@ -1,0 +1,51 @@
+set(dark_physics_sources
+  collide.cpp
+  collprop.cpp
+  gunproj.cpp
+  gunvhot.cpp
+  objmedia.cpp
+  phclimb.cpp
+  phclsn.cpp
+  phcontct.cpp
+  phcore.cpp
+  phctrl.cpp
+  phdyn.cpp
+  phflist.cpp
+  phlisten.cpp
+  phmedtr.cpp
+  phmoapi.cpp
+  phmod.cpp
+  phmodata.c
+  phmodbsp.cpp
+  phmodobb.cpp
+  phmods.cpp
+  phmodsph.cpp
+  phmodutl.cpp
+  phmotion.cpp
+  phmsg.cpp
+  phmterr.cpp
+  phmtprop.cpp
+  phmtscpt.cpp
+  phnet.cpp
+  phoprop.cpp
+  phppscpt.cpp
+  phprop.cpp
+  phprops.cpp
+  phref.cpp
+  phreport.cpp
+  phscrpt.cpp
+  phsubmod.cpp
+  phterr.cpp
+  phtxtprp.cpp
+  phutils.cpp
+  physapi.cpp
+  physcast.cpp
+  physloop.cpp
+  phystest.cpp
+  spherchk.cpp
+)
+
+target_sources(dark_game_core PRIVATE ${dark_physics_sources})
+if(TARGET dark_dromed_core)
+  target_sources(dark_dromed_core PRIVATE ${dark_physics_sources})
+endif()

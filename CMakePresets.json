@@ -19,9 +19,8 @@
       "binaryDir": "${sourceDir}/build-macos",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "DARK_BUILD_ENGINE": "ON",
-        "DARK_BUILD_THIEF2": "ON",
-        "DARK_BUILD_DROMED": "ON"
+        "DARK_BUILD_DROMED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
@@ -37,9 +36,8 @@
       "binaryDir": "${sourceDir}/build-linux",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "DARK_BUILD_ENGINE": "ON",
-        "DARK_BUILD_THIEF2": "ON",
-        "DARK_BUILD_DROMED": "ON"
+        "DARK_BUILD_DROMED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
@@ -54,8 +52,6 @@
         "rhs": "Windows"
       },
       "cacheVariables": {
-        "DARK_BUILD_ENGINE": "ON",
-        "DARK_BUILD_THIEF2": "ON",
         "DARK_BUILD_DROMED": "ON"
       }
     },
