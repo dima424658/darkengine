@@ -5,6 +5,9 @@
 
 // $Header: r:/t2repos/thief2/src/sim/simtime.cpp,v 1.16 2000/03/17 17:40:22 bfarquha Exp $
 
+#include <chrono>
+#include <thread>
+
 #include <tracy/Tracy.hpp>
 #include <lg.h>
 #include <loopapi.h>
@@ -306,9 +309,8 @@ typedef struct _StateRecord
 static void SlowFrame(long nMilliseconds)
 {
    ZoneScopedN("Frame pacing");
-   uint32 nStart = PlatformMilliseconds();
-   while ((PlatformMilliseconds()-nStart) < (uint32)nMilliseconds)
-   {}
+   if (nMilliseconds > 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds(nMilliseconds));
 }
 
 
