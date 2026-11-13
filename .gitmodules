@@ -19,3 +19,6 @@
 [submodule "3rdparty/vorbis"]
 	path = 3rdparty/vorbis
 	url = https://github.com/xiph/vorbis.git
+[submodule "3rdparty/tracy"]
+	path = 3rdparty/tracy
+	url = https://github.com/wolfpld/tracy.git

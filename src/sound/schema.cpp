@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/sound/schema.cpp,v 1.89 2000/01/14 10:44:35 MAT Exp $
 
+#include <tracy/Tracy.hpp>
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
@@ -1322,6 +1323,7 @@ static void ExtractCallbacks(ulong *pNumCallbacks, const char *pszLabel,
 // per frame function
 void SchemaFrame()
 {
+   ZoneScopedN("Sound schemas");
    sSchemaPlay *pSchemaPlay;
    ulong currentTime = SchemaGetTime();
    BOOL startNew;

@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/physics/physloop.cpp,v 1.50 2000/02/19 12:32:27 toml Exp $
 
+#include <tracy/Tracy.hpp>
 #include <lg.h>
 #include <loopapi.h>
 
@@ -210,6 +211,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void *data, eLoopMessage msg, tLoopMes
       case kMsgNormalFrame:
          if (SimStateCheckFlags(kSimPhysics))
          {
+            ZoneScopedN("Physics loop");
             PlayerMotionUpdate((mxs_real)GetSimFrameTime());
             PhysUpdate(GetSimFrameTime());
             ParticlesUpdate(GetSimFrameTime());  

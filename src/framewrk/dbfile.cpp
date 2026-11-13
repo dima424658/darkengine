@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/framewrk/dbfile.cpp,v 2.38 2000/03/07 19:57:07 toml Exp $
 
+#include <tracy/Tracy.hpp>
 #include <lg.h>
 #include <stdio.h>
 #include <string.h>
@@ -1166,6 +1167,9 @@ cDBFileFactory* dbSetFileFactory(cDBFileFactory* new_factory)
 
 edbFiletype dbSave(const char* filename, edbFiletype filetype)
 {
+   ZoneScopedN("Database save");
+   if (filename)
+      ZoneText(filename, strlen(filename));
    char fullname[256];
    munge_path(fullname,(char*)filename);
 
@@ -1220,6 +1224,9 @@ static find_file_func special_file_find = NULL;
 
 edbFiletype dbLoad(const char* filename, ulong loadtype)
 {
+   ZoneScopedN("Database load");
+   if (filename)
+      ZoneText(filename, strlen(filename));
    char fullname[256];
    const char* name = filename; 
    MissionDiagnosticsBegin(filename);
@@ -1270,6 +1277,9 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype);
 
 edbFiletype dbMergeLoad(const char* filename, ulong loadtype)
 {
+   ZoneScopedN("Database merge load");
+   if (filename)
+      ZoneText(filename, strlen(filename));
    char fullname[256];
    const char* name = filename; 
    if (!file_factory)

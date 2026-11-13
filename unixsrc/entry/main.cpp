@@ -1,4 +1,5 @@
 #include <lg.h>
+#include <tracy/Tracy.hpp>
 
 #include <cerrno>
 #include <cstring>
@@ -213,6 +214,10 @@ bool PrepareDarkDataDirectory(const char *requested, bool interactive)
 
 int main(int argc, char *argv[])
 {
+#ifdef TRACY_ENABLE
+    tracy::SetThreadName("Main");
+#endif
+
 #ifdef __ANDROID__
     char entryMessage[96];
     std::snprintf(entryMessage, sizeof(entryMessage),

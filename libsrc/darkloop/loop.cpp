@@ -4,6 +4,7 @@
 #include <loop.h>
 #include <loopman.h>
 #include <tmdecl.h>
+#include <tracy/Tracy.hpp>
 
 IMPLEMENT_DELEGATION(cLoop);
 
@@ -78,6 +79,7 @@ int cLoop::Go(sLoopInstantiator* loop)
 	m_fState |= 0x20 | 0x01;
 	while (m_fState & 0x01)
 	{
+		ZoneScopedN("Engine frame");
 		if (m_fState & 0x20)
 		{
 			auto inmsg = kMsgEnterMode;
@@ -169,6 +171,7 @@ int cLoop::Go(sLoopInstantiator* loop)
 			// leaking both the panel dispatch and its SimState pause.
 			m_fState &= ~0x40;
 		}
+		FrameMark;
 	}
 
 	delete m_pLoopStack;

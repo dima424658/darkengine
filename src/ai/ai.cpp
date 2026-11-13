@@ -46,6 +46,7 @@
 
 // #define PROFILE_ON 1
 
+#include <tracy/Tracy.hpp>
 #include <lg.h>
 #include <str.h>
 #include <appagg.h>
@@ -839,6 +840,8 @@ DECLARE_TIMER(AI_AI_ONF, Average);
 
 HRESULT cAI::OnNormalFrame()
 {
+   ZoneScopedN("AI agent");
+   ZoneValue(GetID());
    AUTO_TIMER(AI_AI_ONF);
 
    AIDebugSet(GetID());
@@ -1062,6 +1065,7 @@ DECLARE_TIMER(AI_AIF_US, Average);
 
 void cAI::UpdateState()
 {
+   ZoneScopedN("AI world state");
    AUTO_TIMER(AI_AIF_US);
 
    sAIState * pState = (sAIState *)((void *)&m_state);     // Naughty, but handy (toml 04-07-98)
@@ -1255,6 +1259,7 @@ DECLARE_TIMER(AI_AIF_USNS, Average);
 
 HRESULT cAI::UpdateSenses()
 {
+   ZoneScopedN("AI senses");
    AUTO_TIMER(AI_AIF_USNS);
 
    if (m_pSenses)
@@ -1462,6 +1467,7 @@ DECLARE_TIMER(AI_AIF_UA, Average);
 
 eAIResult cAI::UpdateAction()
 {
+   ZoneScopedN("AI action update");
    AUTO_TIMER(AI_AIF_UA);
 
    int  i;
@@ -1516,6 +1522,7 @@ DECLARE_TIMER(AI_AIF_UG, Average);
 
 eAIResult cAI::UpdateGoal()
 {
+   ZoneScopedN("AI goal update");
    AUTO_TIMER(AI_AIF_UG);
    eAIResult currentResult;
 
@@ -1737,6 +1744,7 @@ DECLARE_TIMER(AI_AIF_DG, Average);
 
 void cAI::DecideGoal()
 {
+   ZoneScopedN("AI goal selection");
    AUTO_TIMER(AI_AIF_DG);
    int       i;
    BOOL      fNew          = FALSE;
@@ -1887,6 +1895,7 @@ DECLARE_TIMER(AI_AIF_E, Average);
 
 void cAI::Enact()
 {
+   ZoneScopedN("AI enact actions");
    AUTO_TIMER(AI_AIF_E);
    BOOL fEnacted = FALSE;
 
