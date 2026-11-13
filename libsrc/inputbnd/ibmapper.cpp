@@ -248,6 +248,7 @@ input_code g_valid_input_controls[] = {
 	{"mouse2", 8},
 	{"mouse3", 32},
 	{"mouse4", -1},
+	{"mouse5", -1},
 	{"mousesingle1", 1024},
 	{"mousesingle2", 2048},
 	{"mousesingle3", 4096},
@@ -627,7 +628,13 @@ BOOL cIBInputMapper::TrapHandler(uiEvent* p_event)
 	}
 	case UI_EVENT_MOUSE: {
 		auto* mouse_event = reinterpret_cast<uiMouseEvent*>(p_event);
-		uint8 action = static_cast<uint8>(p_event->subtype);
+		unsigned short action = static_cast<unsigned short>(p_event->subtype);
+		if (action & MOUSE_SIDE_MARKER)
+		{
+			if (action & MOUSE_SIDE_UP) return true;
+			strcpy(bind_control, (action & MOUSE_SIDE_SECOND) ? "mouse5" : "mouse4");
+			break;
+		}
 		if (action)
 		{
 			if (mouse_event->wheel && action == 128)
@@ -1285,6 +1292,9 @@ int cIBInputMapper::ProcessCookedKey(short code)
 int cIBInputMapper::ProcessMouseButton(uiMouseEvent* event)
 {
 	auto action = event->action;
+	if (static_cast<unsigned short>(action) & MOUSE_SIDE_MARKER)
+		return SendButtonCmd((action & MOUSE_SIDE_SECOND) ? "mouse5" : "mouse4",
+		                     !(static_cast<unsigned short>(action) & MOUSE_SIDE_UP), 0);
 	if (!action)
 		return 0;
 
@@ -1333,9 +1343,6 @@ int cIBInputMapper::ProcessMouseButton(uiMouseEvent* event)
 
 		return 1;
 	}
-
-	if (control)
-		return SendButtonCmd(control, down, 0);
 
 	return 0;
 }

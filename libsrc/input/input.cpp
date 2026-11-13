@@ -34,7 +34,6 @@ ulong *g_ticks;
 struct Callback { int id; mouse_callfunc fn; void *data; };
 std::vector<Callback> g_callbacks;
 int g_nextCallback = 1;
-constexpr size_t kMaxInputEvents = 32;
 
 ulong system_now_ms()
 {
@@ -78,7 +77,7 @@ void kb_generate(kbs_event event)
 {
    std::lock_guard<std::mutex> lock(g_mutex);
    g_keyState[event.code] = event.state == KBS_DOWN;
-   if (g_keys.size() == kMaxInputEvents) g_keys.pop_front();
+   // Never discard transitions: a lost release leaves command bindings held.
    g_keys.push_back(event);
 }
 kbs_event kb_next(void)
@@ -249,7 +248,7 @@ errtype mouse_generate(lgMouseEvent event)
    {
       std::lock_guard<std::mutex> lock(g_mutex);
       g_x = event.x; g_y = event.y; mouseInstantButts = event.buttons;
-      if (g_mouse.size() == kMaxInputEvents) g_mouse.pop_front();
+      // Motion is coalesced by the SDL pump; retain every button transition.
       g_mouse.push_back(event);
       callbacks.reserve(g_callbacks.size());
       for (const auto &callback : g_callbacks)
@@ -297,6 +296,15 @@ void DarkInputMouse(short x, short y, uchar type, uchar buttons, char wheel)
    lgMouseEvent event{}; event.x = x; event.y = y; event.type = type;
    event.buttons = buttons; event.wheel = wheel; event.timestamp = now_ms(); mouse_generate(event);
 }
+void DarkInputMouseSide(short x, short y, uchar buttons, int side, int down)
+{
+   lgMouseEvent event{};
+   event.x = x; event.y = y; event.type = MOUSE_WHEEL;
+   event.buttons = buttons; event.timestamp = now_ms();
+   event.pad[0] = static_cast<char>(side);
+   event.pad[1] = static_cast<char>(down != 0);
+   mouse_generate(event);
+}
 void DarkInputMouseRelative(int x, int y, uchar buttons)
 {
    if (x == 0 && y == 0)
@@ -325,8 +333,6 @@ void DarkInputMouseRelative(int x, int y, uchar buttons)
       event.type = MOUSE_MOTION;
       event.buttons = buttons;
       event.timestamp = now_ms();
-      if (g_mouse.size() == kMaxInputEvents)
-         g_mouse.pop_front();
       g_mouse.push_back(event);
       callbacks.reserve(g_callbacks.size());
       for (const auto &callback : g_callbacks)

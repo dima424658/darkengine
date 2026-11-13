@@ -538,7 +538,7 @@ errtype uiQueueEvent(uiEvent* ev)
          out.pos.x = mse.x;
          out.pos.y = mse.y;
          out.type = (mse.type == MOUSE_MOTION) ? UI_EVENT_MOUSE_MOVE :  UI_EVENT_MOUSE;
-         out.action = mse.type;
+         out.action = mouse_event_action(&mse);
          out.tstamp = mse.timestamp;
          out.buttons = mse.buttons;
          out.wheel = mse.wheel;
@@ -925,7 +925,7 @@ errtype uiPoll(void)
             // note that the equality operator here means that motion-only
             // events are MOUSE_MOVE, and others are MOUSE events.
             out.type = (mse.type == MOUSE_MOTION) ? UI_EVENT_MOUSE_MOVE :  UI_EVENT_MOUSE;
-            out.subtype = mse.type;
+            out.subtype = mouse_event_action(&mse);
             mout->tstamp = mse.timestamp;
             mout->buttons = mse.buttons | ui_joy_state;
             mout->wheel = mse.wheel;

@@ -88,6 +88,9 @@ DECLARE_INTERFACE_(IInventory,IUnknown)
 
 #undef INTERFACE
 
+// Native helper leaves the legacy IInventory vtable unchanged.
+EXTERN ObjID InventoryCycleSelectionSteps(IInventory *inventory, eWhichInvObj which,
+                                         eCycleDirection dir, unsigned count);
 EXTERN void InventoryCreate(void); 
 
 
