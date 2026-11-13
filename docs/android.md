@@ -30,8 +30,10 @@ Android ABI from their source submodules.
 Install JDK 17 or later, Android SDK platform 36, SDK build tools 36, CMake
 3.31.6, and NDK 30.0.16248370. The project intentionally pins these versions
 so Windows and Linux produce the same native configuration. FFmpeg's source
-build also needs GNU Make and Bash; Windows builds need MSYS2's Make and Bash
-available to CMake.
+build also needs GNU Make and Bash. Parser generation needs Bison 2.3 or
+later on the build host, rather than an Android executable. Windows builds
+need MSYS2's Make and Bash plus `bison` or `win_bison` available to CMake.
+Set `BISON_EXECUTABLE` when the parser generator is outside `PATH`.
 
 From PowerShell:
 

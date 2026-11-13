@@ -60,10 +60,8 @@ set(dark_root_sources
   darktabl.c
   frezreac.cpp
   goof.c
-  inc.c
   inctab.cpp
   killme.cpp
-  songyacc.c
   testloop.c
   testmode.c
   version.c
