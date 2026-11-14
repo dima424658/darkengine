@@ -61,11 +61,23 @@ private:
 
 ///////////////////////////////////////
 
+inline BOOL WinDisplaySuppressMainWindow()
+{
+    return GetEnvironmentVariableA("DARK_HIDE_MAIN_WINDOW", NULL, 0) > 0;
+}
+
+///////////////////////////////////////
+
 inline void cWinDisplayProvider::ShowMainWnd()
 {
     int iPreviousMutexLevel = m_pDisplayDevice->BreakMutex();
-    ShowWindow(GetMainWnd(), SW_SHOW);
-    SetForegroundWindow(GetMainWnd());
+    if (WinDisplaySuppressMainWindow())
+        ShowWindow(GetMainWnd(), SW_HIDE);
+    else
+    {
+        ShowWindow(GetMainWnd(), SW_SHOW);
+        SetForegroundWindow(GetMainWnd());
+    }
     m_pDisplayDevice->RestoreMutex(iPreviousMutexLevel);
 }
 

@@ -37,6 +37,8 @@
 
 namespace
 {
+bool g_platformBatchMode = false;
+int g_platformBatchErrors = 0;
 #if defined(__ANDROID__)
 std::mutex g_applicationClockMutex;
 std::chrono::steady_clock::time_point g_applicationClockSuspendedAt;
@@ -282,8 +284,40 @@ const char *PlatformGetLanguageCode(void)
    return code;
 }
 
+void PlatformSetBatchMode(BOOL enabled)
+{
+   g_platformBatchMode = enabled != FALSE;
+   if (!g_platformBatchMode)
+      g_platformBatchErrors = 0;
+}
+
+BOOL PlatformBatchMode(void)
+{
+   return g_platformBatchMode ? TRUE : FALSE;
+}
+
+void PlatformBatchReportError(const char *title, const char *message)
+{
+   const char *resolvedTitle = title && title[0] ? title : "DromEd batch";
+   const char *resolvedMessage = message ? message : "";
+   ++g_platformBatchErrors;
+   std::fprintf(stderr, "%s: %s\n", resolvedTitle, resolvedMessage);
+   std::fflush(stderr);
+   PlatformDiagnosticsLog("ERROR", "batch", resolvedMessage);
+}
+
+int PlatformBatchExitCode(void)
+{
+   return g_platformBatchErrors > 0 ? 1 : 0;
+}
+
 void PlatformShowError(const char *title, const char *message)
 {
+   if (PlatformBatchMode())
+   {
+      PlatformBatchReportError(title, message);
+      return;
+   }
    const char *resolvedTitle = title ? title : "Dark Engine";
    const char *resolvedMessage = message ? message : "";
 #if defined(__ANDROID__)
@@ -295,6 +329,12 @@ void PlatformShowError(const char *title, const char *message)
 
 BOOL PlatformAskYesNo(const char *title, const char *message)
 {
+   if (PlatformBatchMode())
+   {
+      PlatformBatchReportError(title,
+         message && message[0] ? message : "Interactive confirmation is unavailable.");
+      return FALSE;
+   }
    PlatformShowError(title, message);
    return FALSE;
 }
@@ -460,6 +500,11 @@ void PlatformDiagnosticsLogStack(const char *severity, const char *subsystem,
 
 ePlatformAssertAction PlatformShowAssert(const char *message)
 {
+   if (PlatformBatchMode())
+   {
+      PlatformBatchReportError("Assertion Failed", message);
+      return kPlatformAssertExit;
+   }
    PlatformShowError("Assertion Failed", message);
    return kPlatformAssertExit;
 }

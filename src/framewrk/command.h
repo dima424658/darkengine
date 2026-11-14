@@ -45,6 +45,12 @@ enum CommandType
    TOGGLE_INT
 };
 
+enum CommandFlags
+{
+   // Explicit opt-in: batch mode rejects every command lacking this flag.
+   kCommandBatchSafe = 1 << 0
+};
+
   // length you must provide for a string var
 #define CMD_STRING_LEN   32
 

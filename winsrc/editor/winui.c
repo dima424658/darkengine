@@ -8,22 +8,26 @@
 
 // quarantine the virus
 #include <win32_platform.h>
+#include <stdio.h>
 // quarantine the virus
 
 
 #include <winui.h>
+#include <platform_services.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header!
 
 // get y or n response
 BOOL winui_GetYorN(const char *msg)
 {
-   int rv=MessageBox(NULL,msg,"Dromed Yes or No Question",MB_YESNO|MB_DEFBUTTON2|MB_ICONQUESTION);
-   return rv==IDYES;
+   return PlatformAskYesNo("DromEd confirmation",msg);
 }
 
 // draw a big menu
 void winui_Text(const char *msg)
 {
-   MessageBox(NULL,msg,"Dromed Info",MB_OK);
+   if (PlatformBatchMode())
+      fprintf(stderr,"DromEd: %s\n",msg ? msg : "");
+   else
+      MessageBox(NULL,msg,"Dromed Info",MB_OK);
 }

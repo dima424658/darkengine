@@ -62,6 +62,7 @@
 #include <pgrpprop.h>
 #include <render_backend.h>
 #include <missiondiag.h>
+#include <platform_services.h>
 
 // stuff for camera synch
 #include <dbasemsg.h>
@@ -550,9 +551,20 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
             if (!once)
                process_config_scripts("edit_script");
             once = TRUE;
-            process_config_scripts("edit_always_script");
+            if (!PlatformBatchMode())
+               process_config_scripts("edit_always_script");
 
             state->first_frame = FALSE;
+
+            // Batch jobs use the ordinary editor initialization so database,
+            // brush, portalization, and lighting code see production state.
+            // The host surface remains hidden and the process exits after the
+            // one explicitly requested command script has completed.
+            if (PlatformBatchMode())
+            {
+               quit_game();
+               break;
+            }
 
             if (!render_test_configured && config_is_defined("render_test"))
             {

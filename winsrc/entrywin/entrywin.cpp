@@ -312,6 +312,16 @@ static BOOL HasArgument(int argc, const char* argv[], const char* name)
     return FALSE;
 }
 
+static BOOL HasEnabledArgument(int argc, const char* argv[], const char* name)
+{
+    const size_t nameLength = strlen(name);
+    for (int i = 1; i < argc; ++i)
+        if (_strnicmp(argv[i], name, nameLength) == 0 &&
+            argv[i][nameLength] == '=' && atoi(argv[i] + nameLength + 1) != 0)
+            return TRUE;
+    return FALSE;
+}
+
 static int SelectContent(sGameLocation* location, const char* executable)
 {
     char gameDirectory[MAX_PATH] = "";
@@ -393,6 +403,12 @@ static BOOL PrepareDarkDataDirectory(int argc, const char* argv[])
         LoadLastGameFolder(directory, sizeof(directory));
     while (!location.gameDirectory[0])
     {
+        if (PlatformBatchMode())
+        {
+            PlatformBatchReportError("DromEd batch",
+                "Run from a recognizable Thief installation; batch mode cannot open the game-folder chooser.");
+            return FALSE;
+        }
         if (!PromptForDirectory(directory, sizeof(directory),
                 "Pick a Thief base folder or GOG Thief Gold collection folder"))
             return FALSE;
@@ -784,9 +800,18 @@ int main(int argc, const char* argv[])
     if (!g_pMalloc && !HeapInit())
         return 1;
 
+    const BOOL batchMode = IsDromEdExecutable(argc > 0 ? argv[0] : NULL) &&
+        HasEnabledArgument(argc, argv, "batch");
+    PlatformSetBatchMode(batchMode);
+    if (batchMode)
+    {
+        SetEnvironmentVariableA("DARK_HIDE_MAIN_WINDOW", "1");
+        _putenv_s("DARK_HIDE_MAIN_WINDOW", "1");
+    }
+
     if (UsesDarkData(argc > 0 ? argv[0] : NULL) &&
         !PrepareDarkDataDirectory(argc, argv))
-        return 0;
+        return batchMode ? 1 : 0;
 
     PlatformDiagnosticsStartSession(argc > 0 ? argv[0] : NULL, argc, argv);
 

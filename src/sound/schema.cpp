@@ -1203,12 +1203,13 @@ static Command schema_commands[] =
      "schema-name", NULL},
    { "halt_schemas", FUNC_VOID, SchemaHaltAll, "Halt all playing schemas", HK_ALL},
 #ifdef SCHEMA_LOADING   
-   { "zggtvrk_load_schema", FUNC_STRING, SchemaFilesLoad, "Load a schema file", HK_ALL },
-   { "zggtvrk_load_schemas", FUNC_VOID, SchemaFilesDestroyAndLoad, "Load all schemas in path (destroy first)", HK_ALL },
-   { "reload_schemas", FUNC_VOID, SchemaFilesDestroySpeechAndLoad, "Load all schemas in path (don't destroy)", HK_ALL },
+   { "zggtvrk_load_schema", FUNC_STRING, SchemaFilesLoad,
+     "load a schema definition file", HK_ALL, "filename.sch", NULL, kCommandBatchSafe },
+   { "zggtvrk_load_schemas", FUNC_VOID, SchemaFilesDestroyAndLoad, "Load all schemas in path (destroy first)", HK_ALL, NULL, NULL, kCommandBatchSafe },
+   { "reload_schemas", FUNC_VOID, SchemaFilesDestroySpeechAndLoad, "Load all schemas in path (don't destroy)", HK_ALL, NULL, NULL, kCommandBatchSafe },
 #endif   
 #ifndef SHIP
-   { "dump_schemas", FUNC_VOID, SchemaFilesDump, "Dump schema tags DB)", HK_ALL },
+   { "dump_schemas", FUNC_VOID, SchemaFilesDump, "Dump schema tags DB)", HK_ALL, NULL, NULL, kCommandBatchSafe },
 #endif
 };
 

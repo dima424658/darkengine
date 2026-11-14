@@ -648,6 +648,8 @@ bool DarkRenderOpen(int width, int height, const char *title)
    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
    Uint32 windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE |
       SDL_WINDOW_ALLOW_HIGHDPI;
+   if (PlatformBatchMode())
+      windowFlags |= SDL_WINDOW_HIDDEN;
 #if defined(__ANDROID__)
    // Android is always presented fullscreen. Creating a smaller window and
    // promoting it after EGL has allocated its first buffer can leave a

@@ -13,6 +13,7 @@
 
 #include <lg.h>
 #include <mprintf.h>
+#include <platform_services.h>
 
 #include <command.h>
 #include <status.h>
@@ -125,6 +126,32 @@ bool CommandParse(const char *inp, Command **res_1, const char **res_2)
 
 static char fail_return[] = "No such Command";
 static char context_fail_return[] = "Command is not available in this mode";
+static char batch_fail_return[] = "Command is not available in batch mode";
+
+static BOOL command_batch_allowed(const Command *cmd)
+{
+   char message[256];
+   if (!PlatformBatchMode() || (cmd->flags & kCommandBatchSafe))
+      return TRUE;
+   snprintf(message, sizeof(message),
+            "Command '%s' is not available in batch mode.", cmd->name);
+   message[sizeof(message) - 1] = '\0';
+   PlatformBatchReportError("DromEd batch", message);
+   return FALSE;
+}
+
+static void command_batch_context_error(const Command *cmd)
+{
+   char message[256];
+   if (!PlatformBatchMode())
+      return;
+   snprintf(message, sizeof(message),
+            "Command '%s' is not available in the current batch context.",
+            cmd->name);
+   message[sizeof(message) - 1] = '\0';
+   PlatformBatchReportError("DromEd batch", message);
+}
+
 char *CommandExecute(const char *inp)
 {
    // parse out to the first blank
@@ -136,12 +163,22 @@ char *CommandExecute(const char *inp)
    if (CommandParse(inp, &cmd, &s)) {
       if (!(cmd->contexts & *command_context_ptr)) {
          Warning(("CommandExecute: Invalid context for '%s'\n", cmd->name));
+         command_batch_context_error(cmd);
          return context_fail_return;
       }
+      if (!command_batch_allowed(cmd))
+         return batch_fail_return;
       CommandExecuteParsed(cmd, s);
       return NULL;
    } else {
       Warning(("Unknown command %s\n", inp));
+      if (PlatformBatchMode())
+      {
+         char message[256];
+         snprintf(message, sizeof(message), "Unknown command: %s", inp);
+         message[sizeof(message) - 1] = '\0';
+         PlatformBatchReportError("DromEd batch", message);
+      }
       return fail_return;
    }
 }
@@ -152,12 +189,22 @@ bool CommandExecuteParam(const char *inp, const char *parm)
    if (cmd) {
       if (!(cmd->contexts & *command_context_ptr)) {
          Warning(("CommandExecuteParam: Invalid context for '%s'\n", cmd->name));
+         command_batch_context_error(cmd);
          return FALSE;
       }
+      if (!command_batch_allowed(cmd))
+         return FALSE;
       CommandExecuteParsed(cmd, parm);
       return TRUE;
    } else {
       Warning(("Unknown command %s\n", inp));
+      if (PlatformBatchMode())
+      {
+         char message[256];
+         snprintf(message, sizeof(message), "Unknown command: %s", inp);
+         message[sizeof(message) - 1] = '\0';
+         PlatformBatchReportError("DromEd batch", message);
+      }
       return FALSE;
    }
 }
@@ -187,13 +234,22 @@ void CommandExecuteParsed(Command *cmd, const char *s)
    
    if (!(cmd->contexts & *command_context_ptr)) {
       Warning(("CommandExecuteParsed: Invalid context for '%s'\n", cmd->name));
+      command_batch_context_error(cmd);
       return;
    }
+   if (!command_batch_allowed(cmd))
+      return;
 
    while (*s && isspace(*s)) ++s;
 
    do_prompt=(strncmp("@@",s,2)==0);
    if (do_prompt) s+=2;
+   if (do_prompt && PlatformBatchMode())
+   {
+      PlatformBatchReportError("DromEd batch",
+         "Interactive command arguments are unavailable in batch mode.");
+      return;
+   }
 
    //  mprintf("type %d, s:%x (%c)\n",cmd->type,s,s?*(char *)s:0);
 
@@ -548,7 +604,7 @@ static void help_commands(const char *s)
    // DromEd registers thousands of commands. Its existing searchable command
    // reference is more useful than streaming the entire registry into the
    // embedded console. A filtered query remains available in the console.
-   if (!query_len)
+   if (!query_len && !PlatformBatchMode())
    {
       Command *window_help = CommandFindString("show_command_help");
       if (window_help && (window_help->contexts & *command_context_ptr))
@@ -590,6 +646,8 @@ static void help_commands(const char *s)
             uint mask;
             if (!(cmd->contexts & *command_context_ptr))
                continue;
+            if (PlatformBatchMode() && !(cmd->flags & kCommandBatchSafe))
+               continue;
             mask = help_command_group_mask(cmd);
             if (!all && ((group->mask && !(mask & group->mask)) ||
                          (!group->mask && mask)))
@@ -614,6 +672,8 @@ static void help_commands(const char *s)
          {
             Command *cmd = &set[i];
             if (!(set[i].contexts & *command_context_ptr))
+               continue;
+            if (PlatformBatchMode() && !(cmd->flags & kCommandBatchSafe))
                continue;
             if (!help_text_contains(cmd->name, query, query_len) &&
                 !help_text_contains(cmd->comment, query, query_len) &&
@@ -749,8 +809,11 @@ void CommandRunScript(const char *s)
    f = fopen(s, "r");
    if (f) {
       while (fgets(buf, 256, f)) {
+         size_t length;
          buf[255] = 0;
-         buf[strlen(buf)-1] = 0;  // clear the \n
+         length = strlen(buf);
+         while (length > 0 && (buf[length - 1] == '\n' || buf[length - 1] == '\r'))
+            buf[--length] = 0;
          CommandExecute(buf);
          // note that if this recurses, because buf is static,
          // we won't nest buffers down the stack infinitely;
@@ -758,13 +821,24 @@ void CommandRunScript(const char *s)
       }
       fclose(f);
    }
+   else if (PlatformBatchMode())
+   {
+      char message[320];
+      snprintf(message, sizeof(message), "Unable to open command script '%s'.",
+               s ? s : "");
+      message[sizeof(message) - 1] = '\0';
+      PlatformBatchReportError("DromEd batch", message);
+   }
 }
 
 static Command commands[] =
 {
-   { "help", FUNC_STRING, help_commands, "shows command info" },
-   { "run", FUNC_STRING, CommandRunScript, "run commands in file" },
-   { "dump_cmds", FUNC_STRING, dump_commands, "dump command list to file" }
+   { "help", FUNC_STRING, help_commands, "show or search command information",
+     0, "[group|keyword|all]", NULL, kCommandBatchSafe },
+   { "run", FUNC_STRING, CommandRunScript, "run commands from a script file",
+     0, "filename", NULL, kCommandBatchSafe },
+   { "dump_cmds", FUNC_STRING, dump_commands, "write the command registry to a file",
+     0, "filename", NULL, kCommandBatchSafe }
 };
 
 void CommandInit(void)

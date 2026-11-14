@@ -13,6 +13,7 @@
 #include <str.h>
 #include <dbfile.h>
 #include <contentctx.h>
+#include <platform_services.h>
 
 // for the windows controls
 #include <commdlg.h>
@@ -26,6 +27,12 @@
 
 char* FileDialog(eFileMenuMode mode, sFileMenuFilter* pFilters, const char* def_ext, char* buffer, int buflen)
 {
+   if (PlatformBatchMode())
+   {
+      PlatformBatchReportError("DromEd batch",
+         "A file command omitted its path; batch mode requires explicit paths.");
+      return NULL;
+   }
    // we need the main app's HWND
    AutoAppIPtr_(WinApp,pWA);
 

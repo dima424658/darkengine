@@ -25,6 +25,9 @@ struct sWin32FileFind
    WIN32_FIND_DATAA data;
 };
 
+static BOOL g_platformBatchMode = FALSE;
+static int g_platformBatchErrors = 0;
+
 static void CopyFileFind(const WIN32_FIND_DATAA *source,
                          sPlatformFileFind *destination)
 {
@@ -219,14 +222,52 @@ const char *PlatformGetLanguageCode(void)
    }
 }
 
+void PlatformSetBatchMode(BOOL enabled)
+{
+   g_platformBatchMode = enabled != FALSE;
+   if (!g_platformBatchMode)
+      g_platformBatchErrors = 0;
+}
+
+BOOL PlatformBatchMode(void)
+{
+   return g_platformBatchMode;
+}
+
+void PlatformBatchReportError(const char *title, const char *message)
+{
+   const char *resolvedTitle = title && title[0] ? title : "DromEd batch";
+   const char *resolvedMessage = message ? message : "";
+   ++g_platformBatchErrors;
+   fprintf(stderr, "%s: %s\n", resolvedTitle, resolvedMessage);
+   fflush(stderr);
+   PlatformDiagnosticsLog("ERROR", "batch", resolvedMessage);
+}
+
+int PlatformBatchExitCode(void)
+{
+   return g_platformBatchErrors > 0 ? 1 : 0;
+}
+
 void PlatformShowError(const char *title, const char *message)
 {
+   if (PlatformBatchMode())
+   {
+      PlatformBatchReportError(title, message);
+      return;
+   }
    MessageBoxA(NULL, message ? message : "", title ? title : "Dark Engine",
                MB_OK | MB_ICONERROR);
 }
 
 BOOL PlatformAskYesNo(const char *title, const char *message)
 {
+   if (PlatformBatchMode())
+   {
+      PlatformBatchReportError(title,
+         message && message[0] ? message : "Interactive confirmation is unavailable.");
+      return FALSE;
+   }
    return MessageBoxA(NULL, message ? message : "",
                       title ? title : "Dark Engine",
                       MB_YESNO | MB_ICONQUESTION | MB_SYSTEMMODAL) == IDYES;
@@ -383,6 +424,11 @@ void PlatformDiagnosticsLogStack(const char *severity, const char *subsystem,
 
 ePlatformAssertAction PlatformShowAssert(const char *message)
 {
+   if (PlatformBatchMode())
+   {
+      PlatformBatchReportError("Assertion Failed", message);
+      return kPlatformAssertExit;
+   }
    int priority = GetThreadPriority(GetCurrentThread());
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
    int result = MessageBoxA(NULL, message ? message : "", "Assertion Failed",

@@ -10,6 +10,7 @@
 #include <lg.h>
 #include <dbfile.h>
 #include <filemenu.h>
+#include <platform_services.h>
 #include <winui.h>
 
 EXTERN void load_file(char *path);
@@ -58,6 +59,12 @@ extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *,
                              const char *defaultExtension,
                              char *buffer, int bufferLength)
 {
+   if (PlatformBatchMode())
+   {
+      PlatformBatchReportError("DromEd batch",
+         "A file command omitted its path; batch mode requires explicit paths.");
+      return NULL;
+   }
    if (!buffer || bufferLength <= 0)
       return NULL;
 

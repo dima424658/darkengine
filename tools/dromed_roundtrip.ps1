@@ -106,7 +106,8 @@ function Invoke-DromEd([string[]]$Arguments, [string]$DiagnosticPath) {
         $start.FileName = $editor
         $start.WorkingDirectory = $game
         $start.UseShellExecute = $false
-        $start.Arguments = (($Arguments | ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' ')
+        $batchArguments = @('batch=1') + $Arguments
+        $start.Arguments = (($batchArguments | ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' ')
         $process = New-Object System.Diagnostics.Process
         $process.StartInfo = $start
         if (-not $process.Start()) { throw 'DromEd did not start.' }

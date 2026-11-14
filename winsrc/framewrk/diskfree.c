@@ -11,6 +11,7 @@
 #include <limits.h>
 
 #include <diskfree.h>
+#include <platform_services.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <win32_platform.h>
@@ -59,7 +60,7 @@ BOOL CheckForDiskspaceAndMessage(char *str, int minMB)
       if (!config_get_raw(cfgvar,tmp_buf,512))
          strcpy(tmp_buf,"You have %dM of free disk space.  Thief 2 requires %dM.\n");
       sprintf(buffer, tmp_buf, space >> MB_SHIFT, minMB);
-      MessageBox(NULL, buffer, "Thief 2", MB_ICONERROR);
+      PlatformShowError("Dark Engine", buffer);
       return FALSE;
    }
    return TRUE;

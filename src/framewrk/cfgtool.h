@@ -24,7 +24,7 @@
 EXTERN void set_config_cmd(char* arg);
 
 #define CONFIG_SET_CMD(name) \
-   { name, FUNC_STRING, set_config_cmd, "set a config var: set <var> <value>", HK_ALL}
+   { name, FUNC_STRING, set_config_cmd, "set a config var: set <var> <value>", HK_ALL, NULL, NULL, kCommandBatchSafe}
 
 //////////////////////
 // get <var>
@@ -32,7 +32,7 @@ EXTERN void set_config_cmd(char* arg);
 EXTERN void get_config_cmd(char* arg);
 
 #define CONFIG_GET_CMD(name) \
-{ name, FUNC_STRING, get_config_cmd, "Look up a config value: get <var>", HK_ALL}
+{ name, FUNC_STRING, get_config_cmd, "Look up a config value: get <var>", HK_ALL, NULL, NULL, kCommandBatchSafe}
 
 //////////////////////
 // eval <var> <cmd>
@@ -43,7 +43,7 @@ EXTERN void get_config_cmd(char* arg);
 EXTERN void eval_config_cmd(char* arg); 
 
 #define CONFIG_EVAL_CMD(name) \
-{ name, FUNC_STRING, eval_config_cmd, "Exec a command with config substitution: eval <var> <cmd>", HK_ALL}
+{ name, FUNC_STRING, eval_config_cmd, "Exec a command with config substitution: eval <var> <cmd>", HK_ALL, NULL, NULL, kCommandBatchSafe}
 
 //////////////////////
 // ifdef <var> <cmd>
@@ -53,7 +53,7 @@ EXTERN void eval_config_cmd(char* arg);
 EXTERN void ifdef_config_cmd(char* arg); 
 
 #define CONFIG_IFDEF_CMD(name) \
-{ name, FUNC_STRING, ifdef_config_cmd, "exec a command if a config variable is defined: ifdef <var> <cmd>", HK_ALL}
+{ name, FUNC_STRING, ifdef_config_cmd, "exec a command if a config variable is defined: ifdef <var> <cmd>", HK_ALL, NULL, NULL, kCommandBatchSafe}
 
 //////////////////////
 // ifndef <var> <cmd>
@@ -63,7 +63,7 @@ EXTERN void ifdef_config_cmd(char* arg);
 EXTERN void ifndef_config_cmd(char* arg); 
 
 #define CONFIG_IFNDEF_CMD(name) \
-{ name, FUNC_STRING, ifndef_config_cmd, "exec a command if a config variable is undefined: ifndef <var> <cmd>", HK_ALL}
+{ name, FUNC_STRING, ifndef_config_cmd, "exec a command if a config variable is undefined: ifndef <var> <cmd>", HK_ALL, NULL, NULL, kCommandBatchSafe}
 
 
 //////////////////////
@@ -74,7 +74,7 @@ EXTERN void ifndef_config_cmd(char* arg);
 EXTERN void undef_config_cmd(char* arg); 
 
 #define CONFIG_UNSET_CMD(name) \
-{ name, FUNC_STRING, undef_config_cmd, "Unset a config variable: unset <var>", HK_ALL}
+{ name, FUNC_STRING, undef_config_cmd, "Unset a config variable: unset <var>", HK_ALL, NULL, NULL, kCommandBatchSafe}
 
 ////////////////////////////////////////////////////////////
 // NON-COMMANDS

@@ -619,8 +619,9 @@ BOOL cDDProvider::DoClose()
 
     InvalidateRect(NULL, NULL, TRUE);
 
-    // call show here?
-    ShowWindow(GetMainWnd(), SW_SHOW);
+    // Build-only batch compilers retain a real display device but may keep its
+    // host window hidden for the complete process lifetime.
+    ShowWindow(GetMainWnd(), WinDisplaySuppressMainWindow() ? SW_HIDE : SW_SHOW);
 
     return TRUE;
     END_DEBUG;

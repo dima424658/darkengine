@@ -14,6 +14,7 @@
 #include <loopapi.h>
 #include <config.h>
 #include <render_backend.h>
+#include <platform_services.h>
 #include <stdlib.h>
 
 #include <init.h>
@@ -182,6 +183,14 @@ tResult LGAPI AppInit()
       edbFiletype loaded = dbLoad(buf,kFiletypeAll);
       RenderBackendTrace("database-load var=%s file=%s result=0x%x",
                        load_var,buf,loaded);
+      if (PlatformBatchMode() && loaded <= 0)
+      {
+         char message[320];
+         snprintf(message,sizeof(message),"Unable to load database '%s'.",buf);
+         message[sizeof(message) - 1] = '\0';
+         PlatformBatchReportError("DromEd batch",message);
+         return E_FAIL;
+      }
    }
    else
       new_world();

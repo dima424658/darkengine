@@ -36,7 +36,7 @@ public:
    void Quit() override
    {
       for (auto *sink : m_sinks) sink->OnQuit();
-      std::exit(0);
+      std::exit(PlatformBatchMode() ? PlatformBatchExitCode() : 0);
    }
    void Abort(const char *reason) override
    {

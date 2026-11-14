@@ -516,10 +516,10 @@ static void do_modernize(char* arg)
 
 static Command commands[] = 
 {
-   { "game_strings_load", FUNC_STRING, do_load, "load [<table>]: load the specified string table(s) into its property", HK_EDITOR }, 
-   { "game_strings_dump", FUNC_STRING, do_dump, "dump [<table>]: dump the specified string table(s) from its property", HK_EDITOR }, 
-   { "game_strings_strip", FUNC_STRING, do_strip, "strip [<table>]: strip text values from the property corresponding to the table.", HK_EDITOR }, 
-   { "game_strings_modernize", FUNC_STRING, do_modernize, "modernize [<table>]: converts the property corresponding to the table to the hip gamestrings format.", HK_EDITOR }, 
+   { "game_strings_load", FUNC_STRING, do_load, "load [<table>]: load the specified string table(s) into its property", HK_EDITOR, NULL, NULL, kCommandBatchSafe },
+   { "game_strings_dump", FUNC_STRING, do_dump, "dump [<table>]: dump the specified string table(s) from its property", HK_EDITOR, NULL, NULL, kCommandBatchSafe },
+   { "game_strings_strip", FUNC_STRING, do_strip, "strip [<table>]: strip text values from the property corresponding to the table.", HK_EDITOR, NULL, NULL, kCommandBatchSafe },
+   { "game_strings_modernize", FUNC_STRING, do_modernize, "modernize [<table>]: converts the property corresponding to the table to the hip gamestrings format.", HK_EDITOR, NULL, NULL, kCommandBatchSafe },
 }; 
 
 static void init_commands()

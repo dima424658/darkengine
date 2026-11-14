@@ -96,6 +96,14 @@ IMPLEMENT_COMPLEX_AGGREGATION_SELF_DELETE(cWinGameShell);
 
 cWinGameShell * cWinGameShell::gm_pWinGameShell;
 
+static BOOL SuppressMainWindow()
+{
+    // Build-only tools still need a real window and display device for editor
+    // rendering, portalization, and lighting.  This opt-in keeps that host
+    // window hidden even when a display-mode change asks to bring it forward.
+    return GetEnvironmentVariableA("DARK_HIDE_MAIN_WINDOW", NULL, 0) > 0;
+}
+
 ///////////////////////////////////////
 //
 // Construct an instance...
@@ -233,6 +241,11 @@ STDMETHODIMP_(void) cWinGameShell::EndFrame()
 
 STDMETHODIMP cWinGameShell::BringToFront()
 {
+    if (SuppressMainWindow())
+    {
+        ShowWindow(m_hWnd, SW_HIDE);
+        return S_OK;
+    }
     PostMessage(m_hWnd, WM_GAMESHELL_BRINGTOFRONT, 0, 0);
     return S_OK;
 }
@@ -844,6 +857,11 @@ LRESULT cWinGameShell::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         
         case WM_GAMESHELL_BRINGTOFRONT:
         {
+            if (SuppressMainWindow())
+            {
+                ShowWindow(m_hWnd, SW_HIDE);
+                return TRUE;
+            }
             // SW_RESTORE also takes a maximized window back to its saved
             // normal rectangle.  Display mode changes and focus recovery use
             // this message merely to reveal and activate the host window, so

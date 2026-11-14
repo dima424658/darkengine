@@ -769,6 +769,30 @@ cd /d "C:\Games\Thief Gold"
 "C:\src\darkengine\build\Release\Win32\DromEd\DromEd.exe"
 ```
 
+For non-interactive database and build jobs, pass `batch=1` together with an
+optional input database and an `edit_script` command file:
+
+```powershell
+& 'C:\src\darkengine\build\Release\Win32\DromEd\DromEd.exe' `
+  batch=1 file=MISS1.MIS edit_script=C:\jobs\dromed-build.cmd
+```
+
+Batch mode keeps the editor presentation surface hidden, never opens a folder
+chooser, file chooser, confirmation, or error dialog, and exits automatically
+after the explicit `edit_script` completes. Diagnostics and suppressed prompts
+are written to standard error, and any error produces a nonzero process exit
+code. Run from a recognized retail installation and supply explicit paths to
+load and save commands.
+
+The batch command surface is an explicit safe allowlist rather than the full
+interactive registry. It includes command-script and configuration plumbing;
+mission, gamesys, and COW load/save and format reporting; schema compilation;
+game-string transformations; and non-dialog quest-variable operations. An
+unlisted command fails with `Command '<name>' is not available in batch mode`.
+This allows additional read/transform/write commands to be enabled after they
+have been verified not to require interactive editor state and to complete
+reliably without the editor UI.
+
 The first prompt accepts either a named game's base folder (the runnable root
 containing `cam.cfg`) or the recognized GOG Gold collection folder, but not an
 `FMs` child. The next dialog is headed

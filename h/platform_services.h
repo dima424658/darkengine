@@ -76,6 +76,12 @@ EXTERN BOOL PlatformReadUserUInt(const char *store, const char *name,
 EXTERN BOOL PlatformWriteUserUInt(const char *store, const char *name,
                                   uint32 value);
 EXTERN const char *PlatformGetLanguageCode(void);
+// Batch mode is a non-interactive DromEd execution policy. Platform UI
+// providers must not display windows or wait for input while it is active.
+EXTERN void PlatformSetBatchMode(BOOL enabled);
+EXTERN BOOL PlatformBatchMode(void);
+EXTERN void PlatformBatchReportError(const char *title, const char *message);
+EXTERN int PlatformBatchExitCode(void);
 EXTERN void PlatformShowError(const char *title, const char *message);
 EXTERN BOOL PlatformAskYesNo(const char *title, const char *message);
 EXTERN int PlatformPopupMenu(const char *const *items, int count,

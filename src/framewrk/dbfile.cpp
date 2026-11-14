@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <config.h>
+#include <platform_services.h>
 
 #include <dispbase.h>
 #include <dbasemsg.h>
@@ -1666,7 +1667,11 @@ static void save_cmd_guts(char* filename, edbFiletype ftype)
       set_file_var(LOAD_FILE_VAR,filename,FALSE);
    }
    else
+   {
       Status("Save Failed");
+      if (PlatformBatchMode())
+         PlatformBatchReportError("DromEd batch", "Database save failed.");
+   }
 }
 
 //
@@ -1807,6 +1812,8 @@ static void load_cmd_guts(char* filename, edbFiletype ftype)
       char statbuf[256];
       sprintf(statbuf,"can't find %s",filename);
       Status(statbuf);  
+      if (PlatformBatchMode())
+         PlatformBatchReportError("DromEd batch", statbuf);
       return;
    }
 
@@ -1833,7 +1840,11 @@ static void load_cmd_guts(char* filename, edbFiletype ftype)
       set_file_var(LOAD_FILE_VAR,filename,TRUE);
    }
    else
+   {
       Status("Load Failed");
+      if (PlatformBatchMode())
+         PlatformBatchReportError("DromEd batch", "Database load failed.");
+   }
    secret_load_end_sounds();  
 }
 
@@ -1976,6 +1987,8 @@ static void db_set_write_profile(char* name)
    {
       Warning(("Unknown database write profile '%s'. Use preserve, retail, or newdark.\n",
                name));
+      if (PlatformBatchMode())
+         PlatformBatchReportError("DromEd batch", "Unknown database write profile.");
       return;
    }
    mprintf("Database write profile: %s\n",
@@ -1986,18 +1999,20 @@ static void db_set_write_profile(char* name)
 
 Command dbfile_commands[] = 
 {
-   { "save_cow",  FUNC_STRING, save_world, "Save world to file" }, 
-   { "save_mission",  FUNC_STRING, save_mission, "Save mission to file" }, 
-   { "save_gamesys", FUNC_STRING, save_gamesys, "Save gamesys info only" }, 
-   { "load_file", FUNC_STRING, load_file, "Load .MIS, .COW, or .GAM files" },
-   { "load_gamesys", FUNC_STRING, load_gamesys, "Load .GAM file - Resets the level" },
-   { "set_gamesys", FUNC_STRING, set_gamesys, "Set gamesys file for current mission" }, 
-   { "clear_world", FUNC_VOID,   dbBuildDefault, "Reset to the empty world"},
-   { "dispatch_noise",FUNC_STRING, dispatch_noise, "Toggle dispatch noise for hex message mask\n"},
+   { "save_cow",  FUNC_STRING, save_world, "save the world database", 0, "filename.cow", NULL, kCommandBatchSafe },
+   { "save_mission",  FUNC_STRING, save_mission, "save mission data", 0, "filename.mis", NULL, kCommandBatchSafe },
+   { "save_gamesys", FUNC_STRING, save_gamesys, "save gamesys data only", 0, "filename.gam", NULL, kCommandBatchSafe },
+   { "load_file", FUNC_STRING, load_file, "load a mission, world, or gamesys database", 0, "filename.mis|filename.cow|filename.gam", NULL, kCommandBatchSafe },
+   { "load_gamesys", FUNC_STRING, load_gamesys, "load a gamesys and reset the level", 0, "filename.gam", NULL, kCommandBatchSafe },
+   { "set_gamesys", FUNC_STRING, set_gamesys, "set the gamesys file for the current mission", 0, "filename.gam", NULL, kCommandBatchSafe },
+   { "clear_world", FUNC_VOID,   dbBuildDefault, "Reset to the empty world", 0, NULL, NULL, kCommandBatchSafe},
+   { "dispatch_noise",FUNC_STRING, dispatch_noise, "toggle dispatch noise for a message mask", 0, "hex-mask", NULL},
    { "file_menu", FUNC_VOID, FileMenu, "Bring up the file menu" },
-   { "new_world", FUNC_VOID, new_world, "Clear the world and load the gamesys" },
-   { "db_format_report", FUNC_VOID, db_format_report, "show source chunk versions and output profile" },
-   { "db_write_profile", FUNC_STRING, db_set_write_profile, "set output profile: preserve, retail, or newdark" },
+   { "new_world", FUNC_VOID, new_world, "Clear the world and load the gamesys", 0, NULL, NULL, kCommandBatchSafe },
+   { "db_format_report", FUNC_VOID, db_format_report, "show source chunk versions and output profile", 0, NULL, NULL, kCommandBatchSafe },
+   { "db_write_profile", FUNC_STRING, db_set_write_profile,
+     "set the database writer compatibility profile", 0, "profile",
+     "preserve|retail|newdark", kCommandBatchSafe },
 };
 #endif // ~EDITOR
 

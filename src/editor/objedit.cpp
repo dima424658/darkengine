@@ -599,7 +599,7 @@ static Command edit_mode_commands[] =
    { "unlock", FUNC_STRING, unlock_brush,
      "unlock <brush type>" },
    { "unlock_all", FUNC_VOID, unlock_all_brushes,
-     "unlocks all brushes" },
+     "unlocks all brushes", 0, NULL, NULL, kCommandBatchSafe },
    { "resize_obj_id_space", FUNC_VOID, resize_obj_space,
      "Change obj_min and obj_max on the fly." },
 

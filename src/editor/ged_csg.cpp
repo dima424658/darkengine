@@ -17,6 +17,7 @@
 #include <config.h>
 #include <prof.h>
 #include <mprintf.h>
+#include <missiondiag.h>
 
 #include <editbr.h>
 #include <brlist.h>
@@ -604,8 +605,10 @@ void build_level(void)
    brushConvertEnd();
    mprintf("Setup %d brush level (%d brushes total)...\n",i,blistCount());
    csg_num_brushes++;         // it is now max brush id + 1, for looping in csg
+   MissionDiagnosticsIssue("INFO","build","Beginning portalization and UV subdivision");
    Status("Portalizing....");
    portalize_csg_internal_database();
+   MissionDiagnosticsIssue("INFO","build","Portalization complete");
    if (optimize_bsp && fixup_tjoints) {
       Status("Tjoint Fix....");
       fix_tjoints();
@@ -616,6 +619,7 @@ void build_level(void)
    mprintf("Portalized...");
    if ((portal_snd[0]!='\0')&&(config_is_defined(DONE_LIT_SND)))
      SFX_Play_Raw(SFX_STATIC,NULL,portal_snd);
+   MissionDiagnosticsIssue("INFO","build","Beginning lighting");
    Status("Lighting...");
    editobjFullReref();
    if (!doing_opt_pass1 && !gExternalLightingBuild &&

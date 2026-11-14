@@ -30,6 +30,26 @@ int _g_referenceEntryPoint = 0;
 
 namespace
 {
+bool IsDromEdExecutable(const char *path)
+{
+    if (!path)
+        return false;
+    const char *name = std::strrchr(path, '/');
+    name = name ? name + 1 : path;
+    return std::strstr(name, "dromed") != nullptr ||
+           std::strstr(name, "DromEd") != nullptr;
+}
+
+bool HasEnabledArgument(int argc, char *argv[], const char *name)
+{
+    const size_t length = std::strlen(name);
+    for (int i = 1; i < argc; ++i)
+        if (std::strncmp(argv[i], name, length) == 0 &&
+            argv[i][length] == '=' && std::atoi(argv[i] + length + 1) != 0)
+            return true;
+    return false;
+}
+
 bool FileExistsInDirectory(const std::string &directory, const char *name)
 {
     std::string path = directory;
@@ -195,6 +215,12 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    const bool batchMode = IsDromEdExecutable(argc > 0 ? argv[0] : nullptr) &&
+                           HasEnabledArgument(argc, argv, "batch");
+    PlatformSetBatchMode(batchMode ? TRUE : FALSE);
+    if (batchMode)
+        setenv("DARK_HIDE_MAIN_WINDOW", "1", 1);
+
     bool explicitContent = false;
     const char *requestedGamePath = nullptr;
     std::vector<const char *> arguments;
@@ -231,7 +257,7 @@ int main(int argc, char *argv[])
         PlatformShowError("Dark Engine",
                           "The Android game data directory could not be prepared.");
 #endif
-        return 2;
+        return batchMode ? 1 : 2;
     }
 
 #ifdef __ANDROID__

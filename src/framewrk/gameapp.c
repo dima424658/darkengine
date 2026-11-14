@@ -121,7 +121,7 @@ static Command editor_commands[] =
 
 static Command global_commands[] =
 {
-   { "quit_game", FUNC_VOID, quit_game, "Quit the game"},
+   { "quit_game", FUNC_VOID, quit_game, "Quit the game", 0, NULL, NULL, kCommandBatchSafe},
    { "end_mode", FUNC_VOID, end_mode, "End the current major mode"},
 
    CONFIG_SET_CMD("set"),

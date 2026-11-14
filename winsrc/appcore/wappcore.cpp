@@ -12,6 +12,7 @@
 #include <aggmemb.h>
 #include <wappcore.h>
 #include <appagg.h>
+#include <platform_services.h>
 
 #ifndef NO_DB_MEM
 // Must be last header
@@ -360,7 +361,7 @@ STDMETHODIMP_(void) cWindowsApplication::cApplicationOperations::Quit()
     {
         pSink->OnQuit();
     }
-    exit(0); // This may never execute
+    exit(PlatformBatchMode() ? PlatformBatchExitCode() : 0); // This may never execute
 }
 
 ///////////////////////////////////////

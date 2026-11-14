@@ -7,6 +7,7 @@
 
 // Status line system
 
+#include <stdio.h>
 #include <string.h>
 
 #include <lg.h>
@@ -21,6 +22,7 @@
 #include <scrnman.h>
 
 #include <config.h>
+#include <platform_services.h>
 #include <cfgdbg.h>
 #include <mprintf.h>
 #include <cmdterm.h>
@@ -187,6 +189,11 @@ void Status(const char *s)
 {
    StatusField(SF_STATUS, s);
    cmdterm_capture_status(s);
+   if (PlatformBatchMode() && s && *s)
+   {
+      fprintf(stderr,"DromEd: %s\n",s);
+      fflush(stderr);
+   }
 #ifndef SHIP   
    if (*s != '\0' && config_is_defined("status"))
       mprintf("STATUS: %s\n",s);

@@ -14,6 +14,7 @@
 #include <config.h>
 #include <cfg.h>
 #include <mprintf.h>
+#include <platform_services.h>
 #include <darklimit.h>
 
 #include <command.h>
@@ -170,7 +171,9 @@ void process_config_includes(const char* prefix)
 
 static bool script_iter(char* var)
 {
-   if (strnicmp(iter_prefix,var,strlen(iter_prefix)) == 0)
+   const size_t prefix_len = strlen(iter_prefix);
+   if (strnicmp(iter_prefix,var,prefix_len) == 0 &&
+       (!PlatformBatchMode() || var[prefix_len] == '\0'))
    {
       char buf[256];
       find_file_in_config_path(buf,iter_val,SCRIPT_PATH);
