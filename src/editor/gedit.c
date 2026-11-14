@@ -1781,7 +1781,9 @@ Command gedit_edit_only_keys[] =
    { "spiral_serf", FUNC_INT, spiral_stair_cmd, "build spiral stair, 0 for dialog" },
    { "stair_serf", FUNC_INT, straight_stair_cmd, "build straight stair, 0 for dialog" },
 
-   { "ambient", FUNC_STRING, set_ambient, "give this three values 0-255: r g b" },
+   { "ambient", FUNC_STRING, set_ambient,
+     "set RGB ambient light channels from 0 to 255; no argument reports them",
+     0, "[red green blue]", NULL },
    { "snap_placement", TOGGLE_BOOL, &gedit_snap_placement },
    { "clear_brushes", FUNC_VOID, brushClearAll, "clear all brushes" },
    { "set_medium", FUNC_INT, set_medium, "set brush medium" },
@@ -1795,7 +1797,8 @@ Command gedit_edit_only_keys[] =
    { "grid_abs_scale", FUNC_FLOAT, grid_abs_scale, "set absolute scale of master grid" },
    { "brush_go_last", FUNC_VOID, move_brush_to_end_of_time, "move current brush to temporal last" },
    { "brush_set_time", FUNC_INT, move_brush_to_time_n, "move current brush to time n" },
-   { "load_object", FUNC_STRING, objmodel_command, "load 3d object" },
+   { "load_object", FUNC_STRING, objmodel_command,
+     "load a 3D object model", 0, "model-name", NULL },
 
    { "preload_sound", FUNC_STRING, gedit_preload_snd },
    { "preload_motion", FUNC_STRING, gedit_preload_mot },
@@ -1831,7 +1834,8 @@ Command gedit_edit_only_keys[] =
    { "info_window", FUNC_VOID, gedit_info_window },
 
    { "lazy_update", TOGGLE_BOOL, &gedit_allow_lazy_updates, "do we update instantly, or only on new brush selection" },
-   { "run_cmd_script", FUNC_STRING, gedit_run_script_hack },
+   { "run_cmd_script", FUNC_STRING, gedit_run_script_hack,
+     "run a command script found on script_path", 0, "filename", NULL },
 
    { "set_primal", VAR_INT, &editbr_default_primal, "set default primal" },
    { "prim_sides", FUNC_INT, gedit_set_primal_sides, "# of sides on primals" },
@@ -1848,7 +1852,8 @@ Command gedit_edit_only_keys[] =
    { "passive_hotregions", TOGGLE_BOOL, &passive_hotregions, "are hotregions in the CSG, or just filters" },
 
    // these want to make it down to the list below - but arent ready for it yet - as does obj_pal
-   { "show_image", FUNC_STRING, gedit_show_image, "load image from disk" },
+   { "show_image", FUNC_STRING, gedit_show_image,
+     "load an image from disk", 0, "filename", NULL },
 };
 
 // for keys you want to work in game mode as well, but ONLY In editor builds
@@ -1857,7 +1862,8 @@ Command gedit_all_mode_keys[] =
 {
 #ifndef SHIP
    { "skybox", FUNC_STRING, gedit_make_skybox, "make skyhack texures"},
-   { "play_sfx", FUNC_STRING, SFX_command },
+   { "play_sfx", FUNC_STRING, SFX_command,
+     "play a sound effect by resource name", 0, "sound-name", NULL },
 #endif
    { "get_pixel_color", FUNC_STRING, gedit_get_pixel_color, "click on pixel, get told color" },
    { "heapchk", FUNC_VOID, PlatformHeapCheck, "Test the heap, if debugging heap enabled" },

@@ -931,12 +931,26 @@ the visible output otherwise; **Ctrl+Shift+C** copies all retained output.
 Hold **Ctrl** and turn the mouse wheel over the console to change its font size
 for the current run.
 
+Typing in the command row now replaces the output view with a ranked command
+search. Exact names appear first, followed by name prefixes, underscore-token
+prefixes, substrings, ordered-letter matches, and finally description matches.
+Each result includes the registered command description. Use **Up** and
+**Down** to choose a result, then **Space**, **Tab**, or **Enter** to complete
+it. After a complete command and a space, the console shows its argument
+syntax and any registered closed choices; Boolean commands automatically offer
+`false` and `true`. Use **Left**, **Right**, or **Tab** to cycle those choices.
+For example, `move_game_camera` now documents `x,y,z` in Dark world
+coordinates, while `db_write_profile` offers its three valid profile names.
+With an empty command row,
+**Up** and **Down** browse command history; **Ctrl+P** and **Ctrl+N** remain
+available for compatibility.
+
 The existing `help` command has also been expanded. In gameplay, plain `help`
 prints a short index of command groups, `help <group>` lists one group,
-`help <keyword>` searches the names, descriptions, and argument types available
-in the current mode, and `help all` prints the complete active registry. In
-DromEd, plain `help` opens the searchable **Command Reference** window; use
-`help <text>` to print matching commands in the console.
+`help <keyword>` searches names, descriptions, argument syntax, choices, and
+types available in the current mode, and `help all` prints the complete active
+registry. In DromEd, plain `help` opens the searchable **Command Reference**
+window; use `help <text>` to print matching commands in the console.
 
 Commands added by this restoration for direct console use are:
 

@@ -300,13 +300,22 @@ static void set_phys_off(int val)
 static Command gamemode_keys[] =
 {
    {"halt_player",FUNC_VOID,player_instant_halt,"stop all player motion/controls"},
-   {"player_cam_control",FUNC_INT,player_cam_controls,"0 reset pos, 1 next mode, 2 detach, 3 attach, 4 save, 5 load"},
-   {"cam_attach",FUNC_INT,player_cam_obj_attach,"attach camera to object"},
-   {"add_hp", FUNC_INT, player_add_hp, "give player # hp" },
+   {"player_cam_control",FUNC_INT,player_cam_controls,
+    "reset, cycle, detach, or attach the player camera", 0, "mode",
+    "0|1|2|3"},
+   {"cam_attach",FUNC_INT,player_cam_obj_attach,
+    "attach the camera to an object; 0 returns to first person", 0,
+    "object-id", NULL},
+   {"add_hp", FUNC_INT, player_add_hp,
+    "add hit points; 0 restores maximum hit points", 0, "amount", NULL },
 
    // should these work in edit mode too?  what is player cam in gamemode?  or should it just know?
-   {"player_cam_save", FUNC_STRING, player_cam_disk_save, "save player camera to ARG, or drom000.cam" },
-   {"player_cam_load", FUNC_STRING, player_cam_disk_load, "load ARG or cam000.loc as player camera" },
+   {"player_cam_save", FUNC_STRING, player_cam_disk_save,
+    "save the player camera; defaults to drom000.cam", 0,
+    "[filename.cam]", NULL },
+   {"player_cam_load", FUNC_STRING, player_cam_disk_load,
+    "load a saved player camera; defaults to cam000.loc", 0,
+    "[filename]", NULL },
 
    {"unfly", FUNC_INT, set_phys_off },
 };

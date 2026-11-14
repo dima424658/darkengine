@@ -114,7 +114,9 @@ EXTERN void texture_pal_cmd(void);
 
 static Command commands[] =
 {
-   { "edit_mode", FUNC_STRING, enter_edit_mode, "Switch to editor mode: edit_mode <wid>,<hgt>", HK_ALL},
+   { "edit_mode", FUNC_STRING, enter_edit_mode,
+     "switch to editor mode at the requested window dimensions", HK_ALL,
+     "width,height", NULL},
    { "mono_debug", FUNC_VOID, MonoDebug, "Enter monochrome debug screen", HK_ALL},
    { "texture_pal", FUNC_VOID, texture_pal_cmd, "Bring up the texture palette", HK_EDITOR}, 
    { "motedit", FUNC_VOID, motedit_cmd, "Bring up the motion editor", HK_EDITOR}, 

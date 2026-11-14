@@ -944,6 +944,8 @@ static void ShowKeyboardShortcuts()
 struct sRegisteredCommandHelp
 {
    std::string name;
+   std::string arguments;
+   std::string choices;
    std::string description;
    enum CommandType type;
    bool active;
@@ -958,6 +960,12 @@ static BOOL LGAPI CollectRegisteredCommand(const Command *command, void *data)
 
    sRegisteredCommandHelp entry;
    entry.name = command->name;
+   entry.arguments = command->arguments ? command->arguments : "";
+   entry.choices = command->choices ? command->choices : "";
+   if (entry.choices.empty() &&
+       (command->type == FUNC_BOOL || command->type == VAR_BOOL ||
+        command->type == TOGGLE_BOOL))
+      entry.choices = "false|true";
    entry.description = command->comment ? command->comment : "";
    entry.type = command->type;
    entry.active = command_context_ptr &&
@@ -1003,15 +1011,20 @@ static std::string BuildCommandHelpText(const char *filterText)
    for (const auto &command : commands)
    {
       std::string searchable = Lowercase(command.name + " " +
+                               command.arguments + " " +
+                               command.choices + " " +
                                command.description + " " +
                                CommandTypeName(command.type));
       if (!filter.empty() && searchable.find(filter) == std::string::npos)
          continue;
 
       ++shown;
-      text += command.name;
-      if (command.name.length() < 32)
-         text.append(32 - command.name.length(), ' ');
+      std::string usage = command.name;
+      if (!command.arguments.empty())
+         usage += " " + command.arguments;
+      text += usage;
+      if (usage.length() < 32)
+         text.append(32 - usage.length(), ' ');
       else
          text += "  ";
       text += "[";
@@ -1023,6 +1036,11 @@ static std::string BuildCommandHelpText(const char *filterText)
       {
          text += "\r\n    ";
          text += command.description;
+      }
+      if (!command.choices.empty())
+      {
+         text += "\r\n    choices: ";
+         text += command.choices;
       }
       text += "\r\n";
    }

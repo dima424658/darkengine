@@ -76,7 +76,31 @@ struct _CmdTerm
    BOOL popupcursoractive;
    ulong flags;
    ulong statebits;
+   char suggestioninput[256];
+   const Command* suggestions[64];
+   int suggestionscores[64];
+   int suggestioncount;
+   int suggestionselected;
+   const Command* argumentcommand;
+   char argumentoptions[16][32];
+   int argumentoptioncount;
+   int argumentoptionselected;
+   int suggestionmode;
+   BOOL historybrowsing;
+   char beforekey[256];
 } CmdTerm;
+
+enum eCmdTermSuggestionMode
+{
+   kCmdTermSuggestionNone,
+   kCmdTermSuggestionCommands,
+   kCmdTermSuggestionArguments
+};
+
+#define CMDTERM_MAX_SUGGESTIONS \
+   (sizeof(CmdTerm.suggestions) / sizeof(CmdTerm.suggestions[0]))
+#define CMDTERM_MAX_ARGUMENT_OPTIONS \
+   (sizeof(CmdTerm.argumentoptions) / sizeof(CmdTerm.argumentoptions[0]))
 
 #define CMDTERM_MAX_LINES 4096
 #define CMDTERM_LINE_LENGTH 256
@@ -120,6 +144,440 @@ static char CmdTermConfiguredFonts[2][64];
 static void cmdterm_activate_focus(BOOL position_cursor);
 static BOOL cmdterm_apply_pending_font_change(void);
 static void cmdterm_deferred_font_change(void* unused);
+static void cmdterm_refresh_suggestions(BOOL force);
+
+static const char* cmdterm_command_type_name(const Command* command)
+{
+   static const char* names[] =
+   {
+      "function", "boolean", "integer", "number", "number", "text",
+      "boolean", "integer", "text", "integer list", "number",
+      "boolean", "integer"
+   };
+
+   if (!command || command->type < FUNC_VOID || command->type > TOGGLE_INT)
+      return "value";
+   return names[command->type];
+}
+
+static BOOL cmdterm_command_accepts_argument(const Command* command)
+{
+   return command && command->type != FUNC_VOID;
+}
+
+static int cmdterm_case_find(const char* text, const char* fragment)
+{
+   int text_length;
+   int fragment_length;
+   int i;
+
+   if (!text || !fragment || !*fragment)
+      return -1;
+   text_length = (int)strlen(text);
+   fragment_length = (int)strlen(fragment);
+   for (i = 0; i <= text_length - fragment_length; ++i)
+      if (!_strnicmp(text + i, fragment, fragment_length))
+         return i;
+   return -1;
+}
+
+static int cmdterm_subsequence_score(const char* text, const char* fragment)
+{
+   int first = -1;
+   int last = -1;
+   int text_index = 0;
+   int fragment_index = 0;
+
+   while (text[text_index] && fragment[fragment_index])
+   {
+      if (tolower((unsigned char)text[text_index]) ==
+          tolower((unsigned char)fragment[fragment_index]))
+      {
+         if (first < 0)
+            first = text_index;
+         last = text_index;
+         ++fragment_index;
+      }
+      ++text_index;
+   }
+   if (fragment[fragment_index])
+      return -1;
+   return (last - first) + first;
+}
+
+static int cmdterm_command_match_score(const Command* command,
+                                       const char* fragment)
+{
+   int length = (int)strlen(fragment);
+   int position;
+   int subsequence;
+
+   if (!_stricmp(command->name, fragment))
+      return 0;
+   if (!_strnicmp(command->name, fragment, length))
+      return 100 + (int)strlen(command->name) - length;
+
+   position = cmdterm_case_find(command->name, fragment);
+   if (position >= 0)
+   {
+      if (position > 0 && command->name[position - 1] == '_')
+         return 200 + position;
+      return 300 + position;
+   }
+
+   subsequence = cmdterm_subsequence_score(command->name, fragment);
+   if (subsequence >= 0)
+      return 400 + subsequence;
+
+   position = cmdterm_case_find(command->arguments, fragment);
+   if (position >= 0)
+      return 550 + position;
+   position = cmdterm_case_find(command->choices, fragment);
+   if (position >= 0)
+      return 575 + position;
+   position = cmdterm_case_find(command->comment, fragment);
+   if (position >= 0)
+      return 600 + position;
+   return -1;
+}
+
+typedef struct sCmdTermSuggestionSearch
+{
+   const char* fragment;
+} sCmdTermSuggestionSearch;
+
+static BOOL LGAPI cmdterm_collect_suggestion(const Command* command, void* data)
+{
+   sCmdTermSuggestionSearch* search = (sCmdTermSuggestionSearch*)data;
+   int score;
+   int insert;
+   int i;
+
+   if (!(command->contexts & *command_context_ptr))
+      return TRUE;
+   score = cmdterm_command_match_score(command, search->fragment);
+   if (score < 0)
+      return TRUE;
+
+   for (i = 0; i < CmdTerm.suggestioncount; ++i)
+      if (!_stricmp(CmdTerm.suggestions[i]->name, command->name))
+         return TRUE;
+
+   insert = CmdTerm.suggestioncount;
+   for (i = 0; i < CmdTerm.suggestioncount; ++i)
+      if (score < CmdTerm.suggestionscores[i] ||
+          (score == CmdTerm.suggestionscores[i] &&
+           _stricmp(command->name, CmdTerm.suggestions[i]->name) < 0))
+      {
+         insert = i;
+         break;
+      }
+
+   if (insert >= (int)CMDTERM_MAX_SUGGESTIONS)
+      return TRUE;
+   if (CmdTerm.suggestioncount < (int)CMDTERM_MAX_SUGGESTIONS)
+      ++CmdTerm.suggestioncount;
+   for (i = CmdTerm.suggestioncount - 1; i > insert; --i)
+   {
+      CmdTerm.suggestions[i] = CmdTerm.suggestions[i - 1];
+      CmdTerm.suggestionscores[i] = CmdTerm.suggestionscores[i - 1];
+   }
+   CmdTerm.suggestions[insert] = command;
+   CmdTerm.suggestionscores[insert] = score;
+   return TRUE;
+}
+
+static void cmdterm_add_argument_option(const char* start, int length)
+{
+   static const char* placeholders[] =
+   {
+      "angle", "angles", "extent", "file", "filename", "id", "mission",
+      "name", "number", "object", "path", "position", "shortname",
+      "string", "text", "value"
+   };
+   char* option;
+   int i;
+
+   while (length > 0 && isspace((unsigned char)*start))
+   {
+      ++start;
+      --length;
+   }
+   while (length > 0 && isspace((unsigned char)start[length - 1]))
+      --length;
+   if (length <= 0 || length >= (int)sizeof(CmdTerm.argumentoptions[0]) ||
+       CmdTerm.argumentoptioncount >= (int)CMDTERM_MAX_ARGUMENT_OPTIONS)
+      return;
+   for (i = 0; i < length; ++i)
+      if (!isalnum((unsigned char)start[i]) && start[i] != '_' &&
+          start[i] != '-' && start[i] != '.')
+         return;
+
+   option = CmdTerm.argumentoptions[CmdTerm.argumentoptioncount];
+   memcpy(option, start, length);
+   option[length] = '\0';
+   for (i = 0; i < (int)(sizeof(placeholders) / sizeof(placeholders[0])); ++i)
+      if (!_stricmp(placeholders[i], option))
+         return;
+   for (i = 0; i < CmdTerm.argumentoptioncount; ++i)
+      if (!_stricmp(CmdTerm.argumentoptions[i], option))
+         return;
+   ++CmdTerm.argumentoptioncount;
+}
+
+static void cmdterm_find_argument_options(const Command* command)
+{
+   const char* open;
+
+   CmdTerm.argumentoptioncount = 0;
+   if (command->choices)
+   {
+      const char* token = command->choices;
+      while (*token)
+      {
+         const char* option_end = token;
+         while (*option_end && *option_end != '|' && *option_end != '/')
+            ++option_end;
+         cmdterm_add_argument_option(token, (int)(option_end - token));
+         token = *option_end ? option_end + 1 : option_end;
+      }
+   }
+   else if (command->type == FUNC_BOOL || command->type == VAR_BOOL ||
+            command->type == TOGGLE_BOOL)
+   {
+      cmdterm_add_argument_option("false", 5);
+      cmdterm_add_argument_option("true", 4);
+   }
+   if (command->comment)
+   {
+      open = command->comment;
+      while ((open = strchr(open, '[')) != NULL)
+      {
+         const char* close = strchr(open + 1, ']');
+         const char* separator;
+         const char* token;
+         if (!close)
+            break;
+         separator = open + 1;
+         while (separator < close && *separator != '/' && *separator != '|')
+            ++separator;
+         if (separator < close)
+         {
+            token = open + 1;
+            while (token < close)
+            {
+               const char* option_end = token;
+               while (option_end < close && *option_end != '/' &&
+                      *option_end != '|')
+                  ++option_end;
+               cmdterm_add_argument_option(token, (int)(option_end - token));
+               token = option_end + 1;
+            }
+         }
+         open = close + 1;
+      }
+   }
+
+   if (!CmdTerm.argumentoptioncount &&
+       (command->type == FUNC_BOOL || command->type == VAR_BOOL ||
+        command->type == TOGGLE_BOOL))
+   {
+      cmdterm_add_argument_option("false", 5);
+      cmdterm_add_argument_option("true", 4);
+   }
+}
+
+static void cmdterm_refresh_suggestions(BOOL force)
+{
+   char input[sizeof(CmdTerm.cmdbuf)];
+   char fragment[sizeof(CmdTerm.cmdbuf)];
+   const char* start = CmdTerm.cmdbuf;
+   const char* end;
+   const char* arguments;
+   const Command* prior = NULL;
+   Command* exact;
+   int fragment_length;
+   int i;
+
+   if (!(CmdTerm.flags & kCmdTermScrollable))
+   {
+      CmdTerm.suggestionmode = kCmdTermSuggestionNone;
+      return;
+   }
+
+   strncpy(input, CmdTerm.cmdbuf, sizeof(input));
+   input[sizeof(input) - 1] = '\0';
+   if (!force && !strcmp(input, CmdTerm.suggestioninput))
+      return;
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionCommands &&
+       CmdTerm.suggestionselected >= 0 &&
+       CmdTerm.suggestionselected < CmdTerm.suggestioncount)
+      prior = CmdTerm.suggestions[CmdTerm.suggestionselected];
+
+   strncpy(CmdTerm.suggestioninput, input, sizeof(CmdTerm.suggestioninput));
+   CmdTerm.suggestioninput[sizeof(CmdTerm.suggestioninput) - 1] = '\0';
+   CmdTerm.suggestionmode = kCmdTermSuggestionNone;
+   CmdTerm.suggestioncount = 0;
+   CmdTerm.suggestionselected = 0;
+   CmdTerm.argumentcommand = NULL;
+   CmdTerm.argumentoptioncount = 0;
+   CmdTerm.argumentoptionselected = -1;
+
+   while (*start && isspace((unsigned char)*start))
+      ++start;
+   if (!*start)
+      return;
+   end = start;
+   while (*end && !isspace((unsigned char)*end))
+      ++end;
+   fragment_length = (int)(end - start);
+   if (fragment_length <= 0 || fragment_length >= (int)sizeof(fragment))
+      return;
+   memcpy(fragment, start, fragment_length);
+   fragment[fragment_length] = '\0';
+
+   arguments = end;
+   while (*arguments && isspace((unsigned char)*arguments))
+      ++arguments;
+   exact = CommandFind(fragment, fragment_length);
+   if (exact && (exact->contexts & *command_context_ptr) && *end &&
+       cmdterm_command_accepts_argument(exact))
+   {
+      CmdTerm.suggestionmode = kCmdTermSuggestionArguments;
+      CmdTerm.argumentcommand = exact;
+      cmdterm_find_argument_options(exact);
+      for (i = 0; i < CmdTerm.argumentoptioncount; ++i)
+         if (!_stricmp(arguments, CmdTerm.argumentoptions[i]) ||
+             (*arguments && !_strnicmp(CmdTerm.argumentoptions[i], arguments,
+                                       strlen(arguments))))
+         {
+            CmdTerm.argumentoptionselected = i;
+            break;
+         }
+      return;
+   }
+
+   {
+      sCmdTermSuggestionSearch search;
+      search.fragment = fragment;
+      CmdTerm.suggestionmode = kCmdTermSuggestionCommands;
+      CommandForEach(cmdterm_collect_suggestion, &search);
+   }
+   if (!CmdTerm.suggestioncount)
+   {
+      CmdTerm.suggestionmode = kCmdTermSuggestionNone;
+      return;
+   }
+   if (prior)
+      for (i = 0; i < CmdTerm.suggestioncount; ++i)
+         if (CmdTerm.suggestions[i] == prior)
+         {
+            CmdTerm.suggestionselected = i;
+            break;
+         }
+}
+
+static void cmdterm_output_append(const char* text)
+{
+   int used = (int)strlen(CmdTerm.outputbuf);
+   int available = (int)sizeof(CmdTerm.outputbuf) - used - 1;
+   if (available <= 0)
+      return;
+   _snprintf(CmdTerm.outputbuf + used, available, "%s", text);
+   CmdTerm.outputbuf[sizeof(CmdTerm.outputbuf) - 1] = '\0';
+}
+
+static void cmdterm_rebuild_suggestion_output(void)
+{
+   char line[CMDTERM_LINE_LENGTH];
+   int rows = CmdTerm.visiblelines;
+   int first;
+   int shown;
+   int i;
+
+   CmdTerm.outputbuf[0] = '\0';
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+   {
+      const Command* command = CmdTerm.argumentcommand;
+      _snprintf(line, sizeof(line) - 1, "%s%s%s (%s)\n", command->name,
+                command->arguments ? " " : "",
+                command->arguments ? command->arguments : "",
+                cmdterm_command_type_name(command));
+      line[sizeof(line) - 1] = '\0';
+      cmdterm_output_append(line);
+      if (command->comment && rows > 1)
+      {
+         _snprintf(line, sizeof(line) - 1, "%s\n", command->comment);
+         line[sizeof(line) - 1] = '\0';
+         cmdterm_output_append(line);
+      }
+      if (CmdTerm.argumentoptioncount && rows > 2)
+      {
+         cmdterm_output_append("Options - Left/Right/Tab chooses:\n");
+         shown = rows - 3;
+         if (shown < 1)
+            shown = 1;
+         if (shown > CmdTerm.argumentoptioncount)
+            shown = CmdTerm.argumentoptioncount;
+         first = CmdTerm.argumentoptionselected >= 0
+               ? CmdTerm.argumentoptionselected : 0;
+         if (first + shown > CmdTerm.argumentoptioncount)
+            first = CmdTerm.argumentoptioncount - shown;
+         for (i = first; i < first + shown; ++i)
+         {
+            int selected = CmdTerm.argumentoptionselected >= 0
+                         ? CmdTerm.argumentoptionselected : 0;
+            _snprintf(line, sizeof(line) - 1, "%c %s%s",
+                      i == selected ? '>' : ' ',
+                      CmdTerm.argumentoptions[i],
+                      i + 1 < first + shown ? "\n" : "");
+            line[sizeof(line) - 1] = '\0';
+            cmdterm_output_append(line);
+         }
+      }
+      else if (rows > 2)
+      {
+         _snprintf(line, sizeof(line) - 1, "Argument: %s",
+                   command->arguments ? command->arguments
+                                      : cmdterm_command_type_name(command));
+         line[sizeof(line) - 1] = '\0';
+         cmdterm_output_append(line);
+      }
+      return;
+   }
+
+   _snprintf(line, sizeof(line) - 1,
+             "%s%d command match%s - Up/Down selects; Space/Tab completes\n",
+             CmdTerm.suggestioncount == (int)CMDTERM_MAX_SUGGESTIONS
+                ? "Top " : "",
+             CmdTerm.suggestioncount,
+             CmdTerm.suggestioncount == 1 ? "" : "es");
+   line[sizeof(line) - 1] = '\0';
+   cmdterm_output_append(line);
+   shown = rows - 1;
+   if (shown < 1)
+      shown = 1;
+   if (shown > CmdTerm.suggestioncount)
+      shown = CmdTerm.suggestioncount;
+   first = CmdTerm.suggestionselected - shown / 2;
+   if (first < 0)
+      first = 0;
+   if (first + shown > CmdTerm.suggestioncount)
+      first = CmdTerm.suggestioncount - shown;
+   for (i = first; i < first + shown; ++i)
+   {
+      const Command* command = CmdTerm.suggestions[i];
+      _snprintf(line, sizeof(line) - 1, "%c %s%s%s - %s%s",
+                i == CmdTerm.suggestionselected ? '>' : ' ', command->name,
+                command->arguments ? " " : "",
+                command->arguments ? command->arguments : "",
+                command->comment ? command->comment
+                                 : cmdterm_command_type_name(command),
+                i + 1 < first + shown ? "\n" : "");
+      line[sizeof(line) - 1] = '\0';
+      cmdterm_output_append(line);
+   }
+}
 
 static void cmdterm_set_popup_cursor(BOOL active)
 {
@@ -255,6 +713,12 @@ static void cmdterm_rebuild_output(void)
    int shown;
    int i;
    int used = 0;
+
+   if (CmdTerm.suggestionmode != kCmdTermSuggestionNone)
+   {
+      cmdterm_rebuild_suggestion_output();
+      return;
+   }
 
    cmdterm_model_lock();
    CmdTerm.outputbuf[0] = '\0';
@@ -470,6 +934,7 @@ void cmdterm_redraw(void)
    if (!(CmdTerm.statebits & kStateVisible))
       return;
 
+   cmdterm_refresh_suggestions(FALSE);
    cmdterm_rebuild_output();
    LGadUpdateTextBox(&CmdTerm.outputbox);
    LGadUpdateTextBox(&CmdTerm.textbox);
@@ -1100,6 +1565,15 @@ static short speckeys[] =
    KB_FLAG_DOWN|KB_FLAG_CTRL|'c',
    KB_FLAG_DOWN|KB_FLAG_CTRL|KB_FLAG_SHIFT|'c',
    KB_FLAG_DOWN|KEY_TAB,
+   KB_FLAG_DOWN|' ',
+   KB_FLAG_DOWN|KEY_UP,
+   KB_FLAG_DOWN|KEY_PAD_UP,
+   KB_FLAG_DOWN|KEY_DOWN,
+   KB_FLAG_DOWN|KEY_PAD_DOWN,
+   KB_FLAG_DOWN|KEY_LEFT,
+   KB_FLAG_DOWN|KEY_PAD_LEFT,
+   KB_FLAG_DOWN|KEY_RIGHT,
+   KB_FLAG_DOWN|KEY_PAD_RIGHT,
    KB_FLAG_DOWN|KEY_PGUP,
    KB_FLAG_DOWN|KEY_PAD_PGUP,
    KB_FLAG_DOWN|KEY_PGDN,
@@ -1113,12 +1587,116 @@ static short speckeys[] =
 
 static char last_prefix[sizeof(CmdTerm.cmdbuf)]=" ";
 
+static void cmdterm_set_command_text(LGadTextBox* box, const char* value)
+{
+   if (!value)
+      value = "";
+   strncpy(CmdTerm.cmdbuf, value, sizeof(CmdTerm.cmdbuf) - 1);
+   CmdTerm.cmdbuf[sizeof(CmdTerm.cmdbuf) - 1] = '\0';
+   LGadUpdateTextBox(box);
+   LGadTextBoxSetCursor(box, (int)strlen(CmdTerm.cmdbuf));
+   LGadTextBoxClrFlag(box, TEXTBOX_EDIT_BRANDNEW);
+   CmdTerm.suggestioninput[0] = '\0';
+   cmdterm_refresh_suggestions(TRUE);
+}
+
+static BOOL cmdterm_accept_command_suggestion(LGadTextBox* box)
+{
+   const Command* command;
+   char completed[sizeof(CmdTerm.cmdbuf)];
+
+   if (CmdTerm.suggestionmode != kCmdTermSuggestionCommands ||
+       CmdTerm.suggestionselected < 0 ||
+       CmdTerm.suggestionselected >= CmdTerm.suggestioncount)
+      return FALSE;
+   command = CmdTerm.suggestions[CmdTerm.suggestionselected];
+   _snprintf(completed, sizeof(completed) - 1, "%s%s", command->name,
+             cmdterm_command_accepts_argument(command) ? " " : "");
+   completed[sizeof(completed) - 1] = '\0';
+   cmdterm_set_command_text(box, completed);
+   return TRUE;
+}
+
+static BOOL cmdterm_cycle_argument_option(LGadTextBox* box, int direction)
+{
+   char completed[sizeof(CmdTerm.cmdbuf)];
+   int selected;
+
+   if (CmdTerm.suggestionmode != kCmdTermSuggestionArguments ||
+       !CmdTerm.argumentcommand || !CmdTerm.argumentoptioncount)
+      return FALSE;
+   selected = CmdTerm.argumentoptionselected;
+   if (selected < 0)
+      selected = direction < 0 ? CmdTerm.argumentoptioncount - 1 : 0;
+   else
+   {
+      selected += direction;
+      if (selected < 0)
+         selected = CmdTerm.argumentoptioncount - 1;
+      if (selected >= CmdTerm.argumentoptioncount)
+         selected = 0;
+   }
+   _snprintf(completed, sizeof(completed) - 1, "%s %s",
+             CmdTerm.argumentcommand->name,
+             CmdTerm.argumentoptions[selected]);
+   completed[sizeof(completed) - 1] = '\0';
+   cmdterm_set_command_text(box, completed);
+   CmdTerm.argumentoptionselected = selected;
+   return TRUE;
+}
+
+static BOOL cmdterm_apply_argument_option(LGadTextBox* box)
+{
+   if (CmdTerm.argumentoptionselected < 0)
+      return cmdterm_cycle_argument_option(box, 1);
+   return TRUE;
+}
+
+static BOOL cmdterm_recall_history(LGadTextBox* box, int offset)
+{
+   char* recalled;
+
+   if (offset > 0 && CmdTerm.historybrowsing &&
+       _history_get_idx(+1) == cmd_history_idx)
+   {
+      cmd_history_last_found = HISTORY_NO_LAST;
+      cmdterm_set_command_text(box, "");
+      CmdTerm.historybrowsing = FALSE;
+      return TRUE;
+   }
+   recalled = history_get(offset);
+   if (!recalled)
+   {
+      if (offset > 0)
+      {
+         cmdterm_set_command_text(box, "");
+         CmdTerm.historybrowsing = FALSE;
+         return TRUE;
+      }
+      return FALSE;
+   }
+   cmdterm_set_command_text(box, recalled);
+   CmdTerm.historybrowsing = TRUE;
+   return TRUE;
+}
+
 uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, void* data)
 {
    char  help_buf[256], *help_ptr=NULL;
    char* text = LGadTextBoxText(box);
    BOOL update = FALSE, clear = FALSE, new_base=FALSE;
-   int cursor_pos;
+   if (event == (LGadTextBoxEvent)TEXTGADG_SPECKEY_PRE)
+   {
+      strncpy(CmdTerm.beforekey, text, sizeof(CmdTerm.beforekey) - 1);
+      CmdTerm.beforekey[sizeof(CmdTerm.beforekey) - 1] = '\0';
+      if ((evdata & KB_FLAG_DOWN) &&
+          ((evdata & ~(KB_FLAG_DOWN | KB_FLAG_SHIFT)) == KEY_BS ||
+           (evdata & ~(KB_FLAG_DOWN | KB_FLAG_SHIFT)) == KEY_DEL ||
+           (!(evdata & (KB_FLAG_CTRL | KB_FLAG_ALT)) &&
+            kb2ascii(evdata & ~KB_FLAG_DOWN))))
+         CmdTerm.historybrowsing = FALSE;
+      return FALSE;
+   }
 
    if (event == TEXTBOX_BUTTON && (evdata & BUTTONGADG_LCLICK))
    {
@@ -1133,9 +1711,32 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
       const char *tmp=NULL, *ret;
       ulong context;
 
-      switch(evdata)
+       cmdterm_refresh_suggestions(TRUE);
+       switch(evdata)
       {
       case KB_FLAG_DOWN|KEY_ENTER:
+         if (CmdTerm.suggestionmode == kCmdTermSuggestionCommands &&
+             CmdTerm.suggestioncount &&
+             _stricmp(text,
+                CmdTerm.suggestions[CmdTerm.suggestionselected]->name))
+         {
+            update = cmdterm_accept_command_suggestion(box);
+            break;
+         }
+         if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments &&
+             CmdTerm.argumentoptioncount)
+         {
+            const char* argument = text + strlen(CmdTerm.argumentcommand->name);
+            while (*argument && isspace((unsigned char)*argument))
+               ++argument;
+            if (CmdTerm.argumentoptionselected < 0 ||
+                _stricmp(argument,
+                   CmdTerm.argumentoptions[CmdTerm.argumentoptionselected]))
+            {
+               update = cmdterm_apply_argument_option(box);
+               break;
+            }
+         }
          if (!cmdterm_is_scrollable())
          {
             Status("");
@@ -1161,6 +1762,8 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
             else
                history_add(text);
             *text = '\0';
+            CmdTerm.suggestioninput[0] = '\0';
+            CmdTerm.suggestionmode = kCmdTermSuggestionNone;
             update = TRUE;
             clear = TRUE;
             break;
@@ -1209,6 +1812,8 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
             }
          }
          *text = '\0';
+         CmdTerm.suggestioninput[0] = '\0';
+         CmdTerm.suggestionmode = kCmdTermSuggestionNone;
          update = TRUE;
          break;
       case KB_FLAG_DOWN|KB_FLAG_CTRL|'v':
@@ -1232,25 +1837,56 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
          if (text&&((*text)!='\0'))
             Status("");
          *text = '\0';
+         CmdTerm.suggestioninput[0] = '\0';
+         CmdTerm.suggestionmode = kCmdTermSuggestionNone;
          update = TRUE;
          clear = TRUE;
          break;
       case KB_FLAG_DOWN|KB_FLAG_CTRL|'p':
       {
-         char* history = history_get(-1);
-         cursor_pos=move_cursor_into_command(history,sizeof(CmdTerm.cmdbuf));
-         tmp=history;
-         LGadTextBoxSetCursor(box,cursor_pos);   // cp was strlen(tmp)
+         update = cmdterm_recall_history(box, -1);
          break;
       }
       case KB_FLAG_DOWN|KB_FLAG_CTRL|'n':
       {
-         char* history = history_get(+1);
-         cursor_pos=move_cursor_into_command(history,sizeof(CmdTerm.cmdbuf));
-         tmp=history;
-         LGadTextBoxSetCursor(box,cursor_pos);
+         update = cmdterm_recall_history(box, +1);
          break;
       }
+      case KB_FLAG_DOWN|KEY_UP:
+      case KB_FLAG_DOWN|KEY_PAD_UP:
+         if ((!text || !*text) || CmdTerm.historybrowsing)
+            update = cmdterm_recall_history(box, -1);
+         else if (CmdTerm.suggestionmode == kCmdTermSuggestionCommands &&
+                  CmdTerm.suggestioncount)
+         {
+            CmdTerm.suggestionselected =
+               (CmdTerm.suggestionselected + CmdTerm.suggestioncount - 1) %
+               CmdTerm.suggestioncount;
+            update = TRUE;
+         }
+         break;
+      case KB_FLAG_DOWN|KEY_DOWN:
+      case KB_FLAG_DOWN|KEY_PAD_DOWN:
+         if (CmdTerm.historybrowsing)
+            update = cmdterm_recall_history(box, +1);
+         else if (CmdTerm.suggestionmode == kCmdTermSuggestionCommands &&
+                  CmdTerm.suggestioncount)
+         {
+            CmdTerm.suggestionselected =
+               (CmdTerm.suggestionselected + 1) % CmdTerm.suggestioncount;
+            update = TRUE;
+         }
+         break;
+      case KB_FLAG_DOWN|KEY_LEFT:
+      case KB_FLAG_DOWN|KEY_PAD_LEFT:
+         if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+            update = cmdterm_cycle_argument_option(box, -1);
+         break;
+      case KB_FLAG_DOWN|KEY_RIGHT:
+      case KB_FLAG_DOWN|KEY_PAD_RIGHT:
+         if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+            update = cmdterm_cycle_argument_option(box, +1);
+         break;
       case KB_FLAG_DOWN|KEY_PGUP:
       case KB_FLAG_DOWN|KEY_PAD_PGUP:
          if (cmdterm_is_scrollable())
@@ -1288,6 +1924,16 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
          }
          break;
       case KB_FLAG_DOWN|KEY_TAB:
+         if (CmdTerm.suggestionmode == kCmdTermSuggestionCommands)
+         {
+            update = cmdterm_accept_command_suggestion(box);
+            break;
+         }
+         if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+         {
+            update = cmdterm_cycle_argument_option(box, +1);
+            break;
+         }
          text[LGadTextBoxCursor(box)] = '\0';
          if (strnicmp(last_prefix,text,strlen(last_prefix)))
          {  // if last string start not the same, the reset 
@@ -1316,6 +1962,33 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
          else if (cmd_try_command)
             if (cur_command_help_str(help_buf))
                Status(help_buf);
+         break;
+      case KB_FLAG_DOWN|' ':
+         if (CmdTerm.suggestionmode == kCmdTermSuggestionCommands &&
+             CmdTerm.suggestioncount)
+         {
+            char prior[sizeof(CmdTerm.cmdbuf)];
+            const char* begin = CmdTerm.beforekey;
+            const char* finish;
+            int length;
+            while (*begin && isspace((unsigned char)*begin))
+               ++begin;
+            finish = begin;
+            while (*finish && !isspace((unsigned char)*finish))
+               ++finish;
+            if (!*finish)
+            {
+               length = (int)(finish - begin);
+               if (length >= (int)sizeof(prior))
+                  length = sizeof(prior) - 1;
+               memcpy(prior, begin, length);
+               prior[length] = '\0';
+               if (_stricmp(prior,
+                    CmdTerm.suggestions[CmdTerm.suggestionselected]->name))
+                  update = cmdterm_accept_command_suggestion(box);
+            }
+         }
+         break;
       }
       if (tmp!=NULL)
       {
@@ -1520,10 +2193,10 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
       tdesc.style = &CmdTerm.style;
       if (flags & kCmdTermHideUnfocused)
          strcpy(CmdTerm.titlebuf,
-                "Console - wheel scroll; Ctrl+wheel font; Ctrl+V paste; Esc closes");
+                 "Console - type to search; arrows select; Tab completes; Esc closes");
       else
          strcpy(CmdTerm.titlebuf,
-                "Console :/; focus | wheel scroll | Ctrl+wheel font");
+                 "Console :/; focus | type to search | arrows select | Tab completes");
 
       LGadCreateTextBoxDesc(&CmdTerm.titlebox,&CmdTerm.root,&tdesc);
       LGadTextBoxClrFlag(&CmdTerm.titlebox,
@@ -1573,7 +2246,8 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
       tdesc.editbuf = CmdTerm.cmdbuf;
       tdesc.editbuflen = sizeof(CmdTerm.cmdbuf);
       CmdTerm.cmdbuf[0] = '\0';
-      tdesc.flags = TEXTBOX_BORDER_FLAG|TEXTBOX_FOCUS_FLAG;
+      tdesc.flags = TEXTBOX_BORDER_FLAG|TEXTBOX_FOCUS_FLAG|
+                    TEXTGADG_PRESCREEN_FLAG;
       tdesc.style = &CmdTerm.style;
       tdesc.cb = cmdterm_textbox_cb;
 
@@ -1869,9 +2543,11 @@ static Command commands[] =
      "close the command console and open the simulation menu", HK_ALL },
    { "history_cmd", FUNC_INT, history_cmdterm, "edit command from history offset" },
    { "console_copy", FUNC_STRING, cmdterm_console_copy,
-     "copy console_copy [visible/all/command] to the clipboard", HK_ALL },
+     "copy console text to the clipboard", HK_ALL, "scope",
+     "visible|all|command" },
    { "console_diagnostics", FUNC_STRING, cmdterm_console_diagnostics,
-     "capture console_diagnostics [on/off] mprintf diagnostics", HK_ALL },
+     "enable or disable mprintf diagnostic capture", HK_ALL, "state",
+     "on|off" },
 #ifdef DBG_ON   
    { "history_dump", FUNC_VOID, history_show },
 #endif   

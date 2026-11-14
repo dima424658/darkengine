@@ -1190,12 +1190,17 @@ static void SchemaFilesDump(void)
 
 static Command schema_commands[] =
 {
-   { "play_schema", FUNC_STRING, SchemaPlay0, "Play a named schema", HK_ALL },
-   { "play_schemas", FUNC_STRING, SchemasPlay, "Play two schemas", HK_ALL},
+   { "play_schema", FUNC_STRING, SchemaPlay0,
+     "play a named sound schema", HK_ALL, "schema-name", NULL },
+   { "play_schemas", FUNC_STRING, SchemasPlay,
+     "play one or two named sound schemas", HK_ALL,
+     "schema-name[,schema-name]", NULL},
    { "destroy_schemas", FUNC_VOID, SchemasDestroy, "Destroy all schemas", HK_ALL },
    { "destroy_speech", FUNC_VOID, SpeechDestroy, "Destroy all speech", HK_ALL },
    { "destroy_sound", FUNC_VOID, SoundDestroy, "Destroy all schemas and speech", HK_ALL },
-   { "halt_schema", FUNC_STRING, SchemaHaltNamed, "Halt the first instance of a playing schema", HK_ALL},
+   { "halt_schema", FUNC_STRING, SchemaHaltNamed,
+     "halt the first playing instance of a named schema", HK_ALL,
+     "schema-name", NULL},
    { "halt_schemas", FUNC_VOID, SchemaHaltAll, "Halt all playing schemas", HK_ALL},
 #ifdef SCHEMA_LOADING   
    { "zggtvrk_load_schema", FUNC_STRING, SchemaFilesLoad, "Load a schema file", HK_ALL },

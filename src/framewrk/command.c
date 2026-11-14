@@ -501,13 +501,30 @@ static const char *help_command_type(const Command *cmd)
         ? type_name[cmd->type] : "unknown";
 }
 
+static const char *help_command_choices(const Command *cmd)
+{
+   if (cmd->choices)
+      return cmd->choices;
+   if (cmd->type == FUNC_BOOL || cmd->type == VAR_BOOL ||
+       cmd->type == TOGGLE_BOOL)
+      return "false|true";
+   return NULL;
+}
+
 static void help_print_command(const Command *cmd)
 {
    const char *type = help_command_type(cmd);
+   const char *choices = help_command_choices(cmd);
    if (cmd->comment)
-      mprintf("%s (%s): %s\n", cmd->name, type, cmd->comment);
+      mprintf("%s%s%s (%s): %s\n", cmd->name,
+              cmd->arguments ? " " : "",
+              cmd->arguments ? cmd->arguments : "", type, cmd->comment);
    else
-      mprintf("%s (%s)\n", cmd->name, type);
+      mprintf("%s%s%s (%s)\n", cmd->name,
+              cmd->arguments ? " " : "",
+              cmd->arguments ? cmd->arguments : "", type);
+   if (choices)
+      mprintf("  choices: %s\n", choices);
 }
 
 static void help_commands(const char *s)
@@ -550,7 +567,7 @@ static void help_commands(const char *s)
          mprintf("  %-12s %s\n", help_groups[i].name,
                  help_groups[i].description);
       mprintf("Use help <group> to list that group.\n");
-      mprintf("Use help <keyword> to search names and descriptions.\n");
+      mprintf("Use help <keyword> to search names, syntax, choices, and descriptions.\n");
       mprintf("Use help all only when you want the complete registry.\n");
       return;
    }
@@ -600,6 +617,8 @@ static void help_commands(const char *s)
                continue;
             if (!help_text_contains(cmd->name, query, query_len) &&
                 !help_text_contains(cmd->comment, query, query_len) &&
+                !help_text_contains(cmd->arguments, query, query_len) &&
+                !help_text_contains(help_command_choices(cmd), query, query_len) &&
                 !help_text_contains(help_command_type(cmd), query, query_len))
                continue;
 
@@ -709,8 +728,13 @@ static void dump_commands(const char *s)
       for (i=0; i < command_count[j]; ++i)
       {
          Command *cmd = &command_list[j][i];
-         fprintf(f, "%-20s:  %s\n", cmd->name,
-               cmd->comment ? cmd->comment : type_name[cmd->type]);
+         const char *choices = help_command_choices(cmd);
+         fprintf(f, "%s%s%s:  %s%s%s\n", cmd->name,
+               cmd->arguments ? " " : "",
+               cmd->arguments ? cmd->arguments : "",
+               cmd->comment ? cmd->comment : type_name[cmd->type],
+               choices ? " Choices: " : "",
+               choices ? choices : "");
       }
 
    fclose(f);

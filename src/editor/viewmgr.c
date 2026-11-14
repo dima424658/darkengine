@@ -1604,7 +1604,8 @@ Command vm_commands[] =
    { "zoom_all", FUNC_FLOAT, vm_scale_all, "zoom all 2d cameras" },
    { "zoom_2d", FUNC_FLOAT, vm_cur_scale, "zoom current camera" },
    { "synch_all", FUNC_BOOL, vm_set_synch_all, "set all 2d synch modes" },
-   { "cam_swap", FUNC_STRING, vm_swap_cameras_string, "swap two cameras" },
+   { "cam_swap", FUNC_STRING, vm_swap_cameras_string,
+     "swap two editor camera panes", 0, "camera-index,camera-index", NULL },
    { "cycle_mode", FUNC_VOID, vm_cur_cycle_mode, "change rendering mode" },
    { "set_mode", FUNC_INT, vm_cur_set_mode, "set rendering mode" },
    { "toggle_synch", FUNC_VOID, vm_cur_toggle_synch, "toggle 2d synch mode" },
@@ -1619,7 +1620,9 @@ Command vm_commands[] =
    { "vm_win_mode", FUNC_INT, vmWinCfgSetMode, "wincfg set mode" },
    { "vm_layout", FUNC_INT, vmWinCfgCycleLayout, "cycle/set vm win layout" },
    { "vm_name_corner", VAR_INT, &_vm_name_corner, "set corner for names (-1 no draw)" },
-   { "vm_teleport", FUNC_STRING, vm_teleport_cam, "move camera to x,y,z" },
+   { "vm_teleport", FUNC_STRING, vm_teleport_cam,
+     "teleport the current editor camera to Dark world coordinates", 0,
+     "x,y,z", NULL },
 };
 
 void vm_init(void)

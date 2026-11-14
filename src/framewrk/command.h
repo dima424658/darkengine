@@ -87,6 +87,12 @@ typedef struct
 #endif
    const char *comment;
    ulong contexts;
+   // Optional console/help metadata. "arguments" describes the syntax after
+   // the command name. "choices" is a | separated list of literal values
+   // when the argument is a closed set rather than free-form text.
+   const char *arguments;
+   const char *choices;
+   uint flags;
 } Command;
 
 // Enumerate the registered command definitions without disturbing the

@@ -482,8 +482,12 @@ main_volume_down_cmd( int count )
 
 static Command commands[] =
 {
-   { "main_volume", FUNC_STRING, main_volume_cmd, "main volume 0...100", HK_GAME_MODE },
-   { "ambient_volume", FUNC_STRING, ambient_volume_cmd, "ambient relative volume 0...100", HK_GAME_MODE },
+   { "main_volume", FUNC_STRING, main_volume_cmd,
+     "set absolute master volume, or adjust it by signed decibels",
+     HK_GAME_MODE, "0..100|+dB|-dB", NULL },
+   { "ambient_volume", FUNC_STRING, ambient_volume_cmd,
+     "set ambient offset (50 is neutral), or adjust it by signed decibels",
+     HK_GAME_MODE, "0..100|+dB|-dB", NULL },
    { "main_volume_up", FUNC_INT, main_volume_up_cmd, "inc main volume", HK_GAME_MODE },
    { "main_volume_down", FUNC_INT, main_volume_down_cmd, "dec main volume", HK_GAME_MODE },
    { "ambient_volume_up", FUNC_INT, ambient_volume_up_cmd, "inc ambient relative volume", HK_GAME_MODE },
