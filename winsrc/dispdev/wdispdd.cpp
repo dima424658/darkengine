@@ -395,6 +395,16 @@ BOOL cDDProvider::DoProcessMessage(UINT msg, WPARAM wParam, LPARAM /*lParam*/, L
             // on window-manager paths which omit WM_EXITSIZEMOVE.
             if (!wParam)
                 RenderBackendSetInteractiveResize(FALSE);
+            else if (m_pModeOps && m_pModeOps->HandlesWindowResize())
+            {
+                // DWM may discard or cover the swap-chain image while this
+                // window is inactive without changing the client size.  A
+                // retained menu consequently has no resize or dirty UI event
+                // to make it present again.  Repaint the current logical
+                // canvas after activation so the D3D11 presenter recomputes
+                // its aspect-fitted viewport for the existing client area.
+                InvalidateRect(GetMainWnd(), NULL, FALSE);
+            }
             break;
 
         case WM_SIZE:

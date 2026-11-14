@@ -1135,12 +1135,25 @@ void cOffVideoDDModeOps::DoFlushRect(int x0Source, int y0Source, int x1Source, i
         }
 
         HRESULT result = E_NOTIMPL;
-        if (m_UseD3D11Presentation && m_pPresenter &&
-            m_pPresenter->Present(m_pSecondarySurface, sourceRect.left,
-                                  sourceRect.top, sourceRect.right,
-                                  sourceRect.bottom))
+        if (m_UseD3D11Presentation && m_pPresenter)
         {
-            result = DD_OK;
+            if (m_pPresenter->Present(m_pSecondarySurface, sourceRect.left,
+                                      sourceRect.top, sourceRect.right,
+                                      sourceRect.bottom))
+            {
+                result = DD_OK;
+            }
+            else
+            {
+                // The DirectDraw primary and GDI target the HWND at legacy
+                // pixel coordinates.  Falling through here after a transient
+                // focus/resize failure paints the 640x480 menu at native size
+                // over the swap chain.  Keep D3D11 as the sole owner of a
+                // modern window; the next frame or activation repaint retries
+                // presentation with the current client viewport.
+                m_pDisplayDevice->RestoreLock(iLock);
+                return;
+            }
         }
         else if (!m_UseDesktopPresentation)
         {
