@@ -148,6 +148,13 @@ void lgd3d_pop_zbias(void)
 }
 
 
+void RenderBackendGetNativeDepthEncoding(float scale, float encoding[3])
+{
+   encoding[0] = lgd3d_z_normal ? (float)(scale * inv_z_far) : 0;
+   encoding[1] = lgd3d_z_normal ? 0 : (float)(-z2 / scale);
+   encoding[2] = lgd3d_z_normal ? 0 : (float)z1;
+}
+
 void lgd3d_set_znearfar(double znear, double zfar)
 {
    z_near = znear;

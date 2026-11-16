@@ -1,3 +1,4 @@
+#include "vulkan_world_features.hpp"
 #include "vulkan_context.hpp"
 
 #include <algorithm>
@@ -204,7 +205,7 @@ bool cVulkanContext::Initialize(
    const std::vector<const char *> &surfaceExtensions,
    const tSurfaceFactory &createSurface, uint32_t drawableWidth,
    uint32_t drawableHeight, int physicalDeviceIndex, char *error,
-   unsigned errorCapacity)
+   unsigned errorCapacity, bool enableWorldRendering)
 {
    Shutdown();
    if (!createSurface || !drawableWidth || !drawableHeight)
@@ -339,6 +340,9 @@ bool cVulkanContext::Initialize(
       m_presentQueueFamily = chosen->presentFamily;
       m_properties = chosen->properties;
 
+      dark::VulkanWorldFeatures worldFeatures;
+      m_worldRenderingSupported = worldFeatures.Probe(*m_physicalDevice);
+      m_worldRenderingUnavailable = worldFeatures.unavailable;
       const float priority = 1.0f;
       std::set<uint32_t> uniqueFamilies{m_graphicsQueueFamily,
          m_presentQueueFamily};
@@ -356,7 +360,30 @@ bool cVulkanContext::Initialize(
          static_cast<uint32_t>(queueInfos.size()), queueInfos.data(),
          0, nullptr, static_cast<uint32_t>(deviceExtensions.size()),
          deviceExtensions.data(), &features);
-      m_device = m_physicalDevice.createDevice(deviceInfo);
+      const auto legacyExtensionCount = deviceExtensions.size();
+      m_worldRenderingEnabled = enableWorldRendering && m_worldRenderingSupported;
+      m_worldIndirectShadows=worldFeatures.IndirectShadows();
+      if (m_worldRenderingEnabled)
+      {
+         deviceExtensions.insert(deviceExtensions.end(), worldFeatures.extensions.begin(), worldFeatures.extensions.end());
+         deviceInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+         deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
+         deviceInfo.pEnabledFeatures = nullptr;
+         deviceInfo.pNext = &worldFeatures.features;
+      }
+      try { m_device = m_physicalDevice.createDevice(deviceInfo); }
+      catch (const vk::SystemError &failure)
+      {
+         if (!m_worldRenderingEnabled) throw;
+         m_worldRenderingEnabled = false;
+         m_worldRenderingUnavailable = failure.what();
+         deviceExtensions.resize(legacyExtensionCount);
+         deviceInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+         deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
+         deviceInfo.pNext = nullptr;
+         deviceInfo.pEnabledFeatures = &features;
+         m_device = m_physicalDevice.createDevice(deviceInfo);
+      }
       m_graphicsQueue = (*m_device).getQueue(m_graphicsQueueFamily, 0);
       m_presentQueue = (*m_device).getQueue(m_presentQueueFamily, 0);
       m_drawableWidth = drawableWidth;
@@ -381,6 +408,8 @@ bool cVulkanContext::Initialize(
 
 void cVulkanContext::Shutdown()
 {
+   m_worldRenderingSupported = m_worldRenderingEnabled = false;
+   m_worldRenderingUnavailable.clear();
    m_frameActive = false;
    m_recreateSwapchain = false;
    m_surfaceLost = false;
@@ -591,7 +620,9 @@ bool cVulkanContext::CreateSwapchain()
    vk::SubpassDependency dependency{};
    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
    dependency.dstSubpass = 0;
-   dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+   dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput |
+      vk::PipelineStageFlagBits::eLateFragmentTests;
+   dependency.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
    dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
    dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
    dependency.dstStageMask |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
@@ -649,7 +680,6 @@ bool cVulkanContext::CreateSwapchain()
    m_renderFinished.clear();
    for (size_t i = 0; i < m_swapchainImages.size(); ++i)
       m_renderFinished.push_back(m_device.createSemaphore({}));
-   m_imageFences.assign(m_swapchainImages.size(), vk::Fence{});
    m_frameIndex = 0;
    return true;
 }
@@ -667,7 +697,6 @@ void cVulkanContext::DestroySwapchain()
    m_imageViews.clear();
    m_swapchain.clear();
    m_swapchainImages.clear();
-   m_imageFences.clear();
    m_swapchainExtent = vk::Extent2D{};
 }
 
@@ -708,7 +737,8 @@ bool cVulkanContext::Resize(uint32_t drawableWidth, uint32_t drawableHeight)
 }
 
 bool cVulkanContext::BeginFrame(const std::array<float, 4> &clearColor,
-   vk::CommandBuffer *commandBuffer)
+   vk::CommandBuffer *commandBuffer,
+   const std::function<void(vk::CommandBuffer, uint32_t)> &prepare)
 {
    if (!*m_device || m_frameActive || !commandBuffer)
       return false;
@@ -724,14 +754,15 @@ bool cVulkanContext::BeginFrame(const std::array<float, 4> &clearColor,
       if (acquired.result == vk::Result::eSuboptimalKHR)
          m_recreateSwapchain = true;
       m_acquiredImage = acquired.value;
-      if (m_imageFences[m_acquiredImage])
-         (void)(*m_device).waitForFences(m_imageFences[m_acquiredImage], VK_TRUE,
-            UINT64_MAX);
-      m_imageFences[m_acquiredImage] = frameFence;
+      // Frame-slot fences protect command buffers and mapped slot resources.
+      // Acquired images/framebuffers are not modified by the CPU. Their GPU
+      // reuse is ordered by the acquire semaphore and render-pass dependency,
+      // so a host wait on the previous image submission would serialize frames.
 
       vk::CommandBuffer active = *m_commandBuffers[m_frameIndex];
       (void)active.reset();
       active.begin(vk::CommandBufferBeginInfo{});
+      if (prepare) prepare(active, m_frameIndex);
       std::array<vk::ClearValue, 2> clearValues{};
       clearValues[0].color = vk::ClearColorValue(clearColor);
       clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
@@ -810,7 +841,7 @@ bool cVulkanContext::RecreateSurface(const tSurfaceFactory &createSurface,
    }
 }
 
-bool cVulkanContext::EndFrame()
+bool cVulkanContext::EndFrame(vk::CommandBuffer preparation)
 {
    if (!*m_device || !m_frameActive || m_commandBuffers.empty())
       return false;
@@ -827,14 +858,14 @@ bool cVulkanContext::EndFrame()
       const vk::Semaphore waitSemaphore = *m_imageAvailable[m_frameIndex];
       const vk::Semaphore signalSemaphore = *m_renderFinished[m_acquiredImage];
       const vk::PipelineStageFlags waitStage =
-         vk::PipelineStageFlagBits::eColorAttachmentOutput;
-      const vk::CommandBuffer submitCommand = commandBuffer;
+         vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+      const std::array<vk::CommandBuffer,2> submitCommands{{preparation,commandBuffer}};
       vk::SubmitInfo submitInfo{};
       submitInfo.waitSemaphoreCount = 1;
       submitInfo.pWaitSemaphores = &waitSemaphore;
       submitInfo.pWaitDstStageMask = &waitStage;
-      submitInfo.commandBufferCount = 1;
-      submitInfo.pCommandBuffers = &submitCommand;
+      submitInfo.commandBufferCount = preparation ? 2u : 1u;
+      submitInfo.pCommandBuffers = preparation ? submitCommands.data() : &submitCommands[1];
       submitInfo.signalSemaphoreCount = 1;
       submitInfo.pSignalSemaphores = &signalSemaphore;
       m_graphicsQueue.submit(submitInfo, frameFence);

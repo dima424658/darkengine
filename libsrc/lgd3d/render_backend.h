@@ -42,6 +42,12 @@ int RenderBackendPresentCanvasRect(const void *pixels, int width, int height,
 int RenderBackendClearOverlayPixels(void *pixels, int width, int height,
   int rowBytes, int depth);
 
+/* Optional modern world pass. Called after native geometry capture, before UI. */
+int RenderBackendWorldEnabled(void);
+int RenderBackendRenderWorld(void);
+/* Diagnostic draw suppression; native visibility/pose callbacks still run. */
+int RenderBackendSetNativeWorldDrawing(int enabled);
+void RenderBackendGetNativeDepthEncoding(float scale, float encoding[3]);
 void RenderBackendSetGamma(float gamma);
 // Select a physical device by the index reported through the legacy lgd3d
 // device enumeration. Negative values restore automatic device selection.

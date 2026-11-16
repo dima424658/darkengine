@@ -38,6 +38,9 @@ EXTERN IFloatProperty *gAlphaRenderProp;
 
 EXTERN IFloatProperty *g_pSelfIlluminationProp;
 
+// Changes when material properties or their donor hierarchy change.
+EXTERN unsigned long long RenderMaterialPropertyRevision(void);
+
 
 //
 // 'Object Shadow' Property

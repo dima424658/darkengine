@@ -1,3 +1,4 @@
+#include <render_scene.h>
 #include <render_backend.h>
 #include <dev2d.h>
 #include <lgd3d.h>
@@ -8,6 +9,7 @@
 #include <rsdcfg.h>
 #include <vector>
 #include <material.h>
+#include <unordered_map>
 
 constexpr int kPaletteSlots = 256;
 extern "C" {
@@ -16,6 +18,8 @@ grs_bitmap *g_legacyBitmaps[LGD3D_MAX_TEXTURES]{};
 uchar *lgd3d_clut = nullptr;
 }
 static uchar g_palettes[kPaletteSlots][768];
+static unsigned long long g_paletteRevisions[kPaletteSlots];
+static unsigned long long g_paletteRevisionSerial;
 static uchar *g_textureClut = nullptr;
 static ushort *g_alphaPalette = nullptr;
 static tdrv_texture_info g_textureInfo[LGD3D_MAX_TEXTURES];
@@ -27,7 +31,10 @@ extern "C" void LegacyTexturesInit(void)
    std::memset(g_legacyTextures, 0, sizeof(g_legacyTextures));
    std::memset(g_legacyBitmaps, 0, sizeof(g_legacyBitmaps));
    std::memset(g_textureInfoValid, 0, sizeof(g_textureInfoValid));
-   for (auto &palette : g_palettes) std::memcpy(palette, grd_pal, sizeof(palette));
+   for (int i = 0; i < kPaletteSlots; ++i) {
+      std::memcpy(g_palettes[i], grd_pal, sizeof(g_palettes[i]));
+      g_paletteRevisions[i] = ++g_paletteRevisionSerial;
+   }
 }
 
 extern "C" grs_bitmap *lgd3d_get_texture_bitmap(int id)
@@ -283,6 +290,14 @@ extern "C" void LegacyTextureCook(tdrv_texture_info *info) {
   info->cookie ^= (ulong)info->w * 0x9e3779b1u;
   info->cookie ^= (ulong)info->h * 0x85ebca6bu;
 }
+struct SceneTextureSnapshot {RenderSceneHandle handle;};
+// Survive legacy AppOnExit callbacks, like the world-scene store itself.
+static auto &sceneTextureSnapshots=*new std::unordered_map<grs_bitmap *,SceneTextureSnapshot>;
+static void RefreshSceneTexture(tdrv_texture_info *info,const uchar *pixels) {
+  const auto found=sceneTextureSnapshots.find(info->bm);
+  if(found!=sceneTextureSnapshots.end())
+    RenderSceneReplaceTexture(found->second.handle,info->w,info->h,pixels,info->w*4);
+}
 extern "C" int LegacyTextureLoad(tdrv_texture_info *info) {
   uchar *pixels;
   if (info->id < 0 || info->id >= LGD3D_MAX_TEXTURES)
@@ -294,6 +309,7 @@ extern "C" int LegacyTextureLoad(tdrv_texture_info *info) {
     RenderBackendDestroyTexture(g_legacyTextures[info->id]);
   g_legacyTextures[info->id] =
       RenderBackendCreateTexture(info->w, info->h, pixels, info->w * 4);
+  RefreshSceneTexture(info,pixels);
   free(pixels);
   g_legacyBitmaps[info->id] = info->bm;
   if (g_legacyTextures[info->id]) {
@@ -319,6 +335,7 @@ extern "C" void LegacyTextureReload(tdrv_texture_info *info) {
     g_legacyTextures[info->id] =
         RenderBackendCreateTexture(info->w, info->h, pixels, info->w * 4);
   }
+  RefreshSceneTexture(info,pixels);
   free(pixels);
   g_legacyBitmaps[info->id] = info->bm;
   if (g_legacyTextures[info->id]) {
@@ -387,6 +404,7 @@ extern "C" void lgd3d_set_pal_slot(uint start, uint n, uchar *pal, int slot) {
   if (!n || !memcmp(&g_palettes[slot][start * 3], pal, n * 3))
     return;
   memcpy(&g_palettes[slot][start * 3], pal, n * 3);
+  g_paletteRevisions[slot]=++g_paletteRevisionSerial;
   ReloadPaletteTextures(slot);
 }
 extern "C" void lgd3d_set_pal_slot_flags(uint start, uint n, uchar *pal,
@@ -453,3 +471,42 @@ extern "C" void *LegacyMaterialIllumination(const grs_bitmap *bitmap)
    }
    return texture;
 }
+// Copy source texture content for the persistent scene. Loaded bitmap bits may
+// contain a texture-manager ID; use its retained CPU source rather than treating
+// that value as a pointer.
+// Unloaded bitmaps do not receive ReloadPaletteTextures callbacks. Let copied
+// model textures observe palette changes without re-expanding every frame.
+extern "C" unsigned long long lgd3d_scene_palette_revision(grs_bitmap *bm)
+{
+  if(!bm || (bm->type!=BMT_FLAT8 && bm->type!=BMT_TLUC8 && bm->type!=BMT_RSD8))return 0;
+  return g_paletteRevisions[bm->align];
+}
+
+extern "C" RenderSceneHandle lgd3d_scene_copy_texture(grs_bitmap *bm)
+{
+  if (!bm || bm->w <= 0 || bm->h <= 0) return 0;
+  tdrv_texture_info info{};
+  if (bm->flags & BMF_LOADED) {
+    bool found=false;
+    for (int i=0;i<LGD3D_MAX_TEXTURES;++i)
+      if (g_textureInfoValid[i] && g_legacyBitmaps[i]==bm) {
+        info=g_textureInfo[i];found=true;break;
+      }
+    if (!found) return 0;
+  } else {
+    info.bm=bm;info.bits=bm->bits;info.w=bm->w;info.h=bm->h;
+    if (bm->flags & BMF_TRANS) info.flags|=TF_TRANS;
+  }
+  uchar *pixels=ConvertTexture(&info);
+  if (!pixels) return 0;
+  const auto found=sceneTextureSnapshots.find(bm);
+  if(found!=sceneTextureSnapshots.end() &&
+     RenderSceneReplaceTexture(found->second.handle,info.w,info.h,pixels,info.w*4)) {
+    free(pixels);return found->second.handle;
+  }
+  const auto handle=RenderSceneCreateTexture(info.w,info.h,pixels,info.w*4);
+  if(handle)sceneTextureSnapshots[bm]={handle};
+  free(pixels);return handle;
+}
+
+extern "C" void lgd3d_scene_reset_texture_snapshots() { sceneTextureSnapshots.clear(); }

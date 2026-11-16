@@ -96,7 +96,11 @@ static void DecodeFilename(unsigned long ulEncodedFilename, char * pszTo)
 //
 
 #ifndef _MSC_VER
-extern "C" void __cdecl _assert(void * cond, void * file, unsigned line)
+#ifndef __WATCOMC__
+extern "C" void __cdecl _assert(const char * cond, const char * file, unsigned line)
+#else
+extern "C" void __assert(int, char * cond, char * file, int line)
+#endif
 {
     _CriticalMsg((char *) cond, (char *) file, line);
 }

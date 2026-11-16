@@ -1,3 +1,5 @@
+#include <worldscene.h>
+#include <render_backend.h>
 /*
 @Copyright Looking Glass Studios, Inc.
 1996,1997,1998,1999,2000 Unpublished Work.
@@ -1673,6 +1675,8 @@ void portal_render_scene(Position *pos, float zoom)
 
    portal_start_3d(pos);
    r3_set_zoom (zoom);
+   RenderBackendSetNativeWorldDrawing(TRUE);
+   WorldSceneCaptureCamera();
 
      // tell the scene clipper to clear its clipinfo
 
@@ -1712,6 +1716,7 @@ void portal_render_scene(Position *pos, float zoom)
 
    // do the traversal of all visible cells
    portal_traverse_scene(cell);
+   WorldSceneCaptureVisibleCells(active_regions, (unsigned)r_sorted_count);
 
    if (portal_pre_draw_callback != NULL)
       portal_pre_draw_callback();
@@ -1729,6 +1734,15 @@ void portal_render_scene(Position *pos, float zoom)
 
 
    update_terrain_animation();
+
+   // Modern-only drawing keeps native traversal and object visibility/pose
+   // callbacks. Draw the modern world early so failure retains native drawing.
+   {
+      int portalDrawing = 1;
+      config_get_int("renderer_portal_rendering", &portalDrawing);
+      if (!portalDrawing && RenderBackendWorldEnabled() && WorldSceneRender())
+         RenderBackendSetNativeWorldDrawing(FALSE);
+   }
 
      // now traverse them in front-to-back order so we can determine
      // object rendering information for now we just draw each object
@@ -1882,11 +1896,20 @@ cleanup:
 
    g2pt_post_render_polys();
 
+   // Opaque terrain is finished. Post-render chains may draw native weather
+   // and coronas before reaching the object/effect queue.
+   RenderBackendSetNativeWorldDrawing(TRUE);
+
    if (portal_post_render_cback)
       portal_post_render_cback();
 
    if (g_lgd3d && portal_fog_on && portal_fog_dist)
       lgd3d_set_fog_enable(FALSE);
+
+   RenderBackendSetNativeWorldDrawing(TRUE);
+
+   // Composite the modern world before first-person arms and native overlays.
+   WorldSceneRender();
 
    if (portal_render_overlays_cback)
       portal_render_overlays_cback();

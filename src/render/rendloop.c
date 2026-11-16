@@ -1,3 +1,4 @@
+#include "worldscene.h"
 /*
 @Copyright Looking Glass Studios, Inc.
 1996,1997,1998,1999,2000 Unpublished Work.
@@ -664,6 +665,7 @@ static void db_message(DispatchData* msg)
    switch (DB_MSG(msg->subtype))
    {
       case kDatabaseReset:
+         WorldSceneReset();
          WeatherReset();
          ClearTextureArchetypeMapping();
          MeshTexReset();

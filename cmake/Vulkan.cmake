@@ -16,14 +16,24 @@ if(DARK_COMPILE_VULKAN_SHADERS)
     "${CMAKE_CURRENT_BINARY_DIR}/generated/vulkan")
   file(MAKE_DIRECTORY "${DARK_VULKAN_SHADER_OUTPUT_DIR}")
   set(DARK_VULKAN_SHADER_OUTPUTS)
-  foreach(shader scene.vert scene.frag)
+  # Optimize shipped shaders while retaining the unoptimized Debug path.
+  foreach(shader scene.vert scene.frag shadow_map.vert shadow_map.frag world_mapped.frag world_mapped_native.frag world_depth.frag)
     set(shader_source "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgd3d/shaders/${shader}")
     set(shader_output "${DARK_VULKAN_SHADER_OUTPUT_DIR}/${shader}.spv")
     add_custom_command(OUTPUT "${shader_output}"
-      COMMAND "${Vulkan_GLSLC_EXECUTABLE}" --target-env=vulkan1.1
+      COMMAND "${Vulkan_GLSLC_EXECUTABLE}" "$<IF:$<CONFIG:Debug>,-O0,-O>" --target-env=vulkan1.1
         "${shader_source}" -o "${shader_output}"
-      DEPENDS "${shader_source}"
+      DEPENDS "${shader_source}" "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgd3d/shaders/shadow_sampling.glsl" "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgd3d/shaders/world_mapped_body.glsl"
       VERBATIM)
+    list(APPEND DARK_VULKAN_SHADER_OUTPUTS "${shader_output}")
+  endforeach()
+  foreach(shader world.vert world_composite.vert world_composite.frag)
+    set(shader_source "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/lgd3d/shaders/${shader}")
+    set(shader_output "${DARK_VULKAN_SHADER_OUTPUT_DIR}/${shader}.spv")
+    add_custom_command(OUTPUT "${shader_output}"
+      COMMAND "${Vulkan_GLSLC_EXECUTABLE}" "$<IF:$<CONFIG:Debug>,-O0,-O>" --target-env=vulkan1.1
+        "${shader_source}" -o "${shader_output}"
+      DEPENDS "${shader_source}" VERBATIM)
     list(APPEND DARK_VULKAN_SHADER_OUTPUTS "${shader_output}")
   endforeach()
   add_custom_target(dark_vulkan_shaders DEPENDS ${DARK_VULKAN_SHADER_OUTPUTS})

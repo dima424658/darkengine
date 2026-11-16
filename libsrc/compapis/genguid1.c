@@ -93,7 +93,7 @@ DEFINE_OLEGUID(IID_IExternalConnection, 0x00000019L, 0, 0);
 // Windows providers:
 #include <wappguid.h>
 #include <wnshguid.h>
-#include <inpguid.h>
+// Input binder GUIDs are defined by input/guids.c on every platform.
 #endif
 
 // sdesc:

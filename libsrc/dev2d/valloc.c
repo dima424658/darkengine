@@ -23,7 +23,7 @@ bool vMonitor(uchar **p)
 {
 #ifdef _WIN32
    if (g_pDev2dDisplayDevice)
-      if (IDisplayDevice_SetMonitor(g_pDev2dDisplayDevice, p, kGrDispPtrMonitorOn) != FALSE)
+      if (IDisplayDevice_SetMonitor(g_pDev2dDisplayDevice, (tGrDispBits **)p, kGrDispPtrMonitorOn) != FALSE)
          return TRUE;
 #endif
    return FALSE;
@@ -35,7 +35,7 @@ void vUnmonitor(uchar **p)
    // This function will try to unregister the bits pointer of the bitmap
    // should it be a relocatable pointer.
    if (g_pDev2dDisplayDevice)
-      IDisplayDevice_SetMonitor(g_pDev2dDisplayDevice, p, kGrDispPtrMonitorOff);
+      IDisplayDevice_SetMonitor(g_pDev2dDisplayDevice, (tGrDispBits **)p, kGrDispPtrMonitorOff);
 #endif
 }
 

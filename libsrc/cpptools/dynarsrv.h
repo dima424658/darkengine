@@ -14,6 +14,10 @@
 
 #pragma once
 
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
 #ifdef __cplusplus
 #include <new>
 #endif

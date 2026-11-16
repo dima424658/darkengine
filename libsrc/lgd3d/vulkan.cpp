@@ -1,3 +1,6 @@
+#include "vulkan_world_renderer.hpp"
+#include "canvas_pixels.hpp"
+#include <config.h>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -38,10 +41,17 @@ vk::SurfaceKHR CreateSDLVulkanSurface(vk::Instance instance,
    return surface;
 }
 
+bool ModernWorldRequested() {
+   char mode[32]{};
+   return config_get_raw("renderer_mode",mode,sizeof(mode)) && (std::strcmp(mode,"modern")==0 || std::strcmp(mode,"modern_rt")==0);
+}
 class cVulkanRuntime
 {
 public:
    bool Open(int width, int height, const char *title);
+   bool WorldEnabled() const { return m_modernWorldEnabled; }
+   bool RenderWorld();
+   bool InitializeWorldRenderer();
    void Close();
    bool TakeResize(int *width, int *height);
    bool BeginEventPump();
@@ -79,6 +89,11 @@ private:
 
    bool m_windowOpen{};
    cVulkanContext m_context;
+   dark::VulkanWorldRenderer m_worldRenderer;
+   bool m_modernWorldEnabled{}, m_restoreWorld{}, m_worldRendered{};
+   vk::CommandBuffer m_worldPreparation{};
+   std::string m_worldShaderDirectory;
+   bool m_worldFeaturesAvailable{};
    cVulkanSceneRenderer m_renderer;
    vk::CommandBuffer m_activeCommandBuffer{};
    int m_width{}, m_height{};
@@ -99,6 +114,7 @@ private:
    std::chrono::steady_clock::time_point m_nextSurfaceRecreationAttempt{};
    bool m_surfaceRecreationErrorReported{};
    bool m_frameActive{};
+   std::chrono::steady_clock::time_point m_frameStart{},m_acquiredAt{},m_lastSubmission{};
    int m_physicalDeviceIndex{-1};
    bool m_resizePending{};
    bool m_windowSizeChanged{};
@@ -342,6 +358,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       return false;
    }
    m_windowOpen = true;
+   RenderBackendTraceReset();
    m_appInBackground.store(false, std::memory_order_relaxed);
    m_windowMinimized.store(false, std::memory_order_relaxed);
    m_lifecycleResizePending.store(false, std::memory_order_relaxed);
@@ -366,7 +383,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
          [&surfaceError](vk::Instance instance) {
             return CreateSDLVulkanSurface(instance, surfaceError);
          }, drawableWidth, drawableHeight, m_physicalDeviceIndex, error,
-         sizeof(error)))
+         sizeof(error), ModernWorldRequested()))
    {
       if (!surfaceError.empty())
          std::snprintf(error, sizeof(error), "%s", surfaceError.c_str());
@@ -421,6 +438,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       }
    }
 #endif
+   m_worldFeaturesAvailable = m_context.WorldRenderingEnabled();
    if (!m_renderer.Initialize(m_context,
          (shaderDir + "/scene.vert.spv").c_str(),
          (shaderDir + "/scene.frag.spv").c_str()))
@@ -429,6 +447,8 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       Close();
       return false;
    }
+   m_worldShaderDirectory = shaderDir;
+   if (ModernWorldRequested()) InitializeWorldRenderer();
    RenderBackendVulkanSetRenderer(&m_renderer);
    m_windowMinimized = SDLDisplayWindowIsMinimized();
    std::fprintf(stderr, "SDL3 window opened (%dx%d points, %dx%d pixels)\n",
@@ -467,6 +487,11 @@ void cVulkanRuntime::Close()
       m_movieTexture = nullptr;
    }
    m_renderer.Shutdown();
+   m_worldRenderer.Shutdown();
+   m_modernWorldEnabled = m_restoreWorld = m_worldRendered = false;
+   m_worldPreparation = nullptr;
+
+   m_worldFeaturesAvailable = false;
    m_context.Shutdown();
    SDLDisplayCloseWindow();
    m_windowOpen = false;
@@ -573,6 +598,16 @@ void cVulkanRuntime::BeginApplicationFrame()
    if (!m_windowOpen || m_frameActive ||
        m_windowMinimized.load(std::memory_order_acquire) || !PreparePresentation())
       return;
+   if (m_restoreWorld)
+   {
+      m_context.RaiiDevice().waitIdle();
+      m_worldRenderer.Shutdown();
+      m_worldFeaturesAvailable = m_context.WorldRenderingEnabled();
+      m_restoreWorld = false;
+      InitializeWorldRenderer();
+   }
+   m_frameStart=std::chrono::steady_clock::now();
+   m_worldRendered = false;m_worldPreparation = nullptr;
    vk::CommandBuffer commandBuffer{};
    if (!m_context.BeginFrame({0.0f, 0.0f, 0.0f, 1.0f}, &commandBuffer))
    {
@@ -582,6 +617,7 @@ void cVulkanRuntime::BeginApplicationFrame()
          UpdateWindowDimensions();
       return;
    }
+   m_acquiredAt=std::chrono::steady_clock::now();
    m_activeCommandBuffer = commandBuffer;
    m_renderer.BeginFrame(m_context.FrameIndex());
    RenderBackendVulkanAttach(commandBuffer, m_width, m_height, m_clientWidth,
@@ -593,6 +629,7 @@ void cVulkanRuntime::EndApplicationFrame()
 {
    ZoneScopedN("Vulkan present");
    if (!m_frameActive) return;
+   const auto canvasStart=std::chrono::steady_clock::now();
    const bool canvasReady = PrepareCanvasTexture();
    if (!canvasReady)
       std::fprintf(stderr, "Vulkan canvas texture update failed\n");
@@ -604,11 +641,109 @@ void cVulkanRuntime::EndApplicationFrame()
    // retained scene.
    RenderBackendDeactivateScene();
    RenderBackendVulkanDetach();
-   if (m_context.EndFrame() && (sceneActive || (canvasReady && m_canvasWidth > 0)))
+   const auto submitStart=std::chrono::steady_clock::now();
+   const bool submitted = m_context.EndFrame(m_worldPreparation);
+   if (submitted && (sceneActive || (canvasReady && m_canvasWidth > 0)))
       SDLDisplayRevealAfterPresent();
+   if(submitted) {
+      const auto now=std::chrono::steady_clock::now();
+      const double interval=m_lastSubmission.time_since_epoch().count()?std::chrono::duration<double,std::milli>(now-m_lastSubmission).count():-1;
+      RenderBackendTrace("frame-pacing modern=%u interval_ms=%.3f render_submit_ms=%.3f acquire_ms=%.3f canvas_ms=%.3f submit_present_ms=%.3f",m_worldRendered?1u:0u,
+         interval,std::chrono::duration<double,std::milli>(now-m_frameStart).count(),
+         std::chrono::duration<double,std::milli>(m_acquiredAt-m_frameStart).count(),
+         std::chrono::duration<double,std::milli>(submitStart-canvasStart).count(),
+         std::chrono::duration<double,std::milli>(now-submitStart).count());
+      m_lastSubmission=now;
+   }
+   if (!submitted && m_modernWorldEnabled)
+   {
+      m_modernWorldEnabled = false;m_restoreWorld = true;
+   }
+   m_worldPreparation = nullptr;
    m_activeCommandBuffer = nullptr;
    m_frameActive = false;
    HandleSwapchainRecreation();
+}
+
+bool cVulkanRuntime::InitializeWorldRenderer()
+{
+   std::string failure;
+   m_modernWorldEnabled = m_worldFeaturesAvailable && m_worldRenderer.Initialize(
+      m_context.PhysicalDevice(),m_context.Device(),m_context.GraphicsQueueFamily(),
+      m_context.RenderPass(),m_context.DepthFormat(),m_context.SwapchainFormat(),m_worldShaderDirectory,failure,m_context.WorldIndirectShadows());
+   if (!m_modernWorldEnabled)
+      std::fprintf(stderr,"Modern world unavailable: %s; retaining legacy renderer\n",
+         failure.empty()?m_context.WorldRenderingUnavailableReason().c_str():failure.c_str());
+   else {
+      dark::ShadowSettings settings;
+      int indirect=1;config_get_int("renderer_shadow_indirect",&indirect);settings.indirect=indirect!=0;
+      int staticDepth=0;config_get_int("renderer_shadow_static_cache",&staticDepth);settings.staticDepthCache=staticDepth!=0;
+      int lightBudget=int(settings.localLights),faceBudget=int(settings.localFaces);
+      config_get_int("renderer_shadow_lights",&lightBudget);
+      config_get_int("renderer_shadow_faces",&faceBudget);
+      settings.localLights=uint32_t(std::clamp(lightBudget,0,int(dark::ShadowSettings::maxLocalLights)));
+      settings.localFaces=uint32_t(std::clamp(faceBudget,0,int(dark::ShadowSettings::maxLocalFaces)));
+      // Retain lower-resolution shadows when camera priority moves a light
+      // outside the high-resolution pool; otherwise its occlusion disappears.
+      int distantShadows=1;config_get_int("renderer_shadow_cache",&distantShadows);
+      if(distantShadows) {
+         settings.cachedLights=dark::ShadowSettings::maxCachedLights;
+         settings.cachedFaces=dark::ShadowSettings::maxCachedFaces;
+      }
+      char filter[32]{};
+      if(config_get_raw("renderer_shadow_filter",filter,sizeof(filter))) {
+         if(std::strcmp(filter,"hard")==0)settings.filter=dark::ShadowFilter::Hard;
+         else if(std::strcmp(filter,"pcf")==0)settings.filter=dark::ShadowFilter::PCF;
+         else if(std::strcmp(filter,"pcss")!=0)
+            std::fprintf(stderr,"Unknown renderer_shadow_filter '%s'; using pcss\n",filter);
+      }
+      m_worldRenderer.SetShadowSettings(settings);
+      const char *name=settings.filter==dark::ShadowFilter::Hard?"hard":settings.filter==dark::ShadowFilter::PCF?"pcf":"pcss";
+      std::fprintf(stderr,"Modern world lighting enabled (experimental, %s shadows, %u local lights / %u faces)\n",name,settings.localLights,settings.localFaces);
+   }
+   return m_modernWorldEnabled;
+}
+
+bool cVulkanRuntime::RenderWorld()
+{
+   if (!m_modernWorldEnabled || !m_frameActive || m_worldRendered ||
+       !dark::GetWorldScene().hasCamera || dark::GetWorldScene().meshes.empty()) return false;
+   int x,y,width,height;
+   const auto extent=m_context.SwapchainExtent();
+   RenderBackendVulkanGetViewport(m_width,m_height,extent.width,extent.height,0,&x,&y,&width,&height);
+   if (width<=0 || height<=0) return false;
+   std::string failure;
+   const auto recordStart=std::chrono::steady_clock::now();
+   m_worldPreparation=m_worldRenderer.Record(m_context.FrameIndex(),dark::GetWorldScene(),
+      uint32_t(width),uint32_t(height),failure);
+   if (!m_worldPreparation)
+   {
+      std::fprintf(stderr,"Modern world disabled: %s; retaining legacy renderer\n",failure.c_str());
+      m_modernWorldEnabled = false;m_worldFeaturesAvailable = false;
+      return false;
+   }
+   m_worldRenderer.Composite(m_activeCommandBuffer,m_context.FrameIndex(),x,y,uint32_t(width),uint32_t(height));
+   m_renderer.InvalidateDrawState();
+   const auto shadows=m_worldRenderer.GetShadowWorkload(m_context.FrameIndex());
+   RenderBackendTrace("world-shadow-culling bounds_tests=%u",shadows.boundsTests);
+   RenderBackendTrace("world-shadow-submission batches=%u",shadows.drawBatches);
+   RenderBackendTrace("world-shadow-static rendered=%u reused=%u copies=%u",shadows.staticRendered,shadows.staticReused,shadows.depthCopies);
+   RenderBackendTrace("world-shadow-memory slot_bytes=%llu",static_cast<unsigned long long>(shadows.depthMemoryBytes));
+   const auto &selection=m_worldRenderer.GetShadowSelection();
+   RenderBackendTrace("world-shadow-budget eligible_lights=%u selected_lights=%u selected_faces=%u",
+      selection.eligibleLocalLights,uint32_t(selection.localLights.size()),selection.localFaces);
+   RenderBackendTrace("world-shadow-cache selected_lights=%u",uint32_t(selection.cachedLights.size()));
+   RenderBackendTrace("world-shadows slot=%u extent=%ux%u rendered=%u reused=%u draws=%u previous_slot_gpu_ms=%.3f previous_world_gpu_ms=%.3f record_cpu_ms=%.3f",m_context.FrameIndex(),uint32_t(width),uint32_t(height),
+      shadows.renderedViews,shadows.reusedViews,shadows.drawCalls,shadows.gpuMilliseconds,shadows.worldGpuMilliseconds,
+      std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-recordStart).count());
+   RenderBackendTrace("world-record-cpu plan_ms=%.3f uploads_tiles_ms=%.3f shadows_ms=%.3f lighting_ms=%.3f",
+      shadows.recordCpuMilliseconds[0],shadows.recordCpuMilliseconds[1],shadows.recordCpuMilliseconds[2],shadows.recordCpuMilliseconds[3]);
+   RenderBackendTrace("world-gpu-phases previous_depth_ms=%.3f previous_lighting_ms=%.3f",
+      shadows.depthLightingGpuMilliseconds[0],shadows.depthLightingGpuMilliseconds[1]);
+   const auto textures=m_worldRenderer.GetTextureWorkload(m_context.FrameIndex());
+   RenderBackendTrace("world-textures created_images=%u created_staging=%u uploads=%u evicted_images=%u cached_bytes=%llu",
+      textures.createdImages,textures.createdStagingBuffers,textures.uploads,textures.evictedImages,static_cast<unsigned long long>(textures.cachedBytes));
+   m_worldRendered=true;return true;
 }
 
 void cVulkanRuntime::PresentProgress()
@@ -847,3 +982,9 @@ void DarkRenderPresentRect(const void *pixels, int width, int height,
 }
 void DarkRenderInvalidateCanvas()
 { VulkanRuntime().InvalidateCanvas(); }
+extern "C" int RenderBackendWorldEnabled(void) { return VulkanRuntime().WorldEnabled()?1:0; }
+extern "C" int RenderBackendRenderWorld(void)
+{
+   try { return VulkanRuntime().RenderWorld()?1:0; }
+   catch(const std::exception &error) { std::fprintf(stderr,"Modern world failed: %s\n",error.what());return 0; }
+}

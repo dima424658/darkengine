@@ -130,6 +130,10 @@ typedef struct _GUID CLSID;
 #ifndef DECLSPEC_NOTHROW
 #define DECLSPEC_NOTHROW __declspec(nothrow)
 #endif
+// basetyps.h uses WINAPI; avoid importing unrelated Windows type names.
+#ifndef WINAPI
+#define WINAPI __stdcall
+#endif
 #include <winerror.h>
 #include <basetyps.h>
 #else
@@ -701,8 +705,10 @@ typedef unsigned char   tResultCode;
     MAKE_HRESULT(severity, FACILITY_ITF, ((unsigned long)(subsystem) << 8) | ((unsigned long)(code)))
 
 #define FACILITY_ITF    4
+#ifndef MAKE_HRESULT
 #define MAKE_HRESULT(sev,fac,code) \
     ((HRESULT) (((unsigned long)(sev)<<31) | ((unsigned long)(fac)<<16) | ((unsigned long)(code))) )
+#endif
 
 
 //

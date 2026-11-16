@@ -897,6 +897,12 @@ BOOL CreatureGetRenderHandle(const ObjID objID, long *pHandle)
 
 ///////////////////////////////////////////////////
 
+int CreatureGetRenderJointCount(ObjID objID)
+{
+   cCreature *creature = CreatureFromObj(objID);
+   return creature ? creature->GetCreatureDesc()->nJoints : 0;
+}
+
 void CreatureMeshJointPosCallback(const mms_model *m, const int jointID, mxs_trans *pTrans)
 {
    // A model can remain in the hardware render queue for the rest of the

@@ -423,6 +423,12 @@ void cVulkanSceneRenderer::ResetPipelines()
       if (frame) frame->ResetDrawState();
 }
 
+void cVulkanSceneRenderer::InvalidateDrawState()
+{
+   if (m_frameIndex < m_frames.size() && m_frames[m_frameIndex])
+      m_frames[m_frameIndex]->ResetDrawState();
+}
+
 void cVulkanSceneRenderer::BeginFrame(uint32_t frameIndex)
 {
    if (!m_context || frameIndex >= m_frames.size())

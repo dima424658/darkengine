@@ -111,7 +111,7 @@ static void _do_generic_props(ObjID obj, IProperty *prop, eTweqDo action, int xt
 {
    sTweqBaseState *state;
    IPropertyStore *store;
-   Verify(SUCCEEDED(prop->QueryInterface(IID_IPropertyStore,(void **)&store)));
+   Verify(SUCCEEDED(prop->QueryInterface(IID_IDarkPropertyStore,(void **)&store)));
    sDatum dat; 
    if (!store->Get(obj,&dat))
    {

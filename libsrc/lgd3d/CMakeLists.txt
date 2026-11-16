@@ -4,7 +4,13 @@ add_library(dark_lgd3d STATIC
   legacy_primitives.c
   legacy_texture_manager.c
   vulkan.cpp
+  world_scene.cpp
+  world_shadows.cpp
+  vulkan_world_geometry.cpp
+  vulkan_world_features.cpp
+  vulkan_shadow_maps.cpp
   vulkan_context.cpp
+  vulkan_world_renderer.cpp
   vulkan_render_backend.cpp
   vulkan_scene_renderer.cpp
 )

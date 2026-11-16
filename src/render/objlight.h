@@ -17,6 +17,9 @@
 #include <mlight.h>
 #include <darklimit.h>
 
+// Native sunlight is represented as a point source at this distance.
+#define OBJLIGHT_SUNLIGHT_DISTANCE 125.0f
+
 // objID of object to be highlighted in the world
 EXTERN ObjID highlit_obj;
 
