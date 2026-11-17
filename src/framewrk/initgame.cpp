@@ -14,6 +14,7 @@
 #include <loopapi.h>
 #include <config.h>
 #include <stdlib.h>
+#include <mprintf.h>
 
 #include <init.h>
 #include <gamemode.h>
@@ -112,7 +113,13 @@ tResult LGAPI AppInit()
    char buf[260];
    const char *load_var = quickstart ? "quickstart" : "file";
    if (config_get_raw(load_var,buf,sizeof(buf)))
-      dbLoad(buf,kFiletypeAll);
+   {
+      if (dbLoad(buf,kFiletypeAll) == 0)
+      {
+         mprintf("Unable to load mission '%s' (%s).\n",buf,load_var);
+         return E_FAIL;
+      }
+   }
    else if (!DarkContentShowPicker())
       dbBuildDefault();
 
