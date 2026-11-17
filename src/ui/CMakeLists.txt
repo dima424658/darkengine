@@ -15,5 +15,5 @@ set(dark_ui_sources
 
 target_sources(dark_game_core PRIVATE ${dark_ui_sources})
 if(TARGET dark_dromed_core)
-  target_sources(dark_dromed_core PRIVATE ${dark_ui_sources})
+  target_sources(dark_dromed_core PRIVATE ${dark_ui_sources} winui.cpp)
 endif()

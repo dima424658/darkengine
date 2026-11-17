@@ -106,7 +106,7 @@ if(TARGET dark_dromed_core)
 endif()
 
 if(TARGET dark_dromed_core)
-  target_sources(dark_dromed_core PRIVATE uiedit.c editorplatform.cpp objedit.cpp winui.cpp filemenu.cpp menus.cpp)
+  target_sources(dark_dromed_core PRIVATE uiedit.c editorplatform.cpp objedit.cpp filemenu.cpp menus.cpp)
 endif()
 
 if(TARGET dark_dromed_core)
