@@ -68,8 +68,9 @@ typedef fix fix16;
 typedef ushort fixang;
 
 /* makes a fixed point number with integral part a and fractional part b. */
-#define fix_make_pos(a,b) ((fix) ((((sint32)(a))<<16)|(b)) )
-#define fix_make(a,b) (((a) < 0) ? (-fix_make_pos(-(a), (b))) : (fix_make_pos((a), (b))))
+// Assemble the legacy bit pattern without shifting or negating signed values.
+// In particular, fix_make(-1, 0x8000) is -0.5, not -1.5.
+#define fix_make(a,b) ((fix)(((uint32_t)(a) << 16) | (uint32_t)(b)))
 
 #define FIX_UNIT fix_make(1,0)
 
