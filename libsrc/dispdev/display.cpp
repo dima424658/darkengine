@@ -94,6 +94,7 @@ public:
       // Dark closes the logical display device during mode changes. Keep the
       // native window and presentation context alive for menus, movies, and
       // gameplay.
+      DarkRenderInvalidateCanvas();
       m_pixels.clear();
       m_mode = -1;
       if (m_cap)
@@ -117,6 +118,7 @@ public:
       }
 
       const int rowBytes = modeInfo.w * (modeInfo.bitDepth == 8 ? 1 : 2);
+      DarkRenderInvalidateCanvas();
       m_pixels.assign(static_cast<size_t>(rowBytes) * modeInfo.h, 0);
       m_cap->aspect = FIX_UNIT;
       m_cap->w = modeInfo.w;
@@ -195,7 +197,9 @@ public:
 
    HRESULT PageFlip() override
    {
-      Flush();
+      // An offscreen hardware overlay was already captured by ScrnEndFrame.
+      // Its visible compatibility buffer deliberately has not been blitted.
+      if (!DarkRenderHasDirectCanvas()) Flush();
       return S_OK;
    }
 
@@ -227,7 +231,13 @@ public:
          m_cap->rowBytes, modeInfo.bitDepth, m_palette);
    }
 
-   void FlushRect(int, int, int, int) override { Flush(); }
+   void FlushRect(int x0, int y0, int x1, int y1) override
+   {
+      if (m_mode < 0 || IsFlushingPaused()) return;
+      const sGrModeInfo &modeInfo = grd_mode_info[m_mode];
+      DarkRenderPresentRect(m_pixels.data(), modeInfo.w, modeInfo.h,
+         m_cap->rowBytes, modeInfo.bitDepth, m_palette, x0, y0, x1, y1);
+   }
    BOOL SetGamma(double gamma) override
    {
       RenderBackendSetGamma(static_cast<float>(gamma));

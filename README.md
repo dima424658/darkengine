@@ -356,7 +356,12 @@ remain unchanged; omit these overrides for the normal pacing behavior.
 The legacy HUD/menu canvas keeps its original 8/15/16-bit pixels. Vulkan
 decodes their colors, looks up palettes, filters, and composites them on the
 GPU. Unchanged canvas rows are retained, and unchanged frame-slot textures
-are not uploaded again. The legacy UI drawing code still runs on the CPU.
+are not uploaded again. Hardware game overlays are captured directly from
+the offscreen canvas, without a full copy into the display buffer or a second
+capture at page flip. Rectangle flushes commit only their requested pixels;
+clearing uses previously occupied overlay rows when a complete snapshot is
+available. Menus, retained editor panes, and uncertain snapshots use the
+normal fallback path. The legacy UI drawing code still runs on the CPU.
 See the [canvas regression check](tools/vulkan_canvas_test/README.md) for
 pixel comparisons against the previous CPU conversion.
 

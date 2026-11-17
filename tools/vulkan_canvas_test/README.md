@@ -3,11 +3,14 @@
 This standalone Linux check needs CMake, a C++17 compiler, SDL3 development
 files, Vulkan headers/loader, and the built engine shaders. It tests retained
 canvas updates, padding, palette-only changes, transparency changes, format
-changes, and rejected inputs. The GPU fixtures compare the old CPU conversion
+changes, clipped and partial rectangle updates, sparse clearing, removed HUD
+pixels, and rejected inputs. The GPU fixtures compare the old CPU conversion
 on the left against the packed-pixel shader on the right, with all 65,536 input
 values for 15/16-bit formats. Twelve frames cover 8/15/16-bit canvases,
 nearest/linear filtering, and opaque/transparent composition. Source rows have
-padding and odd pixel widths.
+padding and odd pixel widths. Each fixture also commits a one-pixel update
+while changing another pixel outside the flush; the latter must remain
+uncommitted, including when the pixels share a packed GPU texel.
 
 From the repository root:
 
@@ -38,3 +41,11 @@ over 360 frames after 60 warm-up frames, using `SlowFrame=0 min_frame_time=0
 vsync=0`; MangoHud was enabled for the final run. This measures the initial
 mission view, not every mission or camera position. The game, DromEd resize,
 and the GPU fixtures passed Khronos synchronization validation on this PC.
+
+Direct offscreen capture, avoiding duplicate page-flip capture, and sparse
+overlay clearing subsequently raised the same view to 542.2 FPS (1.85 ms),
+with a 95th-percentile frame time of 2.66 ms. The simulation clock advanced
+664 ms over 664 ms of measured wall time. This used the same uncapped flags,
+MangoHud, and 360-frame measurement window. Inventory changes, entering the
+simulation menu, returning with Escape, and editor resize were also checked
+under Vulkan synchronization validation.

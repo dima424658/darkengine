@@ -738,7 +738,14 @@ void ScrnClearHardwareOverlay(void)
    {
       ScrnLockDrawCanvas();
       gr_push_canvas(_draw_canv);
-      gr_clear(0);
+      // The retained snapshot knows which rows held nonzero overlay pixels.
+      // If the canvas/source or clipping changed, use the normal full clear.
+      if (grd_mode < 0 || grd_clip.left != 0 || grd_clip.top != 0 ||
+          grd_clip.right != _draw_canv->bm.w || grd_clip.bot != _draw_canv->bm.h ||
+          !RenderBackendClearOverlayPixels(_draw_canv->bm.bits,
+             _draw_canv->bm.w, _draw_canv->bm.h, _draw_canv->bm.row,
+             grd_mode_info[grd_mode].bitDepth))
+         gr_clear(0);
       gr_pop_canvas();
       ScrnUnlockDrawCanvas();
    }
@@ -794,6 +801,27 @@ void ScrnForceUpdateRect(Rect *r)
 
       MouseLock++;
       compose_cursor(CURSOR_DRAW);
+
+      // Hardware scenes only need an immutable snapshot of this overlay.
+      // Avoid copying it through the full visible software buffer first.
+      if (grd_mode >= 0 && !IDisplayDevice_IsFlushingPaused(disp))
+      {
+         unsigned char palette[768];
+         int depth = grd_mode_info[grd_mode].bitDepth;
+         const unsigned char *colors = NULL;
+         if (depth == 8 && IDisplayDevice_GetPalette(disp, 0, 256, palette))
+            colors = palette;
+         if (RenderBackendPresentCanvasRect(_off_screen->bm.bits,
+               _off_screen->bm.w, _off_screen->bm.h, _off_screen->bm.row,
+               depth, colors, r->ul.x, r->ul.y, r->lr.x, r->lr.y))
+         {
+            compose_cursor(CURSOR_UNDRAW);
+            MouseLock--;
+            IDisplayDevice_Unlock(disp);
+            SafeRelease(disp);
+            return;
+         }
+      }
 
       gr_push_canvas(grd_visible_canvas);
       clip = grd_gc.clip;

@@ -55,6 +55,13 @@ public:
    void BeginApplicationFrame();
    void EndApplicationFrame();
    void PresentProgress();
+   bool PresentCanvasRect(const void *pixels, int width, int height, int rowBytes,
+      int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
+   bool ClearOverlay(void *pixels, int width, int height, int rowBytes, int depth);
+   bool HasDirectCanvas() const { return m_directCanvas; }
+   void InvalidateCanvas();
+   void PresentRect(const void *pixels, int width, int height, int rowBytes,
+      int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
    void Present(const void *pixels, int width, int height, int rowBytes,
       int bitDepth, const uint8_t *palette);
    bool PresentMovieFrame(const void *rgba, int width, int height,
@@ -64,8 +71,8 @@ private:
    void HandleSwapchainRecreation();
    void ProcessPendingLifecycleResize();
    bool ApplyPendingResize();
-   void CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
-      int depth, const uint8_t *palette);
+   bool CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
+      int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
    bool PrepareCanvasTexture();
    void DrawCanvas(vk::CommandBuffer commandBuffer, bool transparent);
 
@@ -97,6 +104,9 @@ private:
    bool m_exitHookRegistered{};
    void *m_movieTexture{};
    cCanvasSnapshot m_canvas;
+   const void *m_canvasSource{};
+   bool m_directCanvas{};
+   bool m_overlayClearEligible{};
 };
 
 cVulkanRuntime &VulkanRuntime()
@@ -221,22 +231,33 @@ bool cVulkanRuntime::ApplyPendingResize()
    return true;
 }
 
-void cVulkanRuntime::CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
-   int depth, const uint8_t *palette)
+bool cVulkanRuntime::CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
+   int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
 {
    try
    {
-      if (m_canvas.Update(pixels, width, height, rowBytes, depth, palette,
-            RenderBackendVulkanSceneActive() != 0))
+      if (m_canvasSource != pixels)
+      {
+         x0 = y0 = 0;
+         x1 = width;
+         y1 = height;
+      }
+      if (m_canvas.UpdateRect(pixels, width, height, rowBytes, depth, palette,
+            RenderBackendVulkanSceneActive() != 0, x0, y0, x1, y1))
       {
          m_canvasWidth = width;
          m_canvasHeight = height;
+         m_canvasSource = pixels;
+         // Partial flushes cannot prove that other rows were not written.
+         m_overlayClearEligible = x0 <= 0 && y0 <= 0 && x1 >= width && y1 >= height;
+         return true;
       }
    }
    catch (const std::exception &)
    {
       // Retain the last complete canvas if allocating a new snapshot fails.
    }
+   return false;
 }
 
 bool cVulkanRuntime::PrepareCanvasTexture()
@@ -470,6 +491,9 @@ void cVulkanRuntime::Close()
    m_drawableWidth = m_drawableHeight = 0;
    m_canvasWidth = m_canvasHeight = 0;
    m_canvas = cCanvasSnapshot{};
+   m_canvasSource = nullptr;
+   m_directCanvas = false;
+   m_overlayClearEligible = false;
    m_frameActive = false;
    m_canvasTextureWidths.fill(0);
    m_canvasTextureHeights.fill(0);
@@ -544,6 +568,13 @@ void cVulkanRuntime::SetPhysicalDeviceIndex(int index)
 void cVulkanRuntime::BeginApplicationFrame()
 {
    ZoneScopedN("Vulkan begin frame");
+   if (!m_frameActive)
+   {
+      // No direct capture in the preceding frame (e.g. paused flushing or a
+      // menu) means its writes are not covered by the retained overlay rows.
+      m_overlayClearEligible = m_overlayClearEligible && m_directCanvas;
+      m_directCanvas = false;
+   }
    ProcessPendingLifecycleResize();
    if (!m_windowOpen || m_frameActive ||
        m_windowMinimized.load(std::memory_order_acquire) ||
@@ -605,7 +636,49 @@ void cVulkanRuntime::PresentProgress()
 
 void cVulkanRuntime::Present(const void *pixels, int width, int height, int rowBytes,
    int bitDepth, const uint8_t *palette)
-{ CaptureCanvas(pixels, width, height, rowBytes, bitDepth, palette); }
+{
+   PresentRect(pixels, width, height, rowBytes, bitDepth, palette, 0, 0, width, height);
+}
+
+void cVulkanRuntime::PresentRect(const void *pixels, int width, int height,
+   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
+{
+   m_directCanvas = false;
+   CaptureCanvas(pixels, width, height, rowBytes, depth, palette, x0, y0, x1, y1);
+}
+
+void cVulkanRuntime::InvalidateCanvas()
+{
+   m_canvas = cCanvasSnapshot{};
+   m_canvasWidth = m_canvasHeight = 0;
+   m_canvasSource = nullptr;
+   m_directCanvas = false;
+   m_overlayClearEligible = false;
+   m_canvasTextureGenerations.fill(0);
+   m_canvasPaletteGenerations.fill(0);
+}
+
+bool cVulkanRuntime::PresentCanvasRect(const void *pixels, int width, int height,
+   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
+{
+   // Preserve the legacy visible-canvas path for menus, software rendering,
+   // retained editor panes, and out-of-frame progress updates.
+   if (!m_frameActive || !RenderBackendVulkanSceneActive() || RenderBackendPreserveCanvas())
+      return false;
+   if (!CaptureCanvas(pixels, width, height, rowBytes, depth, palette, x0, y0, x1, y1))
+      return false;
+   m_directCanvas = true;
+   return true;
+}
+
+bool cVulkanRuntime::ClearOverlay(void *pixels, int width, int height,
+   int rowBytes, int depth)
+{
+   const bool eligible = m_overlayClearEligible;
+   m_overlayClearEligible = false;
+   return eligible && pixels == m_canvasSource &&
+      m_canvas.ClearOverlay(pixels, width, height, rowBytes, depth);
+}
 
 bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    int rowBytes)
@@ -768,3 +841,28 @@ bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
 
 extern "C" void RenderBackendSetPhysicalDeviceIndex(int index)
 { VulkanRuntime().SetPhysicalDeviceIndex(index); }
+
+extern "C" int RenderBackendPresentCanvasRect(const void *pixels, int width, int height,
+   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
+{
+   return VulkanRuntime().PresentCanvasRect(pixels, width, height, rowBytes,
+      depth, palette, x0, y0, x1, y1);
+}
+
+extern "C" int RenderBackendClearOverlayPixels(void *pixels, int width, int height,
+   int rowBytes, int depth)
+{
+   return VulkanRuntime().ClearOverlay(pixels, width, height, rowBytes, depth);
+}
+
+bool DarkRenderHasDirectCanvas()
+{ return VulkanRuntime().HasDirectCanvas(); }
+
+void DarkRenderPresentRect(const void *pixels, int width, int height,
+   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
+{
+   VulkanRuntime().PresentRect(pixels, width, height, rowBytes, depth,
+      palette, x0, y0, x1, y1);
+}
+void DarkRenderInvalidateCanvas()
+{ VulkanRuntime().InvalidateCanvas(); }

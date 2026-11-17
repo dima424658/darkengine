@@ -38,6 +38,38 @@ static void TestSnapshot()
    Require(!canvas.Update(source, 0x7fffffff, 2, 4, 16, nullptr, false), "reject overflow");
    Require(canvas.Update(source, 1, 2, 4, 16, nullptr, false) &&
       canvas.Pixels()[0] == 1 && canvas.Pixels()[4] == 4, "depth and dimensions change");
+
+   cCanvasSnapshot partial;
+   uint8_t rows[] = {1,0, 0,0, 2,0, 99,99,
+                    0,0, 0,0, 0,0, 99,99,
+                    0,0, 3,0, 0,0, 99,99};
+   Require(partial.UpdateRect(rows, 3, 3, 8, 16, nullptr, true, 1, 2, 2, 3),
+      "first partial flush initializes whole snapshot");
+   Require(partial.Pixels()[0] == 1 && partial.Pixels()[4] == 2,
+      "first flush includes unflushed source pixels");
+   auto generationBeforePatch = partial.Generation();
+   rows[0] = 77; // Outside the flush: must remain uncommitted.
+   rows[18] = 0;
+   Require(partial.UpdateRect(rows, 3, 3, 8, 16, nullptr, true, 1, 2, 2, 3) &&
+      partial.Pixels()[0] == 1 && partial.Pixels()[18] == 0 &&
+      partial.Generation() == generationBeforePatch + 1, "partial commit and removed pixel");
+   auto cleared = partial.Pixels();
+   for (int y = 0; y < 3; ++y) cleared.at(y * 8 + 6) = cleared.at(y * 8 + 7) = 99;
+   Require(partial.ClearOverlay(cleared.data(), 3, 3, 8, 16), "sparse overlay clear");
+   for (int y = 0; y < 3; ++y)
+   {
+      for (int x = 0; x < 6; ++x) Require(cleared[y * 8 + x] == 0, "removed overlay pixel");
+      Require(cleared[y * 8 + 6] == 99 && cleared[y * 8 + 7] == 99, "clear preserves padding");
+   }
+   Require(!partial.ClearOverlay(cleared.data(), 2, 3, 8, 16), "clear rejects different canvas");
+   Require(partial.Update(cleared.data(), 3, 3, 8, 16, nullptr, true) &&
+      partial.Generation() == generationBeforePatch + 2, "cleared HUD committed");
+   Require(partial.UpdateRect(rows, 3, 3, 8, 16, nullptr, true, -5, -5, 1, 1) &&
+      partial.Pixels()[0] == 77 && partial.Pixels()[4] == 0, "clipped rectangle");
+   const auto unchanged = partial.Generation();
+   Require(partial.UpdateRect(rows, 3, 3, 8, 16, nullptr, false, 50, 50, 60, 60) &&
+      partial.Generation() == unchanged && !partial.Transparent(), "empty clipped flush");
+
 }
 
 int main(int argc, char **argv)
@@ -110,6 +142,16 @@ try
             cCanvasSnapshot canvas;
             Require(canvas.Update(source.data(), width, height, sourceStride, depth,
                palette.data(), transparent), "fixture snapshot");
+            // Commit one pixel while deliberately changing another outside
+            // the flush, verifying packed-texel neighbors remain retained.
+            const int bytesPerPixel = depth == 8 ? 1 : 2;
+            std::fill_n(source.data() + bytesPerPixel, bytesPerPixel, 0);
+            std::fill_n(source.data(), bytesPerPixel, 0xff);
+            Require(canvas.UpdateRect(source.data(), width, height, sourceStride, depth,
+               palette.data(), transparent, 1, 0, 2, 1), "partial fixture update");
+            if (depth == 8) std::copy_n(palette.data(), 3, rgba.data() + 4);
+            else std::fill_n(rgba.data() + 4, 3, 0);
+            rgba[7] = transparent ? 0 : 255;
             void *reference = renderer.CreateTexture(width, height, rgba.data(), width * 4);
             void *packed = renderer.CreateTexture(canvas.RowBytes() / 4, height,
                canvas.Pixels().data(), canvas.RowBytes());

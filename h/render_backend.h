@@ -34,6 +34,14 @@ enum eRenderBackendBlend {
 };
 
 int RenderBackendAvailable(void);
+// Commit a legacy offscreen overlay without a second visible-buffer copy.
+// Returns zero when the caller must use the normal display flush path.
+int RenderBackendPresentCanvasRect(const void *pixels, int width, int height,
+  int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
+// Clear previously occupied overlay rows; zero means a full clear is required.
+int RenderBackendClearOverlayPixels(void *pixels, int width, int height,
+  int rowBytes, int depth);
+
 void RenderBackendSetGamma(float gamma);
 // Select a physical device by the index reported through the legacy lgd3d
 // device enumeration. Negative values restore automatic device selection.
