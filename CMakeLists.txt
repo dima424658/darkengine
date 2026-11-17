@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 project(DarkEngine LANGUAGES C CXX)
+
 if(NOT WIN32)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
+
 if(APPLE)
-  enable_language(OBJCXX)
+  enable_language(OBJC)
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFFmpeg.cmake")
