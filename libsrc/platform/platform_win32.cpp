@@ -1,4 +1,4 @@
-#include "../win32_platform.h"
+#include "win32_platform.h"
 
 #include <platform_services.h>
 #include <platform_io.h>

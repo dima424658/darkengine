@@ -558,9 +558,12 @@ void GFHSetCoordMask(ulong mask)
 
 void get_scaled_rect(Ref ref, Rect* bounds,Rect* out, Rect* anchor)
 {
-   Rect scale = *(Rect*)RefGet(REF_RECT_GFHbounds);
-   Rect source = ((RectElem*)RefGet(ref))->area;
-   Rect ancr   = ((RectElem*)RefGet(ref))->anchor;
+   Rect scale;
+   RectElem element;
+   Rect source, ancr;
+   memcpy(&scale, RefGet(REF_RECT_GFHbounds), sizeof(scale));
+   memcpy(&element, RefGet(ref), sizeof(element));
+   source=element.area; ancr=element.anchor;
    short sw = RectWidth(&scale);
    short sh = RectHeight(&scale);
    short bw = RectWidth(bounds);

@@ -11,6 +11,7 @@
 // surface textures/parameters, sizing and stretching of the brush
 // itself.  this does not include brush lists or construction.  
 
+#include <string.h>
 #include <stdlib.h>
 #include <platform_io.h>
 #include <rand.h>
@@ -78,6 +79,10 @@ void brushSysFree(void)
 void brushZero(editBrush *curBrush, int primal_brush)
 {
    int i;
+
+   // Object brushes are reconstructed on load; never serialize uninitialized
+   // timestamps, disabled-grid fields, or unused texture slots.
+   memset(curBrush, 0, sizeof(*curBrush));
 
    curBrush->pos.el[0]=0.0;
    curBrush->pos.el[1]=0.0;

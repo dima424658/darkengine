@@ -81,11 +81,17 @@ void ResSetFreeCallback(tResFreeCallback *);
 
 //  Each compound resource starts with a Ref Table
 
+#pragma pack(push, 1)
 typedef struct
 {
    RefIndex numRefs;                             // # items in compound resource
    int32_t  offset[1];                           // offset to each item (numRefs + 1 of them)
 } RefTable;
+#pragma pack(pop)
+#ifdef __cplusplus
+static_assert(sizeof(RefTable)==6, "compound resource disk layout");
+#endif
+
 
 void *  RefLock(Ref ref);                        // lock compound res, get ptr to item
 void *  RefLockExact(Ref ref);
@@ -323,6 +329,7 @@ void ResUnmake(Id id);                           // unmake a resource
 
 //  Resource-file disk format:  header, data, dir
 
+#pragma pack(push, 1)
 typedef struct
 {
    char  signature[16];                          // "LG ResFile v2.0\n",
@@ -348,6 +355,11 @@ typedef struct
                                                  // (this size is valid disk size even if not comp.)
    int32_t type: 8;                                 // resource type
 } ResDirEntry;
+#pragma pack(pop)
+#ifdef __cplusplus
+static_assert(sizeof(ResFileHeader)==128 && sizeof(ResDirHeader)==6 && sizeof(ResDirEntry)==10, "resource disk layout");
+#endif
+
 
 //  Active resource file table
 

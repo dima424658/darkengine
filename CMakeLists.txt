@@ -31,10 +31,6 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/EngineConfig.cmake")
 
 add_subdirectory(libsrc)
 add_subdirectory(src)
-add_subdirectory(unixsrc)
-if(WIN32)
-  add_subdirectory(winsrc)
-endif()
 add_subdirectory(assets)
 
 if(NOT ANDROID AND DARK_COMPILE_VULKAN_SHADERS)

@@ -6,6 +6,7 @@
 // $Header: r:/t2repos/thief2/src/editor/uiedit.c,v 1.33 2000/02/19 13:13:40 toml Exp $
 #include <lg.h>
 #include <stdlib.h>
+#include <string.h>
 #include <comtools.h>
 #include <res.h>
 #include <gadget.h>
@@ -95,7 +96,7 @@ static Rect* get_layout_rect(Layout* lay, int idx)
    Rect* r = &outrect;
 
    // load rect from resource
-   *r = *(Rect*)RefGet(MKREF(lay->id,idx));
+   memcpy(r, RefGet(MKREF(lay->id,idx)), sizeof(*r));
    // scale
    r->ul.x = r->ul.x * rootdims.x / lay->dims.x;
    r->lr.x = r->lr.x * rootdims.x / lay->dims.x;

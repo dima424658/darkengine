@@ -143,9 +143,11 @@ until its editing and round-trip behavior is comprehensively validated.
 
 The CMake runner uses the shared `lgd3d` Vulkan renderer through SDL3 on
 Windows, macOS, Linux, and Android. The Win32 DirectDraw/GDI display provider
-and renderer stub have been removed. `winsrc` continues to provide Windows
-platform services while the CMake game and editor use Looking Glass's `lgd3d`
-interface.
+and renderer stub have been removed. Platform services live in `libsrc/platform`,
+with selected Windows and POSIX implementations. Shared editor providers live in
+`src/editor`, and both executables use the shared entrypoint in `src/entry`.
+DromEd uses `uiedit.c` on every desktop platform, NFDe native file dialogs, and
+currently has no native menubar.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
 synchronization, and filesystem operations cross `platform_services.h` and
@@ -302,6 +304,8 @@ cd "/path/to/Thief II"
 - The Vulkan SDK (including `glslc`) and the standard CMake build tools.
 - OpenAL Soft at runtime, loaded dynamically. Ogg Vorbis decoding is built
   statically from the pinned submodules.
+- D-Bus development headers for DromEd's native file dialogs, plus a desktop
+  portal with a file chooser backend at runtime.
 - A retail TDP, Thief Gold, or Thief II installation.
 
 For Ubuntu/Debian:
@@ -309,7 +313,7 @@ For Ubuntu/Debian:
 ```sh
 sudo apt update
 sudo apt install build-essential cmake ninja-build bison libvulkan-dev glslc \
-  libopenal1
+  libopenal1 libdbus-1-dev xdg-desktop-portal
 ```
 
 #### Build
@@ -320,7 +324,9 @@ cmake --preset linux
 cmake --build --preset linux-release -j "$(nproc)"
 ```
 
-The result is `build-linux/thief-runner`.
+The results are `build-linux/thief-runner` and, with `DARK_BUILD_DROMED=ON`,
+`build-linux/DromEd`. Platform consolidation details and Linux validation are
+recorded in [the migration notes](docs/platform-consolidation.md).
 SDL3, zlib, libpng, Squirrel, libogg, libvorbis, and FFmpeg are built statically
 from those submodules.
 

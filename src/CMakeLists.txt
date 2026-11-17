@@ -34,19 +34,16 @@ if(DARK_BUILD_DROMED)
 
   if(MSVC)
     target_compile_options(dark_dromed_core PRIVATE
-      "/FI${PROJECT_SOURCE_DIR}/unixsrc/platform/editor_compat.h")
+      "/FI${PROJECT_SOURCE_DIR}/libsrc/platform/editor_compat.h")
   else()
     target_compile_options(dark_dromed_core PRIVATE
       $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
       $<$<COMPILE_LANGUAGE:C>:-fms-extensions>
       $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
-      "$<$<COMPILE_LANGUAGE:C>:-include${PROJECT_SOURCE_DIR}/unixsrc/platform/editor_compat.h>"
+      "$<$<COMPILE_LANGUAGE:C>:-include${PROJECT_SOURCE_DIR}/libsrc/platform/editor_compat.h>"
     )
   endif()
 
-  if(APPLE)
-    target_link_libraries(dark_dromed_core PRIVATE "-framework AppKit")
-  endif()
 
   target_include_directories(dark_dromed_core BEFORE PRIVATE
     "${PROJECT_SOURCE_DIR}/src"
@@ -123,7 +120,7 @@ if(DARK_BUILD_DROMED)
 
   if(APPLE)
     target_link_libraries(dromed PRIVATE dark_engine_config
-      ${dark_runner_libraries} ${dark_runner_libraries} m "-framework AppKit")
+      ${dark_runner_libraries} ${dark_runner_libraries} m)
     target_link_options(dromed PRIVATE -Wl,-no_fixup_chains)
   elseif(MSVC)
     target_link_libraries(dromed PRIVATE dark_engine_config
@@ -211,4 +208,13 @@ if(NOT ANDROID)
   if(TARGET dromed)
     install(TARGETS dromed RUNTIME DESTINATION bin)
   endif()
+endif()
+
+target_sources(thief2 PRIVATE entry/main.cpp)
+if(TARGET dromed)
+ target_sources(dromed PRIVATE entry/main.cpp)
+endif()
+
+if(TARGET dromed)
+ target_link_libraries(dromed PRIVATE nfd)
 endif()

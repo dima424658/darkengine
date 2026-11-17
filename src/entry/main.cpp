@@ -2,6 +2,7 @@
 #include <tracy/Tracy.hpp>
 
 #include <cerrno>
+#include <cctype>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
@@ -34,10 +35,9 @@ bool IsDromEdExecutable(const char *path)
 {
     if (!path)
         return false;
-    const char *name = std::strrchr(path, '/');
-    name = name ? name + 1 : path;
-    return std::strstr(name, "dromed") != nullptr ||
-           std::strstr(name, "DromEd") != nullptr;
+    std::string name=std::filesystem::path(path).filename().string();
+    for(char &ch:name)ch=static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+    return name.find("dromed")!=std::string::npos;
 }
 
 bool HasEnabledArgument(int argc, char *argv[], const char *name)
@@ -48,6 +48,7 @@ bool HasEnabledArgument(int argc, char *argv[], const char *name)
             argv[i][length] == '=' && std::atoi(argv[i] + length + 1) != 0)
             return true;
     return false;
+}
 namespace fs = std::filesystem;
 constexpr size_t kResolvedPathCapacity = 4096;
 

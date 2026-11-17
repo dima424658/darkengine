@@ -1,3 +1,5 @@
+add_subdirectory(platform)
+
 # Explicit directories keep source discovery and header search order predictable.
 set(dark_library_projects
   actmovie
@@ -104,7 +106,7 @@ target_include_directories(dark_engine_config INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/vec2"
   # Keep legacy input GUID headers after compapis/inpguid.h.
   "${CMAKE_CURRENT_SOURCE_DIR}/input"
-  $<$<PLATFORM_ID:Windows>:"${PROJECT_SOURCE_DIR}/winsrc">
+  $<$<PLATFORM_ID:Windows>:"${PROJECT_SOURCE_DIR}/libsrc/platform">
 )
 
 # Apply shared settings before a library adds its own dependencies, preserving

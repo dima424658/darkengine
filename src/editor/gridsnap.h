@@ -11,6 +11,8 @@
 #ifndef __GRIDSNAP_H
 #define __GRIDSNAP_H
 
+// Grid is embedded verbatim in BRLIST 1.0 records.
+#pragma pack(push, 1)
 typedef struct
 {
    mxs_real line_spacing;
@@ -18,6 +20,11 @@ typedef struct
    mxs_angvec orientation;
    bool grid_enabled;
 } Grid;
+#pragma pack(pop)
+#ifdef __cplusplus
+static_assert(sizeof(Grid)==23, "brush grid disk layout");
+#endif
+
 
  // @HACK: perhaps this should be less goofy than just here, eh?
 EXTERN Grid cur_global_grid;
