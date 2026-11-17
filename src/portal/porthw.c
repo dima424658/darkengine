@@ -504,6 +504,17 @@ void porthw_shutdown(void)
 }
 
 
+// Cached elements point into the world representation. Release them while
+// those cells are still alive, retaining an initialized cache for editor rebuilds.
+void porthw_clear_surface_cache(void)
+{
+   if (elem_list != NULL) {
+      lgd3d_end_frame();
+      porthw_shutdown();
+      porthw_init();
+   }
+}
+
 void porthw_uncache_lightmap(PortalPolygonRenderInfo *render)
 {
    int i = render->cached_surface;
