@@ -140,7 +140,6 @@ EXTERN float g_MeshRenderLowDetailDist2;
 EXTERN BOOL mm_punt_render;
 EXTERN BOOL mm_punt_sort;
 EXTERN BOOL mm_punt_xform;
-EXTERN BOOL lgd3d_blend_trans;
 EXTERN BOOL g_render_on_begin_frame;
 EXTERN BOOL pt_lightmap_first;
 EXTERN BOOL portal_draw_lgd3d;
@@ -184,21 +183,6 @@ static void set_obj_zbias(int n)
    g_obj_zbias = n * (1.0f / 65536.0f);
 }
 
-//zb:
-static void toggle_dithering(void)
-{
-	int huh = lgd3d_is_dithering_on();
-	lgd3d_set_dithering( !huh );
-}
-
-//zb:
-static void toggle_antialiasing(void)
-{
-	int huh = lgd3d_is_antialiasing_on();
-	lgd3d_set_antialiasing( !huh );
-}
-
-
 static void set_invisible(int nVal)
 {
    g_pIsInvisibleProperty->Set(PlayerObject(), nVal);
@@ -215,7 +199,6 @@ static Command all_keys[]=
    { "toggle_draw_lgd3d", TOGGLE_BOOL, &portal_draw_lgd3d, "toggle draw lgd3d"},
    { "toggle_lightmap_first", TOGGLE_BOOL, &pt_lightmap_first, "toggle lightmap rendering order"},
    { "toggle_d3d_buffer", TOGGLE_BOOL, &lgd3d_punt_buffer, "toggle d3d primitive buffering"},
-   { "toggle_d3d_blend_trans", TOGGLE_BOOL, &lgd3d_blend_trans, "toggle transparent texel color search"},
    { "toggle_draw_surface", TOGGLE_BOOL, &portal_punt_draw_surface, "toggle draw surface"},
    { "toggle_hardware_lighting", TOGGLE_BOOL, &punt_hardware_lighting, "toggle hardware lighting"},
    { "toggle_two_pass", TOGGLE_BOOL, &portal_true_two_pass, "toggle two pass rendering"},
@@ -229,8 +212,6 @@ static Command all_keys[]=
    { "set_obj_zbias", FUNC_INT, set_obj_zbias, "set object rendering z bias (in bits)"},
    { "set_znear", FUNC_FLOAT, set_znear, "set max sorting z distance"},
    { "set_zfar", FUNC_FLOAT, set_zfar, "set min sorting z distance"},
-   { "toggle_dithering", FUNC_VOID, toggle_dithering, "toggle dithering"}, //zb
-   { "toggle_antialiasing", FUNC_VOID, toggle_antialiasing, "toggle antialiasing"}, //zb
    { "set_invisible", FUNC_INT, set_invisible, "Set player invisibility"},
 };
 #endif

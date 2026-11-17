@@ -1095,7 +1095,6 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
             uv2[i].v = final[i]->grp.v;
             puv2[i] = &uv2[i];
          }
-         lgd3d_set_light_map_method( LGD3D_MULTITEXTURE_COLOR );
          ptlgd3d_recalc_uv(n, uv2, &info);
 
          // Portal base textures repeat across world-space texture vectors;

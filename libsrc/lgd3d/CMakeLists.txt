@@ -1,8 +1,8 @@
 add_library(dark_lgd3d STATIC
-  clip.c
-  modern.cpp
-  render.c
-  tmgr.c
+  legacy_driver.cpp
+  legacy_textures.cpp
+  legacy_primitives.c
+  legacy_texture_manager.c
   vulkan.cpp
   vulkan_context.cpp
   vulkan_render_backend.cpp

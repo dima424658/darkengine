@@ -17,7 +17,6 @@ typedef struct texture_manager {
    int (*init)(grs_bitmap *bm, int max_textures, int *texture_size_list, int num_texture_sizes, int flags);
    void (*shutdown)(void);
    void (*start_frame)(int frame);
-   void (*end_frame)(void);
    void (*load_texture)(grs_bitmap *bm);
    void (*unload_texture)(grs_bitmap *bm);
    void (*set_texture)(grs_bitmap *bm);
@@ -30,11 +29,7 @@ typedef struct texture_manager {
    void (*reload_texture)(grs_bitmap *bm);
 } texture_manager;
 
-typedef struct texture_driver texture_driver;
-
-extern texture_manager *get_block_texture_manager(texture_driver *driver);
-extern texture_manager *get_dopey_texture_manager(texture_driver *driver);
-
+extern texture_manager *lgd3d_get_texture_manager(void);
 
 extern texture_manager        *g_tmgr;       // this is kinda silly, but it'll do for now...
 

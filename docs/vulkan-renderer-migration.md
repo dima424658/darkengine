@@ -212,9 +212,11 @@ systems only provide the native surface and drawable size:
 - The rendering and resource implementation remains shared across these
   surface providers.
 
-`RenderBackendBeginFrame` and `RenderBackendEndFrame` are hardware-scene
-operations, not necessarily swapchain presentation. DromEd can issue several
-hardware scene passes while rendering its viewports. `DarkRenderBegin/EndApplicationFrame`
+`RenderBackendBeginScene` begins a hardware scene inside the active application
+frame. DromEd can issue several hardware scene passes while rendering its
+viewports. Legacy primitive batches are flushed by `lgd3d_end_frame`; there is
+no separate backend end-scene operation. Texture residency changes never
+restart a scene. `DarkRenderBegin/EndApplicationFrame`
 is the outer frame boundary where one swapchain image is acquired, completed,
 and presented. `DarkRenderPresent` contributes the legacy software canvas to
 that final image.

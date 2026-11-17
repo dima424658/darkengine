@@ -66,8 +66,8 @@ int RenderBackendLogicalToClientPoint(int *x, int *y);
 // defers those updates until the enclosing application frame ends.  Intended
 // for throttled progress UI inside synchronous loading work.
 void RenderBackendPresentProgress(void);
-int RenderBackendBeginFrame(void);
-void RenderBackendEndFrame(void);
+// Begin a legacy 3D scene inside the active application frame.
+int RenderBackendBeginScene(void);
 void RenderBackendDeactivateScene(void);
 void RenderBackendClearDepth(void);
 void RenderBackendClearDepthRect(int x0, int y0, int x1, int y1);

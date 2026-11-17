@@ -114,6 +114,9 @@ extern "C" {
     extern void lgd3d_clean_render_surface(BOOL bDepthBuffToo);
 
     extern void lgd3d_shutdown(void);
+    // Bitmap currently owning a legacy resident texture slot.
+    extern grs_bitmap *lgd3d_get_texture_bitmap(int id);
+    extern BOOL lgd3d_texture_is_resident(int id);
 
     extern void lgd3d_start_frame(int frame);  // frame count passed to texture manager
     extern void lgd3d_end_frame(void);
@@ -157,8 +160,6 @@ extern "C" {
 
     //shading
     // "smooth"(i.e., linera or bilinear) or "nearest point"
-    extern BOOL lgd3d_set_shading(BOOL bSmoothShading); //NEW
-    extern BOOL lgd3d_is_smooth_shading_on(void);
 
 
 
@@ -189,11 +190,7 @@ extern "C" {
     // color range is 0..255
     extern void lgd3d_set_chromakey(int red, int green, int blue);
 
-    extern void lgd3d_set_dithering(int bOn);
-    extern int lgd3d_is_dithering_on(void);
 
-    extern void lgd3d_set_antialiasing(int bOn);
-    extern int lgd3d_is_antialiasing_on(void);
 
 
     //fog
@@ -297,13 +294,8 @@ do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
     // Multi texturing
 
     //2 levels texturing:
-#define LGD3D_MULTITEXTURE_COLOR             0L  //default
-#define LGD3D_MULTITEXTURE_ALPHA             1L  
-#define LGD3D_MULTITEXTURE_BLEND_TEX_ALPHA   2L  
 
-#define LGD3D_MULTITEXTURE_NO_STATES         3L
 
-    extern void lgd3d_set_light_map_method(ulong flag); //from the above
 
 
     // additional sets of texture coordinates are added
@@ -315,11 +307,6 @@ do if (g_tmgr) g_tmgr->unload_texture(bm); while (0)
 
 
     extern int lgd3d_TrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_LitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_RGBlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_RGBAlitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_RGBAFoglitTrifanMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
-    extern int lgd3d_DiffuseSpecularMTD(int n, r3s_point** ppl, LGD3D_tex_coord** pptc);
 
 #ifdef __cplusplus
 }

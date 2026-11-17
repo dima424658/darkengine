@@ -1,63 +1,42 @@
 #include <render_backend.h>
 #include <dev2d.h>
 #include <lgd3d.h>
+#include "legacy_texture_driver.h"
 #include <climits>
-#include <cstddef>
-#include <gdbm.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string>
-#include <tdrv.h>
-#include <texture.h>
-#include <tmgr.h>
+#include <cstdlib>
+#include <cstring>
 #include <rsdcfg.h>
 #include <vector>
 
-#define MODERN_MAX_PALETTES 256
-
+constexpr int kPaletteSlots = 256;
 extern "C" {
-texture_manager *g_tmgr = NULL;
-void *g_ModernTextures[LGD3D_MAX_TEXTURES];
-grs_bitmap *g_ModernBitmaps[LGD3D_MAX_TEXTURES];
-void *g_ModernWhiteTexture = NULL;
-int g_ModernTextureLevel = 0;
-BOOL lgd3d_blend_trans = TRUE;
-BOOL b_SS2_UseSageTexManager = FALSE;
-uchar *lgd3d_clut = NULL;
+void *g_legacyTextures[LGD3D_MAX_TEXTURES]{};
+grs_bitmap *g_legacyBitmaps[LGD3D_MAX_TEXTURES]{};
+uchar *lgd3d_clut = nullptr;
+}
+static uchar g_palettes[kPaletteSlots][768];
+static uchar *g_textureClut = nullptr;
+static ushort *g_alphaPalette = nullptr;
+static tdrv_texture_info g_textureInfo[LGD3D_MAX_TEXTURES];
+static BOOL g_textureInfoValid[LGD3D_MAX_TEXTURES];
+static int g_chromaR = 255, g_chromaG = 0, g_chromaB = 255;
+
+extern "C" void LegacyTexturesInit(void)
+{
+   std::memset(g_legacyTextures, 0, sizeof(g_legacyTextures));
+   std::memset(g_legacyBitmaps, 0, sizeof(g_legacyBitmaps));
+   std::memset(g_textureInfoValid, 0, sizeof(g_textureInfoValid));
+   for (auto &palette : g_palettes) std::memcpy(palette, grd_pal, sizeof(palette));
 }
 
-static uchar g_palettes[MODERN_MAX_PALETTES][768];
-static uchar *g_textureClut = NULL;
-static ushort *g_alphaPalette = NULL;
-static tdrv_texture_info g_ModernTextureInfo[LGD3D_MAX_TEXTURES];
-static BOOL g_ModernTextureInfoValid[LGD3D_MAX_TEXTURES];
-// Dark's portal and model UVs routinely extend beyond the base texture and
-// rely on the primary texture stage repeating.  Starting stage zero clamped
-// turns every out-of-range surface into a stretched edge row/column until a
-// later effect happens to enable wrapping.  Lightmaps occupy an atlas, so the
-// secondary stage must remain clamped.
-static BOOL g_wrap[2] = {TRUE, FALSE};
-static BOOL g_smooth[2] = {TRUE, TRUE};
-static BOOL g_dither = FALSE, g_antialias = FALSE, g_shading = TRUE;
-static int g_chromaR = 255, g_chromaG = 0, g_chromaB = 255;
-static grs_bitmap *g_defaultBitmap = NULL;
-static std::vector<lgd3ds_device_info> g_deviceInfos;
-static std::vector<std::string> g_deviceNames;
-static short g_supportedModes[GRD_MODES + 1];
+extern "C" grs_bitmap *lgd3d_get_texture_bitmap(int id)
+{
+   return id >= 0 && id < LGD3D_MAX_TEXTURES ? g_legacyBitmaps[id] : nullptr;
+}
 
-extern "C" {
-extern int RenderBackendVulkanEnumeratePhysicalDevices(void);
-extern const char *RenderBackendVulkanPhysicalDeviceName(int index);
-extern void SetTextureId(int n);
-extern void UnsetTextureId(int n);
-extern void lgd3d_render_init(lgd3ds_device_info *info);
-extern void lgd3d_render_shutdown(void);
-extern void lgd3d_render_start_frame(void);
-extern void lgd3d_render_end_frame(void);
-extern void lgd3d_render_flush(void);
-extern void lgd3d_modern_reset_texture_state(void);
-extern void lgd3d_set_znearfar(double znear, double zfar);
-extern void ScrnClearHardwareOverlay(void);
+extern "C" BOOL lgd3d_texture_is_resident(int id)
+{
+   return id >= 0 && id < LGD3D_MAX_TEXTURES && g_legacyTextures[id] != nullptr;
 }
 
 static void Decode16(ushort p, ushort flags, uchar *r, uchar *g, uchar *b,
@@ -225,7 +204,7 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
           Decode16(p, BMF_RGB_4444, &r, &g, &b, &a);
         } else {
           int slot = bm->align;
-          if (slot < 0 || slot >= MODERN_MAX_PALETTES)
+          if (slot < 0 || slot >= kPaletteSlots)
             slot = 0;
           r = g_palettes[slot][index * 3];
           g = g_palettes[slot][index * 3 + 1];
@@ -265,7 +244,7 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
   return out;
 }
 
-static void CookInfo(tdrv_texture_info *info) {
+extern "C" void LegacyTextureCook(tdrv_texture_info *info) {
   if (!info)
     return;
   // The texture manager owns flags, dimensions, scaling, and the original
@@ -285,204 +264,65 @@ static void CookInfo(tdrv_texture_info *info) {
   info->cookie ^= (ulong)info->w * 0x9e3779b1u;
   info->cookie ^= (ulong)info->h * 0x85ebca6bu;
 }
-static int LoadTexture(tdrv_texture_info *info) {
+extern "C" int LegacyTextureLoad(tdrv_texture_info *info) {
   uchar *pixels;
   if (info->id < 0 || info->id >= LGD3D_MAX_TEXTURES)
     return TDRV_FAILURE;
   pixels = ConvertTexture(info);
   if (!pixels)
     return TDRV_FAILURE;
-  if (g_ModernTextures[info->id])
-    RenderBackendDestroyTexture(g_ModernTextures[info->id]);
-  g_ModernTextures[info->id] =
+  if (g_legacyTextures[info->id])
+    RenderBackendDestroyTexture(g_legacyTextures[info->id]);
+  g_legacyTextures[info->id] =
       RenderBackendCreateTexture(info->w, info->h, pixels, info->w * 4);
   free(pixels);
-  g_ModernBitmaps[info->id] = info->bm;
-  if (g_ModernTextures[info->id]) {
-    g_ModernTextureInfo[info->id] = *info;
-    g_ModernTextureInfoValid[info->id] = TRUE;
+  g_legacyBitmaps[info->id] = info->bm;
+  if (g_legacyTextures[info->id]) {
+    g_textureInfo[info->id] = *info;
+    g_textureInfoValid[info->id] = TRUE;
   }
-  return g_ModernTextures[info->id] ? TDRV_SUCCESS : TDRV_FAILURE;
+  return g_legacyTextures[info->id] ? TDRV_SUCCESS : TDRV_FAILURE;
 }
-static void ReloadTexture(tdrv_texture_info *info) {
+extern "C" void LegacyTextureReload(tdrv_texture_info *info) {
   lgd3d_render_flush();
   uchar *pixels = ConvertTexture(info);
   if (!pixels)
     return;
-  if (!RenderBackendUpdateTexture(g_ModernTextures[info->id], info->w, info->h,
+  if (!RenderBackendUpdateTexture(g_legacyTextures[info->id], info->w, info->h,
                                 pixels, info->w * 4)) {
-    if (g_ModernTextures[info->id]) {
+    if (g_legacyTextures[info->id]) {
       // Replacing a failed animated-light atlas must invalidate the legacy
       // stage cache as well as the backend binding. Otherwise the unchanged
       // texture ID prevents the newly created object from being rebound.
       UnsetTextureId(info->id);
-      RenderBackendDestroyTexture(g_ModernTextures[info->id]);
+      RenderBackendDestroyTexture(g_legacyTextures[info->id]);
     }
-    g_ModernTextures[info->id] =
+    g_legacyTextures[info->id] =
         RenderBackendCreateTexture(info->w, info->h, pixels, info->w * 4);
   }
   free(pixels);
-  g_ModernBitmaps[info->id] = info->bm;
-  if (g_ModernTextures[info->id]) {
-    g_ModernTextureInfo[info->id] = *info;
-    g_ModernTextureInfoValid[info->id] = TRUE;
+  g_legacyBitmaps[info->id] = info->bm;
+  if (g_legacyTextures[info->id]) {
+    g_textureInfo[info->id] = *info;
+    g_textureInfoValid[info->id] = TRUE;
   }
 }
-static void UnloadTexture(int id) {
+extern "C" void LegacyTextureUnload(int id) {
   if (id >= 0 && id < LGD3D_MAX_TEXTURES) {
-    g_ModernBitmaps[id] = NULL;
-    g_ModernTextureInfoValid[id] = FALSE;
+    g_legacyBitmaps[id] = NULL;
+    g_textureInfoValid[id] = FALSE;
   }
 }
-static void ReleaseTexture(int id) {
+extern "C" void LegacyTextureRelease(int id) {
   if (id >= 0 && id < LGD3D_MAX_TEXTURES) {
     UnsetTextureId(id);
-    if (g_ModernTextures[id])
-      RenderBackendDestroyTexture(g_ModernTextures[id]);
-    g_ModernTextures[id] = NULL;
-    g_ModernBitmaps[id] = NULL;
-    g_ModernTextureInfoValid[id] = FALSE;
+    if (g_legacyTextures[id])
+      RenderBackendDestroyTexture(g_legacyTextures[id]);
+    g_legacyTextures[id] = NULL;
+    g_legacyBitmaps[id] = NULL;
+    g_textureInfoValid[id] = FALSE;
   }
 }
-static void Synchronize(void) {}
-static void DriverStartFrame(int frame) { RenderBackendBeginFrame(); }
-static void DriverEndFrame(void) { RenderBackendEndFrame(); }
-
-static void InitTextureManager(lgd3ds_device_info *info) {
-  static texture_driver driver;
-  driver.load_texture = LoadTexture;
-  driver.release_texture = ReleaseTexture;
-  driver.set_texture_id = SetTextureId;
-  driver.unload_texture = UnloadTexture;
-  driver.synchronize = Synchronize;
-  driver.start_frame = DriverStartFrame;
-  driver.end_frame = DriverEndFrame;
-  driver.reload_texture = ReloadTexture;
-  driver.cook_info = CookInfo;
-  g_tmgr = get_dopey_texture_manager(&driver);
-  g_tmgr->init(g_defaultBitmap, LGD3D_MAX_TEXTURES, NULL, 0,
-               (info->flags & LGD3DF_SPEW) ? TMGRF_SPEW : 0);
-}
-
-extern "C" int lgd3d_enumerate_devices(void) {
-  // Enumeration happens before the platform renderer creates its output.
-  int i;
-  int supportedModeCount = gr_get_registered_mode_count(16);
-  for (i = 0; i < supportedModeCount && i < GRD_MODES; ++i)
-    g_supportedModes[i] = (short)gr_get_registered_mode(i, 16);
-  g_supportedModes[i] = -1;
-  const int deviceCount = RenderBackendVulkanEnumeratePhysicalDevices();
-  if (deviceCount <= 0)
-    return 0;
-  try {
-    g_deviceInfos.resize((size_t)deviceCount);
-    g_deviceNames.resize((size_t)deviceCount);
-    for (int device = 0; device < deviceCount; ++device) {
-      const char *name = RenderBackendVulkanPhysicalDeviceName(device);
-      g_deviceNames[(size_t)device] = name ? name : "Vulkan device";
-    }
-    for (int device = 0; device < deviceCount; ++device) {
-      lgd3ds_device_info &info = g_deviceInfos[(size_t)device];
-      memset(&info, 0, sizeof(info));
-      info.supported_modes = g_supportedModes;
-      info.name = g_deviceNames[(size_t)device].c_str();
-      info.flags = LGD3DF_CAN_DO_ZBUFFER | LGD3DF_CAN_DO_VERTEX_FOG |
-                   LGD3DF_CAN_DO_SINGLE_PASS_MT | LGD3DF_CAN_DO_WINDOWED |
-                   LGD3DF_CAN_DO_ITERATE_ALPHA;
-    }
-    return deviceCount;
-  } catch (...) {
-    g_deviceInfos.clear();
-    g_deviceNames.clear();
-    return 0;
-  }
-}
-extern "C" lgd3ds_device_info *lgd3d_get_device_info(int device) {
-  return device >= 0 && (size_t)device < g_deviceInfos.size()
-      ? &g_deviceInfos[(size_t)device] : NULL;
-}
-
-extern "C" BOOL lgd3d_init(lgd3ds_device_info *info) {
-  uint32 white = 0xffffffff;
-  int i;
-  if (!RenderBackendAvailable())
-    return FALSE;
-  memset(g_ModernTextures, 0, sizeof(g_ModernTextures));
-  memset(g_ModernBitmaps, 0, sizeof(g_ModernBitmaps));
-  memset(g_ModernTextureInfoValid, 0, sizeof(g_ModernTextureInfoValid));
-  for (i = 0; i < MODERN_MAX_PALETTES; ++i)
-    memcpy(g_palettes[i], grd_pal, 768);
-  g_defaultBitmap = gr_alloc_bitmap(BMT_FLAT8, 0, 2, 2);
-  if (!g_defaultBitmap)
-    return FALSE;
-  memset(g_defaultBitmap->bits, 255, 4);
-  g_ModernWhiteTexture = RenderBackendCreateTexture(1, 1, &white, 4);
-  if (!g_ModernWhiteTexture) {
-    gr_free(g_defaultBitmap);
-    g_defaultBitmap = NULL;
-    return FALSE;
-  }
-  g_ModernTextureLevel = 0;
-  lgd3d_modern_reset_texture_state();
-  RenderBackendSetSampler(0, g_wrap[0], g_smooth[0]);
-  RenderBackendSetSampler(1, g_wrap[1], g_smooth[1]);
-  RenderBackendSetDepth(FALSE, FALSE);
-  RenderBackendSetBlend(kRenderBackendBlendOpaque);
-  RenderBackendSetAlphaTest(FALSE);
-  info->flags |=
-      LGD3DF_ZBUFFER | LGD3DF_MULTI_TEXTURING | LGD3DF_MULTITEXTURE_COLOR;
-  InitTextureManager(info);
-  RenderBackendBeginFrame();
-  lgd3d_render_init(info);
-  RenderBackendEndFrame();
-  // Renderer initialization needs a temporary hardware frame for state
-  // setup, but it is not a rendered scene.  Leaving it active makes menu
-  // canvases composite as transparent overlays over an empty/stale scene.
-  RenderBackendDeactivateScene();
-  return TRUE;
-}
-extern "C" void lgd3d_shutdown(void) {
-  int i;
-  RenderBackendDeactivateScene();
-  lgd3d_render_shutdown();
-  if (g_tmgr) {
-    g_tmgr->shutdown();
-    g_tmgr = NULL;
-  }
-  for (i = 0; i < LGD3D_MAX_TEXTURES; ++i)
-    ReleaseTexture(i);
-  if (g_ModernWhiteTexture)
-    RenderBackendDestroyTexture(g_ModernWhiteTexture);
-  g_ModernWhiteTexture = NULL;
-  if (g_defaultBitmap)
-    gr_free(g_defaultBitmap);
-  g_defaultBitmap = NULL;
-}
-extern "C" void lgd3d_start_frame(int frame) {
-  g_ModernTextureLevel = 0;
-  ScrnClearHardwareOverlay();
-  RenderBackendBeginFrame();
-  lgd3d_render_start_frame();
-  if (g_tmgr)
-    g_tmgr->start_frame(frame);
-}
-extern "C" void lgd3d_end_frame(void) {
-  lgd3d_render_end_frame();
-  if (g_tmgr)
-    g_tmgr->end_frame();
-  RenderBackendEndFrame();
-}
-extern "C" void lgd3d_scene_suspend(void) { RenderBackendDeactivateScene(); }
-extern "C" void lgd3d_clean_render_surface(BOOL depth) {
-  if (depth)
-    RenderBackendClearDepth();
-}
-extern "C" BOOL lgd3d_overlays_master_switch(BOOL on) {
-  const BOOL previous = RenderBackendCanvasOverlayEnabled();
-  RenderBackendSetCanvasOverlayEnabled(on);
-  return previous;
-}
-
 extern "C" void lgd3d_set_texture_clut(uchar *clut) {
   g_textureClut = lgd3d_clut = clut;
   if (g_tmgr)
@@ -508,20 +348,20 @@ static void ReloadPaletteTextures(int slot) {
   // palette.  Without this, models cached before a mission palette switch
   // retain menu/previous-mission colors while newly loaded terrain is right.
   for (i = 0; i < LGD3D_MAX_TEXTURES; ++i) {
-    grs_bitmap *bm = g_ModernBitmaps[i];
+    grs_bitmap *bm = g_legacyBitmaps[i];
     if (bm && (bm->type == BMT_FLAT8 || bm->type == BMT_TLUC8 ||
                bm->type == BMT_RSD8) && bm->align == slot &&
-        (bm->flags & BMF_LOADED) && g_ModernTextureInfoValid[i])
+        (bm->flags & BMF_LOADED) && g_textureInfoValid[i])
       // Do not ask the legacy manager to recook this texture.  Its cookie
       // depends on the current global fill mode, which need not match the
       // mode used when this resident texture was loaded.  Reuse the original
       // upload description and only re-expand its palette indices.
-      ReloadTexture(&g_ModernTextureInfo[i]);
+      LegacyTextureReload(&g_textureInfo[i]);
   }
 }
 
 extern "C" void lgd3d_set_pal_slot(uint start, uint n, uchar *pal, int slot) {
-  if (slot < 0 || slot >= MODERN_MAX_PALETTES || start >= 256)
+  if (slot < 0 || slot >= kPaletteSlots || start >= 256)
     return;
   if (start + n > 256)
     n = 256 - start;
@@ -536,19 +376,6 @@ extern "C" void lgd3d_set_pal_slot_flags(uint start, uint n, uchar *pal,
 }
 extern "C" void lgd3d_set_pal(uint start, uint n, uchar *pal) {
   lgd3d_set_pal_slot(start, n, pal, 0);
-}
-extern "C" BOOL lgd3d_get_texture_wrapping(uint level) {
-  return level < 2 ? g_wrap[level] : FALSE;
-}
-extern "C" BOOL lgd3d_set_texture_wrapping(uint level, BOOL wrap) {
-  BOOL old;
-  if (level >= 2)
-    return FALSE;
-  lgd3d_render_flush();
-  old = g_wrap[level];
-  g_wrap[level] = wrap;
-  RenderBackendSetSampler(level, wrap, g_smooth[level]);
-  return old;
 }
 extern "C" void lgd3d_set_chromakey(int r, int g, int b) {
   g_chromaR = r < 0 ? 0 : r > 255 ? 255 : r;
@@ -568,18 +395,3 @@ extern "C" void lgd3d_get_alpha_texture_bitmask(grs_rgb_bitmask *m) {
   m->green = 0x00f0;
   m->blue = 0x000f;
 }
-extern "C" void lgd3d_set_dithering(int on) { g_dither = on; }
-extern "C" int lgd3d_is_dithering_on(void) { return g_dither; }
-extern "C" void lgd3d_set_antialiasing(int on) { g_antialias = on; }
-extern "C" int lgd3d_is_antialiasing_on(void) { return g_antialias; }
-extern "C" BOOL lgd3d_set_shading(BOOL smooth) {
-  BOOL old = g_shading;
-  lgd3d_render_flush();
-  g_shading = smooth;
-  g_smooth[0] = g_smooth[1] = smooth;
-  RenderBackendSetSampler(0, g_wrap[0], smooth);
-  RenderBackendSetSampler(1, g_wrap[1], smooth);
-  return old;
-}
-extern "C" BOOL lgd3d_is_smooth_shading_on(void) { return g_shading; }
-extern "C" void lgd3d_set_light_map_method(ulong flag) {}

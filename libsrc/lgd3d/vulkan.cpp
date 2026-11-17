@@ -313,36 +313,18 @@ void cVulkanRuntime::DrawCanvas(vk::CommandBuffer commandBuffer, bool transparen
    if (!RenderBackendVulkanCanvasOverlayEnabled() ||
        slot >= m_canvasTextures.size() || !m_canvasTextures[slot] ||
        !m_canvasWidth || !m_canvasHeight) return;
-   m_renderer.SetDepth(false, false);
-   m_renderer.SetBlend(kRenderBackendBlendAlpha);
-   m_renderer.SetAlphaTest(false);
-   m_renderer.SetFog(false, 0);
-   // Decode packed legacy pixels before filtering; interpolating their raw
-   // bytes would mix palette indices or RGB bit fields instead of colors.
    const bool smooth = RenderBackendVulkanUseLinearCanvasSampling() != 0;
-   m_renderer.SetSampler(0, false, false);
-   m_renderer.SetSampler(1, false, false);
-   m_renderer.BindTexture(1, m_canvas.Depth() == 8 ? m_canvasPaletteTextures[slot] : nullptr);
    const uint32_t canvasMode = static_cast<uint32_t>(m_canvas.Depth()) |
       (m_canvas.Transparent() ? 0x100u : 0u) | (smooth ? 0x200u : 0u);
-   m_renderer.BindTexture(0, m_canvasTextures[slot]);
-   int viewportX, viewportY, viewportWidth, viewportHeight;
+   int x, y, width, height;
    RenderBackendVulkanGetViewport(m_canvasWidth, m_canvasHeight,
       static_cast<int>(m_context.SwapchainExtent().width),
-      static_cast<int>(m_context.SwapchainExtent().height), 1, &viewportX,
-      &viewportY, &viewportWidth, &viewportHeight);
-   m_renderer.SetViewport(viewportX, viewportY, viewportWidth, viewportHeight);
-   const float w = static_cast<float>(m_canvasWidth);
-   const float h = static_cast<float>(m_canvasHeight);
-   const sRenderBackendVertex quad[] = {
-      {0,0,0,1, 1,1,1,1, 1, 0,0, 0,0},
-      {w,0,0,1, 1,1,1,1, 1, 1,0, 1,0},
-      {w,h,0,1, 1,1,1,1, 1, 1,1, 1,1},
-      {0,0,0,1, 1,1,1,1, 1, 0,0, 0,0},
-      {w,h,0,1, 1,1,1,1, 1, 1,1, 1,1},
-      {0,h,0,1, 1,1,1,1, 1, 0,1, 0,1}};
-   (void)m_renderer.Draw(commandBuffer, quad, 6, kRenderBackendTriangles,
-      false, m_canvasWidth, m_canvasHeight, transparent, canvasMode);
+      static_cast<int>(m_context.SwapchainExtent().height), 1, &x, &y, &width, &height);
+   (void)m_renderer.DrawOverlay(commandBuffer, m_canvasTextures[slot],
+      m_canvas.Depth() == 8 ? m_canvasPaletteTextures[slot] : nullptr,
+      m_canvasWidth, m_canvasHeight,
+      vk::Rect2D({x, y}, {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}),
+      true, smooth, canvasMode, transparent);
 }
 
 bool cVulkanRuntime::Open(int width, int height, const char *title)
@@ -764,21 +746,6 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
       try
       {
          m_renderer.BeginFrame(m_context.FrameIndex());
-         m_renderer.SetDepth(false, false);
-         m_renderer.SetBlend(kRenderBackendBlendOpaque);
-         m_renderer.SetAlphaTest(false);
-         m_renderer.SetFog(false, 0);
-         m_renderer.SetSampler(0, false, true);
-         m_renderer.BindTexture(0, m_movieTexture);
-         const float w = static_cast<float>(width);
-         const float h = static_cast<float>(height);
-         const sRenderBackendVertex quad[] = {
-            {0,0,0,1,1,1,1,1,1,0,0,0,0},
-            {w,0,0,1,1,1,1,1,1,1,0,0,0},
-            {w,h,0,1,1,1,1,1,1,1,1,0,0},
-            {0,0,0,1,1,1,1,1,1,0,0,0,0},
-            {w,h,0,1,1,1,1,1,1,1,1,0,0},
-            {0,h,0,1,1,1,1,1,1,0,1,0,0}};
          const vk::Extent2D extent = m_context.SwapchainExtent();
          const double scale = std::min(
             static_cast<double>(extent.width) / width,
@@ -787,12 +754,12 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
             static_cast<int>(width * scale), 1);
          const int viewportHeight = std::max(
             static_cast<int>(height * scale), 1);
-         m_renderer.SetViewport(
-            (static_cast<int>(extent.width) - viewportWidth) / 2,
-            (static_cast<int>(extent.height) - viewportHeight) / 2,
-            viewportWidth, viewportHeight);
-         drew = m_renderer.Draw(commandBuffer, quad, 6,
-            kRenderBackendTriangles, false, width, height);
+         drew = m_renderer.DrawOverlay(commandBuffer, m_movieTexture, nullptr,
+            width, height, vk::Rect2D(
+               {(static_cast<int>(extent.width) - viewportWidth) / 2,
+                (static_cast<int>(extent.height) - viewportHeight) / 2},
+               {static_cast<uint32_t>(viewportWidth), static_cast<uint32_t>(viewportHeight)}),
+            false, true);
       }
       catch (...)
       {

@@ -45,7 +45,6 @@
 
 
 //zb SS2 patch only!
-#include <lgSS2P.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -547,18 +546,6 @@ BOOL ScrnInit3d(void)
 #endif
 
       info->flags |= LGD3DF_DITHER | LGD3DF_MODULATEALPHA; //zb :
-
-
-
-
-
-
-      //zb SS2 patch only!
-      b_SS2_UseSageTexManager = (config_is_defined("safe_texture_manager"));
-
-      
-
-
 
       // note that flags may be changed during this call, so we check afterwards
       if (lgd3d_init(info) == FALSE)

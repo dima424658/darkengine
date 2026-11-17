@@ -99,6 +99,39 @@ static void RunRendererStress(cVulkanContext &context, cVulkanSceneRenderer &ren
    std::sort(times.begin(), times.end());
    std::printf("RENDERER_STRESS frames=%zu draws_per_frame=30002 mean_ms=%.3f p95_ms=%.3f\n",
       times.size(), sum / times.size(), times.back());
+   // Overlay drawing must not invalidate the scene's cached texture, viewport,
+   // depth comparison, or depth-write state, including for subsequent frames.
+   void *red = renderer.CreateTexture(1, 1, colors[0].data(), 4);
+   void *green = renderer.CreateTexture(1, 1, colors[1].data(), 4);
+   void *blue = renderer.CreateTexture(1, 1, colors[2].data(), 4);
+   Require(red && green && blue, "overlay isolation textures");
+   Require(context.BeginFrame({0, 0, 0, 1}, &command), "overlay isolation frame");
+   renderer.BeginFrame(context.FrameIndex());
+   renderer.SetViewport(0, 0, outputWidth, outputHeight);
+   renderer.SetDepth(true, true);
+   renderer.SetBlend(kRenderBackendBlendOpaque);
+   renderer.SetFog(false, 0);
+   renderer.SetSampler(0, true, true);
+   renderer.BindTexture(0, red);
+   std::array<sRenderBackendVertex, 6> sceneQuad;
+   std::copy_n(quad, 6, sceneQuad.begin());
+   for (auto &vertex : sceneQuad) vertex.z = 0.2f;
+   Require(renderer.Draw(command, sceneQuad.data(), 6, kRenderBackendTriangles,
+      false, width, height), "initial scene state");
+   Require(renderer.DrawOverlay(command, green, nullptr, width, height,
+      vk::Rect2D({0, 0}, {static_cast<uint32_t>(outputWidth / 2),
+                         static_cast<uint32_t>(outputHeight)}), false, false), "isolated overlay");
+   for (auto &vertex : sceneQuad) vertex.z = 0.1f;
+   Require(renderer.Draw(command, sceneQuad.data(), 6, kRenderBackendTriangles,
+      false, width, height), "restore scene texture and viewport");
+   renderer.BindTexture(0, blue);
+   for (auto &vertex : sceneQuad) vertex.z = 0.15f;
+   Require(renderer.Draw(command, sceneQuad.data(), 6, kRenderBackendTriangles,
+      false, width, height), "restore scene depth comparison and writing");
+   Require(context.EndFrame(), "overlay isolation submission");
+   renderer.DestroyTexture(red);
+   renderer.DestroyTexture(green);
+   renderer.DestroyTexture(blue);
    for (void *texture : references) renderer.DestroyTexture(texture);
    for (void *texture : streams) renderer.DestroyTexture(texture);
 }

@@ -26,6 +26,11 @@ public:
       const sRenderBackendVertex *vertices, int vertexCount, int primitive,
       bool useSecondTexture, int logicalWidth, int logicalHeight,
       bool transparentBlack = false, uint32_t canvasMode = 0);
+   // Canvas/movie draws temporarily use overlay state, then restore the
+   // scene's intended state. The recorded command cache stays authoritative.
+   bool DrawOverlay(vk::CommandBuffer commandBuffer, void *texture, void *palette,
+      int logicalWidth, int logicalHeight, const vk::Rect2D &viewport,
+      bool blend, bool smooth, uint32_t canvasMode = 0, bool transparentBlack = false);
    void ClearDepth(vk::CommandBuffer commandBuffer);
    void ClearDepthRect(vk::CommandBuffer commandBuffer, int x, int y,
       int width, int height, int logicalWidth, int logicalHeight);
@@ -53,7 +58,6 @@ private:
    struct sTexture;
    struct sVertexBuffer;
    struct sFrameResources;
-   struct sPipelineKey;
    vk::Pipeline GetPipeline(int primitive);
    vk::Sampler GetSampler(bool wrap, bool smooth) const;
    void AllocateVertexBuffer(sVertexBuffer &buffer,
@@ -77,22 +81,20 @@ private:
       kVulkanFramesInFlight> m_deferredTextures;
    std::array<std::unique_ptr<sFrameResources>,
       kVulkanFramesInFlight> m_frames;
-   void *m_boundTextures[2]{};
-   bool m_depthCompare{};
-   bool m_depthWrite{};
-   bool m_alphaTest{};
-   int m_blendMode{};
-   bool m_fog{};
-   uint32_t m_fogColor{};
-   float m_gamma{1.0f};
-   bool m_wrap[2]{};
-   bool m_smooth[2]{true, true};
+   struct sDrawState
+   {
+      void *textures[2]{};
+      bool depthCompare{}, depthWrite{}, alphaTest{};
+      int blendMode{};
+      bool fog{};
+      uint32_t fogColor{};
+      float gamma{1.0f};
+      bool wrap[2]{};
+      bool smooth[2]{true, true};
+      int viewportX{}, viewportY{}, viewportWidth{}, viewportHeight{};
+   } m_state;
    uint32_t m_frameIndex{};
    uint64_t m_nextTextureIdentity{1};
-   int m_viewportX{};
-   int m_viewportY{};
-   int m_viewportWidth{};
-   int m_viewportHeight{};
 };
 
 #endif

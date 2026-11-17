@@ -307,8 +307,8 @@ bool cVulkanSceneRenderer::Initialize(cVulkanContext &context,
       return false;
 
    m_context = &context;
-   m_viewportWidth = static_cast<int>(context.SwapchainExtent().width);
-   m_viewportHeight = static_cast<int>(context.SwapchainExtent().height);
+   m_state.viewportWidth = static_cast<int>(context.SwapchainExtent().width);
+   m_state.viewportHeight = static_cast<int>(context.SwapchainExtent().height);
    const vk::Device device = context.Device();
    try
    {
@@ -358,8 +358,8 @@ bool cVulkanSceneRenderer::Initialize(cVulkanContext &context,
       const uint32_t whitePixel = 0xffffffffu;
       if (!CreateTextureImage(*m_whiteTexture, 1, 1, &whitePixel, 4))
          throw std::runtime_error("failed to create Vulkan fallback texture");
-      m_boundTextures[0] = m_whiteTexture.get();
-      m_boundTextures[1] = m_whiteTexture.get();
+      m_state.textures[0] = m_whiteTexture.get();
+      m_state.textures[1] = m_whiteTexture.get();
       return true;
    }
    catch (const std::exception &)
@@ -410,7 +410,7 @@ void cVulkanSceneRenderer::Shutdown()
    m_vertexShader.clear();
    m_fragmentShader.clear();
    m_context = nullptr;
-   m_boundTextures[0] = m_boundTextures[1] = nullptr;
+   m_state = sDrawState{};
 }
 
 void cVulkanSceneRenderer::ResetPipelines()
@@ -484,8 +484,8 @@ vk::Pipeline cVulkanSceneRenderer::GetPipeline(int primitive)
 {
    primitive = std::clamp(primitive, 0, 2);
    const size_t index = static_cast<size_t>(primitive) * 16 +
-      (m_depthCompare ? 1 : 0) + (m_depthWrite ? 2 : 0) +
-      static_cast<size_t>(std::clamp(m_blendMode, 0, 3)) * 4;
+      (m_state.depthCompare ? 1 : 0) + (m_state.depthWrite ? 2 : 0) +
+      static_cast<size_t>(std::clamp(m_state.blendMode, 0, 3)) * 4;
    if (*m_pipelines[index])
       return *m_pipelines[index];
 
@@ -518,24 +518,24 @@ vk::Pipeline cVulkanSceneRenderer::GetPipeline(int primitive)
    rasterization.lineWidth = 1.0f;
    vk::PipelineMultisampleStateCreateInfo multisample({}, vk::SampleCountFlagBits::e1);
    vk::PipelineDepthStencilStateCreateInfo depth{};
-   depth.depthTestEnable = m_depthCompare || m_depthWrite;
-   depth.depthWriteEnable = m_depthWrite;
-   depth.depthCompareOp = m_depthCompare ? vk::CompareOp::eLessOrEqual : vk::CompareOp::eAlways;
+   depth.depthTestEnable = m_state.depthCompare || m_state.depthWrite;
+   depth.depthWriteEnable = m_state.depthWrite;
+   depth.depthCompareOp = m_state.depthCompare ? vk::CompareOp::eLessOrEqual : vk::CompareOp::eAlways;
    depth.depthBoundsTestEnable = VK_FALSE;
    depth.stencilTestEnable = VK_FALSE;
    vk::PipelineColorBlendAttachmentState blend{};
    blend.colorWriteMask = vk::ColorComponentFlagBits::eR |
       vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
       vk::ColorComponentFlagBits::eA;
-   blend.blendEnable = m_blendMode != 0;
-   if (m_blendMode == 2)
+   blend.blendEnable = m_state.blendMode != 0;
+   if (m_state.blendMode == 2)
    {
       blend.srcColorBlendFactor = vk::BlendFactor::eDstColor;
       blend.dstColorBlendFactor = vk::BlendFactor::eZero;
       blend.srcAlphaBlendFactor = vk::BlendFactor::eOne;
       blend.dstAlphaBlendFactor = vk::BlendFactor::eZero;
    }
-   else if (m_blendMode == 3)
+   else if (m_state.blendMode == 3)
    {
       blend.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
       blend.dstColorBlendFactor = vk::BlendFactor::eOne;
@@ -589,16 +589,16 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
        logicalWidth <= 0 || logicalHeight <= 0 || primitive < 0 || primitive > 2)
       return false;
    const vk::Extent2D extent = m_context->SwapchainExtent();
-   const int viewportWidth = m_viewportWidth > 0 ? m_viewportWidth :
+   const int viewportWidth = m_state.viewportWidth > 0 ? m_state.viewportWidth :
       static_cast<int>(extent.width);
-   const int viewportHeight = m_viewportHeight > 0 ? m_viewportHeight :
+   const int viewportHeight = m_state.viewportHeight > 0 ? m_state.viewportHeight :
       static_cast<int>(extent.height);
-   const int64_t scissorLeft = std::max<int64_t>(m_viewportX, 0);
-   const int64_t scissorTop = std::max<int64_t>(m_viewportY, 0);
+   const int64_t scissorLeft = std::max<int64_t>(m_state.viewportX, 0);
+   const int64_t scissorTop = std::max<int64_t>(m_state.viewportY, 0);
    const int64_t scissorRight = std::min<int64_t>(
-      static_cast<int64_t>(m_viewportX) + viewportWidth, extent.width);
+      static_cast<int64_t>(m_state.viewportX) + viewportWidth, extent.width);
    const int64_t scissorBottom = std::min<int64_t>(
-      static_cast<int64_t>(m_viewportY) + viewportHeight, extent.height);
+      static_cast<int64_t>(m_state.viewportY) + viewportHeight, extent.height);
    if (scissorRight <= scissorLeft || scissorBottom <= scissorTop)
       return false;
    sFrameResources &frame = *m_frames[m_frameIndex];
@@ -640,14 +640,14 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
             VK_WHOLE_SIZE));
    }
 
-   auto *first = static_cast<sTexture *>(m_boundTextures[0]);
+   auto *first = static_cast<sTexture *>(m_state.textures[0]);
    auto *second = (useSecondTexture || canvasMode != 0)
-      ? static_cast<sTexture *>(m_boundTextures[1]) : m_whiteTexture.get();
+      ? static_cast<sTexture *>(m_state.textures[1]) : m_whiteTexture.get();
    if (!first) first = m_whiteTexture.get();
    if (!second) second = m_whiteTexture.get();
    const sDescriptorKey key{{first->identity, second->identity,
-      static_cast<uint64_t>(m_wrap[0] * 2 + m_smooth[0]),
-      static_cast<uint64_t>(m_wrap[1] * 2 + m_smooth[1])}};
+      static_cast<uint64_t>(m_state.wrap[0] * 2 + m_state.smooth[0]),
+      static_cast<uint64_t>(m_state.wrap[1] * 2 + m_state.smooth[1])}};
    auto cached = frame.descriptors.find(key);
    if (cached == frame.descriptors.end())
    {
@@ -663,8 +663,8 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
          catch (const vk::FragmentedPoolError &) { ++frame.descriptorPoolIndex; }
       }
       vk::DescriptorImageInfo images[] = {
-         {GetSampler(m_wrap[0], m_smooth[0]), *first->view, vk::ImageLayout::eShaderReadOnlyOptimal},
-         {GetSampler(m_wrap[1], m_smooth[1]), *second->view, vk::ImageLayout::eShaderReadOnlyOptimal}};
+         {GetSampler(m_state.wrap[0], m_state.smooth[0]), *first->view, vk::ImageLayout::eShaderReadOnlyOptimal},
+         {GetSampler(m_state.wrap[1], m_state.smooth[1]), *second->view, vk::ImageLayout::eShaderReadOnlyOptimal}};
       vk::WriteDescriptorSet writes[] = {
          {descriptor, 0, 0, 1, vk::DescriptorType::eCombinedImageSampler, &images[0]},
          {descriptor, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &images[1]}};
@@ -695,11 +695,11 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
          *m_pipelineLayout, 0, descriptor, {});
       frame.boundDescriptor = descriptor;
    }
-   const std::array<int, 4> viewport{{m_viewportX, m_viewportY, viewportWidth, viewportHeight}};
+   const std::array<int, 4> viewport{{m_state.viewportX, m_state.viewportY, viewportWidth, viewportHeight}};
    if (!frame.viewportValid || frame.viewport != viewport)
    {
       commandBuffer.setViewport(0, vk::Viewport(
-         static_cast<float>(m_viewportX), static_cast<float>(m_viewportY),
+         static_cast<float>(m_state.viewportX), static_cast<float>(m_state.viewportY),
          static_cast<float>(viewportWidth), static_cast<float>(viewportHeight), 0.0f, 1.0f));
       commandBuffer.setScissor(0, vk::Rect2D(
          {static_cast<int32_t>(scissorLeft), static_cast<int32_t>(scissorTop)},
@@ -711,15 +711,15 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
    sPushConstants constants{};
    constants.viewportSize[0] = static_cast<float>(logicalWidth);
    constants.viewportSize[1] = static_cast<float>(logicalHeight);
-   constants.gamma = m_gamma;
+   constants.gamma = m_state.gamma;
    constants.useTexture1 = useSecondTexture ? 1u : 0u;
-   constants.fogEnabled = m_fog ? 1u : 0u;
-   constants.alphaTest = m_alphaTest ? 1u : 0u;
+   constants.fogEnabled = m_state.fog ? 1u : 0u;
+   constants.alphaTest = m_state.alphaTest ? 1u : 0u;
    constants.transparentBlack = transparentBlack ? 1u : 0u;
    constants.canvasMode = canvasMode;
-   constants.fogColor[0] = ((m_fogColor >> 16) & 255) / 255.0f;
-   constants.fogColor[1] = ((m_fogColor >> 8) & 255) / 255.0f;
-   constants.fogColor[2] = (m_fogColor & 255) / 255.0f;
+   constants.fogColor[0] = ((m_state.fogColor >> 16) & 255) / 255.0f;
+   constants.fogColor[1] = ((m_state.fogColor >> 8) & 255) / 255.0f;
+   constants.fogColor[2] = (m_state.fogColor & 255) / 255.0f;
    constants.fogColor[3] = 1.0f;
    if (!frame.constantsValid || std::memcmp(&frame.constants, &constants, sizeof(constants)) != 0)
    {
@@ -738,6 +738,47 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
       static_cast<uint32_t>(frame.vertexOffset / sizeof(sRenderBackendVertex)), 0);
    frame.vertexOffset += byteCount;
    return true;
+}
+
+bool cVulkanSceneRenderer::DrawOverlay(vk::CommandBuffer commandBuffer,
+   void *texture, void *palette, int logicalWidth, int logicalHeight,
+   const vk::Rect2D &viewport, bool blend, bool smooth,
+   uint32_t canvasMode, bool transparentBlack)
+{
+   if (!viewport.extent.width || !viewport.extent.height ||
+       viewport.extent.width > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
+       viewport.extent.height > static_cast<uint32_t>(std::numeric_limits<int>::max()))
+      return false;
+   struct sRestoreState
+   {
+      sDrawState &target;
+      sDrawState saved;
+      ~sRestoreState() { target = saved; }
+   } restore{m_state, m_state};
+   SetDepth(false, false);
+   SetBlend(blend ? kRenderBackendBlendAlpha : kRenderBackendBlendOpaque);
+   SetAlphaTest(false);
+   SetFog(false, 0);
+   SetSampler(0, false, canvasMode == 0 && smooth);
+   SetSampler(1, false, false);
+   BindTexture(0, texture);
+   BindTexture(1, palette);
+   SetViewport(viewport.offset.x, viewport.offset.y,
+      static_cast<int>(viewport.extent.width), static_cast<int>(viewport.extent.height));
+   const float w = static_cast<float>(logicalWidth), h = static_cast<float>(logicalHeight);
+   const sRenderBackendVertex quad[] = {
+      {0,0,0,1, 1,1,1,1, 1, 0,0, 0,0}, {w,0,0,1, 1,1,1,1, 1, 1,0, 1,0},
+      {w,h,0,1, 1,1,1,1, 1, 1,1, 1,1}, {0,0,0,1, 1,1,1,1, 1, 0,0, 0,0},
+      {w,h,0,1, 1,1,1,1, 1, 1,1, 1,1}, {0,h,0,1, 1,1,1,1, 1, 0,1, 0,1}};
+   try
+   {
+      return Draw(commandBuffer, quad, 6, kRenderBackendTriangles, false,
+         logicalWidth, logicalHeight, transparentBlack, canvasMode);
+   }
+   catch (...)
+   {
+      return false;
+   }
 }
 
 void cVulkanSceneRenderer::ClearDepth(vk::CommandBuffer commandBuffer)
@@ -761,8 +802,8 @@ void cVulkanSceneRenderer::ClearDepthRect(vk::CommandBuffer commandBuffer,
       return;
    const vk::Extent2D extent = m_context->SwapchainExtent();
    vk::Rect2D rect{};
-   if (!MapLogicalRect(extent, m_viewportX, m_viewportY, m_viewportWidth,
-       m_viewportHeight, x, y, width, height, logicalWidth, logicalHeight,
+   if (!MapLogicalRect(extent, m_state.viewportX, m_state.viewportY, m_state.viewportWidth,
+       m_state.viewportHeight, x, y, width, height, logicalWidth, logicalHeight,
        &rect))
       return;
    vk::ClearAttachment attachment{};
@@ -782,8 +823,8 @@ void cVulkanSceneRenderer::ClearCanvasRegion(vk::CommandBuffer commandBuffer,
       return;
    const vk::Extent2D extent = m_context->SwapchainExtent();
    vk::Rect2D rect{};
-   if (!MapLogicalRect(extent, m_viewportX, m_viewportY, m_viewportWidth,
-       m_viewportHeight, x, y, width, height, logicalWidth, logicalHeight,
+   if (!MapLogicalRect(extent, m_state.viewportX, m_state.viewportY, m_state.viewportWidth,
+       m_state.viewportHeight, x, y, width, height, logicalWidth, logicalHeight,
        &rect))
       return;
    vk::ClearAttachment attachment{};
@@ -799,26 +840,26 @@ void cVulkanSceneRenderer::ClearCanvasRegion(vk::CommandBuffer commandBuffer,
 }
 
 void cVulkanSceneRenderer::SetDepth(bool compare, bool write)
-{ m_depthCompare = compare; m_depthWrite = write; }
+{ m_state.depthCompare = compare; m_state.depthWrite = write; }
 void cVulkanSceneRenderer::SetBlend(int mode)
-{ m_blendMode = std::clamp(mode, 0, 3); }
-void cVulkanSceneRenderer::SetAlphaTest(bool enabled) { m_alphaTest = enabled; }
+{ m_state.blendMode = std::clamp(mode, 0, 3); }
+void cVulkanSceneRenderer::SetAlphaTest(bool enabled) { m_state.alphaTest = enabled; }
 void cVulkanSceneRenderer::SetFog(bool enabled, uint32_t rgb)
-{ m_fog = enabled; m_fogColor = rgb; }
+{ m_state.fog = enabled; m_state.fogColor = rgb; }
 void cVulkanSceneRenderer::SetGamma(float gamma)
-{ if (gamma > 0.0f) m_gamma = gamma; }
+{ if (gamma > 0.0f) m_state.gamma = gamma; }
 void cVulkanSceneRenderer::SetViewport(int x, int y, int width, int height)
 {
    if (width <= 0 || height <= 0) return;
-   m_viewportX = x;
-   m_viewportY = y;
-   m_viewportWidth = width;
-   m_viewportHeight = height;
+   m_state.viewportX = x;
+   m_state.viewportY = y;
+   m_state.viewportWidth = width;
+   m_state.viewportHeight = height;
 }
 void cVulkanSceneRenderer::SetSampler(int level, bool wrap, bool smooth)
-{ if (level >= 0 && level < 2) { m_wrap[level] = wrap; m_smooth[level] = smooth; } }
+{ if (level >= 0 && level < 2) { m_state.wrap[level] = wrap; m_state.smooth[level] = smooth; } }
 void cVulkanSceneRenderer::BindTexture(int level, void *texture)
-{ if (level >= 0 && level < 2) m_boundTextures[level] = texture ? texture : m_whiteTexture.get(); }
+{ if (level >= 0 && level < 2) m_state.textures[level] = texture ? texture : m_whiteTexture.get(); }
 
 bool cVulkanSceneRenderer::CreateTextureImage(sTexture &texture, int width,
    int height, const void *rgba, int rowBytes)
@@ -1024,7 +1065,7 @@ void cVulkanSceneRenderer::DestroyTexture(void *handle) noexcept
       const auto found = m_textures.find(texture);
       if (found == m_textures.end())
          return;
-      for (void *&bound : m_boundTextures)
+      for (void *&bound : m_state.textures)
          if (bound == texture) bound = m_whiteTexture.get();
       if (m_context->FrameActive())
       {

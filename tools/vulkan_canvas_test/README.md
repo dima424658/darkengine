@@ -59,9 +59,12 @@ to limit fill cost, change samplers/pipelines/constants, and exceed the initial
 8 MiB vertex buffer. Frame-owned textures stream different colors with padded
 source rows and change dimensions halfway through the run. The first reference
 draw must survive vertex-buffer growth, and replacing a shared texture after
-recording a draw must preserve each stripe's original color.
+recording a draw must preserve each stripe's original color. A final frame draws an overlay
+between scene draws without resetting the scene's texture, viewport, or depth
+state; the final image must remain red. This detects overlay state leakage
+and lost depth writes/comparison.
 
-Use a separate capture directory because this workload produces 13 images:
+Use a separate capture directory because this workload produces 14 images:
 
 ```sh
 mkdir -p /tmp/dark-renderer-stress
@@ -77,7 +80,7 @@ python3 tools/vulkan_canvas_test/compare_stress.py /tmp/dark-renderer-stress
 For timing, run the same executable with `--stress` without the validation and
 screenshot environment variables. On the current Linux PC, two runs against
 the pre-reuse renderer averaged 14.2–14.4 ms per workload frame; the optimized
-renderer averaged 2.6–2.7 ms. All 13 captured images matched expected colors
+renderer averaged 2.6–2.7 ms. All 14 captured images matched expected colors
 exactly under synchronization validation. This synthetic workload emphasizes
 submission overhead: the stationary Thief Gold view remained approximately
 533–534 FPS, with no meaningful average-FPS change from these optimizations.

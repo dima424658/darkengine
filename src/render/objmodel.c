@@ -124,8 +124,6 @@ static TextureLoadFunc g_afnTextureLoadFuncs[] =
 // other globals
 static grs_bitmap *g_pDummyObjTmap;
 
-extern void *g_ModernTextures[DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES];
-extern grs_bitmap *g_ModernBitmaps[DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES];
 
 BOOL objmodelIsDummyTexture(const grs_bitmap *bitmap)
 {
@@ -1284,8 +1282,8 @@ static void audit_texture(FILE *log, int model_idx, const char *model_name,
          if (resident_id >= 0 &&
              resident_id < DARK_LIMIT_RUNTIME_TERRAIN_TEXTURES)
          {
-            gpu_present = g_ModernTextures[resident_id] != NULL;
-            gpu_owner_matches = g_ModernBitmaps[resident_id] == frame;
+            gpu_present = lgd3d_texture_is_resident(resident_id);
+            gpu_owner_matches = lgd3d_get_texture_bitmap(resident_id) == frame;
          }
       }
       if (frame && frame->type == BMT_FLAT8 &&

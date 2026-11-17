@@ -5,7 +5,7 @@ import sys
 from compare import read_ppm
 
 paths = sorted(pathlib.Path(sys.argv[1]).glob('*.ppm'), key=lambda path: int(path.stem))
-assert len(paths) == 13, f'Expected 13 stress captures, found {len(paths)}'
+assert len(paths) == 14, f'Expected 14 stress captures, found {len(paths)}'
 for path in paths:
     frame = int(path.stem)
     width, height, pixels = read_ppm(path)
@@ -16,6 +16,8 @@ for path in paths:
             if frame == 0:
                 stripe = min(2, ((x + 1) * 3 - 1) // width)
                 expected = tuple(255 if channel == stripe else 0 for channel in range(3))
+            elif frame == 13:
+                expected = (255, 0, 0)
             else:
                 i = frame - 1
                 expected = ((i * 37 + 43) & 255, (i * 53 + 71) & 255, (i * 29 + 101) & 255)

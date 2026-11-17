@@ -172,7 +172,7 @@ public:
       return 1;
    }
 
-   int BeginFrame()
+   int BeginScene()
    {
       if (!m_renderer || !m_commandBuffer)
          return 0;
@@ -185,7 +185,6 @@ public:
       return 1;
    }
 
-   void EndFrame() {}
    void PresentProgress() { DarkRenderPresentProgress(); }
    void DeactivateScene() { m_sceneActive = false; }
 
@@ -413,9 +412,8 @@ int RenderBackendClientToLogicalPoint(int *x, int *y)
 { return Backend().ClientToLogicalPoint(x, y); }
 int RenderBackendLogicalToClientPoint(int *x, int *y)
 { return Backend().LogicalToClientPoint(x, y); }
-int RenderBackendBeginFrame(void)
-{ return ReturnZeroOnFailure([] { return Backend().BeginFrame(); }); }
-void RenderBackendEndFrame(void) { Backend().EndFrame(); }
+int RenderBackendBeginScene(void)
+{ return ReturnZeroOnFailure([] { return Backend().BeginScene(); }); }
 void RenderBackendPresentProgress(void)
 { IgnoreOperationFailure([] { Backend().PresentProgress(); }); }
 void RenderBackendDeactivateScene(void) { Backend().DeactivateScene(); }
