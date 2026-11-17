@@ -49,8 +49,14 @@ bool cMovieAudioOutput::IsDrained()
     if (!sample)
     {
         std::lock_guard<std::mutex> lock(mutex);
-        return finished && queue.empty();
+        // Finish already attempted to create the stream. If no sample could
+        // be allocated, there is no playable audio to wait for.
+        return finished;
     }
+    // The refill worker requests DeferredStop at EOF. Only the normal mixer
+    // update transitions the sample to Stopped, and the game loop is suspended
+    // during synchronous movie playback.
+    mixer->Update();
     eSndState state{};
     eSndFlagSet flags{};
     sample->GetStatus(&state, &flags);

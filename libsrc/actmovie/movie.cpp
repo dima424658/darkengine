@@ -303,7 +303,8 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
                 if (converted > 0)
                 {
                     samples.resize((size_t)converted * 2);
-                    audioOutput.Submit(samples.data(), samples.size());
+                    if (!audioOutput.Submit(samples.data(), samples.size()))
+                        audioAvailable = false;
                 }
             }
             av_frame_unref(frame);
