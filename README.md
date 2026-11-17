@@ -200,9 +200,10 @@ The runner currently provides:
 #### Prerequisites
 
 - 64-bit Windows 10 or Windows 11.
-- MSVC v143 x86/x64 build tools and a Windows 10 or 11 SDK.
-- CMake 3.21 or later, MSYS2 Bash and Make, and the Vulkan SDK (including
-  `glslc`).
+- Visual Studio 2026 with MSVC x86/x64 build tools and a Windows 10 or 11 SDK
+  for the supplied Windows presets.
+- CMake 4.2 or later for those presets, MSYS2 Bash and Make, and the Vulkan SDK
+  (including `glslc`).
 - Bison 2.3 or later on the build host (`bison` or `win_bison` on `PATH`).
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
@@ -218,6 +219,13 @@ cmake --build --preset windows-x64-release
 
 cmake --preset windows-x86
 cmake --build --preset windows-x86-release
+```
+
+Visual Studio 2022 can instead be selected explicitly with CMake 3.21 or newer:
+
+```powershell
+cmake -S . -B build-win64 -G "Visual Studio 17 2022" -A x64 -DDARK_BUILD_DROMED=ON
+cmake --build build-win64 --config Release --target thief2 dromed
 ```
 
 SDL3, zlib, libpng, Squirrel, libogg, libvorbis, FFmpeg, and the PKWARE DCL

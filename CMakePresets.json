@@ -44,7 +44,7 @@
       "name": "windows-base",
       "hidden": true,
       "displayName": "Windows",
-      "description": "Common game and DromEd configuration for Visual Studio 2022.",
+      "description": "Common game and DromEd configuration for Visual Studio 2026 (CMake 4.2 or newer).",
       "generator": "Visual Studio 18 2026",
       "condition": {
         "type": "equals",
