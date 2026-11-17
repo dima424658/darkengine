@@ -72,6 +72,8 @@ static void TestSnapshot()
 
 }
 
+#include "renderer_stress.hpp"
+
 int main(int argc, char **argv)
 try
 {
@@ -81,7 +83,8 @@ try
       std::puts("Canvas snapshot checks passed");
       return 0;
    }
-   Require(argc == 3, "Usage: vulkan_canvas_test scene.vert.spv scene.frag.spv");
+   const bool stress = argc == 4 && std::string(argv[3]) == "--stress";
+   Require(argc == 3 || stress, "Usage: vulkan_canvas_test scene.vert.spv scene.frag.spv [--stress]");
    Require(SDL_Init(SDL_INIT_VIDEO), SDL_GetError());
    constexpr int width = 257, height = 256;
    std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window(
@@ -111,7 +114,8 @@ try
       {0,0,0,1, 1,1,1,1, 1, 0,0, 0,0}, {w,0,0,1, 1,1,1,1, 1, 1,0, 1,0},
       {w,h,0,1, 1,1,1,1, 1, 1,1, 1,1}, {0,0,0,1, 1,1,1,1, 1, 0,0, 0,0},
       {w,h,0,1, 1,1,1,1, 1, 1,1, 1,1}, {0,h,0,1, 1,1,1,1, 1, 0,1, 0,1}};
-   for (int depth : {8, 15, 16})
+   if (stress) RunRendererStress(context, renderer, quad, width, height);
+   else for (int depth : {8, 15, 16})
       for (bool smooth : {false, true})
          for (bool transparent : {false, true})
          {
@@ -179,7 +183,7 @@ try
             renderer.DestroyTexture(paletteTexture);
             SDL_PumpEvents();
          }
-   std::puts("Rendered 12 canvas comparisons: 8/15/16-bit, nearest/linear, opaque/transparent");
+   if (!stress) std::puts("Rendered 12 canvas comparisons: 8/15/16-bit, nearest/linear, opaque/transparent");
    renderer.Shutdown();
    context.Shutdown();
    window.reset();

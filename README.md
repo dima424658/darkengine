@@ -365,6 +365,13 @@ normal fallback path. The legacy UI drawing code still runs on the CPU.
 See the [canvas regression check](tools/vulkan_canvas_test/README.md) for
 pixel comparisons against the previous CPU conversion.
 
+Vulkan texture uploads reuse persistently mapped staging buffers, command
+buffers, and fences after GPU completion; the idle staging cache is limited
+to 64 MiB and 64 slots. Texture/sampler descriptors are cached separately for
+each frame slot, and repeated pipeline, descriptor, viewport, push-constant,
+and vertex-buffer bindings are skipped within a command buffer. Texture
+replacement gets a new identity so recorded draws retain their old image.
+
 Run DromEd from the same retail directory. It accepts the same editor command
 line used on Windows, including deterministic viewport inspection:
 

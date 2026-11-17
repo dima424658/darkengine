@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <cstddef>
 #include <cstring>
+#include <limits>
 #include <set>
 #include <string>
 #include <utility>
@@ -381,6 +383,9 @@ void cVulkanContext::Shutdown()
    {
       try { (void)(*m_device).waitIdle(); } catch (...) {}
       m_pendingUploads.clear();
+      m_pendingUploadHead = 0;
+      m_uploadPool.clear();
+      m_cachedUploadBytes = 0;
       DestroySwapchain();
       m_inFlightFences.clear();
       m_imageAvailable.clear();
@@ -670,6 +675,7 @@ bool cVulkanContext::Resize(uint32_t drawableWidth, uint32_t drawableHeight)
       m_frameActive = false;
       (void)(*m_device).waitIdle();
       m_pendingUploads.clear();
+      m_pendingUploadHead = 0;
       // A failed frame can leave an acquire semaphore signaled or a fence
       // unsignaled. Recreate synchronization objects together with the
       // swapchain so the next frame starts from a known state.
@@ -773,6 +779,7 @@ bool cVulkanContext::RecreateSurface(const tSurfaceFactory &createSurface,
       m_frameActive = false;
       (void)(*m_device).waitIdle();
       m_pendingUploads.clear();
+      m_pendingUploadHead = 0;
       m_inFlightFences.clear();
       m_imageAvailable.clear();
       m_renderFinished.clear();
@@ -877,36 +884,78 @@ bool cVulkanContext::EndFrame()
    }
 }
 
-bool cVulkanContext::SubmitUpload(
-   const std::function<void(vk::CommandBuffer)> &record,
-   vk::raii::Buffer &&stagingBuffer,
-   vk::raii::DeviceMemory &&stagingMemory)
+std::unique_ptr<cVulkanContext::sPendingUpload> cVulkanContext::AcquireUpload(
+   vk::DeviceSize bytes)
 {
-   if (!*m_device || !*m_commandPool || !record)
+   CollectCompletedUploads();
+   size_t best = m_uploadPool.size();
+   for (size_t i = 0; i < m_uploadPool.size(); ++i)
+      if (m_uploadPool[i]->capacity >= bytes &&
+          (best == m_uploadPool.size() || m_uploadPool[i]->capacity < m_uploadPool[best]->capacity))
+         best = i;
+   if (best != m_uploadPool.size())
+   {
+      auto upload = std::move(m_uploadPool[best]);
+      m_cachedUploadBytes -= upload->allocationBytes;
+      m_uploadPool[best] = std::move(m_uploadPool.back());
+      m_uploadPool.pop_back();
+      return upload;
+   }
+
+   auto upload = std::make_unique<sPendingUpload>();
+   upload->device = *m_device;
+   // Geometric size classes let different texture sizes share staging slots.
+   vk::DeviceSize capacity = 4096;
+   while (capacity < bytes && capacity <= std::numeric_limits<vk::DeviceSize>::max() / 2)
+      capacity *= 2;
+   upload->capacity = std::max(capacity, bytes);
+   upload->stagingBuffer = m_device.createBuffer(vk::BufferCreateInfo({}, upload->capacity,
+      vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive));
+   const auto requirements = (*m_device).getBufferMemoryRequirements(*upload->stagingBuffer);
+   upload->allocationBytes = requirements.size;
+   const auto memoryType = FindHostVisibleMemoryType(requirements.memoryTypeBits, &upload->coherent);
+   upload->stagingMemory = m_device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryType));
+   (*m_device).bindBufferMemory(*upload->stagingBuffer, *upload->stagingMemory, 0);
+   upload->mapped = (*m_device).mapMemory(*upload->stagingMemory, 0, requirements.size);
+   upload->fence = m_device.createFence({});
+   upload->commandBuffers = m_device.allocateCommandBuffers(vk::CommandBufferAllocateInfo(
+      *m_commandPool, vk::CommandBufferLevel::ePrimary, 1));
+   return upload;
+}
+
+bool cVulkanContext::SubmitUpload(const void *pixels, int width, int height, int rowBytes,
+   const std::function<void(vk::CommandBuffer, vk::Buffer)> &record)
+{
+   if (!*m_device || !*m_commandPool || !record || !pixels || width <= 0 || height <= 0 ||
+       rowBytes <= 0 || static_cast<uint64_t>(width) * 4 > static_cast<uint64_t>(rowBytes))
+      return false;
+   const size_t rowSize = static_cast<size_t>(width) * 4;
+   if (static_cast<size_t>(height) > std::numeric_limits<size_t>::max() / rowSize ||
+       static_cast<size_t>(height - 1) >
+          (std::numeric_limits<size_t>::max() - rowSize) / static_cast<size_t>(rowBytes))
       return false;
    try
    {
-      m_pendingUploads.reserve(m_pendingUploads.size() + 1);
-      auto upload = std::make_unique<sPendingUpload>();
-      vk::CommandBufferAllocateInfo allocation(*m_commandPool,
-         vk::CommandBufferLevel::ePrimary, 1);
-      upload->commandBuffers = m_device.allocateCommandBuffers(allocation);
-      vk::CommandBuffer commandBuffer = *upload->commandBuffers.front();
-      commandBuffer.begin(vk::CommandBufferBeginInfo(
-         vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
-      record(commandBuffer);
+      // Reserve before submitting: registering a successful submission must
+      // never throw and destroy an upload that the GPU is still reading.
+      if (m_pendingUploads.size() == m_pendingUploads.capacity())
+         m_pendingUploads.reserve(std::max<size_t>(8, m_pendingUploads.size() * 2));
+      auto upload = AcquireUpload(static_cast<vk::DeviceSize>(rowSize) * height);
+      for (int y = 0; y < height; ++y)
+         std::memcpy(static_cast<uint8_t *>(upload->mapped) + static_cast<size_t>(y) * rowSize,
+            static_cast<const uint8_t *>(pixels) + static_cast<size_t>(y) * rowBytes, rowSize);
+      if (!upload->coherent)
+         (*m_device).flushMappedMemoryRanges(
+            vk::MappedMemoryRange(*upload->stagingMemory, 0, VK_WHOLE_SIZE));
+      const vk::CommandBuffer commandBuffer = *upload->commandBuffers.front();
+      commandBuffer.reset();
+      commandBuffer.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+      record(commandBuffer, *upload->stagingBuffer);
       commandBuffer.end();
-      upload->fence = m_device.createFence({});
-      upload->stagingBuffer = std::move(stagingBuffer);
-      upload->stagingMemory = std::move(stagingMemory);
-
-      // Uploads and frame draws use the same queue. Later frame submissions
-      // are ordered after this transfer, so texture images are ready before
-      // their first draw without stalling the host on queue.waitIdle().
-      const vk::CommandBuffer submittedCommandBuffer = commandBuffer;
+      (*m_device).resetFences(*upload->fence);
       vk::SubmitInfo submit{};
       submit.commandBufferCount = 1;
-      submit.pCommandBuffers = &submittedCommandBuffer;
+      submit.pCommandBuffers = &commandBuffer;
       m_graphicsQueue.submit(submit, *upload->fence);
       m_pendingUploads.push_back(std::move(upload));
       return true;
@@ -919,21 +968,56 @@ bool cVulkanContext::SubmitUpload(
 
 void cVulkanContext::CollectCompletedUploads()
 {
-   for (auto upload = m_pendingUploads.begin();
-        upload != m_pendingUploads.end();)
+   constexpr vk::DeviceSize cacheBudget = 64 * 1024 * 1024;
+   constexpr size_t maxCachedSlots = 64;
+   // Submissions share a queue, so completed uploads form a prefix. Stop at
+   // its first unsignaled fence instead of polling every pending upload on
+   // each texture creation during a large level load.
+   while (m_pendingUploadHead < m_pendingUploads.size())
    {
       try
       {
-         if ((*m_device).getFenceStatus(*(*upload)->fence) == vk::Result::eSuccess)
+         auto &upload = m_pendingUploads[m_pendingUploadHead];
+         if ((*m_device).getFenceStatus(*upload->fence) != vk::Result::eSuccess)
+            break;
+         if (upload->allocationBytes <= cacheBudget)
          {
-            upload = m_pendingUploads.erase(upload);
-            continue;
+            // Adapt to changes in upload sizes: a cache full of tiny level
+            // textures must not prevent reuse of larger HUD/movie buffers.
+            while (!m_uploadPool.empty() && (m_uploadPool.size() >= maxCachedSlots ||
+                   upload->allocationBytes > cacheBudget - m_cachedUploadBytes))
+            {
+               const auto smallest = std::min_element(m_uploadPool.begin(), m_uploadPool.end(),
+                  [](const auto &a, const auto &b) { return a->allocationBytes < b->allocationBytes; });
+               m_cachedUploadBytes -= (*smallest)->allocationBytes;
+               *smallest = std::move(m_uploadPool.back());
+               m_uploadPool.pop_back();
+            }
+            // Allocate bookkeeping before moving ownership. Allocation or
+            // device errors leave the upload safely owned until a later poll.
+            m_uploadPool.push_back(nullptr);
+            m_cachedUploadBytes += upload->allocationBytes;
+            m_uploadPool.back() = std::move(upload);
          }
+         else upload.reset();
+         ++m_pendingUploadHead;
       }
       catch (const std::exception &)
       {
+         break;
       }
-      ++upload;
+   }
+   if (m_pendingUploadHead == m_pendingUploads.size())
+   {
+      m_pendingUploads.clear();
+      m_pendingUploadHead = 0;
+   }
+   else if (m_pendingUploadHead >= 64 && m_pendingUploadHead >= m_pendingUploads.size() / 2)
+   {
+      // Amortize bookkeeping compaction; no live GPU resources are removed.
+      m_pendingUploads.erase(m_pendingUploads.begin(),
+         m_pendingUploads.begin() + static_cast<std::ptrdiff_t>(m_pendingUploadHead));
+      m_pendingUploadHead = 0;
    }
 }
 

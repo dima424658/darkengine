@@ -36,9 +36,10 @@ public:
    bool BeginFrame(const std::array<float, 4> &clearColor,
       vk::CommandBuffer *commandBuffer);
    bool EndFrame();
-   bool SubmitUpload(const std::function<void(vk::CommandBuffer)> &record,
-      vk::raii::Buffer &&stagingBuffer,
-      vk::raii::DeviceMemory &&stagingMemory);
+   // Copies RGBA8 storage (including packed legacy canvases) into a reusable
+   // mapped staging allocation. A slot is reused only after its fence signals.
+   bool SubmitUpload(const void *pixels, int width, int height, int rowBytes,
+      const std::function<void(vk::CommandBuffer, vk::Buffer)> &record);
    bool Resize(uint32_t drawableWidth, uint32_t drawableHeight);
    bool RecreateSurface(const tSurfaceFactory &createSurface,
       uint32_t drawableWidth, uint32_t drawableHeight);
@@ -68,6 +69,16 @@ public:
 private:
    struct sPendingUpload
    {
+      ~sPendingUpload()
+      {
+         if (mapped)
+            try { device.unmapMemory(*stagingMemory); } catch (...) {}
+      }
+      vk::Device device{};
+      void *mapped{};
+      vk::DeviceSize capacity{};
+      vk::DeviceSize allocationBytes{};
+      bool coherent{};
       vk::raii::DeviceMemory stagingMemory{nullptr};
       vk::raii::Buffer stagingBuffer{nullptr};
       vk::raii::Fence fence{nullptr};
@@ -82,9 +93,13 @@ private:
    bool CreateSwapchain();
    void DestroySwapchain();
    void CollectCompletedUploads();
+   std::unique_ptr<sPendingUpload> AcquireUpload(vk::DeviceSize bytes);
 
    vk::raii::Context m_raiiContext;
    std::vector<std::unique_ptr<sPendingUpload>> m_pendingUploads;
+   size_t m_pendingUploadHead{};
+   std::vector<std::unique_ptr<sPendingUpload>> m_uploadPool;
+   vk::DeviceSize m_cachedUploadBytes{};
    vk::raii::Instance m_instance{nullptr};
    vk::raii::SurfaceKHR m_surface{nullptr};
    vk::raii::PhysicalDevice m_physicalDevice{nullptr};

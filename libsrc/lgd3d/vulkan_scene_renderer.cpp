@@ -63,6 +63,24 @@ static_assert(sizeof(sPushConstants) == 48, "SPIR-V push constant layout mismatc
 static_assert(offsetof(sPushConstants, canvasMode) == 28 &&
    offsetof(sPushConstants, fogColor) == 32, "SPIR-V canvas constant offsets mismatch");
 
+struct sDescriptorKey
+{
+   // Texture identities never alias newly allocated image views. Sampler
+   // indices remain stable for the lifetime of the renderer.
+   std::array<uint64_t, 4> values;
+   bool operator==(const sDescriptorKey &other) const { return values == other.values; }
+};
+struct sDescriptorHash
+{
+   size_t operator()(const sDescriptorKey &key) const
+   {
+      size_t hash = 0;
+      for (uint64_t value : key.values)
+         hash ^= std::hash<uint64_t>{}(value) + size_t(0x9e3779b9) + (hash << 6) + (hash >> 2);
+      return hash;
+   }
+};
+
 bool IsValidRgbaImage(int width, int height, int rowBytes)
 {
    if (width <= 0 || height <= 0 || rowBytes <= 0)
@@ -128,7 +146,8 @@ struct cVulkanSceneRenderer::sTexture
    sTexture &operator=(const sTexture &) = delete;
    sTexture(sTexture &&other) noexcept
       : memory(std::move(other.memory)), image(std::move(other.image)),
-        view(std::move(other.view)), width(other.width), height(other.height)
+        view(std::move(other.view)), width(other.width), height(other.height),
+        identity(std::exchange(other.identity, 0))
    {
       other.width = other.height = 0;
    }
@@ -142,6 +161,7 @@ struct cVulkanSceneRenderer::sTexture
          view = std::move(other.view);
          width = other.width;
          height = other.height;
+         identity = std::exchange(other.identity, 0);
          other.width = other.height = 0;
       }
       return *this;
@@ -154,6 +174,7 @@ struct cVulkanSceneRenderer::sTexture
       image.clear();
       memory.clear();
       width = height = 0;
+      identity = 0;
    }
 
    vk::raii::DeviceMemory memory{nullptr};
@@ -161,6 +182,7 @@ struct cVulkanSceneRenderer::sTexture
    vk::raii::ImageView view{nullptr};
    int width{};
    int height{};
+   uint64_t identity{};
 };
 
 struct cVulkanSceneRenderer::sVertexBuffer
@@ -222,6 +244,31 @@ struct cVulkanSceneRenderer::sFrameResources
    std::vector<vk::raii::DescriptorPool> descriptorPools;
    size_t descriptorPoolIndex{};
    vk::DeviceSize vertexOffset{};
+   struct sCachedDescriptor
+   {
+      vk::DescriptorSet set;
+      size_t pool;
+      uint64_t lastUsed;
+   };
+   std::unordered_map<sDescriptorKey, sCachedDescriptor, sDescriptorHash> descriptors;
+   uint64_t descriptorEpoch{};
+   vk::CommandBuffer cachedCommandBuffer{};
+   vk::Pipeline boundPipeline{};
+   vk::DescriptorSet boundDescriptor{};
+   vk::Buffer boundVertexBuffer{};
+   std::array<int, 4> viewport{};
+   bool viewportValid{};
+   sPushConstants constants{};
+   bool constantsValid{};
+
+   void ResetDrawState(vk::CommandBuffer command = {})
+   {
+      cachedCommandBuffer = command;
+      boundPipeline = nullptr;
+      boundDescriptor = nullptr;
+      boundVertexBuffer = nullptr;
+      viewportValid = constantsValid = false;
+   }
 };
 
 namespace
@@ -372,6 +419,8 @@ void cVulkanSceneRenderer::ResetPipelines()
    m_context->RaiiDevice().waitIdle();
    for (auto &pipeline : m_pipelines)
       pipeline.clear();
+   for (auto &frame : m_frames)
+      if (frame) frame->ResetDrawState();
 }
 
 void cVulkanSceneRenderer::BeginFrame(uint32_t frameIndex)
@@ -390,8 +439,19 @@ void cVulkanSceneRenderer::BeginFrame(uint32_t frameIndex)
    // The frame fence has signaled, so the previous submission no longer
    // references buffers retired after an in-frame capacity increase.
    frame.retiredVertexBuffers.clear();
-   for (const auto &pool : frame.descriptorPools)
-      m_context->Device().resetDescriptorPool(*pool);
+   ++frame.descriptorEpoch;
+   // Only this frame slot references these sets, and its fence has signaled.
+   // Keep last frame's bindings hot; reclaim cold sets without resetting the
+   // pools or updating descriptors that another frame could still use.
+   for (auto entry = frame.descriptors.begin(); entry != frame.descriptors.end();)
+      if (entry->second.lastUsed + 1 < frame.descriptorEpoch)
+      {
+         (void)m_context->Device().freeDescriptorSets(
+            *frame.descriptorPools[entry->second.pool], entry->second.set);
+         entry = frame.descriptors.erase(entry);
+      }
+      else ++entry;
+   frame.ResetDrawState();
    frame.descriptorPoolIndex = 0;
    frame.vertexOffset = 0;
 }
@@ -542,6 +602,8 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
    if (scissorRight <= scissorLeft || scissorBottom <= scissorTop)
       return false;
    sFrameResources &frame = *m_frames[m_frameIndex];
+   if (frame.cachedCommandBuffer != commandBuffer)
+      frame.ResetDrawState(commandBuffer);
    const vk::DeviceSize byteCount = static_cast<vk::DeviceSize>(vertexCount) *
       sizeof(sRenderBackendVertex);
    if (byteCount > std::numeric_limits<size_t>::max())
@@ -562,6 +624,8 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
       frame.vertexOffset = 0;
       AllocateVertexBuffer(frame.vertexBuffer, newCapacity);
    }
+   if (frame.vertexOffset / sizeof(sRenderBackendVertex) > std::numeric_limits<uint32_t>::max())
+      return false;
    std::memcpy(static_cast<uint8_t *>(frame.vertexBuffer.mapped) +
          frame.vertexOffset,
       vertices, static_cast<size_t>(byteCount));
@@ -581,55 +645,69 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
       ? static_cast<sTexture *>(m_boundTextures[1]) : m_whiteTexture.get();
    if (!first) first = m_whiteTexture.get();
    if (!second) second = m_whiteTexture.get();
-   vk::DescriptorSet descriptor{};
-   while (!descriptor)
+   const sDescriptorKey key{{first->identity, second->identity,
+      static_cast<uint64_t>(m_wrap[0] * 2 + m_smooth[0]),
+      static_cast<uint64_t>(m_wrap[1] * 2 + m_smooth[1])}};
+   auto cached = frame.descriptors.find(key);
+   if (cached == frame.descriptors.end())
    {
-      if (frame.descriptorPoolIndex >= frame.descriptorPools.size())
+      vk::DescriptorSet descriptor{};
+      while (!descriptor)
       {
-      frame.descriptorPools.push_back(
-         CreateDescriptorPool(m_context->RaiiDevice()));
+         if (frame.descriptorPoolIndex >= frame.descriptorPools.size())
+            frame.descriptorPools.push_back(CreateDescriptorPool(m_context->RaiiDevice()));
+         const vk::DescriptorSetAllocateInfo allocation(
+            *frame.descriptorPools[frame.descriptorPoolIndex], 1, &*m_descriptorLayout);
+         try { descriptor = m_context->Device().allocateDescriptorSets(allocation).front(); }
+         catch (const vk::OutOfPoolMemoryError &) { ++frame.descriptorPoolIndex; }
+         catch (const vk::FragmentedPoolError &) { ++frame.descriptorPoolIndex; }
       }
-      const vk::DescriptorSetAllocateInfo setAllocation(
-         *frame.descriptorPools[frame.descriptorPoolIndex],
-         1, &*m_descriptorLayout);
+      vk::DescriptorImageInfo images[] = {
+         {GetSampler(m_wrap[0], m_smooth[0]), *first->view, vk::ImageLayout::eShaderReadOnlyOptimal},
+         {GetSampler(m_wrap[1], m_smooth[1]), *second->view, vk::ImageLayout::eShaderReadOnlyOptimal}};
+      vk::WriteDescriptorSet writes[] = {
+         {descriptor, 0, 0, 1, vk::DescriptorType::eCombinedImageSampler, &images[0]},
+         {descriptor, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler, &images[1]}};
+      m_context->Device().updateDescriptorSets(writes, {});
       try
       {
-         descriptor = m_context->Device().allocateDescriptorSets(
-            setAllocation).front();
+         cached = frame.descriptors.emplace(key, sFrameResources::sCachedDescriptor{
+            descriptor, frame.descriptorPoolIndex, frame.descriptorEpoch}).first;
       }
-      catch (const vk::OutOfPoolMemoryError &)
+      catch (...)
       {
-         ++frame.descriptorPoolIndex;
-      }
-      catch (const vk::FragmentedPoolError &)
-      {
-         ++frame.descriptorPoolIndex;
+         (void)m_context->Device().freeDescriptorSets(
+            *frame.descriptorPools[frame.descriptorPoolIndex], descriptor);
+         throw;
       }
    }
-   vk::DescriptorImageInfo imageInfos[] = {
-      {GetSampler(m_wrap[0], m_smooth[0]), *first->view,
-         vk::ImageLayout::eShaderReadOnlyOptimal},
-      {GetSampler(m_wrap[1], m_smooth[1]), *second->view,
-         vk::ImageLayout::eShaderReadOnlyOptimal}};
-   vk::WriteDescriptorSet writes[] = {
-      {descriptor, 0, 0, 1, vk::DescriptorType::eCombinedImageSampler,
-         &imageInfos[0]},
-      {descriptor, 1, 0, 1, vk::DescriptorType::eCombinedImageSampler,
-         &imageInfos[1]}};
-   m_context->Device().updateDescriptorSets(writes, {});
-
-   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
-      GetPipeline(primitive));
-   commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-      *m_pipelineLayout, 0, descriptor, {});
-   commandBuffer.setViewport(0, vk::Viewport(
-      static_cast<float>(m_viewportX), static_cast<float>(m_viewportY),
-      static_cast<float>(viewportWidth), static_cast<float>(viewportHeight),
-      0.0f, 1.0f));
-   commandBuffer.setScissor(0, vk::Rect2D(
-      {static_cast<int32_t>(scissorLeft), static_cast<int32_t>(scissorTop)},
-      {static_cast<uint32_t>(scissorRight - scissorLeft),
-       static_cast<uint32_t>(scissorBottom - scissorTop)}));
+   cached->second.lastUsed = frame.descriptorEpoch;
+   const vk::DescriptorSet descriptor = cached->second.set;
+   const vk::Pipeline pipeline = GetPipeline(primitive);
+   if (frame.boundPipeline != pipeline)
+   {
+      commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+      frame.boundPipeline = pipeline;
+   }
+   if (frame.boundDescriptor != descriptor)
+   {
+      commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+         *m_pipelineLayout, 0, descriptor, {});
+      frame.boundDescriptor = descriptor;
+   }
+   const std::array<int, 4> viewport{{m_viewportX, m_viewportY, viewportWidth, viewportHeight}};
+   if (!frame.viewportValid || frame.viewport != viewport)
+   {
+      commandBuffer.setViewport(0, vk::Viewport(
+         static_cast<float>(m_viewportX), static_cast<float>(m_viewportY),
+         static_cast<float>(viewportWidth), static_cast<float>(viewportHeight), 0.0f, 1.0f));
+      commandBuffer.setScissor(0, vk::Rect2D(
+         {static_cast<int32_t>(scissorLeft), static_cast<int32_t>(scissorTop)},
+         {static_cast<uint32_t>(scissorRight - scissorLeft),
+          static_cast<uint32_t>(scissorBottom - scissorTop)}));
+      frame.viewport = viewport;
+      frame.viewportValid = true;
+   }
    sPushConstants constants{};
    constants.viewportSize[0] = static_cast<float>(logicalWidth);
    constants.viewportSize[1] = static_cast<float>(logicalHeight);
@@ -643,12 +721,21 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
    constants.fogColor[1] = ((m_fogColor >> 8) & 255) / 255.0f;
    constants.fogColor[2] = (m_fogColor & 255) / 255.0f;
    constants.fogColor[3] = 1.0f;
-   commandBuffer.pushConstants(*m_pipelineLayout,
-      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
-      0, sizeof(constants), &constants);
-   commandBuffer.bindVertexBuffers(0, *frame.vertexBuffer.buffer,
-      frame.vertexOffset);
-   commandBuffer.draw(static_cast<uint32_t>(vertexCount), 1, 0, 0);
+   if (!frame.constantsValid || std::memcmp(&frame.constants, &constants, sizeof(constants)) != 0)
+   {
+      commandBuffer.pushConstants(*m_pipelineLayout,
+         vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+         0, sizeof(constants), &constants);
+      frame.constants = constants;
+      frame.constantsValid = true;
+   }
+   if (frame.boundVertexBuffer != *frame.vertexBuffer.buffer)
+   {
+      commandBuffer.bindVertexBuffers(0, *frame.vertexBuffer.buffer, vk::DeviceSize(0));
+      frame.boundVertexBuffer = *frame.vertexBuffer.buffer;
+   }
+   commandBuffer.draw(static_cast<uint32_t>(vertexCount), 1,
+      static_cast<uint32_t>(frame.vertexOffset / sizeof(sRenderBackendVertex)), 0);
    frame.vertexOffset += byteCount;
    return true;
 }
@@ -739,34 +826,8 @@ bool cVulkanSceneRenderer::CreateTextureImage(sTexture &texture, int width,
    if (!m_context || !rgba || !IsValidRgbaImage(width, height, rowBytes))
       return false;
    const vk::Device device = m_context->Device();
-   vk::raii::DeviceMemory stagingMemory{nullptr};
-   vk::raii::Buffer staging{nullptr};
    try
    {
-      const size_t pixelBytes = static_cast<size_t>(width) * 4;
-      const vk::DeviceSize bytes = static_cast<vk::DeviceSize>(pixelBytes) *
-         static_cast<uint32_t>(height);
-      staging = m_context->RaiiDevice().createBuffer(vk::BufferCreateInfo({}, bytes,
-         vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive));
-      auto req = device.getBufferMemoryRequirements(*staging);
-      bool stagingCoherent = false;
-      const uint32_t stagingMemoryType = m_context->FindHostVisibleMemoryType(
-         req.memoryTypeBits, &stagingCoherent);
-      stagingMemory = m_context->RaiiDevice().allocateMemory(vk::MemoryAllocateInfo(req.size,
-         stagingMemoryType));
-      device.bindBufferMemory(*staging, *stagingMemory, 0);
-      void *mapped = device.mapMemory(*stagingMemory, 0, req.size);
-      for (int y = 0; y < height; ++y)
-         std::memcpy(static_cast<uint8_t *>(mapped) +
-               static_cast<size_t>(y) * pixelBytes,
-            static_cast<const uint8_t *>(rgba) +
-               static_cast<size_t>(y) * static_cast<size_t>(rowBytes),
-            pixelBytes);
-      if (!stagingCoherent)
-         device.flushMappedMemoryRanges(
-            vk::MappedMemoryRange(*stagingMemory, 0, VK_WHOLE_SIZE));
-      device.unmapMemory(*stagingMemory);
-
       vk::ImageCreateInfo imageInfo{};
       imageInfo.imageType = vk::ImageType::e2D;
       imageInfo.format = vk::Format::eR8G8B8A8Unorm;
@@ -780,7 +841,7 @@ bool cVulkanSceneRenderer::CreateTextureImage(sTexture &texture, int width,
       imageInfo.sharingMode = vk::SharingMode::eExclusive;
       imageInfo.initialLayout = vk::ImageLayout::eUndefined;
       texture.image = m_context->RaiiDevice().createImage(imageInfo);
-      req = device.getImageMemoryRequirements(*texture.image);
+      const auto req = device.getImageMemoryRequirements(*texture.image);
       texture.memory = m_context->RaiiDevice().allocateMemory(vk::MemoryAllocateInfo(req.size,
          m_context->FindMemoryType(req.memoryTypeBits,
             vk::MemoryPropertyFlagBits::eDeviceLocal)));
@@ -793,8 +854,8 @@ bool cVulkanSceneRenderer::CreateTextureImage(sTexture &texture, int width,
          vk::ImageViewType::e2D, vk::Format::eR8G8B8A8Unorm,
          {}, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)));
       const vk::Image textureImage = *texture.image;
-      const vk::Buffer stagingBuffer = *staging;
-      const bool copied = m_context->SubmitUpload([&](vk::CommandBuffer command) {
+      const bool copied = m_context->SubmitUpload(rgba, width, height, rowBytes,
+         [&](vk::CommandBuffer command, vk::Buffer stagingBuffer) {
          vk::ImageMemoryBarrier toTransfer{};
          toTransfer.oldLayout = vk::ImageLayout::eUndefined;
          toTransfer.newLayout = vk::ImageLayout::eTransferDstOptimal;
@@ -824,11 +885,12 @@ bool cVulkanSceneRenderer::CreateTextureImage(sTexture &texture, int width,
          toShader.dstAccessMask = vk::AccessFlagBits::eShaderRead;
          command.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
             vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, toShader);
-      }, std::move(staging), std::move(stagingMemory));
+      });
       if (!copied)
          throw std::runtime_error("Vulkan texture upload failed");
       texture.width = width;
       texture.height = height;
+      texture.identity = m_nextTextureIdentity++;
       return true;
    }
    catch (...)
@@ -877,7 +939,6 @@ bool cVulkanSceneRenderer::UpdateTextureInternal(void *handle, int width,
    if (frameSlotIdle && (!m_context->FrameActive() ||
        m_frameIndex != m_context->FrameIndex()))
       return false;
-   const vk::Device device = m_context->Device();
    // RenderBackendDraw records commands into the active application frame.
    // Keep the previous image alive when a texture changes mid-frame so draws
    // already recorded keep sampling the old contents, matching the legacy
@@ -908,38 +969,11 @@ bool cVulkanSceneRenderer::UpdateTextureInternal(void *handle, int width,
       return true;
    }
 
-   vk::raii::DeviceMemory stagingMemory{nullptr};
-   vk::raii::Buffer staging{nullptr};
    try
    {
-      const size_t pixelBytes = static_cast<size_t>(width) * 4;
-      const vk::DeviceSize bytes = static_cast<vk::DeviceSize>(pixelBytes) *
-         static_cast<uint32_t>(height);
-      staging = m_context->RaiiDevice().createBuffer(vk::BufferCreateInfo({}, bytes,
-         vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive));
-      const auto requirements = device.getBufferMemoryRequirements(*staging);
-      bool stagingCoherent = false;
-      const uint32_t stagingMemoryType = m_context->FindHostVisibleMemoryType(
-         requirements.memoryTypeBits,
-         &stagingCoherent);
-      stagingMemory = m_context->RaiiDevice().allocateMemory(vk::MemoryAllocateInfo(
-         requirements.size, stagingMemoryType));
-      device.bindBufferMemory(*staging, *stagingMemory, 0);
-      void *mapped = device.mapMemory(*stagingMemory, 0, requirements.size);
-      for (int y = 0; y < height; ++y)
-         std::memcpy(static_cast<uint8_t *>(mapped) +
-               static_cast<size_t>(y) * pixelBytes,
-            static_cast<const uint8_t *>(rgba) +
-               static_cast<size_t>(y) * static_cast<size_t>(rowBytes),
-            pixelBytes);
-      if (!stagingCoherent)
-         device.flushMappedMemoryRanges(
-            vk::MappedMemoryRange(*stagingMemory, 0, VK_WHOLE_SIZE));
-      device.unmapMemory(*stagingMemory);
       const vk::Image image = *texture->image;
-      const vk::Buffer stagingBuffer = *staging;
-      const bool uploaded = m_context->SubmitUpload(
-         [&](vk::CommandBuffer command) {
+      const bool uploaded = m_context->SubmitUpload(rgba, width, height, rowBytes,
+         [&](vk::CommandBuffer command, vk::Buffer stagingBuffer) {
             vk::ImageMemoryBarrier toTransfer{};
             toTransfer.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
             toTransfer.newLayout = vk::ImageLayout::eTransferDstOptimal;
@@ -971,7 +1005,7 @@ bool cVulkanSceneRenderer::UpdateTextureInternal(void *handle, int width,
             toShader.dstAccessMask = vk::AccessFlagBits::eShaderRead;
             command.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
                vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, toShader);
-         }, std::move(staging), std::move(stagingMemory));
+         });
       return uploaded;
    }
    catch (...)

@@ -49,3 +49,35 @@ with a 95th-percentile frame time of 2.66 ms. The simulation clock advanced
 MangoHud, and 360-frame measurement window. Inventory changes, entering the
 simulation menu, returning with Escape, and editor resize were also checked
 under Vulkan synchronization validation.
+
+## Upload and descriptor reuse stress check
+
+Add `--stress` to render a three-stripe texture replacement check followed by
+12 frames with 30,002 draws each. The first four workload frames warm up the
+frame slots; the remaining eight are timed. The draws use a one-pixel viewport
+to limit fill cost, change samplers/pipelines/constants, and exceed the initial
+8 MiB vertex buffer. Frame-owned textures stream different colors with padded
+source rows and change dimensions halfway through the run. The first reference
+draw must survive vertex-buffer growth, and replacing a shared texture after
+recording a draw must preserve each stripe's original color.
+
+Use a separate capture directory because this workload produces 13 images:
+
+```sh
+mkdir -p /tmp/dark-renderer-stress
+VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation:VK_LAYER_LUNARG_screenshot \
+  VK_LAYER_VALIDATE_SYNC=1 VK_SCREENSHOT_FRAMES=all \
+  VK_SCREENSHOT_DIR=/tmp/dark-renderer-stress \
+  /tmp/dark-canvas-test/vulkan_canvas_test \
+  build-linux/generated/vulkan/scene.vert.spv \
+  build-linux/generated/vulkan/scene.frag.spv --stress
+python3 tools/vulkan_canvas_test/compare_stress.py /tmp/dark-renderer-stress
+```
+
+For timing, run the same executable with `--stress` without the validation and
+screenshot environment variables. On the current Linux PC, two runs against
+the pre-reuse renderer averaged 14.2–14.4 ms per workload frame; the optimized
+renderer averaged 2.6–2.7 ms. All 13 captured images matched expected colors
+exactly under synchronization validation. This synthetic workload emphasizes
+submission overhead: the stationary Thief Gold view remained approximately
+533–534 FPS, with no meaningful average-FPS change from these optimizations.

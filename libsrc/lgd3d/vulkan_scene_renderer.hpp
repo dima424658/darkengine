@@ -88,6 +88,7 @@ private:
    bool m_wrap[2]{};
    bool m_smooth[2]{true, true};
    uint32_t m_frameIndex{};
+   uint64_t m_nextTextureIdentity{1};
    int m_viewportX{};
    int m_viewportY{};
    int m_viewportWidth{};
