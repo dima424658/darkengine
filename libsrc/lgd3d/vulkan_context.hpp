@@ -28,6 +28,8 @@ public:
       uint32_t drawableHeight, int physicalDeviceIndex, char *error,
       unsigned errorCapacity);
    void Shutdown();
+   // Applied when creating or recreating the swapchain.
+   void SetVSync(bool enabled) { m_vsync = enabled; }
    bool PresentClearFrame(float red, float green, float blue, float alpha);
    // BeginFrame acquires a swapchain image and starts its render pass. The
    // returned command buffer is valid until EndFrame submits and presents it.
@@ -111,6 +113,7 @@ private:
    bool m_frameActive{};
    bool m_recreateSwapchain{};
    bool m_surfaceLost{};
+   bool m_vsync{true};
    uint32_t m_drawableWidth{}, m_drawableHeight{};
    vk::PhysicalDeviceProperties m_properties{};
    uint32_t m_graphicsQueueFamily{};

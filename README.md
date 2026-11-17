@@ -340,21 +340,40 @@ cd "$HOME/Games/Thief 2"
 /path/to/darkengine/build-linux/thief-runner quickstart=MISS1.MIS
 ```
 
+For uncapped performance measurements, disable both the simulation pacing
+override and VSync, and allow simulation steps below the legacy 10 ms minimum:
+
+```sh
+/path/to/darkengine/build-linux/thief-runner quickstart=MISS2.MIS \
+  SlowFrame=0 min_frame_time=0 vsync=0
+```
+
+`vsync=1` is the default. With `vsync=0`, Vulkan prefers mailbox presentation,
+then immediate presentation, and falls back to FIFO if neither is supported.
+Immediate presentation can tear. `SlowFrame` and simulation timing defaults
+remain unchanged; omit these overrides for the normal pacing behavior.
+
+The legacy HUD/menu canvas keeps its original 8/15/16-bit pixels. Vulkan
+decodes their colors, looks up palettes, filters, and composites them on the
+GPU. Unchanged canvas rows are retained, and unchanged frame-slot textures
+are not uploaded again. The legacy UI drawing code still runs on the CPU.
+See the [canvas regression check](tools/vulkan_canvas_test/README.md) for
+pixel comparisons against the previous CPU conversion.
+
 Run DromEd from the same retail directory. It accepts the same editor command
 line used on Windows, including deterministic viewport inspection:
 
 ```sh
-/path/to/darkengine/build-linux/dromed file=MISS1.MIS
-/path/to/darkengine/build-linux/dromed render_test=MISS1.MIS \
+/path/to/darkengine/build-linux/DromEd file=MISS1.MIS
+/path/to/darkengine/build-linux/DromEd render_test=MISS1.MIS \
   render_test_pos=37.43,100.15,18.97 render_test_angles=-35,90,0
 ```
 
-The Linux editor uses SDL for its window and input, SDL message boxes for
-editor prompts, and `zenity` when available for graphical Open/Save dialogs;
-it falls back to a terminal path prompt. The in-engine editor panes, command
-console, and keyboard bindings work, but the Unix provider does not yet supply
-a desktop application menu bar. Use the command console and shortcuts for
-commands that are menu-only on Windows.
+The Linux editor uses SDL for its window, input, and editor prompts, and
+nativefiledialog-extended through the desktop portal for Open/Save dialogs.
+The shared editor panes, command console, and keyboard bindings work. Native
+menu bars are currently disabled on all platforms; use the command console
+and shortcuts for those commands.
 
 An interactive launch from another directory opens the folder chooser. SDL
 uses relative-pointer input during gameplay and absolute coordinates in menus,

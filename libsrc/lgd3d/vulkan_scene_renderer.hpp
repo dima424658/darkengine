@@ -25,7 +25,7 @@ public:
    bool Draw(vk::CommandBuffer commandBuffer,
       const sRenderBackendVertex *vertices, int vertexCount, int primitive,
       bool useSecondTexture, int logicalWidth, int logicalHeight,
-      bool transparentBlack = false);
+      bool transparentBlack = false, uint32_t canvasMode = 0);
    void ClearDepth(vk::CommandBuffer commandBuffer);
    void ClearDepthRect(vk::CommandBuffer commandBuffer, int x, int y,
       int width, int height, int logicalWidth, int logicalHeight);

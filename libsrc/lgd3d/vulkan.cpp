@@ -23,6 +23,8 @@
 #include "vulkan_render_backend.hpp"
 #include "../dispdev/sdl_vulkan.hpp"
 #include "vulkan_scene_renderer.hpp"
+#include "canvas_snapshot.hpp"
+#include <config.h>
 
 namespace
 {
@@ -62,7 +64,7 @@ private:
    void HandleSwapchainRecreation();
    void ProcessPendingLifecycleResize();
    bool ApplyPendingResize();
-   void ConvertCanvas(const void *pixels, int width, int height, int rowBytes,
+   void CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
       int depth, const uint8_t *palette);
    bool PrepareCanvasTexture();
    void DrawCanvas(vk::CommandBuffer commandBuffer, bool transparent);
@@ -80,7 +82,8 @@ private:
    std::array<int, kVulkanFramesInFlight> m_canvasTextureHeights{};
    std::array<uint64_t, kVulkanFramesInFlight>
       m_canvasTextureGenerations{};
-   uint64_t m_canvasGeneration{};
+   std::array<void *, kVulkanFramesInFlight> m_canvasPaletteTextures{};
+   std::array<uint64_t, kVulkanFramesInFlight> m_canvasPaletteGenerations{};
    std::atomic<bool> m_windowMinimized{};
    std::atomic<bool> m_appInBackground{};
    std::atomic<bool> m_lifecycleResizePending{};
@@ -93,7 +96,7 @@ private:
    bool m_windowSizeChanged{};
    bool m_exitHookRegistered{};
    void *m_movieTexture{};
-   std::vector<uint8_t> m_canvasPixels;
+   cCanvasSnapshot m_canvas;
 };
 
 cVulkanRuntime &VulkanRuntime()
@@ -218,112 +221,68 @@ bool cVulkanRuntime::ApplyPendingResize()
    return true;
 }
 
-void cVulkanRuntime::ConvertCanvas(const void *pixels, int width, int height, int rowBytes,
+void cVulkanRuntime::CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
    int depth, const uint8_t *palette)
 {
-   if (!pixels || width <= 0 || height <= 0 || rowBytes <= 0 ||
-       (depth != 8 && depth != 15 && depth != 16) ||
-       (depth == 8 && !palette) ||
-       width > std::numeric_limits<int>::max() / (depth == 8 ? 1 : 2))
-      return;
-
-   const size_t bytesPerPixel = depth == 8 ? 1 : 2;
-   const size_t sourceRowBytes = static_cast<size_t>(rowBytes);
-   const size_t minimumSourceRowBytes =
-      static_cast<size_t>(width) * bytesPerPixel;
-   const size_t canvasWidth = static_cast<size_t>(width);
-   const size_t canvasHeight = static_cast<size_t>(height);
-   const size_t maxSize = std::numeric_limits<size_t>::max();
-   if (sourceRowBytes < minimumSourceRowBytes ||
-       canvasHeight > maxSize / canvasWidth ||
-       canvasWidth * canvasHeight > maxSize / 4 ||
-       (canvasHeight > 1 && canvasHeight - 1 > maxSize / sourceRowBytes))
-      return;
-
    try
    {
-      m_canvasPixels.resize(canvasWidth * canvasHeight * 4);
-   }
-   catch (...)
-   {
-      return;
-   }
-   for (int y = 0; y < height; ++y)
-   {
-      const uint8_t *row = static_cast<const uint8_t *>(pixels) +
-         static_cast<size_t>(y) * sourceRowBytes;
-      for (int x = 0; x < width; ++x)
+      if (m_canvas.Update(pixels, width, height, rowBytes, depth, palette,
+            RenderBackendVulkanSceneActive() != 0))
       {
-         uint32_t raw;
-         uint8_t r, g, b;
-         if (depth == 8)
-         {
-            raw = row[x];
-            r = palette[raw * 3]; g = palette[raw * 3 + 1];
-            b = palette[raw * 3 + 2];
-         }
-         else
-         {
-            uint16_t value;
-            std::memcpy(&value, row + static_cast<size_t>(x) * 2,
-               sizeof(value));
-            raw = value;
-            if (depth == 16)
-            {
-               r = ((value >> 11) & 31) * 255 / 31;
-               g = ((value >> 5) & 63) * 255 / 63;
-               b = (value & 31) * 255 / 31;
-            }
-            else
-            {
-               r = ((value >> 10) & 31) * 255 / 31;
-               g = ((value >> 5) & 31) * 255 / 31;
-               b = (value & 31) * 255 / 31;
-            }
-         }
-         const size_t offset = (static_cast<size_t>(y) * width + x) * 4;
-         m_canvasPixels[offset] = r;
-         m_canvasPixels[offset + 1] = g;
-         m_canvasPixels[offset + 2] = b;
-         m_canvasPixels[offset + 3] =
-            RenderBackendVulkanSceneActive() && raw == 0 ? 0 : 255;
+         m_canvasWidth = width;
+         m_canvasHeight = height;
       }
    }
-   m_canvasWidth = width;
-   m_canvasHeight = height;
-   ++m_canvasGeneration;
+   catch (const std::exception &)
+   {
+      // Retain the last complete canvas if allocating a new snapshot fails.
+   }
 }
 
 bool cVulkanRuntime::PrepareCanvasTexture()
 {
-   if (m_canvasPixels.empty() || !m_canvasWidth || !m_canvasHeight)
+   if (m_canvas.Pixels().empty() || !m_canvasWidth || !m_canvasHeight)
       return true;
    if (!m_context.FrameActive())
       return false;
    const uint32_t slot = m_context.FrameIndex();
    if (slot >= m_canvasTextures.size())
       return false;
-   const int rowBytes = m_canvasWidth * 4;
+   const int rowBytes = m_canvas.RowBytes();
+   const int textureWidth = rowBytes / 4;
    void *&texture = m_canvasTextures[slot];
-   if (!texture || m_canvasTextureWidths[slot] != m_canvasWidth ||
+   if (!texture || m_canvasTextureWidths[slot] != textureWidth ||
        m_canvasTextureHeights[slot] != m_canvasHeight)
    {
       if (texture)
          m_renderer.DestroyTexture(texture);
-      texture = m_renderer.CreateTexture(m_canvasWidth, m_canvasHeight,
-         m_canvasPixels.data(), rowBytes);
+      texture = m_renderer.CreateTexture(textureWidth, m_canvasHeight,
+         m_canvas.Pixels().data(), rowBytes);
       if (!texture) return false;
-      m_canvasTextureWidths[slot] = m_canvasWidth;
+      m_canvasTextureWidths[slot] = textureWidth;
       m_canvasTextureHeights[slot] = m_canvasHeight;
-      m_canvasTextureGenerations[slot] = m_canvasGeneration;
+      m_canvasTextureGenerations[slot] = m_canvas.Generation();
    }
-   else if (m_canvasTextureGenerations[slot] != m_canvasGeneration)
+   else if (m_canvasTextureGenerations[slot] != m_canvas.Generation())
    {
-      if (!m_renderer.UpdateFrameTexture(texture, m_canvasWidth,
-            m_canvasHeight, m_canvasPixels.data(), rowBytes))
+      if (!m_renderer.UpdateFrameTexture(texture, textureWidth,
+            m_canvasHeight, m_canvas.Pixels().data(), rowBytes))
          return false;
-      m_canvasTextureGenerations[slot] = m_canvasGeneration;
+      m_canvasTextureGenerations[slot] = m_canvas.Generation();
    }
+   if (m_canvas.Depth() == 8)
+   {
+      void *&palette = m_canvasPaletteTextures[slot];
+      if (!palette)
+         palette = m_renderer.CreateTexture(256, 1, m_canvas.Palette().data(), 1024);
+      else if (m_canvasPaletteGenerations[slot] != m_canvas.PaletteGeneration() &&
+               !m_renderer.UpdateFrameTexture(palette, 256, 1,
+                  m_canvas.Palette().data(), 1024))
+         return false;
+      if (!palette) return false;
+      m_canvasPaletteGenerations[slot] = m_canvas.PaletteGeneration();
+   }
+
    return true;
 }
 
@@ -337,8 +296,14 @@ void cVulkanRuntime::DrawCanvas(vk::CommandBuffer commandBuffer, bool transparen
    m_renderer.SetBlend(kRenderBackendBlendAlpha);
    m_renderer.SetAlphaTest(false);
    m_renderer.SetFog(false, 0);
-   m_renderer.SetSampler(0, false,
-      RenderBackendVulkanUseLinearCanvasSampling() != 0);
+   // Decode packed legacy pixels before filtering; interpolating their raw
+   // bytes would mix palette indices or RGB bit fields instead of colors.
+   const bool smooth = RenderBackendVulkanUseLinearCanvasSampling() != 0;
+   m_renderer.SetSampler(0, false, false);
+   m_renderer.SetSampler(1, false, false);
+   m_renderer.BindTexture(1, m_canvas.Depth() == 8 ? m_canvasPaletteTextures[slot] : nullptr);
+   const uint32_t canvasMode = static_cast<uint32_t>(m_canvas.Depth()) |
+      (m_canvas.Transparent() ? 0x100u : 0u) | (smooth ? 0x200u : 0u);
    m_renderer.BindTexture(0, m_canvasTextures[slot]);
    int viewportX, viewportY, viewportWidth, viewportHeight;
    RenderBackendVulkanGetViewport(m_canvasWidth, m_canvasHeight,
@@ -356,7 +321,7 @@ void cVulkanRuntime::DrawCanvas(vk::CommandBuffer commandBuffer, bool transparen
       {w,h,0,1, 1,1,1,1, 1, 1,1, 1,1},
       {0,h,0,1, 1,1,1,1, 1, 0,1, 0,1}};
    (void)m_renderer.Draw(commandBuffer, quad, 6, kRenderBackendTriangles,
-      false, m_canvasWidth, m_canvasHeight, transparent);
+      false, m_canvasWidth, m_canvasHeight, transparent, canvasMode);
 }
 
 bool cVulkanRuntime::Open(int width, int height, const char *title)
@@ -390,6 +355,9 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       return false;
    }
    std::string surfaceError;
+   int vsync = 1;
+   config_get_int("vsync", &vsync);
+   m_context.SetVSync(vsync != 0);
    if (!m_context.Initialize(surfaceExtensions,
          [&surfaceError](vk::Instance instance) {
             return CreateSDLVulkanSurface(instance, surfaceError);
@@ -484,6 +452,11 @@ void cVulkanRuntime::Close()
          texture = nullptr;
       }
    }
+   for (void *&texture : m_canvasPaletteTextures)
+   {
+      if (texture) m_renderer.DestroyTexture(texture);
+      texture = nullptr;
+   }
    if (m_movieTexture)
    {
       m_renderer.DestroyTexture(m_movieTexture);
@@ -496,12 +469,12 @@ void cVulkanRuntime::Close()
    m_width = m_height = m_clientWidth = m_clientHeight = 0;
    m_drawableWidth = m_drawableHeight = 0;
    m_canvasWidth = m_canvasHeight = 0;
-   m_canvasPixels.clear();
+   m_canvas = cCanvasSnapshot{};
    m_frameActive = false;
    m_canvasTextureWidths.fill(0);
    m_canvasTextureHeights.fill(0);
    m_canvasTextureGenerations.fill(0);
-   m_canvasGeneration = 0;
+   m_canvasPaletteGenerations.fill(0);
    m_activeCommandBuffer = nullptr;
    m_resizePending = false;
    m_windowSizeChanged = false;
@@ -632,7 +605,7 @@ void cVulkanRuntime::PresentProgress()
 
 void cVulkanRuntime::Present(const void *pixels, int width, int height, int rowBytes,
    int bitDepth, const uint8_t *palette)
-{ ConvertCanvas(pixels, width, height, rowBytes, bitDepth, palette); }
+{ CaptureCanvas(pixels, width, height, rowBytes, bitDepth, palette); }
 
 bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    int rowBytes)

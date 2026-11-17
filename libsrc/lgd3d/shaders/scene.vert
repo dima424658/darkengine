@@ -13,6 +13,7 @@ layout(push_constant) uniform ScenePushConstants {
     uint fogEnabled;
     uint alphaTest;
     uint transparentBlack;
+    uint canvasMode;
     vec4 fogColor;
 } scene;
 

@@ -56,10 +56,12 @@ struct sPushConstants
    uint32_t fogEnabled;
    uint32_t alphaTest;
    uint32_t transparentBlack;
-   uint32_t padding;
+   uint32_t canvasMode;
    float fogColor[4];
 };
 static_assert(sizeof(sPushConstants) == 48, "SPIR-V push constant layout mismatch");
+static_assert(offsetof(sPushConstants, canvasMode) == 28 &&
+   offsetof(sPushConstants, fogColor) == 32, "SPIR-V canvas constant offsets mismatch");
 
 bool IsValidRgbaImage(int width, int height, int rowBytes)
 {
@@ -521,7 +523,7 @@ vk::Sampler cVulkanSceneRenderer::GetSampler(bool wrap, bool smooth) const
 bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
    const sRenderBackendVertex *vertices, int vertexCount, int primitive,
    bool useSecondTexture, int logicalWidth, int logicalHeight,
-   bool transparentBlack)
+   bool transparentBlack, uint32_t canvasMode)
 {
    if (!m_context || !commandBuffer || !vertices || vertexCount <= 0 ||
        logicalWidth <= 0 || logicalHeight <= 0 || primitive < 0 || primitive > 2)
@@ -575,8 +577,8 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
    }
 
    auto *first = static_cast<sTexture *>(m_boundTextures[0]);
-   auto *second = useSecondTexture ? static_cast<sTexture *>(m_boundTextures[1]) :
-      m_whiteTexture.get();
+   auto *second = (useSecondTexture || canvasMode != 0)
+      ? static_cast<sTexture *>(m_boundTextures[1]) : m_whiteTexture.get();
    if (!first) first = m_whiteTexture.get();
    if (!second) second = m_whiteTexture.get();
    vk::DescriptorSet descriptor{};
@@ -636,6 +638,7 @@ bool cVulkanSceneRenderer::Draw(vk::CommandBuffer commandBuffer,
    constants.fogEnabled = m_fog ? 1u : 0u;
    constants.alphaTest = m_alphaTest ? 1u : 0u;
    constants.transparentBlack = transparentBlack ? 1u : 0u;
+   constants.canvasMode = canvasMode;
    constants.fogColor[0] = ((m_fogColor >> 16) & 255) / 255.0f;
    constants.fogColor[1] = ((m_fogColor >> 8) & 255) / 255.0f;
    constants.fogColor[2] = (m_fogColor & 255) / 255.0f;

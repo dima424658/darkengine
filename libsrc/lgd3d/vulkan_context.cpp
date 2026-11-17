@@ -469,6 +469,19 @@ bool cVulkanContext::CreateSwapchain()
          return false;
    }
    swapchainInfo.presentMode = vk::PresentModeKHR::eFifo;
+   if (!m_vsync)
+   {
+      const auto modes = m_physicalDevice.getSurfacePresentModesKHR(*m_surface);
+      // Mailbox allows uncapped rendering without tearing. Immediate is the
+      // fallback for surfaces (including some Wayland drivers) without it.
+      for (const auto preferred : {vk::PresentModeKHR::eMailbox,
+                                  vk::PresentModeKHR::eImmediate})
+         if (std::find(modes.begin(), modes.end(), preferred) != modes.end())
+         {
+            swapchainInfo.presentMode = preferred;
+            break;
+         }
+   }
    swapchainInfo.clipped = VK_TRUE;
    m_swapchainFormat = surfaceFormat.format;
    m_swapchain = m_device.createSwapchainKHR(swapchainInfo);
