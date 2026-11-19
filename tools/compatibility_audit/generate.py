@@ -494,6 +494,37 @@ def review(doc, name, evidence):
             status = "Source implementation reviewed; runtime/return semantics unverified"
             evidence = "`src/script/` and native engfeat/sim services: " + interaction_review[name]
             evidence += "; matching Squirrel Call adapter forwards to native service"
+    sound_method = name.rsplit(".", 1)[-1]
+    native_sound = doc.parent.name == "script" and doc.name == "Sound.txt"
+    squirrel_sound = doc.name == "API-reference_services.txt" and name.startswith("Sound.")
+    if native_sound or squirrel_sound:
+        sound_groups = [
+            ({"Play", "PlayAtLocation", "PlayAtObject", "PlayAmbient"},
+             "native raw-sound overloads use PlayAndRememberSound with position/ambient flags and completion records"),
+            ({"PlaySchema", "PlaySchemaAtLocation", "PlaySchemaAtObject", "PlaySchemaAmbient"},
+             "native schema overloads use PlayAndRememberSchema with object/location flags and completion records"),
+            ({"PlayEnvSchema"}, "native implementation parses tags and uses environmental schema selection"),
+            ({"PlayVoiceOver"}, "delegates to VoiceOverSys Play and returns whether handle is non-null; callback argument unused in wrapper"),
+            ({"Halt", "HaltSchema"}, "delegates target/name/callback filters to HaltActiveSounds with raw/schema selector"),
+            ({"HaltSpeech"}, "calls SpeechHalt and returns S_OK"),
+            ({"PreLoad"}, "delegates to SFX_PreLoad"),
+        ]
+        for methods, detail in sound_groups:
+            if sound_method in methods:
+                status = "Source implementation reviewed; callback/save/runtime parity unverified"
+                evidence = "`src/script/sndscrpt.cpp`: " + detail
+                if squirrel_sound:
+                    evidence += "; CallSound forwards to native overload"
+                break
+        if sound_method in {"SongChange", "SongSetTheme"}:
+            status = "Missing native Sound method" if native_sound else "Missing Squirrel Sound method and native backing method"
+            evidence = "sndscrpt.cpp service and CallSound lack song methods; underlying music system does not imply script exposure"
+        elif squirrel_sound and sound_method.endswith("Net"):
+            status = "Missing named Squirrel network method; native network parameter exists"
+            evidence = "newdark_api.nut.inc and CallSound omit documented *Net names; ordinary native playback accepts eSoundNetwork"
+        elif native_sound and sound_method.endswith("Legacy"):
+            status = "THIEF1-specific entry point absent; restored host uses Thief II ABI"
+            evidence = "sndscrpt.h/cpp expose network-parameter overloads, not named legacy overloads; Gold guest bridging needs separate ABI verification"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

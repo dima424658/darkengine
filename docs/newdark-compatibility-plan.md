@@ -504,3 +504,16 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   acceptance work. No new native docs were inferred where only Squirrel docs
   enumerate these services. Existing twenty-one audit tests pass; gameplay
   behavior is unchanged in this review.
+
+- Sound source audit reviewed raw/schema/environment/voiceover playback,
+  halting and preload in sndscrpt.cpp and CallSound. Active callback records,
+  SoundDone/SchemaDone messages and SndScript save/load/restart paths exist;
+  callback timing and restored playback are still runtime acceptance gates.
+  Failure without active audio posts asynchronous completion for non-loop raw
+  sounds and schemas; this is not evidence of audible playback. The voiceover
+  wrapper does not use its callback-object argument. SongChange/SongSetTheme
+  are absent from native Sound and Squirrel. Squirrel *Net names are neither
+  installed nor dispatched, despite native playback accepting eSoundNetwork.
+  THIEF1 Legacy entry-point layout differs from the restored Thief II host and
+  needs guest ABI verification, not a blanket claim of absent Gold audio.
+  Existing twenty-one audit tests pass; no sound behavior changed here.
