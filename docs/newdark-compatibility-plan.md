@@ -270,3 +270,9 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   malformed/unsupported structural forms. All four C++ fixtures pass and all
   88 installed patches pass structural command checks. Field/schema validation,
   object resolution, database scope and execution remain pending.
+- Added offline field-edit staging: quoted values and duplicate-name occurrence
+  indices are preserved; selected-field bounds and encoder byte counts are
+  validated; partial edits never alter the original record. All five standalone
+  C++ tests pass. Strict native schema encoders, pointer-owning properties and
+  runtime publication remain pending; legacy struct parsing alone is too lenient
+  to establish valid DML values.

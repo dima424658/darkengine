@@ -77,3 +77,20 @@ tag versions, quest operators, field names/indices, numeric types, enum values,
 inheritance, database scope and executor capabilities still require resolution
 against engine schemas before any command can execute. Arbitrary data-block
 contents are preserved, not declared valid. No runtime executor is enabled.
+
+## Field staging
+
+`fields.cpp` extracts named field edits and duplicate-name occurrence selectors,
+retaining value tokens and quotation flags rather than prematurely coercing
+strings or numbers. Schema adapters provide field offsets, sizes and strict
+encoders. Staging copies the original record, updates only the selected field
+bytes and returns only after all edits succeed. Unknown fields, missing encoders,
+out-of-bounds storage and incorrect encoder byte counts fail without changing
+the caller's original record.
+
+This is not yet an engine sStructDesc adapter or a deep-copy property writer.
+Legacy struct parsing is lenient for numeric values and unsafe to assume strict;
+strict encoding and pointer-owning fields need dedicated handling before runtime
+publication. Nested receptron/propagator blocks also require their command-specific
+schema adapters. Tests cover repeated names, quoted empty values, occurrence
+validation, unchanged surrounding bytes and failures after earlier staged edits.

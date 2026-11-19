@@ -15,3 +15,7 @@ add_executable(dbmod_commands_test commands.cpp ../../src/framewrk/dbmod/command
   ../../src/framewrk/dbmod/syntax.cpp ../../src/framewrk/dbmod/fingerprint.cpp)
 target_compile_features(dbmod_commands_test PRIVATE cxx_std_17)
 add_test(NAME dbmod_commands COMMAND dbmod_commands_test)
+add_executable(dbmod_fields_test fields.cpp ../../src/framewrk/dbmod/fields.cpp
+  ../../src/framewrk/dbmod/syntax.cpp)
+target_compile_features(dbmod_fields_test PRIVATE cxx_std_17)
+add_test(NAME dbmod_fields COMMAND dbmod_fields_test)
