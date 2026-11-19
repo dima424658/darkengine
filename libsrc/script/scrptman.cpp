@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <filespec.h>
 #include <scrptman.h>
+#include <script_module_query.h>
 #include <scrptsrv.h>
 #include <nullsrv.h>
 #include <appagg.h>
@@ -163,6 +164,8 @@ cScriptMan::cScriptMan(IUnknown * pOuter, tScrTimeFunc pfnTime,
 cScriptMan::~cScriptMan()
 {
    ScriptDebugSetEnabled(FALSE);
+   if (g_pScriptMan == this)
+      g_pScriptMan = NULL;
 }
 
 ///////////////////////////////////////
@@ -1299,3 +1302,29 @@ void cScriptMan::ExecuteDeferredActions()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+BOOL cScriptMan::IsModuleLoaded(const char *name) const
+{
+   cFileSpec module(name);
+   module.SetFileExtension("osm");
+   for (int index = 0; index < m_Modules.Size(); ++index)
+   {
+      auto *loaded = m_Modules[index].pModule;
+      if (!loaded || !loaded->GetName())
+         continue;
+      cFileSpec loadedName(loaded->GetName());
+      loadedName.SetFileExtension("osm");
+      if (!stricmp(loadedName.GetFileName(), module.GetFileName()))
+         return TRUE;
+   }
+   return FALSE;
+}
+
+HRESULT ScriptModulePresence(const char *name)
+{
+   if (!name || !name[0])
+      return E_INVALIDARG;
+   if (!g_pScriptMan)
+      return E_FAIL;
+   return g_pScriptMan->IsModuleLoaded(name) ? S_OK : S_FALSE;
+}

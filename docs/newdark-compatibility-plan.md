@@ -316,3 +316,10 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   Seven standalone tests pass normally/under sanitizers; installed and private
   native string fixtures exit cleanly with synchronization validation. Live
   property assignment and patch-wide execution/rollback remain pending.
+- Added a native main-thread module-presence query backed by cScriptMan's actual
+  loaded-module table, without changing guest ABI vtables. SCR fingerprints now
+  use it and distinguish query failure from absence. Native tests used the
+  observed MISS02.OSM module: mixed-case/suffix lookup accepts, absent-module
+  lookup rejects and a matching negative block vetoes. All runs exit cleanly
+  under synchronization validation; Linux build and seven C++ tests pass.
+  Script directives, mod/version queries and patch execution remain pending.

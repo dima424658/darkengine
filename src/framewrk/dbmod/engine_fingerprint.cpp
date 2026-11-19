@@ -7,6 +7,7 @@
 #include <propman.h>
 #include <property.h>
 #include <questapi.h>
+#include <script_module_query.h>
 #include <traitman.h>
 #include <memory>
 #include <stdexcept>
@@ -93,6 +94,13 @@ FingerprintContext MakeEngineFingerprintContext(const std::string &gamesysName)
       if (!services->objects->Exists(object))
          return {};
       return services->traits->GetArchetype(object);
+   };
+   context.script = [](const std::string &name)
+   {
+      const HRESULT result = ScriptModulePresence(name.c_str());
+      if (FAILED(result))
+         throw std::runtime_error("DML script-module query unavailable or invalid: " + name);
+      return result == S_OK;
    };
    context.config = [](const std::string &name) { return bool(config_is_defined(name.c_str())); };
    return context;

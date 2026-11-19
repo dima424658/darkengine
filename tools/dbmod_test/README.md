@@ -156,7 +156,7 @@ the loaded database. Gamesys identity comes from the database loader, positions
 from live objects, property presence from direct relevance, names/archetypes from
 the object/trait services, QVAR values from a mission-only snapshot, and CFG from
 config definitions. Service references are retained for the context lifetime.
-Missing script/mod adapters fail explicitly. The output distinguishes accept,
+Missing mod/version adapters fail explicitly. The output distinguishes accept,
 reject and unchecked; rejection is not a syntax error and never applies a patch.
 
 Linux native checks observed positive and negative CFG fingerprint decisions and
@@ -208,3 +208,22 @@ covers literal/empty strings, invalid field/occurrence selectors and creation-ti
 values (three valid, two invalid), with clean synchronization validation. No
 property writes or object creation are performed. Actual IStringProperty Set,
 patch-wide ownership/rollback and execution are still pending.
+
+
+## Loaded script-module fingerprints
+
+The native `ScriptModulePresence` helper queries cScriptMan's actual module table
+on the main thread, not exported classes or disk files. It adds no guest COM
+vtable entries. Names are compared case-insensitively using the module loader's
+basename/OSM convention; both loaded and requested names normalize their suffix.
+Unavailable manager and invalid input are failures, distinct from an absent
+module, so a negative fingerprint cannot accept due to an unavailable query.
+The manager's global reference is cleared when that manager is destroyed.
+
+Native trace established that this Gold mission loads MISS02.OSM (142 classes),
+not gen.osm. Loaded-module fingerprints accepted mixed-case MISS02 with and
+without the suffix, rejected a genuinely absent module, and a matching negative
+fingerprint vetoed acceptance. All three native runs exited cleanly with Vulkan
+synchronization validation. The Linux game build and seven C++ tests pass. These
+checks do not load/unload modules or execute patch script directives; MOD version
+comparisons and complete patch application remain pending.
