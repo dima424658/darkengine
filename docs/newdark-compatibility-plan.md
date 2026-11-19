@@ -560,3 +560,13 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   limit guard. Existing mode/activation/notification behavior is source-reviewed
   but visual/property/callback semantics remain acceptance work. Existing 24
   audit tests pass; no reaction or lighting runtime code changed here.
+
+- DarkGame/native DarkUI audit reviewed mission flow, secret accounting, config,
+  automap and fades with their adapters. DarkGame BindingGetFloat uses unchecked
+  sprintf into 255 bytes and passes an unchecked binder result to strtof.
+  RespawnPlayer is explicitly a single-player false fallback, while its documented
+  effect is multiplayer-only. Native DarkUI rows now share the previously
+  reviewed UI evidence without conflating native and Squirrel methods. Corrected
+  contract extraction to retain native "new functions in v..." annotations,
+  which omit the T2 prefix. All 25 audit-tool tests pass. Runtime mission/UI
+  behavior and outstanding source defects remain unmodified in this review.

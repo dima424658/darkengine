@@ -558,20 +558,20 @@ those documented declarations still require ABI/behavioral review.
 | ND-1b7ec32cce51 | `DOC/script/Camera.txt` | CameraToWorld | `src/script/camscrpt.cpp`: rotates local vector with camera orientation matrix and adds camera position | Source implementation reviewed; runtime/ABI parity unverified |
 | ND-af2d38993922 | `DOC/script/Camera.txt` | WorldToCamera | `src/script/camscrpt.cpp`: subtracts camera position then applies transpose of orientation matrix | Source implementation reviewed; runtime/ABI parity unverified |
 | ND-71c7759d12fa | `DOC/script/Camera.txt` | LockMovement | camscrpt.cpp ignores boolean argument and returns S_OK; CallCamera forwards without implementing input lock | Missing behavior: explicit no-op |
-| ND-d929e92fd146 | `DOC/script/DarkGame.txt` | KillPlayer | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
-| ND-c549b7e595d3 | `DOC/script/DarkGame.txt` | EndMission | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
-| ND-5a37ceb8e1f9 | `DOC/script/DarkGame.txt` | FadeToBlack | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
-| ND-06836b7558c5 | `DOC/script/DarkGame.txt` | FoundObject | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-e3f55db4f970 | `DOC/script/DarkGame.txt` | ConfigIsDefined | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
-| ND-393fe4511dca | `DOC/script/DarkGame.txt` | ConfigGetInt | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
-| ND-e165c4bfd330 | `DOC/script/DarkGame.txt` | ConfigGetFloat | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/script/engscrpt.cpp` | Unverified |
-| ND-0efa49690d8a | `DOC/script/DarkGame.txt` | BindingGetFloat | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/script/engscrpt.cpp` | Unverified |
-| ND-b37dce9949da | `DOC/script/DarkGame.txt` | GetAutomapLocationVisited | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-d9ce5ec6b89c | `DOC/script/DarkGame.txt` | SetAutomapLocationVisited | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-b476b9e80120 | `DOC/script/DarkGame.txt` | SetNextMission | `src/dark/drkgame.cpp`, `src/dark/drkmenu.cpp`, `src/dark/drkmislp.cpp` | Unverified |
-| ND-369bc4b57f7e | `DOC/script/DarkGame.txt` | GetCurrentMission | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-60d86d18f613 | `DOC/script/DarkGame.txt` | RespawnPlayer | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-000726743f44 | `DOC/script/DarkGame.txt` | FadeIn | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-d929e92fd146 | `DOC/script/DarkGame.txt` | KillPlayer | `src/dark/drkscrs.cpp`: sets player mode dead; PLAYTEST cheat/no_endgame can suppress it | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-c549b7e595d3 | `DOC/script/DarkGame.txt` | EndMission | `src/dark/drkscrs.cpp`: calls UnwindToMissionLoop; PLAYTEST cheat/no_endgame can suppress it | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-5a37ceb8e1f9 | `DOC/script/DarkGame.txt` | FadeToBlack | `src/dark/drkscrs.cpp`: starts black fade-out after seconds-to-milliseconds conversion; cheat guard can suppress it | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-06836b7558c5 | `DOC/script/DarkGame.txt` | FoundObject | `src/dark/drkscrs.cpp`: increments secret count and clears hidden-stat bit once | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-e3f55db4f970 | `DOC/script/DarkGame.txt` | ConfigIsDefined | `src/dark/drkscrs.cpp`: delegates to config_is_defined without Engine service null guard | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-393fe4511dca | `DOC/script/DarkGame.txt` | ConfigGetInt | `src/dark/drkscrs.cpp`: delegates to config_get_int | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-e165c4bfd330 | `DOC/script/DarkGame.txt` | ConfigGetFloat | `src/dark/drkscrs.cpp`: delegates to config_get_float | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-0efa49690d8a | `DOC/script/DarkGame.txt` | BindingGetFloat | drkscrs.cpp sprintf into 255-byte buffer and strtof on unchecked binder result; CallDarkGame forwards | Partial implementation; unsafe input/result handling |
+| ND-b37dce9949da | `DOC/script/DarkGame.txt` | GetAutomapLocationVisited | `src/dark/drkscrs.cpp`: delegates to DarkAutomapGetLocationVisited | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-d9ce5ec6b89c | `DOC/script/DarkGame.txt` | SetAutomapLocationVisited | `src/dark/drkscrs.cpp`: calls DarkAutomapSetLocationVisited and returns S_OK | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-b476b9e80120 | `DOC/script/DarkGame.txt` | SetNextMission | `src/dark/drkscrs.cpp`: delegates to global SetNextMission | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-369bc4b57f7e | `DOC/script/DarkGame.txt` | GetCurrentMission | `src/dark/drkscrs.cpp`: returns GetMissionData num or zero if unavailable | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-60d86d18f613 | `DOC/script/DarkGame.txt` | RespawnPlayer | drkscrs.cpp explicitly returns FALSE; documented effect is multiplayer-only | Single-player false fallback; multiplayer behavior absent |
+| ND-000726743f44 | `DOC/script/DarkGame.txt` | FadeIn | `src/dark/drkscrs.cpp`: starts player-mode fade-in after seconds-to-milliseconds conversion | Source implementation reviewed; mission/UI/runtime parity unverified |
 | ND-614d3d064f61 | `DOC/script/DarkOverlay.txt` | DrawHUD | `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-74220aec716b | `DOC/script/DarkOverlay.txt` | DrawTOverlay | `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-9b369decf068 | `DOC/script/DarkOverlay.txt` | OnUIEnterMode | `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
@@ -598,14 +598,14 @@ those documented declarations still require ABI/behavioral review.
 | ND-ff2fac7d904e | `DOC/script/DarkOverlay.txt` | BeginTOverlayUpdate | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-9e318b73539d | `DOC/script/DarkOverlay.txt` | EndTOverlayUpdate | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-4a47c6b1936b | `DOC/script/DarkOverlay.txt` | DrawTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-be3ee5d1fff0 | `DOC/script/DarkUI.txt` | TextMessage | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-f1fe75c91699 | `DOC/script/DarkUI.txt` | ReadBook | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-a141de9f97e8 | `DOC/script/DarkUI.txt` | InvItem | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-241935d295d5 | `DOC/script/DarkUI.txt` | InvWeapon | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-0cc8f4e5e362 | `DOC/script/DarkUI.txt` | InvSelect | `src/dark/drkplinv.cpp`, `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h` | Unverified |
-| ND-5bd34bc49e28 | `DOC/script/DarkUI.txt` | IsCommandBound | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-d9d18906acc6 | `DOC/script/DarkUI.txt` | DescribeKeyBinding | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-cc0bd39ed93f | `DOC/script/DarkUI.txt` | TextMessageFormatted | No exact token; inspect aliases | Unverified |
+| ND-be3ee5d1fff0 | `DOC/script/DarkUI.txt` | TextMessage | `src/dark/drkuiscr.cpp`: delegates to DarkMessageParams with default timeout translation | Source implementation reviewed; UI/runtime parity unverified |
+| ND-f1fe75c91699 | `DOC/script/DarkUI.txt` | ReadBook | `src/dark/drkuiscr.cpp`: enters SwitchToDarkBookMode with text/art resources | Source implementation reviewed; UI/runtime parity unverified |
+| ND-a141de9f97e8 | `DOC/script/DarkUI.txt` | InvItem | `src/dark/drkuiscr.cpp`: reads Inventory Selection(kCurrentItem) | Source implementation reviewed; UI/runtime parity unverified |
+| ND-241935d295d5 | `DOC/script/DarkUI.txt` | InvWeapon | `src/dark/drkuiscr.cpp`: reads Inventory Selection(kCurrentWeapon) | Source implementation reviewed; UI/runtime parity unverified |
+| ND-0cc8f4e5e362 | `DOC/script/DarkUI.txt` | InvSelect | `src/dark/drkuiscr.cpp`: delegates to Inventory Select | Source implementation reviewed; UI/runtime parity unverified |
+| ND-5bd34bc49e28 | `DOC/script/DarkUI.txt` | IsCommandBound | `src/dark/drkuiscr.cpp`: queries GetCmdBinds with one-result capacity | Source implementation reviewed; UI/runtime parity unverified |
+| ND-d9d18906acc6 | `DOC/script/DarkUI.txt` | DescribeKeyBinding | `src/dark/drkuiscr.cpp`: joins up to sixteen bindings with localized separator or returns localized no-bindings text | Source implementation reviewed; UI/runtime parity unverified |
+| ND-cc0bd39ed93f | `DOC/script/DarkUI.txt` | TextMessageFormatted | drkuiscr.cpp and CallDarkUI lack font/margins/alignment formatted-message method | Missing native method |
 | ND-84f472f3511b | `DOC/script/Engine.txt` | ConfigIsDefined | `src/script/engscrpt.cpp`, `src/render/weather.cpp`: engscrpt.cpp delegates to config_is_defined with null guard | Source implementation reviewed; runtime/ABI parity unverified |
 | ND-348bd5942508 | `DOC/script/Engine.txt` | ConfigGetInt | `src/script/engscrpt.cpp`, `src/render/weather.cpp`: engscrpt.cpp delegates typed output to config_get_int | Source implementation reviewed; runtime/ABI parity unverified |
 | ND-edf0effd3637 | `DOC/script/Engine.txt` | ConfigGetFloat | `src/script/engscrpt.cpp`, `src/render/weather.cpp`: engscrpt.cpp delegates typed output to config_get_float | Source implementation reviewed; runtime/ABI parity unverified |
@@ -1110,20 +1110,20 @@ those documented declarations still require ABI/behavioral review.
 | ND-1e7cc2f7e8da | `DOC/squirrel_script/API-reference_services.txt` | Listener.UnsubscribeLink | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-4228c591c725 | `DOC/squirrel_script/API-reference_services.txt` | Listener.SubscribeHierarchy | No exact token; inspect aliases | Unverified |
 | ND-61626afbdabf | `DOC/squirrel_script/API-reference_services.txt` | Listener.UnsubscribeHierarchy | No exact token; inspect aliases | Unverified |
-| ND-0a83b407af49 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.KillPlayer | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
-| ND-d5855bfc73fa | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.EndMission | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
-| ND-62784327750a | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FadeToBlack | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
-| ND-5c8379caaf78 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FoundObject | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-3b183626f8bc | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigIsDefined | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
-| ND-c8e30d8fb0dc | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigGetInt | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
-| ND-8c6bbabc7bc6 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigGetFloat | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/script/engscrpt.cpp` | Unverified |
-| ND-2babb4c47bba | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.BindingGetFloat | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/script/engscrpt.cpp` | Unverified |
-| ND-d5067965f1a5 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.GetAutomapLocationVisited | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-e5e53bf446ed | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.SetAutomapLocationVisited | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-bf41119060fa | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.SetNextMission | `src/dark/drkgame.cpp`, `src/dark/drkmenu.cpp`, `src/dark/drkmislp.cpp` | Unverified |
-| ND-fe7466e7a62a | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.GetCurrentMission | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-b297ff2bcd98 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.RespawnPlayer | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-5fd69573fe21 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FadeIn | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-0a83b407af49 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.KillPlayer | `src/dark/drkscrs.cpp`: sets player mode dead; PLAYTEST cheat/no_endgame can suppress it; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-d5855bfc73fa | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.EndMission | `src/dark/drkscrs.cpp`: calls UnwindToMissionLoop; PLAYTEST cheat/no_endgame can suppress it; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-62784327750a | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FadeToBlack | `src/dark/drkscrs.cpp`: starts black fade-out after seconds-to-milliseconds conversion; cheat guard can suppress it; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-5c8379caaf78 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FoundObject | `src/dark/drkscrs.cpp`: increments secret count and clears hidden-stat bit once; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-3b183626f8bc | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigIsDefined | `src/dark/drkscrs.cpp`: delegates to config_is_defined without Engine service null guard; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-c8e30d8fb0dc | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigGetInt | `src/dark/drkscrs.cpp`: delegates to config_get_int; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-8c6bbabc7bc6 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigGetFloat | `src/dark/drkscrs.cpp`: delegates to config_get_float; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-2babb4c47bba | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.BindingGetFloat | drkscrs.cpp sprintf into 255-byte buffer and strtof on unchecked binder result; CallDarkGame forwards | Partial implementation; unsafe input/result handling |
+| ND-d5067965f1a5 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.GetAutomapLocationVisited | `src/dark/drkscrs.cpp`: delegates to DarkAutomapGetLocationVisited; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-e5e53bf446ed | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.SetAutomapLocationVisited | `src/dark/drkscrs.cpp`: calls DarkAutomapSetLocationVisited and returns S_OK; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-bf41119060fa | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.SetNextMission | `src/dark/drkscrs.cpp`: delegates to global SetNextMission; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-fe7466e7a62a | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.GetCurrentMission | `src/dark/drkscrs.cpp`: returns GetMissionData num or zero if unavailable; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
+| ND-b297ff2bcd98 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.RespawnPlayer | drkscrs.cpp explicitly returns FALSE; documented effect is multiplayer-only | Single-player false fallback; multiplayer behavior absent |
+| ND-5fd69573fe21 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FadeIn | `src/dark/drkscrs.cpp`: starts player-mode fade-in after seconds-to-milliseconds conversion; CallDarkGame forwards to native service | Source implementation reviewed; mission/UI/runtime parity unverified |
 | ND-f05483f54ce6 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.NoMove | `src/ai/aicbhtoh.cpp`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
 | ND-1d4734a5a73c | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.PlayerMode | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
 | ND-5947da7f586c | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.Frob | `src/actreact/contag8r.cpp`, `src/ai/aiactps.cpp`, `src/ai/aibasact.cpp` | Unverified |

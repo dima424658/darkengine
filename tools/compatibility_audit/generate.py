@@ -549,7 +549,9 @@ def review(doc, name, evidence):
         elif camera_method == "LockMovement":
             status = "Missing behavior: explicit no-op"
             evidence = "camscrpt.cpp ignores boolean argument and returns S_OK; CallCamera forwards without implementing input lock"
-    if doc.name == "API-reference_services.txt" and name.startswith("DarkUI."):
+    native_ui = doc.parent.name == "script" and doc.name == "DarkUI.txt"
+    squirrel_ui = doc.name == "API-reference_services.txt" and name.startswith("DarkUI.")
+    if native_ui or squirrel_ui:
         ui_review = {
             "TextMessage": "delegates to DarkMessageParams with default timeout translation",
             "ReadBook": "enters SwitchToDarkBookMode with text/art resources",
@@ -562,9 +564,11 @@ def review(doc, name, evidence):
         method = name.rsplit(".", 1)[-1]
         if method in ui_review:
             status = "Source implementation reviewed; UI/runtime parity unverified"
-            evidence = "`src/dark/drkuiscr.cpp`: " + ui_review[method] + "; CallDarkUI forwarding exists"
+            evidence = "`src/dark/drkuiscr.cpp`: " + ui_review[method]
+            if squirrel_ui:
+                evidence += "; CallDarkUI forwarding exists"
         elif method == "TextMessageFormatted":
-            status = "Missing Squirrel method and native backing method"
+            status = "Missing native method" if native_ui else "Missing Squirrel method and native backing method"
             evidence = "drkuiscr.cpp and CallDarkUI lack font/margins/alignment formatted-message method"
     networking_method = name.rsplit(".", 1)[-1]
     native_networking = doc.parent.name == "script" and doc.name == "Networking.txt"
@@ -647,6 +651,35 @@ def review(doc, name, evidence):
         elif light_method == "Set":
             status = "Partial: supplied brightness range not stored"
             evidence = "litscrpt.cpp SetCore uses min/max for countdown but never assigns animation.min_brightness/max_brightness; equal limits divide by zero"
+    dark_method = name.rsplit(".", 1)[-1]
+    native_dark = doc.parent.name == "script" and doc.name == "DarkGame.txt"
+    squirrel_dark = doc.name == "API-reference_services.txt" and name.startswith("DarkGame.")
+    if native_dark or squirrel_dark:
+        dark_review = {
+            "KillPlayer": "sets player mode dead; PLAYTEST cheat/no_endgame can suppress it",
+            "EndMission": "calls UnwindToMissionLoop; PLAYTEST cheat/no_endgame can suppress it",
+            "FadeToBlack": "starts black fade-out after seconds-to-milliseconds conversion; cheat guard can suppress it",
+            "FoundObject": "increments secret count and clears hidden-stat bit once",
+            "ConfigIsDefined": "delegates to config_is_defined without Engine service null guard",
+            "ConfigGetInt": "delegates to config_get_int",
+            "ConfigGetFloat": "delegates to config_get_float",
+            "GetAutomapLocationVisited": "delegates to DarkAutomapGetLocationVisited",
+            "SetAutomapLocationVisited": "calls DarkAutomapSetLocationVisited and returns S_OK",
+            "SetNextMission": "delegates to global SetNextMission",
+            "GetCurrentMission": "returns GetMissionData num or zero if unavailable",
+            "FadeIn": "starts player-mode fade-in after seconds-to-milliseconds conversion",
+        }
+        if dark_method in dark_review:
+            status = "Source implementation reviewed; mission/UI/runtime parity unverified"
+            evidence = "`src/dark/drkscrs.cpp`: " + dark_review[dark_method]
+            if squirrel_dark:
+                evidence += "; CallDarkGame forwards to native service"
+        elif dark_method == "BindingGetFloat":
+            status = "Partial implementation; unsafe input/result handling"
+            evidence = "drkscrs.cpp sprintf into 255-byte buffer and strtof on unchecked binder result; CallDarkGame forwards"
+        elif dark_method == "RespawnPlayer":
+            status = "Single-player false fallback; multiplayer behavior absent"
+            evidence = "drkscrs.cpp explicitly returns FALSE; documented effect is multiplayer-only"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

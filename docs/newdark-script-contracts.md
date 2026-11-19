@@ -62,10 +62,10 @@ No row establishes implemented vtable order, version gating or runtime parity.
 | `DOC/script/DarkGame.txt:10` | DarkGame | `STDMETHOD_(real, BindingGetFloat)(const char *name) PURE;` | — | No local version annotation |
 | `DOC/script/DarkGame.txt:11` | DarkGame | `STDMETHOD_(BOOL, GetAutomapLocationVisited)(int page, int location) PURE;` | — | No local version annotation |
 | `DOC/script/DarkGame.txt:12` | DarkGame | `STDMETHOD(SetAutomapLocationVisited)(int page, int location) PURE;` | — | No local version annotation |
-| `DOC/script/DarkGame.txt:20` | DarkGame | `STDMETHOD_(void, SetNextMission)(int mission) PURE;` | — | No local version annotation |
-| `DOC/script/DarkGame.txt:23` | DarkGame | `STDMETHOD_(int, GetCurrentMission)() PURE;` | — | No local version annotation |
-| `DOC/script/DarkGame.txt:30` | DarkGame | `STDMETHOD_(BOOL, RespawnPlayer)() PURE;` | — | No local version annotation |
-| `DOC/script/DarkGame.txt:32` | DarkGame | `STDMETHOD(FadeIn)(float time) PURE;` | — | No local version annotation |
+| `DOC/script/DarkGame.txt:20` | DarkGame | `STDMETHOD_(void, SetNextMission)(int mission) PURE;` | — | 15: new functions in v1.19: |
+| `DOC/script/DarkGame.txt:23` | DarkGame | `STDMETHOD_(int, GetCurrentMission)() PURE;` | — | 15: new functions in v1.19: |
+| `DOC/script/DarkGame.txt:30` | DarkGame | `STDMETHOD_(BOOL, RespawnPlayer)() PURE;` | — | 26: new functions in v1.24: |
+| `DOC/script/DarkGame.txt:32` | DarkGame | `STDMETHOD(FadeIn)(float time) PURE;` | — | 26: new functions in v1.24: |
 | `DOC/script/DarkOverlay.txt:30` | DarkOverlay | `STDMETHOD_(void,SetHandler)(IDarkOverlayHandler *pHandler) PURE;` | — | No local version annotation |
 | `DOC/script/DarkOverlay.txt:34` | DarkOverlay | `STDMETHOD_(int,GetBitmap)(const char *name, const char *path                   ) PURE;` | — | No local version annotation |
 | `DOC/script/DarkOverlay.txt:37` | DarkOverlay | `STDMETHOD_(void,FlushBitmap)(int handle) PURE;` | — | No local version annotation |
@@ -96,7 +96,7 @@ No row establishes implemented vtable order, version gating or runtime parity.
 | `DOC/script/DarkUI.txt:7` | DarkUI | `STDMETHOD(InvSelect)(object obj) PURE;` | — | No local version annotation |
 | `DOC/script/DarkUI.txt:8` | DarkUI | `STDMETHOD_(boolean,IsCommandBound)(const string ref cmd) PURE;` | — | No local version annotation |
 | `DOC/script/DarkUI.txt:9` | DarkUI | `STDMETHOD_(string,DescribeKeyBinding)(const string ref cmd) PURE;` | — | No local version annotation |
-| `DOC/script/DarkUI.txt:16` | DarkUI | `STDMETHOD(TextMessageFormatted)(const char* message, int color, int timeout, const char* font = NULL, int xmargin = DEFAULT_MARGIN, int ymargin = DEFAULT_MARGIN, int align = kMsgAlignDefault) PURE;` | — | No local version annotation |
+| `DOC/script/DarkUI.txt:16` | DarkUI | `STDMETHOD(TextMessageFormatted)(const char* message, int color, int timeout, const char* font = NULL, int xmargin = DEFAULT_MARGIN, int ymargin = DEFAULT_MARGIN, int align = kMsgAlignDefault) PURE;` | — | 12: new functions in v1.28: |
 | `DOC/script/Debug.txt:3` | Debug | `STDMETHOD (MPrint)(const string ref, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING) PURE;` | — | No local version annotation |
 | `DOC/script/Debug.txt:6` | Debug | `STDMETHOD (Command)(const string ref, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING, const string ref = NULL_STRING) PURE;` | — | No local version annotation |
 | `DOC/script/Debug.txt:9` | Debug | `STDMETHOD (Break)() PURE;` | — | No local version annotation |

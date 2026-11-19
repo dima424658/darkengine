@@ -48,6 +48,11 @@ int Base();
         self.assertIn('version 12+', items[1].version_note)
         self.assertEqual(items[2].version_note, '')
 
+    def test_native_version_annotation_without_game_prefix(self):
+        items = list(contracts('DECLARE_SCRIPT_SERVICE(Test, 1)\n{\n'
+                               '// new functions in v1.28:\nSTDMETHOD(New)() PURE;\n};', True))
+        self.assertIn('v1.28', items[0].version_note)
+
     def test_incomplete_input_is_rejected(self):
         for text in ['#else\n', '#ifdef X\n',
                      'DECLARE_SCRIPT_SERVICE(Test, 1)\n{\nSTDMETHOD(Set)(\n']:

@@ -30,7 +30,7 @@ def contracts(text, native):
     for number, line in enumerate(code.splitlines(), 1):
         raw = original[number - 1].strip()
         if raw.startswith('//') and ('Available only in API version' in raw or
-                                      'new functions in T2' in raw):
+                                      'new functions in ' in raw):
             note = f'{number}: {raw[2:].strip()}'
         stripped = line.strip()
         directive = re.match(r'#(if|ifdef|ifndef|elif|else|endif)\b(.*)', stripped)
