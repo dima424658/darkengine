@@ -109,3 +109,15 @@ The native-header fixture checks valid encodings, unchanged padding/pointers,
 invalid labels, overflow, malformed vectors, string capacity and invalid native
 schema bounds. All six standalone tests pass normally and under ASan/UBSan on
 Linux. This does not yet test live property stores or publish changes to them.
+
+The native schema adapter also encodes 32-bit 16.16 fixed-point values/vectors,
+16-bit wrapped angles, heading/pitch/bank vectors in native tx/ty/tz order, and
+integer points using their declared component widths. Overflow and malformed
+components reject staging. The legacy fixed/angle parser's wider stores are not
+used. RGBA and pointer-owning layouts remain unsupported pending explicit storage
+and ownership handling.
+
+The DML modules are compiled into the Linux game target through the shared
+framework source list. This checks engine-header/build integration only: no
+database-load hook invokes them, so runtime patching remains disabled. The Linux
+`thief-runner` build and all six standalone tests (normal and ASan/UBSan) pass.

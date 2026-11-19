@@ -1,4 +1,5 @@
 #include "struct_fields.hpp"
+#include <algorithm>
 #include <charconv>
 #include <cmath>
 #include <cstring>
@@ -174,24 +175,59 @@ std::vector<uint8_t> Encode(const sFieldDesc &field, const std::vector<Argument>
          c = ' ';
    std::istringstream input(numeric);
    input.imbue(std::locale::classic());
-   const bool vector = field.type == kFieldTypeVector || field.type == kFieldTypeDoubleVec;
+   const bool fixed = field.type == kFieldTypeFix || field.type == kFieldTypeFixVec;
+   const bool angle = field.type == kFieldTypeAng || field.type == kFieldTypeAngVec;
+   const bool point = field.type == kFieldTypePoint;
+   const bool vector = field.type == kFieldTypeVector || field.type == kFieldTypeDoubleVec ||
+                       field.type == kFieldTypeFixVec || field.type == kFieldTypeAngVec;
    const bool wide = field.type == kFieldTypeDouble || field.type == kFieldTypeDoubleVec;
-   const size_t count = vector ? 3 : 1;
-   if (field.size != count * (wide ? sizeof(double) : sizeof(float)))
-      Invalid("floating field storage size mismatch");
-   std::vector<uint8_t> bytes;
+   const size_t count = point ? 2 : (vector ? 3 : 1);
+   const size_t width = point ? field.size / 2 : (angle ? 2 : (wide ? 8 : 4));
+   if (field.size != count * width || (point && width != 1 && width != 2 && width != 4))
+      Invalid("numeric field storage size mismatch");
+   std::vector<std::vector<uint8_t>> components;
    for (size_t index = 0; index < count; ++index)
    {
+      if (point)
+      {
+         std::string integer;
+         if (!(input >> integer))
+            Invalid("expected integer point component");
+         components.push_back(IntegralBytes(
+             Integer(integer, width, field.flags & kFieldFlagUnsigned, field.flags & kFieldFlagHex),
+             width));
+         continue;
+      }
       double value = 0;
       if (!(input >> value) || !std::isfinite(value))
-         Invalid("expected finite floating point component");
-      if (!wide && !std::isfinite(float(value)))
-         Invalid("float overflow");
-      auto component = wide ? Bytes(value) : Bytes(float(value));
-      bytes.insert(bytes.end(), component.begin(), component.end());
+         Invalid("expected finite numeric component");
+      if (fixed)
+      {
+         const double scaled = value * 65536.0;
+         if (!std::isfinite(scaled) || scaled < INT32_MIN || scaled > INT32_MAX)
+            Invalid("fixed-point overflow");
+         components.push_back(Bytes(int32_t(scaled)));
+      }
+      else if (angle)
+      {
+         const double units = std::floor(std::fmod(value, 360.0) * (65536.0 / 360.0) + 0.5);
+         components.push_back(Bytes(uint16_t(int64_t(units))));
+      }
+      else
+      {
+         if (!wide && !std::isfinite(float(value)))
+            Invalid("float overflow");
+         components.push_back(wide ? Bytes(value) : Bytes(float(value)));
+      }
    }
    if (!(input >> std::ws).eof())
-      Invalid("unexpected trailing floating point data");
+      Invalid("unexpected trailing numeric data");
+   // Text angles are heading/pitch/bank; mxs_angvec stores tx/ty/tz.
+   if (field.type == kFieldTypeAngVec)
+      std::reverse(components.begin(), components.end());
+   std::vector<uint8_t> bytes;
+   for (const auto &component : components)
+      bytes.insert(bytes.end(), component.begin(), component.end());
    return bytes;
 }
 } // namespace
@@ -213,7 +249,10 @@ std::vector<FieldSchema> StructFieldSchema(const sStructDesc &description)
                              field.type == kFieldTypeBool || field.type == kFieldTypeEnum ||
                              field.type == kFieldTypeBits || field.type == kFieldTypeString ||
                              field.type == kFieldTypeFloat || field.type == kFieldTypeDouble ||
-                             field.type == kFieldTypeVector || field.type == kFieldTypeDoubleVec;
+                             field.type == kFieldTypeVector || field.type == kFieldTypeDoubleVec ||
+                             field.type == kFieldTypeFix || field.type == kFieldTypeFixVec ||
+                             field.type == kFieldTypeAng || field.type == kFieldTypeAngVec ||
+                             field.type == kFieldTypePoint;
       if (supported)
          schema.encode = [field](const std::vector<Argument> &values)
          { return Encode(field, values); };

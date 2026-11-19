@@ -282,3 +282,8 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   standalone tests pass normally and with address/undefined-behavior sanitizers.
   Live property-store ownership, deep-copy strings, remaining field types and
   runtime publication are still pending.
+- Extended native field staging to fixed-point scalars/vectors, wrapped angles,
+  native angle-vector order and integer points. Kept RGBA and pointer layouts
+  unsupported rather than using unsafe legacy conversions. The Linux game target
+  now compiles the DML modules; all six standalone tests pass normally and under
+  ASan/UBSan. No database load hook or runtime patch executor is enabled yet.

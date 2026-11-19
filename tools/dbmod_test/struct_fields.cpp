@@ -60,6 +60,43 @@ int main()
       auto bitSchema = StructFieldSchema(bitDescription);
       auto bitValue = StageFieldEdits(std::vector<uint8_t>(4), bitSchema, parse("Bits 10"));
       Check(bitValue[0] == 2, "unnamed bit fields retain native binary notation");
+      sFieldDesc geometricFields[] = {{"Fixed", kFieldTypeFix, 4, 0},
+                                      {"FixedVec", kFieldTypeFixVec, 12, 4},
+                                      {"Angle", kFieldTypeAng, 2, 16},
+                                      {"Angles", kFieldTypeAngVec, 6, 18},
+                                      {"Point", kFieldTypePoint, 4, 24}};
+      sStructDesc geometry = {"Geometry", 32, 0, 5, geometricFields};
+      auto geometricSchema = StructFieldSchema(geometry);
+      const auto geometryBytes = StageFieldEdits(
+          std::vector<uint8_t>(32, 0x5a), geometricSchema,
+          parse(
+              "Fixed -1.5\nFixedVec 1, -2, 0.5\nAngle -90\nAngles 90, 180, -90\nPoint -123, 456"));
+      int32_t fixed[4]{};
+      std::memcpy(fixed, geometryBytes.data(), sizeof(fixed));
+      Check(fixed[0] == -98304 && fixed[1] == 65536 && fixed[2] == -131072 && fixed[3] == 32768,
+            "32-bit fixed point and fixed vector encoding");
+      uint16_t angles[4]{};
+      std::memcpy(angles, geometryBytes.data() + 16, sizeof(angles));
+      Check(angles[0] == 49152 && angles[1] == 49152 && angles[2] == 32768 && angles[3] == 16384,
+            "wrapped angles and heading/pitch/bank storage order");
+      int16_t point[2]{};
+      std::memcpy(point, geometryBytes.data() + 24, sizeof(point));
+      Check(point[0] == -123 && point[1] == 456 && geometryBytes[28] == 0x5a,
+            "point width and surrounding padding preserved");
+      for (const char *body :
+           {"Fixed 32768", "FixedVec 0, 0, -32769", "Angle nan", "Point 40000, 0"})
+      {
+         bool rejected = false;
+         try
+         {
+            StageFieldEdits(std::vector<uint8_t>(32), geometricSchema, parse(body));
+         }
+         catch (const std::exception &)
+         {
+            rejected = true;
+         }
+         Check(rejected, "invalid fixed/angle/point value rejected");
+      }
       fields[0].offset = 100;
       bool failed = false;
       try

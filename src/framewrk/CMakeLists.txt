@@ -13,6 +13,12 @@ set(dark_framewrk_sources
   ctagset.cpp
   dappsink.cpp
   dbfile.cpp
+  dbmod/syntax.cpp
+  dbmod/fingerprint.cpp
+  dbmod/discovery.cpp
+  dbmod/commands.cpp
+  dbmod/fields.cpp
+  dbmod/struct_fields.cpp
   diskfree.cpp
   dispatch.cpp
   dlgmode.c
