@@ -2,6 +2,7 @@
 #include "inspection.hpp"
 #include "commands.hpp"
 #include "fingerprint.hpp"
+#include "engine_fingerprint.hpp"
 #include <appagg.h>
 #include <binrstyp.h>
 #include <mprintf.h>
@@ -32,7 +33,8 @@ struct Unlock
    }
 };
 } // namespace
-bool InspectPatch(const char *filename, bool gamesysPatch)
+bool InspectPatch(const char *filename, bool gamesysPatch, const char *gamesysName,
+                  bool matchCurrentDatabase)
 {
    const std::string path = filename ? filename : "";
    try
@@ -68,11 +70,18 @@ bool InspectPatch(const char *filename, bool gamesysPatch)
       const auto syntax = Parse(text);
       ValidateFingerprints(syntax, gamesysPatch);
       const auto commands = ValidateCommandShapes(syntax);
-      mprintf("DML check OK: %s (%u statements, %u commands; no changes applied)\n", path.c_str(),
-              unsigned(syntax.size()), unsigned(commands.size()));
-      RenderBackendTrace("dbmod-check result=ok path=%s statements=%u commands=%u gamesys=%d",
-                         path.c_str(), unsigned(syntax.size()), unsigned(commands.size()),
-                         int(gamesysPatch));
+      std::string match = "unchecked";
+      if (matchCurrentDatabase)
+      {
+         const auto context = MakeEngineFingerprintContext(gamesysName ? gamesysName : "");
+         match = MatchFingerprints(syntax, context, gamesysPatch) ? "accept" : "reject";
+      }
+      mprintf("DML check OK: %s (%u statements, %u commands; fingerprint %s; no changes applied)\n", path.c_str(),
+              unsigned(syntax.size()), unsigned(commands.size()), match.c_str());
+      RenderBackendTrace(
+          "dbmod-check result=ok path=%s statements=%u commands=%u gamesys=%d match=%s",
+          path.c_str(), unsigned(syntax.size()), unsigned(commands.size()), int(gamesysPatch),
+          match.c_str());
       return true;
    }
    catch (const std::exception &error)

@@ -294,3 +294,10 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   checks IResMan/IStore ownership and preflight integration only: no patch is
   matched against mission state or executed, and diagnostics do not change the
   mission load result.
+- Added live read-only fingerprint adapters for database gamesys identity, object
+  positions/existence/names/archetypes, direct property presence, mission-only
+  quest snapshots and config definitions. `dbmod_check_match=1` opts into native
+  matching; script/mod adapters still fail explicitly when needed. Native
+  positive/negative CFG tests and installed RESBASE matching exit cleanly under
+  synchronization validation. Other adapters are implemented but not individually
+  runtime-verified. No patch mutation is enabled.

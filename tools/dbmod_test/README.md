@@ -129,8 +129,8 @@ argument runs resource-backed syntax, fingerprint-grammar and command-shape
 checks. `dbmod_check_gamesys=1` adds gamesys fingerprint restrictions. This uses
 the live IResMan/IStore and binary-resource lock/release lifecycle, prints results
 with mprintf, and emits `dbmod-check` trace records when DARK_RENDER_TRACE is set.
-It does not evaluate fingerprints against the current mission, validate engine
-property schemas or execute any command. Failures are diagnostics and do not
+By default it does not evaluate fingerprints against the current mission. It
+never validates engine property schemas or executes commands. Failures are diagnostics and do not
 change the mission load result. Normal loads without the argument are unchanged.
 
 Example with private writable game configuration and saves:
@@ -150,3 +150,16 @@ error for an unknown command and the expected missing-resource diagnostic.
 All three mission runs exited cleanly with Vulkan synchronization validation and
 private writable state. These checks establish read-only diagnostic integration,
 not runtime patch application or schema validity.
+
+Add `dbmod_check_match=1` to evaluate fingerprints against read-only adapters for
+the loaded database. Gamesys identity comes from the database loader, positions
+from live objects, property presence from direct relevance, names/archetypes from
+the object/trait services, QVAR values from a mission-only snapshot, and CFG from
+config definitions. Service references are retained for the context lifetime.
+Missing script/mod adapters fail explicitly. The output distinguishes accept,
+reject and unchecked; rejection is not a syntax error and never applies a patch.
+
+Linux native checks observed positive and negative CFG fingerprint decisions and
+matched the installed RESBASE gamesys patch using the loaded database. These
+runs exited cleanly under Vulkan synchronization validation. They do not establish
+behavioral coverage for every adapter or enable any gameplay patch execution.
