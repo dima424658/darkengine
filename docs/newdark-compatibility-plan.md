@@ -287,3 +287,10 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   unsupported rather than using unsafe legacy conversions. The Linux game target
   now compiles the DML modules; all six standalone tests pass normally and under
   ASan/UBSan. No database load hook or runtime patch executor is enabled yet.
+- Added opt-in `dbmod_check` native resource diagnostics after successful database
+  loads. The installed RESBASE gamesys patch passes (82 statements/80 commands);
+  unknown-command and missing-resource runs produce expected diagnostics. All
+  three Linux mission runs exit cleanly with synchronization validation. This
+  checks IResMan/IStore ownership and preflight integration only: no patch is
+  matched against mission state or executed, and diagnostics do not change the
+  mission load result.

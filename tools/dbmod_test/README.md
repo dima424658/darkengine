@@ -121,3 +121,32 @@ The DML modules are compiled into the Linux game target through the shared
 framework source list. This checks engine-header/build integration only: no
 database-load hook invokes them, so runtime patching remains disabled. The Linux
 `thief-runner` build and all six standalone tests (normal and ASan/UBSan) pass.
+
+## Read-only native resource diagnostic
+
+After a successful database load, the optional `dbmod_check=/absolute/patch.dml`
+argument runs resource-backed syntax, fingerprint-grammar and command-shape
+checks. `dbmod_check_gamesys=1` adds gamesys fingerprint restrictions. This uses
+the live IResMan/IStore and binary-resource lock/release lifecycle, prints results
+with mprintf, and emits `dbmod-check` trace records when DARK_RENDER_TRACE is set.
+It does not evaluate fingerprints against the current mission, validate engine
+property schemas or execute any command. Failures are diagnostics and do not
+change the mission load result. Normal loads without the argument are unchanged.
+
+Example with private writable game configuration and saves:
+
+```sh
+DARK_RENDER_TRACE=/tmp/dbmod-check.trace \
+  ./build-linux/thief-runner game_path=/tmp/private-game \
+  save_path=/tmp/private-saves content=vanilla quickstart=miss2.mis \
+  auto_stop=12 SlowFrame=0 min_frame_time=0 vsync=0 \
+  dbmod_check=/path/to/thief_gold/MODS/RESBASE/gamesys.dml \
+  dbmod_check_gamesys=1
+```
+
+On Linux, the installed RESBASE patch passed through the native resource system
+with 82 statements/80 commands. Separate runs produced the expected source-line
+error for an unknown command and the expected missing-resource diagnostic.
+All three mission runs exited cleanly with Vulkan synchronization validation and
+private writable state. These checks establish read-only diagnostic integration,
+not runtime patch application or schema validity.

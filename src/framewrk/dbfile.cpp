@@ -35,6 +35,7 @@
 
 #include <mprintf.h>
 #include <missiondiag.h>
+#include "dbmod/inspection.hpp"
 #ifdef EDITOR
 #include <brestore.h>
 #endif
@@ -1262,6 +1263,17 @@ edbFiletype dbLoad(const char* filename, ulong loadtype)
    }
 
    edbFiletype retval = dbLoadTagFile(file,loadtype); 
+   // Opt-in read-only diagnostic. Normal loads never execute DML patches here.
+   if (retval != 0)
+   {
+      char patch[4096];
+      if (config_get_raw("dbmod_check", patch, sizeof(patch)))
+      {
+         int gamesys = 0;
+         config_get_int("dbmod_check_gamesys", &gamesys);
+         DarkDbMod::InspectPatch(patch, gamesys != 0);
+      }
+   }
    MissionDiagnosticsFinish(retval != 0);
    end_load_transaction();
 

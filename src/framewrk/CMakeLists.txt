@@ -19,6 +19,7 @@ set(dark_framewrk_sources
   dbmod/commands.cpp
   dbmod/fields.cpp
   dbmod/struct_fields.cpp
+  dbmod/inspection.cpp
   diskfree.cpp
   dispatch.cpp
   dlgmode.c
