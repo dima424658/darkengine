@@ -26,8 +26,7 @@
 #define DEFINE_OLEGUID(name, l, w1, w2) \
     DEFINE_GUID(name, l, w1, w2, 0xC0,0,0,0,0,0,0,0x46)
 
-EXTERN const GUID __cdecl GUID_NULL;
-const GUID __cdecl GUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
+DEFINE_GUID(GUID_NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 DEFINE_OLEGUID(IID_IUnknown,            0x00000000L, 0, 0);
 DEFINE_OLEGUID(IID_IClassFactory,       0x00000001L, 0, 0);

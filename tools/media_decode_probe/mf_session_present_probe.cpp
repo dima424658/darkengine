@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include <mfaudio.h>
+#include <initguid.h>
 
 #pragma comment(lib, "evr.lib")
 #pragma comment(lib, "mf.lib")
@@ -16,9 +17,8 @@
 #pragma comment(lib, "mfuuid.lib")
 #pragma comment(lib, "ole32.lib")
 
-static const GUID kVideoRenderService = {
-    0x1092a86c, 0xab1a, 0x459a,
-    {0xa3, 0x36, 0x83, 0x1f, 0xbc, 0x4d, 0x11, 0xff}};
+DEFINE_GUID(kVideoRenderService, 0x1092a86c, 0xab1a, 0x459a,
+    0xa3, 0x36, 0x83, 0x1f, 0xbc, 0x4d, 0x11, 0xff);
 
 template <class T> static void Release(T *&value) {
   if (value) {
