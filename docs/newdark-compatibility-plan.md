@@ -527,3 +527,14 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   custom fonts, margins or alignment. Source-reviewed status does not close
   visual, state-restoration, callback or ABI gates. Existing twenty-one audit
   tests pass; no camera/input/UI behavior changed in this review.
+
+- Networking/CD source audit checked netscrpt.cpp, CallNetworking and CallCD.
+  Current Linux compile commands define NEW_NETWORK_ENABLED; native network
+  methods cannot be classified as absent simply because Squirrel uses local
+  fallback answers. Native broadcast/ownership/iteration/query paths exist but
+  multiplayer behavior has not been tested. Squirrel hardcodes local state for
+  multiplayer/networking/player iteration/suspend/ownership queries, rather than
+  forwarding those calls. New content-proxy, host/player-number/name additions
+  are missing from both adapters. CD SetBGM/SetTrack ignore arguments and return
+  S_OK; Sound schema playback is separate. Existing twenty-one audit tests pass.
+  No network session or CD behavior was tested or changed in this review.

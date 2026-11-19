@@ -566,6 +566,42 @@ def review(doc, name, evidence):
         elif method == "TextMessageFormatted":
             status = "Missing Squirrel method and native backing method"
             evidence = "drkuiscr.cpp and CallDarkUI lack font/margins/alignment formatted-message method"
+    networking_method = name.rsplit(".", 1)[-1]
+    native_networking = doc.parent.name == "script" and doc.name == "Networking.txt"
+    squirrel_networking = doc.name == "API-reference_services.txt" and name.startswith("Networking.")
+    if native_networking or squirrel_networking:
+        networking_review = {
+            "Broadcast": "owner/local-only checks followed by cNetMsg broadcast when networking is compiled",
+            "SendToProxy": "directed cNetMsg with object-valued data mapping, local dispatch in non-network build",
+            "TakeOver": "requests ObjTakeOver while networking; returns TRUE if inactive",
+            "GiveTo": "requests ObjGiveWithoutObjID while networking; returns TRUE if inactive",
+            "IsPlayer": "delegates to IsAPlayer",
+            "IsMultiplayer": "queries NetManager IsNetworkGame",
+            "SetProxyOneShotTimer": "queues proxy-enabled one-shot script timer after seconds-to-milliseconds conversion",
+            "FirstPlayer": "starts NetManager player iterator and returns local PlayerObject",
+            "NextPlayer": "advances NetManager iterator or returns OBJ_NULL",
+            "Suspend": "delegates to NetManager SuspendMessaging",
+            "Resume": "delegates to NetManager ResumeMessaging",
+            "HostedHere": "queries ObjectNetworking ObjHostedHere",
+            "IsProxy": "queries ObjectNetworking ObjIsProxy",
+            "LocalOnly": "queries ObjectNetworking ObjLocalOnly",
+            "IsNetworking": "queries NetManager Networking",
+            "Owner": "returns PlayerObject for local-only object, otherwise ObjHostPlayer",
+        }
+        if networking_method in networking_review:
+            status = "Native source path reviewed; multiplayer/runtime parity unverified"
+            evidence = "`src/script/netscrpt.cpp`: " + networking_review[networking_method]
+            if squirrel_networking:
+                evidence += "; CallNetworking forwards to native service"
+        if squirrel_networking and networking_method in {"IsMultiplayer", "IsNetworking", "FirstPlayer", "NextPlayer", "Suspend", "Resume", "HostedHere", "IsProxy", "LocalOnly", "Owner"}:
+            status = "Local Squirrel fallback; multiplayer semantics absent"
+            evidence = "CallNetworking hardcodes local-player/boolean/success results rather than querying native network state"
+        if networking_method in {"CreateContentProxy", "AmHost", "NumPlayers", "MyPlayerNum", "ObjToPlayerNum", "PlayerNumToObj", "GetPlayerName"}:
+            status = "Missing native Networking addition" if native_networking else "Missing Squirrel method and native backing method"
+            evidence = "netscrpt.h/cpp and CallNetworking lack documented 1.27/API-11 methods"
+    if doc.name == "API-reference_services.txt" and name in {"CD.SetBGM", "CD.SetTrack"}:
+        status = "Missing behavior: success-returning no-op"
+        evidence = "CallCD ignores track/flags and returns S_OK; streamed Sound schemas are a separate capability"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
