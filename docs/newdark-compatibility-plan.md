@@ -603,3 +603,14 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   declarations, including IScriptMan and IDarkOverlayHandler. New tests cover
   those input forms and all 26 audit tests pass. No runtime script behavior was
   changed; complete semantic review and implementation remain outstanding.
+
+- Finished source-level classification of remaining documented legacy IScriptMan
+  methods: service initialization, module/class tables, object-script lifecycle,
+  traces and persistence. This completes source triage for that document, not
+  runtime/ABI or save/load acceptance. WantsMessage ignores its message argument
+  and tests active-object presence; trace line calls use unchecked shift indices.
+  SaveLoad has serialization paths for posted/timed messages and script data,
+  but loaded counts resize arrays without visible bounds checks or propagated
+  IO status. Module changes rely on reentry assertions; object script changes
+  use deferred actions. These remain explicit correctness/acceptance work.
+  All 26 audit-tool tests pass; no manager runtime behavior changed.

@@ -769,9 +769,45 @@ def review(doc, name, evidence):
             "SetScriptData": "creates tagged entry if missing and assigns owned multi-parameter value",
             "ClearScriptData": "copies old value then removes tagged entry, S_FALSE if absent",
         }
+        manager_review.update({
+            "GameInit": "exposes complete service table before Init calls, then acquires ScriptNet",
+            "GameEnd": "ends services, releases networking, clears modules/objects and frees module datapath",
+            "SetModuleDatapath": "copies supplied Datapath for module lookup",
+            "AddModule": "normalizes .osm name, disconnects objects, replaces module, reloads classes/reconnects and sends BeginScript; rejects script reentry by assertion",
+            "RemoveModule": "disconnects/reloads/reconnects after freeing named module, S_FALSE if absent; script reentry guarded by assertion",
+            "ClearModules": "disconnects objects, clears descriptors and frees modules; script reentry guarded by assertion",
+            "ExposeService": "AddRefs service into GUID table; duplicate GUID guarded by assertion",
+            "GetService": "AddRefs matching service or falls back to NullScript service for unknown GUID",
+            "GetFirstClass": "allocates hash iterator and returns first class descriptor",
+            "GetNextClass": "advances class hash iterator",
+            "EndClassIter": "deletes iterator and clears opaque handle",
+            "GetClass": "searches class descriptors by name",
+            "SetObjScripts": "defers changes for actively dispatched object, reconnects class list and dispatches lifecycle/clears removed-class data",
+            "ForgetObj": "defers self-removal during dispatch; otherwise sends EndScript and removes target queues/data",
+            "ForgetAllObjs": "defers during dispatch, otherwise forgets objects, releases remaining queues/data and resets timer IDs",
+            "BeginScripts": "guards duplicate begin, enables and broadcasts BeginScript",
+            "EndScripts": "guards duplicate end, disables and broadcasts EndScript",
+            "AddTrace": "adds/replaces object/message trace hash entry",
+            "RemoveTrace": "removes matching object/message trace entry",
+            "GetTraceLineMask": "returns current integer trace-line mask",
+            "SetTraceLineMask": "replaces trace-line mask",
+            "GetFirstTrace": "allocates trace hash iterator",
+            "GetNextTrace": "advances trace hash iterator",
+            "EndTraceIter": "deletes iterator and clears opaque handle",
+            "PostLoad": "clears BeginScript filtering state and pending filter list",
+        })
         if name in manager_review:
             status = "Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified"
             evidence = "`libsrc/script/scrptman.cpp`: " + manager_review[name]
+        elif name == "WantsMessage":
+            status = "Partial query: object-level script presence only"
+            evidence = "scrptman.cpp ignores message-name argument and checks active object table"
+        elif name in {"GetTraceLine", "SetTraceLine"}:
+            status = "Partial trace control; unchecked shift index"
+            evidence = "scrptman.cpp shifts 1 by supplied trace-line index without validating integer bit range"
+        elif name == "SaveLoad":
+            status = "Persistence implementation present; input/lifecycle parity unverified"
+            evidence = "scrptman.cpp serializes queues, timers and script data; loaded counts resize arrays without visible bounds checks or propagated IO status"
         elif name in {"GetQueuedMessageCount", "GetQueuedMessageInfo", "DeleteQueuedMessage",
                       "GetTimedMessageCount", "GetTimedMessageInfo", "GetFirstScriptData",
                       "GetNextScriptData", "EndScriptDataIter", "GetFirstScriptObject",
