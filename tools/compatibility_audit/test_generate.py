@@ -45,6 +45,18 @@ class RequirementTests(unittest.TestCase):
         self.assertIn("OGG decoding exists", status)
         self.assertIn("without reading", evidence)
 
+    def test_engine_source_review_preserves_runtime_and_canvas_limits(self):
+        for path, name in [("DOC/script/Engine.txt", "GetCanvasSize"),
+                           ("DOC/squirrel_script/API-reference_services.txt", "Engine.GetCanvasSize")]:
+            status, evidence = review(Path(path), name, "candidate")
+            self.assertIn("configured resolution instead of actual canvas", status)
+            self.assertIn("without querying", evidence)
+        status, evidence = review(Path("DOC/script/Engine.txt"), "ConfigGetInt", "candidate")
+        self.assertIn("runtime/ABI parity unverified", status)
+        self.assertIn("config_get_int", evidence)
+        status, _ = review(Path("DOC/script/Engine.txt"), "SetTagBlock", "candidate")
+        self.assertEqual(status, "Missing")
+
     def test_service_declarations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "script" / "Engine.txt"

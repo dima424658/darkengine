@@ -102,6 +102,45 @@ def review(doc, name, evidence):
     if doc.name == "al_reverb.ini":
         status = "Missing preset-file loading; EFX reverb exists"
         evidence = "`libsrc/sound/openal.cpp` UpdateEffect uses compiled six-parameter presets and fixed reflection values; no INI loader"
+    engine_method = name.rsplit(".", 1)[-1]
+    native_engine = doc.parent.name == "script" and doc.name == "Engine.txt"
+    squirrel_engine = doc.name == "API-reference_services.txt" and name.startswith("Engine.")
+    if native_engine or squirrel_engine:
+        engine_review = {
+            "ConfigIsDefined": ("Source implementation reviewed; runtime/ABI parity unverified",
+                                "engscrpt.cpp delegates to config_is_defined with null guard"),
+            "ConfigGetInt": ("Source implementation reviewed; runtime/ABI parity unverified",
+                             "engscrpt.cpp delegates typed output to config_get_int"),
+            "ConfigGetFloat": ("Source implementation reviewed; runtime/ABI parity unverified",
+                               "engscrpt.cpp delegates typed output to config_get_float"),
+            "ConfigGetRaw": ("Source implementation reviewed; runtime/ABI parity unverified",
+                             "engscrpt.cpp copies bounded config text into owned script string; missing value clears output"),
+            "BindingGetFloat": ("Source implementation reviewed; runtime/ABI parity unverified",
+                                "engscrpt.cpp queries binder echo and parses float, matching inputbnd.cpp GetVarValue query mechanism"),
+            "FindFileInPath": ("Source implementation reviewed; runtime/ABI parity unverified",
+                               "engscrpt.cpp builds Datapath from named config value, disables implicit current directory and returns owned path"),
+            "IsRunningDX6": ("Intentionally false on SDL/Vulkan backend",
+                             "engscrpt.cpp returns FALSE; backend has no legacy DX6 rendering mode"),
+            "GetCanvasSize": ("Partial: configured resolution instead of actual canvas",
+                              "engscrpt.cpp reads game_screen_size with 640x480 fallback, without querying the active 2D surface"),
+            "GetAspectRatio": ("Partial: configured resolution instead of actual canvas",
+                               "engscrpt.cpp computes ratio from GetCanvasSize game_screen_size values"),
+            "GetFog": ("Source implementation reviewed; persistence/visual parity unverified",
+                       "engscrpt.cpp reads global portal_fog_color/dist used by portal.c"),
+            "SetFog": ("Source implementation reviewed; persistence/visual parity unverified",
+                       "engscrpt.cpp writes global portal_fog_color/dist; effective drawing also depends on portal_fog_on"),
+            "GetWeather": ("Source implementation reviewed; lifecycle/visual parity unverified",
+                           "engscrpt.cpp delegates to WeatherGetScriptParams over live g_Weather fields"),
+            "SetWeather": ("Source implementation reviewed; lifecycle/visual parity unverified",
+                           "weather.cpp copies parameters into g_Weather and calls Update; non-rain type coerced to snow, texture bounded"),
+            "PortalRaycast": ("Source implementation reviewed; boundary cases unverified",
+                              "engscrpt.cpp inverts terrain PortalRaycast clear result, returning hit or endpoint position"),
+        }
+        if engine_method in engine_review:
+            status, evidence = engine_review[engine_method]
+            evidence = "`src/script/engscrpt.cpp`, `src/render/weather.cpp`: " + evidence
+            if squirrel_engine:
+                evidence += "; CallEngine forwards to native service, Squirrel output/ABI behavior still unverified"
     if doc.name == "Engine.txt" and name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock", "GetFogZone", "SetFogZone", "ObjRaycast"}:
         status = "Missing" if name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock"} else "Partial"
         evidence = "`src/script/engscrpt.cpp`: explicit stubs, script-only fog table or approximate raycast exclusions"

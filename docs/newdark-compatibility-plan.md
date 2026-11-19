@@ -391,3 +391,16 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   submerged_sound_occlusion remain missing. These seven source-reviewed rows
   are not listening-test or complete audio parity claims. Fifteen audit tests
   pass; no audio behavior changed in this review.
+
+- Reviewed fourteen native Engine service methods against DOC/script/Engine.txt
+  and traced CallEngine forwarding for the matching Squirrel entries. Typed
+  config reads, owned raw strings, binder echo queries, Datapath searches,
+  global fog, live weather parameter access and terrain raycast implementations
+  are now marked source-reviewed rather than merely token-matched. Runtime ABI,
+  version guards, lifecycle and visual acceptance are still explicitly open.
+  GetCanvasSize reads configured game_screen_size rather than the actual main
+  2D canvas, and GetAspectRatio inherits that discrepancy; both are partial.
+  IsRunningDX6 intentionally returns false for the SDL/Vulkan renderer.
+  Existing tag-block/environment-map stubs and fog-zone/raycast limitations
+  retain their missing/partial classifications. Sixteen audit-tool tests pass;
+  this review does not establish full script-service compatibility.
