@@ -62,11 +62,5 @@ typedef int 			Errcode; /* >= 0 if ok, < 0 otherwise see pjecodes.h */
  * compiled using the (normal) -3r Watcom standard of parms-in-regs.
  *--------------------------------------------------------------------------*/
 
-#ifdef __WATCOMC__
-	#pragma aux FLICLIB3S	"*"                      \
-							parm caller []			 \
-							value no8087			 \
-							modify [eax ecx edx gs];
-#endif
 
 #endif /* PJSTYPES_H */

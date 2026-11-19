@@ -22,9 +22,6 @@
 
 #include <lg.h>
 
-#if defined(__WATCOMC__)
-#pragma warning 549 9
-#endif
 
 #pragma pack(push, 4)
 #pragma once
@@ -876,7 +873,5 @@ inline void DYNARRAY_BASE::AppendMemCpy(const T * p, unsigned nItems)
 
 ///////////////////////////////////////////////////////////////////////////////
 #pragma pack(pop)
-#if defined(__WATCOMC__)
-#endif
 
 #endif /* !__DYNARRAY_H */

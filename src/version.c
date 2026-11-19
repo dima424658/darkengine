@@ -29,11 +29,7 @@
 #endif
 
 #ifndef SHIP
-#ifdef __WATCOMC__
-#define COMPILER_NAME "Watcom"
-#else
 #define COMPILER_NAME "MSVC"
-#endif
 #else
 #define COMPILER_NAME ""
 #endif

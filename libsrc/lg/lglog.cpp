@@ -26,10 +26,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined (__WATCOMC__)
-    #define snprintf    _bprintf
-    #define vsnprintf   _vbprintf
-#elif defined (__SC__) || defined (_MSC_VER)
+#if defined (__SC__) || defined (_MSC_VER)
     #define snprintf    _snprintf
     #define vsnprintf   _vsnprintf
 #endif
@@ -43,10 +40,6 @@ void LGAPI _LogDefaultLogger(const char *Msg, const char *FN, unsigned LN);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef __WATCOMC__
-int __Debug_True = 1;
-int __Debug_False = 0;
-#endif
 
 static FILE *hLogFile;
 

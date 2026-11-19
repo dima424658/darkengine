@@ -166,16 +166,7 @@ public:
     void Clear();
     void SetEmpty();
 
-#ifndef __WATCOMC__
-    // @Note (toml 05-18-96): The Watcom 10.5 parser has a bug handling
-    // declarations of instances of cSListNodeBase derivations,
-    // but only when optimizing is enabled (!). It claims a client of
-    // a class derived from cSListBase cannot create an instance of
-    // that derivation because this constructor is protected.  This
-    // is incorrect behavior and should be tested against future versions
-    // of Watcom.  Microsoft and Symantec handle it ok.
 protected:
-#endif
     cSListBase();
 
 protected:

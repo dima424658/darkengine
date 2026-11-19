@@ -34,9 +34,6 @@
 #include <dbmem.h>
 
 // huh?
-#ifdef __WATCOMC__
-#pragma warning 555 9
-#endif
 
 ////////////////////////////////////////////////////////////
 // EDITOR INITIALIZATION
@@ -55,7 +52,6 @@
 // pending.
 // The application uses this to call the COM "Create" functions
 //
-
 
 
 tResult LGAPI AppCreateObjects(int argc, const char *argv[])

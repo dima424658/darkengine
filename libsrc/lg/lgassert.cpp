@@ -17,10 +17,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined (__WATCOMC__)
-    #define snprintf    _bprintf
-    #define vsnprintf   _vbprintf
-#elif (__SC__)
+#if (__SC__)
     #define snprintf    _snprintf
     #define vsnprintf   _vsnprintf
 #elif (_MSC_VER)
@@ -99,11 +96,7 @@ static void DecodeFilename(unsigned long ulEncodedFilename, char * pszTo)
 //
 
 #ifndef _MSC_VER
-#ifndef __WATCOMC__
 extern "C" void __cdecl _assert(void * cond, void * file, unsigned line)
-#else
-extern "C" void __assert(int, char * cond, char * file, int line)
-#endif
 {
     _CriticalMsg((char *) cond, (char *) file, line);
 }

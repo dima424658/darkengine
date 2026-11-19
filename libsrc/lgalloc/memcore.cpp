@@ -24,13 +24,9 @@ EXTERN BOOL LGAllocOverride();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef __WATCOMC__
-#pragma initialize 0
-#else
 // under MS, disable normal static construction
 #pragma warning(disable:4075)
 #pragma init_seg ("lgalloc_custom_init")
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 sPlatformMutex g_AllocMutex;

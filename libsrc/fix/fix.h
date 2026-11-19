@@ -22,9 +22,6 @@ extern "C"  {
 #endif  // cplusplus
 
 ushort long_sqrt (sint32 x);
-#ifdef __WATCOMC__
-#pragma aux long_sqrt parm [eax] value [ax] modify [eax ebx ecx edx esi edi]
-#endif
 
 //////////////////////////////
 //
@@ -254,15 +251,9 @@ fix fix_safe_pyth_dist_info (fix a, fix b, const char *file, int line);
 
 // Returns 0 if x < 0
 fix fix_sqrt (fix x);
-#ifdef __WATCOMC__
-#pragma aux fix_sqrt parm [eax] value [eax] modify [eax ebx ecx edx esi edi]
-#endif
 
 // Returns 0 if x < 0
 fix fix_sloppy_sqrt (fix x);
-#ifdef __WATCOMC__
-#pragma aux fix_sloppy_sqrt parm [eax] value [eax] modify [eax ebx ecx edx esi edi]
-#endif
 
 // Computes sin and cos of theta
 void fix_sincos (fixang theta, fix *sin, fix *cos);
@@ -350,9 +341,6 @@ fix24 fix24_fast_pyth_dist (fix24 a, fix24 b);
 fix24 fix24_safe_pyth_dist (fix24 a, fix24 b);
 
 fix24 fix24_sqrt (fix24 x);
-#ifdef __WATCOMC__
-#pragma aux fix24_sqrt parm [eax] value [eax] modify [eax ebx ecx edx esi edi]
-#endif
 
 void fix24_sincos (fixang theta, fix24 *sin, fix24 *cos);
 fix24 fix24_sin (fixang theta);

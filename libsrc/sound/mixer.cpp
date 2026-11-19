@@ -479,8 +479,6 @@ STDMETHODIMP_(void) cSndMixer::Update()
 // Internally used callback for StopAllSamples
 //
 
-#ifdef __WATCOMC__
-#endif
 
 ISndSample *
 StopSample( ISndMixer   *mixer,
@@ -491,8 +489,6 @@ StopSample( ISndMixer   *mixer,
    return NULL;
 }
 
-#ifdef __WATCOMC__
-#endif
 
 /////////////////////////////////////
 // StopAllSamples
@@ -1190,7 +1186,6 @@ void cSndMixer::TimerCallback(void *user)
 }
 
 
-
 //
 // check if timer needs to be started or stopped
 //
@@ -1240,7 +1235,6 @@ cSndMixer::CheckTimer( void )
             }
          }
       }  // end if timer not started (id 0) && not broken
-
 
 
    } // end if timer needed

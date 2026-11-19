@@ -1006,10 +1006,6 @@ cSndSample::TimeToSamples( uint32      milliSeconds )
 }
 
 
-#ifdef __WATCOMC__
-#endif
-
-
 //
 // return a fade task, allocating it if necessary
 //
@@ -1069,10 +1065,6 @@ STDMETHODIMP_(void) cSndSample::Fade(eSndFaders whichFader, int32 destVal, int32
    mpMixer->StartTimer();
 #endif
 }
-
-
-#ifdef __WATCOMC__
-#endif
 
 
 //

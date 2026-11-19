@@ -53,8 +53,6 @@ sint32 long_fast_pyth_dist (sint32 a, sint32 b)
 // Knuth credits it to Moler & Morrison, IBM Journal of Research and
 // Development 27 (1983).  Good for them.
 //
-#ifdef __WATCOMC__
-#endif
 fix fix_safe_pyth_dist_info (fix a, fix b, const char *file, int line)
 {
    fix save_a=a, save_b=b;
@@ -92,8 +90,6 @@ fix fix_safe_pyth_dist_info (fix a, fix b, const char *file, int line)
    }
    return a;
 }
-#ifdef __WATCOMC__
-#endif
 
 fix fix_sqrt(fix x)
 {
@@ -229,7 +225,6 @@ fixang fix_asin (fix x)
    // interpolate between lowy and hiy according to fracx
    return (lowy + (short) (( ( (short) hiy - (short) lowy ) * (uchar) fracx ) >> 8));
 }
-
 
 
 //////////////////////////////

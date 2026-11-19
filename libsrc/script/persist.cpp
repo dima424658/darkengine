@@ -19,11 +19,7 @@
 
 #include <dbmem.h>
 
-#if defined(__WATCOMC__)
-#pragma initialize library
-#else
 #pragma init_seg (lib)
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -209,7 +205,6 @@ extern sPersistReg* PersistLookupReg(const char* pszName)
 
    return pReg; 
 }
-
 
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -36,9 +36,7 @@
 #include <uigadget.h>
 #include <uibutton.h>
 
-#ifndef __WATCOMC__
 #define utoa ultoa
-#endif
 
 grs_bitmap ui_draw_bm;
 grs_canvas ui_draw_canvas;
@@ -75,7 +73,6 @@ char *(*lgad_string_func)(int strref, char *buf, int bufsize) = NULL;
 // these default to standard LG Malloc and Free
 char *(*lgad_malloc)(long size) = NULL;
 void (*lgad_free)(char *ptr) = NULL;
-
 
 
 // old voyager constants
@@ -2001,8 +1998,6 @@ bool MenuMotionHandler(short x, short y, LGadBox *vb)
 }
 
 
-
-
 bool MenuKeyHandlerInternal(short keycode, LGadBox *vb,bool default_retval)
 {
    LGadMenu *vm = (LGadMenu *)vb; // the menu, duh
@@ -2251,7 +2246,6 @@ LGadMenu *LGadCreateMenu(LGadMenu *vm, LGadRoot *vr, short x, short y, short w, 
          return(NULL);
       }
    }
-
 
 
    if (vm == NULL)
@@ -2996,7 +2990,6 @@ LGadEditMenu *LGadCreateEditMenuArgs(LGadEditMenu *vm, LGadRoot *vr, short x, sh
 
 #define NUM_HOTKEYS  70
 extern void DrawElementInit(void);
-
 
 
 EXTERN void LGadSetDefaultFont(IDataSource* pFont)

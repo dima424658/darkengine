@@ -96,9 +96,6 @@ int lg_vsprintf(char *buf, const char *format, va_list arglist)
    int arg_int;
    char fix_frac_buf[5];
    double arg_double;
-#ifdef WATCOM_EVER_PASSED_FLOATS_AS_FLOATS
-   float arg_float;
-#endif
 
    bool ladjust, altform, pspec, this_is_len;
    bigness big;
@@ -270,18 +267,7 @@ string_copy:
                break;
             case 'G':
             case 'g': // really lame hacked in floating point support
-// watcom passes as doubles, even if you mprintf(moo,"%g",(float)cow)
-// so this float based code is somewhat less useful
-// we always just go and run the double stuff
-// if we ever do MSVC, we had better fix this
-#ifdef WATCOM_EVER_PASSED_FLOATS_AS_FLOATS
-               if (big!=BIG)
-               {
-	               arg_float=va_arg(arglist,float);
-	               gcvt(arg_float,8,buf+dest_ind);
-               }
-               else
-#endif
+               // Variadic float arguments are promoted to double.
                {
                   arg_double=va_arg(arglist,double);
 						sprintf(buf+dest_ind, "%.8g", arg_double);
@@ -391,8 +377,6 @@ void lg_sprintf_install_stringfunc(char *(*func)(ulong strnum))
 {
    sprintf_str_func=func;
 }
-
-
 
 
 // ==== static functions follow =======================

@@ -25,7 +25,6 @@
 #include <dbmem.h>   // must be last header! 
 
 // I guess this should probably be in a header somewhere
-#ifndef __WATCOMC__
 # if defined(__OS2__) || defined(__NT__)
 #   define NAME_MAX  255      /* maximum filename for HPFS or NTFS */
 #   define PATH_MAX  259 /* maximum length of full pathname excl. '\0' */
@@ -33,7 +32,6 @@
 #   define NAME_MAX  12    /* 8 chars + '.' +  3 chars */
 #   define PATH_MAX  143 /* maximum length of full pathname excl. '\0' */
 # endif
-#endif
 
 #define MAX_IMG_WIDTH  DARK_LIMIT_RUNTIME_TEXTURE_DIMENSION
 #define MAX_IMG_HEIGHT DARK_LIMIT_RUNTIME_TEXTURE_DIMENSION

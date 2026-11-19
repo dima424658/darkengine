@@ -200,7 +200,7 @@ typedef int true_bool;
 #endif
 
 #ifndef  __cplusplus
-#if defined(_MSC_VER) || defined(WAT110)
+#if defined(_MSC_VER)
 #define bool sbool
 #else
 typedef unsigned char bool;             // Warning: future C++ keyword collision
@@ -237,7 +237,7 @@ typedef struct  _GUID
     BYTE  Data4[ 8 ];
     }	GUID;
 
-#if !defined(_MSC_VER) && !defined(WAT110)
+#if !defined(_MSC_VER)
    #define DEFINE_GUID_UNCONDITIONAL(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
             EXTERN_C const GUID CDECL name \
                      = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
@@ -248,7 +248,7 @@ typedef struct  _GUID
 #endif
 
 // VC 4.2 changed the definition of DEFINE_GUID.  Other compilers are sure to follow (toml 11-19-96)
-#if !defined(_MSC_VER) && !defined(WAT110)
+#if !defined(_MSC_VER)
    #ifndef INITGUID
       #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
             EXTERN_C const GUID CDECL FAR name

@@ -24,11 +24,7 @@
 //
 
 // Necessary for proper construction order of pool:
-#ifdef __WATCOMC__
-#pragma initialize library
-#else
 #pragma init_seg (lib)
-#endif
 
 HASHSET_IMPLEMENT_POOL(sHashSetChunk);
 
@@ -122,7 +118,6 @@ void cHashSetBase::SetEmpty()
 
     m_nItems = 0;
 }
-
 
 
 ///////////////////////////////////////

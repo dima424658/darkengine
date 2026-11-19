@@ -3,12 +3,8 @@
 #include "bugtrak.h"
 #include "lgsprntf.h"
 #include "dbg.h"
-#ifdef __WATCOMC__
-#include "env.h"
-#else
 #include <stdlib.h>
 #include <sys/stat.h>
-#endif
 #include "time.h"
 #include "array.h"
 #include <fcntl.h>

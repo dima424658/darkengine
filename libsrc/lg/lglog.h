@@ -42,15 +42,9 @@ EXTERN const char * LGAPI LogGetLogFile();
 
 // These help quiet noisy warnings about expressions always being true/false
 // without forcing clients to turn off warnings
-#if defined(__WATCOMC__)
-    EXTERN int LGDATA __Debug_True;
-    EXTERN int LGDATA __Debug_False;
-    #define __Debug_QuietEval(expr)     (((expr) || __Debug_False) && __Debug_True)
-#else
     #define __Debug_True                1
     #define __Debug_False               0
     #define __Debug_QuietEval(expr)     (expr)
-#endif
 // Set up a scope type that is both if-else safe and requires a semi-colon
 #define __Debug_BeginScope          do {
 #define __Debug_EndScope            } while (__Debug_False)

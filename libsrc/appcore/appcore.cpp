@@ -81,11 +81,7 @@ int LGAPI _AppMain(int argc, const char *argv[])
     _g_referenceEntryPoint = 1;
 
     // Increase the number of available handles in the standard buffered i/o
-    #ifdef __WATCOMC__
-    _grow_handles(60);
-    #else
     #pragma message("Need a way to increase available file handles")
-    #endif
 
     // Create the core aggregate entity
     _AppAggregateCreate(IID_IAggregate);

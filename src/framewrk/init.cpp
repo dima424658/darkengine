@@ -84,9 +84,6 @@
 #include <dbmem.h>
 
 // huh?
-#ifdef __WATCOMC__
-#pragma warning 555 9
-#endif
 
 //------------------------------------------------------------
 // CONFIG INITIALIZATION
@@ -302,7 +299,6 @@ static void pick_game(void)
    Verify(find_file_in_config_path(path,game,"include_path")); 
    config_load(path); 
 }
-
 
 
 //------------------------------------------------------------
@@ -722,8 +718,6 @@ const char ** g_argv;
 int g_argc;
 
 sLoopInstantiator* gPrimordialMode = NULL;
-
-
 
 
 /*

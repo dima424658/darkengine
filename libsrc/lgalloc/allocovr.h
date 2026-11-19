@@ -93,91 +93,6 @@ size_t msize(void * p)
 }
 
 
-#if defined(__WATCOMC__)
-
-void * _nmalloc(size_t size)
-{
-    return g_pMalloc->Alloc(size);
-}
-
-void _nfree(void * p)
-{
-    g_pMalloc->Free(p);
-}
-
-void * _nrealloc(void * p, size_t size)
-{
-    return g_pMalloc->Realloc(p, size);
-}
-
-void * _ncalloc(size_t n, size_t sizeEach)
-{
-    void * p = g_pMalloc->Alloc(sizeEach * n);
-    memset(p, sizeEach * n, 0);
-    return p;
-}
-
-int _nheapchk()
-{
-#ifndef SHIP
-    return g_pMalloc->VerifyHeap();
-#else
-    return 0;
-#endif
-}
-
-int _nheapmin()
-{
-    g_pMalloc->HeapMinimize();
-    return 1;
-}
-
-size_t _nmsize(void * p)
-{
-    return g_pMalloc->GetSize(p);
-}
-
-size_t nmsize(void * p)
-{
-    return g_pMalloc->GetSize(p);
-}
-
-}
-
-void * operator new(size_t size)
-{
-    return g_pMalloc->Alloc(size);
-}
-
-void * operator new(size_t, void * p)
-{
-    return p;
-}
-
-void * operator new [](size_t size)
-{
-    return g_pMalloc->Alloc(size);
-}
-
-void * operator new[](size_t, void * p)
-{
-    return p;
-}
-
-void operator delete(void * p)
-{
-    g_pMalloc->Free(p);
-}
-
-void operator delete[](void * p)
-{
-    g_pMalloc->Free(p);
-}
-
-extern "C"
-{
-#else
-
 int __cdecl _heap_init()
 {
     return HeapInit();
@@ -203,7 +118,6 @@ void *  __cdecl _expand(void *, size_t)
    return NULL;
 }
 
-#endif
 
 }
 
