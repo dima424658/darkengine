@@ -45,6 +45,7 @@ void UnsetTextureId(int id);
 void lgd3d_render_flush(void);
 void lgd3d_reset_texture_bindings(void);
 void LegacyTexturesInit(void);
+void *LegacyMaterialIllumination(const grs_bitmap *bitmap);
 extern void *g_legacyTextures[LGD3D_MAX_TEXTURES];
 extern grs_bitmap *g_legacyBitmaps[LGD3D_MAX_TEXTURES];
 extern uchar *lgd3d_clut;

@@ -14,6 +14,11 @@ namespace
 class cVulkanRenderBackend
 {
 public:
+   cVulkanRenderBackend()
+   {
+      StartTrace();
+   }
+
    ~cVulkanRenderBackend()
    {
       ResetTrace();
@@ -224,6 +229,18 @@ public:
          viewportHeight);
       m_renderer->ClearCanvasRegion(m_commandBuffer, x, y, width, height,
          m_width, m_height);
+   }
+
+   void PushDrawState()
+   {
+      if (m_renderer)
+         m_renderer->PushDrawState();
+   }
+
+   void PopDrawState()
+   {
+      if (m_renderer)
+         m_renderer->PopDrawState();
    }
 
    void SetDepth(bool compare, bool write)
@@ -481,4 +498,14 @@ void RenderBackendTrace(const char *format, ...)
    Backend().Trace(format, args);
    va_end(args);
 }
+}
+
+void RenderBackendPushDrawState(void)
+{
+   Backend().PushDrawState();
+}
+
+void RenderBackendPopDrawState(void)
+{
+   Backend().PopDrawState();
 }

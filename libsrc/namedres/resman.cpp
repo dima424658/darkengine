@@ -1,6 +1,7 @@
 #include <storeapi.h>
 #include <storeman.h>
 #include <resman.h>
+#include <material.h>
 #include <hshsttem.h>
 
 #ifndef SHIP
@@ -259,6 +260,7 @@ HRESULT cResMan::End()
 		return E_FAIL;
 
 	MissionDiagnosticsFinalSummary();
+	ResMaterialReset();
 	m_pSharedCache->FlushAll();
 
 	if (m_pCache)
@@ -1466,4 +1468,51 @@ tResult LGAPI _Res2Create(REFIID, IResMan** ppResMan, IUnknown* pOuter)
 		*ppResMan = pResMan;
 
 	return pResMan != nullptr ? S_OK : E_FAIL;
+}
+
+IRes *cResMan::BindMaterial(IRes *image, const char *name)
+{
+   cAutoResThreadLock lock;
+   char *path = nullptr;
+   image->GetCanonPath(&path);
+   IStore *source = image->GetStore();
+   IStore *canonical = nullptr;
+   IStore *candidate =
+       m_pDefSearchPath ? m_pDefSearchPath->Find(name, 0, &canonical, path) : nullptr;
+   bool allowed =
+       candidate && source && !stricmp(candidate->GetFullPathName(), source->GetFullPathName());
+   if (!allowed && candidate && source && m_pDefSearchPath)
+   {
+      // Enumerate in search-path order, stopping at either physical store.
+      // Same-folder files are accepted independently of enumeration order.
+      void *cookie = m_pDefSearchPath->BeginContents(nullptr, 0, path);
+      if (cookie)
+      {
+         IStore *store = nullptr;
+         char filename[MAX_STORENAME + 1];
+         while (m_pDefSearchPath->Next(cookie, &store, filename, nullptr))
+         {
+            const bool material = !stricmp(store->GetFullPathName(), candidate->GetFullPathName());
+            const bool base = !stricmp(store->GetFullPathName(), source->GetFullPathName());
+            store->Release();
+            if (material || base)
+            {
+               allowed = material;
+               break;
+            }
+         }
+         m_pDefSearchPath->EndContents(cookie);
+      }
+   }
+   IRes *result = allowed ? BindSpecific(name, RESTYPE_BINARY, candidate, canonical, 0) : nullptr;
+   if (!result && source && source->StreamExists(name))
+      result = BindSpecific(name, RESTYPE_BINARY, source, nullptr, 0);
+   if (canonical)
+      canonical->Release();
+   if (candidate)
+      candidate->Release();
+   if (source)
+      source->Release();
+   Free(path);
+   return result;
 }

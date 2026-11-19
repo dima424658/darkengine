@@ -1,4 +1,5 @@
 #include <resimage.h>
+#include <material.h>
 #include <resbastm.h>
 #include <tmgr.h>
 #include <mode.h>
@@ -126,6 +127,7 @@ void* cImageResource::LoadData(ulong* pSize, ulong* pTimestamp, IResMemOverride*
 		ImageHackRemap16Bit(bm, 0);
 		ImageHackAutoSetTransparency(bm, 0);
 	}
+	ResMaterialLoad(m_pResMan, this, bm);
 	if (pSize)
 		*pSize = pResMem->GetSize(bm);
 
@@ -144,6 +146,7 @@ BOOL cImageResource::FreeData(void* pUntypedData, ulong nSize, IResMemOverride* 
 	if (!m_pStream && (pData->flags & 0x40) && g_tmgr)
 		g_tmgr->unload_texture(pData);
 
+	ResMaterialForget(pData);
 	pResMem->ResFree(pData);
 
 	return TRUE;

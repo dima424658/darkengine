@@ -9,6 +9,7 @@ add_library(dark_namedres STATIC
   fonrstyp.cpp
   gif.cpp
   imgrstyp.cpp
+  material.cpp
   mdlrstyp.cpp
   palrstyp.cpp
   pathutil.cpp

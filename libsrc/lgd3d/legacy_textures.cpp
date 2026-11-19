@@ -7,6 +7,7 @@
 #include <cstring>
 #include <rsdcfg.h>
 #include <vector>
+#include <material.h>
 
 constexpr int kPaletteSlots = 256;
 extern "C" {
@@ -182,6 +183,7 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
   if (sourcePixelBytes && !bits)
     return NULL;
 
+  const auto *material = ResMaterialGet(info->bm);
   const size_t scaleWidth = (size_t)1 << info->scale_w;
   const size_t scaleHeight = (size_t)1 << info->scale_h;
   const size_t sourceRowBytes = bm->row;
@@ -216,8 +218,9 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
         ushort p;
         memcpy(&p, source, sizeof(p));
         Decode16(p, bm->flags, &r, &g, &b, &a);
-        if ((info->flags & TF_TRANS) && MatchesChromaKey16(p, bm->flags))
-          a = 0;
+        if ((info->flags & TF_TRANS) && (!material || material->fullAlpha != 1) &&
+            MatchesChromaKey16(p, bm->flags))
+           a = 0;
       } else if (bm->type == BMT_FLAT24) {
         // The PCX decoder interleaves its red, green, and blue planes in
         // RGB order.  Vulkan uploads the expanded RGBA data unchanged.
@@ -227,6 +230,13 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
         if ((info->flags & TF_TRANS) && r == g_chromaR &&
             g == g_chromaG && b == g_chromaB)
           a = 0;
+      }
+      if (material)
+      {
+         if (material->forceOpaque == 1)
+            a = 255;
+         else if (material->alphaKey == 1)
+            a = a >= 128 ? 255 : 0;
       }
       const size_t destination =
           ((size_t)y * scaleHeight * (size_t)info->w +
@@ -394,4 +404,43 @@ extern "C" void lgd3d_get_alpha_texture_bitmask(grs_rgb_bitmask *m) {
   m->red = 0x0f00;
   m->green = 0x00f0;
   m->blue = 0x000f;
+}
+
+extern "C" void *LegacyMaterialIllumination(const grs_bitmap *bitmap)
+{
+   if (void *cached = ResMaterialRenderData(bitmap))
+      return cached;
+   grs_bitmap *image = ResMaterialIllumination(bitmap);
+   if (!image)
+      return nullptr;
+   tdrv_texture_info info{};
+   info.bm = image;
+   info.w = image->w;
+   info.h = image->h;
+   info.bits = image->bits;
+   // A referenced image can already be resident through ordinary geometry.
+   if (image->flags & BMF_LOADED)
+   {
+      bool found = false;
+      for (int i = 0; i < LGD3D_MAX_TEXTURES; ++i)
+         if (g_legacyBitmaps[i] == image && g_textureInfoValid[i])
+         {
+            info.bits = g_textureInfo[i].bits;
+            found = true;
+            break;
+         }
+      if (!found)
+         return nullptr;
+   }
+   uchar *pixels = ConvertTexture(&info);
+   if (!pixels)
+      return nullptr;
+   void *texture = RenderBackendCreateTexture(image->w, image->h, pixels, image->w * 4);
+   std::free(pixels);
+   if (texture)
+   {
+      ResMaterialSetRenderData(bitmap, texture, RenderBackendDestroyTexture);
+      RenderBackendTrace("material-illumination pixels=%dx%d", image->w, image->h);
+   }
+   return texture;
 }

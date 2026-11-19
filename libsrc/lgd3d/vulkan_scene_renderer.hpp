@@ -37,6 +37,8 @@ public:
    void ClearCanvasRegion(vk::CommandBuffer commandBuffer, int x, int y,
       int width, int height, int logicalWidth, int logicalHeight);
 
+   void PushDrawState();
+   void PopDrawState();
    void SetDepth(bool compare, bool write);
    void SetBlend(int mode);
    void SetAlphaTest(bool enabled);
@@ -93,6 +95,7 @@ private:
       bool smooth[2]{true, true};
       int viewportX{}, viewportY{}, viewportWidth{}, viewportHeight{};
    } m_state;
+   std::vector<sDrawState> m_savedStates;
    uint32_t m_frameIndex{};
    uint64_t m_nextTextureIdentity{1};
 };

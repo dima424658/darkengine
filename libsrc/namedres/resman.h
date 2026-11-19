@@ -23,7 +23,10 @@ public:
 	cResMan(IUnknown* pOuter);
 	~cResMan();
 
-	HRESULT STDMETHODCALLTYPE Init() override;
+        // Bind sidecars only at the image storage priority or above.
+        IRes *BindMaterial(IRes *image, const char *name);
+
+        HRESULT STDMETHODCALLTYPE Init() override;
 	HRESULT STDMETHODCALLTYPE End() override;
 
 	ISearchPath* STDMETHODCALLTYPE NewSearchPath(const char* pNewPath) override;

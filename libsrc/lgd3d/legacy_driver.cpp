@@ -7,7 +7,7 @@
 #include <texture.h>
 #include <tmgr.h>
 #include <vector>
-
+#include <material.h>
 
 extern "C" {
 texture_manager *g_tmgr = NULL;
@@ -86,6 +86,7 @@ extern "C" lgd3ds_device_info *lgd3d_get_device_info(int device) {
 extern "C" BOOL lgd3d_init(lgd3ds_device_info *info) {
   if (!RenderBackendAvailable())
     return FALSE;
+  ResMaterialReleaseRenderData();
   LegacyTexturesInit();
   g_defaultBitmap = gr_alloc_bitmap(BMT_FLAT8, 0, 2, 2);
   if (!g_defaultBitmap)
@@ -109,6 +110,7 @@ extern "C" BOOL lgd3d_init(lgd3ds_device_info *info) {
 extern "C" void lgd3d_shutdown(void) {
   int i;
   RenderBackendDeactivateScene();
+  ResMaterialReleaseRenderData();
   lgd3d_render_shutdown();
   if (g_tmgr) {
     g_tmgr->shutdown();

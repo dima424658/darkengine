@@ -16,6 +16,7 @@
 
 #include <texture.h>
 #include <render_backend.h>
+#include <material.h>
 static int texture_level;
 
 #ifdef MONO_SPEW
@@ -637,12 +638,71 @@ static void ModernConvertVertex(sRenderBackendVertex *d, const sLgd3dVertex *s)
    d->u0=s->tu; d->v0=s->tv; d->u1=d->v1=0.0f;
 }
 
+static void ModernMaterialDraw(int primitive, sRenderBackendVertex *vertices, int count, BOOL second)
+{
+   grs_bitmap *bitmap = tex_id >= 0 && tex_id < LGD3D_MAX_TEXTURES ? g_legacyBitmaps[tex_id] : NULL;
+   const sTextureMaterial *material = ResMaterialGet(bitmap);
+   float u = 1;
+   float v = 1;
+   int i;
+   BOOL wrap = lgd3d_get_texture_wrapping(0);
+   if (!material)
+   {
+      RenderBackendDraw(primitive, vertices, count, second);
+      return;
+   }
+
+   ResMaterialUvScale(bitmap, &u, &v);
+   if (u != 1 || v != 1)
+   {
+      for (i = 0; i < count; ++i)
+      {
+         vertices[i].u0 *= u;
+         vertices[i].v0 *= v;
+      }
+   }
+   RenderBackendPushDrawState();
+   if (material->uvClamp >= 0 && !ResMaterialIsTerrain(bitmap))
+      wrap = !material->uvClamp;
+   RenderBackendSetSampler(0, wrap, TRUE);
+   if (material->fullAlpha == 1 && material->forceOpaque != 1)
+   {
+      RenderBackendSetAlphaTest(FALSE);
+      RenderBackendSetBlend(kRenderBackendBlendAlpha);
+   }
+   RenderBackendDraw(primitive, vertices, count, second);
+   if (primitive == kRenderBackendTriangles && material->illumination > 0)
+   {
+      void *illumination = LegacyMaterialIllumination(bitmap);
+      if (illumination)
+      {
+         // illum_map is an unlit SRC_ALPHA/ONE pass over the base surface.
+         sRenderBackendVertex *glow = (sRenderBackendVertex *)temp_malloc(count * sizeof(*glow));
+         memcpy(glow, vertices, count * sizeof(*glow));
+         for (i = 0; i < count; ++i)
+         {
+            glow[i].r = 1;
+            glow[i].g = 1;
+            glow[i].b = 1;
+            glow[i].a *= material->illumination;
+         }
+         RenderBackendBindTexture(0, illumination);
+         RenderBackendSetAlphaTest(FALSE);
+         RenderBackendSetDepth(zcompare, FALSE);
+         RenderBackendSetBlend(kRenderBackendBlendAdd);
+         RenderBackendDraw(primitive, glow, count, FALSE);
+         temp_free(glow);
+      }
+   }
+   RenderBackendPopDrawState();
+}
+
 static void ModernSubmitList(int primitive, int n, const sLgd3dVertex *src)
 {
    int i;
    sRenderBackendVertex *dst=(sRenderBackendVertex *)temp_malloc(n*sizeof(*dst));
    for(i=0;i<n;++i) ModernConvertVertex(&dst[i],&src[i]);
-   RenderBackendDraw(primitive,dst,n,FALSE);
+   ModernMaterialDraw(primitive, dst, n, FALSE);
    temp_free(dst);
 }
 
@@ -657,7 +717,7 @@ static void ModernSubmitFan(int n, const sLgd3dVertex *src)
       ModernConvertVertex(&dst[j++],&src[i-1]);
       ModernConvertVertex(&dst[j++],&src[i]);
    }
-   RenderBackendDraw(kRenderBackendTriangles,dst,count,FALSE);
+   ModernMaterialDraw(kRenderBackendTriangles, dst, count, FALSE);
    temp_free(dst);
 }
 
@@ -666,7 +726,7 @@ static void ModernSubmitIndexed(int count,const ushort *indices,const sLgd3dVert
    int i;
    sRenderBackendVertex *dst=(sRenderBackendVertex *)temp_malloc(count*sizeof(*dst));
    for(i=0;i<count;++i)ModernConvertVertex(&dst[i],&src[indices[i]]);
-   RenderBackendDraw(kRenderBackendTriangles,dst,count,FALSE);
+   ModernMaterialDraw(kRenderBackendTriangles, dst, count, FALSE);
    temp_free(dst);
 }
 
@@ -1490,7 +1550,7 @@ int lgd3d_TrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **uv2)
          ++j;
       }
    }
-   RenderBackendDraw(kRenderBackendTriangles,v,count,TRUE);
+   ModernMaterialDraw(kRenderBackendTriangles, v, count, TRUE);
    temp_free(v);
    return CLIP_NONE;
 }

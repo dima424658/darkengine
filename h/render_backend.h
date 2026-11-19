@@ -73,6 +73,9 @@ void RenderBackendClearDepth(void);
 void RenderBackendClearDepthRect(int x0, int y0, int x1, int y1);
 // Clear a logical canvas rectangle in the active hardware scene.
 void RenderBackendClearCanvasRegion(int x, int y, int width, int height);
+// Preserve intended draw state around additional material passes.
+void RenderBackendPushDrawState(void);
+void RenderBackendPopDrawState(void);
 void RenderBackendSetDepth(int compareEnabled, int writeEnabled);
 void RenderBackendSetBlend(int blendMode);
 void RenderBackendSetAlphaTest(int enabled);

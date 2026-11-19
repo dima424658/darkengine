@@ -167,6 +167,19 @@ try
             renderer.SetViewport(0, 0, width * 2, height * 2);
             renderer.SetSampler(0, false, smooth);
             renderer.BindTexture(0, reference);
+            // Material passes temporarily replace textures, samplers, blend,
+            // fog and viewport. The following draw must retain the base state.
+            renderer.PushDrawState();
+            renderer.BindTexture(0, packed);
+            renderer.SetSampler(0, true, !smooth);
+            renderer.SetBlend(kRenderBackendBlendMultiply);
+            renderer.SetAlphaTest(true);
+            renderer.SetFog(true, 0xff00ff);
+            renderer.SetViewport(1, 1, 1, 1);
+            renderer.PushDrawState();
+            renderer.SetDepth(true, true);
+            renderer.PopDrawState();
+            renderer.PopDrawState();
             Require(renderer.Draw(command, quad, 6, kRenderBackendTriangles,
                false, width, height, transparent), "reference draw");
             renderer.SetViewport(width * 2, 0, width * 2, height * 2);

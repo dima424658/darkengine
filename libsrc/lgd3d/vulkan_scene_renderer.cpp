@@ -1088,3 +1088,16 @@ void cVulkanSceneRenderer::DestroyTexture(void *handle) noexcept
       // movie, display-device, or legacy RenderBackend callers.
    }
 }
+
+void cVulkanSceneRenderer::PushDrawState()
+{
+   m_savedStates.push_back(m_state);
+}
+
+void cVulkanSceneRenderer::PopDrawState()
+{
+   if (m_savedStates.empty())
+      return;
+   m_state = m_savedStates.back();
+   m_savedStates.pop_back();
+}
