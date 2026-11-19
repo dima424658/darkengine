@@ -67,7 +67,9 @@ Material syntax is parsed by the reentrant Bison C++ grammar in
 paths, BOMs and line endings; the material driver applies validated settings and
 shares condition/include state. Malformed quoted lines are skipped at the next
 newline. Generated sources stay in the build directory. Bison 3.0 or newer is
-required.
+required. On macOS, install it with `brew install bison`; CMake searches the
+Homebrew prefix before the system Bison. An explicit `BISON_EXECUTABLE` override
+is preserved.
 
 The material test links the production `dark_namedres` library. It is an explicit
 build target, excluded from the default build.
