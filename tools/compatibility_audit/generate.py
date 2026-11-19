@@ -815,6 +815,41 @@ def review(doc, name, evidence):
                       "GetAllScriptParams", "HasScriptParam", "GetScriptParam"}:
             status = "Missing IScriptMan interface addition"
             evidence = "scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries"
+    if doc.name == "API-reference_services.txt":
+        equipment_review = {
+            "Bow.Equip": "bowscrpt.cpp delegates to EquipBow",
+            "Bow.UnEquip": "bowscrpt.cpp delegates to UnEquipBow",
+            "Bow.IsEquipped": "bowscrpt.cpp delegates to IsBowEquipped",
+            "Bow.StartAttack": "bowscrpt.cpp calls StartBowAttack, returns literal TRUE through HRESULT",
+            "Bow.FinishAttack": "bowscrpt.cpp delegates to FinishBowAttack",
+            "Bow.AbortAttack": "bowscrpt.cpp delegates to AbortBowAttack",
+            "Bow.SetArrow": "bowscrpt.cpp delegates object to SetCurrentArrow",
+            "Weapon.Equip": "weapscpt.cpp equips weapon on PlayerObject using supplied type",
+            "Weapon.UnEquip": "weapscpt.cpp unequips weapon from PlayerObject",
+            "Weapon.IsEquipped": "weapscpt.cpp queries supplied owner/weapon",
+            "Weapon.StartAttack": "weapscpt.cpp calls StartWeaponAttack and returns literal TRUE through HRESULT",
+            "Weapon.FinishAttack": "weapscpt.cpp calls FinishWeaponAction and returns literal TRUE through HRESULT",
+            "PickLock.Ready": "pickscrs.cpp delegates picker/pick to PickLockReady",
+            "PickLock.UnReady": "pickscrs.cpp delegates picker/pick to PickLockUnReady",
+            "PickLock.StartPicking": "pickscrs.cpp delegates picker/pick/lock to PickLockStartPicking",
+            "PickLock.FinishPicking": "pickscrs.cpp delegates pick object to PickLockFinishPicking",
+            "PickLock.DirectMotion": "pickscrs.cpp delegates start flag to PickLockMotionOnly",
+            "DrkInv.CapabilityControl": "drkinvsc.cpp delegates to drkInvCapControl",
+            "DrkInv.AddSpeedControl": "drkinvsc.cpp delegates named movement/rotation factors to AddSpeedScale",
+            "DrkInv.RemoveSpeedControl": "drkinvsc.cpp delegates named removal to RemoveSpeedScale",
+            "DrkPowerups.TriggerWorldFlash": "drkpwscr.cpp delegates source object to DrkTriggerWorldFlash",
+            "DrkPowerups.ObjTryDeploy": "drkpwscr.cpp delegates source/archetype to DrkObjTryDeploy",
+            "DrkPowerups.CleanseBlood": "drkpwscr.cpp delegates water source/radius to TryCleanBlood",
+        }
+        if name in equipment_review:
+            status = "Source implementation reviewed; gameplay/return/runtime parity unverified"
+            evidence = "`src/dark/`: " + equipment_review[name] + "; matching Squirrel adapter forwards arguments"
+        elif name == "PickLock.CheckPick":
+            status = "Partial: stage ignored and error states become true"
+            evidence = "PickLockMatchLevel ignores stage and returns ePickResult through BOOL; no-data/already-unlocked values are nonzero; adapter converts to bool"
+        elif name.startswith("PlayerLimbs."):
+            status = "Partial implementation; fixed body-carry handler"
+            evidence = "plyscrpt.cpp ObjGetPlayerLimbHandler ignores item and returns kPlayerModeBodyCarry; adapter forwards equip/use methods"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

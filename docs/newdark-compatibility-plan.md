@@ -614,3 +614,13 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   IO status. Module changes rely on reentry assertions; object script changes
   use deferred actions. These remain explicit correctness/acceptance work.
   All 26 audit-tool tests pass; no manager runtime behavior changed.
+
+- Reviewed remaining Thief equipment services: Bow, Weapon, PickLock, DrkInv,
+  DrkPowerups and PlayerLimbs wrappers/adapters. Gameplay delegation exists,
+  with actual equip/attack/deploy/state effects still requiring runtime gates.
+  PickLockMatchLevel ignores its stage argument and returns ePickResult through
+  BOOL: no-data/already-unlocked enum states become true in Squirrel CheckPick.
+  PlayerLimbs always chooses body-carry regardless of item. Bow/Weapon attack
+  wrappers return literal TRUE through HRESULT after void calls. These source
+  findings are recorded rather than treating every return as proven success.
+  All 26 audit tests pass. No equipment or lockpick runtime behavior changed.
