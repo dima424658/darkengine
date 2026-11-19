@@ -97,6 +97,15 @@ class RequirementTests(unittest.TestCase):
         self.assertIn("incomplete", status)
         self.assertIn("uninitialized", evidence)
 
+    def test_version_identity_is_not_runtime_capability_proof(self):
+        path = Path("DOC/script/Version.txt")
+        status, evidence = review(path, "GetVersion", "candidate")
+        self.assertIn("capability parity incomplete", status)
+        self.assertIn("1,28", evidence)
+        status, evidence = review(path, "GetMap", "candidate")
+        self.assertIn("identity not queried", status)
+        self.assertIn("quickstart", evidence)
+
     def test_service_declarations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "script" / "Engine.txt"
@@ -154,8 +163,8 @@ class RequirementTests(unittest.TestCase):
         self.assertEqual(status, "Missing native method")
         self.assertIn("Squirrel binary-variable helpers exist separately", evidence)
         status, evidence = review(Path("DOC/script/AnimTexture.txt"), "ChangeTexture", "candidate")
-        self.assertEqual(status, "Unverified")
-        self.assertEqual(evidence, "candidate")
+        self.assertIn("Partial legacy", status)
+        self.assertIn("unchecked strcpy", evidence)
         status, _ = review(Path("DOC/Quest.txt"), "BinGet", "candidate")
         self.assertEqual(status, "Unverified")
 

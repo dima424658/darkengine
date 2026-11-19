@@ -458,3 +458,15 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   uninitialized data for absent records and leaks it if no schema exists.
   These are recorded for script/link correctness work, not reported as fixed.
   Twenty audit-tool tests pass. No runtime link behavior changed.
+
+- Version/AnimTexture source audit reviewed all documented methods and Squirrel
+  forwarding. Version reports hardcoded 1.28 despite absent 1.28 APIs; this is
+  host identity behavior, not evidence of full NewDark capability. GetMap reads
+  quickstart/file config and GetGamsys reads gamesys config instead of the
+  loader's identity. IsEditor cannot distinguish editor game mode (editor tests
+  remain deferred). FM path helpers have implementations; GetModPath includes
+  FM/base resource entries and remains partial. Legacy ChangeTexture resolves
+  names and calls DynTexture, but unchecked parser copies and missing-position
+  dereferences remain correctness work. Loc/global/single-polygon additions
+  are absent from native and Squirrel adapters. Twenty-one audit tests pass;
+  no version reporting or texture behavior changed in this review.

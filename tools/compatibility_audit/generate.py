@@ -363,6 +363,48 @@ def review(doc, name, evidence):
             "LinkSetData": "missing data allocates uninitialized bytes before setting one field; absent schema leaks that allocation; assertion-based validation",
         }
         evidence = "`linkscpt.cpp`, CallLinkTools: " + details.get(link_method, "requires further review")
+    service_method = name.rsplit(".", 1)[-1]
+    native_version = doc.parent.name == "script" and doc.name == "Version.txt"
+    squirrel_version = doc.name == "API-reference_services.txt" and name.startswith("Version.")
+    if native_version or squirrel_version:
+        version_review = {
+            "GetAppName": ("Partial hardcoded identity; capability parity incomplete",
+                           "engscrpt.cpp reports Thief 2 1.28 (or DromEd) even with Gold content; many 1.28 service additions are absent"),
+            "GetVersion": ("Partial hardcoded identity; capability parity incomplete",
+                           "engscrpt.cpp returns 1,28 regardless of missing documented 1.28 APIs"),
+            "IsEditor": ("Game branch implemented; editor mode distinction missing",
+                         "engscrpt.cpp returns zero in game, always one under EDITOR without checking edit/game mode"),
+            "GetGame": ("Source implementation reviewed; runtime parity unverified",
+                        "engscrpt.cpp returns game config string with dark fallback"),
+            "GetGamsys": ("Partial config value; loaded database identity not queried",
+                          "engscrpt.cpp reads gamesys config rather than dbfile.cpp gCurrGameFile"),
+            "GetMap": ("Partial config value; loaded database identity not queried",
+                       "engscrpt.cpp reads quickstart then file config rather than current loaded mission identity"),
+            "GetCurrentFM": ("Source implementation reviewed; runtime parity unverified",
+                             "engscrpt.cpp derives final path component from DarkContentFMPath, empty/S_FALSE without FM"),
+            "GetCurrentFMPath": ("Source implementation reviewed; runtime parity unverified",
+                                 "engscrpt.cpp returns DarkContentFMPath and S_FALSE if empty"),
+            "FMizeRelativePath": ("Source implementation reviewed; path boundary cases unverified",
+                                  "engscrpt.cpp prefixes active FM path with bounded JoinContentPath, otherwise passes through"),
+            "FMizePath": ("Source implementation reviewed; path boundary cases unverified",
+                          "engscrpt.cpp preserves slash/backslash/drive absolute paths, otherwise prefixes active FM"),
+            "GetModPath": ("Partial",
+                           "engscrpt.cpp returns full resource search path including FM/base entries, rather than mod paths only"),
+        }
+        if service_method in version_review:
+            status, evidence = version_review[service_method]
+            evidence = "`src/script/engscrpt.cpp`: " + evidence
+            if squirrel_version:
+                evidence += "; CallVersion forwards to native service; output/version gates unverified"
+    native_animation = doc.parent.name == "script" and doc.name == "AnimTexture.txt"
+    squirrel_animation = doc.name == "API-reference_services.txt" and name.startswith("AnimTexture.")
+    if native_animation or squirrel_animation:
+        if service_method == "ChangeTexture":
+            status = "Partial legacy implementation; input safety unresolved"
+            evidence = "antxscpt.cpp resolves texture IDs and calls DynTexture; parser uses unchecked strcpy, dyntex.cpp dereferences missing object position"
+        else:
+            status = "Missing native method" if native_animation else "Missing Squirrel method and native backing method"
+            evidence = "antxscpt.cpp and CallAnimTexture implement only object-centred ChangeTexture"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
