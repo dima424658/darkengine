@@ -22,6 +22,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OggVorbis.cmake")
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/RtxLighting.cmake")
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Sanitizers.cmake")

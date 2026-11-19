@@ -341,7 +341,7 @@ bool cVulkanContext::Initialize(
       m_properties = chosen->properties;
 
       dark::VulkanWorldFeatures worldFeatures;
-      m_worldRenderingSupported = worldFeatures.Probe(*m_physicalDevice);
+      m_worldRenderingSupported = worldFeatures.Probe(*m_physicalDevice,enableWorldRendering);
       m_worldRenderingUnavailable = worldFeatures.unavailable;
       const float priority = 1.0f;
       std::set<uint32_t> uniqueFamilies{m_graphicsQueueFamily,
@@ -362,7 +362,7 @@ bool cVulkanContext::Initialize(
          deviceExtensions.data(), &features);
       const auto legacyExtensionCount = deviceExtensions.size();
       m_worldRenderingEnabled = enableWorldRendering && m_worldRenderingSupported;
-      m_worldIndirectShadows=worldFeatures.IndirectShadows();
+      m_worldRayTracing=worldFeatures.rayTracing && m_worldRenderingEnabled;
       if (m_worldRenderingEnabled)
       {
          deviceExtensions.insert(deviceExtensions.end(), worldFeatures.extensions.begin(), worldFeatures.extensions.end());
@@ -376,6 +376,7 @@ bool cVulkanContext::Initialize(
       {
          if (!m_worldRenderingEnabled) throw;
          m_worldRenderingEnabled = false;
+         m_worldRayTracing = false;
          m_worldRenderingUnavailable = failure.what();
          deviceExtensions.resize(legacyExtensionCount);
          deviceInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
@@ -408,7 +409,7 @@ bool cVulkanContext::Initialize(
 
 void cVulkanContext::Shutdown()
 {
-   m_worldRenderingSupported = m_worldRenderingEnabled = false;
+   m_worldRenderingSupported = m_worldRenderingEnabled = m_worldRayTracing = false;
    m_worldRenderingUnavailable.clear();
    m_frameActive = false;
    m_recreateSwapchain = false;

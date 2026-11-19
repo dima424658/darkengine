@@ -5,12 +5,24 @@ set startup-with-shell off
 python
 import gdb
 state = {'armed': 0, 'failed': 0, 'native_draws': 0, 'suppressed': 0}
+phase=int(gdb.parse_and_eval('$fixture_phase'))
+def arm():
+    state['armed'] += 1
+    gdb.execute('set *(unsigned*)&dark_skip_allocations=$fixture_skip', to_string=True)
+    gdb.execute('set *(int*)&dark_fail_allocations=1', to_string=True)
+    print('Fixture allocation phase='+('world','nrd','sharc')[phase])
+class AfterNrd(gdb.FinishBreakpoint):
+    def stop(self):
+        print('Fixture NRD initialization completed before SHaRC injection')
+        arm()
+        return False
 class ArmFailure(gdb.Breakpoint):
     def stop(self):
         self.enabled = False
-        state['armed'] += 1
-        gdb.execute('set *(unsigned*)&dark_skip_allocations=$fixture_skip', to_string=True)
-        gdb.execute('set *(int*)&dark_fail_allocations=1', to_string=True)
+        if phase==2:
+            AfterNrd(gdb.newest_frame(),internal=True)
+        else:
+            arm()
         return False
 class NativeDraw(gdb.Breakpoint):
     def stop(self):
@@ -23,7 +35,7 @@ class NativeDrawing(gdb.Breakpoint):
         if int(gdb.parse_and_eval('*(unsigned*)&dark_failed_allocations')) and int(gdb.parse_and_eval('$rdi')) == 0:
             state['suppressed'] += 1
         return False
-ArmFailure('RenderBackendRenderWorld', internal=True)
+ArmFailure('RenderBackendRenderWorld' if phase==0 else 'dark::VulkanNrd::Initialize', internal=True)
 NativeDraw('draw_region_lgd3d', internal=True)
 NativeDrawing('RenderBackendSetNativeWorldDrawing', internal=True)
 end

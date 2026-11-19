@@ -15,7 +15,6 @@ parser.add_argument('--build', type=Path, default=root / 'build-linux')
 parser.add_argument('--portal-drawing', type=int, choices=(0,1), default=0)
 parser.add_argument('--after', type=int, default=0,
                     help='allow this many modern submissions before failing one')
-parser.add_argument('--static-depth', action='store_true')
 parser.add_argument('--equip-sword', action='store_true',
                     help='select the sword through the native inventory command before recording')
 parser.add_argument('--log', type=Path, help='preserve the complete native/GDB log')
@@ -24,6 +23,7 @@ if options.after < 0:
     parser.error('--after must be nonnegative')
 with tempfile.TemporaryDirectory(prefix='dark-submit-failure-') as temporary:
     log = Path(temporary) / 'game.log'
+    (Path(temporary)/'saves').mkdir()
     hook = Path(temporary) / 'submit.so'
     subprocess.run(['c++', '-std=c++17', '-shared', '-fPIC',
                     str(Path(__file__).with_name('native_submit_failure_hook.cpp')),
@@ -38,11 +38,9 @@ with tempfile.TemporaryDirectory(prefix='dark-submit-failure-') as temporary:
                     (':'+environment['DARK_TEST_INFERIOR_PRELOAD'] if environment.get('DARK_TEST_INFERIOR_PRELOAD') else ''),
                '-x', str(Path(__file__).with_suffix('.gdb')),
                '--args', str(options.build.resolve() / 'thief-runner'),
-               f'game_path={options.game_path.resolve()}', 'content=vanilla',
+               f'game_path={options.game_path.resolve()}', f'save_path={Path(temporary)/"saves"}', 'content=vanilla',
                'mission_loop_test=1', f'auto_stop={options.after+8}', 'renderer_mode=modern',
                f'renderer_portal_rendering={options.portal_drawing}']
-    if options.static_depth:
-        command.append('renderer_shadow_static_cache=1')
     with log.open('w') as output:
         process = subprocess.Popen(command, env=environment, stdout=output,
                                    stderr=subprocess.STDOUT, start_new_session=True)
@@ -61,7 +59,7 @@ with tempfile.TemporaryDirectory(prefix='dark-submit-failure-') as temporary:
     if options.log:
         options.log.write_text(text)
     row = re.search(r'Fixture submit failure failed=1 recovered=([1-9]\d*) total_modern=([1-9]\d*)', text)
-    restored = text.count('Modern world lighting enabled (experimental,') >= 2
+    restored = text.count('Modern world lighting enabled (') >= 2
     if options.equip_sword:
         restored = restored and 'Fixture sword selection requested' in text
     if row is not None:

@@ -5,12 +5,9 @@ add_library(dark_lgd3d STATIC
   legacy_texture_manager.c
   vulkan.cpp
   world_scene.cpp
-  world_shadows.cpp
   vulkan_world_geometry.cpp
   vulkan_world_features.cpp
-  vulkan_shadow_maps.cpp
   vulkan_context.cpp
-  vulkan_world_renderer.cpp
   vulkan_render_backend.cpp
   vulkan_scene_renderer.cpp
 )
@@ -27,4 +24,12 @@ if(DEFINED DARK_VULKAN_SHADER_DIR)
 endif()
 if(TARGET dark_vulkan_shaders)
   add_dependencies(dark_lgd3d dark_vulkan_shaders)
+endif()
+
+if(DARK_ENABLE_RTX_SDK)
+  target_sources(dark_lgd3d PRIVATE vulkan_ray_scene.cpp vulkan_world_renderer.cpp)
+  target_link_libraries(dark_lgd3d PRIVATE dark_rtxdi_vulkan)
+  target_compile_definitions(dark_lgd3d PRIVATE DARK_RTX_SDK_AVAILABLE=1)
+else()
+  target_sources(dark_lgd3d PRIVATE vulkan_world_renderer_stub.cpp)
 endif()

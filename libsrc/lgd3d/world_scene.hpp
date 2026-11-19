@@ -6,7 +6,7 @@
 #include <vector>
 namespace dark {
 static_assert(sizeof(RenderSceneVertex)==32, "world vertex layout must match GPU geometry stride");
-struct SceneTexture { uint32_t width, height; std::vector<uint8_t> rgba; uint64_t revision,alphaRevision=0; };
+struct SceneTexture { uint32_t width, height; std::vector<uint8_t> rgba; uint64_t revision,alphaRevision=0; bool linearData=false; };
 struct SceneBounds {float minimum[3],maximum[3];};
 struct SceneOrientedBounds {double center[3],axes[3][3];};
 struct SceneFrustum {double planes[6][4];};
@@ -36,7 +36,9 @@ struct WorldScene {
    std::unordered_map<RenderSceneHandle, std::vector<RenderSceneHandle>> instanceLights;
    RenderSceneCamera camera{};
    bool hasCamera = false;
-   uint64_t revision = 0, nextHandle = 1, instanceLightsRevision = 0, materialsRevision = 0;
+   uint64_t resetRevision = 0;
+   uint64_t revision = 0, nextHandle = 1, instanceLightsRevision = 0, materialsRevision = 0, lightsRevision = 0;
+   uint64_t texturesRevision = 0;
    // Bounded, allocation-free history for independently retired GPU frame slots.
    // A zero handle marks a scene reset and requires a full cache reconciliation.
    struct MeshChange {uint64_t revision=0;RenderSceneHandle handle=0;};

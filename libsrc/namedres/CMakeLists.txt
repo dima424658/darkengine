@@ -1,8 +1,12 @@
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/3rdparty/bcdec/bcdec.h")
+  message(FATAL_ERROR "Initialize DDS decoder: git submodule update --init 3rdparty/bcdec")
+endif()
 add_library(dark_namedres STATIC
   binrstyp.cpp
   bmp.cpp
   cel.cpp
   dds.cpp
+  dds_decode.cpp
   defresm.cpp
   defstfct.cpp
   filestrm.cpp
@@ -12,6 +16,7 @@ add_library(dark_namedres STATIC
   material.cpp
   material_parser.cpp
   material_lexer.cpp
+  image_pixels.cpp
   mdlrstyp.cpp
   palrstyp.cpp
   pathutil.cpp

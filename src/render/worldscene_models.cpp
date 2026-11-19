@@ -44,9 +44,9 @@
 #include <vector>
 #include <tracy/Tracy.hpp>
 #include "worldscene.h"
+#include "worldscene_pbr.hpp"
 #include "worldscene_properties.hpp"
 extern "C" BOOL FindVhotLocation(mxs_vector *loc,ObjID obj,int vhot);
-extern "C" RenderSceneHandle lgd3d_scene_copy_texture(grs_bitmap *bitmap);
 extern "C" unsigned long long lgd3d_scene_palette_revision(grs_bitmap *bitmap);
 namespace {
 struct Part {
@@ -97,7 +97,7 @@ RenderSceneHandle texture(grs_bitmap *bitmap) {
    const auto revision=lgd3d_scene_palette_revision(bitmap);
    auto it=textures.find(bitmap);
    if(it!=textures.end() && it->second.paletteRevision==revision)return it->second.handle;
-   auto handle=lgd3d_scene_copy_texture(bitmap);
+   auto handle=WorldSceneCopyTexture(bitmap);
    if(handle)textures[bitmap]={handle,revision};
    return handle;
 }
@@ -230,7 +230,7 @@ void materials(ObjID obj,int index,mds_model *m,Model &model,bool unlit) {
       RenderSceneMaterial desc{};desc.doubleSided=1;desc.baseColor[0]=desc.baseColor[1]=desc.baseColor[2]=1;
       desc.baseColor[3]=std::clamp(objectAlpha,0.0f,1.0f);desc.roughness=.8f;desc.alphaCutoff=.5f;
       if(source.type==MD_MAT_TMAP && source.num<MD_TAB_SIZE) {
-         auto *bitmap=mdd_vtext_tab[source.num];desc.baseColorTexture=texture(bitmap);
+         auto *bitmap=mdd_vtext_tab[source.num];desc.baseColorTexture=texture(bitmap);WorldSceneApplyPbrMaps(bitmap,desc);
          if(bitmap && (bitmap->flags&BMF_TRANS))desc.opacity=RenderSceneMasked;
       }else color(desc,source.handle);
       float illum=0;
@@ -394,7 +394,7 @@ void meshMaterials(ObjID obj,int index,mms_model *m,size_t size,Model &model,boo
          if(source.dwCaps&kUseSelfIllumination){illum=std::max(illum,source.fSelfIllumination);desc.emitterSurface=source.fSelfIllumination>0;}
       }
       if(type==MM_MAT_TMAP) {
-         auto *bitmap=mm_resolve_texture(handle);desc.baseColorTexture=texture(bitmap);
+         auto *bitmap=mm_resolve_texture(handle);desc.baseColorTexture=texture(bitmap);WorldSceneApplyPbrMaps(bitmap,desc);
          if(bitmap && (bitmap->flags&BMF_TRANS))desc.opacity=RenderSceneMasked;
       }else color(desc,handle);
       if(desc.baseColor[3]<1)desc.opacity=RenderSceneBlended;

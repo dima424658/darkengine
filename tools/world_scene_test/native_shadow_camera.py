@@ -17,20 +17,20 @@ parser.add_argument('--mission',type=int,choices=(1,2),default=2)
 parser.add_argument('--visibility',type=int,choices=(0,1),help='override portal visibility; omitted tests the renderer default')
 parser.add_argument('--portal-drawing',type=int,choices=(0,1),help='override native opaque drawing')
 parser.add_argument('--yaw-step',type=int,default=182,help='angle units/frame; zero keeps the native camera')
-parser.add_argument('--static-depth',action='store_true')
 parser.add_argument('--trace',type=Path)
 parser.add_argument('--log',type=Path)
 options=parser.parse_args()
 if options.frames<4:parser.error('--frames must be at least 4')
 with tempfile.TemporaryDirectory(prefix='dark-shadow-camera-') as temporary:
     log=Path(temporary)/'game.log'
+    (Path(temporary)/'saves').mkdir()
     environment=os.environ.copy()
     if options.trace:environment['DARK_RENDER_TRACE']=str(options.trace.resolve())
     args=['gdb','-q','-batch','-ex',f'set $fixture_yaw_step={options.yaw_step}',
           '-x',str(Path(__file__).with_suffix('.gdb')),'--args',
-          str(options.build.resolve()/'thief-runner'),f'game_path={options.game_path.resolve()}',
+          str(options.build.resolve()/'thief-runner'),f'game_path={options.game_path.resolve()}',f'save_path={Path(temporary)/"saves"}',
           'content=vanilla',f'mission_loop_test={options.mission}',f'auto_stop={options.frames}','renderer_mode=modern',
-          'game_screen_size=1920 1080','game_screen_fit=0',f'renderer_shadow_static_cache={int(options.static_depth)}']
+          'game_screen_size=1920 1080','game_screen_fit=0']
     if options.visibility is not None:args.append(f'renderer_portal_visibility={options.visibility}')
     if options.portal_drawing is not None:args.append(f'renderer_portal_rendering={options.portal_drawing}')
     with log.open('w') as out:

@@ -73,6 +73,7 @@ set(dark_render_sources
   textarch.cpp
   worldscene.cpp
   worldscene_models.cpp
+  worldscene_pbr.cpp
   weather.cpp
 )
 

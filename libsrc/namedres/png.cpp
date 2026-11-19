@@ -1,4 +1,5 @@
 #include "png.h"
+#include "image_pixels.hpp"
 
 #include <allocapi.h>
 #include <bitmap.h>
@@ -119,7 +120,7 @@ grs_bitmap* ResPngReadImage(IStoreStream* pStream,
                WICBitmapPaletteTypeCustom)))
       goto cleanup;
 
-   if (FAILED(converter->GetSize(&width, &height)) || !width || !height ||
+   if (FAILED(converter->GetSize(&width, &height)) || !width || !height || width > 32767 || height > 32767 ||
        width > (std::numeric_limits<UINT>::max)() / 4 ||
        height > (std::numeric_limits<UINT>::max)() / (width * 4))
       goto cleanup;
@@ -178,6 +179,7 @@ grs_bitmap* ResPngReadImage(IStoreStream* pStream,
                   useBinaryAlpha ? BMF_RGB_1555 :
                   hasAlpha ? BMF_RGB_4444 : BMF_RGB_565,
                   static_cast<int>(width), static_cast<int>(height));
+   if (bitmap) ResImageRememberPixels(bitmap, width, height, rgba);
 cleanup:
    if (bytes)
       GlobalUnlock(storage);
@@ -217,8 +219,7 @@ cleanup:
    const size_t width = image.width;
    const size_t height = image.height;
    if (!width || !height ||
-       width > static_cast<size_t>(std::numeric_limits<int>::max()) ||
-       height > static_cast<size_t>(std::numeric_limits<int>::max()) ||
+       width > 32767 || height > 32767 ||
        width > (std::numeric_limits<size_t>::max)() / height ||
        width * height > (std::numeric_limits<size_t>::max)() / 4)
    {
@@ -289,6 +290,7 @@ cleanup:
       output[i] = useBinaryAlpha ? Pack1555(&rgba[i * 4]) :
                   hasAlpha ? Pack4444(&rgba[i * 4]) :
                              Pack565(&rgba[i * 4]);
+   ResImageRememberPixels(bitmap, width, height, rgba);
    std::free(rgba);
 
    gr_init_bitmap(bitmap, reinterpret_cast<uint8*>(output), BMT_FLAT16,

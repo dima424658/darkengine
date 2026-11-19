@@ -98,6 +98,8 @@ bool valid(const RenderSceneMaterial *m) {
    if (m) {
       for(float color:m->baseColor)if(color<0 || color>1)return false;
       for(float emission:m->emission)if(emission<0)return false;
+      for(auto texture:{m->normalTexture,m->roughnessTexture,m->metallicTexture,m->occlusionTexture,m->emissionTexture,m->ormTexture})
+         if(texture && !GetWorldScene().textures.count(texture))return false;
    }
    return m && finite(m->baseColor,4) && finite(m->emission,3) &&
       std::isfinite(m->roughness) && m->roughness>=0 && m->roughness<=1 &&
@@ -138,15 +140,21 @@ template<class Map,class Value> int update(Map &map,RenderSceneHandle id,const V
 }
 }
 extern "C" {
-RenderSceneHandle RenderSceneCreateTexture(uint32_t width,uint32_t height,const void *rgba,uint32_t rowBytes) {
+static RenderSceneHandle createTexture(uint32_t width,uint32_t height,const void *rgba,uint32_t rowBytes,bool linearData) {
    if(!rgba || !width || !height || width>UINT32_MAX/4 || rowBytes<width*4 ||
       size_t(height)>SIZE_MAX/(size_t(width)*4) || size_t(height)>SIZE_MAX/rowBytes) return 0;
    try {
-      dark::SceneTexture t{width,height,{},dark::GetWorldScene().revision+1,dark::GetWorldScene().revision+1}; t.rgba.resize(size_t(width)*height*4);
+      dark::SceneTexture t{width,height,{},dark::GetWorldScene().revision+1,dark::GetWorldScene().revision+1,linearData}; t.rgba.resize(size_t(width)*height*4);
       for(uint32_t y=0;y<height;++y) std::memcpy(t.rgba.data()+size_t(y)*width*4,
          static_cast<const uint8_t *>(rgba)+size_t(y)*rowBytes,size_t(width)*4);
-      return create(dark::GetWorldScene().textures,std::move(t));
+      auto &s=dark::GetWorldScene();const auto id=create(s.textures,std::move(t));if(id)++s.texturesRevision;return id;
    } catch(...) { return 0; }
+}
+RenderSceneHandle RenderSceneCreateTexture(uint32_t width,uint32_t height,const void *rgba,uint32_t rowBytes) {
+   return createTexture(width,height,rgba,rowBytes,false);
+}
+RenderSceneHandle RenderSceneCreateDataTexture(uint32_t width,uint32_t height,const void *rgba,uint32_t rowBytes) {
+   return createTexture(width,height,rgba,rowBytes,true);
 }
 int RenderSceneUpdateTexture(RenderSceneHandle id,const void *rgba,uint32_t rowBytes) {
    auto &s=dark::GetWorldScene();auto found=s.textures.find(id);
@@ -167,6 +175,7 @@ int RenderSceneUpdateTexture(RenderSceneHandle id,const void *rgba,uint32_t rowB
       std::memcpy(destination,source,size_t(texture.width)*4);
    }
    texture.revision=++s.revision;
+   ++s.texturesRevision;
    if(alphaChanged)texture.alphaRevision=texture.revision;
    return 1;
 }
@@ -176,10 +185,10 @@ int RenderSceneReplaceTexture(RenderSceneHandle id,uint32_t width,uint32_t heigh
       size_t(height)>SIZE_MAX/(size_t(width)*4) || size_t(height)>SIZE_MAX/rowBytes)return 0;
    if(found->second.width==width && found->second.height==height)return RenderSceneUpdateTexture(id,rgba,rowBytes);
    try {
-      dark::SceneTexture replacement{width,height,{},scene.revision+1,scene.revision+1};replacement.rgba.resize(size_t(width)*height*4);
+      dark::SceneTexture replacement{width,height,{},scene.revision+1,scene.revision+1,found->second.linearData};replacement.rgba.resize(size_t(width)*height*4);
       for(uint32_t y=0;y<height;++y)std::memcpy(replacement.rgba.data()+size_t(y)*width*4,
          static_cast<const uint8_t *>(rgba)+size_t(y)*rowBytes,size_t(width)*4);
-      found->second=std::move(replacement);++scene.revision;return 1;
+      found->second=std::move(replacement);++scene.revision;++scene.texturesRevision;return 1;
    }catch(...){return 0;}
 }
 RenderSceneHandle RenderSceneCreateMaterial(const RenderSceneMaterial *m) {
@@ -240,27 +249,35 @@ int RenderSceneClearInstanceLights(RenderSceneHandle instance) {
 }
 RenderSceneHandle RenderSceneCreateLight(const RenderSceneLight *l) {
    if(!valid(l))return 0;
-   try{return create(dark::GetWorldScene().lights,RenderSceneLight(*l));}catch(...){return 0;}
+   try{auto &s=dark::GetWorldScene();const auto id=create(s.lights,RenderSceneLight(*l));if(id)++s.lightsRevision;return id;}catch(...){return 0;}
 }
 int RenderSceneUpdateLight(RenderSceneHandle id,const RenderSceneLight *l) {
-   return update(dark::GetWorldScene().lights,id,l);
+   auto &s=dark::GetWorldScene();const auto found=s.lights.find(id);
+   if(found==s.lights.end() || !valid(l))return 0;
+   if(!std::memcmp(&found->second,l,sizeof(*l)))return 1;
+   found->second=*l;++s.revision;++s.lightsRevision;return 1;
 }
 int RenderSceneSetLightEmitter(RenderSceneHandle id,int32_t objectId) {
    auto &scene=dark::GetWorldScene();const auto found=scene.lights.find(id);
    if(found==scene.lights.end())return 0;
-   if(found->second.emitterObjectId!=objectId){found->second.emitterObjectId=objectId;++scene.revision;}
+   if(found->second.emitterObjectId!=objectId){found->second.emitterObjectId=objectId;++scene.revision;++scene.lightsRevision;}
    return 1;
 }
 int RenderSceneDestroy(RenderSceneHandle id) {
    auto &s=dark::GetWorldScene();
-   if(s.textures.count(id))for(const auto &m:s.materials)if(m.second.baseColorTexture==id)return 0;
+   if(s.textures.count(id))for(const auto &m:s.materials)
+      for(auto texture:{m.second.baseColorTexture,m.second.normalTexture,m.second.roughnessTexture,m.second.metallicTexture,m.second.occlusionTexture,m.second.emissionTexture,m.second.ormTexture})
+         if(texture==id)return 0;
    if(s.materials.count(id))for(const auto &m:s.meshes)if(m.second.material==id)return 0;
    if(s.meshes.count(id))for(const auto &i:s.instances)if(i.second.mesh==id)return 0;
    const bool removingLight=s.lights.count(id)!=0;
+   const bool removingTexture=s.textures.count(id)!=0;
    const bool removingMaterial=s.materials.count(id)!=0;
    const bool removingMesh=s.meshes.count(id)!=0;
    if(s.textures.erase(id)||s.materials.erase(id)||s.meshes.erase(id)||s.instances.erase(id)||s.lights.erase(id)) {
       if(removingMaterial)++s.materialsRevision;
+      if(removingLight)++s.lightsRevision;
+      if(removingTexture)++s.texturesRevision;
       if(removingMesh)s.recordMeshChange(id);
       if(s.instanceLights.erase(id))++s.instanceLightsRevision;
       if(removingLight)for(auto &entry:s.instanceLights) {
@@ -321,6 +338,6 @@ void RenderSceneGetStats(RenderSceneStats *stats) {
 }
 void RenderSceneClear() {
    auto &s=dark::GetWorldScene();s.instances.clear();s.instanceLights.clear();s.meshes.clear();s.materials.clear();s.textures.clear();s.lights.clear();
-   s.hasCamera=false;s.camera={};s.recordMeshChange(0);++s.instanceLightsRevision;++s.materialsRevision;++s.revision;
+   s.hasCamera=false;s.camera={};++s.resetRevision;s.recordMeshChange(0);++s.instanceLightsRevision;++s.materialsRevision;++s.lightsRevision;++s.texturesRevision;++s.revision;
 }
 }

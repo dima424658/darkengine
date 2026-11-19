@@ -45,7 +45,7 @@ public:
    bool RecreateSurface(const tSurfaceFactory &createSurface,
       uint32_t drawableWidth, uint32_t drawableHeight);
    bool WorldRenderingEnabled() const { return m_worldRenderingEnabled; }
-   bool WorldIndirectShadows() const {return m_worldRenderingEnabled && m_worldIndirectShadows;}
+   bool WorldRayTracing() const {return m_worldRenderingEnabled && m_worldRayTracing;}
    bool WorldRenderingSupported() const { return m_worldRenderingSupported; }
    const std::string &WorldRenderingUnavailableReason() const { return m_worldRenderingUnavailable; }
    bool NeedsSwapchainRecreation() const { return m_recreateSwapchain; }
@@ -101,7 +101,7 @@ private:
    std::unique_ptr<sPendingUpload> AcquireUpload(vk::DeviceSize bytes);
 
    bool m_worldRenderingSupported{}, m_worldRenderingEnabled{};
-   bool m_worldIndirectShadows{};
+   bool m_worldRayTracing{};
    std::string m_worldRenderingUnavailable;
    vk::raii::Context m_raiiContext;
    std::vector<std::unique_ptr<sPendingUpload>> m_pendingUploads;

@@ -20,6 +20,10 @@ typedef struct RenderSceneMaterial {
    uint32_t opacity, doubleSided; // Zero culls clockwise faces in the Vulkan viewport.
    uint32_t emissionUsesBaseTexture; // Modulate emission by the base texture RGB.
    uint32_t emitterSurface; // Transmits its associated emitter light; still occludes other lights.
+   // Optional PBR maps. Zero keeps native scalar/default values. Scalar maps
+   // use R; packed ORM uses RGB = occlusion/roughness/metallic. Separate maps win.
+   RenderSceneHandle normalTexture, roughnessTexture, metallicTexture;
+   RenderSceneHandle occlusionTexture, emissionTexture, ormTexture;
 } RenderSceneMaterial;
 typedef struct RenderSceneMesh {
    const RenderSceneVertex *vertices;
@@ -43,7 +47,7 @@ typedef struct RenderSceneLight {
    float position[3], direction[3], color[3];
    float intensity, range, innerCos, outerCos;
    uint32_t type, enabled;
-   /* Emitter dimensions for PCSS; zero size requests sharp shadows. */
+   /* Area-emitter dimensions for ray-traced/map shadows; zero requests sharp shadows. */
    float sourceRadius, angularRadius;
    uint32_t castsShadow;
    int32_t emitterObjectId; // Associated instance.objectId; zero leaves self-occlusion unchanged.
@@ -62,6 +66,8 @@ typedef struct RenderSceneStats {
 } RenderSceneStats;
 RenderSceneHandle RenderSceneCreateTexture(uint32_t width, uint32_t height,
                                            const void *rgba, uint32_t rowBytes);
+/* Linear UNORM sampling for normals/scalars; ordinary textures sample sRGB. */
+RenderSceneHandle RenderSceneCreateDataTexture(uint32_t width,uint32_t height,const void *rgba,uint32_t rowBytes);
 int RenderSceneUpdateTexture(RenderSceneHandle texture, const void *rgba, uint32_t rowBytes);
 /* Replace dimensions/pixels while preserving material references. */
 int RenderSceneReplaceTexture(RenderSceneHandle texture,uint32_t width,uint32_t height,const void *rgba,uint32_t rowBytes);

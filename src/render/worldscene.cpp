@@ -24,13 +24,13 @@
 #include <vector>
 #include <tracy/Tracy.hpp>
 #include "worldscene.h"
+#include "worldscene_pbr.hpp"
 #include "worldscene_lights.hpp"
 extern "C" int portal_sky_id;
 extern "C" BOOL bRenderNewSky;
 extern "C" int mCellRefSys;
 extern int num_light, num_dyn;
 extern mls_multi_light light_data[];
-extern "C" RenderSceneHandle lgd3d_scene_copy_texture(grs_bitmap *bitmap);
 extern "C" unsigned long long lgd3d_scene_palette_revision(grs_bitmap *bitmap);
 extern "C" void lgd3d_scene_reset_texture_snapshots();
 namespace {
@@ -147,10 +147,11 @@ void importTerrain() {
          auto *bitmap=portal_get_texture(render.texture_id);if(!bitmap)continue;
          auto material=materials.find(render.texture_id);
          if(material==materials.end()) {
-            RenderSceneMaterial desc{};desc.doubleSided=1;desc.baseColorTexture=lgd3d_scene_copy_texture(bitmap);
+            RenderSceneMaterial desc{};desc.doubleSided=1;desc.baseColorTexture=WorldSceneCopyTexture(bitmap);
             desc.baseColor[0]=desc.baseColor[1]=desc.baseColor[2]=desc.baseColor[3]=1;
             desc.roughness=0.8f;desc.alphaCutoff=0.5f;
             desc.opacity=(bitmap->flags & BMF_TRANS)?RenderSceneMasked:RenderSceneOpaque;
+            WorldSceneApplyPbrMaps(bitmap,desc);
             const auto handle=RenderSceneCreateMaterial(&desc);if(!handle)continue;
             terrainMaterials.emplace(render.texture_id,TerrainMaterial{handle,desc,bitmap,bitmap->w,bitmap->h,{}});
             if(desc.baseColorTexture)terrainFrames.emplace(bitmap,TerrainFrame{desc.baseColorTexture,lgd3d_scene_palette_revision(bitmap)});
@@ -247,7 +248,7 @@ extern "C" void WorldSceneReset() {
    visibleCellsKnown=false;visibleCells.clear();
    worldRenderAttempted=worldRendered=false;
    cellLinks.clear();terrainReceivers.clear();lightFrame=lightRevision=lightHandleRevision=0;
-   WorldSceneModelsReset();lgd3d_scene_reset_texture_snapshots();RenderSceneClear();imported=false;lightHandles.clear();lightOwners.clear();lightOwnerSeen.clear();terrainMaterials.clear();terrainFrames.clear();
+   WorldScenePbrReset();WorldSceneModelsReset();lgd3d_scene_reset_texture_snapshots();RenderSceneClear();imported=false;lightHandles.clear();lightOwners.clear();lightOwnerSeen.clear();terrainMaterials.clear();terrainFrames.clear();
 }
 extern "C" void WorldSceneCapture() {
    if((!config_is_defined("renderer_scene_capture") && !config_is_defined("renderer_scene_acceleration") && !RenderBackendWorldEnabled()) || wr_num_cells<=0)return;
@@ -288,7 +289,7 @@ extern "C" void WorldSceneCapture() {
          const bool fresh=found!=terrainFrames.end() && found->second.paletteRevision==revision;
          if(bitmap==material.frame && !resized && fresh)continue;
          if(!fresh || resized) {
-            const auto texture=lgd3d_scene_copy_texture(bitmap);if(!texture)continue;
+            const auto texture=WorldSceneCopyTexture(bitmap);if(!texture)continue;
             terrainFrames[bitmap]={texture,revision};found=terrainFrames.find(bitmap);
          }
          if(resized) {
@@ -302,6 +303,7 @@ extern "C" void WorldSceneCapture() {
          }
          auto description=material.description;description.baseColorTexture=found->second.handle;
          description.opacity=(bitmap->flags&BMF_TRANS)?RenderSceneMasked:RenderSceneOpaque;
+         WorldSceneApplyPbrMaps(bitmap,description);
          if(RenderSceneUpdateMaterial(material.handle,&description)){material.description=description;material.frame=bitmap;material.width=bitmap->w;material.height=bitmap->h;}
       }
       linkTerrain();

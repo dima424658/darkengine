@@ -114,6 +114,10 @@ int main() {
    RenderSceneLight light{};light.type=RenderScenePointLight;light.enabled=1;light.intensity=3;
    light.color[0]=1;light.range=10;
    const auto lamp=RenderSceneCreateLight(&light);check(lamp!=0);
+   const auto beforeUnchangedLight=dark::GetWorldScene().revision;
+   const auto beforeUnchangedLighting=dark::GetWorldScene().lightsRevision;
+   check(RenderSceneUpdateLight(lamp,&light));
+   check(dark::GetWorldScene().revision==beforeUnchangedLight && dark::GetWorldScene().lightsRevision==beforeUnchangedLighting);
    RenderSceneHandle linked[]={lamp,lamp};
    check(RenderSceneSetInstanceLights(object,linked,2));linked[0]=0;
    check(dark::GetWorldScene().instanceLights.at(object)==std::vector<RenderSceneHandle>{lamp});

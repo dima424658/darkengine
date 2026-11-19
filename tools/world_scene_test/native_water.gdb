@@ -21,11 +21,25 @@ import gdb,struct
 state={'batches':0,'draws':0,'suppressed':0,'late_draws':0,'late_suppressed':0}
 active=None
 late_callbacks=set()
+water_textures=set()
+bound_texture=0
+class TextureBinding(gdb.Breakpoint):
+    def stop(self):
+        global bound_texture
+        if int(gdb.parse_and_eval('$rdi'))==0:
+            bound_texture=int(gdb.parse_and_eval('$rsi'))
+            if active=='water' and bound_texture:
+                water_textures.add(bound_texture)
+        return False
+TextureBinding('RenderBackendBindTexture',internal=True)
 class WaterDraw(gdb.Breakpoint):
     def stop(self):
-        if active is None and int(gdb.parse_and_eval('*(unsigned char*)&modernAlphaPass'))==0:
+        water=active=='water' or bound_texture in water_textures
+        if not water and active is None and int(gdb.parse_and_eval('*(unsigned char*)&modernAlphaPass'))==0:
             return False # Opaque native model calls are deliberately suppressed.
-        prefix='' if active=='water' else 'late_'
+        # Legacy vertices can flush after portal_render_water_polys returns.
+        # Match the bound water texture as well as the immediate call scope.
+        prefix='' if water else 'late_'
         state[prefix+'draws']+=1
         if int(gdb.parse_and_eval("*(unsigned char*)&'(anonymous namespace)::nativeWorldDrawing'"))==0:
             state[prefix+'suppressed']+=1
@@ -40,7 +54,7 @@ class EndEffect(gdb.FinishBreakpoint):
     def stop(self):
         global active
         active=self.previous
-        water_draw.enabled=self.enabledBefore
+        water_draw.enabled=self.enabledBefore or bool(water_textures)
         return False
 class EffectBatch(gdb.Breakpoint):
     def __init__(self,symbol,kind):
@@ -71,6 +85,7 @@ end
 run
 python
 print('Fixture native water '+' '.join(str(k)+'='+str(v) for k,v in state.items()))
+print('Fixture water textures='+str(len(water_textures)))
 if gdb.selected_inferior().threads():
     gdb.execute('bt')
 if not state['batches'] or not state['draws'] or state['suppressed'] or not state['late_draws'] or state['late_suppressed']:

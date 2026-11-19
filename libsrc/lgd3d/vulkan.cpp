@@ -645,6 +645,7 @@ void cVulkanRuntime::EndApplicationFrame()
    const bool submitted = m_context.EndFrame(m_worldPreparation);
    if (submitted && (sceneActive || (canvasReady && m_canvasWidth > 0)))
       SDLDisplayRevealAfterPresent();
+   if(m_worldRendered)m_worldRenderer.CompleteSubmission(submitted);
    if(submitted) {
       const auto now=std::chrono::steady_clock::now();
       const double interval=m_lastSubmission.time_since_epoch().count()?std::chrono::duration<double,std::milli>(now-m_lastSubmission).count():-1;
@@ -668,38 +669,33 @@ void cVulkanRuntime::EndApplicationFrame()
 bool cVulkanRuntime::InitializeWorldRenderer()
 {
    std::string failure;
-   m_modernWorldEnabled = m_worldFeaturesAvailable && m_worldRenderer.Initialize(
+   int rayTracing=1;config_get_int("renderer_raytracing",&rayTracing);
+   if(!rayTracing)failure="RTX lighting disabled by renderer_raytracing=0";
+   m_modernWorldEnabled = rayTracing!=0 && m_context.WorldRayTracing() && m_worldFeaturesAvailable && m_worldRenderer.Initialize(
       m_context.PhysicalDevice(),m_context.Device(),m_context.GraphicsQueueFamily(),
-      m_context.RenderPass(),m_context.DepthFormat(),m_context.SwapchainFormat(),m_worldShaderDirectory,failure,m_context.WorldIndirectShadows());
+      m_context.RenderPass(),m_context.DepthFormat(),m_context.SwapchainFormat(),m_worldShaderDirectory,failure);
    if (!m_modernWorldEnabled)
       std::fprintf(stderr,"Modern world unavailable: %s; retaining legacy renderer\n",
          failure.empty()?m_context.WorldRenderingUnavailableReason().c_str():failure.c_str());
    else {
-      dark::ShadowSettings settings;
-      int indirect=1;config_get_int("renderer_shadow_indirect",&indirect);settings.indirect=indirect!=0;
-      int staticDepth=0;config_get_int("renderer_shadow_static_cache",&staticDepth);settings.staticDepthCache=staticDepth!=0;
-      int lightBudget=int(settings.localLights),faceBudget=int(settings.localFaces);
-      config_get_int("renderer_shadow_lights",&lightBudget);
-      config_get_int("renderer_shadow_faces",&faceBudget);
-      settings.localLights=uint32_t(std::clamp(lightBudget,0,int(dark::ShadowSettings::maxLocalLights)));
-      settings.localFaces=uint32_t(std::clamp(faceBudget,0,int(dark::ShadowSettings::maxLocalFaces)));
-      // Retain lower-resolution shadows when camera priority moves a light
-      // outside the high-resolution pool; otherwise its occlusion disappears.
-      int distantShadows=1;config_get_int("renderer_shadow_cache",&distantShadows);
-      if(distantShadows) {
-         settings.cachedLights=dark::ShadowSettings::maxCachedLights;
-         settings.cachedFaces=dark::ShadowSettings::maxCachedFaces;
-      }
-      char filter[32]{};
-      if(config_get_raw("renderer_shadow_filter",filter,sizeof(filter))) {
-         if(std::strcmp(filter,"hard")==0)settings.filter=dark::ShadowFilter::Hard;
-         else if(std::strcmp(filter,"pcf")==0)settings.filter=dark::ShadowFilter::PCF;
-         else if(std::strcmp(filter,"pcss")!=0)
-            std::fprintf(stderr,"Unknown renderer_shadow_filter '%s'; using pcss\n",filter);
-      }
-      m_worldRenderer.SetShadowSettings(settings);
-      const char *name=settings.filter==dark::ShadowFilter::Hard?"hard":settings.filter==dark::ShadowFilter::PCF?"pcf":"pcss";
-      std::fprintf(stderr,"Modern world lighting enabled (experimental, %s shadows, %u local lights / %u faces)\n",name,settings.localLights,settings.localFaces);
+      dark::VulkanWorldRenderer::RaySettings rays;
+      int gi=1;float strength=rays.giStrength;
+      config_get_int("renderer_gi",&gi);
+      config_get_float("renderer_gi_strength",&strength);
+      rays.gi=gi!=0;rays.giStrength=strength;
+      int sharc=1,entries=int(rays.sharcEntries),downscale=int(rays.sharcDownscale),accumulation=int(rays.sharcAccumulation),stale=int(rays.sharcStaleFrames);
+      config_get_int("renderer_sharc",&sharc);config_get_int("renderer_sharc_entries",&entries);config_get_int("renderer_sharc_downscale",&downscale);
+      config_get_int("renderer_sharc_accumulation",&accumulation);config_get_int("renderer_sharc_stale_frames",&stale);
+      config_get_float("renderer_sharc_scene_scale",&rays.sharcSceneScale);
+      rays.sharc=sharc!=0;rays.sharcEntries=uint32_t(std::clamp(entries,65536,4194304));
+      // Round capacity down to a power of two, as required by the hash grid.
+      uint32_t capacity=65536;while(capacity*2<=rays.sharcEntries)capacity*=2;rays.sharcEntries=capacity;
+      rays.sharcDownscale=uint32_t(std::clamp(downscale,1,10));rays.sharcAccumulation=uint32_t(std::clamp(accumulation,1,100));rays.sharcStaleFrames=uint32_t(std::clamp(stale,8,100));
+      rays.sharcSceneScale=std::isfinite(rays.sharcSceneScale)?std::clamp(rays.sharcSceneScale,1.f,100.f):50.f;
+      m_worldRenderer.SetRaySettings(rays);
+
+      if(m_worldRenderer.RayTracingEnabled())std::fprintf(stderr,"RTXDI + SHaRC + NRD lighting enabled; indirect lighting %s\n",rays.gi?"enabled":"disabled");
+      std::fprintf(stderr,"Modern world lighting enabled (RTXDI + SHaRC + NRD)\n");
    }
    return m_modernWorldEnabled;
 }
@@ -724,22 +720,21 @@ bool cVulkanRuntime::RenderWorld()
    }
    m_worldRenderer.Composite(m_activeCommandBuffer,m_context.FrameIndex(),x,y,uint32_t(width),uint32_t(height));
    m_renderer.InvalidateDrawState();
-   const auto shadows=m_worldRenderer.GetShadowWorkload(m_context.FrameIndex());
-   RenderBackendTrace("world-shadow-culling bounds_tests=%u",shadows.boundsTests);
-   RenderBackendTrace("world-shadow-submission batches=%u",shadows.drawBatches);
-   RenderBackendTrace("world-shadow-static rendered=%u reused=%u copies=%u",shadows.staticRendered,shadows.staticReused,shadows.depthCopies);
-   RenderBackendTrace("world-shadow-memory slot_bytes=%llu",static_cast<unsigned long long>(shadows.depthMemoryBytes));
-   const auto &selection=m_worldRenderer.GetShadowSelection();
-   RenderBackendTrace("world-shadow-budget eligible_lights=%u selected_lights=%u selected_faces=%u",
-      selection.eligibleLocalLights,uint32_t(selection.localLights.size()),selection.localFaces);
-   RenderBackendTrace("world-shadow-cache selected_lights=%u",uint32_t(selection.cachedLights.size()));
-   RenderBackendTrace("world-shadows slot=%u extent=%ux%u rendered=%u reused=%u draws=%u previous_slot_gpu_ms=%.3f previous_world_gpu_ms=%.3f record_cpu_ms=%.3f",m_context.FrameIndex(),uint32_t(width),uint32_t(height),
-      shadows.renderedViews,shadows.reusedViews,shadows.drawCalls,shadows.gpuMilliseconds,shadows.worldGpuMilliseconds,
-      std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-recordStart).count());
-   RenderBackendTrace("world-record-cpu plan_ms=%.3f uploads_tiles_ms=%.3f shadows_ms=%.3f lighting_ms=%.3f",
-      shadows.recordCpuMilliseconds[0],shadows.recordCpuMilliseconds[1],shadows.recordCpuMilliseconds[2],shadows.recordCpuMilliseconds[3]);
-   RenderBackendTrace("world-gpu-phases previous_depth_ms=%.3f previous_lighting_ms=%.3f",
-      shadows.depthLightingGpuMilliseconds[0],shadows.depthLightingGpuMilliseconds[1]);
+   const auto work=m_worldRenderer.GetWorkload(m_context.FrameIndex());
+   RenderBackendTrace("world-ray-scene blas_builds=%u tlas_builds=%u instances=%u bytes=%llu",work.blasBuilds,work.tlasBuilds,work.instances,
+      static_cast<unsigned long long>(work.accelerationBytes));
+   RenderBackendTrace("world-lighting slot=%u extent=%ux%u previous_world_gpu_ms=%.3f record_cpu_ms=%.3f",m_context.FrameIndex(),uint32_t(width),uint32_t(height),
+      work.gpuMilliseconds,std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-recordStart).count());
+   const auto &worldCamera=dark::GetWorldScene().camera;
+   RenderBackendTrace("world-camera eye=%.4f,%.4f,%.4f forward=%.5f,%.5f,%.5f",
+      worldCamera.position[0],worldCamera.position[1],worldCamera.position[2],
+      worldCamera.viewProjection[3],worldCamera.viewProjection[7],worldCamera.viewProjection[11]);
+   RenderBackendTrace("world-record-cpu setup_ms=%.3f uploads_tiles_ms=%.3f ray_scene_ms=%.3f lighting_ms=%.3f",
+      work.recordCpuMilliseconds[0],work.recordCpuMilliseconds[1],work.recordCpuMilliseconds[2],work.recordCpuMilliseconds[3]);
+   RenderBackendTrace("world-gpu-phases surface_ms=%.3f di_ms=%.3f gi_ms=%.3f nrd_ms=%.3f history_ms=%.3f composition_ms=%.3f transparency_ms=%.3f",
+      work.gpuPhases[0],work.gpuPhases[1],work.gpuPhases[2],work.gpuPhases[3],work.gpuPhases[4],work.gpuPhases[5],work.gpuPhases[6]);
+   RenderBackendTrace("world-di-phases initial_ms=%.3f temporal_ms=%.3f spatial_shading_ms=%.3f",
+      work.directGpuPhases[0],work.directGpuPhases[1],work.directGpuPhases[2]);
    const auto textures=m_worldRenderer.GetTextureWorkload(m_context.FrameIndex());
    RenderBackendTrace("world-textures created_images=%u created_staging=%u uploads=%u evicted_images=%u cached_bytes=%llu",
       textures.createdImages,textures.createdStagingBuffers,textures.uploads,textures.evictedImages,static_cast<unsigned long long>(textures.cachedBytes));

@@ -25,3 +25,15 @@
 [submodule "3rdparty/nativefiledialog-extended"]
 	path = 3rdparty/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "3rdparty/RTXDI"]
+	path = 3rdparty/RTXDI
+	url = https://github.com/NVIDIA-RTX/RTXDI-Library.git
+[submodule "3rdparty/RTXGI"]
+	path = 3rdparty/RTXGI
+	url = https://github.com/NVIDIA-RTX/RTXGI.git
+[submodule "3rdparty/NRD"]
+	path = 3rdparty/NRD
+	url = https://github.com/NVIDIA-RTX/NRD.git
+[submodule "3rdparty/bcdec"]
+	path = 3rdparty/bcdec
+	url = https://github.com/iOrange/bcdec.git

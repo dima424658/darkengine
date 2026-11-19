@@ -19,7 +19,10 @@ void main() {
     // HDR blending/filtering stores premultiplied radiance. Recover straight
     // color for the nonlinear tone map, then blend with the native background.
     vec3 x=max(sampleColor.rgb/max(coverage,0.000001)*exposure.value,vec3(0));
-    x=clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0,1);
+    // Blend the filmic curve with a gentler shoulder/toe to soften contrast
+    // without lifting black or changing the exposure setting.
+    vec3 filmic=clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0,1);
+    x=mix(filmic,x/(1.0+x),0.35);
     if(exposure.srgbAttachment==0) x=mix(12.92*x,1.055*pow(x,vec3(1.0/2.4))-0.055,step(vec3(0.0031308),x));
     color=vec4(x,coverage);
 }
