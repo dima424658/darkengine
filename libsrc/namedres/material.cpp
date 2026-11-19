@@ -10,8 +10,10 @@
 #include <config.h>
 #include <mprintf.h>
 #include <render_backend.h>
+
 #include <memory>
 #include <unordered_map>
+#include <cmath>
 
 namespace
 {
