@@ -99,6 +99,9 @@ def review(doc, name, evidence):
     if doc.name in {"kbd_00000407.ini", "kbd_0000041d.ini"}:
         status = "Missing custom keyboard table loading; native layouts exist"
         evidence = "`gen_bind.cpp` reads kb_country as int and passes it to kb_set_country; `kbcntry.c` uses compiled tables"
+    if doc.name == "al_reverb.ini":
+        status = "Missing preset-file loading; EFX reverb exists"
+        evidence = "`libsrc/sound/openal.cpp` UpdateEffect uses compiled six-parameter presets and fixed reflection values; no INI loader"
     if doc.name == "Engine.txt" and name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock", "GetFogZone", "SetFogZone", "ObjRaycast"}:
         status = "Missing" if name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock"} else "Partial"
         evidence = "`src/script/engscrpt.cpp`: explicit stubs, script-only fog table or approximate raycast exclusions"
@@ -149,6 +152,20 @@ def review(doc, name, evidence):
             "force_windowed": ("Alternative controls; NewDark key unsupported", "`src/framewrk/init.cpp` persists `game_full_screen`; SDL display provider owns window modes"),
             "use_d3d_display": ("Intentionally replaced", "Shared SDL/Vulkan display path replaces Direct3D provider selection; no DX9 provider"),
         }
+        replacements.update({
+            "snd_oal_device": ("Missing device override; default device works",
+                               "`openal.cpp` Init always calls alcOpenDevice(NULL)"),
+            "disable_oal_eax_reverb": ("EFX-only backend; selector key unsupported",
+                                       "`openal.cpp` InitEffects uses AL_EFFECT_REVERB; no native EAX path to suppress"),
+            "snd_decompress_on_load": ("Missing mode selection; OGG decoding exists",
+                                       "`auxsnd.cpp` PrepareSoundBuffer decodes OGG to PCM without reading the documented mode"),
+            "snd_speaker_config": ("Missing configurable output layout",
+                                   "`openal.cpp` uses automatic output selection with Linux mono-to-stereo retry, no documented mode mapping"),
+            "force_underwater_reverb": ("Partial fallback; forced/configurable override missing",
+                                        "`appsfx.cpp` chooses UnderWater only when room acoustics are unset, before mission/gamesys fallback"),
+            "submerged_sound_occlusion": ("Missing configurable submerged occlusion",
+                                          "`appsfx.cpp` handles underwater room fallback but does not read submerged_sound_occlusion"),
+        })
         if name in replacements:
             status, evidence = replacements[name]
     if doc.name == "modders_notes.txt":

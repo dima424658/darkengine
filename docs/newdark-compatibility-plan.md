@@ -378,3 +378,16 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   layouts and configured FM selection remain separate supported capabilities.
   Fourteen audit-tool tests pass. No game behavior changed in this audit commit;
   runtime/visual acceptance for these missing systems remains outstanding.
+
+- Audio source audit distinguishes existing OpenAL EFX reverb and per-source
+  wet mixes from missing NewDark controls. openal.cpp Init opens the default
+  device and uses automatic layout selection (with the existing Linux stereo
+  retry); snd_oal_device/snd_speaker_config are not consumed. UpdateEffect uses
+  compiled six-value presets and fixed reflection parameters, not al_reverb.ini.
+  The backend is EFX-only, so disable_oal_eax_reverb has no EAX path to suppress.
+  auxsnd.cpp already decodes OGG buffers to PCM but does not implement the
+  documented snd_decompress_on_load modes. appsfx.cpp selects UnderWater only
+  when room acoustics are unset; force_underwater_reverb and configurable
+  submerged_sound_occlusion remain missing. These seven source-reviewed rows
+  are not listening-test or complete audio parity claims. Fifteen audit tests
+  pass; no audio behavior changed in this review.

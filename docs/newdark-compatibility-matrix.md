@@ -12,7 +12,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 
 | ID | Reference | Requirement | Source candidates / review evidence | Status |
 | --- | --- | --- | --- | --- |
-| ND-3cdf0a49b33d | `DOC/al_reverb.ini` | al_reverb | No exact token; inspect aliases | Unverified |
+| ND-3cdf0a49b33d | `DOC/al_reverb.ini` | al_reverb | `libsrc/sound/openal.cpp` UpdateEffect uses compiled six-parameter presets and fixed reflection values; no INI loader | Missing preset-file loading; EFX reverb exists |
 | ND-a3667d9ec018 | `DOC/cam_ext.cfg` | cam_ext | `src/framewrk/contentctx.cpp`, `src/framewrk/init.cpp` | Unverified |
 | ND-871b50323d92 | `DOC/cam_mod.ini` | cam_mod | `src/framewrk/init.cpp` | Unverified |
 | ND-2ad40ab0b9b1 | `DOC/dbmod-sample.dml` | DML1 syntax | `src/framewrk/dbmod/syntax.cpp`, `tools/dbmod_test`: all 88 installed patches parse; no executor | Implemented syntax only; runtime missing |
@@ -409,10 +409,10 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-7fa74d3d38b3 | `DOC/new_config_vars.txt` | shock_gun_bob_factor | No exact token; inspect aliases | Unverified |
 | ND-8c2b3d475657 | `DOC/new_config_vars.txt` | phys_freq | No exact token; inspect aliases | Unverified |
 | ND-cd2506c6f561 | `DOC/new_config_vars.txt` | use_hi_res_timer | No exact token; inspect aliases | Unverified |
-| ND-e71105775797 | `DOC/new_config_vars.txt` | snd_oal_device | No exact token; inspect aliases | Unverified |
-| ND-a68440896416 | `DOC/new_config_vars.txt` | disable_oal_eax_reverb | No exact token; inspect aliases | Unverified |
-| ND-48401303e0d7 | `DOC/new_config_vars.txt` | snd_decompress_on_load | No exact token; inspect aliases | Unverified |
-| ND-5fb37e79ebdd | `DOC/new_config_vars.txt` | snd_speaker_config | No exact token; inspect aliases | Unverified |
+| ND-e71105775797 | `DOC/new_config_vars.txt` | snd_oal_device | `openal.cpp` Init always calls alcOpenDevice(NULL) | Missing device override; default device works |
+| ND-a68440896416 | `DOC/new_config_vars.txt` | disable_oal_eax_reverb | `openal.cpp` InitEffects uses AL_EFFECT_REVERB; no native EAX path to suppress | EFX-only backend; selector key unsupported |
+| ND-48401303e0d7 | `DOC/new_config_vars.txt` | snd_decompress_on_load | `auxsnd.cpp` PrepareSoundBuffer decodes OGG to PCM without reading the documented mode | Missing mode selection; OGG decoding exists |
+| ND-5fb37e79ebdd | `DOC/new_config_vars.txt` | snd_speaker_config | `openal.cpp` uses automatic output selection with Linux mono-to-stereo retry, no documented mode mapping | Missing configurable output layout |
 | ND-b8de12252214 | `DOC/new_config_vars.txt` | pixel_parts_as_disks | No exact token; inspect aliases | Unverified |
 | ND-9bb1d62a0263 | `DOC/new_config_vars.txt` | square_parts_as_disks | No exact token; inspect aliases | Unverified |
 | ND-fb9b7f70dca5 | `DOC/new_config_vars.txt` | fixed_star_size | No exact token; inspect aliases | Unverified |
@@ -438,8 +438,8 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-4af40536e194 | `DOC/new_config_vars.txt` | shock_autosave_slot | No exact token; inspect aliases | Unverified |
 | ND-e99c12ada4ef | `DOC/new_config_vars.txt` | shock_old_hud3d_order | No exact token; inspect aliases | Unverified |
 | ND-f17c8aaa2af2 | `DOC/new_config_vars.txt` | shock_disable_escape_abort_load | No exact token; inspect aliases | Unverified |
-| ND-928360716adc | `DOC/new_config_vars.txt` | force_underwater_reverb | No exact token; inspect aliases | Unverified |
-| ND-b7d196f7ab2c | `DOC/new_config_vars.txt` | submerged_sound_occlusion | No exact token; inspect aliases | Unverified |
+| ND-928360716adc | `DOC/new_config_vars.txt` | force_underwater_reverb | `appsfx.cpp` chooses UnderWater only when room acoustics are unset, before mission/gamesys fallback | Partial fallback; forced/configurable override missing |
+| ND-b7d196f7ab2c | `DOC/new_config_vars.txt` | submerged_sound_occlusion | `appsfx.cpp` handles underwater room fallback but does not read submerged_sound_occlusion | Missing configurable submerged occlusion |
 | ND-f0e75ae059cf | `DOC/new_config_vars.txt` | new_mantle | No exact token; inspect aliases | Unverified |
 | ND-21e574b171bf | `DOC/new_config_vars.txt` | force_correct_rope_lengths | No exact token; inspect aliases | Unverified |
 | ND-6870b8bd8f4a | `DOC/new_config_vars.txt` | rope_ground_margin | No exact token; inspect aliases | Unverified |

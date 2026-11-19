@@ -34,6 +34,17 @@ class RequirementTests(unittest.TestCase):
         self.assertIn("native layouts exist", status)
         self.assertIn("compiled tables", evidence)
 
+    def test_audio_support_is_distinct_from_documented_overrides(self):
+        status, evidence = review(Path("DOC/al_reverb.ini"), "al_reverb", "candidate")
+        self.assertIn("EFX reverb exists", status)
+        self.assertIn("compiled", evidence)
+        status, evidence = review(Path("DOC/new_config_vars.txt"), "force_underwater_reverb", "candidate")
+        self.assertIn("forced/configurable override missing", status)
+        self.assertIn("only when room acoustics are unset", evidence)
+        status, evidence = review(Path("DOC/new_config_vars.txt"), "snd_decompress_on_load", "candidate")
+        self.assertIn("OGG decoding exists", status)
+        self.assertIn("without reading", evidence)
+
     def test_service_declarations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "script" / "Engine.txt"
