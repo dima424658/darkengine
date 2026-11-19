@@ -9,6 +9,7 @@ if(APPLE)
   enable_language(OBJC)
 endif()
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Bison.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFFmpeg.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibPng.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenALSoft.cmake")
@@ -36,6 +37,8 @@ add_subdirectory(src)
 add_subdirectory(assets)
 
 if(NOT ANDROID)
+  enable_testing()
+  add_subdirectory(tools/material_test EXCLUDE_FROM_ALL)
   add_subdirectory(tools/movie_test EXCLUDE_FROM_ALL)
 endif()
 

@@ -84,6 +84,37 @@ int main()
       Check(material.settings.tileU == 1 && material.settings.animationMode == -1 &&
                 material.unsupported.empty(),
             "missing properties and inactive includes retain defaults");
+      material = Parse("terrain_scale 64\nillum_map 1 \"unterminated\n"
+                       "tile_factor +2 -4\nforce_opaque 1");
+      Check(material.settings.terrainWidth == 64 && material.illumination.empty() &&
+                material.settings.tileU == 0.5f && material.settings.tileV == 4 &&
+                material.settings.forceOpaque == 1,
+            "an invalid quoted line recovers at newline and accepts EOF without newline");
+
+      material = Parse("illum_map 1 \"glow#//literal path\\name\" # comment\n"
+                       "unknown_setting terrain_scale\nUNKNOWN_SETTING other\n"
+                       "illum_map 2 terrain_scale\n");
+      Check(material.illumination == "terrain_scale" && material.settings.illumination == 2 &&
+                material.unsupported.size() == 1 &&
+                material.unsupported[0] == "unknown_setting",
+            "directive keywords remain ordinary arguments and unknown diagnostics are deduplicated");
+      material = Parse("illum_map 1 \"glow#//literal path\\name\" // comment\n");
+      Check(material.illumination == "glow#//literal path\\name",
+            "comments and backslashes in quoted paths are literal");
+
+      material = Parse("include begin.inc\nterrain_scale 128\n.else\nterrain_scale 16\n"
+                       ".endif\ninclude pass.inc\nuv_clamp 1\n}\nforce_opaque 1\n",
+                       {{"begin.inc", ".ifdef $enabled\n"},
+                        {"pass.inc", "render_pass\n{\n"}});
+      Check(material.settings.terrainWidth == 128 && material.settings.uvClamp == -1 &&
+                material.settings.forceOpaque == 1 && material.unsupported.size() == 1,
+            "condition and render-pass state crosses textual include boundaries");
+
+      material = Parse("include ../escape.inc\ninclude /absolute.inc\n"
+                       "include c:drive.inc\nterrain_scale 64\n");
+      Check(material.settings.terrainWidth == 64 && material.unsupported.empty(),
+            "include traversal and absolute paths are ignored");
+
       std::puts("PASS material settings, includes, conditionals, animation and malformed input");
       return 0;
    }

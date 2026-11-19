@@ -60,13 +60,23 @@ do not add PBR shading, GPU mip generation or the RTX renderer from other branch
 `force_local_pal` inheritance covers material settings; per-frame palette
 reallocation for differing animation-frame palettes is not implemented.
 
+## Parser and build
+
+Material syntax is parsed by the reentrant Bison C++ grammar in
+`libsrc/namedres/material.y`. The line lexer handles comments, quoted
+paths, BOMs and line endings; the material driver applies validated settings and
+shares condition/include state. Malformed quoted lines are skipped at the next
+newline. Generated sources stay in the build directory. Bison 3.0 or newer is
+required.
+
+The material test links the production `dark_namedres` library. It is an explicit
+build target, excluded from the default build.
+
 ## Checks
 
 ```sh
-cmake -S tools/material_test -B /tmp/dark-material-test -G Ninja
-cmake --build /tmp/dark-material-test
-ctest --test-dir /tmp/dark-material-test --output-on-failure
-cmake --build build-linux --target thief-runner -j8
+cmake --build build-linux --target material_test thief-runner -j "$(nproc)"
+ctest --test-dir build-linux -R '^materials$' --output-on-failure
 ```
 
 The parser checks cover includes/cycles/override order, conditionals, rectangular

@@ -1,28 +1,22 @@
-find_package(BISON 2.3 REQUIRED)
-
 # Generate each parser and its scanner token header together, outside the
 # source tree. Keep the legacy prefixes used by the existing scanners.
-BISON_TARGET(IncludeParser "${PROJECT_SOURCE_DIR}/src/inc.y"
-  "${CMAKE_CURRENT_BINARY_DIR}/inc.c"
-  DEFINES_FILE "${CMAKE_CURRENT_BINARY_DIR}/inctok.h"
+dark_generate_parser(include_parser "${PROJECT_SOURCE_DIR}/src/inc.y"
+  "inc.c" "inctok.h"
   COMPILE_FLAGS "-p inc")
-BISON_TARGET(MotionSchemaParser "${PROJECT_SOURCE_DIR}/src/mschema.y"
-  "${CMAKE_CURRENT_BINARY_DIR}/mschyacc.c"
-  DEFINES_FILE "${CMAKE_CURRENT_BINARY_DIR}/mschtok.h"
+dark_generate_parser(motion_schema_parser "${PROJECT_SOURCE_DIR}/src/mschema.y"
+  "mschyacc.c" "mschtok.h"
   COMPILE_FLAGS "-p msch")
-BISON_TARGET(SoundSchemaParser "${PROJECT_SOURCE_DIR}/src/schema.y"
-  "${CMAKE_CURRENT_BINARY_DIR}/schyacc.c"
-  DEFINES_FILE "${CMAKE_CURRENT_BINARY_DIR}/schtok.h")
-BISON_TARGET(SongParser "${PROJECT_SOURCE_DIR}/src/songlang.y"
-  "${CMAKE_CURRENT_BINARY_DIR}/songyacc.c"
-  DEFINES_FILE "${CMAKE_CURRENT_BINARY_DIR}/songtok.h"
+dark_generate_parser(sound_schema_parser "${PROJECT_SOURCE_DIR}/src/schema.y"
+  "schyacc.c" "schtok.h")
+dark_generate_parser(song_parser "${PROJECT_SOURCE_DIR}/src/songlang.y"
+  "songyacc.c" "songtok.h"
   COMPILE_FLAGS "-p songyy")
 
 set(dark_parser_sources
-  ${BISON_IncludeParser_OUTPUTS}
-  ${BISON_MotionSchemaParser_OUTPUTS}
-  ${BISON_SoundSchemaParser_OUTPUTS}
-  ${BISON_SongParser_OUTPUTS}
+  ${include_parser_sources}
+  ${motion_schema_parser_sources}
+  ${sound_schema_parser_sources}
+  ${song_parser_sources}
 )
 # Both cores share one generation step; scanner compilation must wait for
 # the token headers even on a clean parallel build.
