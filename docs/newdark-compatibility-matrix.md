@@ -131,7 +131,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-198bb918b947 | `DOC/modders_notes.txt` | "bm-disk ani frame time" | No exact token; inspect aliases | Unverified |
 | ND-f594113a5576 | `DOC/modders_notes.txt` | "bm-disk grow speed" | No exact token; inspect aliases | Unverified |
 | ND-f221337fd671 | `DOC/modders_notes.txt` | Changed Prop: SFX->"Heat Disks" | No exact token; inspect aliases | Unverified |
-| ND-35bb6c4f50b3 | `DOC/modders_notes.txt` | Changed Prop: AI->"Efficiency settings" | No exact token; inspect aliases | Unverified |
+| ND-35bb6c4f50b3 | `DOC/modders_notes.txt` | Changed Prop: AI->"Efficiency settings" | Native dbmod_check_schema RESBASE inspection: AI_Efficiency has no Flags field in the live schema; see tools/dbmod_test/README.md | Partial native schema |
 | ND-d9083658d03c | `DOC/modders_notes.txt` | Changed Prop: Tweq | No exact token; inspect aliases | Unverified |
 | ND-569c48a9174d | `DOC/modders_notes.txt` | Changed Link: "CreatureAttachment" | No exact token; inspect aliases | Unverified |
 | ND-1bad1107fa30 | `DOC/modders_notes.txt` | Changed Propagator: "Radius" | No exact token; inspect aliases | Unverified |
@@ -146,9 +146,9 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-f08a2896025a | `DOC/modders_notes.txt` | New Prop: Renderer->"Never Block Coronas" | No exact token; inspect aliases | Unverified |
 | ND-6625de685531 | `DOC/modders_notes.txt` | New Prop: Renderer->"Face Strings" | No exact token; inspect aliases | Unverified |
 | ND-986433b47ee3 | `DOC/modders_notes.txt` | New Prop: Renderer->"Dynamic Light Radius" | No exact token; inspect aliases | Unverified |
-| ND-a1f4f5659925 | `DOC/modders_notes.txt` | New Prop: Door->"Static Light Pos" | No exact token; inspect aliases | Unverified |
+| ND-a1f4f5659925 | `DOC/modders_notes.txt` | New Prop: Door->"Static Light Pos" | Native dbmod_check_schema RESBASE inspection: DoorStaticLight is not registered; see tools/dbmod_test/README.md | Missing in tested Linux game |
 | ND-16448a63fb1c | `DOC/modders_notes.txt` | New Prop: Creature->"Creature Scale" | No exact token; inspect aliases | Unverified |
-| ND-c08d1402e026 | `DOC/modders_notes.txt` | New Prop: Creature->"Disable Head Track" | No exact token; inspect aliases | Unverified |
+| ND-c08d1402e026 | `DOC/modders_notes.txt` | New Prop: Creature->"Disable Head Track" | Native dbmod_check_schema RESBASE inspection: CretHTrack is not registered; see tools/dbmod_test/README.md | Missing in tested Linux game |
 | ND-97fbec98430d | `DOC/modders_notes.txt` | New Prop: Inventory->"Block Frob?" (T2) | No exact token; inspect aliases | Unverified |
 | ND-7049ea113f8c | `DOC/modders_notes.txt` | New Prop: Difficulty->"Remove Properties" | No exact token; inspect aliases | Unverified |
 | ND-7d9bae3f2490 | `DOC/modders_notes.txt` | New Prop: Room->"Render Options" | No exact token; inspect aliases | Unverified |

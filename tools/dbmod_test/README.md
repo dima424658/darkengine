@@ -163,3 +163,29 @@ Linux native checks observed positive and negative CFG fingerprint decisions and
 matched the installed RESBASE gamesys patch using the loaded database. These
 runs exited cleanly under Vulkan synchronization validation. They do not establish
 behavioral coverage for every adapter or enable any gameplay patch execution.
+
+## Live property-schema diagnostic
+
+`dbmod_check_schema=1` adds read-only property-name and value-schema validation.
+It inspects the live property manager and struct registry, including creation-time
+ObjProp blocks. Registered fields are encoded into scratch bytes only; no object
+target is resolved, no live property value is read/written, and no property is
+created. Removal commands check only property registration. Other command types
+are not schema-validated by this option. Scratch zeroes are never property defaults.
+
+Results distinguish `valid`, `unsupported` (missing property/schema/field/encoder)
+and `invalid` (the value cannot be encoded by the current native schema). An
+invalid value can be a compatibility discrepancy or a source-content anomaly;
+it is not automatically proof that an installed patch is wrong. Field encoder
+errors retain their DML source line. Summary `schema=invalid` returns an error;
+unsupported schemas also prevent a successful diagnostic result.
+
+On the current Linux miss2 setup, the installed RESBASE patch has 63 validated
+property edits, five unsupported cases and one invalid encoding. Missing cases
+include AI_Efficiency.Flags, unregistered CretHTrack/DoorStaticLight, and DesignNote
+string properties without a registered struct schema. The unencodable PhysAttr
+bit list has a trailing quote in the installed file; it is not silently stripped.
+A separate private fixture verifies valid Scale, invalid PhysAttr numeric input
+and an unregistered property. Both runs exit cleanly under Vulkan synchronization
+validation, without applying changes. Object resolution, strings with separate
+ownership, non-property schemas and patch execution remain pending.

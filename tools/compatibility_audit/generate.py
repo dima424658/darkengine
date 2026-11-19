@@ -110,6 +110,15 @@ def review(doc, name, evidence):
         }
         if name in replacements:
             status, evidence = replacements[name]
+    if doc.name == "modders_notes.txt":
+        native_property_gaps = {
+            'New Prop: Door->"Static Light Pos"': ("Missing in tested Linux game", "DoorStaticLight is not registered"),
+            'New Prop: Creature->"Disable Head Track"': ("Missing in tested Linux game", "CretHTrack is not registered"),
+            'Changed Prop: AI->"Efficiency settings"': ("Partial native schema", "AI_Efficiency has no Flags field in the live schema"),
+        }
+        if name in native_property_gaps:
+            status, detail = native_property_gaps[name]
+            evidence = "Native dbmod_check_schema RESBASE inspection: " + detail + "; see tools/dbmod_test/README.md"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

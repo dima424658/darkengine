@@ -73,7 +73,19 @@ std::vector<uint8_t> StageFieldEdits(const std::vector<uint8_t> &original,
          throw SyntaxError(edit.line, "field storage lies outside the record: " + edit.name);
       if (!selected->encode)
          throw SyntaxError(edit.line, "unsupported field encoding: " + edit.name);
-      const auto encoded = selected->encode(edit.values);
+      std::vector<uint8_t> encoded;
+      try
+      {
+         encoded = selected->encode(edit.values);
+      }
+      catch (const SyntaxError &)
+      {
+         throw;
+      }
+      catch (const std::exception &error)
+      {
+         throw SyntaxError(edit.line, error.what());
+      }
       if (encoded.size() != selected->size)
          throw SyntaxError(edit.line, "field encoder returned an invalid byte count: " + edit.name);
       std::copy(encoded.begin(), encoded.end(), staged.begin() + selected->offset);

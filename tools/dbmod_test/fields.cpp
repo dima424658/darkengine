@@ -60,6 +60,13 @@ int main()
          }
          Check(failed, "invalid field schema fails before publication");
       }
+      edits[0].occurrence = 0;
+      edits[0].line = 99;
+      edits[0].values = {{"invalid", false}};
+      failed = false;
+      try { StageFieldEdits(original, schema, edits); }
+      catch (const SyntaxError &error) { failed = error.line == 99; }
+      Check(failed, "encoder errors retain DML source line");
       for (const char *body : {"Field[-1] value", "Field[99999999999999999999999999] value",
                                "Field[1]", "Field", "Field value { Nested x }"})
       {

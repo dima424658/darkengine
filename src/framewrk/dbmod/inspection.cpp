@@ -3,6 +3,7 @@
 #include "commands.hpp"
 #include "fingerprint.hpp"
 #include "engine_fingerprint.hpp"
+#include "property_validation.hpp"
 #include <appagg.h>
 #include <binrstyp.h>
 #include <mprintf.h>
@@ -34,7 +35,7 @@ struct Unlock
 };
 } // namespace
 bool InspectPatch(const char *filename, bool gamesysPatch, const char *gamesysName,
-                  bool matchCurrentDatabase)
+                  bool matchCurrentDatabase, bool validatePropertyFields)
 {
    const std::string path = filename ? filename : "";
    try
@@ -70,19 +71,51 @@ bool InspectPatch(const char *filename, bool gamesysPatch, const char *gamesysNa
       const auto syntax = Parse(text);
       ValidateFingerprints(syntax, gamesysPatch);
       const auto commands = ValidateCommandShapes(syntax);
+      std::string schemaResult = "unchecked";
+      if (validatePropertyFields)
+      {
+         const auto properties = ValidateNativePropertyFields(commands);
+         unsigned valid = 0;
+         unsigned unsupported = 0;
+         unsigned invalid = 0;
+         for (const auto &property : properties)
+         {
+            const char *status = property.status == PropertyValidation::Status::Valid ? "valid"
+                                 : property.status == PropertyValidation::Status::Unsupported
+                                     ? "unsupported"
+                                     : "invalid";
+            valid += property.status == PropertyValidation::Status::Valid;
+            unsupported += property.status == PropertyValidation::Status::Unsupported;
+            invalid += property.status == PropertyValidation::Status::Invalid;
+            mprintf("DML property check %s: %s:%u %s: %s\n", status, path.c_str(),
+                    unsigned(property.line), property.property.c_str(),
+                    property.diagnostic.c_str());
+            RenderBackendTrace("dbmod-property-check status=%s line=%u property=%s diagnostic=%s",
+                               status, unsigned(property.line), property.property.c_str(),
+                               property.diagnostic.c_str());
+         }
+         schemaResult = invalid ? "invalid" : (unsupported ? "unsupported" : "valid");
+         RenderBackendTrace("dbmod-property-summary valid=%u unsupported=%u invalid=%u", valid,
+                            unsupported, invalid);
+      }
       std::string match = "unchecked";
       if (matchCurrentDatabase)
       {
          const auto context = MakeEngineFingerprintContext(gamesysName ? gamesysName : "");
          match = MatchFingerprints(syntax, context, gamesysPatch) ? "accept" : "reject";
       }
-      mprintf("DML check OK: %s (%u statements, %u commands; fingerprint %s; no changes applied)\n", path.c_str(),
-              unsigned(syntax.size()), unsigned(commands.size()), match.c_str());
+      const char *result = schemaResult == "invalid"       ? "error"
+                           : schemaResult == "unsupported" ? "unsupported"
+                                                           : "ok";
+      mprintf("DML check %s: %s (%u statements, %u commands; fingerprint %s; schema %s; no changes "
+              "applied)\n",
+              result, path.c_str(), unsigned(syntax.size()), unsigned(commands.size()),
+              match.c_str(), schemaResult.c_str());
       RenderBackendTrace(
-          "dbmod-check result=ok path=%s statements=%u commands=%u gamesys=%d match=%s",
-          path.c_str(), unsigned(syntax.size()), unsigned(commands.size()), int(gamesysPatch),
-          match.c_str());
-      return true;
+          "dbmod-check result=%s path=%s statements=%u commands=%u gamesys=%d match=%s schema=%s",
+          result, path.c_str(), unsigned(syntax.size()), unsigned(commands.size()),
+          int(gamesysPatch), match.c_str(), schemaResult.c_str());
+      return schemaResult != "invalid" && schemaResult != "unsupported";
    }
    catch (const std::exception &error)
    {

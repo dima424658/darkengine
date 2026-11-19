@@ -301,3 +301,12 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   positive/negative CFG tests and installed RESBASE matching exit cleanly under
   synchronization validation. Other adapters are implemented but not individually
   runtime-verified. No patch mutation is enabled.
+- Added opt-in native property-schema diagnostics (`dbmod_check_schema=1`).
+  Installed RESBASE inspection yields 63 valid property edits, five unsupported
+  cases and one value rejected by current encoding. Confirmed live gaps include
+  AI_Efficiency.Flags and unregistered CretHTrack/DoorStaticLight; matrix updated.
+  DesignNote ownership/schema handling and a trailing-quote bit-list discrepancy
+  remain unresolved. A private valid/invalid/unknown-property fixture and the
+  installed-patch run exit cleanly under synchronization validation. No targets
+  are resolved or modified. Field encoding errors now retain source lines;
+  all six standalone tests pass normally and with ASan/UBSan.
