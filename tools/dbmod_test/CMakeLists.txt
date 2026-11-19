@@ -25,3 +25,7 @@ add_executable(dbmod_struct_fields_test struct_fields.cpp
 target_compile_features(dbmod_struct_fields_test PRIVATE cxx_std_17)
 target_include_directories(dbmod_struct_fields_test PRIVATE ../../h ../../libsrc/sdesc)
 add_test(NAME dbmod_struct_fields COMMAND dbmod_struct_fields_test)
+add_executable(dbmod_string_fields_test string_fields.cpp ../../src/framewrk/dbmod/string_fields.cpp
+  ../../src/framewrk/dbmod/fields.cpp ../../src/framewrk/dbmod/syntax.cpp)
+target_compile_features(dbmod_string_fields_test PRIVATE cxx_std_17)
+add_test(NAME dbmod_string_fields COMMAND dbmod_string_fields_test)

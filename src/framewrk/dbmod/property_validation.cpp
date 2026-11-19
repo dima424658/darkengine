@@ -1,8 +1,10 @@
 #include <types.h>
 #include "property_validation.hpp"
 #include "struct_fields.hpp"
+#include "string_fields.hpp"
 #include <appagg.h>
 #include <propbase.h>
+#include <propface.h>
 #include <property.h>
 #include <propman.h>
 #include <sdestool.h>
@@ -51,8 +53,18 @@ void Validate(const std::vector<Command> &commands, bool creating, IPropertyMana
          {
             const auto *type = property->DescribeType();
             const auto *description = type ? tools.Lookup(type->type) : nullptr;
-            if (!description)
-               result.diagnostic = "property has no registered struct schema";
+            IStringProperty *rawString = nullptr;
+            property->QueryInterface(IID_IStringProperty, reinterpret_cast<void **>(&rawString));
+            std::unique_ptr<IStringProperty, Release> stringProperty(rawString);
+            if (stringProperty)
+            {
+               const auto text = ReadStringPropertyValue(syntax, propertyIndex + 1);
+               result.status = PropertyValidation::Status::Valid;
+               result.diagnostic = text ? "owned string value validated; no property write"
+                                        : "empty string-property block; no value assignment";
+            }
+            else if (!description)
+               result.diagnostic = "property has no registered struct schema or string interface";
             else
             {
                auto schema = StructFieldSchema(*description);

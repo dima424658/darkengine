@@ -310,3 +310,9 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   installed-patch run exit cleanly under synchronization validation. No targets
   are resolved or modified. Field encoding errors now retain source lines;
   all six standalone tests pass normally and with ASan/UBSan.
+- Added owning string-property value parsing and live IStringProperty schema
+  validation. Both RESBASE DesignNote edits now validate without pointer writes;
+  the report is 65 valid, three unsupported and one rejected bit-list value.
+  Seven standalone tests pass normally/under sanitizers; installed and private
+  native string fixtures exit cleanly with synchronization validation. Live
+  property assignment and patch-wide execution/rollback remain pending.

@@ -180,7 +180,7 @@ it is not automatically proof that an installed patch is wrong. Field encoder
 errors retain their DML source line. Summary `schema=invalid` returns an error;
 unsupported schemas also prevent a successful diagnostic result.
 
-On the current Linux miss2 setup, the installed RESBASE patch has 63 validated
+At commit afea860, the Linux miss2 RESBASE check had 63 validated
 property edits, five unsupported cases and one invalid encoding. Missing cases
 include AI_Efficiency.Flags, unregistered CretHTrack/DoorStaticLight, and DesignNote
 string properties without a registered struct schema. The unencodable PhysAttr
@@ -189,3 +189,22 @@ A separate private fixture verifies valid Scale, invalid PhysAttr numeric input
 and an unregistered property. Both runs exit cleanly under Vulkan synchronization
 validation, without applying changes. Object resolution, strings with separate
 ownership, non-property schemas and patch execution remain pending.
+
+
+## Owning string-property values
+
+`string_fields.cpp` returns owned text for IStringProperty rather than encoding
+pointers into record bytes. It preserves quoted whitespace, embedded design-note
+quotes and explicit empty strings. Empty blocks mean no value assignment; repeated
+unnamed edits retain order. Only the unnamed singleton field/occurrence zero is
+accepted; NUL is rejected to prevent native API truncation. Native schema
+validation queries the string interface before considering raw struct encoding,
+including when a string property also advertises struct metadata.
+
+All seven standalone tests pass normally and under ASan/UBSan. Native RESBASE
+validation now reports 65 valid edits, three unsupported cases and one rejected
+bit-list encoding: both DesignNote edits now validate. A private native fixture
+covers literal/empty strings, invalid field/occurrence selectors and creation-time
+values (three valid, two invalid), with clean synchronization validation. No
+property writes or object creation are performed. Actual IStringProperty Set,
+patch-wide ownership/rollback and execution are still pending.
