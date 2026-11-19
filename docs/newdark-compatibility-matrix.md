@@ -337,14 +337,14 @@ those documented declarations still require ABI/behavioral review.
 | ND-e2d0b593fa5a | `DOC/new_config_vars.txt` | use_d3d_display | Shared SDL/Vulkan display path replaces Direct3D provider selection; no DX9 provider | Intentionally replaced |
 | ND-b62d48e57685 | `DOC/new_config_vars.txt` | force_windowed | `src/framewrk/init.cpp` persists `game_full_screen`; SDL display provider owns window modes | Alternative controls; NewDark key unsupported |
 | ND-6483500b0c8b | `DOC/new_config_vars.txt` | force_32bit | No exact token; inspect aliases | Unverified |
-| ND-f27260087b31 | `DOC/new_config_vars.txt` | single_display_mode | No exact token; inspect aliases | Unverified |
-| ND-b22e5592e11c | `DOC/new_config_vars.txt` | ui_scale_mode | No exact token; inspect aliases | Unverified |
-| ND-df27842d270d | `DOC/new_config_vars.txt` | d3d_disp_scaled_2d_overlay | No exact token; inspect aliases | Unverified |
-| ND-28a439377326 | `DOC/new_config_vars.txt` | d3d_disp_force_filter_scale2d | No exact token; inspect aliases | Unverified |
-| ND-04a76aa684b8 | `DOC/new_config_vars.txt` | d3d_disp_2d_overlay_alpha | No exact token; inspect aliases | Unverified |
-| ND-af255a9f7c33 | `DOC/new_config_vars.txt` | d3d_disp_2d_surf_mode | No exact token; inspect aliases | Unverified |
-| ND-1e3134c4104c | `DOC/new_config_vars.txt` | d3d_disp_hw2d_cachesize | No exact token; inspect aliases | Unverified |
-| ND-17e28c2a770d | `DOC/new_config_vars.txt` | d3d_disp_hw2d_cachesize_editor | No exact token; inspect aliases | Unverified |
+| ND-f27260087b31 | `DOC/new_config_vars.txt` | single_display_mode | Vulkan context selects swapchain image count from surface capabilities; no NewDark blit/double/triple mode dispatch | Documented buffer-mode selector unsupported on Vulkan |
+| ND-b22e5592e11c | `DOC/new_config_vars.txt` | ui_scale_mode | Vulkan retained-canvas presenter has no ui_scale_mode dispatch for integer scaling/filter policy | Missing documented UI scaling mode control |
+| ND-df27842d270d | `DOC/new_config_vars.txt` | d3d_disp_scaled_2d_overlay | Vulkan canvas path does not read one-value scale or two-value virtual resolution setting | Missing documented HUD virtual-resolution control |
+| ND-28a439377326 | `DOC/new_config_vars.txt` | d3d_disp_force_filter_scale2d | Vulkan canvas path does not read this control; existing texture sampling is a separate implementation | Missing documented UI filter override |
+| ND-04a76aa684b8 | `DOC/new_config_vars.txt` | d3d_disp_2d_overlay_alpha | Vulkan retained-canvas drawing does not consume documented HUD/console alpha config | Missing whole-HUD alpha control |
+| ND-af255a9f7c33 | `DOC/new_config_vars.txt` | d3d_disp_2d_surf_mode | SDL/Vulkan owns canvas presentation; no documented four-way legacy surface-mode selection | D3D-specific selector replaced; compatibility key unsupported |
+| ND-1e3134c4104c | `DOC/new_config_vars.txt` | d3d_disp_hw2d_cachesize | No consumer for documented MB budget in Vulkan canvas path; per-frame canvas resources managed separately | D3D-specific cache control unsupported |
+| ND-17e28c2a770d | `DOC/new_config_vars.txt` | d3d_disp_hw2d_cachesize_editor | No consumer for documented editor MB budget; no editor build/run acceptance performed | D3D-specific editor cache control unsupported; editor deferred |
 | ND-3b7aac33408a | `DOC/new_config_vars.txt` | d3d_disp_force_rgba_atex | No exact token; inspect aliases | Unverified |
 | ND-606147d99c8a | `DOC/new_config_vars.txt` | d3d_disp_allow_a8l8_atex | No exact token; inspect aliases | Unverified |
 | ND-8e1c2a8bb3ba | `DOC/new_config_vars.txt` | movie_sw_scale_quality | No exact token; inspect aliases | Unverified |
@@ -357,9 +357,9 @@ those documented declarations still require ABI/behavioral review.
 | ND-70f590b96646 | `DOC/new_config_vars.txt` | widescreen_lock_hfov | No exact token; inspect aliases | Unverified |
 | ND-f5641948eacd | `DOC/new_config_vars.txt` | fov | No exact token; inspect aliases | Unverified |
 | ND-3a98c1a96f01 | `DOC/new_config_vars.txt` | vsync_mode | `libsrc/lgd3d/vulkan.cpp` reads boolean `vsync`; documented mode values are not equivalent | Partial alternative; NewDark key unsupported |
-| ND-00284ae775c0 | `DOC/new_config_vars.txt` | d3d_disp_limit_gpu_frames | No exact token; inspect aliases | Unverified |
-| ND-b41a21881bc8 | `DOC/new_config_vars.txt` | d3d_disp_refreshrate | No exact token; inspect aliases | Unverified |
-| ND-14f998cafcb3 | `DOC/new_config_vars.txt` | framerate_cap | No exact token; inspect aliases | Unverified |
+| ND-00284ae775c0 | `DOC/new_config_vars.txt` | d3d_disp_limit_gpu_frames | Vulkan uses fixed frame resources/swapchain policy, not documented pair of menu/game queue-depth settings | Missing per-menu/game configurable frame queue limit |
+| ND-b41a21881bc8 | `DOC/new_config_vars.txt` | d3d_disp_refreshrate | SDL window code toggles fullscreen without mapping this requested-rate/fallback control | Missing documented refresh-rate selection policy |
+| ND-14f998cafcb3 | `DOC/new_config_vars.txt` | framerate_cap | simtime.cpp reads SlowFrame milliseconds, not framerate_cap FPS; min_frame_time is simulation timing, not equivalent cap | Missing FPS config; millisecond pacing exists separately |
 | ND-7957932d7a43 | `DOC/new_config_vars.txt` | gamma_ui | No exact token; inspect aliases | Unverified |
 | ND-eb22ab7ec0db | `DOC/new_config_vars.txt` | gamma_movie | No exact token; inspect aliases | Unverified |
 | ND-a0f9052a57a7 | `DOC/new_config_vars.txt` | force_32bit_textures | No exact token; inspect aliases | Unverified |

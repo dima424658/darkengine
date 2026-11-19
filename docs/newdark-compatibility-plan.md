@@ -636,3 +636,14 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   Payload validity, widths, retention and event lifecycle still require tests;
   these source findings are not runtime acceptance. All 26 audit tests pass.
   No message conversion or gameplay code changed in this review.
+
+- Renderer configuration audit traced Vulkan canvas/swapchain controls, SDL
+  fullscreen and simulation pacing. Eleven additional rows distinguish missing
+  compatibility keys from existing backend behavior: single-display buffer
+  selectors, UI/HUD scale/filter/alpha controls, D3D surface/cache selectors,
+  per-menu/game queue limits, refresh-rate fallback and FPS cap. Vulkan surface
+  policy and frame resources are not the documented user controls. SlowFrame
+  is millisecond sleeping, while min_frame_time affects simulation timing;
+  neither establishes framerate_cap FPS semantics. Existing boolean vsync is
+  not NewDark's mode bitmask. Editor cache acceptance remains deferred. All 26
+  audit tests pass; no renderer/pacing behavior changed in this source review.

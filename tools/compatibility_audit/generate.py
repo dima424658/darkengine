@@ -205,6 +205,30 @@ def review(doc, name, evidence):
             "submerged_sound_occlusion": ("Missing configurable submerged occlusion",
                                           "`appsfx.cpp` handles underwater room fallback but does not read submerged_sound_occlusion"),
         })
+        replacements.update({
+            "single_display_mode": ("Documented buffer-mode selector unsupported on Vulkan",
+                                    "Vulkan context selects swapchain image count from surface capabilities; no NewDark blit/double/triple mode dispatch"),
+            "ui_scale_mode": ("Missing documented UI scaling mode control",
+                              "Vulkan retained-canvas presenter has no ui_scale_mode dispatch for integer scaling/filter policy"),
+            "d3d_disp_scaled_2d_overlay": ("Missing documented HUD virtual-resolution control",
+                                           "Vulkan canvas path does not read one-value scale or two-value virtual resolution setting"),
+            "d3d_disp_force_filter_scale2d": ("Missing documented UI filter override",
+                                             "Vulkan canvas path does not read this control; existing texture sampling is a separate implementation"),
+            "d3d_disp_2d_overlay_alpha": ("Missing whole-HUD alpha control",
+                                         "Vulkan retained-canvas drawing does not consume documented HUD/console alpha config"),
+            "d3d_disp_2d_surf_mode": ("D3D-specific selector replaced; compatibility key unsupported",
+                                     "SDL/Vulkan owns canvas presentation; no documented four-way legacy surface-mode selection"),
+            "d3d_disp_hw2d_cachesize": ("D3D-specific cache control unsupported",
+                                        "No consumer for documented MB budget in Vulkan canvas path; per-frame canvas resources managed separately"),
+            "d3d_disp_hw2d_cachesize_editor": ("D3D-specific editor cache control unsupported; editor deferred",
+                                               "No consumer for documented editor MB budget; no editor build/run acceptance performed"),
+            "d3d_disp_limit_gpu_frames": ("Missing per-menu/game configurable frame queue limit",
+                                           "Vulkan uses fixed frame resources/swapchain policy, not documented pair of menu/game queue-depth settings"),
+            "d3d_disp_refreshrate": ("Missing documented refresh-rate selection policy",
+                                     "SDL window code toggles fullscreen without mapping this requested-rate/fallback control"),
+            "framerate_cap": ("Missing FPS config; millisecond pacing exists separately",
+                              "simtime.cpp reads SlowFrame milliseconds, not framerate_cap FPS; min_frame_time is simulation timing, not equivalent cap"),
+        })
         if name in replacements:
             status, evidence = replacements[name]
     if doc.name == "modders_notes.txt":
