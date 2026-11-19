@@ -19,6 +19,23 @@ def requirements(doc):
             match = re.match(r"^([a-z][a-z0-9_]+)\s+:", line)
             if match:
                 yield match[1]
+    elif doc.name == "subtitles.txt":
+        yield from ("Language/resource-layer SUB discovery", "Sound subtitle lifecycle",
+                    "Movie subtitle lifecycle", "Positional sound distance indicators")
+        for line in text.splitlines():
+            if re.match(r"^(?:enable_subtitles|subtitles_[a-z_<>A-Z]+|movsubtitles_[a-z_]+)(?:\s|$)", line):
+                yield line.split()[0]
+    elif doc.name == "subtitles-sample.sub":
+        yield from ("SUB1 header and comments", "Resource priority and duplicate entries",
+                    "Type and Descr blocks", "Singleton", "OnlySoundType", "NoVolume",
+                    "Sub sound identifiers", "Text and escaped quotes", "Time and Length",
+                    "MultiSub sequences", "Movie identifiers")
+    elif doc.name == "font-sample.fon":
+        yield from ("FON1 header", "resource", "antialias", "height", "width", "dpi", "dynamic")
+    elif doc.name == "fm_selector_api.txt":
+        yield from ("SelectFM export and packed ABI", "Selection/cancel/exit return values",
+                    "Mutable FM root and selection buffers", "Run selector after game exit",
+                    "Mod exclude paths", "FM language fallback and forced language")
     elif doc.name == "material-format.txt":
         lines = text.splitlines()
         for index, line in enumerate(lines[:-1]):
@@ -69,6 +86,19 @@ def review(doc, name, evidence):
         else:
             status = "Missing"
             evidence = "Material parser reports unsupported directives and skips render-pass blocks; `docs/materials.md`"
+    if doc.name in {"subtitles.txt", "subtitles-sample.sub"}:
+        status = "Missing subtitle pipeline"
+        evidence = "No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends"
+    if doc.name == "font-sample.fon" or (
+            doc.name == "modders_notes.txt" and name == "TTF/OTF Fonts and UTF-8 Support"):
+        status = "Missing vector font pipeline"
+        evidence = "`libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer"
+    if doc.name == "fm_selector_api.txt":
+        status = "Missing external selector API; configured selection exists separately"
+        evidence = "`contentctx.cpp` reads fm/fm_path and builds resource paths; no SelectFM dynamic-library invocation"
+    if doc.name in {"kbd_00000407.ini", "kbd_0000041d.ini"}:
+        status = "Missing custom keyboard table loading; native layouts exist"
+        evidence = "`gen_bind.cpp` reads kb_country as int and passes it to kb_set_country; `kbcntry.c` uses compiled tables"
     if doc.name == "Engine.txt" and name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock", "GetFogZone", "SetFogZone", "ObjRaycast"}:
         status = "Missing" if name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock"} else "Partial"
         evidence = "`src/script/engscrpt.cpp`: explicit stubs, script-only fog table or approximate raycast exclusions"
@@ -190,7 +220,7 @@ def main():
     for folder in ("DOC", "Docs"):
         root = args.game / folder
         for doc in sorted(root.rglob("*")):
-            if not doc.is_file() or doc.suffix.lower() not in {".txt", ".cfg", ".ini", ".dml", ".sub", ".rtf", ".odt", ".doc"}:
+            if not doc.is_file() or (doc.name != "font-sample.fon" and doc.suffix.lower() not in {".txt", ".cfg", ".ini", ".dml", ".sub", ".rtf", ".odt", ".doc"}):
                 continue
             for name in dict.fromkeys(requirements(doc)):
                 number += 1

@@ -47,9 +47,21 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-232bc9aaaa04 | `DOC/dbmod-sample.dml` | dbmod_log | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
 | ND-66f913905c56 | `DOC/dromed.cfg` | dromed | `src/entry/main.cpp`, `src/motion/skilltab.cpp` | Unverified |
 | ND-b71ee6367907 | `DOC/fm.cfg` | fm | `src/dark/drkmenu.cpp`, `src/dark/drkmenu.h`, `src/entry/main.cpp` | Unverified |
-| ND-33b02bd8e8ca | `DOC/fm_selector_api.txt` | fm_selector_api | No exact token; inspect aliases | Unverified |
-| ND-b2515b511491 | `DOC/kbd_00000407.ini` | kbd_00000407 | No exact token; inspect aliases | Unverified |
-| ND-f07eb40a1a7b | `DOC/kbd_0000041d.ini` | kbd_0000041d | No exact token; inspect aliases | Unverified |
+| ND-b12f130d210e | `DOC/fm_selector_api.txt` | SelectFM export and packed ABI | `contentctx.cpp` reads fm/fm_path and builds resource paths; no SelectFM dynamic-library invocation | Missing external selector API; configured selection exists separately |
+| ND-156f255b198b | `DOC/fm_selector_api.txt` | Selection/cancel/exit return values | `contentctx.cpp` reads fm/fm_path and builds resource paths; no SelectFM dynamic-library invocation | Missing external selector API; configured selection exists separately |
+| ND-28fa9ee3e02e | `DOC/fm_selector_api.txt` | Mutable FM root and selection buffers | `contentctx.cpp` reads fm/fm_path and builds resource paths; no SelectFM dynamic-library invocation | Missing external selector API; configured selection exists separately |
+| ND-7b5e64f813cb | `DOC/fm_selector_api.txt` | Run selector after game exit | `contentctx.cpp` reads fm/fm_path and builds resource paths; no SelectFM dynamic-library invocation | Missing external selector API; configured selection exists separately |
+| ND-0c4e3bf27d33 | `DOC/fm_selector_api.txt` | Mod exclude paths | `contentctx.cpp` reads fm/fm_path and builds resource paths; no SelectFM dynamic-library invocation | Missing external selector API; configured selection exists separately |
+| ND-6b6fa074aa7b | `DOC/fm_selector_api.txt` | FM language fallback and forced language | `contentctx.cpp` reads fm/fm_path and builds resource paths; no SelectFM dynamic-library invocation | Missing external selector API; configured selection exists separately |
+| ND-e0a50bdbbba5 | `DOC/font-sample.fon` | FON1 header | `libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer | Missing vector font pipeline |
+| ND-a10a198a6bf5 | `DOC/font-sample.fon` | resource | `libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer | Missing vector font pipeline |
+| ND-fbb6b8dc7552 | `DOC/font-sample.fon` | antialias | `libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer | Missing vector font pipeline |
+| ND-4d7a93b0734d | `DOC/font-sample.fon` | height | `libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer | Missing vector font pipeline |
+| ND-51d125f1c48b | `DOC/font-sample.fon` | width | `libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer | Missing vector font pipeline |
+| ND-6c62b61c570e | `DOC/font-sample.fon` | dpi | `libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer | Missing vector font pipeline |
+| ND-ed9fe44c322f | `DOC/font-sample.fon` | dynamic | `libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer | Missing vector font pipeline |
+| ND-b2515b511491 | `DOC/kbd_00000407.ini` | kbd_00000407 | `gen_bind.cpp` reads kb_country as int and passes it to kb_set_country; `kbcntry.c` uses compiled tables | Missing custom keyboard table loading; native layouts exist |
+| ND-f07eb40a1a7b | `DOC/kbd_0000041d.ini` | kbd_0000041d | `gen_bind.cpp` reads kb_country as int and passes it to kb_set_country; `kbcntry.c` uses compiled tables | Missing custom keyboard table loading; native layouts exist |
 | ND-2d66570f78bc | `DOC/material-format.txt` | include | `libsrc/namedres/material_parser.hpp`, `material.cpp`; see `docs/materials.md` for constraints | Implemented; behavioral parity unverified |
 | ND-6ee514cf0059 | `DOC/material-format.txt` | ani_rate | `libsrc/namedres/material_parser.hpp`, `material.cpp`; see `docs/materials.md` for constraints | Implemented; behavioral parity unverified |
 | ND-e593d7690f28 | `DOC/material-format.txt` | ani_frames | `libsrc/namedres/material_parser.hpp`, `material.cpp`; see `docs/materials.md` for constraints | Implemented; behavioral parity unverified |
@@ -84,7 +96,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-6670ba93cc5d | `DOC/modders_notes.txt` | face  envbox/skybox side | No exact token; inspect aliases | Unverified |
 | ND-c82ff53f80a3 | `DOC/modders_notes.txt` | DXT Texture Compression | No exact token; inspect aliases | Unverified |
 | ND-e54ac44ec1a4 | `DOC/modders_notes.txt` | 8-bit Anti-Aliased Fonts | No exact token; inspect aliases | Unverified |
-| ND-0d92ed450c04 | `DOC/modders_notes.txt` | TTF/OTF Fonts and UTF-8 Support | No exact token; inspect aliases | Unverified |
+| ND-0d92ed450c04 | `DOC/modders_notes.txt` | TTF/OTF Fonts and UTF-8 Support | `libsrc/namedres/fonrstyp.cpp` binds .fon/.bin as raw resources; no FON1 definition parsing or vector rasterizer | Missing vector font pipeline |
 | ND-6064c9710516 | `DOC/modders_notes.txt` | Texture Resolution/Mipmap Visualization | No exact token; inspect aliases | Unverified |
 | ND-aa35edc30724 | `DOC/modders_notes.txt` | Additions to Books/Readables (T2) | No exact token; inspect aliases | Unverified |
 | ND-5cb9671c8896 | `DOC/modders_notes.txt` | Script Service Updates | No exact token; inspect aliases | Unverified |
@@ -1340,8 +1352,40 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-ebbfa1b63859 | `DOC/squirrel_script/Notepad++/ReadMe.txt` | ReadMe | No exact token; inspect aliases | Unverified |
 | ND-723c24a23e57 | `DOC/squirrel_script/ReadMe.txt` | ReadMe | No exact token; inspect aliases | Unverified |
 | ND-e818526d7ddf | `DOC/squirrel_script/squirrel-copyright.txt` | squirrel-copyright | No exact token; inspect aliases | Unverified |
-| ND-b822ad4531d4 | `DOC/subtitles-sample.sub` | subtitles-sample | No exact token; inspect aliases | Unverified |
-| ND-3fa6087fb5ac | `DOC/subtitles.txt` | subtitles | No exact token; inspect aliases | Unverified |
+| ND-caf23a15064f | `DOC/subtitles-sample.sub` | SUB1 header and comments | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-0eea69142f97 | `DOC/subtitles-sample.sub` | Resource priority and duplicate entries | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-c9423c57a45c | `DOC/subtitles-sample.sub` | Type and Descr blocks | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-979e10785c41 | `DOC/subtitles-sample.sub` | Singleton | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-a8241ff39c18 | `DOC/subtitles-sample.sub` | OnlySoundType | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-da3e30596bd2 | `DOC/subtitles-sample.sub` | NoVolume | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-b5c55579f9fa | `DOC/subtitles-sample.sub` | Sub sound identifiers | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-5e6f348c0e4b | `DOC/subtitles-sample.sub` | Text and escaped quotes | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-9c8f89ff804c | `DOC/subtitles-sample.sub` | Time and Length | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-03284cfe7436 | `DOC/subtitles-sample.sub` | MultiSub sequences | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-1f9cc5c37c21 | `DOC/subtitles-sample.sub` | Movie identifiers | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-605776dcbacb | `DOC/subtitles.txt` | Language/resource-layer SUB discovery | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-e917e262dc37 | `DOC/subtitles.txt` | Sound subtitle lifecycle | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-25837bbc585c | `DOC/subtitles.txt` | Movie subtitle lifecycle | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-0f2d4ab2c27b | `DOC/subtitles.txt` | Positional sound distance indicators | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-da5885717b3e | `DOC/subtitles.txt` | enable_subtitles | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-631db3f31315 | `DOC/subtitles.txt` | subtitles_hide_types | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-ac7a54404a3b | `DOC/subtitles.txt` | subtitles_show_descr | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-4c56f36320ab | `DOC/subtitles.txt` | subtitles_show_volume | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-97813459704e | `DOC/subtitles.txt` | subtitles_color_<Type> | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-f7b31028db86 | `DOC/subtitles.txt` | subtitles_bg_color | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-c02db0b4fcbb | `DOC/subtitles.txt` | subtitles_bg_textwidth | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-133caae8429f | `DOC/subtitles.txt` | subtitles_font_dir | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-50f26eabc078 | `DOC/subtitles.txt` | subtitles_font_name | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-29a4dae8083c | `DOC/subtitles.txt` | subtitles_max_count | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-7b1113d8bd1f | `DOC/subtitles.txt` | subtitles_spacing | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-3d54bd1464c4 | `DOC/subtitles.txt` | subtitles_extra_time | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-8b48b2993ed5 | `DOC/subtitles.txt` | subtitles_dim | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-e34f50255f34 | `DOC/subtitles.txt` | subtitles_vol_dist_limits | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-d68d4258c39e | `DOC/subtitles.txt` | subtitles_max_dist_<Type> | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-33d6e6e9a500 | `DOC/subtitles.txt` | subtitles_max_dist | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-b683deb64094 | `DOC/subtitles.txt` | movsubtitles_bg_color | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-52764344eb55 | `DOC/subtitles.txt` | movsubtitles_bg_textwidth | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
+| ND-9c00a0ff3fed | `DOC/subtitles.txt` | movsubtitles_dim | No SUB discovery/parser or subtitle sound/movie lifecycle; `src/ui/movie.cpp` only invokes playback backends | Missing subtitle pipeline |
 | ND-95c768f5d766 | `DOC/sw_cc/sw_cc_notes.txt` | sw_cc_notes | No exact token; inspect aliases | Unverified |
 | ND-8249791843a7 | `Docs/DromEd Basic Menus Explained.odt` | DromEd Basic Menus Explained | No exact token; inspect aliases | Unverified |
 | ND-f3d26a1927a3 | `Docs/DromEd Basic Menus Explained.rtf` | DromEd Basic Menus Explained | No exact token; inspect aliases | Unverified |
@@ -1375,7 +1419,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-b78bda29b659 | `Docs/Tutorials/WEATHER.doc` | WEATHER | `src/render/weather.cpp` | Unverified |
 | ND-90f0cce81dcb | `Docs/Tutorials/convict.doc` | convict | No exact token; inspect aliases | Unverified |
 
-Inventory entries: 1362.
+Inventory entries: 1406.
 
 Non-text assets, bundled archives and licenses need separate sample/license review.
 Binary Word/ODT entries represent workflow documents; their individual instructions

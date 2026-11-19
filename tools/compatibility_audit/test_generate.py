@@ -12,6 +12,28 @@ class RequirementTests(unittest.TestCase):
                             "    explanation\n\nillum_map <float> <texture>\n---------------------------\n")
             self.assertEqual(list(requirements(path)), ["terrain_scale", "illum_map"])
 
+    def test_subtitle_settings_and_sample_formats_are_individual_requirements(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "subtitles.txt"
+            path.write_text("subtitles_max_dist_<Type> <dist>\n"
+                            "    prose\nmovsubtitles_dim\n")
+            names = list(requirements(path))
+            self.assertIn("subtitles_max_dist_<Type>", names)
+            self.assertIn("movsubtitles_dim", names)
+            self.assertNotIn("prose", names)
+            path = Path(directory) / "font-sample.fon"
+            path.write_text("FON1\nresource fonts/serif\n")
+            self.assertIn("FON1 header", list(requirements(path)))
+            self.assertIn("dynamic", list(requirements(path)))
+
+    def test_resource_loading_gaps_do_not_hide_existing_alternatives(self):
+        status, evidence = review(Path("DOC/fm_selector_api.txt"), "SelectFM export and packed ABI", "candidate")
+        self.assertIn("configured selection exists", status)
+        self.assertIn("no SelectFM", evidence)
+        status, evidence = review(Path("DOC/kbd_00000407.ini"), "kbd_00000407", "candidate")
+        self.assertIn("native layouts exist", status)
+        self.assertIn("compiled tables", evidence)
+
     def test_service_declarations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "script" / "Engine.txt"

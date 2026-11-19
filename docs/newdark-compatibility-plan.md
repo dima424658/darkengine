@@ -362,3 +362,19 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   property-schema and object diagnostics, staged duplicate-field selection,
   and the explicit object resolver. These remain preparation for an executor,
   not proof that installed patches are applied. Twelve audit-tool tests pass.
+
+- Resource-loading audit expanded subtitle discovery, sound/movie lifecycle,
+  SUB1 grammar and all documented subtitle settings into individual matrix
+  requirements. Added the previously omitted textual font-sample.fon spec
+  (FON1/resource/antialias/height/width/dpi/dynamic), plus individual external
+  selector ABI/lifecycle requirements. Inventory now contains 1,406 entries;
+  this expansion does not mean the entire semantic audit is finished.
+  Source review found no subtitle pipeline or FON1/vector font rasterization.
+  fonrstyp.cpp binds legacy font bytes as raw resources; movie.cpp delegates
+  playback without subtitle coordination. contentctx.cpp provides configured
+  FM selection but does not invoke the documented SelectFM plugin API.
+  gen_bind.cpp reads numeric kb_country and kbcntry.c uses compiled layouts;
+  the documented custom INI table loader is missing. Existing compiled keyboard
+  layouts and configured FM selection remain separate supported capabilities.
+  Fourteen audit-tool tests pass. No game behavior changed in this audit commit;
+  runtime/visual acceptance for these missing systems remains outstanding.
