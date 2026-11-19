@@ -591,3 +591,15 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   invalidate it. Drawing/resource methods have source evidence with phase,
   lifecycle and visual gates still open. Existing projection/style stubs remain
   recorded. All 25 audit tests pass; no overlay runtime behavior changed.
+
+- IScriptMan review traced synchronous/posted message delivery, timers and tagged
+  script data in scrptman.cpp. Lifecycle, cancellation during a timer snapshot,
+  reentrancy, persistence and guest ABI still require acceptance checks; source
+  paths alone do not prove them. Sixteen documented 1.28 queue/timer/data/object/
+  module/parameter introspection additions are absent from interface and class.
+  Internal ScriptModulePresence does not supply those guest vtable methods.
+  Fixed extraction omissions for spaced STDMETHOD macros and standalone native
+  interfaces. The matrix now has 1,432 requirements; the companion has 864
+  declarations, including IScriptMan and IDarkOverlayHandler. New tests cover
+  those input forms and all 26 audit tests pass. No runtime script behavior was
+  changed; complete semantic review and implementation remain outstanding.

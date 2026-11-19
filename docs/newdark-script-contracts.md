@@ -66,6 +66,9 @@ No row establishes implemented vtable order, version gating or runtime parity.
 | `DOC/script/DarkGame.txt:23` | DarkGame | `STDMETHOD_(int, GetCurrentMission)() PURE;` | — | 15: new functions in v1.19: |
 | `DOC/script/DarkGame.txt:30` | DarkGame | `STDMETHOD_(BOOL, RespawnPlayer)() PURE;` | — | 26: new functions in v1.24: |
 | `DOC/script/DarkGame.txt:32` | DarkGame | `STDMETHOD(FadeIn)(float time) PURE;` | — | 26: new functions in v1.24: |
+| `DOC/script/DarkOverlay.txt:10` | IDarkOverlayHandler | `STDMETHOD_(void,DrawHUD)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/DarkOverlay.txt:15` | IDarkOverlayHandler | `STDMETHOD_(void,DrawTOverlay)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/DarkOverlay.txt:20` | IDarkOverlayHandler | `STDMETHOD_(void,OnUIEnterMode)(THIS) PURE;` | — | No local version annotation |
 | `DOC/script/DarkOverlay.txt:30` | DarkOverlay | `STDMETHOD_(void,SetHandler)(IDarkOverlayHandler *pHandler) PURE;` | — | No local version annotation |
 | `DOC/script/DarkOverlay.txt:34` | DarkOverlay | `STDMETHOD_(int,GetBitmap)(const char *name, const char *path                   ) PURE;` | — | No local version annotation |
 | `DOC/script/DarkOverlay.txt:37` | DarkOverlay | `STDMETHOD_(void,FlushBitmap)(int handle) PURE;` | — | No local version annotation |
@@ -121,6 +124,63 @@ No row establishes implemented vtable order, version gating or runtime parity.
 | `DOC/script/Engine.txt:79` | Engine | `STDMETHOD_(void,SetEnvMapZone)(int iZone, const char *texture) PURE;` | — | 74: new functions in T2 v1.20 / SS2 v2.41: |
 | `DOC/script/Engine.txt:86` | Engine | `STDMETHOD(SetTagBlock)(const char *name, const char *field, const char *value, eWhichVarFile which = kMissionVar, int index = 0) PURE;` | — | 82: new functions in T2 v1.28 / SS2 v2.49: |
 | `DOC/script/Engine.txt:88` | Engine | `STDMETHOD_(cMultiParm,GetTagBlock)(const char *name, const char *field, eWhichVarFile which = kMissionVar, int index = 0) PURE;` | — | 82: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:3` | IScriptMan | `STDMETHOD (GameInit)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:4` | IScriptMan | `STDMETHOD (GameEnd)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:5` | IScriptMan | `STDMETHOD(BeginScripts)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:6` | IScriptMan | `STDMETHOD(EndScripts)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:7` | IScriptMan | `STDMETHOD (SetModuleDatapath)(THIS_ const Datapath *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:8` | IScriptMan | `STDMETHOD (AddModule)(THIS_ const char *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:9` | IScriptMan | `STDMETHOD (RemoveModule)(THIS_ const char *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:10` | IScriptMan | `STDMETHOD (ClearModules)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:11` | IScriptMan | `STDMETHOD (ExposeService)(THIS_ IUnknown *, const GUID *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:12` | IScriptMan | `STDMETHOD_(IUnknown *, GetService)(THIS_ const GUID *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:13` | IScriptMan | `STDMETHOD_(const sScrClassDesc *, GetFirstClass)(THIS_ tScrIter *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:14` | IScriptMan | `STDMETHOD_(const sScrClassDesc *, GetNextClass)(THIS_ tScrIter *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:15` | IScriptMan | `STDMETHOD_(void, EndClassIter)(THIS_ tScrIter *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:16` | IScriptMan | `STDMETHOD_(const sScrClassDesc *, GetClass)(THIS_ const char *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:17` | IScriptMan | `STDMETHOD (SetObjScripts)(THIS_ ObjID, const char **, unsigned n) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:18` | IScriptMan | `STDMETHOD (ForgetObj)(THIS_ ObjID) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:19` | IScriptMan | `STDMETHOD (ForgetAllObjs)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:20` | IScriptMan | `STDMETHOD_(BOOL, WantsMessage)(THIS_ ObjID, const char * pszMessage) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:21` | IScriptMan | `STDMETHOD (SendMessage)(THIS_ sScrMsg *, sMultiParm * DEFAULT_TO(NULL)) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:23` | IScriptMan | `STDMETHOD_(void, KillTimedMessage)(THIS_ tScrTimer) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:24` | IScriptMan | `STDMETHOD_(int, PumpMessages)(THIS) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:25` | IScriptMan | `STDMETHOD_(void, PostMessage)(THIS_ sScrMsg *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:26` | IScriptMan | `STDMETHOD_(tScrTimer, SetTimedMessage)(THIS_ sScrMsg *, ulong time, eScrTimedMsgKind kind) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:29` | IScriptMan | `STDMETHOD_ (cMultiParm, SendMessage2)(ObjID, ObjID, const char *, const cMultiParm &, const cMultiParm &, const cMultiParm &) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:35` | IScriptMan | `STDMETHOD_(void, PostMessage2)(ObjID, ObjID, const char *, const cMultiParm &, const cMultiParm &, const cMultiParm &, ulong flags DEFAULT_TO(0)) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:42` | IScriptMan | `STDMETHOD_(tScrTimer, SetTimedMessage2)(ObjID to, const char *, ulong, eScrTimedMsgKind, const cMultiParm &) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:47` | IScriptMan | `STDMETHOD_(BOOL, IsScriptDataSet)(THIS_ const sScrDatumTag * pTag) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:48` | IScriptMan | `STDMETHOD (GetScriptData)(THIS_ const sScrDatumTag * pTag, sMultiParm *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:49` | IScriptMan | `STDMETHOD (SetScriptData)(THIS_ const sScrDatumTag * pTag, const sMultiParm *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:50` | IScriptMan | `STDMETHOD (ClearScriptData)(THIS_ const sScrDatumTag * pTag, sMultiParm *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:51` | IScriptMan | `STDMETHOD (AddTrace)(ObjID Object, char *pszMessage, eScrTraceAction ScrTraceAction, int iTraceLine) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:53` | IScriptMan | `STDMETHOD (RemoveTrace)(ObjID Object, char *pszMessage) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:54` | IScriptMan | `STDMETHOD_ (BOOL, GetTraceLine)(int iTraceLine) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:55` | IScriptMan | `STDMETHOD_ (void, SetTraceLine)(int iTraceLine, BOOL bStatus) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:56` | IScriptMan | `STDMETHOD_ (int, GetTraceLineMask)() PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:57` | IScriptMan | `STDMETHOD_ (void, SetTraceLineMask)(int iTraceLineMask) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:58` | IScriptMan | `STDMETHOD_(const cScrTrace *, GetFirstTrace)(tScrIter *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:59` | IScriptMan | `STDMETHOD_(const cScrTrace *, GetNextTrace)(tScrIter *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:60` | IScriptMan | `STDMETHOD_(void, EndTraceIter)(tScrIter *) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:61` | IScriptMan | `STDMETHOD (SaveLoad)(THIS_ tPersistIOFunc pfnIO, void * pContextIO, BOOL fLoading) PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:63` | IScriptMan | `STDMETHOD_(void, PostLoad)() PURE;` | — | No local version annotation |
+| `DOC/script/IScriptMan.txt:69` | IScriptMan | `STDMETHOD_(int, GetQueuedMessageCount)() PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:70` | IScriptMan | `STDMETHOD_(sScrMsg*, GetQueuedMessageInfo)(int iIndex) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:71` | IScriptMan | `STDMETHOD_(void, DeleteQueuedMessage)(int iIndex) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:72` | IScriptMan | `STDMETHOD_(int, GetTimedMessageCount)() PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:73` | IScriptMan | `STDMETHOD_(sScrMsg*, GetTimedMessageInfo)(int iIndex, ulong *pPeriod, ulong *pNextTime, tScrTimer *pMsgId) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:74` | IScriptMan | `STDMETHOD_(sScrDatumTag*, GetFirstScriptData)(tScrIter *pIter, sMultiParm **ppData) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:75` | IScriptMan | `STDMETHOD_(sScrDatumTag*, GetNextScriptData)(tScrIter *pIter, sMultiParm **ppData) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:76` | IScriptMan | `STDMETHOD_(void, EndScriptDataIter)(tScrIter *pIter) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:77` | IScriptMan | `STDMETHOD_(const char*, GetFirstScriptObject)(tScrIter *pIter, ObjID *pObj) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:78` | IScriptMan | `STDMETHOD_(const char*, GetNextScriptObject)(tScrIter *pIter, ObjID *pObj) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:79` | IScriptMan | `STDMETHOD_(void, EndScriptObjectIter)(tScrIter *pIter) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:82` | IScriptMan | `STDMETHOD_(int, GetModuleCount)() PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:83` | IScriptMan | `STDMETHOD_(const char *, GetModule)(int iIndex) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:86` | IScriptMan | `STDMETHOD(GetAllScriptParams)(ObjID obj, tScrParCallback cb) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:87` | IScriptMan | `STDMETHOD_(BOOL, HasScriptParam)(ObjID obj, const char *param) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
+| `DOC/script/IScriptMan.txt:88` | IScriptMan | `STDMETHOD_(cMultiParm, GetScriptParam)(ObjID obj, const char *param) PURE;` | — | 66: new functions in T2 v1.28 / SS2 v2.49: |
 | `DOC/script/Link.txt:3` | Link | `STDMETHOD_(link,Create)(linkkind kind, object from, object to) PURE;` | — | No local version annotation |
 | `DOC/script/Link.txt:4` | Link | `STDMETHOD(Destroy)(link destroy_me) PURE;` | — | No local version annotation |
 | `DOC/script/Link.txt:5` | Link | `STDMETHOD_(boolean,AnyExist)(linkkind kind = AnyLink, object from = AnyObject, object to = AnyObject) PURE;` | — | No local version annotation |
@@ -814,4 +874,4 @@ No row establishes implemented vtable order, version gating or runtime parity.
 | `DOC/squirrel_script/API-reference_services.txt:838` | ShockOverlay | `EndTOverlayUpdate();` | — | 800: **** Available only in API version 3+ **** |
 | `DOC/squirrel_script/API-reference_services.txt:839` | ShockOverlay | `DrawTOverlayItem(int handle);` | — | 800: **** Available only in API version 3+ **** |
 
-Declarations: 804.
+Declarations: 864.

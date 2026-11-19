@@ -58,3 +58,9 @@ not evaluated platform availability; notes are not inferred minimum versions.
 The declaration inventory closes an extraction gap, not the semantic ABI audit.
 Use it alongside the method-level matrix when checking vtable order, defaults,
 argument/output shape and API-version gating.
+
+Native declaration extraction includes standalone `DECLARE_INTERFACE` and
+`DECLARE_INTERFACE_` blocks as well as script services. Spaced `STDMETHOD (` and
+`STDMETHOD_ (` forms are included; excluding them previously omitted manager
+methods. The current installed-doc snapshot yields 1,432 matrix requirements and
+864 detailed declarations. These are inventory counts, not compatibility scores.

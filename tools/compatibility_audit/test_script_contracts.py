@@ -53,6 +53,16 @@ int Base();
                                '// new functions in v1.28:\nSTDMETHOD(New)() PURE;\n};', True))
         self.assertIn('v1.28', items[0].version_note)
 
+    def test_native_interfaces_and_spaced_macros(self):
+        text = ('DECLARE_INTERFACE_(IScriptMan, IUnknown)\n{\n'
+                'STDMETHOD (GameInit)(THIS) PURE;\n};\n'
+                'DECLARE_INTERFACE(IDarkOverlayHandler)\n{\n'
+                'STDMETHOD_(void, DrawHUD)(THIS) PURE;\n};\n')
+        items = list(contracts(text, True))
+        self.assertEqual([item.service for item in items],
+                         ['IScriptMan', 'IDarkOverlayHandler'])
+        self.assertIn('GameInit', items[0].declaration)
+
     def test_incomplete_input_is_rejected(self):
         for text in ['#else\n', '#ifdef X\n',
                      'DECLARE_SCRIPT_SERVICE(Test, 1)\n{\nSTDMETHOD(Set)(\n']:

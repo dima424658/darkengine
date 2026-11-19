@@ -606,6 +606,10 @@ those documented declarations still require ABI/behavioral review.
 | ND-5bd34bc49e28 | `DOC/script/DarkUI.txt` | IsCommandBound | `src/dark/drkuiscr.cpp`: queries GetCmdBinds with one-result capacity | Source implementation reviewed; UI/runtime parity unverified |
 | ND-d9d18906acc6 | `DOC/script/DarkUI.txt` | DescribeKeyBinding | `src/dark/drkuiscr.cpp`: joins up to sixteen bindings with localized separator or returns localized no-bindings text | Source implementation reviewed; UI/runtime parity unverified |
 | ND-cc0bd39ed93f | `DOC/script/DarkUI.txt` | TextMessageFormatted | drkuiscr.cpp and CallDarkUI lack font/margins/alignment formatted-message method | Missing native method |
+| ND-89cd0fefb443 | `DOC/script/Debug.txt` | MPrint | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `src/script/linkscpt.cpp` | Unverified |
+| ND-abb04f680e9a | `DOC/script/Debug.txt` | Command | `src/ai/aicmds.cpp`, `src/dark/drkamap.cpp`, `src/dark/drkbook.cpp` | Unverified |
+| ND-16d1e6b6699f | `DOC/script/Debug.txt` | Break | `src/ai/aicmds.cpp`, `src/deepc/object/dpcdmg.cpp`, `src/deepc/player/dpcparam.cpp` | Unverified |
+| ND-6b4a2cf0f13a | `DOC/script/Debug.txt` | Log | `src/deepc/actreact/dpcprop.cpp`, `src/deepc/game/dpcemail.cpp`, `src/deepc/game/dpcreprt.cpp` | Unverified |
 | ND-84f472f3511b | `DOC/script/Engine.txt` | ConfigIsDefined | `src/script/engscrpt.cpp`, `src/render/weather.cpp`: engscrpt.cpp delegates to config_is_defined with null guard | Source implementation reviewed; runtime/ABI parity unverified |
 | ND-348bd5942508 | `DOC/script/Engine.txt` | ConfigGetInt | `src/script/engscrpt.cpp`, `src/render/weather.cpp`: engscrpt.cpp delegates typed output to config_get_int | Source implementation reviewed; runtime/ABI parity unverified |
 | ND-edf0effd3637 | `DOC/script/Engine.txt` | ConfigGetFloat | `src/script/engscrpt.cpp`, `src/render/weather.cpp`: engscrpt.cpp delegates typed output to config_get_float | Source implementation reviewed; runtime/ABI parity unverified |
@@ -626,41 +630,63 @@ those documented declarations still require ABI/behavioral review.
 | ND-72be39dcc8ac | `DOC/script/Engine.txt` | SetEnvMapZone | `src/script/engscrpt.cpp`: explicit stubs, script-only fog table or approximate raycast exclusions | Missing |
 | ND-ceedf483965d | `DOC/script/Engine.txt` | SetTagBlock | `src/script/engscrpt.cpp`: explicit stubs, script-only fog table or approximate raycast exclusions | Missing |
 | ND-097d36f1e676 | `DOC/script/Engine.txt` | GetTagBlock | `src/script/engscrpt.cpp`: explicit stubs, script-only fog table or approximate raycast exclusions | Missing |
+| ND-3f35e2875513 | `DOC/script/IScriptMan.txt` | GameInit | `src/deepc/game/dpcgame.cpp`, `src/deepc/weapon/dpcpgapi.h`, `src/deepc/weapon/dpcplgun.cpp` | Unverified |
+| ND-e4154015544c | `DOC/script/IScriptMan.txt` | GameEnd | `src/engfeat/engfeat.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
 | ND-c0e316df3a60 | `DOC/script/IScriptMan.txt` | BeginScripts | `src/sim/simman.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
 | ND-879a4295239c | `DOC/script/IScriptMan.txt` | EndScripts | `src/script/scrptprp.cpp`, `src/sim/simman.cpp`, `libsrc/script/scrptapi.h` | Unverified |
+| ND-75e5f3b35fc8 | `DOC/script/IScriptMan.txt` | SetModuleDatapath | `src/script/scrptprp.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-8094c01275f2 | `DOC/script/IScriptMan.txt` | AddModule | `src/script/scrptpr_.h`, `src/script/scrptprp.cpp`, `libsrc/script/scrptapi.h` | Unverified |
+| ND-f22d675b1a80 | `DOC/script/IScriptMan.txt` | RemoveModule | `src/script/scrptprp.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-a3dc02fc1fd0 | `DOC/script/IScriptMan.txt` | ClearModules | `src/script/scrptprp.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-d0eb08cbdcf5 | `DOC/script/IScriptMan.txt` | ExposeService | `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp`, `libsrc/script/scrptman.h` | Unverified |
 | ND-0cf59c100f31 | `DOC/script/IScriptMan.txt` | GetService | `libsrc/script/osm_emu/osm32env.cpp`, `libsrc/script/osm_emu/osm32mod.cpp`, `libsrc/script/scrptapi.h` | Unverified |
 | ND-7d601ea5e1b8 | `DOC/script/IScriptMan.txt` | GetFirstClass | `src/dark/drkgame.cpp`, `libsrc/script/osm_emu/osm32mod.cpp`, `libsrc/script/scrptapi.h` | Unverified |
 | ND-b547d36e4cee | `DOC/script/IScriptMan.txt` | GetNextClass | `src/dark/drkgame.cpp`, `libsrc/script/osm_emu/osm32mod.cpp`, `libsrc/script/scrptapi.h` | Unverified |
 | ND-97518a1774f9 | `DOC/script/IScriptMan.txt` | EndClassIter | `src/dark/drkgame.cpp`, `libsrc/script/osm_emu/osm32mod.cpp`, `libsrc/script/scrptapi.h` | Unverified |
 | ND-b55eb9870815 | `DOC/script/IScriptMan.txt` | GetClass | `libsrc/script/scrobj.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-2348c9d4d88d | `DOC/script/IScriptMan.txt` | SetObjScripts | `src/script/scrptprp.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-d06e8ec3d3d8 | `DOC/script/IScriptMan.txt` | ForgetObj | `src/script/scrptprp.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-d3e33a995215 | `DOC/script/IScriptMan.txt` | ForgetAllObjs | `src/script/scrptprp.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
 | ND-b04b6cdffd83 | `DOC/script/IScriptMan.txt` | WantsMessage | `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp`, `libsrc/script/scrptman.h` | Unverified |
-| ND-f3efd8ad6c5f | `DOC/script/IScriptMan.txt` | KillTimedMessage | `libsrc/script/osm_emu/osm32mod.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptbas.h` | Unverified |
-| ND-27c76aad1210 | `DOC/script/IScriptMan.txt` | PumpMessages | `src/deepc/scripts/dpcscrpt.cpp`, `src/engfeat/engfeat.cpp`, `src/render/litprop.cpp` | Unverified |
-| ND-775d3d73021b | `DOC/script/IScriptMan.txt` | PostMessage | `src/ai/aifreeze.cpp`, `src/ai/aipatrol.cpp`, `src/ai/aiscrabl.cpp` | Unverified |
-| ND-b389a234cb3e | `DOC/script/IScriptMan.txt` | SetTimedMessage | `src/script/netscrpt.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
-| ND-a256a70c5b62 | `DOC/script/IScriptMan.txt` | PostMessage2 | `src/ai/aicamera.cpp`, `src/script/linkscpt.cpp`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-4c37e25dc564 | `DOC/script/IScriptMan.txt` | SetTimedMessage2 | `libsrc/script/osm_emu/osm32mod.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptbas.h` | Unverified |
-| ND-f8fe656fc90e | `DOC/script/IScriptMan.txt` | IsScriptDataSet | `libsrc/script/osm_emu/osm32mod.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptbas.h` | Unverified |
+| ND-edbbfe8e6bef | `DOC/script/IScriptMan.txt` | SendMessage | `libsrc/script/scrptman.cpp`: sets dispatch time, handles proxy/owner flags, active targets/broadcast and deferred actions | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-f3efd8ad6c5f | `DOC/script/IScriptMan.txt` | KillTimedMessage | `libsrc/script/scrptman.cpp`: finds ID, releases message/timer and removes entry | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-27c76aad1210 | `DOC/script/IScriptMan.txt` | PumpMessages | `libsrc/script/scrptman.cpp`: guards reentrancy, snapshots/refcounts timers and detaches posted queue; returns zero regardless of deliveries | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-775d3d73021b | `DOC/script/IScriptMan.txt` | PostMessage | `libsrc/script/scrptman.cpp`: AddRefs persistent message and appends posted queue | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-b389a234cb3e | `DOC/script/IScriptMan.txt` | SetTimedMessage | `libsrc/script/scrptman.cpp`: AddRefs message, stores deadline/period and monotonic timer ID | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-ce931e6037b5 | `DOC/script/IScriptMan.txt` | SendMessage2 | `libsrc/script/scrptman.cpp`: wraps three data parameters in sScrMsg and calls synchronous SendMessage | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-a256a70c5b62 | `DOC/script/IScriptMan.txt` | PostMessage2 | `libsrc/script/scrptman.cpp`: wraps sender/target/data/flags and calls PostMessage | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-4c37e25dc564 | `DOC/script/IScriptMan.txt` | SetTimedMessage2 | `libsrc/script/scrptman.cpp`: builds sScrTimerMsg and delegates timer scheduling | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-f8fe656fc90e | `DOC/script/IScriptMan.txt` | IsScriptDataSet | `libsrc/script/scrptman.cpp`: checks tagged script-data hash entry | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-85b398b9c9a6 | `DOC/script/IScriptMan.txt` | GetScriptData | `libsrc/script/scrptman.cpp`: copies stored multi-parameter, returns S_FALSE when absent | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-2781970ae983 | `DOC/script/IScriptMan.txt` | SetScriptData | `libsrc/script/scrptman.cpp`: creates tagged entry if missing and assigns owned multi-parameter value | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-8e40d367dc55 | `DOC/script/IScriptMan.txt` | ClearScriptData | `libsrc/script/scrptman.cpp`: copies old value then removes tagged entry, S_FALSE if absent | Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified |
+| ND-289c93f286c8 | `DOC/script/IScriptMan.txt` | AddTrace | `src/script/scrptcmd.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-06c25c8458ca | `DOC/script/IScriptMan.txt` | RemoveTrace | `src/script/scrptcmd.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-705a2b2e431f | `DOC/script/IScriptMan.txt` | GetTraceLine | `src/script/scrptcmd.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-e41d3e740a51 | `DOC/script/IScriptMan.txt` | SetTraceLine | `src/script/scrptcmd.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-2ac613bd5d55 | `DOC/script/IScriptMan.txt` | GetTraceLineMask | `src/script/scrptcmd.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
+| ND-a901192fe972 | `DOC/script/IScriptMan.txt` | SetTraceLineMask | `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp`, `libsrc/script/scrptman.h` | Unverified |
 | ND-4eb0fb578a8b | `DOC/script/IScriptMan.txt` | GetFirstTrace | `src/script/scrptcmd.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
 | ND-27a59cf9952f | `DOC/script/IScriptMan.txt` | GetNextTrace | `src/script/scrptcmd.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
 | ND-206723214e2f | `DOC/script/IScriptMan.txt` | EndTraceIter | `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp`, `libsrc/script/scrptman.h` | Unverified |
+| ND-e78b300bea9e | `DOC/script/IScriptMan.txt` | SaveLoad | `src/script/scrptst.cpp`, `libsrc/script/scrptapi.h`, `libsrc/script/scrptman.cpp` | Unverified |
 | ND-e91ab699b0ee | `DOC/script/IScriptMan.txt` | PostLoad | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiapicmp.h` | Unverified |
-| ND-a10385d9c4ec | `DOC/script/IScriptMan.txt` | GetQueuedMessageCount | No exact token; inspect aliases | Unverified |
-| ND-22b7397e4f6a | `DOC/script/IScriptMan.txt` | GetQueuedMessageInfo | No exact token; inspect aliases | Unverified |
-| ND-e7ca45bfc969 | `DOC/script/IScriptMan.txt` | DeleteQueuedMessage | No exact token; inspect aliases | Unverified |
-| ND-2f7cfa49438a | `DOC/script/IScriptMan.txt` | GetTimedMessageCount | No exact token; inspect aliases | Unverified |
-| ND-f808588adba4 | `DOC/script/IScriptMan.txt` | GetTimedMessageInfo | No exact token; inspect aliases | Unverified |
-| ND-032e95640ce0 | `DOC/script/IScriptMan.txt` | GetFirstScriptData | No exact token; inspect aliases | Unverified |
-| ND-f093e69a481a | `DOC/script/IScriptMan.txt` | GetNextScriptData | No exact token; inspect aliases | Unverified |
-| ND-29bf6a2f8443 | `DOC/script/IScriptMan.txt` | EndScriptDataIter | No exact token; inspect aliases | Unverified |
-| ND-d0d81f3544fa | `DOC/script/IScriptMan.txt` | GetFirstScriptObject | No exact token; inspect aliases | Unverified |
-| ND-8edd48c1324f | `DOC/script/IScriptMan.txt` | GetNextScriptObject | No exact token; inspect aliases | Unverified |
-| ND-da4200565de0 | `DOC/script/IScriptMan.txt` | EndScriptObjectIter | No exact token; inspect aliases | Unverified |
-| ND-4032c01cded0 | `DOC/script/IScriptMan.txt` | GetModuleCount | No exact token; inspect aliases | Unverified |
-| ND-f3d3a2d1cb79 | `DOC/script/IScriptMan.txt` | GetModule | No exact token; inspect aliases | Unverified |
-| ND-fe6576721d5e | `DOC/script/IScriptMan.txt` | GetAllScriptParams | No exact token; inspect aliases | Unverified |
-| ND-db0df7cc3286 | `DOC/script/IScriptMan.txt` | HasScriptParam | No exact token; inspect aliases | Unverified |
-| ND-d8ee4d61405f | `DOC/script/IScriptMan.txt` | GetScriptParam | No exact token; inspect aliases | Unverified |
+| ND-a10385d9c4ec | `DOC/script/IScriptMan.txt` | GetQueuedMessageCount | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-22b7397e4f6a | `DOC/script/IScriptMan.txt` | GetQueuedMessageInfo | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-e7ca45bfc969 | `DOC/script/IScriptMan.txt` | DeleteQueuedMessage | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-2f7cfa49438a | `DOC/script/IScriptMan.txt` | GetTimedMessageCount | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-f808588adba4 | `DOC/script/IScriptMan.txt` | GetTimedMessageInfo | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-032e95640ce0 | `DOC/script/IScriptMan.txt` | GetFirstScriptData | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-f093e69a481a | `DOC/script/IScriptMan.txt` | GetNextScriptData | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-29bf6a2f8443 | `DOC/script/IScriptMan.txt` | EndScriptDataIter | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-d0d81f3544fa | `DOC/script/IScriptMan.txt` | GetFirstScriptObject | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-8edd48c1324f | `DOC/script/IScriptMan.txt` | GetNextScriptObject | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-da4200565de0 | `DOC/script/IScriptMan.txt` | EndScriptObjectIter | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-4032c01cded0 | `DOC/script/IScriptMan.txt` | GetModuleCount | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-f3d3a2d1cb79 | `DOC/script/IScriptMan.txt` | GetModule | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-fe6576721d5e | `DOC/script/IScriptMan.txt` | GetAllScriptParams | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-db0df7cc3286 | `DOC/script/IScriptMan.txt` | HasScriptParam | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
+| ND-d8ee4d61405f | `DOC/script/IScriptMan.txt` | GetScriptParam | scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries | Missing IScriptMan interface addition |
 | ND-be102c58a0ec | `DOC/script/Link.txt` | Create | `src/script/linkscpt.cpp`: delegates source/destination/kind to LinkManager Add | Source implementation reviewed; runtime/ABI parity unverified |
 | ND-cc8a6ce5f98d | `DOC/script/Link.txt` | Destroy | `src/script/linkscpt.cpp`: delegates link ID to LinkManager Remove | Source implementation reviewed; runtime/ABI parity unverified |
 | ND-b13853efe889 | `DOC/script/Link.txt` | AnyExist | `src/script/linkscpt.cpp`: queries source/destination/kind and checks Done with scoped query ownership | Source implementation reviewed; runtime/ABI parity unverified |
@@ -1422,7 +1448,7 @@ those documented declarations still require ABI/behavioral review.
 | ND-b78bda29b659 | `Docs/Tutorials/WEATHER.doc` | WEATHER | `src/render/weather.cpp` | Unverified |
 | ND-90f0cce81dcb | `Docs/Tutorials/convict.doc` | convict | No exact token; inspect aliases | Unverified |
 
-Inventory entries: 1406.
+Inventory entries: 1432.
 
 Non-text assets, bundled archives and licenses need separate sample/license review.
 Binary Word/ODT entries represent workflow documents; their individual instructions

@@ -63,7 +63,7 @@ def requirements(doc):
         for match in re.finditer(r"^class (\w+)(?: extends (\w+))?", text, re.M):
             yield match[1]
     elif doc.parent.name == "script":
-        for match in re.finditer(r"STDMETHOD(?:_\([^,]+,\s*|\(\s*)(\w+)", text):
+        for match in re.finditer(r"STDMETHOD\s*(?:_\s*\([^,]+,\s*|\(\s*)(\w+)", text):
             yield match[1]
     elif doc.name == "modders_notes.txt":
         lines = text.splitlines()
@@ -754,6 +754,31 @@ def review(doc, name, evidence):
         if method in overlay_review:
             status, evidence = overlay_review[method]
             evidence = "`squirrelhost.cpp` CallDarkOverlay/RenderOverlays: " + evidence
+    if doc.parent.name == "script" and doc.name == "IScriptMan.txt":
+        manager_review = {
+            "SendMessage": "sets dispatch time, handles proxy/owner flags, active targets/broadcast and deferred actions",
+            "SendMessage2": "wraps three data parameters in sScrMsg and calls synchronous SendMessage",
+            "PostMessage": "AddRefs persistent message and appends posted queue",
+            "PostMessage2": "wraps sender/target/data/flags and calls PostMessage",
+            "SetTimedMessage": "AddRefs message, stores deadline/period and monotonic timer ID",
+            "SetTimedMessage2": "builds sScrTimerMsg and delegates timer scheduling",
+            "KillTimedMessage": "finds ID, releases message/timer and removes entry",
+            "PumpMessages": "guards reentrancy, snapshots/refcounts timers and detaches posted queue; returns zero regardless of deliveries",
+            "IsScriptDataSet": "checks tagged script-data hash entry",
+            "GetScriptData": "copies stored multi-parameter, returns S_FALSE when absent",
+            "SetScriptData": "creates tagged entry if missing and assigns owned multi-parameter value",
+            "ClearScriptData": "copies old value then removes tagged entry, S_FALSE if absent",
+        }
+        if name in manager_review:
+            status = "Source implementation reviewed; lifecycle/reentrancy/runtime parity unverified"
+            evidence = "`libsrc/script/scrptman.cpp`: " + manager_review[name]
+        elif name in {"GetQueuedMessageCount", "GetQueuedMessageInfo", "DeleteQueuedMessage",
+                      "GetTimedMessageCount", "GetTimedMessageInfo", "GetFirstScriptData",
+                      "GetNextScriptData", "EndScriptDataIter", "GetFirstScriptObject",
+                      "GetNextScriptObject", "EndScriptObjectIter", "GetModuleCount", "GetModule",
+                      "GetAllScriptParams", "HasScriptParam", "GetScriptParam"}:
+            status = "Missing IScriptMan interface addition"
+            evidence = "scrptapi.h/scrptman.h/cpp lack documented 1.28 methods; internal helpers do not expose these vtable entries"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

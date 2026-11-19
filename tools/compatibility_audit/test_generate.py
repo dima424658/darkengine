@@ -111,8 +111,11 @@ class RequirementTests(unittest.TestCase):
             path = Path(directory) / "script" / "Engine.txt"
             path.parent.mkdir()
             path.write_text("STDMETHOD_(BOOL, ConfigIsDefined)(const char *name) PURE;\n"
-                            "STDMETHOD(SetTagBlock)(const char *name) PURE;\n")
-            self.assertEqual(list(requirements(path)), ["ConfigIsDefined", "SetTagBlock"])
+                            "STDMETHOD(SetTagBlock)(const char *name) PURE;\n"
+                            "STDMETHOD (GameInit)(THIS) PURE;\n"
+                            "STDMETHOD_ (cMultiParm, SendMessage2)(ObjID) PURE;\n")
+            self.assertEqual(list(requirements(path)),
+                             ["ConfigIsDefined", "SetTagBlock", "GameInit", "SendMessage2"])
 
     def test_squirrel_services_remain_distinct(self):
         with tempfile.TemporaryDirectory() as directory:

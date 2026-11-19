@@ -47,7 +47,8 @@ def contracts(text, native):
                 # preprocessor expression or discard preceding elif branches.
                 guards[-1].append(stripped)
             continue
-        declaration_service = re.match(r'DECLARE_SCRIPT_SERVICE\((\w+),', stripped)
+        declaration_service = re.match(
+            r'(?:DECLARE_SCRIPT_SERVICE|DECLARE_INTERFACE_?)\(\s*(\w+)', stripped)
         if native and declaration_service:
             service = declaration_service[1]
         elif not native and re.fullmatch(r'[A-Z][A-Za-z0-9_]*', stripped):
