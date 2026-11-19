@@ -36,6 +36,43 @@ def requirements(doc):
         yield doc.stem
 
 
+def review(doc, name, evidence):
+    status = "Unverified"
+    if doc.name == "material-format.txt":
+        supported = {"include", "ani_rate", "ani_frames", "ani_mode", "force_ani_settings",
+                     "terrain_scale", "tile_factor", "force_opaque", "force_full_alpha",
+                     "force_alpha_key", "no_mipmap", "uv_clamp", "illum_map", "force_local_pal"}
+        if name in supported:
+            status = "Partial" if name in {"illum_map", "force_local_pal"} else "Implemented; behavioral parity unverified"
+            evidence = "`libsrc/namedres/material_parser.hpp`, `material.cpp`; see `docs/materials.md` for constraints"
+        else:
+            status = "Missing"
+            evidence = "Material parser reports unsupported directives and skips render-pass blocks; `docs/materials.md`"
+    if doc.name == "Engine.txt" and name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock", "GetFogZone", "SetFogZone", "ObjRaycast"}:
+        status = "Missing" if name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock"} else "Partial"
+        evidence = "`src/script/engscrpt.cpp`: explicit stubs, script-only fog table or approximate raycast exclusions"
+    if doc.name == "Listener.txt":
+        status = "Partial" if name in {"SubscribeLink", "UnubscribeLink", "UnsubscribeLink"} else "Missing in Squirrel adapter; native unverified"
+        evidence = "`CallListener` in `libsrc/script/squirrel/squirrelhost.cpp`; synchronous link subscriptions only"
+    native_gaps = {
+        "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
+                            "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
+        "Property.txt": ({"PossessedSimple", "GetIndexed", "SetIndexed", "SetLocalIndexed"},
+                         "src/script/propscpt.cpp", "not exposed by the Squirrel adapter"),
+        "Quest.txt": ({"BinSet", "BinGet", "BinExists", "BinDelete", "GetFirst", "GetNext"},
+                      "src/script/quesscpt.cpp", "Squirrel binary-variable helpers exist separately; native parity missing"),
+        "Object.txt": ({"ObjectToWorld", "WorldToObject", "CalcRelTransform", "Archetype",
+                        "SetArchetype", "FindDescendentsSpatial"},
+                       "src/script/objscrpt.cpp", "Squirrel exposes some transforms separately; native parity missing"),
+    }
+    if doc.parent.name == "script" and doc.name in native_gaps:
+        methods, source, qualification = native_gaps[doc.name]
+        if name in methods:
+            status = "Missing native method"
+            evidence = f"`{source}` service implementation lacks this method; {qualification}"
+    return status, evidence
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("game", type=Path)
@@ -70,23 +107,7 @@ def main():
                 candidates = source_index.get(name, [])
                 evidence = ", ".join(f"`{p}`" for p in candidates[:3]) or "No exact token; inspect aliases"
                 reference = str(doc.relative_to(args.game))
-                status = "Unverified"
-                if doc.name == "material-format.txt":
-                    supported = {"include", "ani_rate", "ani_frames", "ani_mode", "force_ani_settings",
-                                 "terrain_scale", "tile_factor", "force_opaque", "force_full_alpha",
-                                 "force_alpha_key", "no_mipmap", "uv_clamp", "illum_map", "force_local_pal"}
-                    if name in supported:
-                        status = "Partial" if name in {"illum_map", "force_local_pal"} else "Implemented; behavioral parity unverified"
-                        evidence = "`libsrc/namedres/material_parser.hpp`, `material.cpp`; see `docs/materials.md` for constraints"
-                    else:
-                        status = "Missing"
-                        evidence = "Material parser reports unsupported directives and skips render-pass blocks; `docs/materials.md`"
-                if doc.name == "Engine.txt" and name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock", "GetFogZone", "SetFogZone", "ObjRaycast"}:
-                    status = "Missing" if name in {"SetEnvMapZone", "SetTagBlock", "GetTagBlock"} else "Partial"
-                    evidence = "`src/script/engscrpt.cpp`: explicit stubs, script-only fog table or approximate raycast exclusions"
-                if doc.name == "Listener.txt":
-                    status = "Partial" if name in {"SubscribeLink", "UnubscribeLink", "UnsubscribeLink"} else "Missing in Squirrel adapter; native unverified"
-                    evidence = "`CallListener` in `libsrc/script/squirrel/squirrelhost.cpp`; synchronous link subscriptions only"
+                status, evidence = review(doc, name, evidence)
                 identity = hashlib.sha256((reference + "\0" + name).encode()).hexdigest()[:12]
                 safe_name = name.replace("|", "\\|")
                 output.append(f"| ND-{identity} | `{reference}` | {safe_name} | {evidence} | {status} |")

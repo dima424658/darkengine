@@ -500,9 +500,9 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-26f2cb04a1b8 | `DOC/script/ActReact.txt` | EndContact | `src/actreact/mediag8r.cpp`, `src/actreact/periog8r.cpp`, `src/actreact/periog8r.h` | Unverified |
 | ND-638e581c77df | `DOC/script/ActReact.txt` | SetSingleSensorContact | `src/actreact/mediag8r.cpp`, `src/actreact/periog8r.cpp`, `src/actreact/periog8r.h` | Unverified |
 | ND-2ebc8d9cc3ad | `DOC/script/AnimTexture.txt` | ChangeTexture | `src/deepc/object/dpcdmg.cpp`, `src/render/antxscpt.cpp`, `src/render/antxscpt.h` | Unverified |
-| ND-d88f68680d8a | `DOC/script/AnimTexture.txt` | ChangeTextureLoc | No exact token; inspect aliases | Unverified |
-| ND-fa0488048428 | `DOC/script/AnimTexture.txt` | ChangeAllTextures | No exact token; inspect aliases | Unverified |
-| ND-78e3f204feab | `DOC/script/AnimTexture.txt` | ChangeSingleTexture | No exact token; inspect aliases | Unverified |
+| ND-d88f68680d8a | `DOC/script/AnimTexture.txt` | ChangeTextureLoc | `src/render/antxscpt.cpp` service implementation lacks this method; not exposed by the Squirrel adapter | Missing native method |
+| ND-fa0488048428 | `DOC/script/AnimTexture.txt` | ChangeAllTextures | `src/render/antxscpt.cpp` service implementation lacks this method; not exposed by the Squirrel adapter | Missing native method |
+| ND-78e3f204feab | `DOC/script/AnimTexture.txt` | ChangeSingleTexture | `src/render/antxscpt.cpp` service implementation lacks this method; not exposed by the Squirrel adapter | Missing native method |
 | ND-4d4ca6b45181 | `DOC/script/Camera.txt` | StaticAttach | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
 | ND-f664fdeacd29 | `DOC/script/Camera.txt` | DynamicAttach | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
 | ND-ae2083babec7 | `DOC/script/Camera.txt` | CameraReturn | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
@@ -681,12 +681,12 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-198aac3be4c9 | `DOC/script/Object.txt` | AddMetaPropertyToMany | `src/ai/aiactps.cpp`, `src/script/objscrpt.cpp`, `src/script/objscrpt.h` | Unverified |
 | ND-ce3a827b4150 | `DOC/script/Object.txt` | RemoveMetaPropertyFromMany | `src/ai/aiactps.cpp`, `src/script/objscrpt.cpp`, `src/script/objscrpt.h` | Unverified |
 | ND-c79f2b812f5a | `DOC/script/Object.txt` | RenderedThisFrame | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-3da50ede3fe8 | `DOC/script/Object.txt` | ObjectToWorld | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-f933364ebfab | `DOC/script/Object.txt` | WorldToObject | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-dc7a11f46d23 | `DOC/script/Object.txt` | CalcRelTransform | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-0df92f276b86 | `DOC/script/Object.txt` | Archetype | `src/deepc/weapon/dpcproj.cpp`, `src/editor/proptest.cpp`, `src/framewrk/netmsg.cpp` | Unverified |
-| ND-de8557680eac | `DOC/script/Object.txt` | SetArchetype | `src/actreact/stimsens.cpp`, `src/actreact/stimuli.cpp`, `src/editor/ged_room.cpp` | Unverified |
-| ND-59bcefc04c18 | `DOC/script/Object.txt` | FindDescendentsSpatial | No exact token; inspect aliases | Unverified |
+| ND-3da50ede3fe8 | `DOC/script/Object.txt` | ObjectToWorld | `src/script/objscrpt.cpp` service implementation lacks this method; Squirrel exposes some transforms separately; native parity missing | Missing native method |
+| ND-f933364ebfab | `DOC/script/Object.txt` | WorldToObject | `src/script/objscrpt.cpp` service implementation lacks this method; Squirrel exposes some transforms separately; native parity missing | Missing native method |
+| ND-dc7a11f46d23 | `DOC/script/Object.txt` | CalcRelTransform | `src/script/objscrpt.cpp` service implementation lacks this method; Squirrel exposes some transforms separately; native parity missing | Missing native method |
+| ND-0df92f276b86 | `DOC/script/Object.txt` | Archetype | `src/script/objscrpt.cpp` service implementation lacks this method; Squirrel exposes some transforms separately; native parity missing | Missing native method |
+| ND-de8557680eac | `DOC/script/Object.txt` | SetArchetype | `src/script/objscrpt.cpp` service implementation lacks this method; Squirrel exposes some transforms separately; native parity missing | Missing native method |
+| ND-59bcefc04c18 | `DOC/script/Object.txt` | FindDescendentsSpatial | `src/script/objscrpt.cpp` service implementation lacks this method; Squirrel exposes some transforms separately; native parity missing | Missing native method |
 | ND-2c95a5140263 | `DOC/script/Object.txt` | FindScriptDonor | `src/shock/shkobjsc.cpp`, `src/shock/shkobjsc.h` | Unverified |
 | ND-cc8e07515be5 | `DOC/script/Object.txt` | AnyExist | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
 | ND-cd234d52be58 | `DOC/script/Object.txt` | GetAll | `src/object/linkarry.cpp`, `src/object/linkarry.h`, `src/object/linkprop.cpp` | Unverified |
@@ -719,22 +719,22 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-73b61d05e763 | `DOC/script/Property.txt` | Remove | `src/actreact/periog8r.cpp`, `src/actreact/propag8r.h`, `src/actreact/radiag8r.cpp` | Unverified |
 | ND-b6e350b21fd4 | `DOC/script/Property.txt` | CopyFrom | `src/object/proparry.h`, `src/object/propscpt.h`, `src/script/propscpt.cpp` | Unverified |
 | ND-d3f63e2c6dc7 | `DOC/script/Property.txt` | Possessed | `src/object/propscpt.h`, `src/script/propscpt.cpp`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-5d8cd9ab43dc | `DOC/script/Property.txt` | PossessedSimple | No exact token; inspect aliases | Unverified |
-| ND-d079f80e1045 | `DOC/script/Property.txt` | GetIndexed | No exact token; inspect aliases | Unverified |
-| ND-642d177de839 | `DOC/script/Property.txt` | SetIndexed | No exact token; inspect aliases | Unverified |
-| ND-22751427a0b2 | `DOC/script/Property.txt` | SetLocalIndexed | No exact token; inspect aliases | Unverified |
+| ND-5d8cd9ab43dc | `DOC/script/Property.txt` | PossessedSimple | `src/script/propscpt.cpp` service implementation lacks this method; not exposed by the Squirrel adapter | Missing native method |
+| ND-d079f80e1045 | `DOC/script/Property.txt` | GetIndexed | `src/script/propscpt.cpp` service implementation lacks this method; not exposed by the Squirrel adapter | Missing native method |
+| ND-642d177de839 | `DOC/script/Property.txt` | SetIndexed | `src/script/propscpt.cpp` service implementation lacks this method; not exposed by the Squirrel adapter | Missing native method |
+| ND-22751427a0b2 | `DOC/script/Property.txt` | SetLocalIndexed | `src/script/propscpt.cpp` service implementation lacks this method; not exposed by the Squirrel adapter | Missing native method |
 | ND-4ce0d88d8c29 | `DOC/script/Quest.txt` | SubscribeMsg | `src/editor/quesedit.cpp`, `src/engfeat/quest.cpp`, `src/engfeat/questapi.h` | Unverified |
 | ND-3e17d31659f6 | `DOC/script/Quest.txt` | UnsubscribeMsg | `src/editor/quesedit.cpp`, `src/engfeat/quest.cpp`, `src/engfeat/questapi.h` | Unverified |
 | ND-10d8b117f09f | `DOC/script/Quest.txt` | Set | `src/actreact/propag8r.h`, `src/ai/ai.cpp`, `src/ai/aiactinv.cpp` | Unverified |
 | ND-7381d3704046 | `DOC/script/Quest.txt` | Get | `src/actreact/periog8r.cpp`, `src/actreact/propag8r.h`, `src/actreact/reaction.h` | Unverified |
 | ND-f53bafc43939 | `DOC/script/Quest.txt` | Exists | `src/ai/aiactnet.cpp`, `src/ai/aiman.cpp`, `src/ai/aiprrngd.cpp` | Unverified |
 | ND-21d9030c9f71 | `DOC/script/Quest.txt` | Delete | `src/actreact/contag8r.cpp`, `src/actreact/periog8r.cpp`, `src/actreact/propag8r.h` | Unverified |
-| ND-a5583684b2d0 | `DOC/script/Quest.txt` | BinSet | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-b18ae0ec2133 | `DOC/script/Quest.txt` | BinGet | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-00acdfa224ee | `DOC/script/Quest.txt` | BinExists | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-99113188600e | `DOC/script/Quest.txt` | BinDelete | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-b0b812f0ab98 | `DOC/script/Quest.txt` | GetFirst | `src/ai/aiapi.h`, `src/ai/aibassns.cpp`, `src/ai/aicnvman.cpp` | Unverified |
-| ND-5e9c9997688f | `DOC/script/Quest.txt` | GetNext | `src/ai/aiapi.h`, `src/ai/aibassns.cpp`, `src/ai/aicnvman.cpp` | Unverified |
+| ND-a5583684b2d0 | `DOC/script/Quest.txt` | BinSet | `src/script/quesscpt.cpp` service implementation lacks this method; Squirrel binary-variable helpers exist separately; native parity missing | Missing native method |
+| ND-b18ae0ec2133 | `DOC/script/Quest.txt` | BinGet | `src/script/quesscpt.cpp` service implementation lacks this method; Squirrel binary-variable helpers exist separately; native parity missing | Missing native method |
+| ND-00acdfa224ee | `DOC/script/Quest.txt` | BinExists | `src/script/quesscpt.cpp` service implementation lacks this method; Squirrel binary-variable helpers exist separately; native parity missing | Missing native method |
+| ND-99113188600e | `DOC/script/Quest.txt` | BinDelete | `src/script/quesscpt.cpp` service implementation lacks this method; Squirrel binary-variable helpers exist separately; native parity missing | Missing native method |
+| ND-b0b812f0ab98 | `DOC/script/Quest.txt` | GetFirst | `src/script/quesscpt.cpp` service implementation lacks this method; Squirrel binary-variable helpers exist separately; native parity missing | Missing native method |
+| ND-5e9c9997688f | `DOC/script/Quest.txt` | GetNext | `src/script/quesscpt.cpp` service implementation lacks this method; Squirrel binary-variable helpers exist separately; native parity missing | Missing native method |
 | ND-36cfb56861fd | `DOC/script/Sound.txt` | Play | `src/ai/aiactps.cpp`, `src/ai/aiacttyp.h`, `src/ai/aideath.cpp` | Unverified |
 | ND-ac2564e7648c | `DOC/script/Sound.txt` | PlayAmbient | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
 | ND-2d9c4e5f68cf | `DOC/script/Sound.txt` | PlaySchema | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |

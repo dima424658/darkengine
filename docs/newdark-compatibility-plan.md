@@ -237,3 +237,9 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   stable IDs, and classified material directives, Engine stubs/approximations
   and Listener restrictions from implementation evidence. Remaining rows still
   require semantic review; no runtime feature is considered complete from this.
+- Native service review: documented AnimTexture location/global/single-surface
+  updates, Property indexed access, Quest binary/enumeration methods and Object
+  transforms/archetype/spatial methods are absent from the inspected native
+  service implementations. Squirrel has separate helpers for some Object/Quest
+  methods; the matrix records this distinction rather than claiming universal
+  absence or native support. Runtime script ABI parity remains unverified.

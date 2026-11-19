@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from generate import requirements
+from generate import requirements, review
 
 
 class RequirementTests(unittest.TestCase):
@@ -19,6 +19,16 @@ class RequirementTests(unittest.TestCase):
             path.write_text("STDMETHOD_(BOOL, ConfigIsDefined)(const char *name) PURE;\n"
                             "STDMETHOD(SetTagBlock)(const char *name) PURE;\n")
             self.assertEqual(list(requirements(path)), ["ConfigIsDefined", "SetTagBlock"])
+
+    def test_service_review_preserves_native_squirrel_distinction(self):
+        status, evidence = review(Path("DOC/script/Quest.txt"), "BinGet", "candidate")
+        self.assertEqual(status, "Missing native method")
+        self.assertIn("Squirrel binary-variable helpers exist separately", evidence)
+        status, evidence = review(Path("DOC/script/AnimTexture.txt"), "ChangeTexture", "candidate")
+        self.assertEqual(status, "Unverified")
+        self.assertEqual(evidence, "candidate")
+        status, _ = review(Path("DOC/Quest.txt"), "BinGet", "candidate")
+        self.assertEqual(status, "Unverified")
 
 
 if __name__ == "__main__":
