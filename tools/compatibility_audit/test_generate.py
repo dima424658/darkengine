@@ -87,6 +87,16 @@ class RequirementTests(unittest.TestCase):
         status, _ = review(Path("DOC/script/Object.txt"), "FindScriptDonor", "candidate")
         self.assertEqual(status, "Missing native method")
 
+    def test_link_many_broadcast_and_data_errors_are_not_marked_complete(self):
+        status, _ = review(Path("DOC/script/Link.txt"), "BroadcastOnAllLinksMany", "candidate")
+        self.assertEqual(status, "Missing native method")
+        path = Path("DOC/squirrel_script/API-reference_services.txt")
+        status, _ = review(path, "Link.BroadcastOnAllLinksMany", "candidate")
+        self.assertIn("Missing Squirrel", status)
+        status, evidence = review(path, "LinkTools.LinkSetData", "candidate")
+        self.assertIn("incomplete", status)
+        self.assertIn("uninitialized", evidence)
+
     def test_service_declarations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "script" / "Engine.txt"

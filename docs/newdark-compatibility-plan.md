@@ -446,3 +446,15 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   FindDescendentsSpatial, FindScriptDonor and AnyExist/GetAll/GetOne are missing
   from both native service and CallObject. Nineteen audit-tool tests pass.
   No object lifecycle or transform behavior changed in this audit commit.
+
+- Link/LinkTools source review traced legacy operations, inherited queries,
+  native broadcast overloads and CallLink/CallLinkTools/PushLinkSet. Existing
+  operations now carry source evidence with runtime/ABI and iterable semantics
+  still open. CreateMany ignores per-link failures; DestroyMany removes while
+  iterating a query and still needs behavioral verification. Data broadcasts
+  filter on the first field for multi-field schemas. BroadcastOnAllLinksMany
+  is absent from both adapters. LinkTools relies on assertion-based invalid-ID
+  and field checks; LinkGet reports S_OK after Verify, and LinkSetData allocates
+  uninitialized data for absent records and leaks it if no schema exists.
+  These are recorded for script/link correctness work, not reported as fixed.
+  Twenty audit-tool tests pass. No runtime link behavior changed.

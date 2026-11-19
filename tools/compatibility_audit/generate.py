@@ -328,6 +328,41 @@ def review(doc, name, evidence):
         elif squirrel_object and object_method in {"SetArchetype", "FindDescendentsSpatial", "FindScriptDonor", "AnyExist", "GetAll", "GetOne"}:
             status = "Missing Squirrel method and native backing method"
             evidence = "CallObject has no matching branch; native Object service lacks the documented method"
+    link_method = name.rsplit(".", 1)[-1]
+    native_link = doc.parent.name == "script" and doc.name == "Link.txt"
+    squirrel_link = doc.name == "API-reference_services.txt" and name.startswith("Link.")
+    if native_link or squirrel_link:
+        link_review = {
+            "Create": "delegates source/destination/kind to LinkManager Add",
+            "Destroy": "delegates link ID to LinkManager Remove",
+            "AnyExist": "queries source/destination/kind and checks Done with scoped query ownership",
+            "GetAll": "returns owned linkset over matching LinkManager query",
+            "GetOne": "returns first matching ID or zero; ordering unspecified",
+            "CreateMany": "parses source/destination sets and adds their Cartesian product; individual add results ignored",
+            "DestroyMany": "parses Cartesian product, removes links while iterating each query; mutation/iteration safety unverified",
+            "GetAllInherited": "calls QueryInheritedLinksUncached and wraps query in linkset",
+            "GetAllInheritedSingle": "calls QueryInheritedLinksSingleUncached and wraps query in linkset",
+            "BroadcastOnAllLinks": "posts owner-routed messages to linked destinations; data overload filters by first struct field when relation has multiple fields",
+            "BroadcastOnAllLinksData": "CallLink uses native data overload, which filters links using first data field and posts matching owner-routed messages",
+        }
+        if link_method in link_review:
+            status = "Source implementation reviewed; runtime/ABI parity unverified"
+            evidence = "`src/script/linkscpt.cpp`: " + link_review[link_method]
+            if squirrel_link:
+                evidence += "; CallLink forwarding/PushLinkSet snapshot reviewed; iterable/version semantics unverified"
+        if link_method == "BroadcastOnAllLinksMany":
+            status = "Missing native method" if native_link else "Missing Squirrel method and native backing method"
+            evidence = "linkscpt.h/cpp and CallLink lack documented many-source broadcast method"
+    if doc.name == "API-reference_services.txt" and name.startswith("LinkTools."):
+        status = "Source implementation reviewed; invalid-ID/field behavior incomplete"
+        details = {
+            "LinkKindNamed": "resolves relation name through native linkkind",
+            "LinkKindName": "asserts relation exists before dereferencing descriptor",
+            "LinkGet": "native Verify on nonexistent ID then S_OK; Squirrel failure check cannot reliably detect invalid ID",
+            "LinkGetData": "selects first matching schema field, missing fields guarded by assertions",
+            "LinkSetData": "missing data allocates uninitialized bytes before setting one field; absent schema leaks that allocation; assertion-based validation",
+        }
+        evidence = "`linkscpt.cpp`, CallLinkTools: " + details.get(link_method, "requires further review")
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
