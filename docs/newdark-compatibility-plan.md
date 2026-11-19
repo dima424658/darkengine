@@ -570,3 +570,12 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   contract extraction to retain native "new functions in v..." annotations,
   which omit the T2 prefix. All 25 audit-tool tests pass. Runtime mission/UI
   behavior and outstanding source defects remain unmodified in this review.
+
+- Data/Puppet/PGroup review traced native implementations and Squirrel adapters.
+  String methods delegate to GameStrings, and random methods use engine Rand;
+  resource precedence/localization and random acceptance remain unverified.
+  RandInt computes signed high-low+1, which can overflow for a wide interval.
+  Puppet PlayMotion returns TRUE even without an AI ability or cerebellum;
+  particle SetActive returns TRUE through HRESULT even when no group exists.
+  Existing behavior is now distinguished from reliable success/error reporting.
+  All 25 audit tests still pass. No motion, particle or RNG behavior changed.

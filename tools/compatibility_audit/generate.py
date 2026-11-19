@@ -680,6 +680,26 @@ def review(doc, name, evidence):
         elif dark_method == "RespawnPlayer":
             status = "Single-player false fallback; multiplayer behavior absent"
             evidence = "drkscrs.cpp explicitly returns FALSE; documented effect is multiplayer-only"
+    if doc.name == "API-reference_services.txt":
+        data_review = {
+            "Data.GetString": "datascrs.cpp delegates table/name/default/relative path to GameStrings FetchString",
+            "Data.GetObjString": "datascrs.cpp delegates object/table lookup to GameStrings FetchObjString",
+            "Data.DirectRand": "datascrs.cpp returns engine Rand output",
+            "Data.RandFlt0to1": "datascrs.cpp scales masked 15-bit random value to [0,1), excluding upper endpoint",
+            "Data.RandFltNeg1to1": "datascrs.cpp scales masked 15-bit random value to [-1,1), excluding upper endpoint",
+        }
+        if name in data_review:
+            status = "Source implementation reviewed; resource/random runtime parity unverified"
+            evidence = "`src/script/`: " + data_review[name] + "; CallData forwarding exists"
+        elif name == "Data.RandInt":
+            status = "Partial implementation; wide-range integer overflow unresolved"
+            evidence = "datascrs.cpp computes signed high-low+1 and modulo range, low>=high returns low; CallData forwards"
+        elif name == "Puppet.PlayMotion":
+            status = "Partial implementation; success does not prove motion started"
+            evidence = "pupscrpt.cpp uses AI script ability or cerebellum; returns TRUE even without either; CallPuppet forwards"
+        elif name == "PGroup.SetActive":
+            status = "Source implementation reviewed; missing-group result ambiguous"
+            evidence = "pgrpscpt.cpp changes pg->active if group exists, always returns TRUE through HRESULT; CallPGroup forwards"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
