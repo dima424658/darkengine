@@ -432,3 +432,17 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   GetFirst/GetNext are missing in both adapters. These findings supersede any
   assumption that the presence of binary helpers establishes campaign storage.
   Eighteen audit tests pass; no gameplay/script mutation was introduced here.
+
+- Object service review traced lifecycle, naming, transience, trait queries,
+  position/facing, teleport, batch metaproperty edits and visibility against
+  DOC/script/Object.txt and CallObject. Existing methods now have source-level
+  evidence with runtime/ABI gates still open. Batch edits report parsed target
+  counts rather than proven successful mutations. FindClosestObjectNamed leaks
+  its trait query and dereferences candidate positions without a null check.
+  Squirrel's Archetype and object/world transforms are separate implementations,
+  not native ABI additions. CalcRelTransform ignores rel_type and sub-index,
+  always returns true and subtracts Euler angles instead of composing relative
+  rotations; joint/vhot/subobject/subphysics support is absent. SetArchetype,
+  FindDescendentsSpatial, FindScriptDonor and AnyExist/GetAll/GetOne are missing
+  from both native service and CallObject. Nineteen audit-tool tests pass.
+  No object lifecycle or transform behavior changed in this audit commit.

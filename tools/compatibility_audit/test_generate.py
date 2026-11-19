@@ -77,6 +77,16 @@ class RequirementTests(unittest.TestCase):
         self.assertIn("Incorrect table API", status)
         self.assertIn("argument 2", evidence)
 
+    def test_object_adapter_transform_gaps_remain_distinct(self):
+        path = Path("DOC/squirrel_script/API-reference_services.txt")
+        status, evidence = review(path, "Object.CalcRelTransform", "candidate")
+        self.assertIn("Incorrect relative transform", status)
+        self.assertIn("ignores rel_type", evidence)
+        status, _ = review(path, "Object.Archetype", "candidate")
+        self.assertIn("Squirrel-only", status)
+        status, _ = review(Path("DOC/script/Object.txt"), "FindScriptDonor", "candidate")
+        self.assertEqual(status, "Missing native method")
+
     def test_service_declarations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "script" / "Engine.txt"

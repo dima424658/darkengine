@@ -288,6 +288,46 @@ def review(doc, name, evidence):
             elif quest_method in {"GetFirst", "GetNext"}:
                 status = "Missing Squirrel method and native backing method"
                 evidence = "CallQuest has no branch; quesscpt.cpp lacks native iterator methods"
+    object_method = name.rsplit(".", 1)[-1]
+    native_object = doc.parent.name == "script" and doc.name == "Object.txt"
+    squirrel_object = doc.name == "API-reference_services.txt" and name.startswith("Object.")
+    if native_object or squirrel_object:
+        object_groups = [
+            ({"BeginCreate", "Create"}, "creates concrete object from existing archetype/clone; invalid parent guarded by assertion"),
+            ({"EndCreate", "Destroy", "Exists"}, "delegates to ObjectSystem lifecycle/existence methods"),
+            ({"SetName", "GetName", "Named"}, "delegates naming and reverse name lookup to ObjectSystem"),
+            ({"SetTransience", "IsTransient"}, "delegates transience state to ObjectSystem"),
+            ({"AddMetaProperty", "RemoveMetaProperty"}, "uses TraitManager or owner-routed ChangeMeta message, depending on network build"),
+            ({"HasMetaProperty"}, "uses ObjHasDonorIntrinsically, distinct from inherited donor query"),
+            ({"InheritsFrom"}, "uses TraitManager ObjHasDonor"),
+            ({"Position", "Facing"}, "reads ObjPos; missing position returns zero vector, facing converted to degrees"),
+            ({"Teleport"}, "converts facing degrees to engine angles and delegates GameTools TeleportObject with reference frame"),
+            ({"IsPositionValid"}, "delegates to IsCreaturePositionValid; general-object/version boundary behavior unverified"),
+            ({"AddMetaPropertyToMany", "RemoveMetaPropertyFromMany"}, "parses target set and returns parsed count, not count of successful changes"),
+            ({"RenderedThisFrame"}, "delegates to rendobj_object_visible; frame timing semantics unverified"),
+        ]
+        for methods, detail in object_groups:
+            if object_method in methods:
+                status = "Source implementation reviewed; runtime/ABI parity unverified"
+                evidence = "`src/script/objscrpt.cpp`: " + detail
+                if squirrel_object:
+                    evidence += "; CallObject forwards to native service"
+                break
+        if object_method == "FindClosestObjectNamed":
+            status = "Partial source behavior; query cleanup and invalid-target cases unresolved"
+            evidence = "objscrpt.cpp queries named archetype descendants and compares squared distance; query not released and candidate position not null-checked"
+        if squirrel_object and object_method == "Archetype":
+            status = "Squirrel-only implementation reviewed; native method missing"
+            evidence = "CallObject directly calls TraitManager GetArchetype; native service has no corresponding method"
+        elif squirrel_object and object_method in {"ObjectToWorld", "WorldToObject"}:
+            status = "Squirrel-only transform; runtime parity unverified"
+            evidence = "CallObject combines native Position/Facing with rotation or transpose; native service method absent"
+        elif squirrel_object and object_method == "CalcRelTransform":
+            status = "Incorrect relative transform; native method missing"
+            evidence = "CallObject ignores rel_type/sub-index, subtracts Euler angles instead of composing orientations, and always returns true"
+        elif squirrel_object and object_method in {"SetArchetype", "FindDescendentsSpatial", "FindScriptDonor", "AnyExist", "GetAll", "GetOne"}:
+            status = "Missing Squirrel method and native backing method"
+            evidence = "CallObject has no matching branch; native Object service lacks the documented method"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
@@ -296,7 +336,7 @@ def review(doc, name, evidence):
         "Quest.txt": ({"BinSet", "BinGet", "BinExists", "BinDelete", "GetFirst", "GetNext"},
                       "src/script/quesscpt.cpp", "Squirrel binary-variable helpers exist separately; native parity missing"),
         "Object.txt": ({"ObjectToWorld", "WorldToObject", "CalcRelTransform", "Archetype",
-                        "SetArchetype", "FindDescendentsSpatial"},
+                        "SetArchetype", "FindDescendentsSpatial", "FindScriptDonor", "AnyExist", "GetAll", "GetOne"},
                        "src/script/objscrpt.cpp", "Squirrel exposes some transforms separately; native parity missing"),
     }
     if doc.parent.name == "script" and doc.name in native_gaps:
