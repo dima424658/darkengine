@@ -34,6 +34,16 @@ class RequirementTests(unittest.TestCase):
         status, _ = review(path, "ObjProp", "candidate")
         self.assertEqual(status, "Missing runtime DML behavior")
 
+    def test_overlay_projection_stubs_and_setting_alternatives(self):
+        for path, name in [("DOC/script/DarkOverlay.txt", "WorldToScreen"),
+                           ("DOC/squirrel_script/API-reference_services.txt", "DarkOverlay.WorldToScreen")]:
+            status, evidence = review(Path(path), name, "candidate")
+            self.assertIn("Missing projection behavior", status)
+            self.assertIn("always returns false", evidence)
+        status, evidence = review(Path("DOC/new_config_vars.txt"), "vsync_mode", "candidate")
+        self.assertIn("key unsupported", status)
+        self.assertIn("not equivalent", evidence)
+
     def test_service_review_preserves_native_squirrel_distinction(self):
         status, evidence = review(Path("DOC/script/Quest.txt"), "BinGet", "candidate")
         self.assertEqual(status, "Missing native method")

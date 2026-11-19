@@ -82,6 +82,26 @@ def review(doc, name, evidence):
         else:
             status = "Missing runtime DML behavior"
             evidence = "`src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor"
+    overlay_method = name.rsplit(".", 1)[-1]
+    is_overlay = (doc.parent.name == "script" and doc.name == "DarkOverlay.txt") or (
+        doc.name == "API-reference_services.txt" and name.startswith("DarkOverlay."))
+    if is_overlay and overlay_method in {"WorldToScreen", "GetObjectScreenBounds"}:
+        status = "Missing projection behavior in Squirrel; native unverified"
+        evidence = "`CallDarkOverlay` in `squirrelhost.cpp` always returns false and zero screen coordinates"
+    if is_overlay and overlay_method == "SetTextColorFromStyle":
+        status = "Partial Squirrel behavior; native unverified"
+        evidence = "`CallDarkOverlay` sets hardcoded 0xffff and ignores the requested style colour"
+    if doc.parent.name == "script" and doc.name == "Version.txt" and name == "GetModPath":
+        status = "Partial"
+        evidence = "`src/script/engscrpt.cpp` returns the full resource search path, including FM/base entries, rather than just mod paths"
+    if doc.name == "new_config_vars.txt":
+        replacements = {
+            "vsync_mode": ("Partial alternative; NewDark key unsupported", "`libsrc/lgd3d/vulkan.cpp` reads boolean `vsync`; documented mode values are not equivalent"),
+            "force_windowed": ("Alternative controls; NewDark key unsupported", "`src/framewrk/init.cpp` persists `game_full_screen`; SDL display provider owns window modes"),
+            "use_d3d_display": ("Intentionally replaced", "Shared SDL/Vulkan display path replaces Direct3D provider selection; no DX9 provider"),
+        }
+        if name in replacements:
+            status, evidence = replacements[name]
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

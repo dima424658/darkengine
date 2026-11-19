@@ -249,3 +249,10 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
 - Expanded Squirrel service/message references into individual requirements.
   API version guards, signatures and semantics remain unverified; this expansion
   does not claim their implementation. Matrix now contains 1,362 inventory rows.
+- Overlay/content review found additional semantic gaps: Squirrel screen
+  projection and screen-bounds queries always fail, style-colour selection uses
+  a constant, and native Version.GetModPath returns the complete resource path.
+  These are now explicit partial/missing matrix entries. Vulkan `vsync` and SDL
+  fullscreen controls are recorded as alternatives, not support for different
+  NewDark configuration names/value semantics; Direct3D provider selection is
+  classified as intentionally replaced.

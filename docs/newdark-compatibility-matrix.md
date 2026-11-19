@@ -319,8 +319,8 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-0cf5ee0afaaa | `DOC/new_commands.txt` | cam_reset | No exact token; inspect aliases | Unverified |
 | ND-3d852c46782e | `DOC/new_commands.txt` | show_texres | No exact token; inspect aliases | Unverified |
 | ND-be22e679073e | `DOC/new_commands.txt` | show_vhots | No exact token; inspect aliases | Unverified |
-| ND-e2d0b593fa5a | `DOC/new_config_vars.txt` | use_d3d_display | No exact token; inspect aliases | Unverified |
-| ND-b62d48e57685 | `DOC/new_config_vars.txt` | force_windowed | No exact token; inspect aliases | Unverified |
+| ND-e2d0b593fa5a | `DOC/new_config_vars.txt` | use_d3d_display | Shared SDL/Vulkan display path replaces Direct3D provider selection; no DX9 provider | Intentionally replaced |
+| ND-b62d48e57685 | `DOC/new_config_vars.txt` | force_windowed | `src/framewrk/init.cpp` persists `game_full_screen`; SDL display provider owns window modes | Alternative controls; NewDark key unsupported |
 | ND-6483500b0c8b | `DOC/new_config_vars.txt` | force_32bit | No exact token; inspect aliases | Unverified |
 | ND-f27260087b31 | `DOC/new_config_vars.txt` | single_display_mode | No exact token; inspect aliases | Unverified |
 | ND-b22e5592e11c | `DOC/new_config_vars.txt` | ui_scale_mode | No exact token; inspect aliases | Unverified |
@@ -341,7 +341,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-599898740f66 | `DOC/new_config_vars.txt` | ffmpeg_force_intern_indeo5 | No exact token; inspect aliases | Unverified |
 | ND-70f590b96646 | `DOC/new_config_vars.txt` | widescreen_lock_hfov | No exact token; inspect aliases | Unverified |
 | ND-f5641948eacd | `DOC/new_config_vars.txt` | fov | No exact token; inspect aliases | Unverified |
-| ND-3a98c1a96f01 | `DOC/new_config_vars.txt` | vsync_mode | No exact token; inspect aliases | Unverified |
+| ND-3a98c1a96f01 | `DOC/new_config_vars.txt` | vsync_mode | `libsrc/lgd3d/vulkan.cpp` reads boolean `vsync`; documented mode values are not equivalent | Partial alternative; NewDark key unsupported |
 | ND-00284ae775c0 | `DOC/new_config_vars.txt` | d3d_disp_limit_gpu_frames | No exact token; inspect aliases | Unverified |
 | ND-b41a21881bc8 | `DOC/new_config_vars.txt` | d3d_disp_refreshrate | No exact token; inspect aliases | Unverified |
 | ND-14f998cafcb3 | `DOC/new_config_vars.txt` | framerate_cap | No exact token; inspect aliases | Unverified |
@@ -564,8 +564,8 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-982b09741cf8 | `DOC/script/DarkOverlay.txt` | GetBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-92e334b0e3b5 | `DOC/script/DarkOverlay.txt` | FlushBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-cb9691f14dba | `DOC/script/DarkOverlay.txt` | GetBitmapSize | `src/render/objshape.cpp`, `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-b20ac43a6f8e | `DOC/script/DarkOverlay.txt` | WorldToScreen | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-f55fa31860cb | `DOC/script/DarkOverlay.txt` | GetObjectScreenBounds | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-b20ac43a6f8e | `DOC/script/DarkOverlay.txt` | WorldToScreen | `CallDarkOverlay` in `squirrelhost.cpp` always returns false and zero screen coordinates | Missing projection behavior in Squirrel; native unverified |
+| ND-f55fa31860cb | `DOC/script/DarkOverlay.txt` | GetObjectScreenBounds | `CallDarkOverlay` in `squirrelhost.cpp` always returns false and zero screen coordinates | Missing projection behavior in Squirrel; native unverified |
 | ND-e734d6f8fbeb | `DOC/script/DarkOverlay.txt` | CreateTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-ff29d2315d23 | `DOC/script/DarkOverlay.txt` | CreateTOverlayItemFromBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-151bf438cdce | `DOC/script/DarkOverlay.txt` | DestroyTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
@@ -574,7 +574,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-bd5afa76db38 | `DOC/script/DarkOverlay.txt` | UpdateTOverlaySize | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-b5e0f17bc5fe | `DOC/script/DarkOverlay.txt` | DrawBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-8c3771661ff9 | `DOC/script/DarkOverlay.txt` | DrawSubBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-b0ffbb393c5c | `DOC/script/DarkOverlay.txt` | SetTextColorFromStyle | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-b0ffbb393c5c | `DOC/script/DarkOverlay.txt` | SetTextColorFromStyle | `CallDarkOverlay` sets hardcoded 0xffff and ignores the requested style colour | Partial Squirrel behavior; native unverified |
 | ND-4aee34c5a7c8 | `DOC/script/DarkOverlay.txt` | SetTextColor | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-2dab28f8791e | `DOC/script/DarkOverlay.txt` | GetStringSize | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-1eeeb2958308 | `DOC/script/DarkOverlay.txt` | DrawString | `src/dark/drkoptmn.cpp`, `src/deepc/ui/dpcnetui.cpp`, `src/deepc/ui/dpcoptmn.cpp` | Unverified |
@@ -791,7 +791,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-0ad8c4988f0d | `DOC/script/Version.txt` | GetCurrentFMPath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
 | ND-fbd384c95686 | `DOC/script/Version.txt` | FMizeRelativePath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
 | ND-c6c1f0159b5f | `DOC/script/Version.txt` | FMizePath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
-| ND-432ee13cb345 | `DOC/script/Version.txt` | GetModPath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-432ee13cb345 | `DOC/script/Version.txt` | GetModPath | `src/script/engscrpt.cpp` returns the full resource search path, including FM/base entries, rather than just mod paths | Partial |
 | ND-02f2b269d3a2 | `DOC/script_services.txt` | script_services | No exact token; inspect aliases | Unverified |
 | ND-dc51365aaf1f | `DOC/squirrel_script/API-reference.txt` | API-reference | No exact token; inspect aliases | Unverified |
 | ND-bffb03ad078c | `DOC/squirrel_script/API-reference_messages.txt` | sScrMsg | `src/ai/aiactlch.cpp`, `src/ai/aifreeze.cpp`, `src/ai/aiscrm.h` | Unverified |
@@ -1154,8 +1154,8 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-a76e8bf18809 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-118a8df13a3c | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.FlushBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-db241254b5db | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetBitmapSize | `src/render/objshape.cpp`, `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-ee4f67e283de | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.WorldToScreen | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-015535244cbe | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetObjectScreenBounds | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-ee4f67e283de | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.WorldToScreen | `CallDarkOverlay` in `squirrelhost.cpp` always returns false and zero screen coordinates | Missing projection behavior in Squirrel; native unverified |
+| ND-015535244cbe | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetObjectScreenBounds | `CallDarkOverlay` in `squirrelhost.cpp` always returns false and zero screen coordinates | Missing projection behavior in Squirrel; native unverified |
 | ND-69e4c14fabb6 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.CreateTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-f1ad3ae48d41 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.CreateTOverlayItemFromBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-63cbc55caa8c | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DestroyTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
@@ -1164,7 +1164,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-d608ea7a070d | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.UpdateTOverlaySize | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-f0b748427117 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DrawBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-4a2d1f6c4648 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DrawSubBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-528fc84b1f8f | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.SetTextColorFromStyle | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-528fc84b1f8f | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.SetTextColorFromStyle | `CallDarkOverlay` sets hardcoded 0xffff and ignores the requested style colour | Partial Squirrel behavior; native unverified |
 | ND-fa179b0ee1f0 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.SetTextColor | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-bee76cd5ac15 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetStringSize | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-2852bf2b0bd9 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DrawString | `src/dark/drkoptmn.cpp`, `src/deepc/ui/dpcnetui.cpp`, `src/deepc/ui/dpcoptmn.cpp` | Unverified |
