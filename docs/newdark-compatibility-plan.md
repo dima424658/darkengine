@@ -256,3 +256,8 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   fullscreen controls are recorded as alternatives, not support for different
   NewDark configuration names/value semantics; Direct3D provider selection is
   classified as intentionally replaced.
+- Added an offline read-only fingerprint evaluator with documented position
+  thresholds, positive/negative precedence, quest masks/comparisons and named
+  rules. Missing adapters and unsupported MOD version comparisons fail explicitly.
+  Both C++ fixtures pass; all 88 installed files pass fingerprint grammar
+  validation. Database adapters, discovery and application remain pending.

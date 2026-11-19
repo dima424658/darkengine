@@ -1,4 +1,5 @@
 #include "../../src/framewrk/dbmod/syntax.hpp"
+#include "../../src/framewrk/dbmod/fingerprint.hpp"
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -21,6 +22,7 @@ int main(int argc, char **argv)
             Check(bool(file), "cannot open input");
             std::string text((std::istreambuf_iterator<char>(file)), {});
             const auto statements = DarkDbMod::Parse(text);
+            DarkDbMod::ValidateFingerprints(statements);
             std::cout << argv[index] << ": " << statements.size() << " statements\n";
          }
          return 0;

@@ -79,6 +79,10 @@ def review(doc, name, evidence):
         if name in {"DML1 syntax", "Pre/post phase annotations"}:
             status = "Implemented syntax only; runtime missing"
             evidence = "`src/framewrk/dbmod/syntax.cpp`, `tools/dbmod_test`: all 88 installed patches parse; no executor"
+        elif name in {"Fingerprint position thresholds", "Fingerprint positive/negative precedence",
+                      "Fingerprint QVAR masks/comparisons", "Fingerprint PROP/NAME/GAM rules"}:
+            status = "Offline evaluator implemented; game integration missing"
+            evidence = "`src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor"
         else:
             status = "Missing runtime DML behavior"
             evidence = "`src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor"
