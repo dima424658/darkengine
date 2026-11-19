@@ -62,3 +62,18 @@ skips, selected FM base, case handling and duplicate layers. Mission save loads
 return no patches before invoking storage; gamesys loading remains a separate
 caller decision. The manifest does not resolve or read engine resources yet,
 evaluate fingerprints, validate commands or execute modifications.
+
+## Command-shape preflight
+
+`commands.cpp` turns recognized statements into command kinds and operations,
+retaining their source syntax and creation-time property commands. It rejects
+unknown/quoted keywords, unsupported prefixes, malformed header/data forms,
+late script/schema directives and non-property commands in creation blocks.
+All 88 installed patches pass this structural check. Focused fixtures exercise
+both accepted variants and rejection paths.
+
+This is deliberately not engine-semantic validation. Object names/IDs, link IDs,
+tag versions, quest operators, field names/indices, numeric types, enum values,
+inheritance, database scope and executor capabilities still require resolution
+against engine schemas before any command can execute. Arbitrary data-block
+contents are preserved, not declared valid. No runtime executor is enabled.

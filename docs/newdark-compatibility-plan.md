@@ -265,3 +265,8 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   documented mission/gamesys ordering examples, plus FM selection, save/disable
   skips, case handling and duplicate layers. All three C++ tests pass.
   Engine path/storage adapters and runtime patch execution remain pending.
+- Added offline command-shape preflight with typed command families/operations,
+  creation-time ObjProp compilation, directive-order checks and rejection of
+  malformed/unsupported structural forms. All four C++ fixtures pass and all
+  88 installed patches pass structural command checks. Field/schema validation,
+  object resolution, database scope and execution remain pending.

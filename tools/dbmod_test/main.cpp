@@ -1,5 +1,6 @@
 #include "../../src/framewrk/dbmod/syntax.hpp"
 #include "../../src/framewrk/dbmod/fingerprint.hpp"
+#include "../../src/framewrk/dbmod/commands.hpp"
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -23,6 +24,7 @@ int main(int argc, char **argv)
             std::string text((std::istreambuf_iterator<char>(file)), {});
             const auto statements = DarkDbMod::Parse(text);
             DarkDbMod::ValidateFingerprints(statements);
+            DarkDbMod::ValidateCommandShapes(statements);
             std::cout << argv[index] << ": " << statements.size() << " statements\n";
          }
          return 0;

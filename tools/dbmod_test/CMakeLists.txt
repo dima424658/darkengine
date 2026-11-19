@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 project(dbmod_test LANGUAGES CXX)
 enable_testing()
-add_executable(dbmod_test main.cpp ../../src/framewrk/dbmod/syntax.cpp ../../src/framewrk/dbmod/fingerprint.cpp)
+add_executable(dbmod_test main.cpp ../../src/framewrk/dbmod/commands.cpp ../../src/framewrk/dbmod/syntax.cpp ../../src/framewrk/dbmod/fingerprint.cpp)
 target_compile_features(dbmod_test PRIVATE cxx_std_17)
 add_test(NAME dbmod_syntax COMMAND dbmod_test)
 add_executable(dbmod_fingerprint_test fingerprint.cpp ../../src/framewrk/dbmod/syntax.cpp
@@ -11,3 +11,7 @@ add_test(NAME dbmod_fingerprints COMMAND dbmod_fingerprint_test)
 add_executable(dbmod_discovery_test discovery.cpp ../../src/framewrk/dbmod/discovery.cpp)
 target_compile_features(dbmod_discovery_test PRIVATE cxx_std_17)
 add_test(NAME dbmod_discovery COMMAND dbmod_discovery_test)
+add_executable(dbmod_commands_test commands.cpp ../../src/framewrk/dbmod/commands.cpp
+  ../../src/framewrk/dbmod/syntax.cpp ../../src/framewrk/dbmod/fingerprint.cpp)
+target_compile_features(dbmod_commands_test PRIVATE cxx_std_17)
+add_test(NAME dbmod_commands COMMAND dbmod_commands_test)
