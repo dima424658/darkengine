@@ -453,7 +453,7 @@ bool VulkanWorldRenderer::Initialize(vk::PhysicalDevice physical, vk::Device dev
       m->shaderDirectory = directory;
       const auto reserve = [](uint32_t limit, uint32_t used) { return limit > used ? limit - used : 0u; };
       // DI binds current and previous scene textures simultaneously.
-      m->maxTextures = std::min({1024u, reserve(m->properties.limits.maxPerStageDescriptorSamplers, 12u) / 2,
+      m->maxTextures = std::min({16384u, reserve(m->properties.limits.maxPerStageDescriptorSamplers, 12u) / 2,
                                  reserve(m->properties.limits.maxPerStageDescriptorSampledImages, 12u) / 2,
                                  reserve(m->properties.limits.maxDescriptorSetSamplers, 12u) / 2,
                                  reserve(m->properties.limits.maxDescriptorSetSampledImages, 12u) / 2,
@@ -767,7 +767,8 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
             materials.push_back(data);
          }
          if (textureIds.size() > m->maxTextures)
-            throw std::runtime_error("world texture count exceeds device descriptor limit");
+            throw std::runtime_error("world texture count "+std::to_string(textureIds.size())+
+               " exceeds descriptor limit "+std::to_string(m->maxTextures));
          m->packedMaterials = std::move(materials);
          m->packedTextureIds = std::move(textureIds);
          m->packedMaterialIndices = std::move(materialIndices);

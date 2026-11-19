@@ -18,3 +18,6 @@ uint64_t ResImageSourceRevision(const grs_bitmap *);
 std::string ResImageSourceName(const grs_bitmap *);
 std::shared_ptr<const ResImagePixels> ResImageExactPixels(const grs_bitmap *);
 std::shared_ptr<const ResImagePixels> ResImageCompanion(const grs_bitmap *,const char *suffix);
+// Returns true for valid authored virtual terrain dimensions; otherwise the
+// caller-provided image dimensions are returned unchanged.
+bool ResImageTerrainSize(const grs_bitmap *,uint32_t imageWidth,uint32_t imageHeight,uint32_t &width,uint32_t &height);

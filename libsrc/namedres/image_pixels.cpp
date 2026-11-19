@@ -1,9 +1,12 @@
 #include "image_pixels.hpp"
 #include "image_pixels_c.h"
+#include "material_metadata.hpp"
 #include <resapi.h>
 #include <storeapi.h>
 #include <reshelp.h>
 #include <imgrstyp.h>
+#include <binrstyp.h>
+#include <config.h>
 #include <resthred.h>
 #include <cstring>
 #include <string>
@@ -17,6 +20,8 @@ struct Source {
    IStore *store=nullptr;
    std::string name,path,fullName;
    std::shared_ptr<ResImagePixels> pixels;
+   bool materialRead=false;
+   TerrainScale terrain;
    ~Source(){if(store)store->Release();}
 };
 auto &sources(){static auto *map=new std::unordered_map<const grs_bitmap *,std::unique_ptr<Source>>;return *map;}
@@ -52,6 +57,7 @@ extern "C" void ResImageCloneSource(const void *original,const void *replacement
    const auto &old=*found->second;auto next=std::make_unique<Source>();
    next->revision=old.revision;next->helper=old.helper;next->name=old.name;next->path=old.path;next->fullName=old.fullName;next->pixels=old.pixels;
    next->store=old.store;if(next->store)next->store->AddRef();
+   next->materialRead=old.materialRead;next->terrain=old.terrain;
    sources()[static_cast<const grs_bitmap *>(replacement)]=std::move(next);
 }
 uint64_t ResImageSourceRevision(const grs_bitmap *bitmap) {
@@ -91,4 +97,47 @@ std::shared_ptr<const ResImagePixels> ResImageCompanion(const grs_bitmap *bitmap
       if(pixels)return pixels;
    }
    return {};
+}
+bool ResImageTerrainSize(const grs_bitmap *bitmap,uint32_t imageWidth,uint32_t imageHeight,uint32_t &width,uint32_t &height) {
+   cAutoResThreadLock lock;width=imageWidth;height=imageHeight;
+   const auto found=sources().find(bitmap);if(found==sources().end())return false;
+   auto &entry=*found->second;
+   if(!entry.materialRead) {
+      entry.materialRead=true;
+      if(!entry.helper)return false;
+      const std::string name=entry.name+".mtl",path=entry.path;
+      IStore *store=entry.store;if(store)store->AddRef();
+      const auto releaseStore=[](IStore *p){if(p)p->Release();};
+      std::unique_ptr<IStore,decltype(releaseStore)> heldStore(store,releaseStore);
+      IResMan *manager=nullptr;entry.helper->QueryInterface(IID_IResMan,reinterpret_cast<void **>(&manager));
+      if(!manager)return false;
+      const auto releaseManager=[](IResMan *p){p->Release();};
+      std::unique_ptr<IResMan,decltype(releaseManager)> heldManager(manager,releaseManager);
+      IRes *resource=manager->Bind(name.c_str(),RESTYPE_BINARY,nullptr,path.c_str());
+      if(!resource && store)resource=manager->BindSpecific(name.c_str(),RESTYPE_BINARY,store,nullptr,0);
+      if(resource) {
+         const auto releaseResource=[](IRes *p){p->Release();};
+         std::unique_ptr<IRes,decltype(releaseResource)> heldResource(resource,releaseResource);
+         const long size=resource->GetSize();
+         if(size>0 && size<=1024*1024) {
+            const auto *data=static_cast<const char *>(resource->Lock());
+            if(data) {
+               const auto condition=[](std::string_view key) {
+                  const std::string name(key);if(!config_is_defined(name.c_str()))return false;
+                  int value=1;config_get_int(name.c_str(),&value);return value!=0;
+               };
+               const auto terrain=ParseTerrainScale(std::string_view(data,size),condition);
+               resource->Unlock();
+               // Nested resource loads can rehash/evict the registry.
+               const auto current=sources().find(bitmap);
+               if(current==sources().end())return false;
+               current->second->terrain=terrain;
+            }
+         }
+      }
+   }
+   const auto current=sources().find(bitmap);if(current==sources().end())return false;
+   const auto scale=current->second->terrain;
+   if(!scale.width || !scale.height || scale.width>imageWidth || scale.height>imageHeight)return false;
+   width=scale.width;height=scale.height;return true;
 }

@@ -25,6 +25,7 @@
 #include <tracy/Tracy.hpp>
 #include "worldscene.h"
 #include "worldscene_pbr.hpp"
+#include <image_pixels.hpp>
 #include "worldscene_lights.hpp"
 extern "C" int portal_sky_id;
 extern "C" BOOL bRenderNewSky;
@@ -41,7 +42,14 @@ auto &lightHandles=*new std::vector<RenderSceneHandle>;
 auto &lightOwners=*new std::vector<int32_t>;
 auto &lightOwnerSeen=*new std::vector<unsigned char>;
 struct TerrainMesh {RenderSceneHandle handle;std::vector<RenderSceneVertex> vertices;int width,height;};
-struct TerrainMaterial {RenderSceneHandle handle;RenderSceneMaterial description;grs_bitmap *frame;int width,height;std::vector<TerrainMesh> meshes;};
+// width/height are virtual UV dimensions; pixel dimensions describe storage.
+struct TerrainMaterial {RenderSceneHandle handle;RenderSceneMaterial description;grs_bitmap *frame;int width,height,pixelWidth,pixelHeight;uint32_t terrainWidth,terrainHeight;std::vector<TerrainMesh> meshes;};
+bool terrainSize(unsigned texture,grs_bitmap *frame,uint32_t &width,uint32_t &height) {
+   // NewDark assigns material metadata to an animation's root, not each frame.
+   auto *root=texture<TEXMEM_MAX && texmem_hnd[texture]?static_cast<grs_bitmap *>(texmem_hnd[texture]->DataPeek()):nullptr;
+   if(root && root->w>0 && root->h>0 && ResImageTerrainSize(root,root->w,root->h,width,height))return true;
+   return ResImageTerrainSize(frame,frame->w,frame->h,width,height);
+}
 // Database reset also runs from legacy AppOnExit after static destructors.
 auto &terrainMaterials=*new std::unordered_map<unsigned,TerrainMaterial>;
 struct TerrainFrame {RenderSceneHandle handle;unsigned long long paletteRevision;};
@@ -144,7 +152,7 @@ void importTerrain() {
          // Sky is an opening, never a wall in the shadow acceleration structure.
          if((bRenderNewSky && render.texture_id==0) || render.texture_id==portal_sky_id ||
             (render.texture_id>=BACKHACK_IDX && render.texture_id<TEXMEM_RESERVED_LIMIT))continue;
-         auto *bitmap=portal_get_texture(render.texture_id);if(!bitmap)continue;
+         auto *bitmap=portal_get_texture(render.texture_id);if(!bitmap || bitmap->w<=0 || bitmap->h<=0)continue;
          auto material=materials.find(render.texture_id);
          if(material==materials.end()) {
             RenderSceneMaterial desc{};desc.doubleSided=1;desc.baseColorTexture=WorldSceneCopyTexture(bitmap);
@@ -153,7 +161,10 @@ void importTerrain() {
             desc.opacity=(bitmap->flags & BMF_TRANS)?RenderSceneMasked:RenderSceneOpaque;
             WorldSceneApplyPbrMaps(bitmap,desc);
             const auto handle=RenderSceneCreateMaterial(&desc);if(!handle)continue;
-            terrainMaterials.emplace(render.texture_id,TerrainMaterial{handle,desc,bitmap,bitmap->w,bitmap->h,{}});
+            uint32_t width=bitmap->w,height=bitmap->h;
+            const bool authored=terrainSize(render.texture_id,bitmap,width,height);
+            terrainMaterials.emplace(render.texture_id,TerrainMaterial{handle,desc,bitmap,int(width),int(height),bitmap->w,bitmap->h,authored?width:0,authored?height:0,{}});
+            if(authored)RenderBackendTrace("world-terrain-scale texture=%u source=%s pixels=%dx%d virtual=%ux%u",unsigned(render.texture_id),ResImageSourceName(bitmap).c_str(),bitmap->w,bitmap->h,width,height);
             if(desc.baseColorTexture)terrainFrames.emplace(bitmap,TerrainFrame{desc.baseColorTexture,lgd3d_scene_palette_revision(bitmap)});
             material=materials.emplace(render.texture_id,handle).first;
          }
@@ -164,7 +175,8 @@ void importTerrain() {
          const float uu=dot(render.tex_u,render.tex_u),vv=dot(render.tex_v,render.tex_v),uv=dot(render.tex_u,render.tex_v);
          const float determinant=uu*vv-uv*uv;if(std::abs(determinant)<1e-15f)continue;
          const float textureScale=portal_worldrep_texture_scale>0?portal_worldrep_texture_scale:1;
-         const float us=64.0f/(bitmap->w*textureScale),vs=64.0f/(bitmap->h*textureScale);
+         const auto &dimensions=terrainMaterials.at(render.texture_id);
+         const float us=64.0f/(dimensions.width*textureScale),vs=64.0f/(dimensions.height*textureScale);
          const float ub=portal_wrext_u_base[cellIndex]?portal_wrext_u_base[cellIndex][polygonIndex]:render.u_base/4096.0f;
          const float vb=portal_wrext_v_base[cellIndex]?portal_wrext_v_base[cellIndex][polygonIndex]:render.v_base/4096.0f;
          std::vector<RenderSceneVertex> vertices;std::vector<uint32_t> indices;
@@ -283,12 +295,18 @@ extern "C" void WorldSceneCapture() {
       for(auto &entry:terrainMaterials) {
          auto &material=entry.second;auto *bitmap=portal_get_texture(entry.first);
          if(!bitmap || bitmap->w<=0 || bitmap->h<=0)continue;
-         const bool resized=bitmap->w!=material.width || bitmap->h!=material.height;
+         uint32_t width=bitmap->w,height=bitmap->h;
+         if(material.terrainWidth){width=material.terrainWidth;height=material.terrainHeight;}
+         else if(terrainSize(entry.first,bitmap,width,height)) {
+            material.terrainWidth=width;material.terrainHeight=height;
+         }
+         const bool resized=int(width)!=material.width || int(height)!=material.height;
+         const bool pixelsResized=bitmap->w!=material.pixelWidth || bitmap->h!=material.pixelHeight;
          const auto revision=lgd3d_scene_palette_revision(bitmap);
          auto found=terrainFrames.find(bitmap);
          const bool fresh=found!=terrainFrames.end() && found->second.paletteRevision==revision;
-         if(bitmap==material.frame && !resized && fresh)continue;
-         if(!fresh || resized) {
+         if(bitmap==material.frame && !resized && !pixelsResized && fresh)continue;
+         if(!fresh || pixelsResized) {
             const auto texture=WorldSceneCopyTexture(bitmap);if(!texture)continue;
             terrainFrames[bitmap]={texture,revision};found=terrainFrames.find(bitmap);
          }
@@ -297,14 +315,14 @@ extern "C" void WorldSceneCapture() {
             // when animation repeatedly alternates between frame dimensions.
             for(const auto &mesh:material.meshes) {
                auto vertices=mesh.vertices;
-               for(auto &vertex:vertices){vertex.uv[0]*=float(mesh.width)/bitmap->w;vertex.uv[1]*=float(mesh.height)/bitmap->h;}
+               for(auto &vertex:vertices){vertex.uv[0]*=float(mesh.width)/width;vertex.uv[1]*=float(mesh.height)/height;}
                if(!RenderSceneUpdateVertices(mesh.handle,vertices.data(),uint32_t(vertices.size())))throw 1;
             }
          }
          auto description=material.description;description.baseColorTexture=found->second.handle;
          description.opacity=(bitmap->flags&BMF_TRANS)?RenderSceneMasked:RenderSceneOpaque;
          WorldSceneApplyPbrMaps(bitmap,description);
-         if(RenderSceneUpdateMaterial(material.handle,&description)){material.description=description;material.frame=bitmap;material.width=bitmap->w;material.height=bitmap->h;}
+         if(RenderSceneUpdateMaterial(material.handle,&description)){material.description=description;material.frame=bitmap;material.width=width;material.height=height;material.pixelWidth=bitmap->w;material.pixelHeight=bitmap->h;}
       }
       linkTerrain();
    }catch(...){WorldSceneReset();std::fprintf(stderr,"World-space scene import failed\n");}

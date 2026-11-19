@@ -11,7 +11,9 @@ VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation VK_LAYER_VALIDATE_SYNC=1 \
   python3 tools/world_scene_test/run_checks.py /tmp/dark-world-tests
 ```
 
-This runs five tests: dds, scene, ranges, history and geometry. The DDS check
+This runs six tests: dds, material_metadata, scene, ranges, history and geometry.
+The material metadata check covers square/rectangular terrain scales, invalid
+dimensions, comments and conditional blocks. The DDS check
 covers BC1/2/3/4/5/7, exact channels, pitch and malformed inputs; initialize
 `3rdparty/bcdec` before building. Geometry skips with
 code 77 when its Vulkan descriptor-indexing requirements are unavailable.

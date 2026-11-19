@@ -41,6 +41,23 @@ and terrain mipmap copies. Normal mod/FM search precedence applies. Use
 `content=configured mod_path=/path/to/my-pbr-mod` for a loose mod directory;
 explicit `content=vanilla` excludes mod/patch overrides.
 
+## High-resolution terrain replacements
+
+The modern renderer reads `terrain_scale` from a `.mtl` beside the base texture.
+For example, `fam/Core/COBL2.mtl` can contain:
+
+```text
+terrain_scale 64
+```
+
+This keeps the original 64×64 terrain tiling while sampling the replacement at
+its full resolution, such as 1024×1024. For rectangular textures, use
+`terrain_scale 64 128`. Dimensions must be positive powers of two and no larger
+than the image. Missing or invalid metadata retains image-sized tiling.
+Animation frames share the root texture's virtual dimensions. Material comments
+and `.ifdef`/`.ifndef` conditionals are respected; other material properties are
+not implemented by this metadata reader.
+
 ## DDS formats
 
 Supported: legacy DXT1/3/5 (BC1/2/3), ATI1/ATI2 (BC4/5 UNORM), DX10 BC1/2/3/4/5/7
