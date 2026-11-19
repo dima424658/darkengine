@@ -39,3 +39,8 @@ unrelated entries does not renumber reviewed requirements. Material extraction
 uses directive headings rather than prose words. Materials, Engine stub methods
 and Listener adapter restrictions have explicit source-reviewed classifications;
 these classifications do not imply native runtime or full parity verification.
+
+The inventory now expands DML lifecycle/command requirements and Squirrel service
+methods/message classes. Native and Squirrel requirements use different reference
+keys. Squirrel API-version conditions and overloaded signatures still need review;
+method-name inventory must not be interpreted as API parity.

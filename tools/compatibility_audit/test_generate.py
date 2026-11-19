@@ -20,6 +20,20 @@ class RequirementTests(unittest.TestCase):
                             "STDMETHOD(SetTagBlock)(const char *name) PURE;\n")
             self.assertEqual(list(requirements(path)), ["ConfigIsDefined", "SetTagBlock"])
 
+    def test_squirrel_services_remain_distinct(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "API-reference_services.txt"
+            path.write_text("Engine\n{\n    BOOL ConfigIsDefined(string name);\n}\n"
+                            "Object\n{\n    ObjID Create(object archetype);\n}\n")
+            self.assertEqual(list(requirements(path)), ["Engine.ConfigIsDefined", "Object.Create"])
+
+    def test_dml_syntax_is_not_runtime_support(self):
+        path = Path("DOC/dbmod-sample.dml")
+        status, _ = review(path, "DML1 syntax", "candidate")
+        self.assertEqual(status, "Implemented syntax only; runtime missing")
+        status, _ = review(path, "ObjProp", "candidate")
+        self.assertEqual(status, "Missing runtime DML behavior")
+
     def test_service_review_preserves_native_squirrel_distinction(self):
         status, evidence = review(Path("DOC/script/Quest.txt"), "BinGet", "candidate")
         self.assertEqual(status, "Missing native method")

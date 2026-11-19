@@ -15,7 +15,36 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-3cdf0a49b33d | `DOC/al_reverb.ini` | al_reverb | No exact token; inspect aliases | Unverified |
 | ND-a3667d9ec018 | `DOC/cam_ext.cfg` | cam_ext | `src/framewrk/contentctx.cpp`, `src/framewrk/init.cpp` | Unverified |
 | ND-871b50323d92 | `DOC/cam_mod.ini` | cam_mod | `src/framewrk/init.cpp` | Unverified |
-| ND-58de68ad7af8 | `DOC/dbmod-sample.dml` | dbmod-sample | No exact token; inspect aliases | Unverified |
+| ND-2ad40ab0b9b1 | `DOC/dbmod-sample.dml` | DML1 syntax | `src/framewrk/dbmod/syntax.cpp`, `tools/dbmod_test`: all 88 installed patches parse; no executor | Implemented syntax only; runtime missing |
+| ND-9ee0a30fe4b1 | `DOC/dbmod-sample.dml` | Pre/post phase annotations | `src/framewrk/dbmod/syntax.cpp`, `tools/dbmod_test`: all 88 installed patches parse; no executor | Implemented syntax only; runtime missing |
+| ND-49d116feab7c | `DOC/dbmod-sample.dml` | Mission patch discovery | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-7e3f1a8fd994 | `DOC/dbmod-sample.dml` | Gamesys patch discovery | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-25e0e325217a | `DOC/dbmod-sample.dml` | Resource layer application order | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-b4b02ecac50d | `DOC/dbmod-sample.dml` | Savegame exclusion | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-0977a01778a5 | `DOC/dbmod-sample.dml` | Fingerprint position thresholds | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-c817c0cce1ee | `DOC/dbmod-sample.dml` | Fingerprint positive/negative precedence | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-412d1b9009a4 | `DOC/dbmod-sample.dml` | Fingerprint QVAR masks/comparisons | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-14f1d799b3b0 | `DOC/dbmod-sample.dml` | Fingerprint PROP/NAME/GAM rules | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-411a379d3b5c | `DOC/dbmod-sample.dml` | Fingerprint EXIST/ARCH/SCR/MOD rules | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-bb20fd0798a9 | `DOC/dbmod-sample.dml` | Script inclusion/exclusion | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-45aba033a232 | `DOC/dbmod-sample.dml` | Schema loading | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-7a17bd163eed | `DOC/dbmod-sample.dml` | TagBlock | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-7ac13ea68fab | `DOC/dbmod-sample.dml` | ObjProp | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-1fa1aebb7b12 | `DOC/dbmod-sample.dml` | ObjName | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-a2110d8268bc | `DOC/dbmod-sample.dml` | ObjArch | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-d85bd81593d5 | `DOC/dbmod-sample.dml` | MetaProp | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-8106d48de9cd | `DOC/dbmod-sample.dml` | Link | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-d1c2a1d14adb | `DOC/dbmod-sample.dml` | Receptron | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-30fe255f3fc8 | `DOC/dbmod-sample.dml` | StimSource | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-9465eeb32264 | `DOC/dbmod-sample.dml` | Create/CreateArch | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-461cfd107c7f | `DOC/dbmod-sample.dml` | Destroy/DestroyArch/DestroyArchAll | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-ff701618d5bc | `DOC/dbmod-sample.dml` | QuestVar | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-7298f4b0d1fc | `DOC/dbmod-sample.dml` | Texture/TextureAll | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-4fc6eeea4e90 | `DOC/dbmod-sample.dml` | Duplicate field indices | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-296ee2a5cc46 | `DOC/dbmod-sample.dml` | Object ID remapping | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-8dcea3a16490 | `DOC/dbmod-sample.dml` | apply_dbmods game/editor defaults | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-80927038fdc0 | `DOC/dbmod-sample.dml` | dbmod_load | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-232bc9aaaa04 | `DOC/dbmod-sample.dml` | dbmod_log | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
 | ND-66f913905c56 | `DOC/dromed.cfg` | dromed | `src/entry/main.cpp`, `src/motion/skilltab.cpp` | Unverified |
 | ND-b71ee6367907 | `DOC/fm.cfg` | fm | `src/dark/drkmenu.cpp`, `src/dark/drkmenu.h`, `src/entry/main.cpp` | Unverified |
 | ND-33b02bd8e8ca | `DOC/fm_selector_api.txt` | fm_selector_api | No exact token; inspect aliases | Unverified |
@@ -46,8 +75,8 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-b29ed769f7d3 | `DOC/modders_notes.txt` | Notable Unchanged Limitations | No exact token; inspect aliases | Unverified |
 | ND-fd03d04c28fe | `DOC/modders_notes.txt` | Image Type Priorities | No exact token; inspect aliases | Unverified |
 | ND-b4f79a18fdc0 | `DOC/modders_notes.txt` | Image Alpha | No exact token; inspect aliases | Unverified |
-| ND-720c6f62522f | `DOC/modders_notes.txt` | LG.INI | No exact token; inspect aliases | Unverified |
-| ND-28429cc4c1fe | `DOC/modders_notes.txt` | BND.INI | No exact token; inspect aliases | Unverified |
+| ND-720c6f62522f | `DOC/modders_notes.txt` | LG.INI | `h/ail.h` | Unverified |
+| ND-28429cc4c1fe | `DOC/modders_notes.txt` | BND.INI | `h/ail.h` | Unverified |
 | ND-19d915260d71 | `DOC/modders_notes.txt` | Materials | No exact token; inspect aliases | Unverified |
 | ND-2177ded6e582 | `DOC/modders_notes.txt` | Game Strings | No exact token; inspect aliases | Unverified |
 | ND-030a158bc7c1 | `DOC/modders_notes.txt` | Gamesys and Mission DML Patching/Modding | No exact token; inspect aliases | Unverified |
@@ -66,7 +95,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-2807ea4c5e88 | `DOC/modders_notes.txt` | General DromEd Notes | No exact token; inspect aliases | Unverified |
 | ND-04353c553b92 | `DOC/modders_notes.txt` | HW Rendering in DromEd | No exact token; inspect aliases | Unverified |
 | ND-12bdfc86b5ba | `DOC/modders_notes.txt` | Viewport BG Images in DromEd | No exact token; inspect aliases | Unverified |
-| ND-7ee9248eb04b | `DOC/modders_notes.txt` | Updates to DARKDLGS.DLL | No exact token; inspect aliases | Unverified |
+| ND-7ee9248eb04b | `DOC/modders_notes.txt` | Updates to DARKDLGS.DLL | `src/actreact/aredit.h`, `src/dark/crbowarm.c`, `src/dark/crconsta.c` | Unverified |
 | ND-e9e4bb4685ba | `DOC/modders_notes.txt` | Object Hierarchy dialog | No exact token; inspect aliases | Unverified |
 | ND-e8cf87ba4e06 | `DOC/modders_notes.txt` | Object Properties dialog | No exact token; inspect aliases | Unverified |
 | ND-c53801311088 | `DOC/modders_notes.txt` | Links dialog | No exact token; inspect aliases | Unverified |
@@ -80,7 +109,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-349f7b8cac8d | `DOC/modders_notes.txt` | New Texture Align Mode "AlignExt" | No exact token; inspect aliases | Unverified |
 | ND-1c8161dff58e | `DOC/modders_notes.txt` | UV Mapping a Cylinder | No exact token; inspect aliases | Unverified |
 | ND-123eb1a7fdf9 | `DOC/modders_notes.txt` | Quick-linking | No exact token; inspect aliases | Unverified |
-| ND-b8fb984b36ba | `DOC/modders_notes.txt` | CAMOVL.TXT | No exact token; inspect aliases | Unverified |
+| ND-b8fb984b36ba | `DOC/modders_notes.txt` | CAMOVL.TXT | `src/render/objmodel.c` | Unverified |
 | ND-00adabfb5668 | `DOC/modders_notes.txt` | Stripped Mission Reconstruction | No exact token; inspect aliases | Unverified |
 | ND-d31b6b98ca91 | `DOC/modders_notes.txt` | Changed Edit Flow Group Dialog | No exact token; inspect aliases | Unverified |
 | ND-1e9b5218b132 | `DOC/modders_notes.txt` | Changed Prop: Script->"Trap Control Flags" | No exact token; inspect aliases | Unverified |
@@ -765,8 +794,549 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-432ee13cb345 | `DOC/script/Version.txt` | GetModPath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
 | ND-02f2b269d3a2 | `DOC/script_services.txt` | script_services | No exact token; inspect aliases | Unverified |
 | ND-dc51365aaf1f | `DOC/squirrel_script/API-reference.txt` | API-reference | No exact token; inspect aliases | Unverified |
-| ND-df5947971c74 | `DOC/squirrel_script/API-reference_messages.txt` | API-reference_messages | No exact token; inspect aliases | Unverified |
-| ND-29a26d33bfd9 | `DOC/squirrel_script/API-reference_services.txt` | API-reference_services | No exact token; inspect aliases | Unverified |
+| ND-bffb03ad078c | `DOC/squirrel_script/API-reference_messages.txt` | sScrMsg | `src/ai/aiactlch.cpp`, `src/ai/aifreeze.cpp`, `src/ai/aiscrm.h` | Unverified |
+| ND-fc0a72bae481 | `DOC/squirrel_script/API-reference_messages.txt` | sScrTimerMsg | `src/script/netscrpt.cpp`, `libsrc/script/osm_emu/osm32mod.cpp`, `libsrc/script/scrptbas.h` | Unverified |
+| ND-4cf8a8b9df8c | `DOC/squirrel_script/API-reference_messages.txt` | sTweqMsg | `src/script/engscrpt.h`, `src/script/twqscrpt.cpp`, `src/script/twqscrpt.h` | Unverified |
+| ND-f3b61704f78d | `DOC/squirrel_script/API-reference_messages.txt` | sSoundDoneMsg | `src/script/engscrpt.h`, `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h` | Unverified |
+| ND-ce621ae181c7 | `DOC/squirrel_script/API-reference_messages.txt` | sSchemaDoneMsg | `src/script/engscrpt.h`, `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h` | Unverified |
+| ND-7ddc6d40299c | `DOC/squirrel_script/API-reference_messages.txt` | sSimMsg | `src/script/engscrpt.h`, `src/script/simscrm.h`, `src/sim/simman.cpp` | Unverified |
+| ND-da6dff768b09 | `DOC/squirrel_script/API-reference_messages.txt` | sRoomMsg | `src/script/rooscrpt.cpp`, `src/script/rooscrpt.h`, `src/sim/rooms.cpp` | Unverified |
+| ND-9d8e85d3a85c | `DOC/squirrel_script/API-reference_messages.txt` | sQuestMsg | `src/engfeat/quest.cpp`, `src/script/engscrpt.h`, `src/script/quesscpt.cpp` | Unverified |
+| ND-d9e2ff75bac1 | `DOC/squirrel_script/API-reference_messages.txt` | sMovingTerrainMsg | `src/physics/phmterr.cpp`, `src/physics/phmtscpt.cpp`, `src/physics/phmtscpt.h` | Unverified |
+| ND-a59c64996a69 | `DOC/squirrel_script/API-reference_messages.txt` | sWaypointMsg | `src/physics/phmterr.cpp`, `src/physics/phmtscpt.cpp`, `src/physics/phmtscpt.h` | Unverified |
+| ND-93ee912aaa37 | `DOC/squirrel_script/API-reference_messages.txt` | sMediumTransMsg | `src/ai/ai.cpp`, `src/script/mtscrpt.cpp`, `src/script/mtscrpt.h` | Unverified |
+| ND-cf682efae51b | `DOC/squirrel_script/API-reference_messages.txt` | sFrobMsg | `src/engfeat/frobctrl.cpp`, `src/script/frobscrm.h`, `src/script/frobscrp.h` | Unverified |
+| ND-a744bdad0edb | `DOC/squirrel_script/API-reference_messages.txt` | sDoorMsg | `src/script/drscrpt.cpp`, `src/script/drscrpt.h`, `src/sim/doorphys.cpp` | Unverified |
+| ND-bc0e59fbdfa2 | `DOC/squirrel_script/API-reference_messages.txt` | sDiffScrMsg | `src/dark/diffscrm.h`, `src/dark/drkdiff.cpp` | Unverified |
+| ND-5bde4290543b | `DOC/squirrel_script/API-reference_messages.txt` | sDamageScrMsg | `src/engfeat/dmgmodel.cpp`, `src/script/damgscrm.h`, `src/script/damgscrp.h` | Unverified |
+| ND-015546491433 | `DOC/squirrel_script/API-reference_messages.txt` | sSlayMsg | `src/engfeat/dmgmodel.cpp`, `src/script/damgscrm.h`, `src/script/damgscrp.h` | Unverified |
+| ND-ec89f99eb962 | `DOC/squirrel_script/API-reference_messages.txt` | sContainerScrMsg | `src/engfeat/contain.cpp`, `src/script/contscrm.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-63a2841df312 | `DOC/squirrel_script/API-reference_messages.txt` | sContainedScrMsg | `src/engfeat/contain.cpp`, `src/script/contscrm.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-76b2e7d06db7 | `DOC/squirrel_script/API-reference_messages.txt` | sCombineScrMsg | `src/engfeat/contain.cpp`, `src/script/contscrm.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-4e12cf6ddb10 | `DOC/squirrel_script/API-reference_messages.txt` | sContainMsg | `src/script/contscpt.h` | Unverified |
+| ND-5d544326383b | `DOC/squirrel_script/API-reference_messages.txt` | sBodyMsg | `src/ai/aiscrabl.cpp`, `src/motion/mvrutils.cpp`, `src/motion/puppet.cpp` | Unverified |
+| ND-f8e1071a763d | `DOC/squirrel_script/API-reference_messages.txt` | sAttackMsg | `src/engfeat/weapcb.cpp`, `src/script/atkscrpt.cpp`, `src/script/atkscrpt.h` | Unverified |
+| ND-fd593a3b84bb | `DOC/squirrel_script/API-reference_messages.txt` | sAISignalMsg | `src/ai/aiscrabl.cpp`, `src/ai/aiscrm.h`, `src/ai/aiscrpt.cpp` | Unverified |
+| ND-e3be99564d9c | `DOC/squirrel_script/API-reference_messages.txt` | sAIPatrolPointMsg | `src/ai/aipatrol.cpp`, `src/ai/aiscrm.h`, `src/ai/aiscrpt.cpp` | Unverified |
+| ND-053e89080883 | `DOC/squirrel_script/API-reference_messages.txt` | sAIAlertnessMsg | `src/ai/aiscrabl.cpp`, `src/ai/aiscrm.h`, `src/ai/aiscrpt.cpp` | Unverified |
+| ND-c98cf61b2601 | `DOC/squirrel_script/API-reference_messages.txt` | sAIHighAlertMsg | `src/ai/aiscrabl.cpp`, `src/ai/aiscrm.h`, `src/ai/aiscrpt.cpp` | Unverified |
+| ND-5fded2d66b7a | `DOC/squirrel_script/API-reference_messages.txt` | sAIModeChangeMsg | `src/ai/aiscrabl.cpp`, `src/ai/aiscrm.h`, `src/ai/aiscrpt.cpp` | Unverified |
+| ND-d7afb1b354fa | `DOC/squirrel_script/API-reference_messages.txt` | sAIObjActResultMsg | `src/ai/aiscrabl.cpp`, `src/ai/aiscrm.h`, `src/ai/aiscrpt.cpp` | Unverified |
+| ND-248b39449b88 | `DOC/squirrel_script/API-reference_messages.txt` | sPhysMsg | `src/physics/phmsg.cpp`, `src/physics/phnet.cpp`, `src/physics/phscrpt.cpp` | Unverified |
+| ND-ab6ac56cc517 | `DOC/squirrel_script/API-reference_messages.txt` | sStimMsg | `src/script/arscript.cpp`, `src/script/arscrm.h`, `src/script/arscrp.h` | Unverified |
+| ND-793b058d1ffc | `DOC/squirrel_script/API-reference_messages.txt` | sReportMsg | `src/framewrk/report.cpp`, `src/script/repscrpt.h` | Unverified |
+| ND-2c92906a50c9 | `DOC/squirrel_script/API-reference_messages.txt` | sPropNotifyMsg | No exact token; inspect aliases | Unverified |
+| ND-afb4ae76db9c | `DOC/squirrel_script/API-reference_messages.txt` | sObjNotifyMsg | No exact token; inspect aliases | Unverified |
+| ND-e90431c6ad08 | `DOC/squirrel_script/API-reference_messages.txt` | sLinkNotifyMsg | No exact token; inspect aliases | Unverified |
+| ND-9e3293420f08 | `DOC/squirrel_script/API-reference_messages.txt` | sTraitNotifyMsg | No exact token; inspect aliases | Unverified |
+| ND-796ed1c914ba | `DOC/squirrel_script/API-reference_messages.txt` | sDarkGameModeScrMsg | `src/dark/drkgame.cpp`, `src/dark/drkscrm.h` | Unverified |
+| ND-8d7a2e2207b5 | `DOC/squirrel_script/API-reference_messages.txt` | sPickStateScrMsg | `src/dark/picklock.cpp`, `src/dark/pickscrm.h` | Unverified |
+| ND-fcc040dfa222 | `DOC/squirrel_script/API-reference_messages.txt` | sYorNMsg | `src/deepc/scripts/dpcscrm.h`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
+| ND-8fecfc300705 | `DOC/squirrel_script/API-reference_messages.txt` | sKeypadMsg | `src/deepc/game/dpckeypd.cpp`, `src/deepc/scripts/dpcscrm.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-1d3a91f6eadb | `DOC/squirrel_script/API-reference_services.txt` | Version.GetAppName | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-fd92b6af6efa | `DOC/squirrel_script/API-reference_services.txt` | Version.GetVersion | `src/dark/drkmislp.cpp`, `src/dark/stubfile.h`, `src/deepc/game/dpcmain.cpp` | Unverified |
+| ND-28acffdcd2d4 | `DOC/squirrel_script/API-reference_services.txt` | Version.IsEditor | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-c438debe6c60 | `DOC/squirrel_script/API-reference_services.txt` | Version.GetGame | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b7055a51ecf4 | `DOC/squirrel_script/API-reference_services.txt` | Version.GetGamsys | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-67f03f7accbd | `DOC/squirrel_script/API-reference_services.txt` | Version.GetMap | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-181909ba0133 | `DOC/squirrel_script/API-reference_services.txt` | Version.GetCurrentFM | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-e2a5f0bca2b9 | `DOC/squirrel_script/API-reference_services.txt` | Version.GetCurrentFMPath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-a7a39067565d | `DOC/squirrel_script/API-reference_services.txt` | Version.FMizeRelativePath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-1531fc2e47ce | `DOC/squirrel_script/API-reference_services.txt` | Version.FMizePath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-e381f4e88afd | `DOC/squirrel_script/API-reference_services.txt` | Version.GetModPath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b831363b62d6 | `DOC/squirrel_script/API-reference_services.txt` | Engine.ConfigIsDefined | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-aa067c22bddd | `DOC/squirrel_script/API-reference_services.txt` | Engine.ConfigGetInt | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-baa36f232521 | `DOC/squirrel_script/API-reference_services.txt` | Engine.ConfigGetFloat | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/script/engscrpt.cpp` | Unverified |
+| ND-ae90556d7cfc | `DOC/squirrel_script/API-reference_services.txt` | Engine.ConfigGetRaw | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-ae3b4e8c67dc | `DOC/squirrel_script/API-reference_services.txt` | Engine.BindingGetFloat | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/script/engscrpt.cpp` | Unverified |
+| ND-ec6cae7f8a15 | `DOC/squirrel_script/API-reference_services.txt` | Engine.FindFileInPath | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-4b118fa7d374 | `DOC/squirrel_script/API-reference_services.txt` | Engine.IsRunningDX6 | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-c0e8b07fc006 | `DOC/squirrel_script/API-reference_services.txt` | Engine.GetCanvasSize | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-36c60e045ad7 | `DOC/squirrel_script/API-reference_services.txt` | Engine.GetAspectRatio | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-10e33605bcf6 | `DOC/squirrel_script/API-reference_services.txt` | Engine.GetFog | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-5c3339d3f6a3 | `DOC/squirrel_script/API-reference_services.txt` | Engine.SetFog | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/lgd3d/vulkan_render_backend.cpp` | Unverified |
+| ND-d7ab6a302773 | `DOC/squirrel_script/API-reference_services.txt` | Engine.GetFogZone | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-537f83f69561 | `DOC/squirrel_script/API-reference_services.txt` | Engine.SetFogZone | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-16e3261ef985 | `DOC/squirrel_script/API-reference_services.txt` | Engine.GetWeather | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-f3f329d55b4b | `DOC/squirrel_script/API-reference_services.txt` | Engine.SetWeather | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-eea621b4573d | `DOC/squirrel_script/API-reference_services.txt` | Engine.PortalRaycast | `src/ai/aiactlch.cpp`, `src/ai/aiactmrk.cpp`, `src/ai/aicbrnew.cpp` | Unverified |
+| ND-08f90cbb828a | `DOC/squirrel_script/API-reference_services.txt` | Engine.ObjRaycast | `src/ai/aisgtcst.cpp`, `src/dark/drkgame.cpp`, `src/render/objcast.cpp` | Unverified |
+| ND-b1b4f4e2b66a | `DOC/squirrel_script/API-reference_services.txt` | Engine.SetEnvMapZone | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-ff6b6d2d8aea | `DOC/squirrel_script/API-reference_services.txt` | Engine.SetTagBlock | `src/script/engscrpt.cpp`, `src/script/engscrpt.h` | Unverified |
+| ND-38f0ac7eb8e8 | `DOC/squirrel_script/API-reference_services.txt` | Engine.GetTagBlock | `src/script/engscrpt.cpp`, `src/script/engscrpt.h` | Unverified |
+| ND-580ddb51f56e | `DOC/squirrel_script/API-reference_services.txt` | Object.BeginCreate | `src/dark/drkcmbat.cpp`, `src/dark/drkgame.cpp`, `src/dark/drkldout.cpp` | Unverified |
+| ND-5619343f00bb | `DOC/squirrel_script/API-reference_services.txt` | Object.EndCreate | `src/dark/drkcmbat.cpp`, `src/dark/drkgame.cpp`, `src/dark/drkldout.cpp` | Unverified |
+| ND-acad58cb2a0a | `DOC/squirrel_script/API-reference_services.txt` | Object.Create | `src/actreact/propag8n.h`, `src/actreact/stimsens.cpp`, `src/actreact/stimsrc.cpp` | Unverified |
+| ND-373b511c7ba2 | `DOC/squirrel_script/API-reference_services.txt` | Object.Destroy | `src/actreact/ssrclife.cpp`, `src/actreact/stimbase.h`, `src/actreact/stimul8r.cpp` | Unverified |
+| ND-f92df53868b4 | `DOC/squirrel_script/API-reference_services.txt` | Object.Exists | `src/ai/aiactnet.cpp`, `src/ai/aiman.cpp`, `src/ai/aiprrngd.cpp` | Unverified |
+| ND-209ee1ad641a | `DOC/squirrel_script/API-reference_services.txt` | Object.SetName | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `src/sim/room.h` | Unverified |
+| ND-adb364eb2152 | `DOC/squirrel_script/API-reference_services.txt` | Object.GetName | `src/actreact/stimuli.cpp`, `src/ai/ai.cpp`, `src/ai/aiactloc.cpp` | Unverified |
+| ND-40e8ee65949b | `DOC/squirrel_script/API-reference_services.txt` | Object.Named | `src/editor/areapnp.c`, `src/editor/proptest.cpp`, `src/script/objscrpt.cpp` | Unverified |
+| ND-7713d64e370b | `DOC/squirrel_script/API-reference_services.txt` | Object.AddMetaProperty | `src/object/propman.cpp`, `src/object/propman_.h`, `src/script/objscrpt.cpp` | Unverified |
+| ND-9dcad0dd8871 | `DOC/squirrel_script/API-reference_services.txt` | Object.RemoveMetaProperty | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-9895484304c7 | `DOC/squirrel_script/API-reference_services.txt` | Object.HasMetaProperty | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-b34c6ec19508 | `DOC/squirrel_script/API-reference_services.txt` | Object.InheritsFrom | `src/actreact/stimuli.cpp`, `src/actreact/stimuli.h`, `src/actreact/stimuli_.h` | Unverified |
+| ND-ade0ed44259b | `DOC/squirrel_script/API-reference_services.txt` | Object.IsTransient | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-70019405ed21 | `DOC/squirrel_script/API-reference_services.txt` | Object.SetTransience | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-0cd7054f7c08 | `DOC/squirrel_script/API-reference_services.txt` | Object.Position | `src/actreact/mediag8r.cpp`, `src/actreact/reaction.cpp`, `src/actreact/stimtype.h` | Unverified |
+| ND-4a905a3bd207 | `DOC/squirrel_script/API-reference_services.txt` | Object.Facing | `src/ai/aiactmot.h`, `src/ai/aidev.cpp`, `src/ai/aiidle.cpp` | Unverified |
+| ND-1a812965710c | `DOC/squirrel_script/API-reference_services.txt` | Object.Teleport | `src/engfeat/propreac.cpp`, `src/framewrk/gametool.h`, `src/motion/skillset.cpp` | Unverified |
+| ND-adb335484d02 | `DOC/squirrel_script/API-reference_services.txt` | Object.IsPositionValid | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-c46181249a44 | `DOC/squirrel_script/API-reference_services.txt` | Object.FindClosestObjectNamed | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-fb5314239b44 | `DOC/squirrel_script/API-reference_services.txt` | Object.AddMetaPropertyToMany | `src/ai/aiactps.cpp`, `src/script/objscrpt.cpp`, `src/script/objscrpt.h` | Unverified |
+| ND-30232ac5e793 | `DOC/squirrel_script/API-reference_services.txt` | Object.RemoveMetaPropertyFromMany | `src/ai/aiactps.cpp`, `src/script/objscrpt.cpp`, `src/script/objscrpt.h` | Unverified |
+| ND-61e31a1564e0 | `DOC/squirrel_script/API-reference_services.txt` | Object.RenderedThisFrame | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-4dacabaabcb3 | `DOC/squirrel_script/API-reference_services.txt` | Object.ObjectToWorld | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-82dc176cb9fd | `DOC/squirrel_script/API-reference_services.txt` | Object.WorldToObject | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-c900fd642238 | `DOC/squirrel_script/API-reference_services.txt` | Object.CalcRelTransform | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-23579ef6e472 | `DOC/squirrel_script/API-reference_services.txt` | Object.Archetype | `src/deepc/weapon/dpcproj.cpp`, `src/editor/proptest.cpp`, `src/framewrk/netmsg.cpp` | Unverified |
+| ND-8e7a1e22bdb7 | `DOC/squirrel_script/API-reference_services.txt` | Object.SetArchetype | `src/actreact/stimsens.cpp`, `src/actreact/stimuli.cpp`, `src/editor/ged_room.cpp` | Unverified |
+| ND-483a22a9745e | `DOC/squirrel_script/API-reference_services.txt` | Object.FindDescendentsSpatial | No exact token; inspect aliases | Unverified |
+| ND-b60e96f5d486 | `DOC/squirrel_script/API-reference_services.txt` | Object.FindScriptDonor | `src/shock/shkobjsc.cpp`, `src/shock/shkobjsc.h` | Unverified |
+| ND-f6e62f525b4e | `DOC/squirrel_script/API-reference_services.txt` | Object.AnyExist | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-14a56a56a66b | `DOC/squirrel_script/API-reference_services.txt` | Object.GetAll | `src/object/linkarry.cpp`, `src/object/linkarry.h`, `src/object/linkprop.cpp` | Unverified |
+| ND-303309bcc136 | `DOC/squirrel_script/API-reference_services.txt` | Object.GetOne | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-8fba27c9940b | `DOC/squirrel_script/API-reference_services.txt` | Property.Get | `src/actreact/periog8r.cpp`, `src/actreact/propag8r.h`, `src/actreact/reaction.h` | Unverified |
+| ND-90dd0da4e2d5 | `DOC/squirrel_script/API-reference_services.txt` | Property.Set | `src/actreact/propag8r.h`, `src/ai/ai.cpp`, `src/ai/aiactinv.cpp` | Unverified |
+| ND-e9a115b94a0b | `DOC/squirrel_script/API-reference_services.txt` | Property.SetSimple | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-e7325eb87f56 | `DOC/squirrel_script/API-reference_services.txt` | Property.SetLocal | `src/object/propscpt.h`, `src/script/propscpt.cpp`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-6aff16140b9f | `DOC/squirrel_script/API-reference_services.txt` | Property.Add | `src/actreact/contag8r.cpp`, `src/actreact/mediag8r.cpp`, `src/actreact/propag8n.cpp` | Unverified |
+| ND-f31595108df0 | `DOC/squirrel_script/API-reference_services.txt` | Property.Remove | `src/actreact/periog8r.cpp`, `src/actreact/propag8r.h`, `src/actreact/radiag8r.cpp` | Unverified |
+| ND-3ab70ab741fd | `DOC/squirrel_script/API-reference_services.txt` | Property.CopyFrom | `src/object/proparry.h`, `src/object/propscpt.h`, `src/script/propscpt.cpp` | Unverified |
+| ND-630cca5f5aac | `DOC/squirrel_script/API-reference_services.txt` | Property.Possessed | `src/object/propscpt.h`, `src/script/propscpt.cpp`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-d82a7fcdcefd | `DOC/squirrel_script/API-reference_services.txt` | Property.PossessedSimple | No exact token; inspect aliases | Unverified |
+| ND-5819e4050e95 | `DOC/squirrel_script/API-reference_services.txt` | Property.GetIndexed | No exact token; inspect aliases | Unverified |
+| ND-da20fb1ad0a3 | `DOC/squirrel_script/API-reference_services.txt` | Property.SetIndexed | No exact token; inspect aliases | Unverified |
+| ND-7e0dfbf7e102 | `DOC/squirrel_script/API-reference_services.txt` | Property.SetLocalIndexed | No exact token; inspect aliases | Unverified |
+| ND-f4942a8174e6 | `DOC/squirrel_script/API-reference_services.txt` | Physics.SubscribeMsg | `src/editor/quesedit.cpp`, `src/engfeat/quest.cpp`, `src/engfeat/questapi.h` | Unverified |
+| ND-0cb430b3889a | `DOC/squirrel_script/API-reference_services.txt` | Physics.UnsubscribeMsg | `src/editor/quesedit.cpp`, `src/engfeat/quest.cpp`, `src/engfeat/questapi.h` | Unverified |
+| ND-8076d8157996 | `DOC/squirrel_script/API-reference_services.txt` | Physics.LaunchProjectile | `src/deepc/weapon/dpcplgun.cpp`, `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h` | Unverified |
+| ND-7ecba96a0c56 | `DOC/squirrel_script/API-reference_services.txt` | Physics.SetVelocity | `src/motion/creature.h`, `src/motion/motorapi.h`, `src/physics/phclimb.cpp` | Unverified |
+| ND-d3957b2f18ca | `DOC/squirrel_script/API-reference_services.txt` | Physics.GetVelocity | `src/engfeat/weaphit.cpp`, `src/engfeat/weapreac.cpp`, `src/physics/objmedia.cpp` | Unverified |
+| ND-b2a006ac76fb | `DOC/squirrel_script/API-reference_services.txt` | Physics.ControlVelocity | `src/physics/phcore.cpp`, `src/physics/phctrl.cpp`, `src/physics/phctrl.h` | Unverified |
+| ND-9321f2bbb599 | `DOC/squirrel_script/API-reference_services.txt` | Physics.StopControlVelocity | `src/physics/phcore.cpp`, `src/physics/phctrl.cpp`, `src/physics/phctrl.h` | Unverified |
+| ND-d400cc2c1d09 | `DOC/squirrel_script/API-reference_services.txt` | Physics.SetGravity | `src/physics/phmod.h`, `src/physics/phprop.cpp`, `src/physics/phscrpt.cpp` | Unverified |
+| ND-8ec9c3acc5ea | `DOC/squirrel_script/API-reference_services.txt` | Physics.GetGravity | `src/physics/phcore.cpp`, `src/physics/phmod.h`, `src/physics/phprop.cpp` | Unverified |
+| ND-2b2838c2c4ec | `DOC/squirrel_script/API-reference_services.txt` | Physics.HasPhysics | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-0970fef4f97c | `DOC/squirrel_script/API-reference_services.txt` | Physics.IsSphere | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-326e5efa6ba5 | `DOC/squirrel_script/API-reference_services.txt` | Physics.IsOBB | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-629efbbf5e1a | `DOC/squirrel_script/API-reference_services.txt` | Physics.ControlCurrentLocation | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-4530295b3f5f | `DOC/squirrel_script/API-reference_services.txt` | Physics.ControlCurrentRotation | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-0aafd39c38ce | `DOC/squirrel_script/API-reference_services.txt` | Physics.ControlCurrentPosition | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-fb3f546e544e | `DOC/squirrel_script/API-reference_services.txt` | Physics.DeregisterModel | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-3a5171c7c6a7 | `DOC/squirrel_script/API-reference_services.txt` | Physics.PlayerMotionSetOffset | `src/engfeat/weapreac.cpp`, `src/physics/phmoapi.cpp`, `src/physics/phmoapi.h` | Unverified |
+| ND-78dbde222d65 | `DOC/squirrel_script/API-reference_services.txt` | Physics.Activate | `src/ai/aidev.cpp`, `src/ai/aiprdev.cpp`, `src/dark/drkpwups.cpp` | Unverified |
+| ND-6d1ec2024c55 | `DOC/squirrel_script/API-reference_services.txt` | Physics.ValidPos | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-0a5c31830ea8 | `DOC/squirrel_script/API-reference_services.txt` | Physics.IsRope | `src/physics/phclimb.cpp`, `src/physics/phcore.cpp`, `src/physics/phmod.cpp` | Unverified |
+| ND-677d26c328ee | `DOC/squirrel_script/API-reference_services.txt` | Physics.GetClimbingObject | `src/physics/phscrpt.cpp`, `src/physics/phscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-d11f8e690a04 | `DOC/squirrel_script/API-reference_services.txt` | Link.Create | `src/actreact/propag8n.h`, `src/actreact/stimsens.cpp`, `src/actreact/stimsrc.cpp` | Unverified |
+| ND-8492ac16c29e | `DOC/squirrel_script/API-reference_services.txt` | Link.Destroy | `src/actreact/ssrclife.cpp`, `src/actreact/stimbase.h`, `src/actreact/stimul8r.cpp` | Unverified |
+| ND-30187999bc6c | `DOC/squirrel_script/API-reference_services.txt` | Link.AnyExist | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-542695e76450 | `DOC/squirrel_script/API-reference_services.txt` | Link.GetAll | `src/object/linkarry.cpp`, `src/object/linkarry.h`, `src/object/linkprop.cpp` | Unverified |
+| ND-6985e082c41a | `DOC/squirrel_script/API-reference_services.txt` | Link.GetOne | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-68105aee87cf | `DOC/squirrel_script/API-reference_services.txt` | Link.BroadcastOnAllLinks | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-b93f590b2634 | `DOC/squirrel_script/API-reference_services.txt` | Link.BroadcastOnAllLinksData | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-3c27619afdc4 | `DOC/squirrel_script/API-reference_services.txt` | Link.CreateMany | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-9a16a009d56a | `DOC/squirrel_script/API-reference_services.txt` | Link.DestroyMany | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-e584b89e67fb | `DOC/squirrel_script/API-reference_services.txt` | Link.GetAllInherited | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-70d452b9321b | `DOC/squirrel_script/API-reference_services.txt` | Link.GetAllInheritedSingle | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-523f5c4aa1cb | `DOC/squirrel_script/API-reference_services.txt` | Link.BroadcastOnAllLinksMany | No exact token; inspect aliases | Unverified |
+| ND-40c0a54dbc2f | `DOC/squirrel_script/API-reference_services.txt` | LinkTools.LinkKindNamed | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-e78a3607cf6e | `DOC/squirrel_script/API-reference_services.txt` | LinkTools.LinkKindName | `src/script/linkscpt.cpp`, `src/script/linkscpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-444fcaa9d0ee | `DOC/squirrel_script/API-reference_services.txt` | LinkTools.LinkGet | `src/object/link.cpp`, `src/object/link.h`, `src/script/linkscpt.cpp` | Unverified |
+| ND-e8f23e62ce8c | `DOC/squirrel_script/API-reference_services.txt` | LinkTools.LinkGetData | `src/ai/aisuslnk.cpp`, `src/object/link.cpp`, `src/object/link.h` | Unverified |
+| ND-a6776365641d | `DOC/squirrel_script/API-reference_services.txt` | LinkTools.LinkSetData | `src/object/link.cpp`, `src/object/link.h`, `src/script/linkscpt.cpp` | Unverified |
+| ND-6b261eadabf2 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.React | `src/actreact/arloop.h`, `src/actreact/contag8r.cpp`, `src/actreact/periog8r.cpp` | Unverified |
+| ND-69d6e52d13e9 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.Stimulate | `src/actreact/stimul8r.cpp`, `src/editor/arcmd.cpp`, `src/script/arscript.cpp` | Unverified |
+| ND-3f7200663095 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.GetReactionNamed | `src/actreact/reactio_.h`, `src/actreact/reaction.cpp`, `src/actreact/reaction.h` | Unverified |
+| ND-6a8ed80dc604 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.GetReactionName | `src/script/arscript.cpp`, `src/script/arscrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-97b40d22d838 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.SubscribeToStimulus | `src/script/arscript.cpp`, `src/script/arscrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-6c393da2d659 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.UnsubscribeToStimulus | `src/script/arscript.cpp`, `src/script/arscrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-6449e261f408 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.BeginContact | `src/actreact/periog8r.cpp`, `src/actreact/periog8r.h`, `src/script/arscript.cpp` | Unverified |
+| ND-2eb7ac6f2247 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.EndContact | `src/actreact/mediag8r.cpp`, `src/actreact/periog8r.cpp`, `src/actreact/periog8r.h` | Unverified |
+| ND-649185a57d49 | `DOC/squirrel_script/API-reference_services.txt` | ActReact.SetSingleSensorContact | `src/actreact/mediag8r.cpp`, `src/actreact/periog8r.cpp`, `src/actreact/periog8r.h` | Unverified |
+| ND-2282ccb1014d | `DOC/squirrel_script/API-reference_services.txt` | Data.GetString | `src/deepc/ui/dpcnetui.cpp`, `src/script/datascrs.cpp`, `src/script/datascrs.h` | Unverified |
+| ND-8d35dbcfaa76 | `DOC/squirrel_script/API-reference_services.txt` | Data.GetObjString | `src/script/datascrs.cpp`, `src/script/datascrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-8e0d2892e8ab | `DOC/squirrel_script/API-reference_services.txt` | Data.DirectRand | `src/script/datascrs.cpp`, `src/script/datascrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-0e54d381333c | `DOC/squirrel_script/API-reference_services.txt` | Data.RandInt | `src/script/datascrs.cpp`, `src/script/datascrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-9192aa2d1e2a | `DOC/squirrel_script/API-reference_services.txt` | Data.RandFlt0to1 | `src/script/datascrs.cpp`, `src/script/datascrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-21f1689fd125 | `DOC/squirrel_script/API-reference_services.txt` | Data.RandFltNeg1to1 | `src/script/datascrs.cpp`, `src/script/datascrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-1f312783a051 | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeGotoObjLoc | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
+| ND-bee7499b3bf2 | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeFrobObjWith | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-62ba9c335e9f | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeFrobObj | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
+| ND-e4d3e05c73c2 | `DOC/squirrel_script/API-reference_services.txt` | AI.GetAlertLevel | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
+| ND-6bb94ebaaa4c | `DOC/squirrel_script/API-reference_services.txt` | AI.SetMinimumAlert | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
+| ND-de28d918e66c | `DOC/squirrel_script/API-reference_services.txt` | AI.ClearGoals | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
+| ND-b1960cd78b1d | `DOC/squirrel_script/API-reference_services.txt` | AI.SetScriptFlags | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
+| ND-e447b085eee6 | `DOC/squirrel_script/API-reference_services.txt` | AI.ClearAlertness | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
+| ND-5356fd09c83a | `DOC/squirrel_script/API-reference_services.txt` | AI.Signal | `src/ai/ai.cpp`, `src/ai/aiactps.cpp`, `src/ai/aibasabl.h` | Unverified |
+| ND-e0d0700ff167 | `DOC/squirrel_script/API-reference_services.txt` | AI.StartConversation | `src/ai/aiapi.h`, `src/ai/aicmds.cpp`, `src/ai/aiman.cpp` | Unverified |
+| ND-452fe9e8dcaf | `DOC/squirrel_script/API-reference_services.txt` | AI.Stun | `src/ai/aistun.cpp`, `src/dark/drkpwups.cpp`, `src/deepc/ai/dpcstnrc.cpp` | Unverified |
+| ND-aa05b404e6e2 | `DOC/squirrel_script/API-reference_services.txt` | AI.IsStunned | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
+| ND-542208ae779c | `DOC/squirrel_script/API-reference_services.txt` | AI.UnStun | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
+| ND-6a5d9b37f4ed | `DOC/squirrel_script/API-reference_services.txt` | AI.Freeze | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiapi.h` | Unverified |
+| ND-695438b7a065 | `DOC/squirrel_script/API-reference_services.txt` | AI.IsFrozen | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/motion/creature.cpp` | Unverified |
+| ND-2875b1fe0dad | `DOC/squirrel_script/API-reference_services.txt` | AI.UnFreeze | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/motion/creature.cpp` | Unverified |
+| ND-a32bb54b54c2 | `DOC/squirrel_script/API-reference_services.txt` | AI.SetFaceVisage | No exact token; inspect aliases | Unverified |
+| ND-d1325e845cea | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayAtLocation | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-450f4fc82aa8 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayAtObject | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-f09d70879aad | `DOC/squirrel_script/API-reference_services.txt` | Sound.Play | `src/ai/aiactps.cpp`, `src/ai/aiacttyp.h`, `src/ai/aideath.cpp` | Unverified |
+| ND-d8c6a46e4091 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayAmbient | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-6491ac3b1cad | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlaySchemaAtLocation | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-994d053b9b1e | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlaySchemaAtObject | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-33b6b8784391 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlaySchema | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-8c4544b0da11 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlaySchemaAmbient | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-10ac21819ff7 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayEnvSchema | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-9e31ba191e9a | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayAtLocationNet | No exact token; inspect aliases | Unverified |
+| ND-bb758594ab2a | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayAtObjectNet | No exact token; inspect aliases | Unverified |
+| ND-aa9a7fd028c3 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayNet | No exact token; inspect aliases | Unverified |
+| ND-7a0f381c0c12 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayAmbientNet | No exact token; inspect aliases | Unverified |
+| ND-97875c96fd46 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlaySchemaAtLocationNet | No exact token; inspect aliases | Unverified |
+| ND-6bd8a2504d48 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlaySchemaAtObjectNet | No exact token; inspect aliases | Unverified |
+| ND-c62c65724d8d | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlaySchemaNet | No exact token; inspect aliases | Unverified |
+| ND-cfd2ca5b92bf | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlaySchemaAmbientNet | No exact token; inspect aliases | Unverified |
+| ND-513b2fb1d919 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayEnvSchemaNet | No exact token; inspect aliases | Unverified |
+| ND-84a43f02f84b | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayVoiceOver | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-2e5bc5f3a782 | `DOC/squirrel_script/API-reference_services.txt` | Sound.Halt | `src/ai/aimttest.cpp`, `src/ai/aiqdeath.cpp`, `src/ai/aisound.h` | Unverified |
+| ND-3634921c820a | `DOC/squirrel_script/API-reference_services.txt` | Sound.HaltSchema | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-4b2870c73d27 | `DOC/squirrel_script/API-reference_services.txt` | Sound.HaltSpeech | `src/script/sndscrpt.cpp`, `src/script/sndscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-fd3eb02215be | `DOC/squirrel_script/API-reference_services.txt` | Sound.PreLoad | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiapicmp.h` | Unverified |
+| ND-193e795cb32d | `DOC/squirrel_script/API-reference_services.txt` | Sound.SongChange | No exact token; inspect aliases | Unverified |
+| ND-4c10dedc500e | `DOC/squirrel_script/API-reference_services.txt` | Sound.SongSetTheme | No exact token; inspect aliases | Unverified |
+| ND-0c4975508bf4 | `DOC/squirrel_script/API-reference_services.txt` | AnimTexture.ChangeTexture | `src/deepc/object/dpcdmg.cpp`, `src/render/antxscpt.cpp`, `src/render/antxscpt.h` | Unverified |
+| ND-8ffd110f347f | `DOC/squirrel_script/API-reference_services.txt` | AnimTexture.ChangeTextureLoc | No exact token; inspect aliases | Unverified |
+| ND-c26b50b9a1fb | `DOC/squirrel_script/API-reference_services.txt` | AnimTexture.ChangeAllTextures | No exact token; inspect aliases | Unverified |
+| ND-50b5982ce3fd | `DOC/squirrel_script/API-reference_services.txt` | AnimTexture.ChangeSingleTexture | No exact token; inspect aliases | Unverified |
+| ND-f5d56d2b95a9 | `DOC/squirrel_script/API-reference_services.txt` | PGroup.SetActive | `src/ai/aipath.cpp`, `src/ai/aipath.h`, `src/ai/aipthfnd.cpp` | Unverified |
+| ND-6540ac99ed39 | `DOC/squirrel_script/API-reference_services.txt` | Camera.StaticAttach | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-3031c92f087e | `DOC/squirrel_script/API-reference_services.txt` | Camera.DynamicAttach | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-f603555603cb | `DOC/squirrel_script/API-reference_services.txt` | Camera.CameraReturn | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-0f318ee12f17 | `DOC/squirrel_script/API-reference_services.txt` | Camera.ForceCameraReturn | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-5dcf3f3302eb | `DOC/squirrel_script/API-reference_services.txt` | Camera.GetCameraParent | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-db77dcfbd08b | `DOC/squirrel_script/API-reference_services.txt` | Camera.IsRemote | `src/ai/aiapiiai.h`, `src/physics/phcore.cpp`, `src/physics/phmod.h` | Unverified |
+| ND-5a361a67efc1 | `DOC/squirrel_script/API-reference_services.txt` | Camera.GetPosition | `src/physics/phmod.h`, `src/script/camscrpt.cpp`, `src/script/camscrs.h` | Unverified |
+| ND-1bfbcc0e7305 | `DOC/squirrel_script/API-reference_services.txt` | Camera.GetFacing | `src/ai/aiactmot.h`, `src/ai/aimovmot.cpp`, `src/script/camscrpt.cpp` | Unverified |
+| ND-a2c35b66326a | `DOC/squirrel_script/API-reference_services.txt` | Camera.CameraToWorld | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-eb67dce35d8e | `DOC/squirrel_script/API-reference_services.txt` | Camera.WorldToCamera | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-0ed927f8887f | `DOC/squirrel_script/API-reference_services.txt` | Camera.LockMovement | `src/script/camscrpt.cpp`, `src/script/camscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b563736af753 | `DOC/squirrel_script/API-reference_services.txt` | Light.Set | `src/actreact/propag8r.h`, `src/ai/ai.cpp`, `src/ai/aiactinv.cpp` | Unverified |
+| ND-b741369ba66e | `DOC/squirrel_script/API-reference_services.txt` | Light.SetMode | `src/ai/ai.cpp`, `src/ai/aiapiiai.h`, `src/dark/drkscrs.cpp` | Unverified |
+| ND-9f27c8cd3363 | `DOC/squirrel_script/API-reference_services.txt` | Light.Activate | `src/ai/aidev.cpp`, `src/ai/aiprdev.cpp`, `src/dark/drkpwups.cpp` | Unverified |
+| ND-18843853f9f0 | `DOC/squirrel_script/API-reference_services.txt` | Light.Deactivate | `src/ai/aidev.cpp`, `src/deepc/player/dpcmelee.cpp`, `src/physics/phmod.cpp` | Unverified |
+| ND-055d39c4f8d1 | `DOC/squirrel_script/API-reference_services.txt` | Light.Subscribe | `src/framewrk/subscrip.cpp`, `src/framewrk/subscrip.h`, `src/physics/phlisten.cpp` | Unverified |
+| ND-e774485889bd | `DOC/squirrel_script/API-reference_services.txt` | Light.Unsubscribe | `src/engfeat/questapi.h`, `src/framewrk/subscrip.cpp`, `src/framewrk/subscrip.h` | Unverified |
+| ND-66ba958eb45d | `DOC/squirrel_script/API-reference_services.txt` | Light.GetMode | `src/ai/ai.cpp`, `src/ai/aiactnet.cpp`, `src/ai/aiapiiai.h` | Unverified |
+| ND-f1576b0a01cc | `DOC/squirrel_script/API-reference_services.txt` | Door.CloseDoor | `src/script/drscrpt.cpp`, `src/script/drscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-7385e92f56f1 | `DOC/squirrel_script/API-reference_services.txt` | Door.OpenDoor | `src/deepc/ai/dpcaidmr.cpp`, `src/deepc/ai/dpcaidmr.h`, `src/script/drscrpt.cpp` | Unverified |
+| ND-09a424ae88fd | `DOC/squirrel_script/API-reference_services.txt` | Door.GetDoorState | `src/script/drscrpt.cpp`, `src/script/drscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b989fa6011f6 | `DOC/squirrel_script/API-reference_services.txt` | Door.ToggleDoor | `src/script/drscrpt.cpp`, `src/script/drscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-34b311616a7f | `DOC/squirrel_script/API-reference_services.txt` | Door.SetBlocking | `src/script/drscrpt.cpp`, `src/script/drscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-c77fd1a28ac4 | `DOC/squirrel_script/API-reference_services.txt` | Door.GetSoundBlocking | `src/script/drscrpt.cpp`, `src/script/drscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-ae4ee385da1e | `DOC/squirrel_script/API-reference_services.txt` | Damage.Damage | `src/ai/aibassns.cpp`, `src/ai/aithreat.cpp`, `src/chevkind.h` | Unverified |
+| ND-622b288196b6 | `DOC/squirrel_script/API-reference_services.txt` | Damage.Slay | `src/actreact/contag8r.cpp`, `src/engfeat/dmgprop.cpp`, `src/engfeat/dmgreact.cpp` | Unverified |
+| ND-805fece48304 | `DOC/squirrel_script/API-reference_services.txt` | Damage.Resurrect | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiapi.h` | Unverified |
+| ND-f7cc69c15f05 | `DOC/squirrel_script/API-reference_services.txt` | Container.Add | `src/actreact/contag8r.cpp`, `src/actreact/mediag8r.cpp`, `src/actreact/propag8n.cpp` | Unverified |
+| ND-edd2c97ebdc9 | `DOC/squirrel_script/API-reference_services.txt` | Container.Remove | `src/actreact/periog8r.cpp`, `src/actreact/propag8r.h`, `src/actreact/radiag8r.cpp` | Unverified |
+| ND-3462f1327846 | `DOC/squirrel_script/API-reference_services.txt` | Container.MoveAllContents | `src/dark/drkldout.cpp`, `src/engfeat/contain.cpp`, `src/engfeat/contain.h` | Unverified |
+| ND-4d2b644c01a3 | `DOC/squirrel_script/API-reference_services.txt` | Container.StackAdd | `src/dark/drkwbow.cpp`, `src/deepc/player/dpcplayr.cpp`, `src/engfeat/contain.cpp` | Unverified |
+| ND-0ea93071cbec | `DOC/squirrel_script/API-reference_services.txt` | Container.IsHeld | `src/dark/drkcmbat.cpp`, `src/dark/drkinvui.cpp`, `src/dark/drkplinv.cpp` | Unverified |
+| ND-9d28140fc9ac | `DOC/squirrel_script/API-reference_services.txt` | Quest.SubscribeMsg | `src/editor/quesedit.cpp`, `src/engfeat/quest.cpp`, `src/engfeat/questapi.h` | Unverified |
+| ND-a4bfbe7716b1 | `DOC/squirrel_script/API-reference_services.txt` | Quest.UnsubscribeMsg | `src/editor/quesedit.cpp`, `src/engfeat/quest.cpp`, `src/engfeat/questapi.h` | Unverified |
+| ND-b5d1a5b8c7c5 | `DOC/squirrel_script/API-reference_services.txt` | Quest.Set | `src/actreact/propag8r.h`, `src/ai/ai.cpp`, `src/ai/aiactinv.cpp` | Unverified |
+| ND-2e5a5226ea4d | `DOC/squirrel_script/API-reference_services.txt` | Quest.Get | `src/actreact/periog8r.cpp`, `src/actreact/propag8r.h`, `src/actreact/reaction.h` | Unverified |
+| ND-8e58d8aaa166 | `DOC/squirrel_script/API-reference_services.txt` | Quest.Exists | `src/ai/aiactnet.cpp`, `src/ai/aiman.cpp`, `src/ai/aiprrngd.cpp` | Unverified |
+| ND-fc2826fde379 | `DOC/squirrel_script/API-reference_services.txt` | Quest.Delete | `src/actreact/contag8r.cpp`, `src/actreact/periog8r.cpp`, `src/actreact/propag8r.h` | Unverified |
+| ND-cc1b7ccb1ba7 | `DOC/squirrel_script/API-reference_services.txt` | Quest.GetAllVars | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-6696394eb089 | `DOC/squirrel_script/API-reference_services.txt` | Quest.BinSet | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-269130efb793 | `DOC/squirrel_script/API-reference_services.txt` | Quest.BinGet | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-025933c74ff4 | `DOC/squirrel_script/API-reference_services.txt` | Quest.BinSetTable | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-6ccb0cd48c21 | `DOC/squirrel_script/API-reference_services.txt` | Quest.BinGetTable | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-82f100bf6f90 | `DOC/squirrel_script/API-reference_services.txt` | Quest.BinExists | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-9ab1fc67a429 | `DOC/squirrel_script/API-reference_services.txt` | Quest.BinDelete | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-aafd71d6039f | `DOC/squirrel_script/API-reference_services.txt` | Quest.GetFirst | `src/ai/aiapi.h`, `src/ai/aibassns.cpp`, `src/ai/aicnvman.cpp` | Unverified |
+| ND-167292281d9e | `DOC/squirrel_script/API-reference_services.txt` | Quest.GetNext | `src/ai/aiapi.h`, `src/ai/aibassns.cpp`, `src/ai/aicnvman.cpp` | Unverified |
+| ND-0468499f4d2a | `DOC/squirrel_script/API-reference_services.txt` | Puppet.PlayMotion | `src/ai/aiscrabl.cpp`, `src/ai/aiscrabl.h`, `src/motion/cbllmapi.h` | Unverified |
+| ND-c49d636be2df | `DOC/squirrel_script/API-reference_services.txt` | Locked.IsLocked | `src/render/scrnman.c`, `src/script/lockscpt.cpp`, `src/script/lockscpt.h` | Unverified |
+| ND-f8a2f72757f8 | `DOC/squirrel_script/API-reference_services.txt` | Key.TryToUseKey | `src/engfeat/keysys.cpp`, `src/engfeat/keysys.h`, `src/script/keyscpt.cpp` | Unverified |
+| ND-00b017d57fea | `DOC/squirrel_script/API-reference_services.txt` | Networking.Broadcast | `src/ai/aiactjr.h`, `src/ai/aiactjs.h`, `src/ai/aiactjsc.h` | Unverified |
+| ND-c70bc6e48fe0 | `DOC/squirrel_script/API-reference_services.txt` | Networking.SendToProxy | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-ed11a8ab75b1 | `DOC/squirrel_script/API-reference_services.txt` | Networking.TakeOver | `src/physics/phnet.cpp`, `src/script/netscrpt.cpp`, `src/script/netscrpt.h` | Unverified |
+| ND-903c69754a47 | `DOC/squirrel_script/API-reference_services.txt` | Networking.GiveTo | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b97723a38062 | `DOC/squirrel_script/API-reference_services.txt` | Networking.IsPlayer | `src/physics/phclimb.cpp`, `src/physics/phcontct.cpp`, `src/physics/phcore.cpp` | Unverified |
+| ND-cb91d5a0dd32 | `DOC/squirrel_script/API-reference_services.txt` | Networking.IsMultiplayer | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-50d405116960 | `DOC/squirrel_script/API-reference_services.txt` | Networking.SetProxyOneShotTimer | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b3c64a714b50 | `DOC/squirrel_script/API-reference_services.txt` | Networking.FirstPlayer | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-ffe99d620371 | `DOC/squirrel_script/API-reference_services.txt` | Networking.NextPlayer | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-6b4a2cbc8fa9 | `DOC/squirrel_script/API-reference_services.txt` | Networking.Suspend | `src/ai/aigunact.cpp`, `src/ai/aipatrol.cpp`, `src/deepc/ai/dpcaigna.cpp` | Unverified |
+| ND-19e1ec3607a0 | `DOC/squirrel_script/API-reference_services.txt` | Networking.Resume | `src/framewrk/netman.cpp`, `src/object/netman.h`, `src/script/netscrpt.cpp` | Unverified |
+| ND-f206566dd343 | `DOC/squirrel_script/API-reference_services.txt` | Networking.HostedHere | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-f35fe8aa7575 | `DOC/squirrel_script/API-reference_services.txt` | Networking.IsProxy | `src/ai/aiactprx.cpp`, `src/ai/aiactprx.h`, `src/ai/aiapiact.h` | Unverified |
+| ND-21d11d689feb | `DOC/squirrel_script/API-reference_services.txt` | Networking.LocalOnly | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `src/sound/psnd.cpp` | Unverified |
+| ND-2438dba4b49d | `DOC/squirrel_script/API-reference_services.txt` | Networking.IsNetworking | `src/script/netscrpt.cpp`, `src/script/netscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-49e1233dddb0 | `DOC/squirrel_script/API-reference_services.txt` | Networking.Owner | `src/deepc/weapon/dpcproj.cpp`, `src/editor/pnptools.c`, `src/editor/pnptools.h` | Unverified |
+| ND-f6f1cbc8b374 | `DOC/squirrel_script/API-reference_services.txt` | Networking.CreateContentProxy | No exact token; inspect aliases | Unverified |
+| ND-b6ad511bdc41 | `DOC/squirrel_script/API-reference_services.txt` | Networking.AmHost | No exact token; inspect aliases | Unverified |
+| ND-a1fb36118b58 | `DOC/squirrel_script/API-reference_services.txt` | Networking.NumPlayers | `src/deepc/ui/dpcnetui.cpp`, `src/framewrk/netman.cpp`, `src/framewrk/netsim.cpp` | Unverified |
+| ND-b076c8dedef1 | `DOC/squirrel_script/API-reference_services.txt` | Networking.MyPlayerNum | `src/dark/drkgame.cpp`, `src/dark/drknetap.cpp`, `src/deepc/game/dpcgame.cpp` | Unverified |
+| ND-31e25320b579 | `DOC/squirrel_script/API-reference_services.txt` | Networking.ObjToPlayerNum | `src/deepc/mp/dpcnet.cpp`, `src/deepc/ui/dpcmulti.cpp`, `src/framewrk/netman.cpp` | Unverified |
+| ND-5a5618d0bb4d | `DOC/squirrel_script/API-reference_services.txt` | Networking.PlayerNumToObj | `src/deepc/ui/dpcmulti.cpp`, `src/framewrk/netman.cpp`, `src/object/netman.h` | Unverified |
+| ND-4ec0a1681c3f | `DOC/squirrel_script/API-reference_services.txt` | Networking.GetPlayerName | `src/deepc/engfeat/dpcfsys.cpp`, `src/deepc/mp/dpcnet.cpp`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-28722b0d7aa8 | `DOC/squirrel_script/API-reference_services.txt` | CD.SetBGM | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-c9a4a3f3c054 | `DOC/squirrel_script/API-reference_services.txt` | CD.SetTrack | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-d9a0ab5cad01 | `DOC/squirrel_script/API-reference_services.txt` | Debug.MPrint | `src/script/engscrpt.cpp`, `src/script/engscrpt.h`, `src/script/linkscpt.cpp` | Unverified |
+| ND-2e3138c3b96e | `DOC/squirrel_script/API-reference_services.txt` | Debug.Command | `src/ai/aicmds.cpp`, `src/dark/drkamap.cpp`, `src/dark/drkbook.cpp` | Unverified |
+| ND-b1408f711d75 | `DOC/squirrel_script/API-reference_services.txt` | Debug.Break | `src/ai/aicmds.cpp`, `src/deepc/object/dpcdmg.cpp`, `src/deepc/player/dpcparam.cpp` | Unverified |
+| ND-6c2fbb803c9e | `DOC/squirrel_script/API-reference_services.txt` | Debug.Log | `src/deepc/actreact/dpcprop.cpp`, `src/deepc/game/dpcemail.cpp`, `src/deepc/game/dpcreprt.cpp` | Unverified |
+| ND-287ca0ab0024 | `DOC/squirrel_script/API-reference_services.txt` | Listener.SubscribeProperty | No exact token; inspect aliases | Unverified |
+| ND-b12e980fce03 | `DOC/squirrel_script/API-reference_services.txt` | Listener.UnsubscribeProperty | No exact token; inspect aliases | Unverified |
+| ND-ae030e19c2eb | `DOC/squirrel_script/API-reference_services.txt` | Listener.SubscribeObject | No exact token; inspect aliases | Unverified |
+| ND-1969f0a0cab9 | `DOC/squirrel_script/API-reference_services.txt` | Listener.UnsubscribeObject | No exact token; inspect aliases | Unverified |
+| ND-0222124f3d27 | `DOC/squirrel_script/API-reference_services.txt` | Listener.SubscribeLink | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-1e7cc2f7e8da | `DOC/squirrel_script/API-reference_services.txt` | Listener.UnsubscribeLink | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-4228c591c725 | `DOC/squirrel_script/API-reference_services.txt` | Listener.SubscribeHierarchy | No exact token; inspect aliases | Unverified |
+| ND-61626afbdabf | `DOC/squirrel_script/API-reference_services.txt` | Listener.UnsubscribeHierarchy | No exact token; inspect aliases | Unverified |
+| ND-0a83b407af49 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.KillPlayer | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
+| ND-d5855bfc73fa | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.EndMission | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
+| ND-62784327750a | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FadeToBlack | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrs.cpp` | Unverified |
+| ND-5c8379caaf78 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FoundObject | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-3b183626f8bc | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigIsDefined | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-c8e30d8fb0dc | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigGetInt | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-8c6bbabc7bc6 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.ConfigGetFloat | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/script/engscrpt.cpp` | Unverified |
+| ND-2babb4c47bba | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.BindingGetFloat | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/script/engscrpt.cpp` | Unverified |
+| ND-d5067965f1a5 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.GetAutomapLocationVisited | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-e5e53bf446ed | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.SetAutomapLocationVisited | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-bf41119060fa | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.SetNextMission | `src/dark/drkgame.cpp`, `src/dark/drkmenu.cpp`, `src/dark/drkmislp.cpp` | Unverified |
+| ND-fe7466e7a62a | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.GetCurrentMission | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b297ff2bcd98 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.RespawnPlayer | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-5fd69573fe21 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.FadeIn | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-f05483f54ce6 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.NoMove | `src/ai/aicbhtoh.cpp`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
+| ND-1d4734a5a73c | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.PlayerMode | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-5947da7f586c | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.Frob | `src/actreact/contag8r.cpp`, `src/ai/aiactps.cpp`, `src/ai/aibasact.cpp` | Unverified |
+| ND-dbf0d23a1853 | `DOC/squirrel_script/API-reference_services.txt` | DarkGame.Save | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiactps.cpp` | Unverified |
+| ND-a2d888ba36e7 | `DOC/squirrel_script/API-reference_services.txt` | DarkUI.TextMessage | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-f21364760dcb | `DOC/squirrel_script/API-reference_services.txt` | DarkUI.ReadBook | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-4674379396e7 | `DOC/squirrel_script/API-reference_services.txt` | DarkUI.InvItem | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-15c1ffc4835f | `DOC/squirrel_script/API-reference_services.txt` | DarkUI.InvWeapon | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-f8f5a15c76bf | `DOC/squirrel_script/API-reference_services.txt` | DarkUI.InvSelect | `src/dark/drkplinv.cpp`, `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h` | Unverified |
+| ND-2af944c74211 | `DOC/squirrel_script/API-reference_services.txt` | DarkUI.IsCommandBound | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-6a2bde4b6cb3 | `DOC/squirrel_script/API-reference_services.txt` | DarkUI.DescribeKeyBinding | `src/dark/drkuiscr.cpp`, `src/dark/drkuiscrapi.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
+| ND-9df418cf9756 | `DOC/squirrel_script/API-reference_services.txt` | DarkUI.TextMessageFormatted | No exact token; inspect aliases | Unverified |
+| ND-9996d4fbcd49 | `DOC/squirrel_script/API-reference_services.txt` | PickLock.Ready | `src/ai/aiactrng.cpp`, `src/dark/drkwswd_.c`, `src/dark/pickscrs.cpp` | Unverified |
+| ND-5783ceba96c5 | `DOC/squirrel_script/API-reference_services.txt` | PickLock.UnReady | `src/dark/pickscrs.cpp`, `src/dark/pickscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b30f40d77a04 | `DOC/squirrel_script/API-reference_services.txt` | PickLock.StartPicking | `src/dark/pickscrs.cpp`, `src/dark/pickscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-181c031fd2cb | `DOC/squirrel_script/API-reference_services.txt` | PickLock.FinishPicking | `src/dark/pickscrs.cpp`, `src/dark/pickscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-540e520b096f | `DOC/squirrel_script/API-reference_services.txt` | PickLock.CheckPick | `src/dark/pickscrs.cpp`, `src/dark/pickscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-e87ff2025478 | `DOC/squirrel_script/API-reference_services.txt` | PickLock.DirectMotion | `src/dark/pickscrs.cpp`, `src/dark/pickscrs.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-6a4f5a9d6b7a | `DOC/squirrel_script/API-reference_services.txt` | DrkInv.CapabilityControl | `src/dark/drkinvsc.cpp`, `src/dark/drkinvsc.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-f14b217d252f | `DOC/squirrel_script/API-reference_services.txt` | DrkInv.AddSpeedControl | `src/dark/drkinvsc.cpp`, `src/dark/drkinvsc.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-cf616210b407 | `DOC/squirrel_script/API-reference_services.txt` | DrkInv.RemoveSpeedControl | `src/dark/drkinvsc.cpp`, `src/dark/drkinvsc.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-c0fc3287bd69 | `DOC/squirrel_script/API-reference_services.txt` | DrkPowerups.TriggerWorldFlash | `src/dark/drkpwscr.cpp`, `src/dark/drkpwscr.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-2c649f98cdc3 | `DOC/squirrel_script/API-reference_services.txt` | DrkPowerups.ObjTryDeploy | `src/dark/drkpwscr.cpp`, `src/dark/drkpwscr.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-9d150793ecef | `DOC/squirrel_script/API-reference_services.txt` | DrkPowerups.CleanseBlood | `src/dark/drkpwscr.cpp`, `src/dark/drkpwscr.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-b96ceee6a698 | `DOC/squirrel_script/API-reference_services.txt` | PlayerLimbs.Equip | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/drkinvui.cpp` | Unverified |
+| ND-9bb4782bee47 | `DOC/squirrel_script/API-reference_services.txt` | PlayerLimbs.UnEquip | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/drkwbdy.cpp` | Unverified |
+| ND-7872526f2de9 | `DOC/squirrel_script/API-reference_services.txt` | PlayerLimbs.StartUse | `src/dark/drkwbdy.cpp`, `src/dark/plyscrpt.cpp`, `src/dark/plyscrpt.h` | Unverified |
+| ND-8e7b55009c6a | `DOC/squirrel_script/API-reference_services.txt` | PlayerLimbs.FinishUse | `src/dark/drkwbdy.cpp`, `src/dark/plyscrpt.cpp`, `src/dark/plyscrpt.h` | Unverified |
+| ND-b5daf9617abc | `DOC/squirrel_script/API-reference_services.txt` | Weapon.Equip | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/drkinvui.cpp` | Unverified |
+| ND-07b32a14223e | `DOC/squirrel_script/API-reference_services.txt` | Weapon.UnEquip | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/drkwbdy.cpp` | Unverified |
+| ND-e45a7115fd26 | `DOC/squirrel_script/API-reference_services.txt` | Weapon.IsEquipped | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/weapscpt.cpp` | Unverified |
+| ND-5b6ac5dc23e4 | `DOC/squirrel_script/API-reference_services.txt` | Weapon.StartAttack | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/weapscpt.cpp` | Unverified |
+| ND-5cfee34b5c47 | `DOC/squirrel_script/API-reference_services.txt` | Weapon.FinishAttack | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/weapscpt.cpp` | Unverified |
+| ND-9e22e386d978 | `DOC/squirrel_script/API-reference_services.txt` | Bow.Equip | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/drkinvui.cpp` | Unverified |
+| ND-d6f0367754f1 | `DOC/squirrel_script/API-reference_services.txt` | Bow.UnEquip | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/drkwbdy.cpp` | Unverified |
+| ND-0c6df9cb2a36 | `DOC/squirrel_script/API-reference_services.txt` | Bow.IsEquipped | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/weapscpt.cpp` | Unverified |
+| ND-7e3e7a85e7e8 | `DOC/squirrel_script/API-reference_services.txt` | Bow.StartAttack | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/weapscpt.cpp` | Unverified |
+| ND-0fedc90a4ce3 | `DOC/squirrel_script/API-reference_services.txt` | Bow.FinishAttack | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/weapscpt.cpp` | Unverified |
+| ND-502e45cc1f2d | `DOC/squirrel_script/API-reference_services.txt` | Bow.AbortAttack | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-e25411665b2b | `DOC/squirrel_script/API-reference_services.txt` | Bow.SetArrow | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `libsrc/script/squirrel/newdark_api.nut.inc` | Unverified |
+| ND-a82f3df04a28 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.AddHandler | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-1f526eae9508 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.RemoveHandler | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-a76e8bf18809 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-118a8df13a3c | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.FlushBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-db241254b5db | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetBitmapSize | `src/render/objshape.cpp`, `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-ee4f67e283de | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.WorldToScreen | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-015535244cbe | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetObjectScreenBounds | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-69e4c14fabb6 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.CreateTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-f1ad3ae48d41 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.CreateTOverlayItemFromBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-63cbc55caa8c | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DestroyTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-15a782682520 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.UpdateTOverlayAlpha | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-f1e3b00ead8d | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.UpdateTOverlayPosition | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-d608ea7a070d | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.UpdateTOverlaySize | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-f0b748427117 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DrawBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-4a2d1f6c4648 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DrawSubBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-528fc84b1f8f | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.SetTextColorFromStyle | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-fa179b0ee1f0 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.SetTextColor | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-bee76cd5ac15 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.GetStringSize | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-2852bf2b0bd9 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DrawString | `src/dark/drkoptmn.cpp`, `src/deepc/ui/dpcnetui.cpp`, `src/deepc/ui/dpcoptmn.cpp` | Unverified |
+| ND-0ca248ddb028 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DrawLine | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-778a7669790b | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.FillTOverlay | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-0e78b00a6dd2 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.BeginTOverlayUpdate | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-f05b67e433cc | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.EndTOverlayUpdate | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-bd472d4d21c6 | `DOC/squirrel_script/API-reference_services.txt` | DarkOverlay.DrawTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-25b2bc8233fc | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.DestroyCursorObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-ebd2b823d6b8 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.DestroyInvObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-433354be0431 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.HideInvObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-bab52faf4674 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SetPlayerPsiPoints | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-8505c2ed5f78 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetPlayerPsiPoints | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-13346e6db78f | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AttachCamera | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-af49a25ce1eb | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.CutSceneModeOn | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-22b0bea8e296 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.CutSceneModeOff | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-f4affd70957c | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.CreatePlayerPuppet | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-b5d0b238db8f | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.CreatePlayerPuppetDefault | No exact token; inspect aliases | Unverified |
+| ND-ead398e91ca3 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.DestroyPlayerPuppet | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-0c23eb64ea7d | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Replicator | `src/deepc/object/dpclinks.cpp`, `src/shock/shklinks.cpp`, `src/shock/shkrep.cpp` | Unverified |
+| ND-90108d41a13e | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Container | `src/actreact/mediag8r.cpp`, `src/deepc/engfeat/dpcfsys.cpp`, `src/deepc/mp/dpcnet.cpp` | Unverified |
+| ND-986293d8ba12 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.YorN | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-c4c7b9e1629b | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Keypad | `src/deepc/engfeat/dpcfrob.cpp`, `src/deepc/engfeat/dpcfrob.h`, `src/deepc/game/dpchplug.cpp` | Unverified |
+| ND-fd4a3dd2a08c | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.HRM | `src/deepc/game/dpchrm.cpp`, `src/deepc/player/dpcparam.cpp`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-dfdd92893abb | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.TechTool | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-0d2ddd224214 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.UseLog | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-dac5fbacf7e1 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.TriggerLog | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-81217070f3dd | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.FindLogData | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-daa0a98153ec | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.PayNanites | `src/deepc/game/dpchrm.cpp`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
+| ND-650457b8f42f | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.OverlayChange | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-4485ef9aaf3e | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Equipped | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-d1750169d1fa | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.LevelTransport | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-933e3d6f85a2 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.CheckLocked | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-2fcf1ac7de3a | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddText | `src/deepc/mp/dpcnet.cpp`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
+| ND-4ecf6ea44729 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddTranslatableText | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-68ceb9fb6081 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AmmoLoad | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-7a81bf5a50f4 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetClip | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/deepc/weapon/dpcgnapi.h` | Unverified |
+| ND-dec6b015cb56 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddExp | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkexp.cpp` | Unverified |
+| ND-901869a4841c | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.HasTrait | `src/deepc/game/dpchrm.cpp`, `src/deepc/game/dpcmap.cpp`, `src/deepc/game/dpcscomp.cpp` | Unverified |
+| ND-3a651a366bfb | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.HasImplant | `src/shock/shkarmor.cpp`, `src/shock/shkhrm.cpp`, `src/shock/shkplayr.cpp` | Unverified |
+| ND-aa150e0c4c08 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.HealObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-b4dbb4a0b487 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.OverlaySetObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-67ad3d77cda8 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Research | `src/deepc/player/dpcparam.cpp`, `src/deepc/player/dpcplayr.cpp`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-13980e527c4e | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetArchetypeName | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-5b227ad4f545 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.OverlayOn | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-7e0f91e7b6c4 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.FindSpawnPoint | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-212a2d589cd3 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.CountEcoMatching | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-c2d71a33211f | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetStat | `src/deepc/game/dpchrm.cpp`, `src/deepc/game/dpcloot.cpp`, `src/deepc/player/dpcplayr.cpp` | Unverified |
+| ND-0fc7b1add06c | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetSelectedObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-d414c2c4dc0b | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddInvObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-60e9584d993e | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.RecalcStats | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-3850031d87d7 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.PlayVideo | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-d09d297e668a | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.ClearRadiation | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-45bcd5a8a2be | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SetPlayerVolume | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-a4e6f6184475 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.RandRange | `src/ai/aistun.cpp`, `src/ai/aiutils.h`, `src/deepc/player/dpcmelee.cpp` | Unverified |
+| ND-f755649a197c | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.LoadCursor | `src/deepc/engfeat/dpcfsys.cpp`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
+| ND-bcb2261c6fd8 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddSpeedControl | `src/dark/drkinvsc.cpp`, `src/dark/drkinvsc.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-9187fd44f435 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.RemoveSpeedControl | `src/dark/drkinvsc.cpp`, `src/dark/drkinvsc.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-52ca9df006f8 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.PreventSwap | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-86b977fcbc9e | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetDistantSelectedObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-f45c7eb76492 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Equip | `src/dark/bowscrpt.cpp`, `src/dark/bowscrpt.h`, `src/dark/drkinvui.cpp` | Unverified |
+| ND-74ef8fdf0fdf | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.OverlayChangeObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-f5bf89feb647 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SetObjState | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-9e2204b79296 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.RadiationHack | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-58c7c83d3abe | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.DestroyAllByName | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-e7d76ac20cf1 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddTextObjProp | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-4ada873f25f1 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.DisableAlarmGlobal | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-49ae04aa66b9 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Frob | `src/actreact/contag8r.cpp`, `src/ai/aiactps.cpp`, `src/ai/aibasact.cpp` | Unverified |
+| ND-8ecd92914abe | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.TweqAllByName | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-9bd63d3ff7e0 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SetExplored | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-9da85c1971ed | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.RemoveFromContainer | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-3caac0998ec1 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.ActivateMap | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-bba1a860bcb8 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SimTime | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-eb7bffd05fcb | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.StartFadeIn | `src/dark/drkscrs.cpp`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
+| ND-ce492b57fca9 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.StartFadeOut | `src/dark/drkscrs.cpp`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
+| ND-dc22c8fa2067 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GrantPsiPower | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-6a67f94432c4 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.ResearchConsume | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-0ab4b56feb0d | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.PlayerMode | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-c7b1abeb6dc3 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.EndGame | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-148ee3ddf3cb | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AllowDeath | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-b6c7dddfef8a | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddAlarm | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-97a1712ff9e4 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.RemoveAlarm | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-f69dc088737a | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetHazardResistance | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-d45318cc9463 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetBurnDmg | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-db43de8aad75 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.PlayerGun | `src/deepc/game/dpcgame.cpp`, `src/deepc/game/dpcsloop.cpp`, `src/deepc/game/dpcwsett.cpp` | Unverified |
+| ND-38404b67a369 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.IsPsiActive | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-1bcd1bbf8ccb | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.PsiRadarScan | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-5ddff424e030 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.PseudoProjectile | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-7f6791d41f28 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.WearArmor | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-5c33c32767bc | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SetModify | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-6e548c6cdbba | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Censored | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-458ceb45dd37 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.DebriefMode | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-335ba3c639fa | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.TlucTextAdd | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-5592564ef7e0 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Mouse | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/deepc/ui/dpcovrly.cpp` | Unverified |
+| ND-533115eec6a0 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.RefreshInv | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-df5d4a7b4ce7 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.TreasureTable | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-139866aaed03 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.OverlayGetObj | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-5cb1f33e074d | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.VaporizeInv | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-85b3663a85bd | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.ShutoffPsi | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-a4ed48ff24bb | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SetQBHacked | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-cbef8d22338e | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.GetPlayerMaxPsiPoints | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-e083151b92cd | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SetLogTime | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-198ae25a7518 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddTranslatableTextInt | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-b7d946164d52 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.ZeroControls | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-01a52dd2acb1 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SetSelectedPsiPower | `src/shock/shkscrpt.cpp`, `src/shock/shkscrpt.h` | Unverified |
+| ND-5d86b8b89d69 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.ValidGun | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-6a92e1c99894 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.AddTranslatableTextIndexInt | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-2af0ce7c9afe | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.IsAlarmActive | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-d5dc1061a050 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.SlayAllByName | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-bfd7f7b3aa4e | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.NoMove | `src/ai/aicbhtoh.cpp`, `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h` | Unverified |
+| ND-da4d819039bd | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.PlayerModeSimple | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-150cf18d0556 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.UpdateMovingTerrainVelocity | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/physics/phmterr.cpp` | Unverified |
+| ND-4605446812ea | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.MouseCursor | `src/deepc/scripts/dpcscrpt.cpp`, `src/deepc/scripts/dpcscrpt.h`, `src/shock/shkscrpt.cpp` | Unverified |
+| ND-b777e88f2a6f | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.ConfigIsDefined | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-35d373454cbd | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.ConfigGetInt | `src/dark/drkscrs.cpp`, `src/dark/drkscrs.h`, `src/deepc/scripts/dpcscrpt.cpp` | Unverified |
+| ND-059defe87883 | `DOC/squirrel_script/API-reference_services.txt` | ShockGame.Save | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiactps.cpp` | Unverified |
+| ND-d54e7f3039e7 | `DOC/squirrel_script/API-reference_services.txt` | ShockObj.FindScriptDonor | `src/shock/shkobjsc.cpp`, `src/shock/shkobjsc.h` | Unverified |
+| ND-40167615bdb8 | `DOC/squirrel_script/API-reference_services.txt` | ShockWeapon.SetWeaponModel | `src/deepc/game/dpcsloop.cpp`, `src/deepc/player/dpcplayr.cpp`, `src/deepc/player/dpcplayr.h` | Unverified |
+| ND-8980162b4733 | `DOC/squirrel_script/API-reference_services.txt` | ShockWeapon.GetWeaponModel | `src/deepc/scripts/dpcwepsc.cpp`, `src/deepc/scripts/dpcwepsc.h`, `src/shock/shkwepsc.cpp` | Unverified |
+| ND-977ac541a7b5 | `DOC/squirrel_script/API-reference_services.txt` | ShockWeapon.TargetScan | `src/ai/aicombat.cpp`, `src/ai/aicombat.h`, `src/deepc/scripts/dpchome.cpp` | Unverified |
+| ND-97fc3e7e518f | `DOC/squirrel_script/API-reference_services.txt` | ShockWeapon.Home | `src/deepc/scripts/dpchome.cpp`, `src/deepc/scripts/dpchome.h`, `src/deepc/scripts/dpcwepsc.cpp` | Unverified |
+| ND-652ab8cbe58c | `DOC/squirrel_script/API-reference_services.txt` | ShockWeapon.DestroyMelee | `src/deepc/player/dpcmelee.cpp`, `src/deepc/player/dpcmelee.h`, `src/deepc/scripts/dpcwepsc.cpp` | Unverified |
+| ND-271c5580b233 | `DOC/squirrel_script/API-reference_services.txt` | ShockPsi.OnDeactivate | `src/shock/shkpsapi.h`, `src/shock/shkpsi.cpp`, `src/shock/shkpsisc.cpp` | Unverified |
+| ND-c8a9f9b944fd | `DOC/squirrel_script/API-reference_services.txt` | ShockPsi.GetActiveTime | `src/shock/shkpsisc.cpp`, `src/shock/shkpsisc.h` | Unverified |
+| ND-f87075012262 | `DOC/squirrel_script/API-reference_services.txt` | ShockPsi.IsOverloaded | `src/shock/shkpsisc.cpp`, `src/shock/shkpsisc.h` | Unverified |
+| ND-624f58af4432 | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.Stun | `src/ai/aistun.cpp`, `src/dark/drkpwups.cpp`, `src/deepc/ai/dpcstnrc.cpp` | Unverified |
+| ND-58fa4d2f6740 | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.IsStunned | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
+| ND-98051c09498b | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.UnStun | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
+| ND-848733b4896c | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.Freeze | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiapi.h` | Unverified |
+| ND-2059a1c3a034 | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.IsFrozen | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/motion/creature.cpp` | Unverified |
+| ND-e9a62bfdad40 | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.UnFreeze | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/motion/creature.cpp` | Unverified |
+| ND-61113d8f4477 | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.NotifyEnterTripwire | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
+| ND-9c29034729bb | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.NotifyExitTripwire | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
+| ND-6f6f82881b35 | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.ObjectLocked | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
+| ND-42fd590cc167 | `DOC/squirrel_script/API-reference_services.txt` | ShockAI.ValidateSpawn | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
+| ND-bda9499109d9 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.AddHandler | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-6b111f9f9ee0 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.RemoveHandler | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-bd1b1e256a2a | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.SetKeyboardInputCapture | No exact token; inspect aliases | Unverified |
+| ND-d308b0cc5fcb | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.GetBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-4feb45dd55b4 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.FlushBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-d29e9b6523e0 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.GetBitmapSize | `src/render/objshape.cpp`, `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-93cd6dea59d8 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.SetCustomFont | No exact token; inspect aliases | Unverified |
+| ND-21280794c55b | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.GetOverlayRect | No exact token; inspect aliases | Unverified |
+| ND-885340cf386e | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.GetCursorMode | No exact token; inspect aliases | Unverified |
+| ND-935c2602261f | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.ClearCursorMode | No exact token; inspect aliases | Unverified |
+| ND-0b2f05617a57 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.SetCursorBitmap | No exact token; inspect aliases | Unverified |
+| ND-fafa22e803fa | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.SetInterfaceMouseOverObject | No exact token; inspect aliases | Unverified |
+| ND-662ce2ca97ff | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.GetInterfaceFocusObject | No exact token; inspect aliases | Unverified |
+| ND-6db85e09921c | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.OpenLookPopup | No exact token; inspect aliases | Unverified |
+| ND-1a0a43dafea5 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.ToggleLookCursor | No exact token; inspect aliases | Unverified |
+| ND-3536255637ad | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.StartObjectDragDrop | No exact token; inspect aliases | Unverified |
+| ND-cc7e61a26d24 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.PlaySound | `src/ai/aicbrnew.cpp`, `src/ai/aicbrnew.h`, `src/deepc/ai/dpcaipro.cpp` | Unverified |
+| ND-9789dce14301 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.WorldToScreen | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-ea337f37f2de | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.GetObjectScreenBounds | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-e8346f16caa2 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.CreateTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-4548c28e039b | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.CreateTOverlayItemFromBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-242affe9a32f | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.DestroyTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-4564ca5e2da4 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.UpdateTOverlayAlpha | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-21ce7217e51c | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.UpdateTOverlayPosition | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-39cd86543cf8 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.UpdateTOverlaySize | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-9d56f0424766 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.DrawBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-19c018eeb4a3 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.DrawSubBitmap | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-6bc3a00ab119 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.DrawObjectIcon | No exact token; inspect aliases | Unverified |
+| ND-2a28185c8a94 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.SetFont | No exact token; inspect aliases | Unverified |
+| ND-88be14b62a46 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.SetTextColor | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-c331ef4722f2 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.GetStringSize | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-9b680c250e93 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.DrawString | `src/dark/drkoptmn.cpp`, `src/deepc/ui/dpcnetui.cpp`, `src/deepc/ui/dpcoptmn.cpp` | Unverified |
+| ND-08c921a74ab5 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.DrawLine | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-397aa8099640 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.FillTOverlay | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-abd67e23f159 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.BeginTOverlayUpdate | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-1563a42be4c0 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.EndTOverlayUpdate | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
+| ND-eba538a1a7b5 | `DOC/squirrel_script/API-reference_services.txt` | ShockOverlay.DrawTOverlayItem | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-ebbfa1b63859 | `DOC/squirrel_script/Notepad++/ReadMe.txt` | ReadMe | No exact token; inspect aliases | Unverified |
 | ND-723c24a23e57 | `DOC/squirrel_script/ReadMe.txt` | ReadMe | No exact token; inspect aliases | Unverified |
 | ND-e818526d7ddf | `DOC/squirrel_script/squirrel-copyright.txt` | squirrel-copyright | No exact token; inspect aliases | Unverified |
@@ -805,9 +1375,9 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-b78bda29b659 | `Docs/Tutorials/WEATHER.doc` | WEATHER | `src/render/weather.cpp` | Unverified |
 | ND-90f0cce81dcb | `Docs/Tutorials/convict.doc` | convict | No exact token; inspect aliases | Unverified |
 
-Inventory entries: 792.
+Inventory entries: 1362.
 
 Non-text assets, bundled archives and licenses need separate sample/license review.
 Binary Word/ODT entries represent workflow documents; their individual instructions
-are not automatically extracted. Squirrel API reference files likewise need
-method-level expansion. These are explicit remaining audit tasks.
+are not automatically extracted. Squirrel services/messages are individually listed,
+but signatures, API-version guards and behavioral parity still require review.

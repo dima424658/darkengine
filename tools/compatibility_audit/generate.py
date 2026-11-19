@@ -24,6 +24,27 @@ def requirements(doc):
         for index, line in enumerate(lines[:-1]):
             if re.fullmatch(r"[a-z][a-z0-9_]*(?: .*|)", line) and re.fullmatch(r"-{4,}", lines[index + 1]):
                 yield line.split()[0]
+    elif doc.name == "dbmod-sample.dml":
+        yield from ("DML1 syntax", "Pre/post phase annotations", "Mission patch discovery",
+                    "Gamesys patch discovery", "Resource layer application order", "Savegame exclusion",
+                    "Fingerprint position thresholds", "Fingerprint positive/negative precedence",
+                    "Fingerprint QVAR masks/comparisons", "Fingerprint PROP/NAME/GAM rules",
+                    "Fingerprint EXIST/ARCH/SCR/MOD rules", "Script inclusion/exclusion", "Schema loading",
+                    "TagBlock", "ObjProp", "ObjName", "ObjArch", "MetaProp", "Link", "Receptron",
+                    "StimSource", "Create/CreateArch", "Destroy/DestroyArch/DestroyArchAll",
+                    "QuestVar", "Texture/TextureAll", "Duplicate field indices", "Object ID remapping",
+                    "apply_dbmods game/editor defaults", "dbmod_load", "dbmod_log")
+    elif doc.name == "API-reference_services.txt":
+        service = None
+        for line in text.splitlines():
+            if re.fullmatch(r"[A-Z][A-Za-z0-9_]*", line):
+                service = line
+            match = re.match(r"^[ \t]+(?:[A-Za-z_][A-Za-z0-9_]*[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)\(", line)
+            if service and match:
+                yield service + "." + match[1]
+    elif doc.name == "API-reference_messages.txt":
+        for match in re.finditer(r"^class (\w+)(?: extends (\w+))?", text, re.M):
+            yield match[1]
     elif doc.parent.name == "script":
         for match in re.finditer(r"STDMETHOD(?:_\([^,]+,\s*|\(\s*)(\w+)", text):
             yield match[1]
@@ -54,6 +75,13 @@ def review(doc, name, evidence):
     if doc.name == "Listener.txt":
         status = "Partial" if name in {"SubscribeLink", "UnubscribeLink", "UnsubscribeLink"} else "Missing in Squirrel adapter; native unverified"
         evidence = "`CallListener` in `libsrc/script/squirrel/squirrelhost.cpp`; synchronous link subscriptions only"
+    if doc.name == "dbmod-sample.dml":
+        if name in {"DML1 syntax", "Pre/post phase annotations"}:
+            status = "Implemented syntax only; runtime missing"
+            evidence = "`src/framewrk/dbmod/syntax.cpp`, `tools/dbmod_test`: all 88 installed patches parse; no executor"
+        else:
+            status = "Missing runtime DML behavior"
+            evidence = "`src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
@@ -104,7 +132,7 @@ def main():
                 continue
             for name in dict.fromkeys(requirements(doc)):
                 number += 1
-                candidates = source_index.get(name, [])
+                candidates = source_index.get(name.rsplit(".", 1)[-1], [])
                 evidence = ", ".join(f"`{p}`" for p in candidates[:3]) or "No exact token; inspect aliases"
                 reference = str(doc.relative_to(args.game))
                 status, evidence = review(doc, name, evidence)
@@ -114,8 +142,8 @@ def main():
     output.extend(["", f"Inventory entries: {number}.", "",
                    "Non-text assets, bundled archives and licenses need separate sample/license review.",
                    "Binary Word/ODT entries represent workflow documents; their individual instructions",
-                   "are not automatically extracted. Squirrel API reference files likewise need",
-                   "method-level expansion. These are explicit remaining audit tasks.", ""])
+                   "are not automatically extracted. Squirrel services/messages are individually listed,",
+                   "but signatures, API-version guards and behavioral parity still require review.", ""])
     args.output.write_text("\n".join(output))
     print(f"Wrote {number} inventory entries to {args.output}")
 

@@ -243,3 +243,9 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   service implementations. Squirrel has separate helpers for some Object/Quest
   methods; the matrix records this distinction rather than claiming universal
   absence or native support. Runtime script ABI parity remains unverified.
+- Expanded DML review into individual discovery, ordering, fingerprint, command,
+  remapping and load-lifecycle requirements. Only syntax parsing and phase
+  annotations exist; every runtime DML requirement remains classified missing.
+- Expanded Squirrel service/message references into individual requirements.
+  API version guards, signatures and semantics remain unverified; this expansion
+  does not claim their implementation. Matrix now contains 1,362 inventory rows.
