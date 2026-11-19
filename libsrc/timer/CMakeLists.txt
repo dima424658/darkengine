@@ -1,5 +1,4 @@
 add_library(dark_timer STATIC
-  tmail.c
   tmftab.c
   tmlibt.c
   tmrt.c
