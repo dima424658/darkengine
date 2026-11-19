@@ -9,6 +9,7 @@ set(dark_library_projects
   config
   cpptools
   darkloop
+  dbmod
   dev2d
   dispdev
   dstruct
@@ -54,6 +55,7 @@ set(dark_library_projects
 )
 
 target_include_directories(dark_engine_config INTERFACE
+  "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/actmovie"
   "${CMAKE_CURRENT_SOURCE_DIR}/appcore"
   "${CMAKE_CURRENT_SOURCE_DIR}/compapis"

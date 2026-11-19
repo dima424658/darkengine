@@ -1,4 +1,4 @@
-#include "../../src/framewrk/dbmod/struct_fields.hpp"
+#include "../../libsrc/dbmod/struct_fields.hpp"
 #include <cstring>
 #include <iostream>
 #include <stdexcept>

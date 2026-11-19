@@ -13,18 +13,6 @@ set(dark_framewrk_sources
   ctagset.cpp
   dappsink.cpp
   dbfile.cpp
-  dbmod/syntax.cpp
-  dbmod/fingerprint.cpp
-  dbmod/discovery.cpp
-  dbmod/commands.cpp
-  dbmod/fields.cpp
-  dbmod/struct_fields.cpp
-  dbmod/inspection.cpp
-  dbmod/engine_fingerprint.cpp
-  dbmod/property_validation.cpp
-  dbmod/object_validation.cpp
-  dbmod/object_reference.cpp
-  dbmod/string_fields.cpp
   diskfree.cpp
   dispatch.cpp
   dlgmode.c

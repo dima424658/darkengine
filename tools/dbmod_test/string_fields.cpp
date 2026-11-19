@@ -1,4 +1,4 @@
-#include "../../src/framewrk/dbmod/string_fields.hpp"
+#include "../../libsrc/dbmod/string_fields.hpp"
 #include <iostream>
 #include <stdexcept>
 
