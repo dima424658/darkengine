@@ -624,3 +624,15 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   wrappers return literal TRUE through HRESULT after void calls. These source
   findings are recorded rather than treating every return as proven success.
   All 26 audit tests pass. No equipment or lockpick runtime behavior changed.
+
+- Reviewed all 39 documented Squirrel message classes against NativeGetMessage.
+  Generic/common fields and twenty specialized conversions exist as mutable
+  tables, not the documented specialized classes with const members. QuestChange,
+  SoundDone/SchemaDone, motion/attack, difficulty, moving-terrain/waypoint, medium,
+  notification types other than LinkNotify, game-mode/pick-state and SS2-specific
+  fields have no dedicated conversion. ReportMessage SetTextBuffer behavior is
+  also absent. Name/prefix-based dispatch static-casts without payload validation,
+  which risks reading beyond a generic synthetic message with a reserved name.
+  Payload validity, widths, retention and event lifecycle still require tests;
+  these source findings are not runtime acceptance. All 26 audit tests pass.
+  No message conversion or gameplay code changed in this review.

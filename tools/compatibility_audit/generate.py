@@ -850,6 +850,32 @@ def review(doc, name, evidence):
         elif name.startswith("PlayerLimbs."):
             status = "Partial implementation; fixed body-carry handler"
             evidence = "plyscrpt.cpp ObjGetPlayerLimbHandler ignores item and returns kPlayerModeBodyCarry; adapter forwards equip/use methods"
+    if doc.name == "API-reference_messages.txt":
+        converted_messages = {
+            "sScrTimerMsg": "name", "sTweqMsg": "Type/Op/Dir",
+            "sSimMsg": "starting", "sRoomMsg": "FromObjId/ToObjId/MoveObjId/ObjType/TransitionType",
+            "sFrobMsg": "SrcObjId/DstObjId/Frobber/SrcLoc/DstLoc/Sec/Abort",
+            "sDoorMsg": "ActionType/PrevActionType/isProxy",
+            "sDamageScrMsg": "kind/damage/culprit", "sSlayMsg": "culprit/kind",
+            "sContainerScrMsg": "event/containee", "sContainedScrMsg": "event/container",
+            "sCombineScrMsg": "combiner", "sAISignalMsg": "signal",
+            "sAIPatrolPointMsg": "patrolObj", "sAIAlertnessMsg": "level/oldLevel",
+            "sAIHighAlertMsg": "level/oldLevel", "sAIModeChangeMsg": "mode/previous_mode",
+            "sAIObjActResultMsg": "action/result/actdata/target",
+            "sPhysMsg": "collision/contact/transition fields",
+            "sStimMsg": "stimulus/intensity/sensor/source",
+            "sLinkNotifyMsg": "type/id/source/dest/flavor",
+        }
+        if name == "sScrMsg":
+            status = "Partial generic field conversion; class/const semantics absent"
+            evidence = "NativeGetMessage copies from/to/message/time/flags/data fields into a mutable table, not documented message class"
+        elif name in converted_messages:
+            status = "Partial specialized fields; payload/class/runtime safety unverified"
+            evidence = "NativeGetMessage copies " + converted_messages[name]
+            evidence += "; dispatch selects by name and static-casts without payload-type validation, table fields mutable"
+        else:
+            status = "Missing specialized Squirrel message fields"
+            evidence = "NativeGetMessage has no conversion for documented class; only generic fields available, including absent ReportMessage SetTextBuffer behavior where applicable"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
