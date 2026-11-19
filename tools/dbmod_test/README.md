@@ -94,3 +94,18 @@ strict encoding and pointer-owning fields need dedicated handling before runtime
 publication. Nested receptron/propagator blocks also require their command-specific
 schema adapters. Tests cover repeated names, quoted empty values, occurrence
 validation, unchanged surrounding bytes and failures after earlier staged edits.
+
+## Native struct-description adapter
+
+`struct_fields.cpp` uses the actual engine `sStructDesc`/`sFieldDesc` definitions
+to build staging encoders for integer/short, boolean, enum, bitmask, bounded
+string, float/double and float/double vector fields. Numeric conversions require
+complete input and reject range errors; enum labels and bit labels are checked.
+Unnamed bit fields retain binary notation. Strings reject truncation and NUL.
+Unsupported types, including pointer-owning strings, have no encoder and cannot
+be written. Enum/bit label tables must outlive their encoders.
+
+The native-header fixture checks valid encodings, unchanged padding/pointers,
+invalid labels, overflow, malformed vectors, string capacity and invalid native
+schema bounds. All six standalone tests pass normally and under ASan/UBSan on
+Linux. This does not yet test live property stores or publish changes to them.

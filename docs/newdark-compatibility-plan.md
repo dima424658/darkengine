@@ -276,3 +276,9 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   C++ tests pass. Strict native schema encoders, pointer-owning properties and
   runtime publication remain pending; legacy struct parsing alone is too lenient
   to establish valid DML values.
+- Added strict staging encoders backed by native sStructDesc/sFieldDesc metadata
+  for common scalar, enum/bit, fixed-string and floating vector types. Pointer
+  types and other unsupported representations cannot be written. All six
+  standalone tests pass normally and with address/undefined-behavior sanitizers.
+  Live property-store ownership, deep-copy strings, remaining field types and
+  runtime publication are still pending.
