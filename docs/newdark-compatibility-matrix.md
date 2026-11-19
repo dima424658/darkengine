@@ -514,22 +514,22 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-eca84dc9c7b8 | `DOC/new_config_vars.txt` | crouch_unmount | No exact token; inspect aliases | Unverified |
 | ND-1fc10d7a4f2d | `DOC/new_config_vars.txt` | crouch_norepeat | No exact token; inspect aliases | Unverified |
 | ND-c47c85c04ca3 | `DOC/new_config_vars.txt` | flytoggle | No exact token; inspect aliases | Unverified |
-| ND-b769bdeb0929 | `DOC/script/AI.txt` | MakeGotoObjLoc | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-6c5941d8da34 | `DOC/script/AI.txt` | MakeFrobObj | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-18848ad4db7d | `DOC/script/AI.txt` | GetAlertLevel | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-8e82e8621427 | `DOC/script/AI.txt` | SetMinimumAlert | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-95e7bec56a32 | `DOC/script/AI.txt` | ClearGoals | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-b227c42650ca | `DOC/script/AI.txt` | SetScriptFlags | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-24614896b4fb | `DOC/script/AI.txt` | ClearAlertness | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-0f6725ad30b0 | `DOC/script/AI.txt` | Signal | `src/ai/ai.cpp`, `src/ai/aiactps.cpp`, `src/ai/aibasabl.h` | Unverified |
-| ND-035e7ebf7cb8 | `DOC/script/AI.txt` | StartConversation | `src/ai/aiapi.h`, `src/ai/aicmds.cpp`, `src/ai/aiman.cpp` | Unverified |
-| ND-e204ab512911 | `DOC/script/AI.txt` | Stun | `src/ai/aistun.cpp`, `src/dark/drkpwups.cpp`, `src/deepc/ai/dpcstnrc.cpp` | Unverified |
-| ND-861a6feb3535 | `DOC/script/AI.txt` | IsStunned | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
-| ND-f1a11fec0e1a | `DOC/script/AI.txt` | UnStun | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
-| ND-9f59b6c3b0d6 | `DOC/script/AI.txt` | Freeze | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiapi.h` | Unverified |
-| ND-c0f83dd1658d | `DOC/script/AI.txt` | IsFrozen | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/motion/creature.cpp` | Unverified |
-| ND-d571ce17f170 | `DOC/script/AI.txt` | UnFreeze | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/motion/creature.cpp` | Unverified |
-| ND-8e9612b87807 | `DOC/script/AI.txt` | SetFaceVisage | No exact token; inspect aliases | Unverified |
+| ND-b769bdeb0929 | `DOC/script/AI.txt` | MakeGotoObjLoc | `src/ai/aiscrpt.cpp`: uses cAIBasicScript GotoObjLoc with speed/priority conversion and callback data, false without basic script | Source implementation reviewed; action/callback parity unverified |
+| ND-6c5941d8da34 | `DOC/script/AI.txt` | MakeFrobObj | `src/ai/aiscrpt.cpp`: native overloads call FrobObj with optional tool, priority conversion and callback data | Source implementation reviewed; action/callback parity unverified |
+| ND-18848ad4db7d | `DOC/script/AI.txt` | GetAlertLevel | `src/ai/aiscrpt.cpp`: reads AI state alertness, returns kNoAlert without basic script | Source implementation reviewed; runtime parity unverified |
+| ND-8e82e8621427 | `DOC/script/AI.txt` | SetMinimumAlert | `src/ai/aiscrpt.cpp`: updates minLevel in AI alert-cap property | Source implementation reviewed; property effects unverified |
+| ND-95e7bec56a32 | `DOC/script/AI.txt` | ClearGoals | `src/ai/aiscrpt.cpp`: aiscrpt.cpp ClearGoals body contains only a comment | Missing behavior: explicit no-op |
+| ND-b227c42650ca | `DOC/script/AI.txt` | SetScriptFlags | `src/ai/aiscrpt.cpp`: sets sound-enactor speech-stop and halts speech; source explicitly excludes motion support | Partial: speech flag only; motion flag ignored |
+| ND-24614896b4fb | `DOC/script/AI.txt` | ClearAlertness | `src/ai/aiscrpt.cpp`: sets lowest alert level and removes outgoing awareness links | Source implementation reviewed; AI-state parity unverified |
+| ND-0f6725ad30b0 | `DOC/script/AI.txt` | Signal | `src/ai/aiscrpt.cpp`: sends AISignal message to owner via g_pAISignalMsg | Source implementation reviewed; network/runtime parity unverified |
+| ND-035e7ebf7cb8 | `DOC/script/AI.txt` | StartConversation | `src/ai/aiscrpt.cpp`: delegates to AIManager StartConversation | Source implementation reviewed; conversation lifecycle unverified |
+| ND-e204ab512911 | `DOC/script/AI.txt` | Stun | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing native AI method |
+| ND-861a6feb3535 | `DOC/script/AI.txt` | IsStunned | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing native AI method |
+| ND-f1a11fec0e1a | `DOC/script/AI.txt` | UnStun | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing native AI method |
+| ND-9f59b6c3b0d6 | `DOC/script/AI.txt` | Freeze | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing native AI method |
+| ND-c0f83dd1658d | `DOC/script/AI.txt` | IsFrozen | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing native AI method |
+| ND-d571ce17f170 | `DOC/script/AI.txt` | UnFreeze | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing native AI method |
+| ND-8e9612b87807 | `DOC/script/AI.txt` | SetFaceVisage | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing native AI method |
 | ND-4b1ff6146d60 | `DOC/script/ActReact.txt` | React | `src/actreact/arloop.h`, `src/actreact/contag8r.cpp`, `src/actreact/periog8r.cpp` | Unverified |
 | ND-8720428631e9 | `DOC/script/ActReact.txt` | Stimulate | `src/actreact/stimul8r.cpp`, `src/editor/arcmd.cpp`, `src/script/arscript.cpp` | Unverified |
 | ND-acfc655d511e | `DOC/script/ActReact.txt` | StimulateLegacy | No exact token; inspect aliases | Unverified |
@@ -973,23 +973,23 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-0e54d381333c | `DOC/squirrel_script/API-reference_services.txt` | Data.RandInt | `src/script/datascrs.cpp`, `src/script/datascrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
 | ND-9192aa2d1e2a | `DOC/squirrel_script/API-reference_services.txt` | Data.RandFlt0to1 | `src/script/datascrs.cpp`, `src/script/datascrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
 | ND-21f1689fd125 | `DOC/squirrel_script/API-reference_services.txt` | Data.RandFltNeg1to1 | `src/script/datascrs.cpp`, `src/script/datascrs.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
-| ND-1f312783a051 | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeGotoObjLoc | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-bee7499b3bf2 | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeFrobObjWith | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
-| ND-62ba9c335e9f | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeFrobObj | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-e4d3e05c73c2 | `DOC/squirrel_script/API-reference_services.txt` | AI.GetAlertLevel | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-6bb94ebaaa4c | `DOC/squirrel_script/API-reference_services.txt` | AI.SetMinimumAlert | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-de28d918e66c | `DOC/squirrel_script/API-reference_services.txt` | AI.ClearGoals | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-b1960cd78b1d | `DOC/squirrel_script/API-reference_services.txt` | AI.SetScriptFlags | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-e447b085eee6 | `DOC/squirrel_script/API-reference_services.txt` | AI.ClearAlertness | `src/ai/aiscrpt.cpp`, `src/ai/aiscrpt.h`, `src/ai/aiscrptapi.h` | Unverified |
-| ND-5356fd09c83a | `DOC/squirrel_script/API-reference_services.txt` | AI.Signal | `src/ai/ai.cpp`, `src/ai/aiactps.cpp`, `src/ai/aibasabl.h` | Unverified |
-| ND-e0d0700ff167 | `DOC/squirrel_script/API-reference_services.txt` | AI.StartConversation | `src/ai/aiapi.h`, `src/ai/aicmds.cpp`, `src/ai/aiman.cpp` | Unverified |
-| ND-452fe9e8dcaf | `DOC/squirrel_script/API-reference_services.txt` | AI.Stun | `src/ai/aistun.cpp`, `src/dark/drkpwups.cpp`, `src/deepc/ai/dpcstnrc.cpp` | Unverified |
-| ND-aa05b404e6e2 | `DOC/squirrel_script/API-reference_services.txt` | AI.IsStunned | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
-| ND-542208ae779c | `DOC/squirrel_script/API-reference_services.txt` | AI.UnStun | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/shock/shkaisc.cpp` | Unverified |
-| ND-6a5d9b37f4ed | `DOC/squirrel_script/API-reference_services.txt` | AI.Freeze | `src/ai/ai.cpp`, `src/ai/ai.h`, `src/ai/aiapi.h` | Unverified |
-| ND-695438b7a065 | `DOC/squirrel_script/API-reference_services.txt` | AI.IsFrozen | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/motion/creature.cpp` | Unverified |
-| ND-2875b1fe0dad | `DOC/squirrel_script/API-reference_services.txt` | AI.UnFreeze | `src/deepc/scripts/dpcaisc.cpp`, `src/deepc/scripts/dpcaisc.h`, `src/motion/creature.cpp` | Unverified |
-| ND-a32bb54b54c2 | `DOC/squirrel_script/API-reference_services.txt` | AI.SetFaceVisage | No exact token; inspect aliases | Unverified |
+| ND-1f312783a051 | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeGotoObjLoc | `src/ai/aiscrpt.cpp`: uses cAIBasicScript GotoObjLoc with speed/priority conversion and callback data, false without basic script; CallAI forwarding exists, Squirrel conversion/version guards unverified | Source implementation reviewed; action/callback parity unverified |
+| ND-bee7499b3bf2 | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeFrobObjWith | `src/ai/aiscrpt.cpp`: CallAI forwards explicit-tool form to native FrobObj overload; CallAI forwarding exists, Squirrel conversion/version guards unverified | Source implementation reviewed; action/callback parity unverified |
+| ND-62ba9c335e9f | `DOC/squirrel_script/API-reference_services.txt` | AI.MakeFrobObj | `src/ai/aiscrpt.cpp`: native overloads call FrobObj with optional tool, priority conversion and callback data; CallAI forwarding exists, Squirrel conversion/version guards unverified | Source implementation reviewed; action/callback parity unverified |
+| ND-e4d3e05c73c2 | `DOC/squirrel_script/API-reference_services.txt` | AI.GetAlertLevel | `src/ai/aiscrpt.cpp`: reads AI state alertness, returns kNoAlert without basic script; CallAI forwarding exists, Squirrel conversion/version guards unverified | Source implementation reviewed; runtime parity unverified |
+| ND-6bb94ebaaa4c | `DOC/squirrel_script/API-reference_services.txt` | AI.SetMinimumAlert | `src/ai/aiscrpt.cpp`: updates minLevel in AI alert-cap property; CallAI forwarding exists, Squirrel conversion/version guards unverified | Source implementation reviewed; property effects unverified |
+| ND-de28d918e66c | `DOC/squirrel_script/API-reference_services.txt` | AI.ClearGoals | `src/ai/aiscrpt.cpp`: aiscrpt.cpp ClearGoals body contains only a comment; CallAI forwarding exists, Squirrel conversion/version guards unverified | Missing behavior: explicit no-op |
+| ND-b1960cd78b1d | `DOC/squirrel_script/API-reference_services.txt` | AI.SetScriptFlags | `src/ai/aiscrpt.cpp`: sets sound-enactor speech-stop and halts speech; source explicitly excludes motion support; CallAI forwarding exists, Squirrel conversion/version guards unverified | Partial: speech flag only; motion flag ignored |
+| ND-e447b085eee6 | `DOC/squirrel_script/API-reference_services.txt` | AI.ClearAlertness | `src/ai/aiscrpt.cpp`: sets lowest alert level and removes outgoing awareness links; CallAI forwarding exists, Squirrel conversion/version guards unverified | Source implementation reviewed; AI-state parity unverified |
+| ND-5356fd09c83a | `DOC/squirrel_script/API-reference_services.txt` | AI.Signal | `src/ai/aiscrpt.cpp`: sends AISignal message to owner via g_pAISignalMsg; CallAI forwarding exists, Squirrel conversion/version guards unverified | Source implementation reviewed; network/runtime parity unverified |
+| ND-e0d0700ff167 | `DOC/squirrel_script/API-reference_services.txt` | AI.StartConversation | `src/ai/aiscrpt.cpp`: delegates to AIManager StartConversation; CallAI forwarding exists, Squirrel conversion/version guards unverified | Source implementation reviewed; conversation lifecycle unverified |
+| ND-452fe9e8dcaf | `DOC/squirrel_script/API-reference_services.txt` | AI.Stun | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing Squirrel AI method and native backing method |
+| ND-aa05b404e6e2 | `DOC/squirrel_script/API-reference_services.txt` | AI.IsStunned | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing Squirrel AI method and native backing method |
+| ND-542208ae779c | `DOC/squirrel_script/API-reference_services.txt` | AI.UnStun | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing Squirrel AI method and native backing method |
+| ND-6a5d9b37f4ed | `DOC/squirrel_script/API-reference_services.txt` | AI.Freeze | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing Squirrel AI method and native backing method |
+| ND-695438b7a065 | `DOC/squirrel_script/API-reference_services.txt` | AI.IsFrozen | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing Squirrel AI method and native backing method |
+| ND-2875b1fe0dad | `DOC/squirrel_script/API-reference_services.txt` | AI.UnFreeze | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing Squirrel AI method and native backing method |
+| ND-a32bb54b54c2 | `DOC/squirrel_script/API-reference_services.txt` | AI.SetFaceVisage | aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure | Missing Squirrel AI method and native backing method |
 | ND-d1325e845cea | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayAtLocation | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-450f4fc82aa8 | `DOC/squirrel_script/API-reference_services.txt` | Sound.PlayAtObject | `libsrc/script/squirrel/newdark_api.nut.inc`, `libsrc/script/squirrel/squirrelhost.cpp` | Unverified |
 | ND-f09d70879aad | `DOC/squirrel_script/API-reference_services.txt` | Sound.Play | `src/ai/aiactps.cpp`, `src/ai/aiacttyp.h`, `src/ai/aideath.cpp` | Unverified |

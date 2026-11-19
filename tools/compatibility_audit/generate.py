@@ -405,6 +405,40 @@ def review(doc, name, evidence):
         else:
             status = "Missing native method" if native_animation else "Missing Squirrel method and native backing method"
             evidence = "antxscpt.cpp and CallAnimTexture implement only object-centred ChangeTexture"
+    ai_method = name.rsplit(".", 1)[-1]
+    native_ai = doc.parent.name == "script" and doc.name == "AI.txt"
+    squirrel_ai = doc.name == "API-reference_services.txt" and name.startswith("AI.")
+    if native_ai or squirrel_ai:
+        ai_review = {
+            "MakeGotoObjLoc": ("Source implementation reviewed; action/callback parity unverified",
+                               "uses cAIBasicScript GotoObjLoc with speed/priority conversion and callback data, false without basic script"),
+            "MakeFrobObj": ("Source implementation reviewed; action/callback parity unverified",
+                            "native overloads call FrobObj with optional tool, priority conversion and callback data"),
+            "MakeFrobObjWith": ("Source implementation reviewed; action/callback parity unverified",
+                                "CallAI forwards explicit-tool form to native FrobObj overload"),
+            "GetAlertLevel": ("Source implementation reviewed; runtime parity unverified",
+                              "reads AI state alertness, returns kNoAlert without basic script"),
+            "SetMinimumAlert": ("Source implementation reviewed; property effects unverified",
+                                "updates minLevel in AI alert-cap property"),
+            "ClearGoals": ("Missing behavior: explicit no-op",
+                           "aiscrpt.cpp ClearGoals body contains only a comment"),
+            "SetScriptFlags": ("Partial: speech flag only; motion flag ignored",
+                               "sets sound-enactor speech-stop and halts speech; source explicitly excludes motion support"),
+            "ClearAlertness": ("Source implementation reviewed; AI-state parity unverified",
+                               "sets lowest alert level and removes outgoing awareness links"),
+            "Signal": ("Source implementation reviewed; network/runtime parity unverified",
+                       "sends AISignal message to owner via g_pAISignalMsg"),
+            "StartConversation": ("Source implementation reviewed; conversation lifecycle unverified",
+                                  "delegates to AIManager StartConversation"),
+        }
+        if ai_method in ai_review:
+            status, evidence = ai_review[ai_method]
+            evidence = "`src/ai/aiscrpt.cpp`: " + evidence
+            if squirrel_ai:
+                evidence += "; CallAI forwarding exists, Squirrel conversion/version guards unverified"
+        if ai_method in {"Stun", "IsStunned", "UnStun", "Freeze", "IsFrozen", "UnFreeze", "SetFaceVisage"}:
+            status = "Missing native AI method" if native_ai else "Missing Squirrel AI method and native backing method"
+            evidence = "aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

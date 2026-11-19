@@ -470,3 +470,13 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   dereferences remain correctness work. Loc/global/single-polygon additions
   are absent from native and Squirrel adapters. Twenty-one audit tests pass;
   no version reporting or texture behavior changed in this review.
+
+- AI service source audit traced aiscrpt.cpp and CallAI against native/Squirrel
+  docs. ClearGoals is an explicit no-op; SetScriptFlags controls speech only,
+  ignoring motion flags. Stun/IsStunned/UnStun, Freeze/IsFrozen/UnFreeze and
+  SetFaceVisage are absent from both AI adapters. Existing ShockAI capabilities
+  would not establish exposure through the documented AI service. Movement and
+  frobbing delegate to cAIBasicScript with speed/priority/callback data; alerts,
+  owner-routed signals and conversations have implementations but need action,
+  callback, state and runtime verification. No AI behavior changed. The existing
+  twenty-one audit-tool tests still pass; full semantic review remains open.
