@@ -642,6 +642,8 @@ def main():
               "declarations, stubs or unrelated identifiers. No match does not rule out aliases.", "",
               "See `newdark-compatibility-plan.md` for confirmed findings, dependencies and gates.", "",
               "IDs are content-derived and remain stable when unrelated requirements are added.", "",
+              "See `newdark-script-contracts.md` for full overloads, guards and version annotations;",
+              "those documented declarations still require ABI/behavioral review.", "",
               "| ID | Reference | Requirement | Source candidates / review evidence | Status |",
               "| --- | --- | --- | --- | --- |"]
     number = 0

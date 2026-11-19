@@ -10,6 +10,9 @@ See `newdark-compatibility-plan.md` for confirmed findings, dependencies and gat
 
 IDs are content-derived and remain stable when unrelated requirements are added.
 
+See `newdark-script-contracts.md` for full overloads, guards and version annotations;
+those documented declarations still require ABI/behavioral review.
+
 | ID | Reference | Requirement | Source candidates / review evidence | Status |
 | --- | --- | --- | --- | --- |
 | ND-3cdf0a49b33d | `DOC/al_reverb.ini` | al_reverb | `libsrc/sound/openal.cpp` UpdateEffect uses compiled six-parameter presets and fixed reflection values; no INI loader | Missing preset-file loading; EFX reverb exists |

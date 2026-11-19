@@ -44,3 +44,17 @@ The inventory now expands DML lifecycle/command requirements and Squirrel servic
 methods/message classes. Native and Squirrel requirements use different reference
 keys. Squirrel API-version conditions and overloaded signatures still need review;
 method-name inventory must not be interpreted as API parity.
+
+Generate the companion declaration inventory with:
+
+```sh
+python3 tools/compatibility_audit/script_contracts.py /path/to/thief_gold \
+  --output docs/newdark-script-contracts.md
+```
+
+This retains every documented native/Squirrel overload, source line, conditional
+branch history and nearby version annotation. Guards are literal documentation,
+not evaluated platform availability; notes are not inferred minimum versions.
+The declaration inventory closes an extraction gap, not the semantic ABI audit.
+Use it alongside the method-level matrix when checking vtable order, defaults,
+argument/output shape and API-version gating.

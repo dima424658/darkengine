@@ -538,3 +538,14 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   are missing from both adapters. CD SetBGM/SetTrack ignore arguments and return
   S_OK; Sound schema playback is separate. Existing twenty-one audit tests pass.
   No network session or CD behavior was tested or changed in this review.
+
+- Added docs/newdark-script-contracts.md as a companion to the method-level
+  matrix: 804 native/Squirrel declarations retain full overload signatures,
+  source lines, literal conditional branch history and nearby version notes.
+  This exposes THIEF1-dependent method placement/defaults that the grouped
+  matrix could not represent. Extraction does not evaluate guards, infer API
+  availability or prove host/guest vtable conformance. The remaining semantic
+  review must compare these contracts with implementation and runtime behavior.
+  Parser tests cover multiline overloads, nested if/elif/else, quoted comment
+  markers, comment examples, version-note reset and incomplete input. All 24
+  audit-tool tests pass. No game behavior changed.
