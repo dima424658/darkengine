@@ -245,6 +245,26 @@ def review(doc, name, evidence):
             "ffmpeg_force_intern_indeo5": ("External DLL codec selection replaced; key unsupported",
                                          "actmovie/movie.cpp uses avcodec decoder lookup, not ir50_32.dll selection; prefers available MP4 sibling"),
         })
+        replacements.update({
+            "analog_mwheel_bind": ("Partial legacy analog wheel; documented binding mode missing",
+                                   "ibmapper.cpp sends signed wheel parameter only to mouse_wheel; no up/down controls or options-menu mode selector"),
+            "mouse_smoothing": ("Missing configurable mouse smoothing",
+                                "SDL accumulates relative deltas, ibmapper/gen_bind pass them directly; no frame-history averaging setting"),
+            "mouse_smoothing_weight": ("Missing weighted mouse smoothing",
+                                       "No weight/history processing in relative-motion binder path"),
+            "use_raw_mouse_input": ("Windows API replaced by SDL relative mode; key unsupported",
+                                    "sdl_window.cpp uses SDL_SetWindowRelativeMouseMode and sdl_events.cpp accumulates xrel/yrel without reading Windows-specific selector"),
+            "raw_mouse_sens_scale": ("Missing independent raw-input base scale",
+                                     "gen_bind.cpp applies general mouse_sensitivity/invert only, no raw x/y base scale"),
+            "mouse_sensitivity_use_aspect": ("Missing documented bind variable",
+                                             "MTurnProc multiplies delta by general sensitivity, no configurable aspect policy"),
+            "mouse_sensitivity_y_scale": ("Missing documented bind variable",
+                                          "MLookProc applies general sensitivity and invert, no additional vertical factor"),
+            "ext_kb_country_check": ("Partial locale-based layouts; documented extended detection absent",
+                                     "gen_bind.cpp maps platform language fr/de/it/es otherwise US; numeric kb_country override, no custom layout-ID loader"),
+            "crouch_unmount": ("Missing documented crouch bind option",
+                               "CrouchProc/CrouchHoldProc change stance only while grounded; no climb detach option"),
+        })
         if name in replacements:
             status, evidence = replacements[name]
     if doc.name == "modders_notes.txt":

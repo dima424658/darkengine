@@ -435,7 +435,7 @@ those documented declarations still require ABI/behavioral review.
 | ND-25306f8bf391 | `DOC/new_config_vars.txt` | ai_death_keep_phys | No exact token; inspect aliases | Unverified |
 | ND-cc77ea080322 | `DOC/new_config_vars.txt` | legacy_force_match_unrefs | No exact token; inspect aliases | Unverified |
 | ND-ba4322e8469a | `DOC/new_config_vars.txt` | render_weapon_particles | No exact token; inspect aliases | Unverified |
-| ND-c1c0fb33a041 | `DOC/new_config_vars.txt` | analog_mwheel_bind | No exact token; inspect aliases | Unverified |
+| ND-c1c0fb33a041 | `DOC/new_config_vars.txt` | analog_mwheel_bind | ibmapper.cpp sends signed wheel parameter only to mouse_wheel; no up/down controls or options-menu mode selector | Partial legacy analog wheel; documented binding mode missing |
 | ND-551976eb8ff7 | `DOC/new_config_vars.txt` | shock_single_bind_set | No exact token; inspect aliases | Unverified |
 | ND-f9e34341a45a | `DOC/new_config_vars.txt` | shock_quicksave_slot | No exact token; inspect aliases | Unverified |
 | ND-4af40536e194 | `DOC/new_config_vars.txt` | shock_autosave_slot | No exact token; inspect aliases | Unverified |
@@ -451,7 +451,7 @@ those documented declarations still require ABI/behavioral review.
 | ND-ce233be1145a | `DOC/new_config_vars.txt` | sun_runtime_obj_shadows | No exact token; inspect aliases | Unverified |
 | ND-6991a18dd690 | `DOC/new_config_vars.txt` | frob_mode | No exact token; inspect aliases | Unverified |
 | ND-d4aba0400ad9 | `DOC/new_config_vars.txt` | disable_headtracking | No exact token; inspect aliases | Unverified |
-| ND-849bf22d8f4a | `DOC/new_config_vars.txt` | ext_kb_country_check | No exact token; inspect aliases | Unverified |
+| ND-849bf22d8f4a | `DOC/new_config_vars.txt` | ext_kb_country_check | gen_bind.cpp maps platform language fr/de/it/es otherwise US; numeric kb_country override, no custom layout-ID loader | Partial locale-based layouts; documented extended detection absent |
 | ND-4d92287c670e | `DOC/new_config_vars.txt` | skip_writeaccess_check | No exact token; inspect aliases | Unverified |
 | ND-ef493c29cbb3 | `DOC/new_config_vars.txt` | swim_chest_offset | No exact token; inspect aliases | Unverified |
 | ND-0b04fd5a8981 | `DOC/new_config_vars.txt` | new_mantle_fwd | No exact token; inspect aliases | Unverified |
@@ -478,10 +478,10 @@ those documented declarations still require ABI/behavioral review.
 | ND-9a2c05dcccaa | `DOC/new_config_vars.txt` | fam_search_missing | No exact token; inspect aliases | Unverified |
 | ND-0cd73310d51d | `DOC/new_config_vars.txt` | allow_wr_tex_assign | No exact token; inspect aliases | Unverified |
 | ND-1764ffbe9f3f | `DOC/new_config_vars.txt` | sdesc_decimals | No exact token; inspect aliases | Unverified |
-| ND-a065c842be2b | `DOC/new_config_vars.txt` | mouse_smoothing | No exact token; inspect aliases | Unverified |
-| ND-f77fc984455f | `DOC/new_config_vars.txt` | mouse_smoothing_weight | No exact token; inspect aliases | Unverified |
-| ND-bece1bc3ac00 | `DOC/new_config_vars.txt` | use_raw_mouse_input | No exact token; inspect aliases | Unverified |
-| ND-b380497775a4 | `DOC/new_config_vars.txt` | raw_mouse_sens_scale | No exact token; inspect aliases | Unverified |
+| ND-a065c842be2b | `DOC/new_config_vars.txt` | mouse_smoothing | SDL accumulates relative deltas, ibmapper/gen_bind pass them directly; no frame-history averaging setting | Missing configurable mouse smoothing |
+| ND-f77fc984455f | `DOC/new_config_vars.txt` | mouse_smoothing_weight | No weight/history processing in relative-motion binder path | Missing weighted mouse smoothing |
+| ND-bece1bc3ac00 | `DOC/new_config_vars.txt` | use_raw_mouse_input | sdl_window.cpp uses SDL_SetWindowRelativeMouseMode and sdl_events.cpp accumulates xrel/yrel without reading Windows-specific selector | Windows API replaced by SDL relative mode; key unsupported |
+| ND-b380497775a4 | `DOC/new_config_vars.txt` | raw_mouse_sens_scale | gen_bind.cpp applies general mouse_sensitivity/invert only, no raw x/y base scale | Missing independent raw-input base scale |
 | ND-48c75ef95309 | `DOC/new_config_vars.txt` | ui_scale_keep_ar | No exact token; inspect aliases | Unverified |
 | ND-cc3e8b2adbd3 | `DOC/new_config_vars.txt` | script_aliases | No exact token; inspect aliases | Unverified |
 | ND-92e0070c1516 | `DOC/new_config_vars.txt` | player_camera_limit_x | No exact token; inspect aliases | Unverified |
@@ -512,9 +512,9 @@ those documented declarations still require ABI/behavioral review.
 | ND-393f085673ca | `DOC/new_config_vars.txt` | inv_font | No exact token; inspect aliases | Unverified |
 | ND-282fbda987e7 | `DOC/new_config_vars.txt` | dark_no_script_save | No exact token; inspect aliases | Unverified |
 | ND-ea3be3323623 | `DOC/new_config_vars.txt` | shock_no_script_save | No exact token; inspect aliases | Unverified |
-| ND-5812986f9bf1 | `DOC/new_config_vars.txt` | mouse_sensitivity_use_aspect | No exact token; inspect aliases | Unverified |
-| ND-4c4559e94db6 | `DOC/new_config_vars.txt` | mouse_sensitivity_y_scale | No exact token; inspect aliases | Unverified |
-| ND-eca84dc9c7b8 | `DOC/new_config_vars.txt` | crouch_unmount | No exact token; inspect aliases | Unverified |
+| ND-5812986f9bf1 | `DOC/new_config_vars.txt` | mouse_sensitivity_use_aspect | MTurnProc multiplies delta by general sensitivity, no configurable aspect policy | Missing documented bind variable |
+| ND-4c4559e94db6 | `DOC/new_config_vars.txt` | mouse_sensitivity_y_scale | MLookProc applies general sensitivity and invert, no additional vertical factor | Missing documented bind variable |
+| ND-eca84dc9c7b8 | `DOC/new_config_vars.txt` | crouch_unmount | CrouchProc/CrouchHoldProc change stance only while grounded; no climb detach option | Missing documented crouch bind option |
 | ND-1fc10d7a4f2d | `DOC/new_config_vars.txt` | crouch_norepeat | No exact token; inspect aliases | Unverified |
 | ND-c47c85c04ca3 | `DOC/new_config_vars.txt` | flytoggle | No exact token; inspect aliases | Unverified |
 | ND-b769bdeb0929 | `DOC/script/AI.txt` | MakeGotoObjLoc | `src/ai/aiscrpt.cpp`: uses cAIBasicScript GotoObjLoc with speed/priority conversion and callback data, false without basic script | Source implementation reviewed; action/callback parity unverified |

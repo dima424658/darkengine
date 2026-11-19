@@ -658,3 +658,14 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   interface support must not be inferred from working synchronous playback.
   All 26 audit tests pass. No movie behavior changed; visual/audio/lifecycle
   acceptance and the missing settings remain implementation work.
+
+- Input configuration audit traced SDL relative motion/wheel accumulation,
+  ibmapper dispatch and gen_bind input variables. Legacy mouse_wheel commands
+  exist, but directional wheel buttons/options binding selector do not.
+  Smoothing/history weights, independent raw base scale, vertical sensitivity
+  and aspect-policy bind variables are absent. SDL relative mode replaces the
+  Windows API choice without consuming use_raw_mouse_input. Language detection
+  maps fr/de/it/es and falls back to US, not extended keyboard-layout IDs.
+  Crouch handlers only change grounded stance and do not implement crouch_unmount.
+  All 26 audit tests pass. No input behavior changed. Untracked TODO.md was
+  preserved and excluded from this work's commit.
