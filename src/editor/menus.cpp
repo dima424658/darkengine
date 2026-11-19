@@ -1,7 +1,7 @@
 #include <lg.h>
 #include <menus.h>
 
-#include "../../libsrc/dispdev/display_window.h"
+#include <display_window.h>
 
 extern "C" void SetMainMenu(const char *name)
 {

@@ -1,4 +1,4 @@
-#include "../../libsrc/dbmod/fingerprint.hpp"
+#include <fingerprint.hpp>
 #include <iostream>
 #include <stdexcept>
 

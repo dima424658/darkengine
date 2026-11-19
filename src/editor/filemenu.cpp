@@ -2,7 +2,7 @@
 #include <nfd.h>
 #include <nfd_sdl3.h>
 
-#include "../../libsrc/dispdev/sdl_window.h"
+#include <sdl_window.h>
 #include <dbfile.h>
 #include <filemenu.h>
 #include <lg.h>

@@ -8,7 +8,7 @@
 
 #include <appagg.h>
 #include <scrptsrv.h>
-#include "../../../src/framewrk/contentctx.h"
+#include <contentctx.h>
 #include <aiscrm.h>
 #include <aiscrptapi.h>
 #include <antxscpt.h>
@@ -53,7 +53,7 @@
 #include <traitman.h>
 #include <twqscrpt.h>
 #include <weapscpt.h>
-#include "../../../src/physics/phscrpt.h"
+#include <phscrpt.h>
 #include <2d.h>
 #include <fcolor.h>
 #include <grscale.h>

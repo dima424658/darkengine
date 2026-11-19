@@ -1,4 +1,4 @@
-#include "../../libsrc/dbmod/object_reference.hpp"
+#include <object_reference.hpp>
 #include <iostream>
 #include <stdexcept>
 

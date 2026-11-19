@@ -18,10 +18,10 @@
 
 #include "runtime.h"
 #include "event_bridge.h"
-#include "../dispdev/display_window.h"
+#include <display_window.h>
 #include "vulkan_context.hpp"
 #include "vulkan_render_backend.hpp"
-#include "../dispdev/sdl_vulkan.hpp"
+#include <sdl_vulkan.hpp>
 #include "vulkan_scene_renderer.hpp"
 #include "canvas_snapshot.hpp"
 #include <config.h>

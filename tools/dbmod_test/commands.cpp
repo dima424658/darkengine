@@ -1,4 +1,4 @@
-#include "../../libsrc/dbmod/commands.hpp"
+#include <commands.hpp>
 #include <iostream>
 #include <stdexcept>
 

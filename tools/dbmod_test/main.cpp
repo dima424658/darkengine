@@ -1,6 +1,6 @@
-#include "../../libsrc/dbmod/syntax.hpp"
-#include "../../libsrc/dbmod/fingerprint.hpp"
-#include "../../libsrc/dbmod/commands.hpp"
+#include <syntax.hpp>
+#include <fingerprint.hpp>
+#include <commands.hpp>
 #include <fstream>
 #include <iostream>
 #include <iterator>

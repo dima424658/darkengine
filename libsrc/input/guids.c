@@ -3,4 +3,4 @@
 #include "inputguid.h"
 #include <inpinit.h>
 
-#include "../../libsrc/compapis/inpguid.h"
+#include <inpguid.h>

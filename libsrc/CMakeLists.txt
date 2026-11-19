@@ -95,6 +95,7 @@ target_include_directories(dark_engine_config INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/res"
   "${CMAKE_CURRENT_SOURCE_DIR}/rnd"
   "${CMAKE_CURRENT_SOURCE_DIR}/script"
+  "${CMAKE_CURRENT_SOURCE_DIR}/script/squirrel"
   "${CMAKE_CURRENT_SOURCE_DIR}/sdesc"
   "${CMAKE_CURRENT_SOURCE_DIR}/skel"
   "${CMAKE_CURRENT_SOURCE_DIR}/sndsrc"

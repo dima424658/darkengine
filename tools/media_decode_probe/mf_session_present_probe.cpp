@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "../../libsrc/actmovie/mfaudio.h"
+#include <mfaudio.h>
 
 #pragma comment(lib, "evr.lib")
 #pragma comment(lib, "mf.lib")

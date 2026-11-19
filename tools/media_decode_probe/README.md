@@ -11,7 +11,8 @@ These diagnostics check the two independent parts of movie playback:
 They do not require Thief 2 data in the repository.
 
 These standalone probes are not part of the CMake game/editor build and
-currently have no CMake targets.
+currently have no CMake targets. When compiling the presentation probe manually,
+add `libsrc/actmovie` to the compiler's include directories for `<mfaudio.h>`.
 
 The decode probe processes five seconds without displaying it. The presentation
 probe opens a window for ten seconds and obtains images from EVR after

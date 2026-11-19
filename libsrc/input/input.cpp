@@ -15,7 +15,7 @@
 #include <mouse.h>
 #include <mousevel.h>
 
-#include "../dispdev/display_window.h"
+#include <display_window.h>
 
 namespace {
 std::mutex g_mutex;

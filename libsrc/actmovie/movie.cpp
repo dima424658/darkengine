@@ -30,8 +30,8 @@ extern "C" {
 #include <platform_services.h>
 #include "movie_audio_output.h"
 
-#include "../lgd3d/runtime.h"
-#include "../gameshel/sdl_events.h"
+#include <runtime.h>
+#include <sdl_events.h>
 
 namespace
 {

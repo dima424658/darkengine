@@ -1,4 +1,4 @@
-#include "../../libsrc/dbmod/string_fields.hpp"
+#include <string_fields.hpp>
 #include <iostream>
 #include <stdexcept>
 

@@ -7,8 +7,8 @@
 #include <dispapi.h>
 #include <gshelapi.h>
 
-#include "../dispdev/display_window.h"
-#include "../lgd3d/runtime.h"
+#include <display_window.h>
+#include <runtime.h>
 #include "sdl_events.h"
 
 bool DarkPumpEvents(void)

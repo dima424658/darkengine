@@ -13,8 +13,8 @@
 
 #include "dispbase.h"
 #include "display_window.h"
-#include "../lgd3d/runtime.h"
-#include "../lgd3d/event_bridge.h"
+#include <runtime.h>
+#include <event_bridge.h>
 
 class cSDLDisplayDevice : public cDisplayDevice
 {

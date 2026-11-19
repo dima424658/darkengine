@@ -1,4 +1,4 @@
-#include "../../libsrc/namedres/material_parser.hpp"
+#include <material_parser.hpp>
 #include <cstdio>
 #include <map>
 #include <stdexcept>

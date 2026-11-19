@@ -34,3 +34,8 @@ add_executable(dbmod_object_reference_test object_reference.cpp
   ../../libsrc/dbmod/object_reference.cpp)
 target_compile_features(dbmod_object_reference_test PRIVATE cxx_std_17)
 add_test(NAME dbmod_object_reference COMMAND dbmod_object_reference_test)
+
+get_property(dbmod_test_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+foreach(target IN LISTS dbmod_test_targets)
+  target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../libsrc/dbmod")
+endforeach()

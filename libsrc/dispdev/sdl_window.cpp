@@ -6,7 +6,7 @@
 
 #include "sdl_window.h"
 #include "display_window.h"
-#include "../lgd3d/event_bridge.h"
+#include <event_bridge.h>
 
 namespace
 {

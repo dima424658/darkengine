@@ -7,8 +7,8 @@
 #include <mouse.h>
 
 #include "sdl_events.h"
-#include "../dispdev/sdl_window.h"
-#include "../lgd3d/event_bridge.h"
+#include <sdl_window.h>
+#include <event_bridge.h>
 #include <render_backend.h>
 
 extern "C" void DarkInputKey(uchar scan, int down);

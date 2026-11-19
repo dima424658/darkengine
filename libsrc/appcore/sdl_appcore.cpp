@@ -10,7 +10,7 @@
 #include <appagg.h>
 #include <appapi.h>
 #include <platform_services.h>
-#include "../lgd3d/runtime.h"
+#include <runtime.h>
 
 class cSDLApplication : public IApplication
 {

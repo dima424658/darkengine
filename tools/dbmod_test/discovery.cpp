@@ -1,4 +1,4 @@
-#include "../../libsrc/dbmod/discovery.hpp"
+#include <discovery.hpp>
 #include <iostream>
 #include <map>
 #include <stdexcept>
