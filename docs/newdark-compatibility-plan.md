@@ -233,3 +233,7 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
 - The parser is not connected to the game. No runtime compatibility status is
   upgraded by syntax success. Fingerprints, semantic validation, discovery,
   application and persistence remain pending, as does semantic matrix review.
+- Matrix review: corrected material-heading extraction, added content-derived
+  stable IDs, and classified material directives, Engine stubs/approximations
+  and Listener restrictions from implementation evidence. Remaining rows still
+  require semantic review; no runtime feature is considered complete from this.

@@ -33,3 +33,9 @@ This demonstrates that a property-only patch executor would be insufficient:
 fingerprints, links, metaproperties, creation, receptrons, stimulus sources and
 script dependencies must be supported or rejected before any patch is applied.
 No runtime patch loader is enabled by these tools.
+
+Matrix IDs now derive from the reference path and requirement name, so adding
+unrelated entries does not renumber reviewed requirements. Material extraction
+uses directive headings rather than prose words. Materials, Engine stub methods
+and Listener adapter restrictions have explicit source-reviewed classifications;
+these classifications do not imply native runtime or full parity verification.
