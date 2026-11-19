@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 #include <kb.h>
 #include <mouse.h>
@@ -56,7 +57,7 @@ public:
       return m_quit;
    }
 
-   bool PumpMovie()
+   bool PumpMovie(bool allowSkip, const char *termKeys)
    {
       ResetForWindow();
       if (!SDLDisplayGetWindow())
@@ -78,11 +79,17 @@ public:
          else if (event.type == SDL_EVENT_WILL_ENTER_BACKGROUND ||
                   event.type == SDL_EVENT_DID_ENTER_BACKGROUND)
             stop = true;
-         else if (event.type == SDL_EVENT_KEY_DOWN ||
-                  event.type == SDL_EVENT_FINGER_DOWN ||
+         else if (event.type == SDL_EVENT_KEY_DOWN)
+         {
+            if (allowSkip && (!termKeys ||
+                (event.key.key > 0 && event.key.key <= 0x7f &&
+                 std::strchr(termKeys, static_cast<char>(event.key.key)))))
+               stop = true;
+         }
+         else if (event.type == SDL_EVENT_FINGER_DOWN ||
                   event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                   event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN)
-            stop = true;
+            stop = stop || allowSkip;
          else
             HandleEvent(event);
       }
@@ -423,7 +430,7 @@ bool DarkPumpSDLEvents()
    return EventPump().Pump();
 }
 
-bool DarkPumpMovieEvents()
+bool DarkPumpMovieEvents(bool allowSkip, const char *termKeys)
 {
-   return EventPump().PumpMovie();
+   return EventPump().PumpMovie(allowSkip, termKeys);
 }

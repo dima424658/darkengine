@@ -24,9 +24,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include <aggmemb.h>
-#include <movie_backend.h>
-#include <movieapi.h>
+#include "movie.h"
 #include <platform_services.h>
 #include "movie_audio_output.h"
 
@@ -59,74 +57,55 @@ Java_io_github_inkmakerdroid_darkengine_ThiefActivity_nativeMoviePlaybackActive(
 }
 #endif
 
-class cSDLMoviePlayer final : public IMoviePlayer1
-{
-public:
-    explicit cSDLMoviePlayer(IUnknown *outer)
-        : m_state(kMP1NothingOpen), m_volume(0)
-    {
-        INIT_AGGREGATION_1(outer, IID_IMoviePlayer1, this, kPriorityLibrary, nullptr);
-    }
-
-    DECLARE_SIMPLE_AGGREGATION(cSDLMoviePlayer);
-
-    STDMETHOD_(BOOL, Open)(const char *, int, int, int, int) override
-    {
-        m_state = kMP1NothingOpen;
-        return FALSE;
-    }
-    STDMETHOD_(void, Close)() override { m_state = kMP1NothingOpen; }
-    STDMETHOD_(BOOL, CanPlay)() override { return TRUE; }
-    STDMETHOD_(BOOL, Play)(int) override { return FALSE; }
-    STDMETHOD_(BOOL, Pause)() override { return FALSE; }
-    STDMETHOD_(BOOL, Stop)() override { m_state = kMP1NothingOpen; return TRUE; }
-    STDMETHOD_(BOOL, GetVolume)(long *volume) override
-    {
-        if (volume) *volume = m_volume;
-        return volume != nullptr;
-    }
-    STDMETHOD_(BOOL, SetVolume)(long volume) override { m_volume = volume; return TRUE; }
-    STDMETHOD_(eMP1State, GetState)() override { return m_state; }
-    STDMETHOD_(void, SetTermKeys)(char *) override {}
-
-private:
-    eMP1State m_state;
-    long m_volume;
-};
-
-IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cSDLMoviePlayer);
-
-extern "C" tResult LGAPI _MoviePlayerCreate(REFIID, void **player,
-                                              IUnknown *outer, REFCLSID,
-                                              unsigned)
-{
-    if (!outer)
-        return E_INVALIDARG;
-    auto *created = new cSDLMoviePlayer(outer);
-    if (player)
-        *player = created;
-    return created ? S_OK : E_FAIL;
-}
-
 namespace
 {
 using MovieClock = std::chrono::steady_clock;
 
-struct Decoder
+std::string NativeMoviePath(const char *legacyPath)
 {
-    AVCodecContext *context{};
-    int stream{-1};
-};
+    char native[4096];
+    std::string modern = legacyPath ? legacyPath : "";
+    const size_t dot = modern.find_last_of('.');
+    if (dot != std::string::npos)
+    {
+        modern.resize(dot);
+        modern += ".mp4";
+        if (PlatformResolvePath(modern.c_str(), native, sizeof(native)))
+            return native;
+    }
+    if (PlatformResolvePath(legacyPath, native, sizeof(native)))
+        return native;
+    return legacyPath ? legacyPath : "";
+}
 
-void CloseDecoder(Decoder &decoder)
+bool WaitForFrame(MovieClock::time_point start, double seconds,
+    bool allowSkip, const char *termKeys)
+{
+    for (;;)
+    {
+        if (DarkPumpMovieEvents(allowSkip, termKeys))
+            return false;
+        const double elapsed = std::chrono::duration<double>(
+            MovieClock::now() - start).count();
+        if (elapsed >= seconds)
+            return true;
+        const double remaining = seconds - elapsed;
+        std::this_thread::sleep_for(std::chrono::milliseconds(
+            remaining > 0.010 ? 5 : 1));
+    }
+}
+}
+
+void cSDLMoviePlayer::CloseDecoder(Decoder &decoder)
 {
     avcodec_free_context(&decoder.context);
     decoder.stream = -1;
 }
 
-bool OpenDecoder(AVFormatContext *format, AVMediaType type, Decoder &decoder)
+bool cSDLMoviePlayer::OpenDecoder(AVFormatContext *format, int type, Decoder &decoder)
 {
-    const int stream = av_find_best_stream(format, type, -1, -1, nullptr, 0);
+    const int stream = av_find_best_stream(format,
+        static_cast<AVMediaType>(type), -1, -1, nullptr, 0);
     if (stream < 0)
         return false;
     const AVCodec *codec = avcodec_find_decoder(
@@ -146,47 +125,120 @@ bool OpenDecoder(AVFormatContext *format, AVMediaType type, Decoder &decoder)
     return true;
 }
 
-std::string NativeMoviePath(const char *legacyPath)
+cSDLMoviePlayer::cSDLMoviePlayer(IUnknown *outer)
 {
-    char native[4096];
-    std::string modern = legacyPath ? legacyPath : "";
-    const size_t dot = modern.find_last_of('.');
-    if (dot != std::string::npos)
-    {
-        modern.resize(dot);
-        modern += ".mp4";
-        if (PlatformResolvePath(modern.c_str(), native, sizeof(native)))
-            return native;
-    }
-    if (PlatformResolvePath(legacyPath, native, sizeof(native)))
-        return native;
-    return legacyPath ? legacyPath : "";
+    INIT_AGGREGATION_1(outer, IID_IMoviePlayer1, this, kPriorityLibrary, nullptr);
 }
 
-bool WaitForFrame(MovieClock::time_point start, double seconds)
+cSDLMoviePlayer::~cSDLMoviePlayer()
 {
-    for (;;)
-    {
-        if (DarkPumpMovieEvents())
-            return false;
-        const double elapsed = std::chrono::duration<double>(
-            MovieClock::now() - start).count();
-        if (elapsed >= seconds)
-            return true;
-        const double remaining = seconds - elapsed;
-        std::this_thread::sleep_for(std::chrono::milliseconds(
-            remaining > 0.010 ? 5 : 1));
-    }
-}
+    Close();
 }
 
-bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
+BOOL STDMETHODCALLTYPE cSDLMoviePlayer::Open(const char *name, int, int, int, int)
 {
+    Close();
+    if (!name || !*name)
+        return FALSE;
+
+    const std::string path = NativeMoviePath(name);
+    if (avformat_open_input(&m_format, path.c_str(), nullptr, nullptr) < 0 ||
+        avformat_find_stream_info(m_format, nullptr) < 0 ||
+        !OpenDecoder(m_format, AVMEDIA_TYPE_VIDEO, m_video))
+    {
+        std::fprintf(stderr, "Could not decode movie: %s\n", path.c_str());
+        Close();
+        return FALSE;
+    }
+    OpenDecoder(m_format, AVMEDIA_TYPE_AUDIO, m_audio);
+    m_state = kMP1Ready;
+    return TRUE;
+}
+
+void STDMETHODCALLTYPE cSDLMoviePlayer::Close()
+{
+    CloseDecoder(m_audio);
+    CloseDecoder(m_video);
+    avformat_close_input(&m_format);
+    m_state = kMP1NothingOpen;
+    m_hasPlayed = false;
+}
+
+BOOL STDMETHODCALLTYPE cSDLMoviePlayer::CanPlay()
+{
+    return m_state == kMP1Ready;
+}
+
+BOOL STDMETHODCALLTYPE cSDLMoviePlayer::Pause()
+{
+    return FALSE;
+}
+
+BOOL STDMETHODCALLTYPE cSDLMoviePlayer::Stop()
+{
+    m_stopRequested = true;
+    return TRUE;
+}
+
+BOOL STDMETHODCALLTYPE cSDLMoviePlayer::GetVolume(long *volume)
+{
+    if (!volume)
+        return FALSE;
+    *volume = m_volume;
+    return TRUE;
+}
+
+BOOL STDMETHODCALLTYPE cSDLMoviePlayer::SetVolume(long volume)
+{
+    m_volume = std::clamp(volume, -10000L, 0L);
+    return TRUE;
+}
+
+eMP1State STDMETHODCALLTYPE cSDLMoviePlayer::GetState()
+{
+    return m_state;
+}
+
+void STDMETHODCALLTYPE cSDLMoviePlayer::SetTermKeys(char *keys)
+{
+    m_termKeys = keys ? keys : "";
+    m_useTermKeys = keys != nullptr;
+}
+
+IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cSDLMoviePlayer);
+
+extern "C" tResult LGAPI _MoviePlayerCreate(REFIID, void **player,
+    IUnknown *outer, REFCLSID, unsigned)
+{
+    if (!outer)
+        return E_INVALIDARG;
+    auto *created = new cSDLMoviePlayer(outer);
+    if (player)
+        *player = created;
+    return created ? S_OK : E_FAIL;
+}
+
+BOOL STDMETHODCALLTYPE cSDLMoviePlayer::Play(int flags)
+{
+    if (m_state != kMP1Ready || !(flags & kMoviePlayBlock))
+        return FALSE;
+    if (m_hasPlayed)
+    {
+        if (av_seek_frame(m_format, -1, 0, AVSEEK_FLAG_BACKWARD) < 0)
+            return FALSE;
+        avcodec_flush_buffers(m_video.context);
+        if (m_audio.context)
+            avcodec_flush_buffers(m_audio.context);
+    }
+    m_hasPlayed = true;
+    m_stopRequested = false;
+    m_state = kMP1Playing;
     cMoviePlaybackScope playbackScope;
-    const std::string path = NativeMoviePath(legacyPath);
-    AVFormatContext *format = nullptr;
-    Decoder video;
-    Decoder audio;
+    AVFormatContext *format = m_format;
+    Decoder &video = m_video;
+    Decoder &audio = m_audio;
+    const bool allowSkip = !(flags & kMoviePlayNoStop);
+    const char *termKeys = m_useTermKeys ? m_termKeys.c_str() : nullptr;
     SwsContext *scaler = nullptr;
     SwrContext *resampler = nullptr;
     AVFrame *frame = nullptr;
@@ -198,21 +250,8 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     int64_t firstVideoTimestamp = AV_NOPTS_VALUE;
     MovieClock::time_point start;
 
-    if (path.empty() || avformat_open_input(&format, path.c_str(), nullptr,
-                                            nullptr) < 0 ||
-        avformat_find_stream_info(format, nullptr) < 0 ||
-        !OpenDecoder(format, AVMEDIA_TYPE_VIDEO, video))
-    {
-        std::fprintf(stderr, "Could not decode movie: %s\n", path.c_str());
-        if (format)
-            avformat_close_input(&format);
-        return false;
-    }
-    OpenDecoder(format, AVMEDIA_TYPE_AUDIO, audio);
-
-    std::fprintf(stderr,
-        "Playing movie with FFmpeg: %s (%dx%d%s)\n", path.c_str(),
-        video.context->width, video.context->height,
+    std::fprintf(stderr, "Playing movie with FFmpeg: %s (%dx%d%s)\n",
+        format->url, video.context->width, video.context->height,
         audio.context ? ", audio" : "");
 
     frame = av_frame_alloc();
@@ -227,7 +266,7 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     if (!frame || !packet || !scaler)
         keepPlaying = false;
 
-    if (audio.context && audioOutput.Open(volume))
+    if (audio.context && audioOutput.Open(m_volume))
     {
         AVChannelLayout outputLayout = AV_CHANNEL_LAYOUT_STEREO;
         AVChannelLayout inputLayout = audio.context->ch_layout;
@@ -248,7 +287,7 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
             av_channel_layout_uninit(&inputLayout);
     }
 
-    while (keepPlaying && av_read_frame(format, packet) >= 0)
+    while (keepPlaying && !m_stopRequested && av_read_frame(format, packet) >= 0)
     {
         Decoder *decoder = packet->stream_index == video.stream ? &video :
                            packet->stream_index == audio.stream ? &audio :
@@ -260,7 +299,7 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
         }
         av_packet_unref(packet);
 
-        while (keepPlaying && avcodec_receive_frame(decoder->context, frame) == 0)
+        while (keepPlaying && !m_stopRequested && avcodec_receive_frame(decoder->context, frame) == 0)
         {
             if (decoder == &video)
             {
@@ -278,7 +317,8 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
                 const double seconds = timestamp == AV_NOPTS_VALUE ? 0.0 :
                     (timestamp - firstVideoTimestamp) *
                     av_q2d(format->streams[video.stream]->time_base);
-                keepPlaying = WaitForFrame(start, std::max(seconds, 0.0));
+                keepPlaying = WaitForFrame(start, std::max(seconds, 0.0),
+                    allowSkip, termKeys);
                 if (keepPlaying)
                 {
                     played = DarkRenderPresentMovieFrame(
@@ -314,7 +354,7 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     if (audioAvailable && keepPlaying)
     {
         audioOutput.Finish();
-        while (!audioOutput.IsDrained() && !DarkPumpMovieEvents())
+        while (!audioOutput.IsDrained() && !DarkPumpMovieEvents(allowSkip, termKeys))
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
@@ -323,8 +363,6 @@ bool MovieBackendPlaySynchronous(const char *legacyPath, int volume)
     sws_freeContext(scaler);
     av_packet_free(&packet);
     av_frame_free(&frame);
-    CloseDecoder(audio);
-    CloseDecoder(video);
-    avformat_close_input(&format);
+    m_state = kMP1Ready;
     return played;
 }

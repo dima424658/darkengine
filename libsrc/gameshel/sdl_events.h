@@ -2,6 +2,6 @@
 #define DARK_GAMESHEL_SDL_EVENTS_H
 
 bool DarkPumpSDLEvents();
-bool DarkPumpMovieEvents();
+bool DarkPumpMovieEvents(bool allowSkip = true, const char *termKeys = nullptr);
 
 #endif

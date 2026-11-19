@@ -35,6 +35,10 @@ add_subdirectory(libsrc)
 add_subdirectory(src)
 add_subdirectory(assets)
 
+if(NOT ANDROID)
+  add_subdirectory(tools/movie_test EXCLUDE_FROM_ALL)
+endif()
+
 if(NOT ANDROID AND DARK_COMPILE_VULKAN_SHADERS)
   install(FILES ${DARK_VULKAN_SHADER_OUTPUTS}
     DESTINATION bin/generated/vulkan)

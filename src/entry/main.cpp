@@ -16,7 +16,6 @@
 #include <unistd.h>
 #endif
 
-#include <movie_backend.h>
 #include <platform_services.h>
 
 #include <SDL3/SDL_main.h>
@@ -264,16 +263,6 @@ int main(int argc, char *argv[])
     arguments.push_back(argv[0]);
     for (int i = 1; i < argc; ++i)
     {
-        if (std::strncmp(argv[i], "movie_test=", 11) == 0)
-        {
-            const char *path = argv[i] + 11;
-            if (!path[0] || !DarkRenderOpen(640, 480,
-                                             "Dark Engine movie test"))
-                return 1;
-            const bool played = MovieBackendPlaySynchronous(path, 0);
-            DarkRenderClose();
-            return played ? 0 : 1;
-        }
         if (std::strncmp(argv[i], "game_path=", 10) == 0)
         {
             requestedGamePath = argv[i] + 10;
