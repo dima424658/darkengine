@@ -525,6 +525,47 @@ def review(doc, name, evidence):
         elif native_sound and sound_method.endswith("Legacy"):
             status = "THIEF1-specific entry point absent; restored host uses Thief II ABI"
             evidence = "sndscrpt.h/cpp expose network-parameter overloads, not named legacy overloads; Gold guest bridging needs separate ABI verification"
+    camera_method = name.rsplit(".", 1)[-1]
+    native_camera = doc.parent.name == "script" and doc.name == "Camera.txt"
+    squirrel_camera = doc.name == "API-reference_services.txt" and name.startswith("Camera.")
+    if native_camera or squirrel_camera:
+        camera_review = {
+            "StaticAttach": "calls CameraView and hides player arm/clears weapon in THIEF builds",
+            "DynamicAttach": "calls CameraRemote and hides player arm/clears weapon in THIEF builds",
+            "CameraReturn": "reattaches player only if supplied object matches current camera parent; otherwise S_FALSE",
+            "ForceCameraReturn": "reattaches camera to PlayerObject unconditionally",
+            "GetCameraParent": "queries CameraGetObjID(PlayerCamera())",
+            "IsRemote": "compares actual camera parent against PlayerObject",
+            "GetPosition": "reads current CameraGetLocation position",
+            "GetFacing": "reads current CameraGetLocation orientation and converts engine angles to degrees",
+            "CameraToWorld": "rotates local vector with camera orientation matrix and adds camera position",
+            "WorldToCamera": "subtracts camera position then applies transpose of orientation matrix",
+        }
+        if camera_method in camera_review:
+            status = "Source implementation reviewed; runtime/ABI parity unverified"
+            evidence = "`src/script/camscrpt.cpp`: " + camera_review[camera_method]
+            if squirrel_camera:
+                evidence += "; CallCamera forwards to native service"
+        elif camera_method == "LockMovement":
+            status = "Missing behavior: explicit no-op"
+            evidence = "camscrpt.cpp ignores boolean argument and returns S_OK; CallCamera forwards without implementing input lock"
+    if doc.name == "API-reference_services.txt" and name.startswith("DarkUI."):
+        ui_review = {
+            "TextMessage": "delegates to DarkMessageParams with default timeout translation",
+            "ReadBook": "enters SwitchToDarkBookMode with text/art resources",
+            "InvItem": "reads Inventory Selection(kCurrentItem)",
+            "InvWeapon": "reads Inventory Selection(kCurrentWeapon)",
+            "InvSelect": "delegates to Inventory Select",
+            "IsCommandBound": "queries GetCmdBinds with one-result capacity",
+            "DescribeKeyBinding": "joins up to sixteen bindings with localized separator or returns localized no-bindings text",
+        }
+        method = name.rsplit(".", 1)[-1]
+        if method in ui_review:
+            status = "Source implementation reviewed; UI/runtime parity unverified"
+            evidence = "`src/dark/drkuiscr.cpp`: " + ui_review[method] + "; CallDarkUI forwarding exists"
+        elif method == "TextMessageFormatted":
+            status = "Missing Squirrel method and native backing method"
+            evidence = "drkuiscr.cpp and CallDarkUI lack font/margins/alignment formatted-message method"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

@@ -517,3 +517,13 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   THIEF1 Legacy entry-point layout differs from the restored Thief II host and
   needs guest ABI verification, not a blanket claim of absent Gold audio.
   Existing twenty-one audit tests pass; no sound behavior changed here.
+
+- Camera/DarkUI review traced live camera pose, attachment/return and matrix
+  transforms plus Squirrel forwarding. LockMovement is an explicit no-op that
+  ignores its argument and returns S_OK. CameraToWorld/WorldToCamera have actual
+  orientation-matrix implementations; input locking is a separate missing
+  behavior. DarkUI basic text, book mode, inventory selection and localized
+  binding queries exist; TextMessageFormatted has no native/adapter method for
+  custom fonts, margins or alignment. Source-reviewed status does not close
+  visual, state-restoration, callback or ABI gates. Existing twenty-one audit
+  tests pass; no camera/input/UI behavior changed in this review.
