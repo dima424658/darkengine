@@ -23,7 +23,8 @@ add_executable(dbmod_struct_fields_test struct_fields.cpp
   ../../libsrc/dbmod/struct_fields.cpp ../../libsrc/dbmod/fields.cpp
   ../../libsrc/dbmod/syntax.cpp)
 target_compile_features(dbmod_struct_fields_test PRIVATE cxx_std_17)
-target_include_directories(dbmod_struct_fields_test PRIVATE ../../h ../../libsrc/sdesc)
+target_include_directories(dbmod_struct_fields_test PRIVATE
+  ../../h ../../libsrc/platform ../../libsrc/sdesc)
 add_test(NAME dbmod_struct_fields COMMAND dbmod_struct_fields_test)
 add_executable(dbmod_string_fields_test string_fields.cpp ../../libsrc/dbmod/string_fields.cpp
   ../../libsrc/dbmod/fields.cpp ../../libsrc/dbmod/syntax.cpp)

@@ -196,7 +196,7 @@ enabled after the Vulkan-only screen-mode change.
 ## Goal
 
 Replace the OpenGL/OpenGL ES and D3D11 renderers with one Vulkan renderer that
-implements `h/render_backend.h`. Keep the legacy engine-facing `RenderBackend*`
+implements `libsrc/lgd3d/render_backend.h`. Keep the legacy engine-facing `RenderBackend*`
 calls stable while moving graphics API work behind that interface. Vulkan-Hpp
 is the C++ API for Vulkan objects and commands; shader source is compiled to
 SPIR-V with `glslc`.

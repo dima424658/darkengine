@@ -18,7 +18,6 @@
 #define _LG_SOUND_H
 
 #ifndef _INTTYPE_H
-//#include <inttype.h>
 #endif
 
 #include <comtools.h>

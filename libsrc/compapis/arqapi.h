@@ -16,7 +16,7 @@
 #pragma warning(push)
 #pragma warning(disable:4103)
 #endif
-#include <pshpack4.h>
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -419,7 +419,7 @@ DECLARE_INTERFACE_(IAsyncStreamer, IUnknown)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <poppack.h>
+#pragma pack(pop)
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
