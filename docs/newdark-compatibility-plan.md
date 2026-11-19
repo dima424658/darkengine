@@ -480,3 +480,15 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   owner-routed signals and conversations have implementations but need action,
   callback, state and runtime verification. No AI behavior changed. The existing
   twenty-one audit-tool tests still pass; full semantic review remains open.
+
+- Physics source review checked phscrpt.h/cpp and CallPhysics against native
+  and Squirrel docs. Rope/climbing and velocity controls are present, alongside
+  legacy launch, gravity, model, subscription and motion-offset operations.
+  These now have source evidence instead of name matches; runtime output,
+  argument conversion and game-dependent ABI ordering remain unverified.
+  ControlCurrentLocation/Rotation dereference ObjPosGet after only a nonzero-ID
+  check; ControlCurrentPosition invokes both. Subscription methods return literal
+  TRUE as HRESULT; GetVelocity and several setters report S_OK without surfacing
+  underlying failure. These are acceptance/correctness follow-ups, not a claim
+  that all valid-input physics behavior is missing. Existing twenty-one audit
+  tests pass; no physics behavior changed in this audit commit.

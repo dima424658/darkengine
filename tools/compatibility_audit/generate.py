@@ -439,6 +439,38 @@ def review(doc, name, evidence):
         if ai_method in {"Stun", "IsStunned", "UnStun", "Freeze", "IsFrozen", "UnFreeze", "SetFaceVisage"}:
             status = "Missing native AI method" if native_ai else "Missing Squirrel AI method and native backing method"
             evidence = "aiscrpt.cpp service and CallAI lack documented AI service additions; ShockAI capability is not equivalent exposure"
+    physics_method = name.rsplit(".", 1)[-1]
+    native_physics = doc.parent.name == "script" and doc.name == "Physics.txt"
+    squirrel_physics = doc.name == "API-reference_services.txt" and name.startswith("Physics.")
+    if native_physics or squirrel_physics:
+        physics_review = {
+            "SubscribeMsg": "calls subscription service with event mask and returns literal TRUE as HRESULT",
+            "UnsubscribeMsg": "calls unsubscription service with event mask and returns literal TRUE as HRESULT",
+            "LaunchProjectile": "delegates launcher/archetype/power/flags/additional velocity to launchProjectile",
+            "SetVelocity": "destroys active model contacts before PhysSetVelocity, returns S_OK",
+            "GetVelocity": "calls PhysGetVelocity and always returns S_OK; absent-model output behavior requires verification",
+            "SetGravity": "calls PhysSetGravity and returns S_OK",
+            "GetGravity": "delegates to PhysGetGravity",
+            "HasPhysics": "delegates to PhysObjHasPhysics",
+            "IsSphere": "checks first submodel for sphere, point or sphere-hat; false without model",
+            "IsOBB": "checks first submodel for OBB; false without model",
+            "ControlVelocity": "calls PhysControlVelocity and returns S_OK; game-specific vtable placement unverified",
+            "StopControlVelocity": "calls PhysStopControlVelocity and returns S_OK; game-specific vtable placement unverified",
+            "DeregisterModel": "calls PhysDeregisterModel for nonzero ID, E_FAIL for zero",
+            "PlayerMotionSetOffset": "delegates submodel and offset to PlayerMotionSetOffset",
+            "Activate": "activates existing model, E_FAIL without model",
+            "ValidPos": "delegates to PhysObjValidPos",
+            "IsRope": "delegates to PhysObjIsRope; native addition is appended to service interface",
+            "GetClimbingObject": "sets output from PhysGetClimbingObj; native addition is appended to service interface",
+        }
+        if physics_method in physics_review:
+            status = "Source implementation reviewed; runtime/ABI parity unverified"
+            evidence = "`src/physics/phscrpt.cpp`: " + physics_review[physics_method]
+            if squirrel_physics:
+                evidence += "; CallPhysics forwards method, output/argument conversion still unverified"
+        elif physics_method in {"ControlCurrentLocation", "ControlCurrentRotation", "ControlCurrentPosition"}:
+            status = "Partial implementation; missing-position safety unresolved"
+            evidence = "phscrpt.cpp checks nonzero ID then dereferences ObjPosGet without null check; position combines both controls and sends owner message"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
