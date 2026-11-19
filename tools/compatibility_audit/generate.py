@@ -230,6 +230,28 @@ def review(doc, name, evidence):
         if name in native_property_gaps:
             status, detail = native_property_gaps[name]
             evidence = "Native dbmod_check_schema RESBASE inspection: " + detail + "; see tools/dbmod_test/README.md"
+    property_method = name.rsplit(".", 1)[-1]
+    native_property = doc.parent.name == "script" and doc.name == "Property.txt"
+    squirrel_property = doc.name == "API-reference_services.txt" and name.startswith("Property.")
+    if native_property or squirrel_property:
+        property_review = {
+            "Get": "GetPropField follows direct/inherited donor; schema lookup selects first matching field; cleanup defects remain",
+            "Set": "native scalar/field overloads route through SetField network message; typed field/string writes exist; ownership cleanup defects remain",
+            "SetSimple": "CallProperty forwards three-argument form to native scalar Set overload",
+            "SetLocal": "native four-argument form invokes SetField directly, bypassing owner routing; lifecycle/THIEF1 ABI order unverified",
+            "Add": "calls property Create on nonzero object; missing-property rejection exists but acquired property reference is not released",
+            "Remove": "calls property Delete; acquired property reference is not released",
+            "CopyFrom": "calls property Copy(target, source); acquired property reference is not released",
+            "Possessed": "uses IsRelevant including inheritance, not IsSimplyRelevant; acquired property reference is not released",
+        }
+        if property_method in property_review:
+            status = "Source behavior reviewed; lifecycle/runtime parity unverified"
+            evidence = "`src/script/propscpt.cpp`: " + property_review[property_method]
+            if squirrel_property:
+                evidence += "; CallProperty forwarding reviewed, Squirrel conversion/version guards unverified"
+        if squirrel_property and property_method in {"PossessedSimple", "GetIndexed", "SetIndexed", "SetLocalIndexed"}:
+            status = "Missing Squirrel method and native backing method"
+            evidence = "CallProperty has no branch; propscpt.h/cpp lacks method; documented API 11/12 additions"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

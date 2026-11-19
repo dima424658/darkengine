@@ -57,6 +57,16 @@ class RequirementTests(unittest.TestCase):
         status, _ = review(Path("DOC/script/Engine.txt"), "SetTagBlock", "candidate")
         self.assertEqual(status, "Missing")
 
+    def test_property_inheritance_and_missing_indexed_methods(self):
+        status, evidence = review(Path("DOC/script/Property.txt"), "Possessed", "candidate")
+        self.assertIn("runtime parity unverified", status)
+        self.assertIn("including inheritance", evidence)
+        status, evidence = review(Path("DOC/squirrel_script/API-reference_services.txt"), "Property.GetIndexed", "candidate")
+        self.assertIn("Missing Squirrel method", status)
+        self.assertIn("API 11/12", evidence)
+        status, _ = review(Path("DOC/script/Property.txt"), "GetIndexed", "candidate")
+        self.assertEqual(status, "Missing native method")
+
     def test_service_declarations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "script" / "Engine.txt"

@@ -404,3 +404,17 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   Existing tag-block/environment-map stubs and fog-zone/raycast limitations
   retain their missing/partial classifications. Sixteen audit-tool tests pass;
   this review does not establish full script-service compatibility.
+
+- Property service source audit reviewed Get, both native Set overloads,
+  SetLocal, Add, Remove, CopyFrom and Possessed plus Squirrel SetSimple/forwarding.
+  Reads follow property donors; Possessed calls IsRelevant (inheritance included),
+  while SetLocal bypasses the SetField owner-routing message. NewDark's
+  PossessedSimple/indexed API additions have neither native implementations nor
+  CallProperty branches. API-version gates and THIEF1-dependent native vtable
+  ordering remain unverified, and the inventory still groups Set overloads.
+  Confirmed source cleanup defects for the script-correctness phase: propman.cpp
+  GetPropertyNamed AddRefs its result, but several Property methods do not
+  release it; get_prop_donor does not release its queried ITrait; GetPropField
+  and SetPropField have early returns with store/ops references still held.
+  No runtime leak magnitude or ABI correctness is inferred from these findings.
+  Seventeen audit tests pass. Script behavior changes remain pending.
