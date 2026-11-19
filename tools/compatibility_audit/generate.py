@@ -700,6 +700,60 @@ def review(doc, name, evidence):
         elif name == "PGroup.SetActive":
             status = "Source implementation reviewed; missing-group result ambiguous"
             evidence = "pgrpscpt.cpp changes pg->active if group exists, always returns TRUE through HRESULT; CallPGroup forwards"
+    native_overlay = doc.parent.name == "script" and doc.name == "DarkOverlay.txt"
+    squirrel_overlay = doc.name == "API-reference_services.txt" and name.startswith("DarkOverlay.")
+    if native_overlay:
+        status = "Missing native DarkOverlay service/handler interface"
+        evidence = "No native service registration or OSM guest bridge; Squirrel CallDarkOverlay is separate and does not implement native ABI"
+    if squirrel_overlay:
+        overlay_review = {
+            "AddHandler": ("Partial callback implementation; UI lifecycle incomplete",
+                           "retains callback handle and sets UI dirty; resize/menu-resume invalidation not wired"),
+            "RemoveHandler": ("Partial callback implementation; UI lifecycle incomplete",
+                              "removes handle from handler vector and sets UI dirty"),
+            "GetBitmap": ("Partial resource loading; freed slots not reused",
+                          "binds/locks image and retains resource, but 128 limit counts vector slots including flushed entries"),
+            "FlushBitmap": ("Partial resource release; slot reuse missing",
+                            "releases resource and clears pointer without reclaiming handle slot"),
+            "GetBitmapSize": ("Source implementation reviewed; runtime/output parity unverified",
+                              "returns retained dimensions or zeros for invalid handle"),
+            "CreateTOverlayItem": ("Partial bitmap item; alpha/transparency semantics missing",
+                                   "allocates bitmap canvas with BMF_TRANS, ignores trans_bg, stores alpha without drawing it; 64 vector-slot cap"),
+            "CreateTOverlayItemFromBitmap": ("Partial bitmap item; alpha/transparency semantics missing",
+                                             "copies bitmap into new canvas, ignores trans_bg, stored alpha unused by drawing"),
+            "DestroyTOverlayItem": ("Partial resource release; slot reuse missing",
+                                    "closes/frees canvas bitmap and clears pointer, leaves consumed vector slot"),
+            "UpdateTOverlayAlpha": ("Missing visible alpha behavior",
+                                    "updates item.alpha but RenderOverlays never consumes it"),
+            "UpdateTOverlayPosition": ("Source implementation reviewed; visual parity unverified",
+                                       "updates item x/y used by RenderOverlays"),
+            "UpdateTOverlaySize": ("Source implementation reviewed; visual parity unverified",
+                                   "clamps draw dimensions and uses gr_scale_bitmap without resizing backing canvas"),
+            "DrawBitmap": ("Source implementation reviewed; phase/visual parity unverified",
+                           "locks image, draws into current software canvas and unlocks"),
+            "DrawSubBitmap": ("Source implementation reviewed; phase/visual parity unverified",
+                              "clamps source rectangle, creates sub-bitmap and draws current canvas"),
+            "SetTextColor": ("Source implementation reviewed; font/visual parity unverified",
+                             "packs RGB into gr_make_screen_fcolor and sets current canvas colour"),
+            "GetStringSize": ("Source implementation reviewed; font/output parity unverified",
+                              "queries gr_string_size into short dimensions"),
+            "DrawString": ("Source implementation reviewed; phase/font parity unverified",
+                           "draws text using gr_string on current canvas"),
+            "DrawLine": ("Source implementation reviewed; phase/visual parity unverified",
+                         "draws using gr_int_line and current canvas colour"),
+            "FillTOverlay": ("Partial fill; per-pixel alpha ignored",
+                             "clears update canvas using palette colour, never reads alpha argument"),
+            "BeginTOverlayUpdate": ("Partial canvas update; lifecycle safety unverified",
+                                     "pushes item canvas and keeps pointer into growable item vector; creation during update can invalidate pointer"),
+            "EndTOverlayUpdate": ("Source implementation reviewed; lifecycle parity unverified",
+                                  "pops current update canvas and clears pointer; RenderOverlays also closes unfinished update"),
+            "DrawTOverlayItem": ("Partial software drawing; transparent 3D overlay behavior missing",
+                                 "marks item then gr_bitmap/gr_scale_bitmap draws retained canvas, no item alpha blending into 3D buffer"),
+        }
+        method = name.rsplit(".", 1)[-1]
+        if method in overlay_review:
+            status, evidence = overlay_review[method]
+            evidence = "`squirrelhost.cpp` CallDarkOverlay/RenderOverlays: " + evidence
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

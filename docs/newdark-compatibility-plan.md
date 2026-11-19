@@ -579,3 +579,15 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   particle SetActive returns TRUE through HRESULT even when no group exists.
   Existing behavior is now distinguished from reliable success/error reporting.
   All 25 audit tests still pass. No motion, particle or RNG behavior changed.
+
+- DarkOverlay source review traced resource/item vectors, canvas updates,
+  RenderOverlays and the drkgame software-canvas hook. Native service/handler
+  registration and guest bridge are absent; Squirrel drawings do not establish
+  native ABI support. Item alpha is stored but never drawn, FillTOverlay ignores
+  per-pixel alpha and creation ignores trans_bg. Flushed/destroyed vector slots
+  are not reused before the 128/64 limits. UI dirty invalidation is tied to
+  handler changes, not explicit resize/menu-resume hooks. An update keeps a raw
+  pointer into a growable item vector, so creating items during update can
+  invalidate it. Drawing/resource methods have source evidence with phase,
+  lifecycle and visual gates still open. Existing projection/style stubs remain
+  recorded. All 25 audit tests pass; no overlay runtime behavior changed.
