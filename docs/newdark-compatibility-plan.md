@@ -647,3 +647,14 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   neither establishes framerate_cap FPS semantics. Existing boolean vsync is
   not NewDark's mode bitmask. Editor cache acceptance remains deferred. All 26
   audit tests pass; no renderer/pacing behavior changed in this source review.
+
+- Movie configuration review traced src/ui/movie.cpp, actmovie/movie.cpp,
+  Vulkan movie presentation and LibFFmpeg.cmake. Modern synchronous playback
+  uses linked static FFmpeg, prefers an available MP4 sibling and aspect-fits
+  the full decoded frame. Quality selection, UI-only scaling, cropping/crop
+  exclusions and movie-disable lists are absent. FFmpeg DLL unload/external
+  Indeo selection are replaced by linked avcodec lookup, not implemented keys.
+  The legacy IMoviePlayer wrapper Open/Play/Pause remains stubbed, so asynchronous
+  interface support must not be inferred from working synchronous playback.
+  All 26 audit tests pass. No movie behavior changed; visual/audio/lifecycle
+  acceptance and the missing settings remain implementation work.

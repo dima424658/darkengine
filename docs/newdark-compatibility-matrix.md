@@ -347,13 +347,13 @@ those documented declarations still require ABI/behavioral review.
 | ND-17e28c2a770d | `DOC/new_config_vars.txt` | d3d_disp_hw2d_cachesize_editor | No consumer for documented editor MB budget; no editor build/run acceptance performed | D3D-specific editor cache control unsupported; editor deferred |
 | ND-3b7aac33408a | `DOC/new_config_vars.txt` | d3d_disp_force_rgba_atex | No exact token; inspect aliases | Unverified |
 | ND-606147d99c8a | `DOC/new_config_vars.txt` | d3d_disp_allow_a8l8_atex | No exact token; inspect aliases | Unverified |
-| ND-8e1c2a8bb3ba | `DOC/new_config_vars.txt` | movie_sw_scale_quality | No exact token; inspect aliases | Unverified |
-| ND-8c24eeb51a3b | `DOC/new_config_vars.txt` | scale_movie_to_ui | No exact token; inspect aliases | Unverified |
-| ND-a4190e6a7dc5 | `DOC/new_config_vars.txt` | crop_movies | No exact token; inspect aliases | Unverified |
-| ND-7c4f8f1812fc | `DOC/new_config_vars.txt` | movie_crop_exclude | No exact token; inspect aliases | Unverified |
-| ND-3d241ca35bab | `DOC/new_config_vars.txt` | movie_disable | No exact token; inspect aliases | Unverified |
-| ND-bfbce72627c0 | `DOC/new_config_vars.txt` | no_unload_ffmpeg | No exact token; inspect aliases | Unverified |
-| ND-599898740f66 | `DOC/new_config_vars.txt` | ffmpeg_force_intern_indeo5 | No exact token; inspect aliases | Unverified |
+| ND-8e1c2a8bb3ba | `DOC/new_config_vars.txt` | movie_sw_scale_quality | actmovie/movie.cpp uses SWS_BILINEAR conversion without reading quality 0-6 setting | Missing configurable decoder scaling quality |
+| ND-8c24eeb51a3b | `DOC/new_config_vars.txt` | scale_movie_to_ui | Vulkan movie presenter fits frame to full swapchain extent, not documented virtual UI area | Missing UI-area movie scaling control |
+| ND-a4190e6a7dc5 | `DOC/new_config_vars.txt` | crop_movies | Vulkan movie presenter uses full decoded frame with aspect-fit rectangle; no 640x480 crop policy | Missing configurable movie cropping |
+| ND-7c4f8f1812fc | `DOC/new_config_vars.txt` | movie_crop_exclude | No crop/exclusion-list consumer in modern movie path | Missing movie crop exclusions |
+| ND-3d241ca35bab | `DOC/new_config_vars.txt` | movie_disable | src/ui/movie.cpp and actmovie backend attempt existing files without documented plus-separated disable filtering | Missing per-movie disable list |
+| ND-bfbce72627c0 | `DOC/new_config_vars.txt` | no_unload_ffmpeg | cmake/LibFFmpeg.cmake builds static libraries; no per-play ffmpeg.dll loading/unloading | Intentionally replaced by linked FFmpeg lifetime |
+| ND-599898740f66 | `DOC/new_config_vars.txt` | ffmpeg_force_intern_indeo5 | actmovie/movie.cpp uses avcodec decoder lookup, not ir50_32.dll selection; prefers available MP4 sibling | External DLL codec selection replaced; key unsupported |
 | ND-70f590b96646 | `DOC/new_config_vars.txt` | widescreen_lock_hfov | No exact token; inspect aliases | Unverified |
 | ND-f5641948eacd | `DOC/new_config_vars.txt` | fov | No exact token; inspect aliases | Unverified |
 | ND-3a98c1a96f01 | `DOC/new_config_vars.txt` | vsync_mode | `libsrc/lgd3d/vulkan.cpp` reads boolean `vsync`; documented mode values are not equivalent | Partial alternative; NewDark key unsupported |

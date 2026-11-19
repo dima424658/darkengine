@@ -229,6 +229,22 @@ def review(doc, name, evidence):
             "framerate_cap": ("Missing FPS config; millisecond pacing exists separately",
                               "simtime.cpp reads SlowFrame milliseconds, not framerate_cap FPS; min_frame_time is simulation timing, not equivalent cap"),
         })
+        replacements.update({
+            "movie_sw_scale_quality": ("Missing configurable decoder scaling quality",
+                                       "actmovie/movie.cpp uses SWS_BILINEAR conversion without reading quality 0-6 setting"),
+            "scale_movie_to_ui": ("Missing UI-area movie scaling control",
+                                  "Vulkan movie presenter fits frame to full swapchain extent, not documented virtual UI area"),
+            "crop_movies": ("Missing configurable movie cropping",
+                            "Vulkan movie presenter uses full decoded frame with aspect-fit rectangle; no 640x480 crop policy"),
+            "movie_crop_exclude": ("Missing movie crop exclusions",
+                                   "No crop/exclusion-list consumer in modern movie path"),
+            "movie_disable": ("Missing per-movie disable list",
+                              "src/ui/movie.cpp and actmovie backend attempt existing files without documented plus-separated disable filtering"),
+            "no_unload_ffmpeg": ("Intentionally replaced by linked FFmpeg lifetime",
+                                 "cmake/LibFFmpeg.cmake builds static libraries; no per-play ffmpeg.dll loading/unloading"),
+            "ffmpeg_force_intern_indeo5": ("External DLL codec selection replaced; key unsupported",
+                                         "actmovie/movie.cpp uses avcodec decoder lookup, not ir50_32.dll selection; prefers available MP4 sibling"),
+        })
         if name in replacements:
             status, evidence = replacements[name]
     if doc.name == "modders_notes.txt":
