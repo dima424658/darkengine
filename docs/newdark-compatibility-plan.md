@@ -549,3 +549,14 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   Parser tests cover multiline overloads, nested if/elif/else, quoted comment
   markers, comment examples, version-note reset and incomplete input. All 24
   audit-tool tests pass. No game behavior changed.
+
+- ActReact/Light audit traced reactions, sensor stimulation, script receptron
+  subscriptions and ScriptContact propagation plus CallActReact/CallLight.
+  Reaction-name lookup dereferences a missing descriptor without checking it.
+  THIEF1 legacy stimulation signature remains an ABI review item, not a claim
+  that source-aware stimulation is absent. Light SetCore never assigns the
+  supplied min/max to animation.min_brightness/max_brightness, so Set does not
+  apply its requested range; TimeLeft divides by end-start without an equal
+  limit guard. Existing mode/activation/notification behavior is source-reviewed
+  but visual/property/callback semantics remain acceptance work. Existing 24
+  audit tests pass; no reaction or lighting runtime code changed here.

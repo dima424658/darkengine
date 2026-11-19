@@ -602,6 +602,51 @@ def review(doc, name, evidence):
     if doc.name == "API-reference_services.txt" and name in {"CD.SetBGM", "CD.SetTrack"}:
         status = "Missing behavior: success-returning no-op"
         evidence = "CallCD ignores track/flags and returns S_OK; streamed Sound schemas are a separate capability"
+    act_method = name.rsplit(".", 1)[-1]
+    native_act = doc.parent.name == "script" and doc.name == "ActReact.txt"
+    squirrel_act = doc.name == "API-reference_services.txt" and name.startswith("ActReact.")
+    if native_act or squirrel_act:
+        act_review = {
+            "React": "validates reaction descriptor, fills reaction struct from up to eight multi-parameters and calls Reactions React",
+            "Stimulate": "looks up sensor, optionally adds a source descriptor, stimulates sensor or returns S_FALSE if absent",
+            "GetReactionNamed": "delegates reaction-name lookup to Reactions",
+            "SubscribeToStimulus": "requires concrete sensor and abstract stimulus, adds script-message receptron",
+            "UnsubscribeToStimulus": "requires concrete sensor and abstract stimulus, removes script-message receptron",
+            "BeginContact": "delegates to ScriptContact periodic propagator after nonzero assertions",
+            "EndContact": "delegates to ScriptContact periodic propagator after nonzero assertions",
+            "SetSingleSensorContact": "delegates exclusive sensor contact to periodic propagator after nonzero assertions",
+        }
+        if act_method in act_review:
+            status = "Source implementation reviewed; event/parameter/runtime parity unverified"
+            evidence = "`src/script/arscript.cpp`: " + act_review[act_method]
+            if squirrel_act:
+                evidence += "; CallActReact forwarding/name conversion exists"
+        elif act_method == "GetReactionName":
+            status = "Partial implementation; invalid-ID safety unresolved"
+            evidence = "arscript.cpp dereferences DescribeReaction(id) without null check; CallActReact forwards"
+        elif act_method == "StimulateLegacy":
+            status = "THIEF1-specific entry point absent; restored host uses Thief II ABI"
+            evidence = "arscript.cpp exposes source-aware Stimulate; legacy guest signature needs ABI verification"
+    light_method = name.rsplit(".", 1)[-1]
+    native_light = doc.parent.name == "script" and doc.name == "Light.txt"
+    squirrel_light = doc.name == "API-reference_services.txt" and name.startswith("Light.")
+    if native_light or squirrel_light:
+        light_review = {
+            "SetMode": "changes mode/countdown and activates animation; equal brightness limits make TimeLeft divide by zero",
+            "Activate": "sets animation.inactive FALSE on resolved animated-light property",
+            "Deactivate": "sets animation.inactive TRUE on resolved animated-light property",
+            "Subscribe": "sets notify_script to light object's own ID",
+            "Unsubscribe": "clears notify_script",
+            "GetMode": "returns animation mode or -1 when animated-light property is absent",
+        }
+        if light_method in light_review:
+            status = "Source implementation reviewed; property/callback/visual parity unverified"
+            evidence = "`src/script/litscrpt.cpp`: " + light_review[light_method]
+            if squirrel_light:
+                evidence += "; CallLight forwards to native service"
+        elif light_method == "Set":
+            status = "Partial: supplied brightness range not stored"
+            evidence = "litscrpt.cpp SetCore uses min/max for countdown but never assigns animation.min_brightness/max_brightness; equal limits divide by zero"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
