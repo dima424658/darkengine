@@ -223,3 +223,13 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
 - Report deferred editor/platform coverage and remaining compatibility limits.
 - Split implementation into reviewable subsystem commits; do not describe the
   branch as fully NewDark-compatible while partial/missing runtime entries remain.
+
+## Implementation progress
+
+- `7d3ed3f`: ignore Python cache directories.
+- DML syntax foundation: standalone C++ parser with ordered/nested statements,
+  quoted arguments, source locations, comments and pre/post phase annotations.
+  Focused tests and all 88 installed TFix DML files pass syntax parsing.
+- The parser is not connected to the game. No runtime compatibility status is
+  upgraded by syntax success. Fingerprints, semantic validation, discovery,
+  application and persistence remain pending, as does semantic matrix review.
