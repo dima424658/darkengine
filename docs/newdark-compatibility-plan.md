@@ -492,3 +492,15 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   underlying failure. These are acceptance/correctness follow-ups, not a claim
   that all valid-input physics behavior is missing. Existing twenty-one audit
   tests pass; no physics behavior changed in this audit commit.
+
+- Reviewed sixteen Squirrel Door/Locked/Key/Damage/Container requirements by
+  tracing adapters into drscrpt, lockscpt, keysys, dmgscrpt and contscrs. Door
+  state checks and room acoustic blocking, computed lock-count queries and
+  mode-specific key matching exist. Door HRESULT methods return boolean values,
+  including zero for invalid door; damage wrappers always return S_OK even for
+  zero victims. Container wrappers deliberately reverse object/container or
+  source/target order to the native API. Source behavior is now recorded;
+  return interpretation, save/lifecycle and action outcomes remain runtime
+  acceptance work. No new native docs were inferred where only Squirrel docs
+  enumerate these services. Existing twenty-one audit tests pass; gameplay
+  behavior is unchanged in this review.

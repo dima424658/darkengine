@@ -471,6 +471,29 @@ def review(doc, name, evidence):
         elif physics_method in {"ControlCurrentLocation", "ControlCurrentRotation", "ControlCurrentPosition"}:
             status = "Partial implementation; missing-position safety unresolved"
             evidence = "phscrpt.cpp checks nonzero ID then dereferences ObjPosGet without null check; position combines both controls and sends owner message"
+    if doc.name == "API-reference_services.txt":
+        interaction_review = {
+            "Door.CloseDoor": "drscrpt.cpp rejects non-door/missing property and already closed/closing state, then DoorPhysActivate CLOSE",
+            "Door.OpenDoor": "drscrpt.cpp rejects non-door/missing property and already open/opening state, then DoorPhysActivate OPEN",
+            "Door.GetDoorState": "drscrpt.cpp returns kDoorNoDoor for invalid door, otherwise GetDoorStatus",
+            "Door.ToggleDoor": "drscrpt.cpp returns BOOL activation through HRESULT; invalid door returns FALSE (zero), not failure HRESULT",
+            "Door.SetBlocking": "drscrpt.cpp adds/removes door blocking, returns TRUE through HRESULT or FALSE for invalid door",
+            "Door.GetSoundBlocking": "doorphys.cpp derives bool from room-to-room acoustic blocking factor, with room validity guards",
+            "Locked.IsLocked": "lockscpt.cpp uses ObjComputeLockedState, which reads computed lock count > 0",
+            "Key.TryToUseKey": "keysys.cpp checks key/lock properties and KeyWorksOnLock; check mode is non-mutating, other modes change self-lock state",
+            "Damage.Damage": "dmgscrpt.cpp calls DamageObject with amount/kind for nonzero victim, always returns S_OK",
+            "Damage.Slay": "dmgscrpt.cpp calls SlayObject for nonzero victim, always returns S_OK",
+            "Damage.Resurrect": "dmgscrpt.cpp calls ResurrectObject for nonzero victim, always returns S_OK",
+            "Container.Add": "contscrs.cpp forwards (container,obj,type,flags), reversing script object/container order",
+            "Container.Remove": "contscrs.cpp forwards (container,obj); default/null-container semantics need runtime verification",
+            "Container.MoveAllContents": "contscrs.cpp forwards (target,source,flags), reversing script source/target order",
+            "Container.StackAdd": "contscrs.cpp delegates quantity change to ContainSys StackAdd",
+            "Container.IsHeld": "contscrs.cpp delegates container/containee type query to ContainSys IsHeld",
+        }
+        if name in interaction_review:
+            status = "Source implementation reviewed; runtime/return semantics unverified"
+            evidence = "`src/script/` and native engfeat/sim services: " + interaction_review[name]
+            evidence += "; matching Squirrel Call adapter forwards to native service"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),
