@@ -79,6 +79,10 @@ def review(doc, name, evidence):
         if name in {"DML1 syntax", "Pre/post phase annotations"}:
             status = "Implemented syntax only; runtime missing"
             evidence = "`src/framewrk/dbmod/syntax.cpp`, `tools/dbmod_test`: all 88 installed patches parse; no executor"
+        elif name in {"Mission patch discovery", "Gamesys patch discovery",
+                      "Resource layer application order", "Savegame exclusion"}:
+            status = "Offline ordering implemented; storage/game integration missing"
+            evidence = "`src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor"
         elif name in {"Fingerprint position thresholds", "Fingerprint positive/negative precedence",
                       "Fingerprint QVAR masks/comparisons", "Fingerprint PROP/NAME/GAM rules"}:
             status = "Offline evaluator implemented; game integration missing"

@@ -261,3 +261,7 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   rules. Missing adapters and unsupported MOD version comparisons fail explicitly.
   Both C++ fixtures pass; all 88 installed files pass fingerprint grammar
   validation. Database adapters, discovery and application remain pending.
+- Added callback-backed offline DML discovery manifests. Tests reproduce both
+  documented mission/gamesys ordering examples, plus FM selection, save/disable
+  skips, case handling and duplicate layers. All three C++ tests pass.
+  Engine path/storage adapters and runtime patch execution remain pending.

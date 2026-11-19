@@ -40,3 +40,25 @@ current database identities. No engine adapter or patch application exists yet.
 The CLI now validates fingerprint grammar as well as syntax; all 88 installed
 patches pass. Evaluator fixtures test matching/mismatching snapshots independently
 of those installed-file grammar checks. Neither check proves gameplay patching.
+
+## Offline discovery manifests
+
+`discovery.cpp` constructs ordered patch lists from caller-resolved database,
+mod and resource layers using a read-only regular-file listing callback. It can
+therefore later use filesystem or archive-backed IStore adapters without
+changing ordering semantics. The caller selects the documented base/FM database
+directory and supplies canonical layer identities in highest-priority-first order.
+
+Named all-database patches precede database-specific patches, with base/FM first
+and mods from lowest to highest priority. Directory patches follow, by resource
+layer from lowest to highest; within a layer mission-global files precede
+mission-specific files. Files sort case-insensitively. Gamesys discovery lists
+only direct files in `dbmods`, not nested mission directories. Duplicate layer
+entries do not apply the same root-relative filename twice. Non-DML entries are
+ignored; ambiguous case-folded DML names and malformed adapter filenames fail.
+
+Tests reproduce both documented load-order examples and exercise save/disable
+skips, selected FM base, case handling and duplicate layers. Mission save loads
+return no patches before invoking storage; gamesys loading remains a separate
+caller decision. The manifest does not resolve or read engine resources yet,
+evaluate fingerprints, validate commands or execute modifications.

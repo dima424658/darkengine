@@ -8,3 +8,6 @@ add_executable(dbmod_fingerprint_test fingerprint.cpp ../../src/framewrk/dbmod/s
   ../../src/framewrk/dbmod/fingerprint.cpp)
 target_compile_features(dbmod_fingerprint_test PRIVATE cxx_std_17)
 add_test(NAME dbmod_fingerprints COMMAND dbmod_fingerprint_test)
+add_executable(dbmod_discovery_test discovery.cpp ../../src/framewrk/dbmod/discovery.cpp)
+target_compile_features(dbmod_discovery_test PRIVATE cxx_std_17)
+add_test(NAME dbmod_discovery COMMAND dbmod_discovery_test)

@@ -17,10 +17,10 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-871b50323d92 | `DOC/cam_mod.ini` | cam_mod | `src/framewrk/init.cpp` | Unverified |
 | ND-2ad40ab0b9b1 | `DOC/dbmod-sample.dml` | DML1 syntax | `src/framewrk/dbmod/syntax.cpp`, `tools/dbmod_test`: all 88 installed patches parse; no executor | Implemented syntax only; runtime missing |
 | ND-9ee0a30fe4b1 | `DOC/dbmod-sample.dml` | Pre/post phase annotations | `src/framewrk/dbmod/syntax.cpp`, `tools/dbmod_test`: all 88 installed patches parse; no executor | Implemented syntax only; runtime missing |
-| ND-49d116feab7c | `DOC/dbmod-sample.dml` | Mission patch discovery | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-7e3f1a8fd994 | `DOC/dbmod-sample.dml` | Gamesys patch discovery | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-25e0e325217a | `DOC/dbmod-sample.dml` | Resource layer application order | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-b4b02ecac50d | `DOC/dbmod-sample.dml` | Savegame exclusion | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-49d116feab7c | `DOC/dbmod-sample.dml` | Mission patch discovery | `src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor | Offline ordering implemented; storage/game integration missing |
+| ND-7e3f1a8fd994 | `DOC/dbmod-sample.dml` | Gamesys patch discovery | `src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor | Offline ordering implemented; storage/game integration missing |
+| ND-25e0e325217a | `DOC/dbmod-sample.dml` | Resource layer application order | `src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor | Offline ordering implemented; storage/game integration missing |
+| ND-b4b02ecac50d | `DOC/dbmod-sample.dml` | Savegame exclusion | `src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor | Offline ordering implemented; storage/game integration missing |
 | ND-0977a01778a5 | `DOC/dbmod-sample.dml` | Fingerprint position thresholds | `src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor | Offline evaluator implemented; game integration missing |
 | ND-c817c0cce1ee | `DOC/dbmod-sample.dml` | Fingerprint positive/negative precedence | `src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor | Offline evaluator implemented; game integration missing |
 | ND-412d1b9009a4 | `DOC/dbmod-sample.dml` | Fingerprint QVAR masks/comparisons | `src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor | Offline evaluator implemented; game integration missing |
@@ -695,7 +695,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-f958475a28bf | `DOC/script/Object.txt` | Exists | `src/ai/aiactnet.cpp`, `src/ai/aiman.cpp`, `src/ai/aiprrngd.cpp` | Unverified |
 | ND-e6422714636a | `DOC/script/Object.txt` | SetName | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `src/sim/room.h` | Unverified |
 | ND-7c25a6991092 | `DOC/script/Object.txt` | GetName | `src/actreact/stimuli.cpp`, `src/ai/ai.cpp`, `src/ai/aiactloc.cpp` | Unverified |
-| ND-5dc33a5bae27 | `DOC/script/Object.txt` | Named | `src/editor/areapnp.c`, `src/editor/proptest.cpp`, `src/script/objscrpt.cpp` | Unverified |
+| ND-5dc33a5bae27 | `DOC/script/Object.txt` | Named | `src/editor/areapnp.c`, `src/editor/proptest.cpp`, `src/framewrk/dbmod/discovery.cpp` | Unverified |
 | ND-aaf9ce777030 | `DOC/script/Object.txt` | AddMetaProperty | `src/object/propman.cpp`, `src/object/propman_.h`, `src/script/objscrpt.cpp` | Unverified |
 | ND-cea082341dec | `DOC/script/Object.txt` | RemoveMetaProperty | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
 | ND-b25dc594fc37 | `DOC/script/Object.txt` | HasMetaProperty | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
@@ -871,7 +871,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-f92df53868b4 | `DOC/squirrel_script/API-reference_services.txt` | Object.Exists | `src/ai/aiactnet.cpp`, `src/ai/aiman.cpp`, `src/ai/aiprrngd.cpp` | Unverified |
 | ND-209ee1ad641a | `DOC/squirrel_script/API-reference_services.txt` | Object.SetName | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `src/sim/room.h` | Unverified |
 | ND-adb364eb2152 | `DOC/squirrel_script/API-reference_services.txt` | Object.GetName | `src/actreact/stimuli.cpp`, `src/ai/ai.cpp`, `src/ai/aiactloc.cpp` | Unverified |
-| ND-40e8ee65949b | `DOC/squirrel_script/API-reference_services.txt` | Object.Named | `src/editor/areapnp.c`, `src/editor/proptest.cpp`, `src/script/objscrpt.cpp` | Unverified |
+| ND-40e8ee65949b | `DOC/squirrel_script/API-reference_services.txt` | Object.Named | `src/editor/areapnp.c`, `src/editor/proptest.cpp`, `src/framewrk/dbmod/discovery.cpp` | Unverified |
 | ND-7713d64e370b | `DOC/squirrel_script/API-reference_services.txt` | Object.AddMetaProperty | `src/object/propman.cpp`, `src/object/propman_.h`, `src/script/objscrpt.cpp` | Unverified |
 | ND-9dcad0dd8871 | `DOC/squirrel_script/API-reference_services.txt` | Object.RemoveMetaProperty | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
 | ND-9895484304c7 | `DOC/squirrel_script/API-reference_services.txt` | Object.HasMetaProperty | `src/script/objscrpt.cpp`, `src/script/objscrpt.h`, `libsrc/script/osm_emu/osm32mod.cpp` | Unverified |
