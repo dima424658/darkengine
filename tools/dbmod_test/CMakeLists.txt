@@ -29,3 +29,8 @@ add_executable(dbmod_string_fields_test string_fields.cpp ../../src/framewrk/dbm
   ../../src/framewrk/dbmod/fields.cpp ../../src/framewrk/dbmod/syntax.cpp)
 target_compile_features(dbmod_string_fields_test PRIVATE cxx_std_17)
 add_test(NAME dbmod_string_fields COMMAND dbmod_string_fields_test)
+
+add_executable(dbmod_object_reference_test object_reference.cpp
+  ../../src/framewrk/dbmod/object_reference.cpp)
+target_compile_features(dbmod_object_reference_test PRIVATE cxx_std_17)
+add_test(NAME dbmod_object_reference COMMAND dbmod_object_reference_test)

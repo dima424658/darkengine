@@ -323,3 +323,12 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   lookup rejects and a matching negative block vetoes. All runs exit cleanly
   under synchronization validation; Linux build and seven C++ tests pass.
   Script directives, mod/version queries and patch execution remain pending.
+
+- Added a read-only object-reference resolver with strict signed numeric IDs,
+  quoted names (including numeric names), existence queries and per-reference
+  concrete/abstract scope checks. An explicit optional loader remap callback
+  applies only to numeric IDs; name lookups already return live IDs. Standalone
+  tests cover remapping, scope rejection, malformed IDs, missing objects and
+  unavailable queries. This is preparatory code, not an engine execution hook:
+  remap lifetime, command-specific reference roles, runtime mutation and full
+  semantic matrix review remain unfinished.
