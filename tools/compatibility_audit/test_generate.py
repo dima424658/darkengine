@@ -34,6 +34,26 @@ class RequirementTests(unittest.TestCase):
         status, _ = review(path, "ObjProp", "candidate")
         self.assertEqual(status, "Missing runtime DML behavior")
 
+    def test_rendering_metadata_is_not_runtime_zone_support(self):
+        path = Path("DOC/modders_notes.txt")
+        status, evidence = review(path, "Ambient Light Zones", "candidate")
+        self.assertIn("Missing runtime", status)
+        self.assertIn("no callers", evidence)
+        status, evidence = review(path, 'Changed Prop: Weather->"Local Weather"', "candidate")
+        self.assertIn("legacy", status)
+        self.assertIn("boolean fog", evidence)
+        status, _ = review(path, "Max View Distance", "candidate")
+        self.assertIn("mission minimum missing", status)
+
+    def test_dml_diagnostics_do_not_claim_execution(self):
+        path = Path("DOC/dbmod-sample.dml")
+        status, evidence = review(path, "Fingerprint PROP/NAME/GAM rules", "candidate")
+        self.assertIn("automatic application missing", status)
+        self.assertIn("native read-only", evidence)
+        status, evidence = review(path, "Object ID remapping", "candidate")
+        self.assertIn("lifecycle integration missing", status)
+        self.assertIn("live IDs only", evidence)
+
     def test_overlay_projection_stubs_and_setting_alternatives(self):
         for path, name in [("DOC/script/DarkOverlay.txt", "WorldToScreen"),
                            ("DOC/squirrel_script/API-reference_services.txt", "DarkOverlay.WorldToScreen")]:

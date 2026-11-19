@@ -21,30 +21,30 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-7e3f1a8fd994 | `DOC/dbmod-sample.dml` | Gamesys patch discovery | `src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor | Offline ordering implemented; storage/game integration missing |
 | ND-25e0e325217a | `DOC/dbmod-sample.dml` | Resource layer application order | `src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor | Offline ordering implemented; storage/game integration missing |
 | ND-b4b02ecac50d | `DOC/dbmod-sample.dml` | Savegame exclusion | `src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor | Offline ordering implemented; storage/game integration missing |
-| ND-0977a01778a5 | `DOC/dbmod-sample.dml` | Fingerprint position thresholds | `src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor | Offline evaluator implemented; game integration missing |
-| ND-c817c0cce1ee | `DOC/dbmod-sample.dml` | Fingerprint positive/negative precedence | `src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor | Offline evaluator implemented; game integration missing |
-| ND-412d1b9009a4 | `DOC/dbmod-sample.dml` | Fingerprint QVAR masks/comparisons | `src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor | Offline evaluator implemented; game integration missing |
-| ND-14f1d799b3b0 | `DOC/dbmod-sample.dml` | Fingerprint PROP/NAME/GAM rules | `src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor | Offline evaluator implemented; game integration missing |
-| ND-411a379d3b5c | `DOC/dbmod-sample.dml` | Fingerprint EXIST/ARCH/SCR/MOD rules | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-bb20fd0798a9 | `DOC/dbmod-sample.dml` | Script inclusion/exclusion | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-45aba033a232 | `DOC/dbmod-sample.dml` | Schema loading | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-7a17bd163eed | `DOC/dbmod-sample.dml` | TagBlock | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-7ac13ea68fab | `DOC/dbmod-sample.dml` | ObjProp | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-1fa1aebb7b12 | `DOC/dbmod-sample.dml` | ObjName | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-a2110d8268bc | `DOC/dbmod-sample.dml` | ObjArch | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-d85bd81593d5 | `DOC/dbmod-sample.dml` | MetaProp | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-8106d48de9cd | `DOC/dbmod-sample.dml` | Link | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-d1c2a1d14adb | `DOC/dbmod-sample.dml` | Receptron | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-30fe255f3fc8 | `DOC/dbmod-sample.dml` | StimSource | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-9465eeb32264 | `DOC/dbmod-sample.dml` | Create/CreateArch | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-461cfd107c7f | `DOC/dbmod-sample.dml` | Destroy/DestroyArch/DestroyArchAll | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-ff701618d5bc | `DOC/dbmod-sample.dml` | QuestVar | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-7298f4b0d1fc | `DOC/dbmod-sample.dml` | Texture/TextureAll | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-4fc6eeea4e90 | `DOC/dbmod-sample.dml` | Duplicate field indices | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-296ee2a5cc46 | `DOC/dbmod-sample.dml` | Object ID remapping | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-8dcea3a16490 | `DOC/dbmod-sample.dml` | apply_dbmods game/editor defaults | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-80927038fdc0 | `DOC/dbmod-sample.dml` | dbmod_load | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
-| ND-232bc9aaaa04 | `DOC/dbmod-sample.dml` | dbmod_log | `src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor | Missing runtime DML behavior |
+| ND-0977a01778a5 | `DOC/dbmod-sample.dml` | Fingerprint position thresholds | `fingerprint.cpp`, `engine_fingerprint.cpp`, `inspection.cpp`; native read-only adapters, no patch executor | Evaluator and opt-in native inspection implemented; automatic application missing |
+| ND-c817c0cce1ee | `DOC/dbmod-sample.dml` | Fingerprint positive/negative precedence | `fingerprint.cpp`, `engine_fingerprint.cpp`, `inspection.cpp`; native read-only adapters, no patch executor | Evaluator and opt-in native inspection implemented; automatic application missing |
+| ND-412d1b9009a4 | `DOC/dbmod-sample.dml` | Fingerprint QVAR masks/comparisons | `fingerprint.cpp`, `engine_fingerprint.cpp`, `inspection.cpp`; native read-only adapters, no patch executor | Evaluator and opt-in native inspection implemented; automatic application missing |
+| ND-14f1d799b3b0 | `DOC/dbmod-sample.dml` | Fingerprint PROP/NAME/GAM rules | `fingerprint.cpp`, `engine_fingerprint.cpp`, `inspection.cpp`; native read-only adapters, no patch executor | Evaluator and opt-in native inspection implemented; automatic application missing |
+| ND-411a379d3b5c | `DOC/dbmod-sample.dml` | Fingerprint EXIST/ARCH/SCR/MOD rules | `engine_fingerprint.cpp` queries objects, traits and loaded script modules; MOD query/version semantics unavailable | Partial evaluator/native inspection; MOD adapter and automatic application missing |
+| ND-bb20fd0798a9 | `DOC/dbmod-sample.dml` | Script inclusion/exclusion | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-45aba033a232 | `DOC/dbmod-sample.dml` | Schema loading | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-7a17bd163eed | `DOC/dbmod-sample.dml` | TagBlock | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-7ac13ea68fab | `DOC/dbmod-sample.dml` | ObjProp | `property_validation.cpp` checks native schemas/owned strings; `object_validation.cpp` inspects live targets; no writes | Missing runtime DML behavior |
+| ND-1fa1aebb7b12 | `DOC/dbmod-sample.dml` | ObjName | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-a2110d8268bc | `DOC/dbmod-sample.dml` | ObjArch | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-d85bd81593d5 | `DOC/dbmod-sample.dml` | MetaProp | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-8106d48de9cd | `DOC/dbmod-sample.dml` | Link | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-d1c2a1d14adb | `DOC/dbmod-sample.dml` | Receptron | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-30fe255f3fc8 | `DOC/dbmod-sample.dml` | StimSource | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-9465eeb32264 | `DOC/dbmod-sample.dml` | Create/CreateArch | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-461cfd107c7f | `DOC/dbmod-sample.dml` | Destroy/DestroyArch/DestroyArchAll | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-ff701618d5bc | `DOC/dbmod-sample.dml` | QuestVar | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-7298f4b0d1fc | `DOC/dbmod-sample.dml` | Texture/TextureAll | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-4fc6eeea4e90 | `DOC/dbmod-sample.dml` | Duplicate field indices | `fields.cpp`, `struct_fields.cpp`; occurrence selection and strict encoders tested without property-store writes | Staged encoding implemented; runtime application missing |
+| ND-296ee2a5cc46 | `DOC/dbmod-sample.dml` | Object ID remapping | `object_reference.cpp` tests explicit numeric remapping and quoted names; post-load inspection uses live IDs only | Resolver implemented; loader lifecycle integration missing |
+| ND-8dcea3a16490 | `DOC/dbmod-sample.dml` | apply_dbmods game/editor defaults | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-80927038fdc0 | `DOC/dbmod-sample.dml` | dbmod_load | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
+| ND-232bc9aaaa04 | `DOC/dbmod-sample.dml` | dbmod_log | `commands.cpp` validates command shapes; database load path has no patch executor | Missing runtime DML behavior |
 | ND-66f913905c56 | `DOC/dromed.cfg` | dromed | `src/entry/main.cpp`, `src/motion/skilltab.cpp` | Unverified |
 | ND-b71ee6367907 | `DOC/fm.cfg` | fm | `src/dark/drkmenu.cpp`, `src/dark/drkmenu.h`, `src/entry/main.cpp` | Unverified |
 | ND-33b02bd8e8ca | `DOC/fm_selector_api.txt` | fm_selector_api | No exact token; inspect aliases | Unverified |
@@ -103,9 +103,9 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-2bb21cca8e71 | `DOC/modders_notes.txt` | Build Dialog | No exact token; inspect aliases | Unverified |
 | ND-77a3fd559c35 | `DOC/modders_notes.txt` | Loading Textured Group (.vbr) | No exact token; inspect aliases | Unverified |
 | ND-29d529e63bab | `DOC/modders_notes.txt` | Exporting Terrain Mesh | No exact token; inspect aliases | Unverified |
-| ND-0288fece355b | `DOC/modders_notes.txt` | Fog Zones | No exact token; inspect aliases | Unverified |
-| ND-4a5010655ad0 | `DOC/modders_notes.txt` | Ambient Light Zones | No exact token; inspect aliases | Unverified |
-| ND-cadd834778f9 | `DOC/modders_notes.txt` | Max View Distance | No exact token; inspect aliases | Unverified |
+| ND-0288fece355b | `DOC/modders_notes.txt` | Fog Zones | `portal.c`/`portdraw.c` consume global fog only; `engscrpt.cpp` keeps eight script-only presets | Missing zone rendering; metadata/script storage partial |
+| ND-4a5010655ad0 | `DOC/modders_notes.txt` | Ambient Light Zones | `wrloop.cpp` retains zone bytes; portal_cell_ambient_zone has no callers; missrend.h has global ambient only | Missing runtime zone lighting; metadata retained |
+| ND-cadd834778f9 | `DOC/modders_notes.txt` | Max View Distance | `render.cpp` owns global zfar/set_zfar; sMissionRenderParams has no Required View Dist field | Partial global control; mission minimum missing |
 | ND-349f7b8cac8d | `DOC/modders_notes.txt` | New Texture Align Mode "AlignExt" | No exact token; inspect aliases | Unverified |
 | ND-1c8161dff58e | `DOC/modders_notes.txt` | UV Mapping a Cylinder | No exact token; inspect aliases | Unverified |
 | ND-123eb1a7fdf9 | `DOC/modders_notes.txt` | Quick-linking | No exact token; inspect aliases | Unverified |
@@ -114,7 +114,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-d31b6b98ca91 | `DOC/modders_notes.txt` | Changed Edit Flow Group Dialog | No exact token; inspect aliases | Unverified |
 | ND-1e9b5218b132 | `DOC/modders_notes.txt` | Changed Prop: Script->"Trap Control Flags" | No exact token; inspect aliases | Unverified |
 | ND-74a41457424e | `DOC/modders_notes.txt` | Changed Prop: Script->"Trap Control Flags" (SS2) | No exact token; inspect aliases | Unverified |
-| ND-31536a01b31b | `DOC/modders_notes.txt` | Changed Prop: Weather->"Local Weather" | No exact token; inspect aliases | Unverified |
+| ND-31536a01b31b | `DOC/modders_notes.txt` | Changed Prop: Weather->"Local Weather" | `weather.h`/`weather.cpp` expose boolean fog and precipitation, no fog/ambient zone selectors | Partial legacy weather schema |
 | ND-90d3e0d2ff0a | `DOC/modders_notes.txt` | Changed Prop: Renderer->"Bitmap Worldspace" | No exact token; inspect aliases | Unverified |
 | ND-c2ae3ebbd208 | `DOC/modders_notes.txt` | Changed Prop: Renderer->"Anim Light" | No exact token; inspect aliases | Unverified |
 | ND-3a8915e36426 | `DOC/modders_notes.txt` | Changed Prop: Renderer->"Corona" | No exact token; inspect aliases | Unverified |
@@ -161,7 +161,7 @@ IDs are content-derived and remain stable when unrelated requirements are added.
 | ND-c45fcbf5faf7 | `DOC/modders_notes.txt` | Changed Var: Mission Variables->"Dark Mission Description" | No exact token; inspect aliases | Unverified |
 | ND-878fb16be1b6 | `DOC/modders_notes.txt` | Changed Var: Mission Variables->"Rendering Parameters" | No exact token; inspect aliases | Unverified |
 | ND-cebf5c1fc866 | `DOC/modders_notes.txt` | Changed Var: Mission Variables->"NewSky:Stars" | No exact token; inspect aliases | Unverified |
-| ND-e6286fa2df03 | `DOC/modders_notes.txt` | New Var: Mission Variables->"Fog Zones" | No exact token; inspect aliases | Unverified |
+| ND-e6286fa2df03 | `DOC/modders_notes.txt` | New Var: Mission Variables->"Fog Zones" | `engscrpt.cpp` presets are script-only storage; renderer consumes global portal_fog values | Missing mission zone variable |
 | ND-ea823ee0bbf9 | `DOC/modders_notes.txt` | New Var: Mission Variables->"Environment Maps" | No exact token; inspect aliases | Unverified |
 | ND-17b919c876d5 | `DOC/modders_notes.txt` | Changed Var: GameSys Variables->"Overload Params" (SS2) | No exact token; inspect aliases | Unverified |
 | ND-a19873926bbb | `DOC/modders_notes.txt` | New Var: GameSys Variables->"Misc Dark Settings" | No exact token; inspect aliases | Unverified |

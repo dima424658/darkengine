@@ -85,11 +85,22 @@ def review(doc, name, evidence):
             evidence = "`src/framewrk/dbmod/discovery.cpp`, `tools/dbmod_test/discovery.cpp`; callback-backed manifests, no executor"
         elif name in {"Fingerprint position thresholds", "Fingerprint positive/negative precedence",
                       "Fingerprint QVAR masks/comparisons", "Fingerprint PROP/NAME/GAM rules"}:
-            status = "Offline evaluator implemented; game integration missing"
-            evidence = "`src/framewrk/dbmod/fingerprint.cpp`, `tools/dbmod_test/fingerprint.cpp`; no database adapters or executor"
+            status = "Evaluator and opt-in native inspection implemented; automatic application missing"
+            evidence = "`fingerprint.cpp`, `engine_fingerprint.cpp`, `inspection.cpp`; native read-only adapters, no patch executor"
         else:
             status = "Missing runtime DML behavior"
-            evidence = "`src/framewrk/dbmod/` has syntax representation only; database load path has no patch executor"
+            evidence = "`commands.cpp` validates command shapes; database load path has no patch executor"
+        if name == "ObjProp":
+            evidence = "`property_validation.cpp` checks native schemas/owned strings; `object_validation.cpp` inspects live targets; no writes"
+        elif name == "Duplicate field indices":
+            status = "Staged encoding implemented; runtime application missing"
+            evidence = "`fields.cpp`, `struct_fields.cpp`; occurrence selection and strict encoders tested without property-store writes"
+        elif name == "Object ID remapping":
+            status = "Resolver implemented; loader lifecycle integration missing"
+            evidence = "`object_reference.cpp` tests explicit numeric remapping and quoted names; post-load inspection uses live IDs only"
+        elif name == "Fingerprint EXIST/ARCH/SCR/MOD rules":
+            status = "Partial evaluator/native inspection; MOD adapter and automatic application missing"
+            evidence = "`engine_fingerprint.cpp` queries objects, traits and loaded script modules; MOD query/version semantics unavailable"
     overlay_method = name.rsplit(".", 1)[-1]
     is_overlay = (doc.parent.name == "script" and doc.name == "DarkOverlay.txt") or (
         doc.name == "API-reference_services.txt" and name.startswith("DarkOverlay."))
@@ -111,6 +122,20 @@ def review(doc, name, evidence):
         if name in replacements:
             status, evidence = replacements[name]
     if doc.name == "modders_notes.txt":
+        rendering_gaps = {
+            "Fog Zones": ("Missing zone rendering; metadata/script storage partial",
+                          "`portal.c`/`portdraw.c` consume global fog only; `engscrpt.cpp` keeps eight script-only presets"),
+            "Ambient Light Zones": ("Missing runtime zone lighting; metadata retained",
+                                    "`wrloop.cpp` retains zone bytes; portal_cell_ambient_zone has no callers; missrend.h has global ambient only"),
+            "Max View Distance": ("Partial global control; mission minimum missing",
+                                  "`render.cpp` owns global zfar/set_zfar; sMissionRenderParams has no Required View Dist field"),
+            'Changed Prop: Weather->"Local Weather"': ("Partial legacy weather schema",
+                                                      "`weather.h`/`weather.cpp` expose boolean fog and precipitation, no fog/ambient zone selectors"),
+            'New Var: Mission Variables->"Fog Zones"': ("Missing mission zone variable",
+                                                      "`engscrpt.cpp` presets are script-only storage; renderer consumes global portal_fog values"),
+        }
+        if name in rendering_gaps:
+            status, evidence = rendering_gaps[name]
         native_property_gaps = {
             'New Prop: Door->"Static Light Pos"': ("Missing in tested Linux game", "DoorStaticLight is not registered"),
             'New Prop: Creature->"Disable Head Track"': ("Missing in tested Linux game", "CretHTrack is not registered"),

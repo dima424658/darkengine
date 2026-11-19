@@ -76,10 +76,12 @@ no Vulkan validation errors. These checks do not establish campaign or FM parity
 
 | Gap | Source evidence / consequence |
 | --- | --- |
-| DML patch loading | No parser/application pipeline found; TFix and FM mission/gamesys fixes cannot be assumed applied |
+| DML patch loading | Parser, offline discovery/evaluation and opt-in native diagnostics exist; automatic discovery/application and persistence are unfinished |
 | General material passes | `render_pass` blocks are skipped; custom passes and procedural RGB/alpha/UV behavior are absent |
 | Environment maps | Material cubemaps/location maps absent; `Engine.SetEnvMapZone` is a no-op |
-| Fog zones | Engine service retains script-side zone values without connecting them to zone-aware rendering |
+| Fog zones | Engine service retains script-side zone values without connecting them to zone-aware rendering; no mission fog-zone variable |
+| Ambient zones | WREXT cell bytes are retained, but object lighting reads global ambient and the zone accessor has no callers |
+| Mission view-distance minimum | Global near/far controls exist; the mission Required View Dist setting is not consumed |
 | Tag-block script access | `SetTagBlock` returns `E_NOTIMPL`; `GetTagBlock` returns an empty value |
 | Exact object raycasting | Excluded returned hits fall back to terrain, potentially missing another object; documented flag semantics incomplete |
 | Subtitles | No `.SUB` discovery, sound/movie timing or presentation implementation found |
@@ -345,3 +347,18 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   and no validation errors. No object/property writes were added.
   The same fixture in mission mode resolved concrete object 1, rejected both
   abstract references, and again exited normally without validation errors.
+
+- Source-level rendering metadata review checked DOC/modders_notes.txt against
+  weather.h/cpp, missrend.h/cpp, objlight.c, render.cpp, portal.c/portdraw.c and
+  sim/wrloop.cpp. Five more matrix rows now distinguish retained metadata,
+  legacy behavior and missing runtime behavior. In particular, objlight.c
+  copies global ambient directly, and the WREXT ambient-zone accessor has no
+  consumers. RENDPARAMS preserves extended source bytes for round-tripping;
+  that does not implement the additional fields. Global zfar defaults to 256
+  and has manual controls, but no mission minimum field is consumed. These
+  are source findings, not new visual acceptance results; editor testing
+  remains deferred. The complete semantic audit is still unfinished.
+- Refreshed stale DML matrix evidence to include the native fingerprint,
+  property-schema and object diagnostics, staged duplicate-field selection,
+  and the explicit object resolver. These remain preparation for an executor,
+  not proof that installed patches are applied. Twelve audit-tool tests pass.
