@@ -1,4 +1,8 @@
 AGENTS.md
+
+# Python caches
+__pycache__/
+
 # Prerequisites
 *.d
 
