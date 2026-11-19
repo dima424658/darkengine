@@ -1275,7 +1275,10 @@ edbFiletype dbLoad(const char* filename, ulong loadtype)
          config_get_int("dbmod_check_match", &match);
          int schema = 0;
          config_get_int("dbmod_check_schema", &schema);
-         DarkDbMod::InspectPatch(patch, gamesys != 0, gCurrGameFile, match != 0, schema != 0);
+         int objects = 0;
+         config_get_int("dbmod_check_objects", &objects);
+         DarkDbMod::InspectPatch(patch, gamesys != 0, gCurrGameFile, match != 0, schema != 0,
+                                objects != 0);
       }
    }
    MissionDiagnosticsFinish(retval != 0);

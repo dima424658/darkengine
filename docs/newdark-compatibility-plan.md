@@ -332,3 +332,16 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   unavailable queries. This is preparatory code, not an engine execution hook:
   remap lifetime, command-specific reference roles, runtime mutation and full
   semantic matrix review remain unfinished.
+
+- `dbmod_check_objects=1` now inspects standalone ObjProp targets against the
+  loaded native object system. With `dbmod_check_gamesys=1`, targets must be
+  abstract; otherwise they must be concrete. This optional diagnostic reports
+  resolved/unresolved live snapshots independently of syntax/schema results;
+  it does not simulate earlier creations, renames or destruction, inspect
+  creation-time property targets, or use the expired loader remapping table.
+  A private miss2 Linux fixture resolved both -1 and "Object" to archetype -1,
+  rejected missing numeric/named targets, and reported concrete object 1 as
+  outside gamesys scope. The run exited normally with Vulkan validation enabled
+  and no validation errors. No object/property writes were added.
+  The same fixture in mission mode resolved concrete object 1, rejected both
+  abstract references, and again exited normally without validation errors.

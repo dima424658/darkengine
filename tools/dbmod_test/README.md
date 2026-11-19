@@ -227,3 +227,13 @@ fingerprint vetoed acceptance. All three native runs exited cleanly with Vulkan
 synchronization validation. The Linux game build and seven C++ tests pass. These
 checks do not load/unload modules or execute patch script directives; MOD version
 comparisons and complete patch application remain pending.
+
+`dbmod_check_objects=1` independently inspects standalone ObjProp targets in
+the loaded database (without applying commands). Numeric IDs are current live
+IDs; quoted tokens use native name lookup. Gamesys inspection requires abstract
+targets, mission inspection concrete targets. Trace records
+`dbmod-object-check` and `dbmod-object-summary` report resolved/unresolved
+snapshots. These records do not affect the syntax/schema result and do not
+establish that a patch can execute: preceding Create/ObjName/Destroy commands
+are not simulated, and nested creation properties have no live target to check.
+Loader-time ID remapping is deliberately not used after the load has finished.

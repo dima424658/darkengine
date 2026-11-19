@@ -4,6 +4,7 @@
 #include "fingerprint.hpp"
 #include "engine_fingerprint.hpp"
 #include "property_validation.hpp"
+#include "object_validation.hpp"
 #include <appagg.h>
 #include <binrstyp.h>
 #include <mprintf.h>
@@ -35,7 +36,7 @@ struct Unlock
 };
 } // namespace
 bool InspectPatch(const char *filename, bool gamesysPatch, const char *gamesysName,
-                  bool matchCurrentDatabase, bool validatePropertyFields)
+                  bool matchCurrentDatabase, bool validatePropertyFields, bool inspectPropertyTargets)
 {
    const std::string path = filename ? filename : "";
    try
@@ -71,6 +72,24 @@ bool InspectPatch(const char *filename, bool gamesysPatch, const char *gamesysNa
       const auto syntax = Parse(text);
       ValidateFingerprints(syntax, gamesysPatch);
       const auto commands = ValidateCommandShapes(syntax);
+      if (inspectPropertyTargets)
+      {
+         const auto targets = InspectNativePropertyTargets(commands, gamesysPatch);
+         unsigned resolved = 0;
+         for (const auto &target : targets)
+         {
+            resolved += target.resolved;
+            const char *status = target.resolved ? "resolved" : "unresolved";
+            mprintf("DML property target %s: %s:%u object=%d: %s (live snapshot)\n",
+                    status, path.c_str(), unsigned(target.line), target.object,
+                    target.diagnostic.c_str());
+            RenderBackendTrace("dbmod-object-check status=%s line=%u object=%d diagnostic=%s",
+                               status, unsigned(target.line), target.object,
+                               target.diagnostic.c_str());
+         }
+         RenderBackendTrace("dbmod-object-summary resolved=%u unresolved=%u mode=live-snapshot",
+                            resolved, unsigned(targets.size()) - resolved);
+      }
       std::string schemaResult = "unchecked";
       if (validatePropertyFields)
       {
