@@ -67,6 +67,16 @@ class RequirementTests(unittest.TestCase):
         status, _ = review(Path("DOC/script/Property.txt"), "GetIndexed", "candidate")
         self.assertEqual(status, "Missing native method")
 
+    def test_quest_wildcard_and_binary_helpers_are_not_full_parity(self):
+        status, evidence = review(Path("DOC/script/Quest.txt"), "SubscribeMsg", "candidate")
+        self.assertIn("wildcard missing", status)
+        self.assertIn("literal name", evidence)
+        status, _ = review(Path("DOC/squirrel_script/API-reference_services.txt"), "Quest.BinSet", "candidate")
+        self.assertIn("campaign persistence missing", status)
+        status, evidence = review(Path("DOC/squirrel_script/API-reference_services.txt"), "Quest.BinSetTable", "candidate")
+        self.assertIn("Incorrect table API", status)
+        self.assertIn("argument 2", evidence)
+
     def test_service_declarations(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "script" / "Engine.txt"

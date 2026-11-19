@@ -252,6 +252,42 @@ def review(doc, name, evidence):
         if squirrel_property and property_method in {"PossessedSimple", "GetIndexed", "SetIndexed", "SetLocalIndexed"}:
             status = "Missing Squirrel method and native backing method"
             evidence = "CallProperty has no branch; propscpt.h/cpp lacks method; documented API 11/12 additions"
+    quest_method = name.rsplit(".", 1)[-1]
+    native_quest = doc.parent.name == "script" and doc.name == "Quest.txt"
+    squirrel_quest = doc.name == "API-reference_services.txt" and name.startswith("Quest.")
+    if native_quest or squirrel_quest:
+        quest_review = {
+            "SubscribeMsg": ("Partial named subscriptions; wildcard missing",
+                             "quest.cpp SubscribeMsg looks up/creates literal name, not all-variable subscription; quesscpt.cpp always returns TRUE"),
+            "UnsubscribeMsg": ("Partial named subscriptions; wildcard missing",
+                               "quest.cpp removes listener from literal named node; quesscpt.cpp ignores returned status and returns TRUE"),
+            "Set": ("Source implementation reviewed; runtime/scope parity unverified",
+                    "quesscpt.cpp updates existing qvar without changing type, creates missing qvar with requested scope"),
+            "Get": ("Source implementation reviewed; runtime parity unverified",
+                    "quesscpt.cpp delegates integer read to QuestData"),
+            "Exists": ("Source implementation reviewed; runtime parity unverified",
+                       "quesscpt.cpp delegates existence query to QuestData"),
+            "Delete": ("Source implementation reviewed; runtime/network parity unverified",
+                       "quesscpt.cpp delegates deletion to QuestData; no native binary store method"),
+        }
+        if quest_method in quest_review:
+            status, evidence = quest_review[quest_method]
+            evidence = "`src/script/quesscpt.cpp`, `src/engfeat/quest.cpp`: " + evidence
+            if squirrel_quest:
+                evidence += "; CallQuest forwards to native service"
+        if squirrel_quest:
+            if quest_method == "GetAllVars":
+                status = "Source implementation reviewed; scope/version parity unverified"
+                evidence = "CallQuest builds a fresh table from QuestData Iter(type) and releases iterator/service"
+            elif quest_method in {"BinSet", "BinGet", "BinExists", "BinDelete"}:
+                status = "Partial VM-only data; campaign persistence missing"
+                evidence = "CallQuest keeps HSQOBJECT references in gQuestBinaryValues; no binary serialization/65000-byte enforcement, cleared at VM teardown"
+            elif quest_method in {"BinSetTable", "BinGetTable"}:
+                status = "Incorrect table API and missing campaign persistence"
+                evidence = "CallQuest treats argument 1 as string key and argument 2 as value, unlike documented (name, table)/(name); no table serialization"
+            elif quest_method in {"GetFirst", "GetNext"}:
+                status = "Missing Squirrel method and native backing method"
+                evidence = "CallQuest has no branch; quesscpt.cpp lacks native iterator methods"
     native_gaps = {
         "AnimTexture.txt": ({"ChangeTextureLoc", "ChangeAllTextures", "ChangeSingleTexture"},
                             "src/render/antxscpt.cpp", "not exposed by the Squirrel adapter"),

@@ -418,3 +418,17 @@ required. Runtime DromEd tests remain deferred until explicitly authorized.
   and SetPropField have early returns with store/ops references still held.
   No runtime leak magnitude or ABI correctness is inferred from these findings.
   Seventeen audit tests pass. Script behavior changes remain pending.
+
+- Quest source audit traced quesscpt.cpp, engfeat/quest.cpp and CallQuest.
+  Named subscriptions exist, but "*" is a literal node name, not the documented
+  all-qvar subscription. Native wrappers also discard subscription HRESULTs and
+  always report true. Set updates existing qvars without changing their scope;
+  a missing variable is created with the requested scope. Basic integer methods
+  are source-reviewed with runtime/network verification still open.
+  Squirrel GetAllVars builds a fresh scoped table. Binary helpers instead retain
+  HSQOBJECT references in a VM-global vector, without campaign serialization or
+  the documented native size limit. BinSetTable/BinGetTable use an extra string
+  key/value argument convention incompatible with documented name/table calls.
+  GetFirst/GetNext are missing in both adapters. These findings supersede any
+  assumption that the presence of binary helpers establishes campaign storage.
+  Eighteen audit tests pass; no gameplay/script mutation was introduced here.
