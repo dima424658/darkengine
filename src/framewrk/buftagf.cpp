@@ -15,7 +15,7 @@
 #include <limits.h>
 #include <string.h>
 #include <cfgdbg.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 #include <dataguard.h>
 
 #include <lg.h>

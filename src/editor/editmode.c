@@ -63,7 +63,7 @@
 #include <pgrpprop.h>
 #include <render_backend.h>
 #include <missiondiag.h>
-#include <platform_services.h>
+#include <platform_application.h>
 
 // stuff for camera synch
 #include <dbasemsg.h>

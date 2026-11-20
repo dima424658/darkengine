@@ -8,7 +8,7 @@
 //
 
 #include "dynfunc.h"
-#include <platform_services.h>
+#include <platform_library.h>
 
 ///////////////////////////////////////
 BOOL cDynFunc::Load()

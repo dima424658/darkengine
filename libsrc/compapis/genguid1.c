@@ -23,9 +23,6 @@
 #endif
 
 #ifndef _WIN32
-#define DEFINE_OLEGUID(name, l, w1, w2) \
-    DEFINE_GUID(name, l, w1, w2, 0xC0,0,0,0,0,0,0,0x46)
-
 DEFINE_GUID(GUID_NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 DEFINE_OLEGUID(IID_IUnknown,            0x00000000L, 0, 0);

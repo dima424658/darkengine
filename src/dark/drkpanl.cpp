@@ -20,7 +20,7 @@
 
 #include <dispapi.h>
 #include <render_backend.h>
-#include <platform_services.h>
+#include <platform_runtime.h>
 
 #include <drkuires.h>
 #include <imgsrc.h>

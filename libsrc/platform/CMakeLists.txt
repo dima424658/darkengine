@@ -30,3 +30,11 @@ endif()
 set_target_properties(dark_platform PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
+
+if(NOT WIN32)
+  target_include_directories(dark_platform PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/windows")
+endif()
+
+install(FILES
+  windows/COPYING.mingw-w64 windows/DISCLAIMER windows/DISCLAIMER.PD
+  DESTINATION share/licenses/DarkEngine/mingw-w64)

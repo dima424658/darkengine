@@ -471,14 +471,14 @@ YYDECL {
 	{
    ConfigSpew("lexspew", ("int\n"));
    inclval.ival = atoi(inctext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 	break;
 	case 6:
 	{
    ConfigSpew("lexspew", ("hex\n"));
    inclval.ival = strtol(inctext, NULL, 16);
-   return INT;
+   return INTEGER_LITERAL;
 }
 	break;
 	case 7:

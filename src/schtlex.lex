@@ -41,7 +41,7 @@ astring [^<^>^\n]
 <PREPROC>\n     {ConfigSpew("lexspew", ("schlex: return\n"));BEGIN INITIAL;};
 
 <PREPROC>{firstchar}{followchar}* {ConfigSpew("lexspew", ("schlex: ident\n"));yylval.strval = local_strdup(yytext); return IDENT;}
-<PREPROC>-?{digit}+ {ConfigSpew("lexspew", ("schlex: int\n"));yylval.ival = atoi(yytext); return INT;}
+<PREPROC>-?{digit}+ {ConfigSpew("lexspew", ("schlex: int\n"));yylval.ival = atoi(yytext); return INTEGER_LITERAL;}
 <PREPROC>{quote}{string}*{quote} {ConfigSpew("lexspew", ("schlex: string\n"));yylval.strval = local_strdup(yytext); return STRING;}
 <PREPROC>{langle}{astring}*{rangle} {ConfigSpew("lexspew", ("schlex: string\n"));yylval.strval = local_strdup(yytext); return STRING;}
 
@@ -54,7 +54,7 @@ freq            return FREQ;
 
 {alpha}{alphanum}* {ConfigSpew("lexspew", ("schlex: ident\n")); yylval.strval = local_strdup(yytext); return IDENT;}
 {quote}{string}*{quote} {ConfigSpew("lexspew", ("schlex: string\n")); yylval.strval = local_strdup(yytext); return STRING;}
--?{digit}+ {ConfigSpew("lexspew", ("schlex: int\n")); yylval.ival = atoi(yytext); return INT;}
+-?{digit}+ {ConfigSpew("lexspew", ("schlex: int\n")); yylval.ival = atoi(yytext); return INTEGER_LITERAL;}
 
 .               /* ignore */;
 

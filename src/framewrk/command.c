@@ -13,7 +13,7 @@
 
 #include <lg.h>
 #include <mprintf.h>
-#include <platform_services.h>
+#include <platform_application.h>
 
 #include <command.h>
 #include <status.h>

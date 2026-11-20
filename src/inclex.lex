@@ -62,12 +62,12 @@ hex [xX]
 <PREPROC>-?{digit}+ {
    ConfigSpew("lexspew", ("int\n"));
    inclval.ival = atoi(inctext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 <PREPROC>0{hex}-?{digit}+ {
    ConfigSpew("lexspew", ("hex\n"));
    inclval.ival = strtol(inctext, NULL, 16);
-   return INT;
+   return INTEGER_LITERAL;
 }
 
 <PREPROC>{quote}{string}*{quote} {

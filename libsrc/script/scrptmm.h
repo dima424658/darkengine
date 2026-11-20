@@ -30,7 +30,7 @@
 
 #include <allocovr.h>
 #include <scrptmem.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 
 cScriptModuleAlloc g_Malloc;
 IAllocator * g_pMalloc;

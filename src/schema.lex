@@ -22,7 +22,7 @@ freq            return FREQ;
 
 {alpha}{alphanum}*      return IDENT;                         
 {quote}{string}*{quote} return STRING;
--?{digit}+              return INT;
+-?{digit}+              return INTEGER_LITERAL;
 
 %%
 
@@ -34,7 +34,7 @@ main()
       printf("%s", token_name[tok]);  
       if ((tok == IDENT) || (tok == STRING))
          printf(": %s\n", yytext);
-      else if (tok == INT)
+      else if (tok == INTEGER_LITERAL)
          printf(": %d\n", atoi(yytext));
       else 
          printf("\n");

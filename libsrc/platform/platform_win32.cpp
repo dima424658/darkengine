@@ -1,6 +1,15 @@
-#include "win32_platform.h"
+#include <windows.h>
 
-#include <platform_services.h>
+#include <platform_display.h>
+#include <platform_memory.h>
+#include <platform_settings.h>
+#include <platform_application.h>
+#include <platform_runtime.h>
+#include <platform_library.h>
+#include <platform_diagnostics.h>
+#include <platform_input.h>
+#include <platform_filesystem.h>
+#include <platform_process.h>
 #include <platform_io.h>
 
 #include <SDL3/SDL.h>
@@ -16,11 +25,6 @@
 #include <vector>
 #include <exception>
 #include <cstdlib>
-
-EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
-{
-   return std::fopen(path, mode);
-}
 
 struct sWin32FileFind
 {
@@ -46,77 +50,6 @@ static void CopyFileFind(const WIN32_FIND_DATAA *source,
    strncpy(destination->name, source->cFileName,
            sizeof(destination->name) - 1);
    destination->name[sizeof(destination->name) - 1] = '\0';
-}
-
-int PlatformGetDisplayModes(ePlatformDisplayScope scope,
-                            sPlatformDisplayMode *modes, int capacity,
-                            int *native_width, int *native_height)
-{
-   if (!modes || capacity < 0)
-      capacity = 0;
-   if (native_width)
-      *native_width = 0;
-   if (native_height)
-      *native_height = 0;
-
-   const bool initialized =
-      (SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) != 0;
-   if (!initialized && !SDL_InitSubSystem(SDL_INIT_VIDEO))
-      return 0;
-
-   int displayCount = 0;
-   SDL_DisplayID *displays = SDL_GetDisplays(&displayCount);
-   if (!displays)
-      displayCount = 0;
-   int firstDisplay = 0;
-   if (scope == kPlatformCurrentDisplay && displayCount > 0)
-   {
-      SDL_Window *window = SDL_GetKeyboardFocus();
-      const SDL_DisplayID current = window
-         ? SDL_GetDisplayForWindow(window) : displays[0];
-      for (int i = 0; i < displayCount; ++i)
-         if (displays[i] == current)
-         {
-            firstDisplay = i;
-            break;
-         }
-      displayCount = 1;
-   }
-
-   int count = 0;
-   for (int displayOffset = 0; displayOffset < displayCount; ++displayOffset)
-   {
-      const SDL_DisplayID display = displays[firstDisplay + displayOffset];
-      const SDL_DisplayMode *current = SDL_GetCurrentDisplayMode(display);
-      if (current && scope == kPlatformCurrentDisplay)
-      {
-         if (native_width) *native_width = current->w;
-         if (native_height) *native_height = current->h;
-      }
-
-      int modeCount = 0;
-      SDL_DisplayMode **displayModes = SDL_GetFullscreenDisplayModes(display,
-         &modeCount);
-      for (int i = 0; displayModes && i < modeCount && count < capacity; ++i)
-      {
-         const SDL_DisplayMode &mode = *displayModes[i];
-         const int depth = SDL_BITSPERPIXEL(mode.format);
-         int duplicate = 0;
-         for (; duplicate < count; ++duplicate)
-            if (modes[duplicate].width == mode.w &&
-                modes[duplicate].height == mode.h &&
-                modes[duplicate].bit_depth == depth)
-               break;
-         if (duplicate == count)
-            modes[count++] = {mode.w, mode.h, depth};
-      }
-      SDL_free(displayModes);
-   }
-
-   SDL_free(displays);
-   if (!initialized)
-      SDL_QuitSubSystem(SDL_INIT_VIDEO);
-   return count;
 }
 
 float PlatformGetTextScale(void)
@@ -294,14 +227,6 @@ int PlatformPopupMenu(const char *const *items, int count,
 uint32 PlatformMilliseconds(void)
 {
    return (uint32)GetTickCount();
-}
-
-void PlatformSuspendApplicationClock(void)
-{
-}
-
-void PlatformResumeApplicationClock(void)
-{
 }
 
 uint32 PlatformApplicationResumeGeneration(void)
@@ -535,16 +460,25 @@ int PlatformGetClipboardText(char *text, int capacity)
    return length;
 }
 
-static BOOL gPlatformTextInputActive = FALSE;
-
 void PlatformSetTextInputActive(BOOL active)
 {
-   gPlatformTextInputActive = active;
 }
 
-BOOL PlatformTextInputActive(void)
+BOOL PlatformDirectoryExists(const char *path)
 {
-   return gPlatformTextInputActive;
+   if (!path || !*path)
+      return FALSE;
+   const DWORD attributes = GetFileAttributesA(path);
+   return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+BOOL PlatformCreateDirectory(const char *path)
+{
+   if (!path || !*path)
+      return FALSE;
+   if (CreateDirectoryA(path, nullptr))
+      return TRUE;
+   return GetLastError() == ERROR_ALREADY_EXISTS && PlatformDirectoryExists(path);
 }
 
 BOOL PlatformGetCurrentDirectory(char *path, int capacity)
@@ -840,70 +774,4 @@ void PlatformFindClose(sPlatformFileFind *find)
       free(native);
       find->implementation = NULL;
    }
-}
-
-BOOL PlatformMutexInit(sPlatformMutex *mutex)
-{
-   if (!mutex)
-      return FALSE;
-   CRITICAL_SECTION *section =
-      (CRITICAL_SECTION *)malloc(sizeof(CRITICAL_SECTION));
-   if (!section)
-      return FALSE;
-   InitializeCriticalSection(section);
-   mutex->implementation = section;
-   return TRUE;
-}
-
-void PlatformMutexTerm(sPlatformMutex *mutex)
-{
-   if (mutex && mutex->implementation)
-   {
-      CRITICAL_SECTION *section =
-         (CRITICAL_SECTION *)mutex->implementation;
-      DeleteCriticalSection(section);
-      free(section);
-      mutex->implementation = NULL;
-   }
-}
-
-void PlatformMutexLock(sPlatformMutex *mutex)
-{
-   EnterCriticalSection((CRITICAL_SECTION *)mutex->implementation);
-}
-
-void PlatformMutexUnlock(sPlatformMutex *mutex)
-{
-   LeaveCriticalSection((CRITICAL_SECTION *)mutex->implementation);
-}
-
-long PlatformAtomicLoad(volatile long *value)
-{
-   return InterlockedCompareExchange(value, 0, 0);
-}
-
-long PlatformAtomicIncrement(volatile long *value)
-{
-   return InterlockedIncrement(value);
-}
-
-long PlatformAtomicDecrement(volatile long *value)
-{
-   return InterlockedDecrement(value);
-}
-
-long PlatformAtomicExchange(volatile long *value, long replacement)
-{
-   return InterlockedExchange(value, replacement);
-}
-
-long PlatformAtomicAdd(volatile long *value, long amount)
-{
-   return InterlockedExchangeAdd(value, amount);
-}
-
-long PlatformAtomicCompareExchange(volatile long *value, long replacement,
-                                   long expected)
-{
-   return InterlockedCompareExchange(value, replacement, expected);
 }

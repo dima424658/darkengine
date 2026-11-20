@@ -15,7 +15,7 @@
 #include <limits.h>
 
 #include <lg.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 #include <mprintf.h>
 #include <appagg.h>
 #include <r3d.h>

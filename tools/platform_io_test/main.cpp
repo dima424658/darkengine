@@ -1,6 +1,6 @@
 // Build against libdark_platform.a with -Ih -lSDL3 -ldl -pthread.
 // Runs only in a temporary directory; no retail data is required.
-#include <platform_services.h>
+#include <platform_filesystem.h>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -9,10 +9,13 @@
 #include <string>
 #include <unistd.h>
 
-extern "C" FILE *PlatformFopen(const char *, const char *);
+static FILE *NativeFopen(const char *path, const char *mode)
+{
+   return std::fopen(path, mode);
+}
+
+#include <platform_posix.h>
 extern "C" int PlatformOpen(const char *, int, ...);
-extern "C" int PlatformAccess(const char *, int);
-extern "C" int PlatformUnlink(const char *);
 extern "C" int PlatformChangeDirectory(const char *);
 
 static void require(bool passed)
@@ -27,17 +30,34 @@ int main()
    require(mkdtemp(temp) != nullptr);
    std::filesystem::create_directories(std::string(temp) + "/Resources/Textures");
    require(PlatformChangeDirectory(temp) == 0);
-   FILE *file = PlatformFopen("Resources/Textures/Stone.bin", "wb");
+   const auto cwd = std::filesystem::current_path();
+   require(PlatformDirectoryExists("resources\\TEXTURES"));
+   require(!PlatformDirectoryExists("resources/missing"));
+   char directoryResolved[4096];
+   require(!PlatformResolvePath("resources/textures/NewFolder", directoryResolved, sizeof(directoryResolved)));
+   require(PlatformCreateDirectory("resources\\TEXTURES\\NewFolder"));
+   require(PlatformDirectoryExists("RESOURCES/textures/newfolder"));
+   require(PlatformCreateDirectory("RESOURCES/textures/NEWFOLDER"));
+   require(PlatformResolvePath("resources/textures/newfolder", directoryResolved, sizeof(directoryResolved)));
+   require(std::filesystem::exists("Resources/Textures/NewFolder"));
+   require(!std::filesystem::exists("Resources/Textures/NEWFOLDER"));
+   require(!PlatformCreateDirectory("missing-parent/child"));
+   require(!PlatformDirectoryExists(nullptr));
+   require(!PlatformCreateDirectory(""));
+   require(std::filesystem::current_path() == cwd);
+   FILE *file = fopen("Resources/Textures/Stone.bin", "wb");
    require(file != nullptr);
    std::fputs("stone", file);
    std::fclose(file);
+   require(!PlatformDirectoryExists("resources/textures/stone.bin"));
+   require(!PlatformCreateDirectory("resources/textures/STONE.bin"));
    char resolved[4096];
    require(PlatformResolvePath("resources/textures/stone.bin", resolved, sizeof(resolved)));
-   require(PlatformAccess("RESOURCES/TEXTURES/STONE.BIN", R_OK) == 0);
+   require(PlatformResolvePath("RESOURCES/TEXTURES/STONE.BIN", resolved, sizeof(resolved)));
    int readFd = PlatformOpen("resources/textures/stone.bin", O_RDONLY);
    require(readFd >= 0);
    close(readFd);
-   file = PlatformFopen("resources/textures/stone.bin", "rb");
+   file = fopen("resources/textures/stone.bin", "rb");
    require(file && std::fgetc(file) == 's');
    std::fclose(file);
    require(!PlatformResolvePath("resources/new.bin", resolved, sizeof(resolved)));
@@ -47,19 +67,20 @@ int main()
    require(PlatformResolvePath("resources/new.bin", resolved, sizeof(resolved)));
 
    // Exact spellings must still win when case-folded names are ambiguous.
-   file = std::fopen("Resources/Textures/STONE.bin", "wb");
+   file = NativeFopen("Resources/Textures/STONE.bin", "wb");
    require(file != nullptr);
    std::fclose(file);
    // Refresh directory caches after the native filesystem mutation.
    require(PlatformChangeDirectory(temp) == 0);
-   require(PlatformAccess("Resources/Textures/Stone.bin", R_OK) == 0);
-   require(PlatformAccess("Resources/Textures/STONE.bin", R_OK) == 0);
-   require(PlatformAccess("Resources/Textures/sToNe.bin", R_OK) != 0);
-   require(PlatformUnlink("Resources/Textures/STONE.bin") == 0);
-   require(PlatformUnlink("resources/new.bin") == 0);
-   require(PlatformAccess("resources/new.bin", F_OK) != 0);
+   require(PlatformResolvePath("Resources/Textures/Stone.bin", resolved, sizeof(resolved)));
+   require(PlatformResolvePath("Resources/Textures/STONE.bin", resolved, sizeof(resolved)));
+   require(!PlatformResolvePath("Resources/Textures/sToNe.bin", resolved, sizeof(resolved)));
+   require(std::filesystem::remove("Resources/Textures/STONE.bin"));
+   require(std::filesystem::remove("Resources/New.bin"));
+   require(PlatformChangeDirectory(temp) == 0);
    require(!PlatformResolvePath("resources/new.bin", resolved, sizeof(resolved)));
-   file = PlatformFopen("Resources/NEW.bin", "wb");
+   require(!PlatformResolvePath("resources/new.bin", resolved, sizeof(resolved)));
+   file = fopen("Resources/NEW.bin", "wb");
    require(file != nullptr);
    std::fclose(file);
    require(PlatformResolvePath("resources/new.bin", resolved, sizeof(resolved)));
@@ -67,13 +88,13 @@ int main()
    const auto start = std::chrono::steady_clock::now();
    for (int i = 0; i < 20000; ++i)
    {
-      require(PlatformAccess("resources/textures/stone.bin", R_OK) == 0);
-      file = PlatformFopen("resources/textures/stone.bin", "rb");
+      require(PlatformResolvePath("resources/textures/stone.bin", resolved, sizeof(resolved)));
+      file = fopen("resources/textures/stone.bin", "rb");
       require(file != nullptr);
       std::fclose(file);
-      require(PlatformAccess("resources/textures/missing.bin", F_OK) != 0);
+      require(!PlatformResolvePath("resources/textures/missing.bin", resolved, sizeof(resolved)));
       // Diagnostics frequently reopen existing files during mission loads.
-      file = PlatformFopen("Resources/NEW.bin", "ab");
+      file = fopen("Resources/NEW.bin", "ab");
       require(file != nullptr);
       std::fclose(file);
    }

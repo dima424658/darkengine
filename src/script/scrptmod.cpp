@@ -2,7 +2,7 @@
 #include <allocapi.h>
 #include <filespec.h>
 #include <mprintf.h>
-#include <platform_services.h>
+#include <platform_library.h>
 #include <osm_emu/osm32mod.h>
 #include <squirrel/squirrelhost.h>
 

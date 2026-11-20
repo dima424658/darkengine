@@ -16,7 +16,7 @@
 #include <uigame.h>
 #include <2d.h>
 #include <rendloop.h>
-#include <platform_services.h>
+#include <platform_input.h>
 
 #include <command.h>
 #include <stdio.h>

@@ -13,7 +13,8 @@
 #include <lgassert.h>
 #include <mprintf.h>
 #include <coremutx.h>
-#include <platform_services.h>
+#include <platform_runtime.h>
+#include <platform_diagnostics.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

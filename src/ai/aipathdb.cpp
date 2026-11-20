@@ -33,7 +33,7 @@
 
 #include <appagg.h>
 #include <gshelapi.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 
 #include <status.h>
 

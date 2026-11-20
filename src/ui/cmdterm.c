@@ -8,6 +8,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdatomic.h>
+#include <threads.h>
+#include <stdlib.h>
 
 #include <kb.h>
 #include <kbcook.h>
@@ -33,7 +36,7 @@
 #include <uigame.h>
 
 #include <config.h>
-#include <platform_services.h>
+#include <platform_input.h>
 
 #include <mprintf.h>
 #include <memall.h>
@@ -110,14 +113,14 @@ static int CmdTermLineCount = 0;
 static int CmdTermNextLine = 0;
 static char CmdTermCaptureLine[CMDTERM_LINE_LENGTH];
 static int CmdTermCaptureLength = 0;
-static volatile long CmdTermCommandCaptureDepth = 0;
-static volatile long CmdTermDiagnosticCapture = FALSE;
+static atomic_long CmdTermCommandCaptureDepth = 0;
+static atomic_long CmdTermDiagnosticCapture = FALSE;
 static BOOL CmdTermOutputHookInstalled = FALSE;
 static void (*CmdTermPreviousMonoHook)(char*,int) = NULL;
-static sPlatformMutex CmdTermModelLock;
-static BOOL CmdTermModelLockInitialized = FALSE;
-static volatile long CmdTermPendingFontDelta = 0;
-static volatile long CmdTermFontChangeDeferred = FALSE;
+static mtx_t CmdTermModelLock;
+static once_flag CmdTermModelLockOnce = ONCE_FLAG_INIT;
+static atomic_long CmdTermPendingFontDelta = 0;
+static atomic_long CmdTermFontChangeDeferred = FALSE;
 
 // Use the stock antialiased interface faces now that their 16-bit blitter can
 // blend coverage without depending on renderer-owned lighting-table state.
@@ -608,23 +611,26 @@ static void cmdterm_set_popup_cursor(BOOL active)
    SafeRelease(shell);
 }
 
+static void cmdterm_model_init_once(void)
+{
+   if (mtx_init(&CmdTermModelLock, mtx_recursive) != thrd_success)
+      abort();
+}
+
 static void cmdterm_model_init(void)
 {
-   if (!CmdTermModelLockInitialized)
-   {
-      CmdTermModelLockInitialized = PlatformMutexInit(&CmdTermModelLock);
-   }
+   call_once(&CmdTermModelLockOnce, cmdterm_model_init_once);
 }
 
 static void cmdterm_model_lock(void)
 {
    cmdterm_model_init();
-   PlatformMutexLock(&CmdTermModelLock);
+   mtx_lock(&CmdTermModelLock);
 }
 
 static void cmdterm_model_unlock(void)
 {
-   PlatformMutexUnlock(&CmdTermModelLock);
+   mtx_unlock(&CmdTermModelLock);
 }
 
 static BOOL cmdterm_is_scrollable(void)
@@ -859,8 +865,8 @@ static void cmdterm_mono_output(char* text, int length)
 {
    if (CmdTermPreviousMonoHook)
       CmdTermPreviousMonoHook(text, length);
-   if (PlatformAtomicLoad(&CmdTermCommandCaptureDepth) > 0 ||
-       PlatformAtomicLoad(&CmdTermDiagnosticCapture))
+   if (atomic_load(&CmdTermCommandCaptureDepth) > 0 ||
+       atomic_load(&CmdTermDiagnosticCapture))
       cmdterm_capture_stream(text, length);
 }
 
@@ -888,7 +894,7 @@ static void cmdterm_remove_output_hook(void)
 
 static void cmdterm_begin_command_capture(void)
 {
-   PlatformAtomicIncrement(&CmdTermCommandCaptureDepth);
+   atomic_fetch_add(&CmdTermCommandCaptureDepth, 1);
    // Installing mono_spc_func makes legacy mprintf calls format their output
    // even when no monochrome screen or log is active. Limit that behavior to
    // an executing console command unless diagnostics were explicitly enabled.
@@ -897,19 +903,19 @@ static void cmdterm_begin_command_capture(void)
 
 static void cmdterm_end_command_capture(void)
 {
-   if (PlatformAtomicLoad(&CmdTermCommandCaptureDepth) > 0)
-      PlatformAtomicDecrement(&CmdTermCommandCaptureDepth);
+   if (atomic_load(&CmdTermCommandCaptureDepth) > 0)
+      atomic_fetch_sub(&CmdTermCommandCaptureDepth, 1);
    cmdterm_model_lock();
    cmdterm_capture_flush_locked();
    cmdterm_model_unlock();
-   if (PlatformAtomicLoad(&CmdTermCommandCaptureDepth) == 0 &&
-       !PlatformAtomicLoad(&CmdTermDiagnosticCapture))
+   if (atomic_load(&CmdTermCommandCaptureDepth) == 0 &&
+       !atomic_load(&CmdTermDiagnosticCapture))
       cmdterm_remove_output_hook();
 }
 
 void cmdterm_capture_status(const char* text)
 {
-   if (PlatformAtomicLoad(&CmdTermCommandCaptureDepth) > 0 &&
+   if (atomic_load(&CmdTermCommandCaptureDepth) > 0 &&
        text && *text)
       cmdterm_print(text);
 }
@@ -971,12 +977,12 @@ static BOOL cmdterm_handle_wheel(short wheel)
 
    if (cmdterm_control_down())
    {
-      PlatformAtomicAdd(&CmdTermPendingFontDelta, wheel);
-      if (PlatformAtomicCompareExchange(&CmdTermFontChangeDeferred,
-                                        TRUE, FALSE) == FALSE)
+      atomic_fetch_add(&CmdTermPendingFontDelta, wheel);
+      long expected = FALSE;
+      if (atomic_compare_exchange_strong(&CmdTermFontChangeDeferred, &expected, TRUE))
       {
          if (uiDefer(cmdterm_deferred_font_change, NULL) != OK)
-            PlatformAtomicExchange(&CmdTermFontChangeDeferred, FALSE);
+            atomic_exchange(&CmdTermFontChangeDeferred, FALSE);
       }
       return TRUE;
    }
@@ -1276,7 +1282,7 @@ static void cmdterm_console_diagnostics(char* argument)
 
    if (!argument || !*argument)
    {
-      cmdterm_print(PlatformAtomicLoad(&CmdTermDiagnosticCapture)
+      cmdterm_print(atomic_load(&CmdTermDiagnosticCapture)
          ? "Diagnostic output capture is on."
          : "Diagnostic output capture is off.");
       return;
@@ -1285,15 +1291,15 @@ static void cmdterm_console_diagnostics(char* argument)
        cmdterm_argument_is(argument, "1") ||
        cmdterm_argument_is(argument, "true"))
    {
-      PlatformAtomicExchange(&CmdTermDiagnosticCapture, TRUE);
+      atomic_exchange(&CmdTermDiagnosticCapture, TRUE);
       cmdterm_install_output_hook();
    }
    else if (cmdterm_argument_is(argument, "off") ||
             cmdterm_argument_is(argument, "0") ||
             cmdterm_argument_is(argument, "false"))
    {
-      PlatformAtomicExchange(&CmdTermDiagnosticCapture, FALSE);
-      if (PlatformAtomicLoad(&CmdTermCommandCaptureDepth) == 0)
+      atomic_exchange(&CmdTermDiagnosticCapture, FALSE);
+      if (atomic_load(&CmdTermCommandCaptureDepth) == 0)
          cmdterm_remove_output_hook();
    }
    else
@@ -1302,7 +1308,7 @@ static void cmdterm_console_diagnostics(char* argument)
       return;
    }
 
-   cmdterm_print(PlatformAtomicLoad(&CmdTermDiagnosticCapture)
+   cmdterm_print(atomic_load(&CmdTermDiagnosticCapture)
       ? "Diagnostic output capture enabled."
       : "Diagnostic output capture disabled.");
 }
@@ -2060,7 +2066,7 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
    CmdTerm.flags = flags;
    CmdTerm.parentroot = root;
    CmdTerm.bounds = *bounds;
-   if (PlatformAtomicLoad(&CmdTermDiagnosticCapture))
+   if (atomic_load(&CmdTermDiagnosticCapture))
       cmdterm_install_output_hook();
 
    // Retain the compact profile for other historical game targets. Thief 2
@@ -2337,7 +2343,7 @@ void DestroyCommandTerminal(void)
 
 static BOOL cmdterm_apply_pending_font_change(void)
 {
-   long delta = PlatformAtomicExchange(&CmdTermPendingFontDelta, 0);
+   long delta = atomic_exchange(&CmdTermPendingFontDelta, 0);
    LGadRoot* parent;
    Rect bounds;
    ulong flags;
@@ -2401,7 +2407,7 @@ static BOOL cmdterm_apply_pending_font_change(void)
 static void cmdterm_deferred_font_change(void* unused)
 {
    (void)unused;
-   PlatformAtomicExchange(&CmdTermFontChangeDeferred, FALSE);
+   atomic_exchange(&CmdTermFontChangeDeferred, FALSE);
    cmdterm_apply_pending_font_change();
 }
 

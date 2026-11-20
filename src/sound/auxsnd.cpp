@@ -11,7 +11,7 @@
 #include <limits.h>
 
 #include <lg.h>
-#include <platform_services.h>
+#include <platform_library.h>
 #include <sndsrc.h>
 #include <playlist.h>
 

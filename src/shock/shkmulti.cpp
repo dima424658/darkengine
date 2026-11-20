@@ -7,7 +7,7 @@
 
 #include <limits.h>
 #include <stdio.h>
-#include <platform_services.h>
+#include <platform_filesystem.h>
 #include <config.h>
 #include <mprintf.h>
 #include <filepath.h>
@@ -964,19 +964,11 @@ HRESULT DoShockSaveGame(int slot, char *savedesc)
 
    if (slot != -1)
    {
-      // Make sure the target directory exists
       ShockGetSaveDir(slot, savedir);
-      //sprintf(savedir,"%s%d",SAVEROOT,slot);
-   //   if (_chdir(savedir))
-      if (_chdir(savedir))
+      if (!PlatformDirectoryExists(savedir) && !PlatformCreateDirectory(savedir))
       {
-         // dir does not exist, create it
-         if (mkdir(savedir) != 0)
-         {
-            Warning(("ShockSaveGame: Could not create directory %d!\n",savedir));
-         }
+         Warning(("ShockSaveGame: Could not create directory %s!\n", savedir));
       }
-      _chdir(curdir);
    }
 
    // Save out the current state of the game to the current directory

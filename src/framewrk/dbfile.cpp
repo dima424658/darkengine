@@ -15,7 +15,7 @@
 #include <vector>
 
 #include <config.h>
-#include <platform_services.h>
+#include <platform_application.h>
 
 #include <dispbase.h>
 #include <dbasemsg.h>

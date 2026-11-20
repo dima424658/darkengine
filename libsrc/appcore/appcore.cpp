@@ -10,7 +10,7 @@
 #include <appagg.h>
 #include <objcguid.h>
 #include <objcoll.h>
-#include <platform_services.h>
+#include <platform_diagnostics.h>
 #include <stdlib.h>
 
 #ifdef __ANDROID__

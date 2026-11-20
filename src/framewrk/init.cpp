@@ -72,7 +72,8 @@
 #include <iobjnet.h>
 #include <movie.h>
 #include <diskfree.h>
-#include <platform_services.h>
+#include <display_modes.h>
+#include <platform_settings.h>
 #include <dyntex.h>
 #include <scrptne_.h>
 #include <random.h>
@@ -108,14 +109,14 @@ static void RegisterDisplayMode(int width, int height)
 
 static void RegisterDisplayModes(void)
 {
-   sPlatformDisplayMode modes[512];
+   sDisplayMode modes[512];
    int count;
    int i;
 
    // Register the union of modes exposed by every connected monitor before
    // screen-mode configuration is read. The modern renderer presents these
    // as internal render sizes, so no exclusive legacy mode switch is required.
-   count = PlatformGetDisplayModes(kPlatformAllDisplays, modes,
+   count = DisplayGetModes(kDisplayAllDisplays, modes,
                                    sizeof(modes) / sizeof(modes[0]),
                                    NULL, NULL);
    for (i = 0; i < count; ++i)
@@ -615,7 +616,7 @@ tResult LGAPI CoreEngineAppInit()
       int native_width;
       int native_height;
 
-      PlatformGetDisplayModes(kPlatformCurrentDisplay, NULL, 0,
+      DisplayGetModes(kDisplayCurrentDisplay, NULL, 0,
                               &native_width, &native_height);
 
       SetSupportedScreenSize("screen_size", "screen_depth",

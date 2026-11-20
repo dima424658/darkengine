@@ -19,7 +19,7 @@
 #include <mprintf.h>
 
 #include <lg.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 
 #include <csg.h>
 #include <csgbrush.h>

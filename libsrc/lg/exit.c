@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <lg.h>
-#include <platform_services.h>
+#include <platform_application.h>
 
 void PrintExitMsg(void);
 const char *pExitMsg;		// message to print on exit

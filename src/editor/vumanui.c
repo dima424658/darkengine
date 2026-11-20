@@ -15,7 +15,7 @@
 #include <gcompose.h>
 #include <config.h>
 #include <cfgdbg.h>
-#include <platform_services.h>
+#include <platform_application.h>
 
 #include <command.h>
 #include <vumanui.h>

@@ -6,7 +6,7 @@
 // $Header: r:/t2repos/thief2/src/goof.c,v 1.3 2000/02/19 12:14:17 toml Exp $
 
 #include <fix.h>
-#include <platform_services.h>
+#include <platform_runtime.h>
 
 fix fixtime(void)
 {

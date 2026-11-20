@@ -112,7 +112,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <mprintf.h>
-#include <platform_services.h>
+#include <platform_runtime.h>
 
 #define TimerRawTimeValue() PlatformMilliseconds()
 

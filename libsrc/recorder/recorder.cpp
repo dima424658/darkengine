@@ -23,7 +23,7 @@
 #include <string.h>  // strncat
 #include <stdlib.h>  // getenv
 #include <str.h>
-#include <platform_services.h>
+#include <platform_runtime.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

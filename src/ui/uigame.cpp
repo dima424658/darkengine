@@ -18,7 +18,7 @@
 #include <uiapp.h>
 #include <scrnman.h>
 #include <metasnd.h>
-#include <platform_services.h>
+#include <platform_display.h>
 #include <render_backend.h>
 
 #include <resapi.h>

@@ -1,6 +1,6 @@
 #include <string.h>
 #include <memall.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 
 #pragma code_seg("lgalloc")
 

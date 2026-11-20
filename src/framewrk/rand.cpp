@@ -17,7 +17,7 @@
 #include <rnd.h>
 #include <rand.h>
 #include <hashfns.h>
-#include <platform_services.h>
+#include <platform_runtime.h>
 
 // Must be last header 
 #include <dbmem.h>

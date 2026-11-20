@@ -10,7 +10,7 @@
 
 %token INCLUDE
 %token DEFINE
-%token <ival> INT
+%token <ival> INTEGER_LITERAL
 %token <strval> STRING
 %token <strval> IDENT
 
@@ -49,7 +49,7 @@ include: INCLUDE STRING
    ConfigSpew("yaccspew", ("Include %s\n", $2));
 };
 
-define: DEFINE IDENT INT opt_other
+define: DEFINE IDENT INTEGER_LITERAL opt_other
 {
    ConfigSpew("yaccspew", ("Define %s %d\n", $2, $3));
    IncTabAddInt($2, $3);
@@ -71,7 +71,7 @@ opt_other: null | other;
 
 other: not_newline | not_newline other;
 
-not_newline: IDENT | INT | STRING;
+not_newline: IDENT | INTEGER_LITERAL | STRING;
 
 null: ;
 

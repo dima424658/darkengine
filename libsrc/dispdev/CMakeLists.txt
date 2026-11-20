@@ -1,6 +1,7 @@
 add_library(dark_dispdev STATIC
   dispbase.cpp
   display.cpp
+  display_modes.cpp
   sdl_window.cpp
   sdl_vulkan.cpp
 )

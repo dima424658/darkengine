@@ -15,7 +15,7 @@
 #include <string.h>
 #include <mprintf.h>
 #include <initguid.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 
 #undef Malloc
 #undef Free

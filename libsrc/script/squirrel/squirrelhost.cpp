@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#include <win32_platform.h>
+#include <windows.h>
 #endif
 
 #include "squirrelhost.h"
@@ -59,7 +59,8 @@
 #include <grscale.h>
 #include <imgrstyp.h>
 #include <resapi.h>
-#include <platform_services.h>
+#include <platform_diagnostics.h>
+#include <platform_filesystem.h>
 
 #undef string
 #undef vector

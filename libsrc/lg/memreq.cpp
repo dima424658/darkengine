@@ -7,7 +7,8 @@
 
 #include <lg.h>
 #include <memreq.h>
-#include <platform_services.h>
+#include <platform_memory.h>
+#include <platform_application.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

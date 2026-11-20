@@ -82,7 +82,7 @@ dot "."
 <PREPROC>-?{digit}+ {
    ConfigSpew("lexspew", ("schlex: int\n"));
    yylval.ival = atoi(yytext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 <PREPROC>{quote}{string}*{quote} {
    ConfigSpew("lexspew", ("schlex: string\n"));
@@ -137,7 +137,7 @@ local_spatial   return LOCAL_SPATIAL;
    else
    {
       yylval.ival = val;
-      return INT;
+      return INTEGER_LITERAL;
    }
 }
 
@@ -150,7 +150,7 @@ local_spatial   return LOCAL_SPATIAL;
 -?{digit}+ {
    ConfigSpew("lexspew", ("schlex: int\n"));
    yylval.ival = atoi(yytext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 
 -?({digit}+)|({digit}*{dot}{digit}+)|({digit}+{dot}{digit}*) {

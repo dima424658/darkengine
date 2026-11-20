@@ -47,7 +47,7 @@
 #include <objmodel.h>
 
 #include <litprop.h>
-#include <platform_services.h>
+#include <platform_diagnostics.h>
 
 #include <dbmem.h>   // woo-woo
 

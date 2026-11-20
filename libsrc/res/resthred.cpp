@@ -1,3 +1,4 @@
+#include <mutex>
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/res/RCS/resthred.cpp $
 // $Author: TOML $
@@ -6,29 +7,17 @@
 //
 
 #include <lg.h>
-#include <platform_services.h>
+
 #include <resthred.h>
 
-class cResourceThreadLock
-{
-public:
-   cResourceThreadLock() { Verify(PlatformMutexInit(&m_Mutex)); }
-   ~cResourceThreadLock() { PlatformMutexTerm(&m_Mutex); }
-   void Lock() { PlatformMutexLock(&m_Mutex); }
-   void Unlock() { PlatformMutexUnlock(&m_Mutex); }
-
-private:
-   sPlatformMutex m_Mutex;
-};
-
-static cResourceThreadLock g_ResThreadLock;
+static std::recursive_mutex g_ResThreadLock;
 #ifdef RES_THREAD_TRACE
 static int g_iLock;
 #endif
 
 void _ResThreadLock()
 {
-   g_ResThreadLock.Lock();
+   g_ResThreadLock.lock();
 
 #ifdef RES_THREAD_TRACE
    g_iLock++;
@@ -42,5 +31,5 @@ void _ResThreadUnlock()
    g_iLock--;
    LogMsg1("   %d", g_iLock);
 #endif
-   g_ResThreadLock.Unlock();
+   g_ResThreadLock.unlock();
 }

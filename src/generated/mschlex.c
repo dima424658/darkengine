@@ -689,7 +689,7 @@ YYDECL {
 	{
    ConfigSpew("lexspew", ("schlex: int\n"));
    mschlval.ival = atoi(mschtext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 	break;
 	case 8:
@@ -776,178 +776,178 @@ YYDECL {
 	return MOT_IN_PLACE;
 	break;
 	case 33:
-	{ mschlval.ival=kNumDarkActorTypes; return INT; }
+	{ mschlval.ival=kNumDarkActorTypes; return INTEGER_LITERAL; }
 	break;
 	case 34:
-	{ mschlval.ival=kDATYPE_Humanoid; return INT; }
+	{ mschlval.ival=kDATYPE_Humanoid; return INTEGER_LITERAL; }
 	break;
 	case 35:
-	{ mschlval.ival=kDATYPE_PlayerLimb; return INT; }
+	{ mschlval.ival=kDATYPE_PlayerLimb; return INTEGER_LITERAL; }
 	break;
 	case 36:
-	{ mschlval.ival=kDATYPE_PlayerBowLimb; return INT; }
+	{ mschlval.ival=kDATYPE_PlayerBowLimb; return INTEGER_LITERAL; }
 	break;
 	case 37:
-	{ mschlval.ival=kDATYPE_Burrick; return INT; }
+	{ mschlval.ival=kDATYPE_Burrick; return INTEGER_LITERAL; }
 	break;
 	case 38:
-	{ mschlval.ival=kDATYPE_Spider; return INT; }
+	{ mschlval.ival=kDATYPE_Spider; return INTEGER_LITERAL; }
 	break;
 	case 39:
-	{ mschlval.ival=kDATYPE_Constantine; return INT; }
+	{ mschlval.ival=kDATYPE_Constantine; return INTEGER_LITERAL; }
 	break;
 	case 40:
-	{ mschlval.ival=kDATYPE_Sweel; return INT; }
+	{ mschlval.ival=kDATYPE_Sweel; return INTEGER_LITERAL; }
 	break;
 	case 41:
-	{ mschlval.ival=kDATYPE_Apparition; return INT; }
+	{ mschlval.ival=kDATYPE_Apparition; return INTEGER_LITERAL; }
 	break;
 	case 42:
-	{ mschlval.ival=kDATYPE_Robot; return INT; }
+	{ mschlval.ival=kDATYPE_Robot; return INTEGER_LITERAL; }
 	break;
 	case 43:
-	{ mschlval.ival=kNumShockActorTypes; return INT; }
+	{ mschlval.ival=kNumShockActorTypes; return INTEGER_LITERAL; }
 	break;
 	case 44:
-	{ mschlval.ival=kShATYPE_Droid; return INT; }
+	{ mschlval.ival=kShATYPE_Droid; return INTEGER_LITERAL; }
 	break;
 	case 45:
-	{ mschlval.ival=kShATYPE_Overlord; return INT; }
+	{ mschlval.ival=kShATYPE_Overlord; return INTEGER_LITERAL; }
 	break;
 	case 46:
-	{ mschlval.ival=kShATYPE_Arachnid; return INT; }
+	{ mschlval.ival=kShATYPE_Arachnid; return INTEGER_LITERAL; }
 	break;
 	case 47:
-	{ mschlval.ival=kNumDPCActorTypes; return INT; }
+	{ mschlval.ival=kNumDPCActorTypes; return INTEGER_LITERAL; }
 	break;
 	case 48:
-	{ mschlval.ival=kDPCATYPE_OldDog; return INT; }
+	{ mschlval.ival=kDPCATYPE_OldDog; return INTEGER_LITERAL; }
 	break;
 	case 49:
-	{ mschlval.ival=kDPCATYPE_Dog; return INT; }
+	{ mschlval.ival=kDPCATYPE_Dog; return INTEGER_LITERAL; }
 	break;
 	case 50:
-	{ mschlval.ival=kDPCATYPE_DeepHuman; return INT; }
+	{ mschlval.ival=kDPCATYPE_DeepHuman; return INTEGER_LITERAL; }
 	break;
 	case 51:
-	{ mschlval.ival=kMTV_set; return INT; }
+	{ mschlval.ival=kMTV_set; return INTEGER_LITERAL; }
 	break;
 	case 52:
-	{ mschlval.ival=kMTV_middle; return INT; }
+	{ mschlval.ival=kMTV_middle; return INTEGER_LITERAL; }
 	break;
 	case 53:
-	{ mschlval.ival=kMTV_left; return INT; }
+	{ mschlval.ival=kMTV_left; return INTEGER_LITERAL; }
 	break;
 	case 54:
-	{ mschlval.ival=kMTV_right; return INT; }
+	{ mschlval.ival=kMTV_right; return INTEGER_LITERAL; }
 	break;
 	case 55:
-	{ mschlval.ival=kMTV_front; return INT; }
+	{ mschlval.ival=kMTV_front; return INTEGER_LITERAL; }
 	break;
 	case 56:
-	{ mschlval.ival=kMTV_back; return INT; }
+	{ mschlval.ival=kMTV_back; return INTEGER_LITERAL; }
 	break;
 	case 57:
-	{ mschlval.ival=kMTV_high; return INT; }
+	{ mschlval.ival=kMTV_high; return INTEGER_LITERAL; }
 	break;
 	case 58:
-	{ mschlval.ival=kMTV_low; return INT; }
+	{ mschlval.ival=kMTV_low; return INTEGER_LITERAL; }
 	break;
 	case 59:
-	{ mschlval.ival=kMTV_forward; return INT; }
+	{ mschlval.ival=kMTV_forward; return INTEGER_LITERAL; }
 	break;
 	case 60:
-	{ mschlval.ival=kMTV_forward; return INT; }
+	{ mschlval.ival=kMTV_forward; return INTEGER_LITERAL; }
 	break;
 	case 61:
-	{ mschlval.ival=kMTV_backward; return INT; }
+	{ mschlval.ival=kMTV_backward; return INTEGER_LITERAL; }
 	break;
 	case 62:
-	{ mschlval.ival=kMTV_backward; return INT; }
+	{ mschlval.ival=kMTV_backward; return INTEGER_LITERAL; }
 	break;
 	case 63:
-	{ mschlval.ival=kMTV_upstairs; return INT; }
+	{ mschlval.ival=kMTV_upstairs; return INTEGER_LITERAL; }
 	break;
 	case 64:
-	{ mschlval.ival=kMTV_downstairs; return INT; }
+	{ mschlval.ival=kMTV_downstairs; return INTEGER_LITERAL; }
 	break;
 	case 65:
-	{ mschlval.ival=kMTV_swing_short; return INT; }
+	{ mschlval.ival=kMTV_swing_short; return INTEGER_LITERAL; }
 	break;
 	case 66:
-	{ mschlval.ival=kMTV_swing_medium; return INT; }
+	{ mschlval.ival=kMTV_swing_medium; return INTEGER_LITERAL; }
 	break;
 	case 67:
-	{ mschlval.ival=kMTV_swing_long; return INT; }
+	{ mschlval.ival=kMTV_swing_long; return INTEGER_LITERAL; }
 	break;
 	case 68:
-	{ mschlval.ival=kMTV_true; return INT; }
+	{ mschlval.ival=kMTV_true; return INTEGER_LITERAL; }
 	break;
 	case 69:
-	{ mschlval.ival=kMTV_fast; return INT; }
+	{ mschlval.ival=kMTV_fast; return INTEGER_LITERAL; }
 	break;
 	case 70:
-	{ mschlval.ival=kMTV_stationary; return INT; }
+	{ mschlval.ival=kMTV_stationary; return INTEGER_LITERAL; }
 	break;
 	case 71:
-	{ mschlval.ival=kMTV_perpleft; return INT; }
+	{ mschlval.ival=kMTV_perpleft; return INTEGER_LITERAL; }
 	break;
 	case 72:
-	{ mschlval.ival=kMTV_perpright; return INT; }
+	{ mschlval.ival=kMTV_perpright; return INTEGER_LITERAL; }
 	break;
 	case 73:
-	{ mschlval.ival=kMTV_searching; return INT; }
+	{ mschlval.ival=kMTV_searching; return INTEGER_LITERAL; }
 	break;
 	case 74:
-	{ mschlval.ival=kMTV_swordmelee; return INT; }
+	{ mschlval.ival=kMTV_swordmelee; return INTEGER_LITERAL; }
 	break;
 	case 75:
-	{ mschlval.ival=kMTV_alert; return INT; }
+	{ mschlval.ival=kMTV_alert; return INTEGER_LITERAL; }
 	break;
 	case 76:
-	{ mschlval.ival=kMTV_swing; return INT; }
+	{ mschlval.ival=kMTV_swing; return INTEGER_LITERAL; }
 	break;
 	case 77:
-	{ mschlval.ival=kMTV_dodge; return INT; }
+	{ mschlval.ival=kMTV_dodge; return INTEGER_LITERAL; }
 	break;
 	case 78:
-	{ mschlval.ival=kMTV_parry; return INT; }
+	{ mschlval.ival=kMTV_parry; return INTEGER_LITERAL; }
 	break;
 	case 79:
-	{ mschlval.ival=kMTV_pose_calib; return INT; }
+	{ mschlval.ival=kMTV_pose_calib; return INTEGER_LITERAL; }
 	break;
 	case 80:
-	{ mschlval.ival=kMTV_pose_swordready; return INT; }
+	{ mschlval.ival=kMTV_pose_swordready; return INTEGER_LITERAL; }
 	break;
 	case 81:
-	{ mschlval.ival=kMTV_gesture; return INT; }
+	{ mschlval.ival=kMTV_gesture; return INTEGER_LITERAL; }
 	break;
 	case 82:
-	{ mschlval.ival=kMTV_hurt; return INT; }
+	{ mschlval.ival=kMTV_hurt; return INTEGER_LITERAL; }
 	break;
 	case 83:
-	{ mschlval.ival=kMTV_stunned; return INT; }
+	{ mschlval.ival=kMTV_stunned; return INTEGER_LITERAL; }
 	break;
 	case 84:
-	{ mschlval.ival=kMTV_surprised; return INT; }
+	{ mschlval.ival=kMTV_surprised; return INTEGER_LITERAL; }
 	break;
 	case 85:
-	{ mschlval.ival=kMTV_alerttrans1; return INT; }
+	{ mschlval.ival=kMTV_alerttrans1; return INTEGER_LITERAL; }
 	break;
 	case 86:
-	{ mschlval.ival=kMTV_alerttrans2; return INT; }
+	{ mschlval.ival=kMTV_alerttrans2; return INTEGER_LITERAL; }
 	break;
 	case 87:
-	{ mschlval.ival=kMTV_alerttrans3; return INT; }
+	{ mschlval.ival=kMTV_alerttrans3; return INTEGER_LITERAL; }
 	break;
 	case 88:
-	{ mschlval.ival=kMTV_die; return INT; }
+	{ mschlval.ival=kMTV_die; return INTEGER_LITERAL; }
 	break;
 	case 89:
-	{ mschlval.ival=kMTV_hurt_light; return INT; }
+	{ mschlval.ival=kMTV_hurt_light; return INTEGER_LITERAL; }
 	break;
 	case 90:
-	{ mschlval.ival=kMTV_hurt_heavy; return INT; }
+	{ mschlval.ival=kMTV_hurt_heavy; return INTEGER_LITERAL; }
 	break;
 	case 91:
 	{
@@ -962,7 +962,7 @@ YYDECL {
    else
    {
       mschlval.ival = val;
-      return INT;
+      return INTEGER_LITERAL;
    }
 }
 	break;
@@ -977,7 +977,7 @@ YYDECL {
 	{
    ConfigSpew("lexspew", ("schlex: int\n"));
    mschlval.ival = atoi(mschtext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 	break;
 	case 94:

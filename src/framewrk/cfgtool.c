@@ -14,7 +14,7 @@
 #include <config.h>
 #include <cfg.h>
 #include <mprintf.h>
-#include <platform_services.h>
+#include <platform_application.h>
 #include <darklimit.h>
 
 #include <command.h>

@@ -38,6 +38,7 @@ add_subdirectory(assets)
 
 if(NOT ANDROID)
   enable_testing()
+  add_subdirectory(tools/win32_compat_test EXCLUDE_FROM_ALL)
   add_subdirectory(tools/material_test EXCLUDE_FROM_ALL)
   add_subdirectory(tools/movie_test EXCLUDE_FROM_ALL)
 endif()

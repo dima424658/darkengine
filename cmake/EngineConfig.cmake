@@ -26,6 +26,10 @@ set(dark_include_dirs
   "${DARK_PLATFORM_ROOT}"
 )
 
+if(NOT WIN32)
+  list(APPEND dark_include_dirs "${DARK_PLATFORM_ROOT}/windows")
+endif()
+
 add_library(dark_engine_config INTERFACE)
 target_link_libraries(dark_engine_config INTERFACE dark_profiling dark_sanitizers)
 target_include_directories(dark_engine_config INTERFACE ${dark_include_dirs})

@@ -590,7 +590,7 @@ YYDECL {
 	{
    ConfigSpew("lexspew", ("schlex: int\n"));
    yylval.ival = atoi(yytext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 	break;
 	case 8:
@@ -707,7 +707,7 @@ YYDECL {
    else
    {
       yylval.ival = val;
-      return INT;
+      return INTEGER_LITERAL;
    }
 }
 	break;
@@ -722,7 +722,7 @@ YYDECL {
 	{
    ConfigSpew("lexspew", ("schlex: int\n"));
    yylval.ival = atoi(yytext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 	break;
 	case 42:

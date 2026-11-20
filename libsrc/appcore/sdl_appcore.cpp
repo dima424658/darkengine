@@ -5,7 +5,8 @@
 #include <filesystem>
 
 #include <appagg.h>
-#include <platform_services.h>
+#include <platform_application.h>
+#include <platform_filesystem.h>
 #include <runtime.h>
 
 cSDLApplication::cSDLApplication(IUnknown *outer, int argumentCount,

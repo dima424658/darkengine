@@ -6,7 +6,7 @@
 #include <dbfile.h>
 #include <filemenu.h>
 #include <lg.h>
-#include <platform_services.h>
+#include <platform_application.h>
 #include <winui.h>
 
 #include <cstring>

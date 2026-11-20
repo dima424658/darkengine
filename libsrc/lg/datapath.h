@@ -69,7 +69,7 @@
 #include <stdlib.h>
 
 #include <types.h>
-#include <platform_services.h>
+#include <platform_filesystem.h>
 #include <darklimit.h>
 
 #ifdef __cplusplus

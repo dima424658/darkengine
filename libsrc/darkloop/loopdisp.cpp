@@ -5,7 +5,7 @@
 #include <loopapi.h>
 #include <appagg.h>
 #include <mprintf.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 #include <tracy/Tracy.hpp>
 #include <cstring>
 

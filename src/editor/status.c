@@ -22,7 +22,7 @@
 #include <scrnman.h>
 
 #include <config.h>
-#include <platform_services.h>
+#include <platform_application.h>
 #include <cfgdbg.h>
 #include <mprintf.h>
 #include <cmdterm.h>

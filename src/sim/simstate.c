@@ -10,7 +10,7 @@
 #ifdef __ANDROID__
 #include <stdio.h>
 #include <simtime.h>
-#include <platform_services.h>
+#include <platform_diagnostics.h>
 #endif
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 

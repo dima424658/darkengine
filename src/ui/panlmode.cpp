@@ -49,7 +49,7 @@ extern "C"
 #include <dev2d.h>
 
 #include <simstate.h>
-#include <platform_services.h>
+#include <platform_runtime.h>
 
 
 // Include these last

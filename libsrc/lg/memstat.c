@@ -3,7 +3,7 @@
 
 #include <lg.h>
 #include <memstat.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 
 int MemStatsFlags = MS_GETSTAT;
 

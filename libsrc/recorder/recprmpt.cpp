@@ -7,7 +7,7 @@
 // This is in a seperate file to reduce depondence on windows.h (toml 10-29-96)
 
 #include <recprmpt.h>
-#include <platform_services.h>
+#include <platform_application.h>
 
 BOOL RecPromptYesNo(const char * pszPrompt)
 {

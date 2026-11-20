@@ -59,7 +59,8 @@
 #include <dbfile.h>
 #include <dbasemsg.h>
 #include <contentctx.h>
-#include <platform_services.h>
+#include <platform_filesystem.h>
+#include <platform_process.h>
 #include <viewmgr.h>
 #include <editsave.h>
 #include <gedmedmo.h>

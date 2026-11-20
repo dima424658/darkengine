@@ -6,7 +6,7 @@
 
 #include <coremutx.h>
 #include <mprintf.h>
-#include <platform_services.h>
+#include <platform_diagnostics.h>
 
 #define MONO_WIDTH 80
 #define MONO_HEIGHT 25

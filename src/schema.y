@@ -21,7 +21,7 @@
 %token FREQ
 %token <strval> IDENT
 %token <strval> STRING
-%token <ival> INT
+%token <ival> INTEGER_LITERAL
 %token <fval> FLOAT
 %token INCLUDE
 %token DEFINE
@@ -219,7 +219,7 @@ include: INCLUDE STRING
 };
 
 
-concept: CONCEPT IDENT INT
+concept: CONCEPT IDENT INTEGER_LITERAL
 {
    Label ConceptLabel;
 
@@ -303,7 +303,7 @@ schema_param: flags | volume | delay | pan | pan_range | priority | fade |
          no_repeat | stream | loopcount | no_combat | play_once |
          net_ambient | local_spatial;
 
-flags: FLAGS INT
+flags: FLAGS INTEGER_LITERAL
 {
    schemaPlayParams.flags = $2;
    schemaParamsSet = TRUE;
@@ -355,19 +355,19 @@ stream: STREAM
    schemaParamsSet = TRUE;
 };
 
-volume: VOLUME INT
+volume: VOLUME INTEGER_LITERAL
 {
    schemaPlayParams.volume = $2;
    schemaParamsSet = TRUE;
 };
 
-delay: DELAY INT
+delay: DELAY INTEGER_LITERAL
 {
    schemaPlayParams.initialDelay = $2;
    schemaParamsSet = TRUE;
 };
 
-pan: PAN INT
+pan: PAN INTEGER_LITERAL
 {
    schemaPlayParams.flags &= ~SCH_PAN_RANGE;
    schemaPlayParams.flags |= SCH_PAN_POS;
@@ -375,7 +375,7 @@ pan: PAN INT
    schemaParamsSet = TRUE;
 };
 
-pan_range: PAN_RANGE INT
+pan_range: PAN_RANGE INTEGER_LITERAL
 {
    schemaPlayParams.flags &= ~SCH_PAN_POS;
    schemaPlayParams.flags |= SCH_PAN_RANGE;
@@ -383,13 +383,13 @@ pan_range: PAN_RANGE INT
    schemaParamsSet = TRUE;
 };
 
-priority: PRIORITY INT
+priority: PRIORITY INTEGER_LITERAL
 {
    schemaPriority = $2;
    schemaPrioritySet = TRUE;
 };
 
-fade: FADE INT
+fade: FADE INTEGER_LITERAL
 {
    schemaPlayParams.fade = $2;
    schemaParamsSet = TRUE;
@@ -421,7 +421,7 @@ archetype: ARCHETYPE IDENT
    FreeString($2);
 };
 
-monoloop: MONO_LOOP INT INT
+monoloop: MONO_LOOP INTEGER_LITERAL INTEGER_LITERAL
 {
    loopSet = TRUE;
    loopParams.flags &= ~SCHEMA_LOOP_POLY;
@@ -430,7 +430,7 @@ monoloop: MONO_LOOP INT INT
    loopParams.intervalMax = $3;
 };
 
-polyloop: POLY_LOOP INT INT INT
+polyloop: POLY_LOOP INTEGER_LITERAL INTEGER_LITERAL INTEGER_LITERAL
 {
    loopSet = TRUE;
    loopParams.flags |= SCHEMA_LOOP_POLY;
@@ -439,7 +439,7 @@ polyloop: POLY_LOOP INT INT INT
    loopParams.intervalMax = $4;
 };
 
-loopcount: LOOP_COUNT INT
+loopcount: LOOP_COUNT INTEGER_LITERAL
 {
    loopParams.flags |= SCHEMA_LOOP_COUNT;
    loopParams.count = $2;
@@ -539,7 +539,7 @@ env_tag_required: ENV_TAG_REQUIRED IDENT
 };
 
 
-schema_voice: SCHEMA_VOICE IDENT INT IDENT opt_schema_tags
+schema_voice: SCHEMA_VOICE IDENT INTEGER_LITERAL IDENT opt_schema_tags
 {
    Label VoiceLabel, ConceptLabel;
    int i;
@@ -588,7 +588,7 @@ schema_tag_empty: LPAREN IDENT RPAREN
    FreeString($2);
 };
 
-schema_tag_int: LPAREN IDENT INT INT RPAREN
+schema_tag_int: LPAREN IDENT INTEGER_LITERAL INTEGER_LITERAL RPAREN
 {
    MakeLabel(&g_aTagNameLabel[g_iNumTagsAdded], $2);
    g_aTagMinInt[g_iNumTagsAdded] = $3;
@@ -682,7 +682,7 @@ text: STRING
 
 opt_freq: freq | null;
 
-freq: FREQ INT
+freq: FREQ INTEGER_LITERAL
 {
    sampleFreq = (uchar)$2;
    freqSet = TRUE;

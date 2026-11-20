@@ -25,7 +25,7 @@ extern "C" {
 }
 
 #include "movie.h"
-#include <platform_services.h>
+#include <platform_filesystem.h>
 #include "movie_audio_output.h"
 
 #include <runtime.h>

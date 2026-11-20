@@ -17,7 +17,7 @@
 %token <ival> FREQ 
 %token <strval> IDENT 
 %token <strval> STRING 
-%token <ival> INT
+%token <ival> INTEGER_LITERAL
 %token INCLUDE
 %token DEFINE
 
@@ -128,7 +128,7 @@ opt_schema_params: null | schema_params;
 
 schema_params: schema_param | schema_param schema_params;
 
-schema_param: TYPE INT | GAIN INT | MESSAGE IDENT;
+schema_param: TYPE INTEGER_LITERAL | GAIN INTEGER_LITERAL | MESSAGE IDENT;
 
 samples: sample | sample samples;
 
@@ -156,7 +156,7 @@ sample_params: sample_param | sample_param sample_params;
 
 sample_param: voice | no_rep | freq;
 
-voice: VOICE INT
+voice: VOICE INTEGER_LITERAL
 {
    sample.voice_id = $2;
 };
@@ -165,7 +165,7 @@ no_rep: NO_REP
 {
 };
 
-freq: FREQ INT
+freq: FREQ INTEGER_LITERAL
 {
    sample.frequency = $2;
 };

@@ -26,7 +26,8 @@
 #include <plyrmode.h>
 #include <plyrspd.h>
 #include <playrobj.h>
-#include <platform_services.h>
+#include <platform_settings.h>
+#include <platform_runtime.h>
 #include <mprintf.h>
 
 #include <drk_bind.h>

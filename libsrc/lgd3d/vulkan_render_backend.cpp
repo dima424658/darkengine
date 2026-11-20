@@ -309,7 +309,7 @@ public:
       ResetTrace();
       const char *path = std::getenv("DARK_RENDER_TRACE");
       if (path && *path)
-         m_trace = std::fopen(path, "w");
+         m_trace = fopen(path, "w");
    }
 
    void Trace(const char *format, va_list args)

@@ -13,7 +13,7 @@
 /* standard tokens */
 %token <strval> IDENT
 %token <strval> STRING
-%token <ival> INT
+%token <ival> INTEGER_LITERAL
 %token <fval> FLOAT
 %token <bval> BOOLEAN
 %token INCLUDE
@@ -158,7 +158,7 @@ tag: TAG IDENT opt_tag_spec
    FreeString($2);
 };
 
-actors_declare: ACTORS_DECLARE INT
+actors_declare: ACTORS_DECLARE INTEGER_LITERAL
 {
    MotDBCreate($2);
 };
@@ -172,13 +172,13 @@ arch_string: ARCHETYPE IDENT
    FreeString($2);
 };
 
-arch_int: ARCHETYPE INT
+arch_int: ARCHETYPE INTEGER_LITERAL
 {
    g_ArchIsString=FALSE;
    g_ArchInt=$2;
 };
 
-schema: SCHEMA IDENT ACTOR INT archetype optparams taglist motlist
+schema: SCHEMA IDENT ACTOR INTEGER_LITERAL archetype optparams taglist motlist
 {
    int i;
    sMotDesc *pMotDesc;
@@ -314,7 +314,7 @@ taginsts: taginsts taginst | taginst;
 
 opt_tag_val: tag_val | null;
 
-tag_val: INT
+tag_val: INTEGER_LITERAL
 {
    g_TagVal=$1;
 };
@@ -361,7 +361,7 @@ blend_none: MOT_BLEND_NONE
    g_BlendLength=0;             
 };
 
-blend_length: MOT_BLEND_LENGTH INT
+blend_length: MOT_BLEND_LENGTH INTEGER_LITERAL
 {
    g_BlendLength=$2;             
 };

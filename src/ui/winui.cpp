@@ -1,7 +1,7 @@
 #include <SDL3/SDL.h>
 
 #include <lg.h>
-#include <platform_services.h>
+#include <platform_application.h>
 #include <cstdio>
 #include <winui.h>
 

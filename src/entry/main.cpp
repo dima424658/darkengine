@@ -16,7 +16,9 @@
 #include <unistd.h>
 #endif
 
-#include <platform_services.h>
+#include <platform_application.h>
+#include <platform_diagnostics.h>
+#include <platform_filesystem.h>
 
 #include <SDL3/SDL_main.h>
 

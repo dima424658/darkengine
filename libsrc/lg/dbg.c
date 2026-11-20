@@ -433,7 +433,7 @@
 
 #include <coremutx.h>
 #include <lgassert.h>
-#include <platform_services.h>
+#include <platform_input.h>
 
 #ifdef DBG_ON
 

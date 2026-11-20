@@ -20,7 +20,7 @@ BOOL g_fResPrintDrops;
 #include <search.h>
 #include <cstdlib>
 #include <missiondiag.h>
-#include <platform_services.h>
+#include <platform_diagnostics.h>
 #include <mutex>
 #include <string>
 #include <vector>

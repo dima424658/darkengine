@@ -14,7 +14,7 @@
 #include <loopapi.h>
 #include <config.h>
 #include <render_backend.h>
-#include <platform_services.h>
+#include <platform_application.h>
 #include <stdlib.h>
 
 #include <init.h>

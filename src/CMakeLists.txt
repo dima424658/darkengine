@@ -34,13 +34,13 @@ if(DARK_BUILD_DROMED)
 
   if(MSVC)
     target_compile_options(dark_dromed_core PRIVATE
-      "/FI${PROJECT_SOURCE_DIR}/libsrc/platform/editor_compat.h")
+      "/FI${PROJECT_SOURCE_DIR}/libsrc/platform/windows/editor_compat.h")
   else()
     target_compile_options(dark_dromed_core PRIVATE
       $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
       $<$<COMPILE_LANGUAGE:C>:-fms-extensions>
       $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
-      "$<$<COMPILE_LANGUAGE:C>:-include${PROJECT_SOURCE_DIR}/libsrc/platform/editor_compat.h>"
+      "$<$<COMPILE_LANGUAGE:C>:-include${PROJECT_SOURCE_DIR}/libsrc/platform/windows/editor_compat.h>"
     )
   endif()
 

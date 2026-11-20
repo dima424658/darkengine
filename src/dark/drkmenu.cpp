@@ -30,7 +30,9 @@
 #include <contentctx.h>
 #include <dbfile.h>
 #include <filepanl.h>
-#include <platform_services.h>
+#include <platform_diagnostics.h>
+#include <platform_filesystem.h>
+#include <platform_process.h>
 #include <resapp.h>
 #include <scrptprp.h>
 

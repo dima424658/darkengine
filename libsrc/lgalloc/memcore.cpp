@@ -1,3 +1,4 @@
+#include <mutex>
 ///////////////////////////////////////////////////////////////////////////////
 // $Source: x:/prj/tech/libsrc/lgalloc/RCS/memcore.cpp $
 // $Author: TOML $
@@ -7,7 +8,7 @@
 // @TBD (toml 07-14-97): should cram all functions in this library into the same codeseg
 
 #include <allocapi.h>
-#include <platform_services.h>
+#include <platform_memory.h>
 
 #include <memcore.h>
 #include <multpool.h>
@@ -29,34 +30,38 @@ EXTERN BOOL LGAllocOverride();
 #pragma init_seg ("lgalloc_custom_init")
 
 ///////////////////////////////////////////////////////////////////////////////
-sPlatformMutex g_AllocMutex;
+static std::recursive_mutex &AllocMutex()
+{
+   static std::recursive_mutex mutex;
+   return mutex;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 extern void AllocMutexInit(void)
 {
-   PlatformMutexInit(&g_AllocMutex);
+   (void)AllocMutex();
 }
 
 ///////////////////////////////////////
 
 extern void AllocMutexTerm(void)
 {
-   PlatformMutexTerm(&g_AllocMutex);
+   // The mutex outlives cMemCore and is destroyed automatically.
 }
 
 ///////////////////////////////////////
 
 extern void AllocThreadLock(void)
 {
-    PlatformMutexLock(&g_AllocMutex);
+    AllocMutex().lock();
 }
 
 ///////////////////////////////////////
 
 extern void AllocThreadUnlock(void)
 {
-    PlatformMutexUnlock(&g_AllocMutex);
+    AllocMutex().unlock();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

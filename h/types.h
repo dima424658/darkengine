@@ -32,67 +32,9 @@
 #undef ulong
 #endif
 
-#ifndef EXTERN_C
-#ifdef __cplusplus
-#define EXTERN_C extern "C"
-#else
-#define EXTERN_C extern
-#endif
-#endif
-
-#ifndef CDECL
-#define CDECL
-#endif
-
+#include <windef.h>
 #if !defined(_WIN32)
-#ifndef __cdecl
-#define __cdecl
-#endif
-#ifndef __stdcall
-#define __stdcall
-#endif
-#ifndef __fastcall
-#define __fastcall
-#endif
-#ifndef __declspec
-#define __declspec(attribute)
-#endif
-#ifndef interface
-#define interface struct
-#endif
-
 #include <legacy_compat.h>
-#endif
-
-#ifndef FAR
-#define FAR
-#endif
-
-#ifndef _DARK_HANDLE_DEFINED
-#define _DARK_HANDLE_DEFINED
-typedef void *HANDLE;
-#endif
-
-#ifndef DECLARE_HANDLE
-#define DECLARE_HANDLE(name) struct name##__{int unused;}; typedef struct name##__ *name
-#endif
-
-#ifndef _DARK_SIZE_T_DEFINED
-#define _DARK_SIZE_T_DEFINED
-#ifdef _WIN64
-typedef unsigned __int64 SIZE_T;
-#else
-typedef unsigned long SIZE_T;
-#endif
-
-#ifndef _DARK_DWORD_PTR_DEFINED
-#define _DARK_DWORD_PTR_DEFINED
-#ifdef _WIN64
-typedef unsigned __int64 DWORD_PTR;
-#else
-typedef unsigned long DWORD_PTR;
-#endif
-#endif
 #endif
 
 //
@@ -145,32 +87,22 @@ typedef unsigned char   ubyte;
 typedef unsigned char   uint8;
 typedef   signed char   sint8;
 typedef   signed char   int8;
-typedef unsigned char   BYTE;
 
 typedef unsigned short  uint16;
 typedef   signed short  sint16;
 typedef   signed short  int16;
-typedef unsigned short  WORD;
 
 #if ULONG_MAX == UINT32_MAX
 typedef unsigned long   uint32;
 typedef   signed long   sint32;
 typedef   signed long   int32;
-typedef unsigned long   DWORD;
 #else
 typedef uint32_t        uint32;
 typedef int32_t         sint32;
 typedef int32_t         int32;
-typedef uint32_t        DWORD;
 #endif
 
 #endif /* !NO_SCALAR_TYPEDEFS */
-
-#ifndef _HRESULT_DEFINED
-#define _HRESULT_DEFINED
-typedef int32 HRESULT;
-#endif
-
 
 //
 // BOOLEANS
@@ -178,7 +110,6 @@ typedef int32 HRESULT;
 
 #ifndef NO_BOOLEAN_TYPEDEFS
 
-typedef int BOOL;                       // Microsoft-style
 typedef unsigned char sbool;            // small bool
 
 // "True" bool that is own type and matches C++ standard behavior
@@ -226,49 +157,10 @@ typedef unsigned char bool;             // Warning: future C++ keyword collision
 #define F_DECLARE_GUID(guid) \
     EXTERN_C const GUID CDECL FAR guid
 
-#if !defined(NO_GUIDS) && !defined(GUID_DEFINED)
-#define GUID_DEFINED
-
-typedef struct  _GUID
-    {
-    DWORD Data1;
-    WORD  Data2;
-    WORD  Data3;
-    BYTE  Data4[ 8 ];
-    }	GUID;
-
-#if !defined(_MSC_VER)
-   #define DEFINE_GUID_UNCONDITIONAL(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-            EXTERN_C const GUID CDECL name \
-                     = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-#else
-   #define DEFINE_GUID_UNCONDITIONAL(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-            EXTERN_C const GUID name \
-                     = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+#ifndef NO_GUIDS
+#include <guiddef.h>
 #endif
-
-// VC 4.2 changed the definition of DEFINE_GUID.  Other compilers are sure to follow (toml 11-19-96)
-#if !defined(_MSC_VER)
-   #ifndef INITGUID
-      #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-            EXTERN_C const GUID CDECL FAR name
-   #else
-      #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-               EXTERN_C const GUID CDECL name \
-                        = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-   #endif /* !INITGUID */
-#else
-   #ifndef INITGUID
-      #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-            EXTERN_C const GUID FAR name
-   #else
-      #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-               EXTERN_C const GUID name \
-                        = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-   #endif /* !INITGUID */
-#endif
-
-#endif /* !NO_GUIDS && !GUID_DEFINED */
+#include <winerror.h>
 
 #define MAKE_GUID(p, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
    do \
@@ -425,9 +317,6 @@ typedef unsigned char   tResultCode;
 #define MakeResult(severity, subsystem, code) \
     MAKE_HRESULT(severity, FACILITY_ITF, ((unsigned long)(subsystem) << 8) | ((unsigned long)(code)))
 
-#define FACILITY_ITF    4
-#define MAKE_HRESULT(sev,fac,code) \
-    ((HRESULT) (((unsigned long)(sev)<<31) | ((unsigned long)(fac)<<16) | ((unsigned long)(code))) )
 
 
 #endif /* !__TYPES_H */

@@ -159,8 +159,8 @@ DromEd uses `uiedit.c` on every desktop platform, NFDe native file dialogs, and
 currently has no native menubar.
 
 Core clocks, dynamic-library loading, memory queries, assertions, clipboard,
-synchronization, and filesystem operations cross `platform_services.h` and
-`platform_io.h`. The shared engine retains its historical data layouts while
+and filesystem operations use thematic `platform_*.h` headers and `platform_io.h`.
+Synchronization uses standard C11/C++ primitives. The shared engine retains its historical data layouts while
 the compatibility headers isolate Windows and LP64 ABI differences.
 
 Native 64-bit builds include a compatibility runtime for legacy 32-bit `.osm`

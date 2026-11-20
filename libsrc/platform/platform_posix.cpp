@@ -1,4 +1,13 @@
-#include <platform_services.h>
+#include <platform_display.h>
+#include <platform_memory.h>
+#include <platform_settings.h>
+#include <platform_application.h>
+#include <platform_runtime.h>
+#include <platform_library.h>
+#include <platform_diagnostics.h>
+#include <platform_input.h>
+#include <platform_filesystem.h>
+#include <platform_process.h>
 
 #include <algorithm>
 #include <chrono>
@@ -91,83 +100,6 @@ std::chrono::steady_clock::time_point g_applicationClockSuspendedAt;
 std::chrono::steady_clock::duration g_applicationClockSuspendedDuration{};
 bool g_applicationClockSuspended = false;
 uint32 g_applicationResumeGeneration = 0;
-#endif
-}
-
-int PlatformGetDisplayModes(ePlatformDisplayScope scope,
-                            sPlatformDisplayMode *modes, int capacity,
-                            int *native_width, int *native_height)
-{
-   if (native_width) *native_width = 0;
-   if (native_height) *native_height = 0;
-#if defined(__linux__) || defined(__APPLE__)
-   if (!modes || capacity < 0)
-      capacity = 0;
-
-   const bool initialized = (SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) != 0;
-   if (!initialized)
-   {
-      // Pick the compositor-native provider before the first SDL video call.
-      // This startup query runs before the renderer creates its window.
-      if (std::getenv("WAYLAND_DISPLAY") && !std::getenv("SDL_VIDEODRIVER"))
-         setenv("SDL_VIDEODRIVER", "wayland", 0);
-      if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
-         return 0;
-   }
-
-   int displayCount = 0;
-   SDL_DisplayID *displays = SDL_GetDisplays(&displayCount);
-   if (!displays)
-      displayCount = 0;
-   int firstDisplay = 0;
-   if (scope == kPlatformCurrentDisplay && displayCount > 0)
-   {
-      SDL_Window *window = SDL_GetKeyboardFocus();
-      const SDL_DisplayID current = window ? SDL_GetDisplayForWindow(window)
-                                           : displays[0];
-      for (int i = 0; i < displayCount; ++i)
-         if (displays[i] == current) { firstDisplay = i; break; }
-      displayCount = 1;
-   }
-
-   int count = 0;
-   for (int displayOffset = 0; displayOffset < displayCount; ++displayOffset)
-   {
-      const SDL_DisplayID display = displays[firstDisplay + displayOffset];
-      const SDL_DisplayMode *current = SDL_GetCurrentDisplayMode(display);
-      if (current && scope == kPlatformCurrentDisplay)
-      {
-         if (native_width) *native_width = current->w;
-         if (native_height) *native_height = current->h;
-      }
-      int modeCount = 0;
-      SDL_DisplayMode **displayModes = SDL_GetFullscreenDisplayModes(display,
-         &modeCount);
-      for (int i = 0; displayModes && i < modeCount && count < capacity; ++i)
-      {
-         const SDL_DisplayMode &mode = *displayModes[i];
-         const int depth = SDL_BITSPERPIXEL(mode.format);
-         int duplicate = 0;
-         for (; duplicate < count; ++duplicate)
-            if (modes[duplicate].width == mode.w &&
-                modes[duplicate].height == mode.h &&
-                modes[duplicate].bit_depth == depth)
-               break;
-         if (duplicate == count)
-            modes[count++] = {mode.w, mode.h, depth};
-      }
-      SDL_free(displayModes);
-   }
-   SDL_free(displays);
-
-   if (!initialized)
-      SDL_QuitSubSystem(SDL_INIT_VIDEO);
-   return count;
-#else
-   (void)scope;
-   (void)modes;
-   (void)capacity;
-   return 0;
 #endif
 }
 
@@ -403,34 +335,6 @@ uint32 PlatformMilliseconds(void)
       g_applicationClockSuspendedDuration).count();
 #else
    return (uint32)duration_cast<milliseconds>(now.time_since_epoch()).count();
-#endif
-}
-
-void PlatformSuspendApplicationClock(void)
-{
-#if defined(__ANDROID__)
-   std::lock_guard<std::mutex> lock(g_applicationClockMutex);
-   if (!g_applicationClockSuspended)
-   {
-      g_applicationClockSuspendedAt = std::chrono::steady_clock::now();
-      g_applicationClockSuspended = true;
-   }
-#endif
-}
-
-void PlatformResumeApplicationClock(void)
-{
-#if defined(__ANDROID__)
-   const std::chrono::steady_clock::time_point now =
-      std::chrono::steady_clock::now();
-   std::lock_guard<std::mutex> lock(g_applicationClockMutex);
-   if (g_applicationClockSuspended)
-   {
-      g_applicationClockSuspendedDuration +=
-         now - g_applicationClockSuspendedAt;
-      g_applicationClockSuspended = false;
-      ++g_applicationResumeGeneration;
-   }
 #endif
 }
 
@@ -711,11 +615,8 @@ static void set_android_console_frame_visible(BOOL visible)
 }
 #endif
 
-static BOOL gPlatformTextInputActive = FALSE;
-
 void PlatformSetTextInputActive(BOOL active)
 {
-   gPlatformTextInputActive = active;
 #if defined(__linux__) || defined(__APPLE__)
    if (!(SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO))
       return;
@@ -737,11 +638,6 @@ void PlatformSetTextInputActive(BOOL active)
 #else
    (void)active;
 #endif
-}
-
-BOOL PlatformTextInputActive(void)
-{
-   return gPlatformTextInputActive;
 }
 
 BOOL PlatformGetCurrentDirectory(char *path, int capacity)
@@ -1039,7 +935,30 @@ BOOL PlatformResolvePath(const char *path, char *resolved, int capacity)
    return CopyResolvedPath(native, resolved, capacity) && exists;
 }
 
-EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
+BOOL PlatformDirectoryExists(const char *path)
+{
+   if (!path || !*path)
+      return FALSE;
+   std::error_code error;
+   const auto native = ResolveNativePath(path, nullptr);
+   return std::filesystem::is_directory(native, error) && !error;
+}
+
+BOOL PlatformCreateDirectory(const char *path)
+{
+   if (!path || !*path)
+      return FALSE;
+   const auto native = ResolveNativePath(path, nullptr);
+   std::error_code error;
+   const bool created = std::filesystem::create_directory(native, error);
+   if (error)
+      return FALSE;
+   if (created)
+      ClearPathCaches();
+   return created || std::filesystem::is_directory(native, error);
+}
+
+EXTERN_C FILE *PosixFopen(const char *path, const char *mode)
 {
    const bool creates = mode && std::strpbrk(mode, "wax");
    bool existed = false;
@@ -1071,11 +990,6 @@ EXTERN_C int PlatformOpen(const char *path, int flags, ...)
    return descriptor;
 }
 
-EXTERN_C int PlatformAccess(const char *path, int mode)
-{
-   const std::string native = ResolveCachedPath(path, nullptr);
-   return access(native.c_str(), mode);
-}
 
 EXTERN_C int PlatformChangeDirectory(const char *path)
 {
@@ -1086,23 +1000,7 @@ EXTERN_C int PlatformChangeDirectory(const char *path)
    return result;
 }
 
-EXTERN_C int PlatformRemoveDirectory(const char *path)
-{
-   const std::string native = ResolveNativePath(path, nullptr);
-   const int result = rmdir(native.c_str());
-   if (result == 0)
-      ClearPathCaches();
-   return result;
-}
 
-EXTERN_C int PlatformUnlink(const char *path)
-{
-   const std::string native = ResolveNativePath(path, nullptr);
-   const int result = unlink(native.c_str());
-   if (result == 0)
-      ClearPathCaches();
-   return result;
-}
 
 BOOL PlatformCopyFiles(const char *pattern, const char *source_dir,
                        const char *destination_dir)
@@ -1246,50 +1144,4 @@ void PlatformFindClose(sPlatformFileFind *find)
       delete native;
       find->implementation = nullptr;
    }
-}
-
-BOOL PlatformMutexInit(sPlatformMutex *mutex)
-{
-   if (!mutex)
-      return FALSE;
-   mutex->implementation = new (std::nothrow) std::recursive_mutex;
-   return mutex->implementation != nullptr;
-}
-
-void PlatformMutexTerm(sPlatformMutex *mutex)
-{
-   if (mutex)
-   {
-      delete static_cast<std::recursive_mutex *>(mutex->implementation);
-      mutex->implementation = nullptr;
-   }
-}
-
-void PlatformMutexLock(sPlatformMutex *mutex)
-{
-   static_cast<std::recursive_mutex *>(mutex->implementation)->lock();
-}
-
-void PlatformMutexUnlock(sPlatformMutex *mutex)
-{
-   static_cast<std::recursive_mutex *>(mutex->implementation)->unlock();
-}
-
-long PlatformAtomicLoad(volatile long *value) { return __atomic_load_n(value, __ATOMIC_SEQ_CST); }
-long PlatformAtomicIncrement(volatile long *value) { return __atomic_add_fetch(value, 1, __ATOMIC_SEQ_CST); }
-long PlatformAtomicDecrement(volatile long *value) { return __atomic_sub_fetch(value, 1, __ATOMIC_SEQ_CST); }
-long PlatformAtomicExchange(volatile long *value, long replacement)
-{
-   return __atomic_exchange_n(value, replacement, __ATOMIC_SEQ_CST);
-}
-long PlatformAtomicAdd(volatile long *value, long amount)
-{
-   return __atomic_fetch_add(value, amount, __ATOMIC_SEQ_CST);
-}
-long PlatformAtomicCompareExchange(volatile long *value, long replacement,
-                                   long expected)
-{
-   __atomic_compare_exchange_n(value, &expected, replacement, false,
-                               __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-   return expected;
 }

@@ -64,7 +64,7 @@
 #include <missiondiag.h>
 #include <dataguard.h>
 #include <gameapp.h>
-#include <platform_services.h>
+#include <platform_runtime.h>
 #include <render_backend.h>
 
 #include <btffact.h>

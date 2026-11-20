@@ -12,7 +12,7 @@
 #define __SCRPTBAS_H
 
 #include <scrpttyp.h>
-#include <platform_services.h>
+#include <platform_diagnostics.h>
 
 #ifdef SCRIPT
 

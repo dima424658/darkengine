@@ -27,7 +27,7 @@
 #include <palmgr.h>
 #include <palette.h>
 #include <gamma.h>
-#include <platform_services.h>
+#include <platform_application.h>
 #include <stdlib.h>
 #include <mprintf.h>
 

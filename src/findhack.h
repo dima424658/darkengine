@@ -10,7 +10,7 @@
 #ifndef __FINDHACK_H
 #define __FINDHACK_H
 
-#include <platform_services.h>
+#include <platform_filesystem.h>
 
 #ifndef NAME_MAX
 #define NAME_MAX 255

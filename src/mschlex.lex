@@ -77,7 +77,7 @@ dot "."
 <PREPROC>-?{digit}+ {
    ConfigSpew("lexspew", ("schlex: int\n"));
    mschlval.ival = atoi(mschtext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 <PREPROC>{quote}{string}*{quote} {
    ConfigSpew("lexspew", ("schlex: string\n"));
@@ -117,82 +117,82 @@ is_loco                 return MOT_IS_LOCO;
 in_place                return MOT_IN_PLACE;                 
 
 /* Dark-specific tokens */
-all_dark_actors         { mschlval.ival=kNumDarkActorTypes; return INT; }
+all_dark_actors         { mschlval.ival=kNumDarkActorTypes; return INTEGER_LITERAL; }
 
-humanoid                { mschlval.ival=kDATYPE_Humanoid; return INT; }
-playerLimb              { mschlval.ival=kDATYPE_PlayerLimb; return INT; }
-playerBowLimb           { mschlval.ival=kDATYPE_PlayerBowLimb; return INT; }
-burrick                 { mschlval.ival=kDATYPE_Burrick; return INT; }
-spider                  { mschlval.ival=kDATYPE_Spider; return INT; }
-constantine             { mschlval.ival=kDATYPE_Constantine; return INT; }
-sweel                   { mschlval.ival=kDATYPE_Sweel; return INT; }
-apparition              { mschlval.ival=kDATYPE_Apparition; return INT; } 
-robot                   { mschlval.ival=kDATYPE_Robot; return INT; }
+humanoid                { mschlval.ival=kDATYPE_Humanoid; return INTEGER_LITERAL; }
+playerLimb              { mschlval.ival=kDATYPE_PlayerLimb; return INTEGER_LITERAL; }
+playerBowLimb           { mschlval.ival=kDATYPE_PlayerBowLimb; return INTEGER_LITERAL; }
+burrick                 { mschlval.ival=kDATYPE_Burrick; return INTEGER_LITERAL; }
+spider                  { mschlval.ival=kDATYPE_Spider; return INTEGER_LITERAL; }
+constantine             { mschlval.ival=kDATYPE_Constantine; return INTEGER_LITERAL; }
+sweel                   { mschlval.ival=kDATYPE_Sweel; return INTEGER_LITERAL; }
+apparition              { mschlval.ival=kDATYPE_Apparition; return INTEGER_LITERAL; }
+robot                   { mschlval.ival=kDATYPE_Robot; return INTEGER_LITERAL; }
 
 /* Shock-specific tokens */
-all_shock_actors        { mschlval.ival=kNumShockActorTypes; return INT; }
-droid                   { mschlval.ival=kShATYPE_Droid; return INT; }
-overlord                { mschlval.ival=kShATYPE_Overlord; return INT; }
-arachnid                { mschlval.ival=kShATYPE_Arachnid; return INT; }
+all_shock_actors        { mschlval.ival=kNumShockActorTypes; return INTEGER_LITERAL; }
+droid                   { mschlval.ival=kShATYPE_Droid; return INTEGER_LITERAL; }
+overlord                { mschlval.ival=kShATYPE_Overlord; return INTEGER_LITERAL; }
+arachnid                { mschlval.ival=kShATYPE_Arachnid; return INTEGER_LITERAL; }
 
 /* Deep Cover-specific tokens */
-all_deepc_actors        { mschlval.ival=kNumDPCActorTypes; return INT; }
-olddog                  { mschlval.ival=kDPCATYPE_OldDog; return INT; }
-dog                     { mschlval.ival=kDPCATYPE_Dog; return INT; }
-deephuman               { mschlval.ival=kDPCATYPE_DeepHuman; return INT; }
+all_deepc_actors        { mschlval.ival=kNumDPCActorTypes; return INTEGER_LITERAL; }
+olddog                  { mschlval.ival=kDPCATYPE_OldDog; return INTEGER_LITERAL; }
+dog                     { mschlval.ival=kDPCATYPE_Dog; return INTEGER_LITERAL; }
+deephuman               { mschlval.ival=kDPCATYPE_DeepHuman; return INTEGER_LITERAL; }
 
 /* game-shared ai tokens */
-tagval_set              { mschlval.ival=kMTV_set; return INT; }
+tagval_set              { mschlval.ival=kMTV_set; return INTEGER_LITERAL; }
 
-tagval_middle             { mschlval.ival=kMTV_middle; return INT; }
-tagval_left             { mschlval.ival=kMTV_left; return INT; }
-tagval_right             { mschlval.ival=kMTV_right; return INT; }
-tagval_front              { mschlval.ival=kMTV_front; return INT; }
-tagval_back              { mschlval.ival=kMTV_back; return INT; }
-tagval_high             { mschlval.ival=kMTV_high; return INT; }
-tagval_low             { mschlval.ival=kMTV_low; return INT; }
+tagval_middle             { mschlval.ival=kMTV_middle; return INTEGER_LITERAL; }
+tagval_left             { mschlval.ival=kMTV_left; return INTEGER_LITERAL; }
+tagval_right             { mschlval.ival=kMTV_right; return INTEGER_LITERAL; }
+tagval_front              { mschlval.ival=kMTV_front; return INTEGER_LITERAL; }
+tagval_back              { mschlval.ival=kMTV_back; return INTEGER_LITERAL; }
+tagval_high             { mschlval.ival=kMTV_high; return INTEGER_LITERAL; }
+tagval_low             { mschlval.ival=kMTV_low; return INTEGER_LITERAL; }
 
-tagval_forward             { mschlval.ival=kMTV_forward; return INT; }
-tagval_forwards            { mschlval.ival=kMTV_forward; return INT; }
-tagval_backward            { mschlval.ival=kMTV_backward; return INT; }
-tagval_backwards        { mschlval.ival=kMTV_backward; return INT; }
-tagval_upstairs        { mschlval.ival=kMTV_upstairs; return INT; }
-tagval_downstairs      { mschlval.ival=kMTV_downstairs; return INT; }
+tagval_forward             { mschlval.ival=kMTV_forward; return INTEGER_LITERAL; }
+tagval_forwards            { mschlval.ival=kMTV_forward; return INTEGER_LITERAL; }
+tagval_backward            { mschlval.ival=kMTV_backward; return INTEGER_LITERAL; }
+tagval_backwards        { mschlval.ival=kMTV_backward; return INTEGER_LITERAL; }
+tagval_upstairs        { mschlval.ival=kMTV_upstairs; return INTEGER_LITERAL; }
+tagval_downstairs      { mschlval.ival=kMTV_downstairs; return INTEGER_LITERAL; }
 
-tagval_swing_short      { mschlval.ival=kMTV_swing_short; return INT; }
-tagval_swing_medium     { mschlval.ival=kMTV_swing_medium; return INT; }
-tagval_swing_long       { mschlval.ival=kMTV_swing_long; return INT; }
+tagval_swing_short      { mschlval.ival=kMTV_swing_short; return INTEGER_LITERAL; }
+tagval_swing_medium     { mschlval.ival=kMTV_swing_medium; return INTEGER_LITERAL; }
+tagval_swing_long       { mschlval.ival=kMTV_swing_long; return INTEGER_LITERAL; }
 
 /* many of these are soon to be obsolete */
-tagval_true             { mschlval.ival=kMTV_true; return INT; }
-tagval_fast             { mschlval.ival=kMTV_fast; return INT; }
-tagval_stationary       { mschlval.ival=kMTV_stationary; return INT; }
+tagval_true             { mschlval.ival=kMTV_true; return INTEGER_LITERAL; }
+tagval_fast             { mschlval.ival=kMTV_fast; return INTEGER_LITERAL; }
+tagval_stationary       { mschlval.ival=kMTV_stationary; return INTEGER_LITERAL; }
 
-tagval_perpleft         { mschlval.ival=kMTV_perpleft; return INT; }
-tagval_perpright        { mschlval.ival=kMTV_perpright; return INT; }
+tagval_perpleft         { mschlval.ival=kMTV_perpleft; return INTEGER_LITERAL; }
+tagval_perpright        { mschlval.ival=kMTV_perpright; return INTEGER_LITERAL; }
 
-tagval_searching        { mschlval.ival=kMTV_searching; return INT; }
-tagval_swordmelee       { mschlval.ival=kMTV_swordmelee; return INT; }
-tagval_alert            { mschlval.ival=kMTV_alert; return INT; }
+tagval_searching        { mschlval.ival=kMTV_searching; return INTEGER_LITERAL; }
+tagval_swordmelee       { mschlval.ival=kMTV_swordmelee; return INTEGER_LITERAL; }
+tagval_alert            { mschlval.ival=kMTV_alert; return INTEGER_LITERAL; }
 
-tagval_swing            { mschlval.ival=kMTV_swing; return INT; }
-tagval_dodge            { mschlval.ival=kMTV_dodge; return INT; }
-tagval_parry            { mschlval.ival=kMTV_parry; return INT; }
+tagval_swing            { mschlval.ival=kMTV_swing; return INTEGER_LITERAL; }
+tagval_dodge            { mschlval.ival=kMTV_dodge; return INTEGER_LITERAL; }
+tagval_parry            { mschlval.ival=kMTV_parry; return INTEGER_LITERAL; }
 
-tagval_pose_calib       { mschlval.ival=kMTV_pose_calib; return INT; }
-tagval_pose_swordready  { mschlval.ival=kMTV_pose_swordready; return INT; }
+tagval_pose_calib       { mschlval.ival=kMTV_pose_calib; return INTEGER_LITERAL; }
+tagval_pose_swordready  { mschlval.ival=kMTV_pose_swordready; return INTEGER_LITERAL; }
 
-tagval_gesture          { mschlval.ival=kMTV_gesture; return INT; }
-tagval_hurt             { mschlval.ival=kMTV_hurt; return INT; }
-tagval_stunned          { mschlval.ival=kMTV_stunned; return INT; }
-tagval_surprised        { mschlval.ival=kMTV_surprised; return INT; }
-tagval_alerttrans1     { mschlval.ival=kMTV_alerttrans1; return INT; }
-tagval_alerttrans2     { mschlval.ival=kMTV_alerttrans2; return INT; }
-tagval_alerttrans3     { mschlval.ival=kMTV_alerttrans3; return INT; }
-tagval_die              { mschlval.ival=kMTV_die; return INT; }        
+tagval_gesture          { mschlval.ival=kMTV_gesture; return INTEGER_LITERAL; }
+tagval_hurt             { mschlval.ival=kMTV_hurt; return INTEGER_LITERAL; }
+tagval_stunned          { mschlval.ival=kMTV_stunned; return INTEGER_LITERAL; }
+tagval_surprised        { mschlval.ival=kMTV_surprised; return INTEGER_LITERAL; }
+tagval_alerttrans1     { mschlval.ival=kMTV_alerttrans1; return INTEGER_LITERAL; }
+tagval_alerttrans2     { mschlval.ival=kMTV_alerttrans2; return INTEGER_LITERAL; }
+tagval_alerttrans3     { mschlval.ival=kMTV_alerttrans3; return INTEGER_LITERAL; }
+tagval_die              { mschlval.ival=kMTV_die; return INTEGER_LITERAL; }
 
-tagval_hurt_light       { mschlval.ival=kMTV_hurt_light; return INT; }
-tagval_hurt_heavy       { mschlval.ival=kMTV_hurt_heavy; return INT; }
+tagval_hurt_light       { mschlval.ival=kMTV_hurt_light; return INTEGER_LITERAL; }
+tagval_hurt_heavy       { mschlval.ival=kMTV_hurt_heavy; return INTEGER_LITERAL; }
 
 /* generic stuff */
 
@@ -208,7 +208,7 @@ tagval_hurt_heavy       { mschlval.ival=kMTV_hurt_heavy; return INT; }
    else
    {
       mschlval.ival = val;
-      return INT;
+      return INTEGER_LITERAL;
    }
 }
 
@@ -221,7 +221,7 @@ tagval_hurt_heavy       { mschlval.ival=kMTV_hurt_heavy; return INT; }
 -?{digit}+ {
    ConfigSpew("lexspew", ("schlex: int\n"));
    mschlval.ival = atoi(mschtext);
-   return INT;
+   return INTEGER_LITERAL;
 }
 
 -?({digit}+)|({digit}*{dot}{digit}+)|({digit}+{dot}{digit}*) {

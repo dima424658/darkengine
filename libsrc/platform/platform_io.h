@@ -1,6 +1,9 @@
 #pragma once
 #ifdef _WIN32
-#include "platform_io_win32.h"
+#include <direct.h>
+#include <io.h>
+#include <stdio.h>
+#include <types.h>
 #else
-#include "platform_io_posix.h"
+#include "platform_posix.h"
 #endif

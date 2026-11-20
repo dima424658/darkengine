@@ -113,7 +113,7 @@
 extern "C"  {
 #endif
 
-#include <platform_services.h>
+#include <platform_runtime.h>
 
 #define RAW_TIME_VALUE PlatformMilliseconds()
 

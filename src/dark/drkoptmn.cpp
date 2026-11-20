@@ -20,7 +20,7 @@
 
 #include <appsfx.h>
 #include <render_backend.h>
-#include <platform_services.h>
+#include <display_modes.h>
 #include <gamescrn.h>
 #include <scrnmode.h>
 
@@ -185,7 +185,7 @@ static void AddDisplayResolution(sDisplayResolution *resolutions, int capacity,
 // a useful description of the current display.
 static int GetDisplayResolutions(sDisplayResolution *resolutions, int capacity)
 {
-   sPlatformDisplayMode displayModes[MAX_DISPLAY_RESOLUTIONS];
+   sDisplayMode displayModes[MAX_DISPLAY_RESOLUTIONS];
    int displayModeCount;
    int monitorWidth;
    int monitorHeight;
@@ -201,8 +201,8 @@ static int GetDisplayResolutions(sDisplayResolution *resolutions, int capacity)
       { 1920, 1080 }
    };
 
-   displayModeCount = PlatformGetDisplayModes(
-      kPlatformCurrentDisplay, displayModes,
+   displayModeCount = DisplayGetModes(
+      kDisplayCurrentDisplay, displayModes,
       sizeof(displayModes) / sizeof(displayModes[0]),
       &monitorWidth, &monitorHeight);
    for (modeIndex = 0; modeIndex < displayModeCount && count < capacity;
