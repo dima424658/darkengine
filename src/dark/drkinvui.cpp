@@ -500,7 +500,7 @@ void prev_weapon_command( int count )
 // CYCLE ITEM COMMAND
 //
 
-void cycle_item_command(int dir, unsigned count = 1)
+static void cycle_item_steps(int dir, unsigned count)
 {
    BOOL expired = is_expired(kCurrentItem);
    set_expiration(kCurrentItem);
@@ -535,6 +535,11 @@ void cycle_item_command(int dir, unsigned count = 1)
 
 }
 
+void cycle_item_command(int dir)
+{
+   cycle_item_steps(dir, 1);
+}
+
 void next_item_command( int count )
 {
    int dir;
@@ -546,7 +551,7 @@ void next_item_command( int count )
    dir = ( count < 0 ) ? -1 : 1;
    count = abs( count );
 
-   cycle_item_command(dir, (unsigned)count);
+   cycle_item_steps(dir, (unsigned)count);
 }
 
 void prev_item_command( int count )
@@ -560,7 +565,7 @@ void prev_item_command( int count )
    dir = ( count < 0 ) ? 1 : -1;
    count = abs( count );
 
-   cycle_item_command(dir, (unsigned)count);
+   cycle_item_steps(dir, (unsigned)count);
 }
 
 // Touch HUD regions are persistent selectors, rather than keyboard-style
