@@ -1,0 +1,26 @@
+# Approximate the predominant legacy src/ style on main. Include order is
+# significant: memory/debug headers are deliberately included last in places.
+BasedOnStyle: LLVM
+IndentWidth: 3
+ContinuationIndentWidth: 3
+TabWidth: 3
+UseTab: Never
+ColumnLimit: 80
+BreakBeforeBraces: Allman
+IndentCaseLabels: true
+AccessModifierOffset: -3
+NamespaceIndentation: None
+IndentExternBlock: NoIndent
+PointerAlignment: Middle
+ReferenceAlignment: Pointer
+DerivePointerAlignment: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+BinPackArguments: true
+BinPackParameters: true
+SortIncludes: Never
+IncludeBlocks: Preserve
+ReflowComments: false
+MaxEmptyLinesToKeep: 2
