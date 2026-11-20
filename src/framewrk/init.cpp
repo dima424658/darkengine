@@ -73,7 +73,6 @@
 #include <movie.h>
 #include <diskfree.h>
 #include <display_modes.h>
-#include <platform_settings.h>
 #include <dyntex.h>
 #include <scrptne_.h>
 #include <random.h>
@@ -124,106 +123,6 @@ static void RegisterDisplayModes(void)
          RegisterDisplayMode(modes[i].width, modes[i].height);
    RegisterDisplayMode(640, 480);
    RegisterDisplayMode(800, 600);
-}
-
-#ifdef THIEF2_GAME
-static const char kUserSettingsStore[] = "Thief2";
-
-static void LoadUserVideoSettings(void)
-{
-   uint32 version;
-   uint32 width;
-   uint32 height;
-   uint32 depth;
-   uint32 fullscreen;
-   uint32 fit;
-   uint32 gamma_milli;
-
-   if (PlatformReadUserUInt(kUserSettingsStore, "VideoSettingsVersion",
-                            &version) &&
-       (version == 1 || version == 2))
-   {
-      if (PlatformReadUserUInt(kUserSettingsStore, "GammaMilli",
-                               &gamma_milli) &&
-          gamma_milli >= 100 && gamma_milli <= 4000)
-      {
-         float gamma = gamma_milli / 1000.0f;
-         config_set_float_from_var("gamma", gamma);
-      }
-
-      if (PlatformReadUserUInt(kUserSettingsStore, "ScreenWidth", &width) &&
-          PlatformReadUserUInt(kUserSettingsStore, "ScreenHeight", &height) &&
-          width > 0 && height > 0)
-      {
-         int dimensions[2] = { (int)width, (int)height };
-         config_set_value("game_screen_size", CONFIG_INT_TYPE,
-                          dimensions, 2);
-      }
-
-      if (PlatformReadUserUInt(kUserSettingsStore, "ScreenDepth", &depth) &&
-          depth > 0)
-         config_set_int("game_screen_depth", (int)depth);
-      if (PlatformReadUserUInt(kUserSettingsStore, "Fullscreen", &fullscreen))
-         config_set_int("game_full_screen", fullscreen != 0);
-      if (version >= 2 &&
-          PlatformReadUserUInt(kUserSettingsStore, "Fit", &fit))
-         config_set_int("game_screen_fit", fit != 0);
-   }
-}
-#else
-static void LoadUserVideoSettings(void)
-{
-}
-#endif
-
-void LGAPI CoreEngineSaveVideoSettings(void)
-{
-#ifdef THIEF2_GAME
-   uint32 version = 2;
-   uint32 width;
-   uint32 height;
-   uint32 depth;
-   uint32 fullscreen;
-   uint32 fit;
-   uint32 gamma_milli;
-   int dimensions[2];
-   int count = 2;
-   int value;
-   float gamma = 1.0f;
-
-   if (config_get_float("gamma", &gamma))
-   {
-      gamma_milli = (uint32)(gamma * 1000.0f + 0.5f);
-      PlatformWriteUserUInt(kUserSettingsStore, "GammaMilli", gamma_milli);
-   }
-
-   if (config_get_value("game_screen_size", CONFIG_INT_TYPE,
-                        dimensions, &count) && count == 2)
-   {
-      width = dimensions[0];
-      height = dimensions[1];
-      PlatformWriteUserUInt(kUserSettingsStore, "ScreenWidth", width);
-      PlatformWriteUserUInt(kUserSettingsStore, "ScreenHeight", height);
-   }
-
-   if (config_get_int("game_screen_depth", &value))
-   {
-      depth = value;
-      PlatformWriteUserUInt(kUserSettingsStore, "ScreenDepth", depth);
-   }
-   if (config_get_int("game_full_screen", &value))
-   {
-      fullscreen = value != 0;
-      PlatformWriteUserUInt(kUserSettingsStore, "Fullscreen", fullscreen);
-   }
-   if (config_get_int("game_screen_fit", &value))
-   {
-      fit = value != 0;
-      PlatformWriteUserUInt(kUserSettingsStore, "Fit", fit);
-   }
-
-   PlatformWriteUserUInt(kUserSettingsStore, "VideoSettingsVersion", version);
-#endif
 }
 
 //----------------------------------------
@@ -412,9 +311,6 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    // Apply FM/mod precedence only after those inputs are available.
    DarkContentConfigure(g_argc,g_argv);
 
-   // Keep runner-specific video preferences outside the retail data folder.
-   // Command-line values are parsed afterward and therefore still win.
-   LoadUserVideoSettings();
    config_parse_commandline(g_argc,g_argv,NULL);
 
    // The themed content panel runs inside the normal engine window. Some

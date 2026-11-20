@@ -2128,7 +2128,6 @@ protected:
             RenderBackendSetFitToViewport(mPendingFit);
             mPendingVideoMode = *SetGameScreenMode(&mPendingVideoMode);
             ScrnModeSetConfig(GetGameScreenMode(), "game_");
-            CoreEngineSaveVideoSettings();
             if (mPendingVideoMode.flags & kScrnModeWindowed)
                RenderBackendSetWindowedClientSizeHint(mPendingVideoMode.w,
                                                     mPendingVideoMode.h);
@@ -2736,7 +2735,6 @@ protected:
             RenderBackendSetFitToViewport (mPendingFit);
             SetGameScreenMode (&mPendingVideoMode);
             ScrnModeSetConfig (GetGameScreenMode (), "game_");
-            CoreEngineSaveVideoSettings();
 
             // The screen manager applies GetGameScreenMode() after the
             // Options panel has exited and its parent mode resumes. Replacing

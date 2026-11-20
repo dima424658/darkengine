@@ -88,53 +88,6 @@ BOOL PlatformGetMemoryStatus(sPlatformMemoryStatus *status)
    return TRUE;
 }
 
-static BOOL MakeUserKey(char *key, size_t size, const char *store)
-{
-   int count;
-   if (!key || !size || !store || !store[0])
-      return FALSE;
-   count = snprintf(key, size, "Software\\DarkEngineRestored\\%s", store);
-   return count > 0 && (size_t)count < size;
-}
-
-BOOL PlatformReadUserUInt(const char *store, const char *name, uint32 *value)
-{
-   char key_name[256];
-   HKEY key;
-   DWORD type = REG_DWORD;
-   DWORD size = sizeof(*value);
-   BOOL result;
-
-   if (!name || !value || !MakeUserKey(key_name, sizeof(key_name), store) ||
-       RegOpenKeyExA(HKEY_CURRENT_USER, key_name, 0, KEY_QUERY_VALUE, &key) !=
-          ERROR_SUCCESS)
-      return FALSE;
-
-   result = RegQueryValueExA(key, name, NULL, &type, (BYTE *)value, &size) ==
-               ERROR_SUCCESS &&
-            type == REG_DWORD && size == sizeof(*value);
-   RegCloseKey(key);
-   return result;
-}
-
-BOOL PlatformWriteUserUInt(const char *store, const char *name, uint32 value)
-{
-   char key_name[256];
-   HKEY key;
-   DWORD disposition;
-   LONG result;
-
-   if (!name || !MakeUserKey(key_name, sizeof(key_name), store) ||
-       RegCreateKeyExA(HKEY_CURRENT_USER, key_name, 0, NULL, 0, KEY_SET_VALUE,
-                       NULL, &key, &disposition) != ERROR_SUCCESS)
-      return FALSE;
-
-   result = RegSetValueExA(key, name, 0, REG_DWORD, (const BYTE *)&value,
-                           sizeof(value));
-   RegCloseKey(key);
-   return result == ERROR_SUCCESS;
-}
-
 const char *PlatformGetLanguageCode(void)
 {
    switch (PRIMARYLANGID(GetSystemDefaultLangID()))

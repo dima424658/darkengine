@@ -250,8 +250,6 @@ BOOL PlatformGetMemoryStatus(sPlatformMemoryStatus *status)
 #endif
 }
 
-BOOL PlatformReadUserUInt(const char *, const char *, uint32 *) { return FALSE; }
-BOOL PlatformWriteUserUInt(const char *, const char *, uint32) { return FALSE; }
 
 const char *PlatformGetLanguageCode(void)
 {
