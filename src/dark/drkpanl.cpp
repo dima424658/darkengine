@@ -254,7 +254,7 @@ void cDarkPanel::OnLoopMsg(eLoopMessage msg, tLoopMessageData data)
          RenderBackendSetScaleToWindow(TRUE);
          RenderBackendSetFitToViewport(FALSE);
          RenderBackendSetPreserveCanvas(FALSE);
-         RenderBackendGetSettledClientSize(&mPresentationWidth,
+         RenderBackendGetClientSize(&mPresentationWidth,
                                            &mPresentationHeight);
          RedrawDisplay();
          break;
@@ -264,7 +264,7 @@ void cDarkPanel::OnLoopMsg(eLoopMessage msg, tLoopMessageData data)
          const uint32 generation = PlatformApplicationResumeGeneration();
          int presentationWidth;
          int presentationHeight;
-         if (RenderBackendGetSettledClientSize(&presentationWidth,
+         if (RenderBackendGetClientSize(&presentationWidth,
                                                &presentationHeight))
          {
             if (mPresentationWidth > 0 && mPresentationHeight > 0 &&

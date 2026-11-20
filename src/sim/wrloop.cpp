@@ -398,6 +398,7 @@ void FreeWR(void)
    PortalCell  *p;
    
    clear_surface_cache();
+   porthw_clear_surface_cache();
 #ifdef RGB_LIGHTING
    dbCompatibilityRewriteTag(&WRExtTag,
       "world representation changed; source block will be regenerated");

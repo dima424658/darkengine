@@ -16,7 +16,7 @@
 #include <aicbrmod.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -50,8 +50,7 @@ inline int cAIRangedIdle::SuggestApplicability(void) {return 0;}
 inline int cAIRangedIdle::GetPriority(void) {return kAIRC_PriMinimum;}
 
 /////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBTRNG_H */
 

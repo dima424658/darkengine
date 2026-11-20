@@ -160,10 +160,6 @@ enum eGrModeFlags
     // DynamicProperties
     kGrModeIsWindowed   = 0x0100,
     kGrModeIsDirect     = 0x0200,
-    // Full-display presentation through the desktop compositor.  This is
-    // visually fullscreen, but must not use the legacy exclusive-mode focus
-    // and message-pump rules.
-    kGrModeIsBorderless = 0x0400,
     
     kGrModeNotSet       = 0x80000000
 };
@@ -220,7 +216,7 @@ struct sGrModeInfoEx
 ///////////////////////////////////////
 //
 // Device bitmap descriptor.  Used to allocate/query OS or hardware based
-// bitmaps, mostly for use by DirectDraw and Direct3D intimate code.
+// bitmaps, mostly for use by display-device and renderer-specific code.
 //
 // @Note (toml 12-10-96): Narrow support right now
 //
@@ -414,13 +410,13 @@ DECLARE_INTERFACE_(IDisplayDevice, IUnknown)
     STDMETHOD (GetRenderTargets)(THIS_ sGrRenderTargets *) PURE;
 
     //
-    // Specify ddraw guid.
+    // Specify display provider GUID.
     // @tbd: move this next to SetKind next time we can't backtouch
     // 
-    STDMETHOD_(void,               SetKind2)(THIS_ eDisplayDeviceKind, int flags, GUID *pDDrawGuid) PURE;
+    STDMETHOD_(void,               SetKind2)(THIS_ eDisplayDeviceKind, int flags, GUID *pDisplayGuid) PURE;
 
     //
-    // Query kind, flags, and ddraw guid
+    // Query kind, flags, and display provider GUID.
     // @tbd: move this next to GetKind next time we can't backtouch
     // 
     STDMETHOD_(void,               GetKind2)(THIS_ eDisplayDeviceKind *, int *, GUID **) PURE;
@@ -507,8 +503,8 @@ DECLARE_INTERFACE_(IDeviceBitmap, IUnknown)
     STDMETHOD (EndAccess)(THIS_ sGrBitmap * pGrsBitmap) PURE;
 
     //
-    // Gain access to object doing most basic work. This is usually an
-    // IDirectDrawSurface, and can return NULL.  It is dangerous to
+    // Gain access to the object doing most basic work. This is usually a
+    // platform or renderer-specific object, and can return NULL. It is dangerous to
     // hold this accross a mode change if the bitmap is one of the
     // render targets.
     //

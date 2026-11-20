@@ -23,7 +23,6 @@
 #define _SNDSRC_H
 
 #ifndef _INTTYPE_H
-//#include <inttype.h>
 #endif
 
 #include <comtools.h>

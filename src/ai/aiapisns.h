@@ -20,7 +20,7 @@
 #include <aiapicmp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 struct sAIAwareness;
 struct sSoundInfo;
@@ -124,7 +124,6 @@ DECLARE_INTERFACE_(IAISenses, IAIComponent)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIAPISNS_H */

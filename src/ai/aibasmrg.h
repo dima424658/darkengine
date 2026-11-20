@@ -18,7 +18,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -55,7 +55,6 @@ inline cAIMoveRegulator::cAIMoveRegulator(eAITimerPeriod period)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIBASMRG_H */

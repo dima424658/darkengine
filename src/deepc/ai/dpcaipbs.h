@@ -11,7 +11,7 @@
 #include <aibasbhv.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -31,8 +31,7 @@ public:
 
    STDMETHOD_(void, EnactProxyCustomAction)(tAIActionType type, IAI *pAI, void *netmsg);
 };
-
-#pragma pack()
+#pragma pack(pop)
 #endif /* !__DPCAIGBS_H */
 
 

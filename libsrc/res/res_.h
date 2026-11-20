@@ -83,9 +83,6 @@
 // quiet the warnings, although it wouldn't be bad for someone to
 // evaluate them. (toml 09-14-96)
 //
-#ifdef __WATCOMC__
-#pragma warning 389 9
-#endif
 
 #ifdef __cplusplus
 extern "C"

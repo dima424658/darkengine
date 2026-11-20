@@ -442,7 +442,7 @@ int processTweqJoints(ObjID obj, void *state, int ms)
       }
       if (jnt_cfg->primary_joint)  // copy global state bits to primary joint specific
          jnt_state->jnt_flgs[jnt_cfg->primary_joint-1]=jnt_state->state;
-      for (i=0; i<std::min(param_count,MAX_TWEQ_JOINTS); i++)
+      for (i=0; i<(std::min)(param_count,MAX_TWEQ_JOINTS); i++)
       {
          mxs_vector *limits=&jnt_cfg->jnt_data[i].limits;
          sTweqBaseConfig *jnt_x_cfg=&jnt_cfg->jnt_data[i].flags;

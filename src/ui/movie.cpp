@@ -22,7 +22,6 @@
 
 #include <movie.h>
 #include <mprintf.h>
-#include <movie_backend.h>
 
 // Must be last header 
 #include <dbmem.h>
@@ -40,13 +39,6 @@ EXTERN BOOL MoviePlaySynchronous(const char * pszFile, int volume)
    BOOL played;
       
    fileSpec.MakeFullPath();
-   if (!fileSpec.FileExists())
-      return FALSE;
-
-   // Prefer the modern H.264/AAC sibling when retail data provides one.
-   // This avoids depending on the obsolete 32-bit Intel Indeo codec.
-   if (MovieBackendPlaySynchronous(fileSpec.GetName(), volume))
-      return TRUE;
 
    if (!pMoviePlayer1 || !pDisplayDevice)
       return FALSE;
@@ -92,12 +84,10 @@ BOOL MoviePlayAsynchronous(const char *pszFile,int x,int y,int w,int h, int volu
    cFileSpec fileSpec(pszFile);
    float oldGamma;
    
-   if (!pMoviePlayer1)
+   if (!pMoviePlayer1 || !pDisplayDevice)
       return FALSE;
       
    fileSpec.MakeFullPath();
-   if (!fileSpec.FileExists())
-      return FALSE;
    
    // remember old gamma setting, set gamma to default
    //  this is to keep movies from looking bad if user has cranked up gamma
@@ -108,10 +98,14 @@ BOOL MoviePlayAsynchronous(const char *pszFile,int x,int y,int w,int h, int volu
    // @TODO (toml 06-16-97): This is hacked e3 logic and should be distrusted as long as this comment is here
    int iDisplayLock = pDisplayDevice->BreakLock();
 
-   pMoviePlayer1->Open(fileSpec.GetName(), x, y, w, h);
-   pMoviePlayer1->SetVolume(volume);
-   // Play asynchronously.
-   pMoviePlayer1->Play(kMoviePlayNoStop);
+   BOOL played = FALSE;
+   if (pMoviePlayer1->Open(fileSpec.GetName(), x, y, w, h))
+   {
+      pMoviePlayer1->SetVolume(volume);
+      played = pMoviePlayer1->Play(kMoviePlayNoStop);
+      if (!played)
+         pMoviePlayer1->Close();
+   }
     
    pDisplayDevice->RestoreLock(iDisplayLock);
 
@@ -119,7 +113,7 @@ BOOL MoviePlayAsynchronous(const char *pszFile,int x,int y,int w,int h, int volu
    g_gamma = oldGamma;
    gamma_update();
 
-   return TRUE;
+   return played;
 }
 
 

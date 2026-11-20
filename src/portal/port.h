@@ -260,6 +260,7 @@ extern void portal_free_mem_rect(unsigned char *p, int x, int y);
   // lightmap aggregation stuff
 extern void porthw_init(void);
 extern void porthw_shutdown(void);
+extern void porthw_clear_surface_cache(void);
 extern void porthw_start_frame(int frame);
 extern void porthw_end_frame(void);
 

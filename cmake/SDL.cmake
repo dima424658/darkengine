@@ -1,0 +1,11 @@
+if(NOT ANDROID)
+  set(SDL_SHARED OFF CACHE BOOL "Build SDL3 statically" FORCE)
+  set(SDL_STATIC ON CACHE BOOL "Build SDL3 statically" FORCE)
+  set(SDL_TESTS OFF CACHE BOOL "Do not build SDL3 tests" FORCE)
+  set(SDL_EXAMPLES OFF CACHE BOOL "Do not build SDL3 examples" FORCE)
+  set(SDL_INSTALL OFF CACHE BOOL "Do not install SDL3 from this build" FORCE)
+  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SDL"
+    "${CMAKE_BINARY_DIR}/third_party/SDL" EXCLUDE_FROM_ALL)
+else()
+  find_package(SDL3 CONFIG REQUIRED)
+endif()

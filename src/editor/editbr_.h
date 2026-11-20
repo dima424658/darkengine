@@ -29,6 +29,8 @@
 
 #define TEXINFO_HACK_ALIGN 1  // for now, how you specify rotate to brush
 
+// Numeric brush records are serialized directly by the legacy BRLIST codec.
+#pragma pack(push, 1)
 struct _TexInfo
 {
    short tx_id;
@@ -90,5 +92,10 @@ struct _editBrush
                              // this is actually only as long as it needs
                              // to be (according to num_faces),
 };
+
+#pragma pack(pop)
+#ifdef __cplusplus
+static_assert(sizeof(TexInfo)==10 && sizeof(editBrush)-EDITBR_MAX_FACES*sizeof(TexInfo)==76, "brush disk layout");
+#endif
 
 #endif

@@ -311,8 +311,6 @@ long HuffMakeFlashTables(HuffNode *htree, HuffNode *hroot, uchar *pFlashTab,
 	return (long)(pftGrow - pftBase);
 }
 
-#ifdef __WATCOMC__
-#endif
 
 void HuffGrowFlashTables(HuffNode *htree, HuffNode *hnode, ulong code,
 	int numBits)
@@ -374,8 +372,6 @@ void HuffGrowFlashTables(HuffNode *htree, HuffNode *hnode, ulong code,
 		memcpy(p, &token, htokSize);
 }
 
-#ifdef __WATCOMC__
-#endif
 
 //	-----------------------------------------------------------------
 //		PRINT OUT HUFFMAN FLASH-TABLES

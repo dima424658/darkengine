@@ -157,6 +157,7 @@ public:
    STDMETHOD (AddModule)(const char *);
    STDMETHOD (RemoveModule)(const char *);
    STDMETHOD (ClearModules)();
+   BOOL IsModuleLoaded(const char *name) const;
 
    // Script services
    STDMETHOD (ExposeService)(IUnknown *, const GUID *);

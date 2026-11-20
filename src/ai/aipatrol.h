@@ -16,7 +16,7 @@
 #include <ainoncbt.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -86,8 +86,7 @@ inline BOOL cAIPatrol::ShouldPatrol()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPATROL_H */
 

@@ -6,6 +6,5 @@ $Revision: 1.2 $
 ===============================================================
 
 This library implements the core memory management
-functionality of the Resource System. It provides fast
-allocators, custom allocators, debugging allocators and
-caching logic.
+functionality of the Resource System. It provides allocation
+limits, resource paging, and the platform allocator chain.

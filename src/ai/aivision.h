@@ -15,7 +15,7 @@
 #include <aitype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -174,7 +174,6 @@ struct sAIVisibilityControl
 extern sAIVisibilityControl g_AIDefVisCtrl;
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIVISION_H */

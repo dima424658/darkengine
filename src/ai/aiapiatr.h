@@ -19,7 +19,7 @@
 #include <aiapicmp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(IAIActor);
 
@@ -46,7 +46,6 @@ DECLARE_INTERFACE_(IAIActor, IAIComponent)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIAPIATR_H */

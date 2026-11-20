@@ -1,0 +1,59 @@
+set(dark_object_sources
+  bintrait.cpp
+  dataops.cpp
+  donorq.cpp
+  edittool.cpp
+  link.cpp
+  linkarry.cpp
+  linkboth.cpp
+  linkdata.cpp
+  linkdb.cpp
+  linkguid.c
+  linkman.cpp
+  linkprop.cpp
+  linkqdb.cpp
+  linkset.cpp
+  linkstor.cpp
+  lnkbyobj.cpp
+  lnkquery.cpp
+  nameprop.cpp
+  objlpars.cpp
+  objproxy.cpp
+  objquery.cpp
+  objremap.cpp
+  objsys.cpp
+  osetlnkq.cpp
+  prcniter.cpp
+  propdb.cpp
+  property.cpp
+  propface.cpp
+  propguid.c
+  proplink.cpp
+  propman.cpp
+  propmix.cpp
+  propnull.cpp
+  propobsv.cpp
+  propsave.cpp
+  propstor.cpp
+  querynul.cpp
+  relation.cpp
+  relinver.cpp
+  relnull.cpp
+  strprop.cpp
+  traisrch.cpp
+  trait.cpp
+  traitiid.c
+  traitlnk.cpp
+  traitman.cpp
+  traitnul.cpp
+  traitprp.cpp
+  traitq.cpp
+  traitqdb.cpp
+  trcache.cpp
+  trcachui.cpp
+)
+
+target_sources(dark_game_core PRIVATE ${dark_object_sources})
+if(TARGET dark_dromed_core)
+  target_sources(dark_dromed_core PRIVATE ${dark_object_sources})
+endif()

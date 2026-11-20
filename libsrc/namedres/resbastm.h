@@ -26,9 +26,6 @@
 #ifndef __RESBASTM_H
 #define __RESBASTM_H
 
-#ifdef WAT110
-#pragma message("resbastm.h is known not to compile in Watcom 110; skipping...")
-#else
 
 #include <lg.h>
 #include <appagg.h>
@@ -841,5 +838,4 @@ STDMETHODIMP_(BOOL) RES_BASE::HasSetData()
 
 //////////////////////////////////////////////////////////////////////////
 #include <undbmem.h>
-#endif // !WAT110
 #endif // !__RESBASTM_H

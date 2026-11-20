@@ -6,6 +6,8 @@
 #include <appagg.h>
 #include <mprintf.h>
 #include <platform_services.h>
+#include <tracy/Tracy.hpp>
+#include <cstring>
 
 unsigned MessageToIndex(eLoopMessage message)
 {
@@ -124,7 +126,7 @@ cLoopDispatch::cLoopDispatch(ILoopMode* loop, sLoopModeInitParmList parmList, tL
 
 	AutoAppIPtr(LoopManager);
 
-	if (pLoopManager)
+	if (pLoopManager != NULL)
 	{
 		auto* pBaseMode = pLoopManager->GetBaseMode();
 		AddClientsFromMode(pBaseMode, constraints);
@@ -150,6 +152,8 @@ cLoopDispatch::~cLoopDispatch()
 
 HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData, int flags)
 {
+	ZoneScopedN("Loop dispatch");
+	ZoneName(LoopGetMessageName(message), std::strlen(LoopGetMessageName(message)));
 	if (!(m_msgs & message))
 	{
 		if (message && !(m_msgs & message))
@@ -196,21 +200,21 @@ HRESULT cLoopDispatch::SendMessage(eLoopMessage message, tLoopMessageData hData,
 		if (fLoopTrack)
 			LoopTrack(message, pszClient);
 
-		cAverageTimer* pTimer = nullptr;
 		if (fLoopTimeThisMsg)
-		{
-			pTimer = &reinterpret_cast<sClientInfo*>(targetList[idx]->pData)->timer;
-			pTimer->Start();
-		}
+			reinterpret_cast<sClientInfo*>(targetList[idx]->pData)->timer.Start();
 
 		eLoopMessageResult clientResult{};
-		if (m_ProfileSet & message)
-			clientResult = LoopProfileSend(pClient, message, hData);
-		else
-			clientResult = pClient->ReceiveMessage(message, hData);
+		{
+			ZoneScopedN("Loop client");
+			ZoneName(pszClient, std::strlen(pszClient));
+			if (m_ProfileSet & message)
+				clientResult = LoopProfileSend(pClient, message, hData);
+			else
+				clientResult = pClient->ReceiveMessage(message, hData);
+		}
 
 		if (fLoopTimeThisMsg)
-			pTimer->Stop();
+			reinterpret_cast<sClientInfo*>(targetList[idx]->pData)->timer.Stop();
 
 		if (fClientHeapchk)
 			PlatformHeapCheck();
@@ -284,6 +288,7 @@ HRESULT cLoopDispatch::PostSimpleMessage(eLoopMessage message)
 
 HRESULT cLoopDispatch::ProcessQueue()
 {
+   ZoneScopedN("Loop queued messages");
 	auto result = S_FALSE;
 
 	sLoopQueueMessage message{};

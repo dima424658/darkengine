@@ -925,8 +925,6 @@ void DbgCloseLogFiles()
 // DbgHandle() is factored out to be used by the C++ version,
 // which is called DbgHandleCpp()
 
-#ifdef __WATCOMC__
-#endif
 
 void DbgHandle(int reportType, ulong src, char *buff)
 {
@@ -1020,6 +1018,3 @@ void DbgHandleC(int reportType, ulong src, const char *fmt, va_list __arg)
    DbgHandle(reportType,src,buff);
     CoreThreadUnlock();
 }
-
-#ifdef __WATCOMC__
-#endif

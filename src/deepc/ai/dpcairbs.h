@@ -12,7 +12,7 @@
 #include <dpcaisbs.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -30,6 +30,5 @@ public:
 protected:
    virtual void CreateCombatAbilities(cAIComponentPtrs * pComponents);
 };
-
-#pragma pack()
+#pragma pack(pop)
 #endif /* !__DPCAIRBS_H */

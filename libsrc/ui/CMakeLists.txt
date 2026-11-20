@@ -1,0 +1,29 @@
+add_library(dark_ui STATIC
+  butarray.c
+  curdrw.c
+  cursors.c
+  event.c
+  gadgets.c
+  hotkey.c
+  menu.c
+  plain.c
+  pushbutt.c
+  qboxgadg.c
+  region.c
+  slab.c
+  slider.c
+  textgadg.c
+  texttool.c
+  tng.c
+  tngbarry.c
+  tngfont.c
+  tngmenu.c
+  tngplain.c
+  tngpushb.c
+  tngqbox.c
+  tngslidr.c
+  tngtextg.c
+  uires.c
+  vmouse.c
+)
+dark_configure_library(dark_ui)

@@ -11,10 +11,12 @@
 // actually do.
 
 
+#include <tracy/Tracy.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <filespec.h>
 #include <scrptman.h>
+#include <script_module_query.h>
 #include <scrptsrv.h>
 #include <nullsrv.h>
 #include <appagg.h>
@@ -29,11 +31,7 @@
 
 #include <dbmem.h>
 
-#if defined(__WATCOMC__)
-#pragma initialize library
-#else
 #pragma init_seg (lib)
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -162,6 +160,8 @@ cScriptMan::cScriptMan(IUnknown * pOuter, tScrTimeFunc pfnTime,
 cScriptMan::~cScriptMan()
 {
    ScriptDebugSetEnabled(FALSE);
+   if (g_pScriptMan == this)
+      g_pScriptMan = NULL;
 }
 
 ///////////////////////////////////////
@@ -663,6 +663,8 @@ HRESULT cScriptMan::DoSendMessage(cScrObj * pScrObj, sScrMsg * pMsg, sMultiParm 
    {
       if (pInfo->pScript)
       {
+         ZoneScopedN("Script callback");
+         ZoneName(pInfo->className, strlen(pInfo->className));
          if (DoSendDirect(pInfo->pScript, pMsg, pReply) != S_OK)
             result = E_FAIL;
          if (pMsg->flags & kSMF_MsgBlock)
@@ -678,6 +680,10 @@ HRESULT cScriptMan::DoSendMessage(cScrObj * pScrObj, sScrMsg * pMsg, sMultiParm 
 
 STDMETHODIMP cScriptMan::SendMessage(sScrMsg * pMsg, sMultiParm * pReply)
 {
+   ZoneScopedN("Script message");
+   if (pMsg->message)
+      ZoneName(pMsg->message, strlen(pMsg->message));
+   ZoneValue(pMsg->to);
    HRESULT result = S_OK;
 
    if (!m_ActiveObjs.IsEmpty())
@@ -850,6 +856,7 @@ STDMETHODIMP_(void) cScriptMan::KillTimedMessage(tScrTimer timer)
 
 STDMETHODIMP_(int) cScriptMan::PumpMessages()
 {
+   ZoneScopedN("Script message pump");
    int             i;
    cMultiParm      reply;
    sScrTimedMsg *  pTimedMsg;
@@ -1291,3 +1298,29 @@ void cScriptMan::ExecuteDeferredActions()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+BOOL cScriptMan::IsModuleLoaded(const char *name) const
+{
+   cFileSpec module(name);
+   module.SetFileExtension("osm");
+   for (int index = 0; index < m_Modules.Size(); ++index)
+   {
+      auto *loaded = m_Modules[index].pModule;
+      if (!loaded || !loaded->GetName())
+         continue;
+      cFileSpec loadedName(loaded->GetName());
+      loadedName.SetFileExtension("osm");
+      if (!stricmp(loadedName.GetFileName(), module.GetFileName()))
+         return TRUE;
+   }
+   return FALSE;
+}
+
+HRESULT ScriptModulePresence(const char *name)
+{
+   if (!name || !name[0])
+      return E_INVALIDARG;
+   if (!g_pScriptMan)
+      return E_FAIL;
+   return g_pScriptMan->IsModuleLoaded(name) ? S_OK : S_FALSE;
+}

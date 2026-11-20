@@ -16,7 +16,7 @@
 #include <aiutils.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cAIMotionAction;
 
@@ -75,7 +75,6 @@ inline void cAIWaitAction::Set(unsigned waitTime)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTWT_H */

@@ -101,6 +101,7 @@
 #include <objtxtrp.h> // for the horror of texture replace
 
 #include <mipmap.h>
+#include <material.h>
 #include <texmem.h>
 #include <rnd.h>
 #include <rand.h>
@@ -399,7 +400,12 @@ static int _texmem_get_align(IRes *pRes)
    pPalRes = IResMan_Bind(pResMan, IRes_GetName(pRes), RESTYPE_PALETTE,
                           NULL, pCanonPath, 0);
 #else // DEEPC
-   pPalRes = IResMan_Bind(pResMan, "full", RESTYPE_PALETTE, NULL, pCanonPath, 0);
+   {
+      const sTextureMaterial *material = ResMaterialGet((grs_bitmap *)IRes_DataPeek(pRes));
+      pPalRes =
+          IResMan_Bind(pResMan, material && material->localPalette ? IRes_GetName(pRes) : "full",
+                       RESTYPE_PALETTE, NULL, pCanonPath, 0);
+   }
 #endif // DEEPC
 
    if (pPalRes) {
@@ -851,6 +857,14 @@ IRes *texmemLoadSingleRes(char *dirname, char *fname, BOOL doMipmap)
 
    pRes = IResMan_Bind(pResMan, fname, RESTYPE_IMAGE, NULL, dirname, 0);
    SafeRelease(pResMan);
+   // Inherit root settings before palette selection and mip generation.
+   if (pRes && ectsAnimLoading)
+   {
+      grs_bitmap *frame = (grs_bitmap *)IRes_Lock(pRes);
+      if (frame)
+         ectsAnimTxtApplyMaterial(frame);
+      IRes_Unlock(pRes);
+   }
    if (pRes)
       if (doMipmap)
       {

@@ -8,6 +8,7 @@
 #define __RES_H
 
 #include <lg.h>
+#include <stdint.h>
 #include <comtools.h>
 #include <prikind.h>
 
@@ -80,11 +81,17 @@ void ResSetFreeCallback(tResFreeCallback *);
 
 //  Each compound resource starts with a Ref Table
 
+#pragma pack(push, 1)
 typedef struct
 {
    RefIndex numRefs;                             // # items in compound resource
-   int32    offset[1];                           // 32-bit on-disk offsets (numRefs + 1 of them)
+   int32_t  offset[1];                           // offset to each item (numRefs + 1 of them)
 } RefTable;
+#pragma pack(pop)
+#ifdef __cplusplus
+static_assert(sizeof(RefTable)==6, "compound resource disk layout");
+#endif
+
 
 void *  RefLock(Ref ref);                        // lock compound res, get ptr to item
 void *  RefLockExact(Ref ref);
@@ -101,7 +108,7 @@ void *     RefExtractPartial(RefTable *prt, Ref ref, void *buff, long size);
 
 int        ResNumRefs(Id id);                           // returns the number of refs in a resource, extracting if necessary.
 
-#define    REFTABLESIZE(numrefs) (sizeof(RefIndex) + (((numrefs)+1) * sizeof(int32)))
+#define    REFTABLESIZE(numrefs) (sizeof(RefIndex) + (((numrefs)+1) * sizeof(int32_t)))
 #define    REFPTR(prt,index) (((uchar *) prt) + prt->offset[index])
 
 #define    RefLockString(ref) ((const char *)RefLock(ref))
@@ -128,7 +135,7 @@ typedef struct
 {
    void *ptr;                                    // ptr to resource in memory, or NULL if on disk
    ulong lock: 8;                                // lock count
-   ulong size: 24;                               // size of resource in bytes (1 Mb max)
+   uint32_t size: 24;                               // size of resource in bytes (1 Mb max)
    ulong offset;                                 // offset in file
 #if 0
    Id next;                                      // next resource in LRU order
@@ -322,18 +329,19 @@ void ResUnmake(Id id);                           // unmake a resource
 
 //  Resource-file disk format:  header, data, dir
 
+#pragma pack(push, 1)
 typedef struct
 {
    char  signature[16];                          // "LG ResFile v2.0\n",
    char  comment[96];                            // user comment, terminated with '\z'
    uchar reserved[12];                           // reserved for future use, must be 0
-   int32 dirOffset;                              // file offset of directory
+   int32_t dirOffset;                              // file offset of directory
 } ResFileHeader;                                 // total 128 bytes (why not?)
 
 typedef struct
 {
    ushort numEntries;                            // # items referred to by directory
-   int32  dataOffset;                            // file offset at which data resides
+   int32_t dataOffset;                            // file offset at which data resides
                                                  // directory entries follow immediately
                                                  // (numEntries of them)
 } ResDirHeader;
@@ -341,12 +349,17 @@ typedef struct
 typedef struct
 {
    Id    id;                                     // resource id (if 0, entry is deleted)
-   ulong size: 24;                               // uncompressed size (size in ram)
-   ulong flags: 8;                               // resource flags (RDF_XXX)
-   ulong csize: 24;                              // compressed size (size on disk)
+   uint32_t size: 24;                               // uncompressed size (size in ram)
+   uint32_t flags: 8;                               // resource flags (RDF_XXX)
+   uint32_t csize: 24;                              // compressed size (size on disk)
                                                  // (this size is valid disk size even if not comp.)
-   int32 type: 8;                                // resource type
+   int32_t type: 8;                                 // resource type
 } ResDirEntry;
+#pragma pack(pop)
+#ifdef __cplusplus
+static_assert(sizeof(ResFileHeader)==128 && sizeof(ResDirHeader)==6 && sizeof(ResDirEntry)==10, "resource disk layout");
+#endif
+
 
 //  Active resource file table
 

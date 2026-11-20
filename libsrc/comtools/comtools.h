@@ -260,11 +260,7 @@ inline BOOL operator!=(const GUID& guidOne, const GUID& guidOther)
 #undef INTERFACE
 
 #ifndef __CGUID_H__
-#if defined(__WATCOMC__)
-EXTERN const IID __cdecl GUID_NULL;
-#else
 EXTERN const IID GUID_NULL;
-#endif
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -709,7 +705,6 @@ typedef unsigned char   tResultCode;
     ((HRESULT) (((unsigned long)(sev)<<31) | ((unsigned long)(fac)<<16) | ((unsigned long)(code))) )
 
 
-
 //
 // The standard headers define IsEqualIID() which returns 0 or 1, but
 // we want also something that is more informative for complex
@@ -796,10 +791,6 @@ enum eCTUnaggregatedFlags
    kCTU_NoSelfDelete = 0x01
 };
 
-#ifdef __WATCOMC__
-extern int g_ComtoolsQuietWatcom_TRUE; // Calms annoying and inescapable warning about expression always being true (toml 02-19-98)
-extern int g_ComtoolsQuietWatcom_FALSE;
-#endif
 
 template <class INTERFACE, const GUID * pIID_INTERFACE, const int FLAGS>
 class cCTUnaggregated : public INTERFACE
@@ -837,11 +828,7 @@ public:
 
       OnFinalRelease();
 
-#ifdef __WATCOMC__
-      if ((!(FLAGS & kCTU_NoSelfDelete) && g_ComtoolsQuietWatcom_TRUE) || g_ComtoolsQuietWatcom_FALSE)
-#else
       if (!(FLAGS & kCTU_NoSelfDelete))
-#endif
          delete this;
 
       return 0;
@@ -895,11 +882,7 @@ public:
 
       OnFinalRelease();
 
-#ifdef __WATCOMC__
-      if ((!(FLAGS & kCTU_NoSelfDelete) && g_ComtoolsQuietWatcom_TRUE) || g_ComtoolsQuietWatcom_FALSE)
-#else
       if (!(FLAGS & kCTU_NoSelfDelete))
-#endif
          delete this;
 
       return 0;

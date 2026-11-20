@@ -750,10 +750,10 @@ HRESULT cObjectSystem::LoadActiveArray(ITagFile* file, eObjPartition partition)
          sObjBounds newBounds = { gMinObjID, gMaxObjID }; 
 
          if (partition & kObjPartAbstract)
-            newBounds.min = std::min(gMinObjID,minobj);
+            newBounds.min = (std::min)(gMinObjID,minobj);
             
          if (partition & kObjPartConcrete)
-            newBounds.max = std::max(gMaxObjID,maxobj);
+            newBounds.max = (std::max)(gMaxObjID,maxobj);
             
          Warning(("Resizing object id bounds to (%d, %d)\n",newBounds.min,newBounds.max)); 
 

@@ -18,6 +18,7 @@
 
 //#define CLSN_COUNT
 
+#include <tracy/Tracy.hpp>
 #include <lg.h>
 
 #include <math.h>
@@ -1893,6 +1894,7 @@ DECLARE_TIMER(UD_UpdateModel, Average);
 
 static void UpdateDynamics(mxs_real dt)
 {
+   ZoneScopedN("Physics dynamics");
    cPhysModel *pModel;
    cPhysModel *pNextModel;
    int  i;
@@ -2297,6 +2299,7 @@ static void UpdateModelControls(cPhysModel * pModel, mxs_real dt)
 
 static void UpdateControls(mxs_real dt)
 {
+   ZoneScopedN("Physics controls");
    cPhysModel *pModel = g_PhysModels.GetFirstMoving();
    cPhysModel *pNextModel;
 
@@ -2380,6 +2383,7 @@ static void CheckModelTerrainCollisions(cPhysModel * pModel, mxs_real t0, mxs_re
 
 static void CheckTerrainCollisions(mxs_real t0, mxs_real dt)
 {
+   ZoneScopedN("Physics terrain collisions");
    cPhysModel *pModel = g_PhysModels.GetFirstMoving();
 
    // iterate over all moveable models
@@ -3591,6 +3595,7 @@ next_coll_obj:
 
 static void CheckObjectCollisions(mxs_real t0, mxs_real dt)
 {
+   ZoneScopedN("Physics object collisions");
    cPhysModel *pModel = g_PhysModels.GetFirstMoving();
 
    // iterate over all moveable models
@@ -6305,6 +6310,7 @@ int clsn_count = 0;
 
 static void ResolveCollisions(mxs_real dt)
 {
+   ZoneScopedN("Physics resolve collisions");
    cPhysClsn * pClsn;
    int i=0;
 
@@ -6357,6 +6363,7 @@ static void ZeroAcceleration(cPhysModel *pModel)
 
 static void StartFrame(mxs_real dt)
 {
+   ZoneScopedN("Physics prepare models");
    int i;
    cPhysModel   *pModel = g_PhysModels.GetFirstMoving();
    cPhysDynData *pDyn;
@@ -6410,6 +6417,7 @@ static void StartFrame(mxs_real dt)
 
 static void UpdatePositions()
 {
+   ZoneScopedN("Physics commit positions");
    cPhysModel   *pModel = g_PhysModels.GetFirstMoving();
    cPhysDynData *pDynamics;
    int i;
@@ -6546,6 +6554,7 @@ static void UpdatePositions()
 
 static void ValidatePositions()
 {
+   ZoneScopedN("Physics validate positions");
    cPhysModel *pModel;
 
    // The player
@@ -6729,6 +6738,7 @@ DECLARE_TIMER(PHYS_UpdatePos, Average);
 
 static void PhysicsFrame(mxs_real dt)
 {
+   ZoneScopedN("Physics step");
    #ifndef SHIP
    if (config_is_defined("SphereCheckSpew") || config_is_defined("PointCheckSpew"))
       mprintf("\n");
@@ -6823,6 +6833,7 @@ static LazyAggMember(INetManager) gpNetMan;
 
 void PhysUpdate(long dt_msec)
 {
+   ZoneScopedN("Physics update");
    AUTO_TIMER(PHYS_Total);
 
    static int accum_ms = 0;

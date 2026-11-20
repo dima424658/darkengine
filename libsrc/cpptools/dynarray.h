@@ -22,11 +22,8 @@
 
 #include <lg.h>
 
-#if defined(__WATCOMC__)
-#pragma warning 549 9
-#endif
 
-#pragma pack(4)
+#pragma pack(push, 4)
 #pragma once
 
 typedef int (*tVoidCompareFunc)(const void * pLeft, const void * pRight);
@@ -875,9 +872,6 @@ inline void DYNARRAY_BASE::AppendMemCpy(const T * p, unsigned nItems)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
-#if defined(__WATCOMC__)
-#endif
+#pragma pack(pop)
 
 #endif /* !__DYNARRAY_H */

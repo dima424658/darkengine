@@ -11,7 +11,7 @@
 //
 
 //
-// Parameter to setdisplay, which means use your existing ddraw guid. 
+// Parameter to setdisplay, which means keep the current display provider.
 //
-DEFINE_LG_GUID(SCRNMAN_PRESERVE_DDRAW, 0x12a);
+DEFINE_LG_GUID(SCRNMAN_PRESERVE_DISPLAY, 0x12a);
 

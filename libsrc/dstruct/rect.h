@@ -147,7 +147,7 @@ int RectClipCode(Rect *prect, Point pt);
 // oh, doug is mocked, you cant cast to a non-scaler type
 
 // take this, note ax and bx passed but use whole thing... oooooh
-__inline Point MakePointInline(ushort x, ushort y)
+static __inline Point MakePointInline(ushort x, ushort y)
 {
    Point point;
    point.x = (short)x;

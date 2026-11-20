@@ -1,0 +1,23 @@
+add_library(dark_lg STATIC
+  appagg.cpp
+  bugtrak.c
+  coremutx.cpp
+  crc32.cpp
+  datapath.cpp
+  dbg.c
+  dbgcfg.c
+  dbgpp.cc
+  dpathdir.c
+  exit.c
+  hashfns.cpp
+  lgassert.cpp
+  lglog.cpp
+  lgprntf.c
+  lgsprntf.c
+  memreq.cpp
+  memstat.c
+  stack.c
+  timings.cpp
+  tmpalloc.c
+)
+dark_configure_library(dark_lg)

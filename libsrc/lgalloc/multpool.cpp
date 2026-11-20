@@ -63,11 +63,7 @@ inline void *operator new(size_t, cPoolAllocator **p)
 // @TBD (toml 03-08-97): make pool arrangements flexible
 //
 
-#if defined(__WATCOMC__)
-    #define GetMPAllocHeader(p) ((tMPAllocHeader *)(p))
-#else
     #define GetMPAllocHeader(p) (reinterpret_cast < tMPAllocHeader * >(p))
-#endif
 
 typedef size_t tMPAllocHeader;
 #define kHeaderSize sizeof(tMPAllocHeader)

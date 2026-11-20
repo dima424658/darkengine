@@ -1,0 +1,40 @@
+#include <SDL3/SDL.h>
+
+#include <lg.h>
+#include <platform_services.h>
+#include <cstdio>
+#include <winui.h>
+
+static BOOL ask_yes_no(const char *message)
+{
+   if(PlatformBatchMode())return PlatformAskYesNo("DromEd confirmation",message);
+   const SDL_MessageBoxButtonData buttons[] = {
+      {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No"},
+      {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes"},
+   };
+   const SDL_MessageBoxData data = {
+      SDL_MESSAGEBOX_INFORMATION,
+      NULL,
+      "DromEd",
+      message ? message : "",
+      2,
+      buttons,
+      NULL,
+   };
+   int selected = 0;
+   if (!SDL_ShowMessageBox(&data, &selected))
+      return FALSE;
+   return selected == 1;
+}
+
+extern "C" BOOL winui_GetYorN(const char *message)
+{
+   return ask_yes_no(message);
+}
+
+extern "C" void winui_Text(const char *message)
+{
+   if(PlatformBatchMode()){std::fprintf(stderr,"DromEd: %s\n",message?message:"");return;}
+   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "DromEd",
+                            message ? message : "", NULL);
+}

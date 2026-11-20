@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/framewrk/dbfile.cpp,v 2.38 2000/03/07 19:57:07 toml Exp $
 
+#include <tracy/Tracy.hpp>
 #include <lg.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,6 +35,7 @@
 
 #include <mprintf.h>
 #include <missiondiag.h>
+#include "dbmod/inspection.hpp"
 #ifdef EDITOR
 #include <brestore.h>
 #endif
@@ -1167,6 +1169,9 @@ cDBFileFactory* dbSetFileFactory(cDBFileFactory* new_factory)
 
 edbFiletype dbSave(const char* filename, edbFiletype filetype)
 {
+   ZoneScopedN("Database save");
+   if (filename)
+      ZoneText(filename, strlen(filename));
    char fullname[256];
    munge_path(fullname,(char*)filename);
 
@@ -1221,6 +1226,9 @@ static find_file_func special_file_find = NULL;
 
 edbFiletype dbLoad(const char* filename, ulong loadtype)
 {
+   ZoneScopedN("Database load");
+   if (filename)
+      ZoneText(filename, strlen(filename));
    char fullname[256];
    const char* name = filename; 
    MissionDiagnosticsBegin(filename);
@@ -1255,6 +1263,24 @@ edbFiletype dbLoad(const char* filename, ulong loadtype)
    }
 
    edbFiletype retval = dbLoadTagFile(file,loadtype); 
+   // Opt-in read-only diagnostic. Normal loads never execute DML patches here.
+   if (retval != 0)
+   {
+      char patch[4096];
+      if (config_get_raw("dbmod_check", patch, sizeof(patch)))
+      {
+         int gamesys = 0;
+         config_get_int("dbmod_check_gamesys", &gamesys);
+         int match = 0;
+         config_get_int("dbmod_check_match", &match);
+         int schema = 0;
+         config_get_int("dbmod_check_schema", &schema);
+         int objects = 0;
+         config_get_int("dbmod_check_objects", &objects);
+         DarkDbMod::InspectPatch(patch, gamesys != 0, gCurrGameFile, match != 0, schema != 0,
+                                objects != 0);
+      }
+   }
    MissionDiagnosticsFinish(retval != 0);
    end_load_transaction();
 
@@ -1271,6 +1297,9 @@ edbFiletype dbMergeLoadTagFile(ITagFile* file, edbFiletype loadtype);
 
 edbFiletype dbMergeLoad(const char* filename, ulong loadtype)
 {
+   ZoneScopedN("Database merge load");
+   if (filename)
+      ZoneText(filename, strlen(filename));
    char fullname[256];
    const char* name = filename; 
    if (!file_factory)

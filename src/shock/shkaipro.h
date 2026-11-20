@@ -16,7 +16,7 @@
 #include <aisndtyp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +68,6 @@ inline cAIProtocolCombat::cAIProtocolCombat():
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIPRO_H */

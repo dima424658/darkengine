@@ -1,0 +1,55 @@
+set(dark_sim_sources
+  avatar.cpp
+  doorphys.cpp
+  doorprop.cpp
+  doorrep.cpp
+  eosapp.c
+  flowarch.cpp
+  ghost.cpp
+  ghosthst.cpp
+  ghostlst.cpp
+  ghostlup.cpp
+  ghostmsg.cpp
+  ghostphy.cpp
+  ghostrcv.cpp
+  ghostshk.cpp
+  ghostsnd.cpp
+  ghostwep.cpp
+  headmove.c
+  objloop.cpp
+  objnet.cpp
+  objpos.cpp
+  objtool.cpp
+  playtest.cpp
+  plyablty.cpp
+  plycbllm.cpp
+  plyrhdlr.cpp
+  plyrloop.cpp
+  plyrmode.cpp
+  plyrmov.cpp
+  plyrvmot.cpp
+  prjctile.cpp
+  room.cpp
+  roomcore.cpp
+  roomeax.cpp
+  roomloop.cpp
+  roompa.cpp
+  roomprop.cpp
+  rooms.cpp
+  roomutil.cpp
+  rpathfnd.cpp
+  rpaths.cpp
+  rportal.cpp
+  simloop.c
+  simman.cpp
+  simstate.c
+  simtime.cpp
+  wrbsp.cpp
+  wrcell.c
+  wrloop.cpp
+)
+
+target_sources(dark_game_core PRIVATE ${dark_sim_sources})
+if(TARGET dark_dromed_core)
+  target_sources(dark_dromed_core PRIVATE ${dark_sim_sources})
+endif()

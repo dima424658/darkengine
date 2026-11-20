@@ -12,7 +12,7 @@
 #include <aicbrbkp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -36,8 +36,7 @@ inline cAIDPCRangedBackup::cAIDPCRangedBackup(cAINewRangedSubcombat* pOwner): cA
 inline const char* cAIDPCRangedBackup::GetName(void) const {return "DPC Backup";}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif // !__DPCAICRB_H
 

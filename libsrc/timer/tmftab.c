@@ -3,9 +3,7 @@
 #include <tmdecl.h>
 #include <tmftab.h>
 
-/* array of pointer to fn, points to tm_ftab_libt or to
-   tm_ftab_AIL or tm_ftab_win32
- */
+/* Timer dispatch table, initialized by the active timer implementation. */
 
 pfv *tm_ftab;
 

@@ -21,7 +21,7 @@
 #include <aiapicmp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 typedef unsigned eAISoundConcept;
 class cTagSet;
@@ -44,6 +44,5 @@ DECLARE_INTERFACE_(IAISoundEnactor, IAIComponent)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 #endif /* !__AIAPISND_H */

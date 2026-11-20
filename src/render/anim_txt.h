@@ -20,6 +20,9 @@ F_DECLARE_INTERFACE(IRes);
 EXTERN int   ectsAnimTxtTime;
 EXTERN BOOL  ectsAnimLoading;
 
+struct grs_bitmap;
+EXTERN void ectsAnimTxtApplyMaterial(struct grs_bitmap *bitmap);
+
 EXTERN BOOL  ectsAnimTxtIgnore(const char *name);
 EXTERN void  ectsAnimTxtCheckLoad(IRes *me, BOOL portal_tmap, char *path, int txt_id);
 EXTERN void *ectsAnimTxtGetFrame(IRes *me);

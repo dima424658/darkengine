@@ -20,7 +20,7 @@
 #include <objtype.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 // The conversation manager
@@ -69,8 +69,7 @@ private:
    cConversationList m_convList; 
    cConversationListenerList m_convListenerList;
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICNVMAN_H */
 

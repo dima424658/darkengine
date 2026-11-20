@@ -13,7 +13,7 @@
 #define __AIPSDSCR_H
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 struct sAIPsdScrAct;
 
@@ -83,7 +83,6 @@ struct sAIPsdScrAct
    { "   Argument 3", kFieldTypeString, FieldLocation(structname, field.args[2])                                                    }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIPSDSCR_H */

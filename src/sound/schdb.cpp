@@ -45,7 +45,6 @@
 
 // Hey, I copied this from lresname.c
 // It should undoubtedly be changed/centralised somewhere.
-#ifndef __WATCOMC__
 # undef NAME_MAX
 # undef PATH_MAX
 # if defined(__OS2__) || defined(__NT__)
@@ -55,7 +54,6 @@
 #   define NAME_MAX	12		/* 8 chars + '.' +  3 chars */
 #   define PATH_MAX	143 /* maximum length of full pathname excl. '\0' */
 # endif
-#endif
 
 static struct sSchemaPlayParams baseSchemaPlayParams = {0, -1, 0, 0, 0};
 

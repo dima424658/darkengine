@@ -12,8 +12,6 @@
 #include <memcore.h>
 #include <multpool.h>
 #include <heap.h>
-#include <dbgalloc.h>
-#include <memtimer.h>
 #include <primallc.h>
 #include <stdalloc.h>
 #include <nullallc.h>
@@ -26,13 +24,9 @@ EXTERN BOOL LGAllocOverride();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef __WATCOMC__
-#pragma initialize 0
-#else
 // under MS, disable normal static construction
 #pragma warning(disable:4075)
 #pragma init_seg ("lgalloc_custom_init")
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 sPlatformMutex g_AllocMutex;
@@ -70,11 +64,6 @@ extern void AllocThreadUnlock(void)
 IAllocator *        g_pMalloc;
 
 #ifndef SHIP
-sAllocLimits *      g_pAllocLimits;
-
-cHeapDebug *        g_pHeapDebug;
-BOOL                g_bAllocDumpLeaks;
-cMemAllocTimer *    g_pMemAllocTimer;
 ///////////////////////////////////////////////////////////////////////////////
 //
 // CLASS: cMemCore
@@ -93,7 +82,6 @@ cMemAllocTimer *    g_pMemAllocTimer;
 // allocated memory
 //
 
-#pragma pack(8)
 class cMemCore
 {
 public:
@@ -114,11 +102,6 @@ public:
         // rest of the executable.
         m_StdAlloc.Init();
         pNext = &m_StdAlloc;
-
-#ifndef SHIP
-        g_pAllocLimits = &m_PrimaryMalloc;
-
-#endif
 
         m_PrimaryMalloc.SetNext(pNext);
         g_pMalloc = &m_PrimaryMalloc;
@@ -141,14 +124,9 @@ public:
     cStdAlloc      m_StdAlloc;
     cHeap          m_Heap;
     cMultiPool     m_MultiPool;
-#ifndef SHIP
-    cMemAllocTimer m_MemAllocTimer;
-    cHeapDebug     m_HeapDebug;
-#endif
     cPrimaryMalloc m_PrimaryMalloc;
 
 };
-#pragma pack()
 
 static cMemCore g_MemCore;
 

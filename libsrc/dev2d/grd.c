@@ -9,9 +9,6 @@
  * This file is part of the dev2d library.
  */
 
-#ifdef __WATCOMC__
-#include <dpmi.h>
-#endif
 
 #include <grs.h>
 
@@ -67,10 +64,6 @@ void (**gdd_canvas_table)();
 /* flag for whether we are executing in an interrupt. */
 bool grd_interrupt=0;
 
-/* global location to store data for dpmi calls */
-#ifdef __WATCOMC__
-dpmis_reg dpmi_reg_data;
-#endif
 
 /* default graphics context */
 grs_context grd_defgc;

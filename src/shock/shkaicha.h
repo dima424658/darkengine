@@ -15,7 +15,7 @@
 #include <aiactloc.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -74,7 +74,6 @@ inline void cAIChargeAction::Set(const cMxsVector & dest, eAITimerPeriod rePathP
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAICHA_H */

@@ -97,14 +97,29 @@ void portal_position_portal_texture(mxs_vector *dest_u, mxs_vector *dest_v,
    mxs_real u_mag, v_mag;
    mxs_vector transformed_anchor;
    r3s_point anchor_point;
+   int major_axis = motion->major_axis;
 
    // So finding the new anchor point and offsets into the texture is
    // a complex and interesting problem.  We'll blow it off and count
    // on the texture mapping to tile from the center point of our
    // rotation.
    transformed_anchor = motion->center;
+   u = transformed_anchor;
+   v = transformed_anchor;
 
-   switch(motion->major_axis)
+   // Legacy saves can contain zero in the axis byte for horizontal water.
+   // Projection along a parallel axis cannot solve the plane equation and
+   // previously left a component of u/v uninitialized. Keep authored axes
+   // when usable, otherwise project along the largest normal component.
+   if (major_axis > MEDIUM_AXIS_Z || plane->normal.el[major_axis] == 0.0f) {
+      major_axis = MEDIUM_AXIS_X;
+      if (fabsf(plane->normal.y) > fabsf(plane->normal.el[major_axis]))
+         major_axis = MEDIUM_AXIS_Y;
+      if (fabsf(plane->normal.z) > fabsf(plane->normal.el[major_axis]))
+         major_axis = MEDIUM_AXIS_Z;
+   }
+
+   switch(major_axis)
    {
       // The u and v vectors are built from scratch in (y, z).  The x
       // coordinate comes from projecting the (y, z) onto the plane.  We

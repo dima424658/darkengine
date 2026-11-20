@@ -1,7 +1,7 @@
 #include <algorithm>
 
 #include <zipstrm.h>
-#include <portableinflate.h>
+#include <zlib.h>
 
 extern "C"
 {
@@ -218,9 +218,21 @@ int ZInflateStreamToMem(IStoreStream* pStream, int nStreamSize, void* pData, int
 		totalReadSize += readSize;
 	}
 
-	const auto actualRead = RawDeflateExpand(inputBuffer, nStreamSize, pData, nSize);
+	int actualRead = -1;
+	z_stream stream{};
+	stream.next_in = inputBuffer;
+	stream.avail_in = static_cast<uInt>(nStreamSize);
+	stream.next_out = static_cast<Bytef*>(pData);
+	stream.avail_out = static_cast<uInt>(nSize);
+	if (inflateInit2(&stream, -15) == Z_OK)
+	{
+		const auto result = inflate(&stream, Z_FINISH);
+		if (result == Z_STREAM_END)
+			actualRead = static_cast<int>(stream.total_out);
+		inflateEnd(&stream);
+	}
 	Free(inputBuffer);
-	return static_cast<int>(actualRead);
+	return actualRead;
 }
 
 ///////////////////////////////////////
@@ -256,7 +268,7 @@ BOOL cZipStream::Open()
 			nRealSize = PkExplodeStreamToMem(pRealStream, m_pData, 0, m_pInfo->m_nUncompressedSize);
 
 		if (nRealSize != m_pInfo->m_nUncompressedSize)
-			CriticalMsg2("Zip stream: expected size of %ld, got %ld", m_pInfo->m_nUncompressedSize, nRealSize);
+			CriticalMsg2("Zip stream: expected size of %u, got %d", m_pInfo->m_nUncompressedSize, nRealSize);
 	}
 	else
 	{

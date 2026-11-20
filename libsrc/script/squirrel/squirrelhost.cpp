@@ -8,7 +8,7 @@
 
 #include <appagg.h>
 #include <scrptsrv.h>
-#include "../../../src/framewrk/contentctx.h"
+#include <contentctx.h>
 #include <aiscrm.h>
 #include <aiscrptapi.h>
 #include <antxscpt.h>
@@ -53,7 +53,7 @@
 #include <traitman.h>
 #include <twqscrpt.h>
 #include <weapscpt.h>
-#include "../../../src/physics/phscrpt.h"
+#include <phscrpt.h>
 #include <2d.h>
 #include <fcolor.h>
 #include <grscale.h>
@@ -73,7 +73,6 @@
 // The historical script project is compiled with /Zp1 for Dark's persisted
 // and COM-facing structures.  Squirrel's public value types contain native
 // pointers and must retain their normal alignment, especially on x64.
-#pragma pack(push, 8)
 
 #include <squirrel.h>
 #include <sqstdaux.h>
@@ -1977,7 +1976,7 @@ static SQInteger CallListener(HSQUIRRELVM vm, const char* method)
       }
 
       AutoAppIPtr(LinkManager);
-      IRelation* relation = pLinkManager ?
+      IRelation* relation = pLinkManager != NULL ?
          pLinkManager->GetRelation(flavor) : NULL;
       if (!relation || relation->GetID() == RELID_NULL)
       {
@@ -3729,7 +3728,6 @@ STDMETHODIMP cNativeSquirrelScript::ReceiveMessage(sScrMsg* message,
 
 } // namespace
 
-#pragma pack(pop)
 
 BOOL CreateSquirrelScriptModule(const char* moduleName,
                                 IScriptMan* scriptManager,

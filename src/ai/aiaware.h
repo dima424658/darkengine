@@ -19,7 +19,7 @@
 F_DECLARE_INTERFACE(IRelation);
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -203,7 +203,6 @@ inline const sAIAwareness * AINullAware(ObjID object)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIAWARE_H */

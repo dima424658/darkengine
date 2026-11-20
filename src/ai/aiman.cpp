@@ -11,6 +11,7 @@
 // #define PROFILE_ON 1
 
 
+#include <tracy/Tracy.hpp>
 #include <lg.h>
 #include <mprintf.h>
 #include <hashpp.h>
@@ -1024,6 +1025,7 @@ DECLARE_TIMER(AI_AIMAN_ONF_Post, Average);
 
 void cAIManager::OnNormalFrame()
 {
+   ZoneScopedN("AI frame");
    int i;
 
    if (!SimStateCheckFlags(kSimAI))
@@ -1035,6 +1037,7 @@ void cAIManager::OnNormalFrame()
 #endif
 
    AUTO_TIMER(AI_AIMAN_ONF);
+   TracyPlot("AI agents", static_cast<int64_t>(m_AIs.Size()));
 
    if (!PreFrameValidate())
       return;
@@ -1048,6 +1051,7 @@ void cAIManager::OnNormalFrame()
    //if (g_AIVisUpdateTimer.Expired())
    {
    
+      ZoneScopedN("AI player visibility");
       TIMER_Start(AI_AIMAN_ONF_Visibility);
 
       AutoAppIPtr(AINetServices);
@@ -1127,6 +1131,7 @@ void cAIManager::OnNormalFrame()
 
 void cAIManager::ScheduledNormalFrame()
 {
+   ZoneScopedN("AI scheduling");
    int i;
 
    TIMER_Start(AI_AIMAN_ONF_Schedule);

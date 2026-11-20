@@ -1,0 +1,6 @@
+add_executable(movie_test main.cpp)
+get_target_property(movie_test_libraries thief2 LINK_LIBRARIES)
+target_link_libraries(movie_test PRIVATE ${movie_test_libraries})
+if(APPLE)
+  target_link_options(movie_test PRIVATE -Wl,-no_fixup_chains)
+endif()

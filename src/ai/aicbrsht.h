@@ -17,7 +17,7 @@
 #include <fix.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -64,8 +64,7 @@ inline eAIRangedModeID cAIRangedShoot::GetModeID(void) const {return kAIRC_Shoot
 inline const char* cAIRangedShoot::GetName(void) const {return "Shoot";}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRSHT_H */
 

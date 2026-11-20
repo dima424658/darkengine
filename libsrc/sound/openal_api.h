@@ -53,6 +53,9 @@ struct ALCcontext;
 
 #define ALC_FALSE 0
 #define ALC_MAX_AUXILIARY_SENDS 0x20003
+#define ALC_OUTPUT_MODE_SOFT 0x19AC
+#define ALC_MONO_SOFT 0x1500
+#define ALC_STEREO_SOFT 0x1501
 
 #define AL_EFFECT_TYPE 0x8001
 #define AL_EFFECT_REVERB 0x0001
@@ -79,6 +82,7 @@ struct ALCcontext;
 
 typedef struct sOpenALApi
 {
+   void (*alcGetIntegerv)(ALCdevice *, ALCenum, ALCsizei, ALCint *);
    ALCdevice *(*alcOpenDevice)(const ALCchar *);
    ALCboolean (*alcCloseDevice)(ALCdevice *);
    ALCcontext *(*alcCreateContext)(ALCdevice *, const ALCint *);

@@ -42,6 +42,7 @@
 #include <edittool.h>
 
 #include <command.h>
+#include <keycmd.h>
 
 #include <ctype.h>
 #include <string.h>
@@ -49,8 +50,6 @@
 #include <iobjed.h>
 #include <lnktrait.h>
 
-#include <dialogs.h>
-#include <gen_bind.h>
 
 #include <dbmem.h>
 

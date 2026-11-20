@@ -102,6 +102,40 @@ STDMETHODIMP_(eSndError) cALSndMixer::Init(sSndSetup *, uint32 channels,
    mContext = mAL.alcCreateContext(mDevice, effectAttributes);
    if (mContext == NULL)
       mContext = mAL.alcCreateContext(mDevice, NULL);
+#if defined(__linux__) && !defined(__ANDROID__)
+   // PipeWire Pro Audio devices can expose a stereo DAC as AUX0/AUX1.
+   // OpenAL Soft then chooses a mono decoder, collapsing all spatial cues.
+   // Retry with stereo only when auto-detection selected mono; retain surround
+   // and headphone modes, and fall back if the explicit request is rejected.
+   if (mContext != NULL &&
+       mAL.alcIsExtensionPresent(mDevice, "ALC_SOFT_output_mode"))
+   {
+      ALCint outputMode = 0;
+      mAL.alcGetIntegerv(mDevice, ALC_OUTPUT_MODE_SOFT, 1, &outputMode);
+      if (outputMode == ALC_MONO_SOFT)
+      {
+         mAL.alcDestroyContext(mContext);
+         const ALCint stereoAttributes[] = {
+            ALC_OUTPUT_MODE_SOFT, ALC_STEREO_SOFT,
+            ALC_MAX_AUXILIARY_SENDS, 1, 0 };
+         mContext = mAL.alcCreateContext(mDevice, stereoAttributes);
+         if (mContext == NULL)
+         {
+            const ALCint stereoOnly[] = {
+               ALC_OUTPUT_MODE_SOFT, ALC_STEREO_SOFT, 0 };
+            mContext = mAL.alcCreateContext(mDevice, stereoOnly);
+         }
+         if (mContext == NULL)
+            mContext = mAL.alcCreateContext(mDevice, NULL);
+         if (mContext != NULL)
+         {
+            mAL.alcGetIntegerv(mDevice, ALC_OUTPUT_MODE_SOFT, 1, &outputMode);
+            mprintf("OpenAL: mono output detected; stereo retry %s\n",
+               outputMode == ALC_MONO_SOFT ? "remained mono" : "enabled spatial output");
+         }
+      }
+   }
+#endif
    if (mContext == NULL || !MakeCurrent())
    {
       mprintf("OpenAL: unable to create a playback context; audio is disabled\n");
@@ -129,8 +163,6 @@ STDMETHODIMP_(eSndError) cALSndMixer::Init(sSndSetup *, uint32 channels,
    mGroupFadesActive = FALSE;
    mMasterVolume = 0;
    mTimerState = eSndTimerUnknown;
-   InitPlatformState();
-
    mAL.alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
    Set3DPosition(&m3DPosition);
    Set3DOrientation(&m3DFrontVector, &m3DTopVector);

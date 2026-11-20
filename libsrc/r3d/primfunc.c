@@ -34,7 +34,7 @@ static int (*prim_point_func)(r3s_phandle p);
 static poly_setup_func *poly_setup_funcs;
 static int (*convert_func)(int n, r3s_phandle *vl);
 
-// use this to setup alternative drivers (like d3d, for example)
+// Use this to set up an alternative primitive driver.
 void r3_setup_prim_funcs(
    poly_setup_func *setup_func_list,
    int (*convert)(int n, r3s_phandle *vl),

@@ -42,6 +42,8 @@
 
 %{
 
+extern int songyylex(void);
+
 #include <mprintf.h>
 #include <song.h>
 #include <stdio.h>
@@ -108,7 +110,7 @@ song: SONG ID declarations onevents sections
 
          /* Error on string too long. */
          if (_StringLengthErrorCheck ($2))
-            SONGYYABORT;
+            YYABORT;
 
          ISong_GetSongInfo (sgpCurrSong, &songInfo);
          strcpy (songInfo.id, $2);
@@ -117,12 +119,12 @@ song: SONG ID declarations onevents sections
 |     SONG error
       {
          songyyerror ("Song parsing failure.  Aborting.");
-         SONGYYABORT;
+         YYABORT;
       }
 |     error
       {
          songyyerror ("File parsing failure.  Aborting.");
-         SONGYYABORT;
+         YYABORT;
       }
 ;
 
@@ -133,7 +135,7 @@ declaresections: DECLARESECTIONS sectiondeclarationlist
 |     DECLARESECTIONS error
       {
          songyyerror ("DeclareSections parsing failure.  Aborting.");
-         SONGYYABORT;
+         YYABORT;
       }
 ;
 
@@ -148,7 +150,7 @@ sectiondeclaration: ID
 
          /* Error on string too long */
          if (_StringLengthErrorCheck ($1))
-            SONGYYABORT;
+            YYABORT;
 
          /* Create a new section and place it in the song.  It is a placeholder to
           * match up against later when a section is actually defined. */
@@ -175,7 +177,7 @@ section: SECTION ID sectionoptions samplesorsilence onevents
          /* Set the ID */
          /* Error on string too long. */
          if (_StringLengthErrorCheck ($2))
-            SONGYYABORT;
+            YYABORT;
 
          ISongSection_GetSectionInfo (sgpCurrSection, &sectionInfo);
          strcpy (sectionInfo.id, $2);
@@ -187,7 +189,7 @@ section: SECTION ID sectionoptions samplesorsilence onevents
          if (index == -1)
          {
             songyyerror("Section not declared.");
-            SONGYYABORT;
+            YYABORT;
          }
 
          /* Assign the section. */
@@ -200,7 +202,7 @@ section: SECTION ID sectionoptions samplesorsilence onevents
 |        SECTION error
       {
          songyyerror ("Section parsing failure.  Aborting.");
-         SONGYYABORT;
+         YYABORT;
       }
 ;
 
@@ -248,7 +250,7 @@ sample: SAMPLE QSTRING /* sampleoptions */
 
          /* Error on string too long. */
          if (_StringLengthErrorCheck ($2))
-            SONGYYABORT;
+            YYABORT;
 
          ISongSample_GetSampleInfo (sgpCurrSample, &sampleInfo);
          strcpy (sampleInfo.name, $2);
@@ -264,7 +266,7 @@ sample: SAMPLE QSTRING /* sampleoptions */
 |       SAMPLE error
       {
          songyyerror ("Sample parsing error.  Aborting.");
-         SONGYYABORT;
+         YYABORT;
       }
 ;
 
@@ -315,7 +317,7 @@ onevent: ONEVENT QSTRING oneventoptions gotosections
 
          /* Error on string too long. */
          if (_StringLengthErrorCheck ($2))
-            SONGYYABORT;
+            YYABORT;
 
          /* Set the event string */
          ISongEvent_GetEventInfo (sgpCurrEvent, &eventInfo);
@@ -335,7 +337,7 @@ onevent: ONEVENT QSTRING oneventoptions gotosections
 |        ONEVENT error
       {
          songyyerror ("Event parsing failure.  Aborting.");
-         SONGYYABORT;
+         YYABORT;
       }
 ;
 
@@ -361,14 +363,14 @@ gotosection: GOTOSECTION ID probability
 
          /* Error on string too long. */
          if (_StringLengthErrorCheck ($2))
-            SONGYYABORT;
+            YYABORT;
          
          /* Match the goto's ID with declared ones and add to the event. */
          index = _FindSectionIndexFromID (sgpCurrSong, $2);
          if (index == -1)
          {
             songyyerror ("Section undeclared.");
-            SONGYYABORT;
+            YYABORT;
          }
 
          /* Set the info. */
@@ -408,13 +410,13 @@ gotosection: GOTOSECTION ID probability
 |            GOTOSECTION error
       {
          songyyerror ("GotoSection parsing failure.  Aborting.");
-         SONGYYABORT;
+         YYABORT;
       }
 |
              GOTOEND error
       {
          songyyerror ("GotoEnd parsing failure. Aborting.");
-         SONGYYABORT;
+         YYABORT;
       }
 ;
 

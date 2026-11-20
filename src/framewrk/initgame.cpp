@@ -14,6 +14,7 @@
 #include <loopapi.h>
 #include <config.h>
 #include <stdlib.h>
+#include <mprintf.h>
 
 #include <init.h>
 #include <gamemode.h>
@@ -33,9 +34,6 @@
 #include <dbmem.h>
 
 // huh?
-#ifdef __WATCOMC__
-#pragma warning 555 9
-#endif
 
 ////////////////////////////////////////////////////////////
 // EDITOR INITIALIZATION
@@ -54,7 +52,6 @@
 // pending.
 // The application uses this to call the COM "Create" functions
 //
-
 
 
 tResult LGAPI AppCreateObjects(int argc, const char *argv[])
@@ -112,7 +109,13 @@ tResult LGAPI AppInit()
    char buf[260];
    const char *load_var = quickstart ? "quickstart" : "file";
    if (config_get_raw(load_var,buf,sizeof(buf)))
-      dbLoad(buf,kFiletypeAll);
+   {
+      if (dbLoad(buf,kFiletypeAll) == 0)
+      {
+         mprintf("Unable to load mission '%s' (%s).\n",buf,load_var);
+         return E_FAIL;
+      }
+   }
    else if (!DarkContentShowPicker())
       dbBuildDefault();
 

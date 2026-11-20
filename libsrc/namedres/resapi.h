@@ -62,7 +62,7 @@
 #include <datasrc.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 F_DECLARE_INTERFACE(IResMan);
 F_DECLARE_INTERFACE(IResStats);
@@ -1091,7 +1091,6 @@ DECLARE_INTERFACE_(IResMemOverride, IUnknown)
 #define IResMemOverride_ResGetSize(p, a) COMCall1(p, ResGetSize, a)
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__RESAPI_H */

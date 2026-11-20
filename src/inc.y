@@ -15,6 +15,8 @@
 %token <strval> IDENT
 
 %{
+
+extern int inclex(void);
 #include <stdio.h>
 #include <config.h>
 #include <cfgdbg.h>

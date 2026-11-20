@@ -414,36 +414,6 @@ bool config_write_to_same_file( char* filename, char* var )
 }
 
 
-#ifdef NEED_CHANGE_DRIVE
-#define DRIVE_TO_DRNUM(x)  (toupper(*(x)) - 'A' + 1)
-
-#define DRIVE_CHAR ':'
-
-void _change_dir(char* path)
-{
-   uint drnum = 0;
-   char* colon;
-   while(isspace(*path)) path++;
-
-   colon = strchr(path,DRIVE_CHAR);
-   if (colon != NULL)
-   {
-      *colon = '\0';
-      drnum = DRIVE_TO_DRNUM(path);
-      *colon = DRIVE_CHAR;
-      colon++;
-   }
-   else
-      colon = path;
-   _chdir(path);
-   if (drnum > 0)
-   {
-      uint tot;
-      _dos_setdrive(drnum,&tot);
-   }
-}
-#endif // NEED_CHANGE_DRIVE
-
 errtype config_write_file(const char* in,writefunc writable)
 {
    errtype err;

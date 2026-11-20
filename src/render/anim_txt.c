@@ -28,6 +28,7 @@
 #include <textarch.h>
 
 #include <anim_txt.h>
+#include <material.h>
 
 #include <_animtxt.h>
 
@@ -44,6 +45,13 @@
 // set a flag in the user data
                 
 BOOL ectsAnimLoading=FALSE;
+static grs_bitmap *material_root = NULL;
+
+void ectsAnimTxtApplyMaterial(grs_bitmap *bitmap)
+{
+   if (ectsAnimLoading && material_root)
+      ResMaterialClone(material_root, bitmap);
+}
 
 // @TBD: This method is now obsolete, and being kept only because lresname
 // depends on it. Kill it when we kill lresname
@@ -156,7 +164,22 @@ static void ectsAnimConfigure(ectsAnimInfo *us)
    static sAnimTexProp defprop = { DEF_RATE, DEF_FLAG }; 
    sAnimTexProp* prop = &defprop;
    PROPERTY_GET(gpAnimProp,GetResTextureObj(us->frame_hnd[0]),&prop);
-   us->rate=prop->rate;
+   {
+      grs_bitmap *bitmap = (grs_bitmap *)IRes_DataPeek(us->frame_hnd[0]);
+      const sTextureMaterial *material = ResMaterialGet(bitmap);
+      BOOL has_property = prop != &defprop;
+      static sAnimTexProp authored;
+      if (material && (!has_property || material->forceAnimation == 1))
+      {
+         authored = *prop;
+         if (material->animationRate > 0)
+            authored.rate = material->animationRate;
+         if (material->animationMode >= 0)
+            authored.flags = material->animationMode;
+         prop = &authored;
+      }
+   }
+   us->rate = prop->rate > 0 ? prop->rate : DEF_RATE;
    us->flags &= FLAGS_RUNTIME; 
    us->flags|=prop->flags;
    us->flags &= ~FLAG_CONFIGURE_ME; 
@@ -169,7 +192,15 @@ BOOL ectsAnimRefresh(IRes *pRes, sAnimTexProp *newvals)
    if (!pRes) return FALSE;
    animData = GetResAnimData(pRes);
    if (!animData) return FALSE;
-   animData->rate=newvals->rate;
+   {
+      const sTextureMaterial *material = ResMaterialGet((grs_bitmap *)IRes_DataPeek(pRes));
+      if (material && material->forceAnimation == 1)
+      {
+         ectsAnimConfigure(animData);
+         return TRUE;
+      }
+   }
+   animData->rate = newvals->rate > 0 ? newvals->rate : DEF_RATE;
    animData->flags=(animData->flags&FLAGS_RUNTIME)|(newvals->flags&FLAGS_PROP);
    animData->flags &= ~FLAG_CONFIGURE_ME; 
    return TRUE;
@@ -203,16 +234,22 @@ void  ectsAnimTxtCheckLoad(IRes *me, BOOL portal_tmap, char *path, int txt_id)
    {
       int frame_idx=1, old_cback_idx=texmem_callback_idx, base_align;
       IRes *nxt_frame;
+      const sTextureMaterial *material = ResMaterialGet((grs_bitmap *)IRes_DataPeek(me));
+      int max_frames = MAX_FRAMES;
+      if (material && material->animationFrames > 0 && material->animationFrames < max_frames)
+         max_frames = material->animationFrames;
 
       // GROSS only use _ at end if !txt_id hacks
       if (txt_id==0 && (name[strlen(name)-1]!='_'))
          return;
       if (name[strlen(name)-1]=='_')
          name[strlen(name)-1]='\0';
+      material_root = (grs_bitmap *)IRes_DataPeek(me);
       ectsAnimLoading=TRUE;
       texmem_callback_idx=TEXMEM_NO_HND;  // make sure we are at NO_HND
       // Note that it's okay to not find nxt_frame; we don't complain...
-      nxt_frame=ectsAnimSearchForFrame(name,frame_idx,path,portal_tmap);
+      nxt_frame =
+          max_frames > 1 ? ectsAnimSearchForFrame(name, frame_idx, path, portal_tmap) : NULL;
       if (nxt_frame)
       {
          // 16 bit horror
@@ -231,8 +268,8 @@ void  ectsAnimTxtCheckLoad(IRes *me, BOOL portal_tmap, char *path, int txt_id)
          animData->flags = 0; 
          animData->frame_hnd[0]=me;
          animData->frame_hnd[frame_idx++]=nxt_frame;
-         while (frame_idx < MAX_FRAMES &&
-                (nxt_frame=ectsAnimSearchForFrame(name,frame_idx,path,portal_tmap))!=NULL)
+         while (frame_idx < max_frames &&
+                (nxt_frame = ectsAnimSearchForFrame(name, frame_idx, path, portal_tmap)) != NULL)
          {
             animData->frame_hnd[frame_idx++]=nxt_frame;
             if (!portal_tmap)
@@ -250,6 +287,22 @@ void  ectsAnimTxtCheckLoad(IRes *me, BOOL portal_tmap, char *path, int txt_id)
             }
          }
          optConfigSpew("anim_txt_load",("- found %d frames\n",frame_idx));
+         {
+            int f;
+            grs_bitmap *root = (grs_bitmap *)IRes_DataPeek(me);
+            for (f = 1; f < frame_idx; ++f)
+            {
+               grs_bitmap *frame = (grs_bitmap *)IRes_DataPeek(animData->frame_hnd[f]);
+               grs_bitmap *level = frame;
+               do
+               {
+                  ResMaterialClone(root, level);
+                  if (!portal_tmap)
+                     break;
+                  ++level;
+               } while (level->w);
+            }
+         }
          animData->cnt=frame_idx;
          animData->lock_cnt=1;
          animData->cur=0;
@@ -267,6 +320,7 @@ void  ectsAnimTxtCheckLoad(IRes *me, BOOL portal_tmap, char *path, int txt_id)
             add_to_secret_list(me);
       }
       ectsAnimLoading=FALSE;
+      material_root = NULL;
       texmem_callback_idx=old_cback_idx;
    }
 }

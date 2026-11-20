@@ -19,7 +19,7 @@
 #include <aiapiatr.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class cAIActions;
 struct sAIModeSuggestion;
@@ -72,7 +72,6 @@ DECLARE_INTERFACE_(IAIAbility, IAIActor)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIAPIABL_H */

@@ -27,10 +27,7 @@
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined (__WATCOMC__)
-    #define snprintf    _bprintf
-    #define vsnprintf   _vbprintf
-#elif defined (__SC__) || defined (_MSC_VER)
+#if defined (__SC__) || defined (_MSC_VER)
     #define snprintf    _snprintf
     #define vsnprintf   _vsnprintf
 #endif
@@ -638,7 +635,6 @@ void cAnsiStr::Trim()
 
         }
     }
-
 
 
 //

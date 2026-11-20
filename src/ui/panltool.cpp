@@ -162,7 +162,6 @@ STDMETHODIMP_(eLoopMessageResult) cMovieClient::ReceiveMessage(eLoopMessage msg,
          {
             metaSndExitPanel(TRUE);
             volume = SFX_GetMasterVolume();
-            SFXClose();
          }
 
          // Movie volume factor:
@@ -198,7 +197,6 @@ STDMETHODIMP_(eLoopMessageResult) cMovieClient::ReceiveMessage(eLoopMessage msg,
          if (sound)
          {
             metaSndEnterPanel(kMetaSndPanelLast);
-            SFXInit();
          }
       }
       break; 

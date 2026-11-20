@@ -19,7 +19,7 @@
 
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -127,8 +127,7 @@ inline BOOL cAIAttackRangedAction::DoLeadTarget() const
    AssertMsg(m_pLaunchAction, "Attempt to get target leading status with null launch action");
    return m_pLaunchAction->DoLeadTarget();
 }
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AIACTRNG_H */
 

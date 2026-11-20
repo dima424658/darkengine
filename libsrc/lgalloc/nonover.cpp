@@ -7,7 +7,6 @@
 // Default, non override versions of functions
 
 #include <stdlib.h>
-#include <mallocdb.h>
 
 #pragma code_seg("lgalloc")
 
@@ -15,20 +14,3 @@ EXTERN BOOL LGAllocOverride()
 {
    return FALSE;
 }
-
-#ifndef SHIP
-void * malloc_db(size_t size, const char *, int)
-{
-    return malloc(size);
-}
-
-void free_db(void * p, const char *, int)
-{
-    free(p);
-}
-
-void * realloc_db(void * p, size_t size, const char *, int)
-{
-    return realloc(p, size);
-}
-#endif

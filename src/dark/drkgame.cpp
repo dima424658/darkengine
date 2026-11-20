@@ -151,7 +151,7 @@
 #include <propbase.h>
 #include <plycbllm.h>
 #include <anim_txt.h>
-#include "../../libsrc/script/squirrel/squirrelhost.h"
+#include <squirrelhost.h>
 
 #ifdef NEW_NETWORK_ENABLED
 #include <netman.h>
@@ -1448,8 +1448,10 @@ void dark_init_game(void)
    DarkBookInit(); 
    DarkVoiceOverInit(); 
    DarkMenusInit(); 
+#ifndef EDITOR
    if (DarkContentShowPicker())
       gPrimordialMode = (sLoopInstantiator*)DescribeContentMenuMode();
+#endif
    DarkSaveGameInit(); 
    DarkSaveInitUI();
    DarkReportInit();

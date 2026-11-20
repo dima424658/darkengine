@@ -18,6 +18,7 @@
 #endif
 
 #include <mipmap.h>
+#include <material.h>
 #include <palmgr.h>
 
 #include <mprintf.h>
@@ -213,8 +214,10 @@ r3s_texture create_mipmapped_texture(grs_bitmap *src_orig)
    // The legacy downsampler is palette based. True-colour replacement art
    // still needs a correctly sized base texture, but cannot use that indexed
    // mip generator.
-   if (src->type == BMT_FLAT8 && mipmap_enable && tmap_ipal &&
-       !(src->flags & BMF_TRANS)) {
+   if (src->type == BMT_FLAT8 && mipmap_enable &&
+       !(ResMaterialGet(src_orig) && ResMaterialGet(src_orig)->noMipmap == 1) && tmap_ipal &&
+       !(src->flags & BMF_TRANS))
+   {
 #ifdef LIGHT_MAP
       while (src->w > (4 << n) && src->h > (4 << n))
 #else
@@ -274,6 +277,11 @@ r3s_texture create_mipmapped_texture(grs_bitmap *src_orig)
       mm_downsample(&tmap[i], &tmap[i-1]);
    }
 
+   for (i = 0; i < n; ++i)
+   {
+      ResMaterialClone(src_orig, &tmap[i]);
+      ResMaterialSetTerrain(&tmap[i], src_orig);
+   }
    return tmap;
 }
 
@@ -294,5 +302,7 @@ void free_mipmapped_texture(r3s_texture dest, bool free_rect)
       }
    }
 
+   for (temp = dest; temp->w; ++temp)
+      ResMaterialForget(temp);
    Free(dest);
 }

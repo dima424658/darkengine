@@ -16,7 +16,7 @@
 #include <aicbrmod.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -45,8 +45,7 @@ inline eAIRangedModeID cAIRangedVantage::GetModeID(void) const {return kAIRC_Van
 inline const char* GetName(void) const {return "Vantage";}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBRVAN_H */
 

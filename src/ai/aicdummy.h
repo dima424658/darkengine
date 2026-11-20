@@ -14,7 +14,7 @@
 #include <ainoncbt.h>
 #include <aiutils.h>
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 // create the properties needed for CombatDummies
 BOOL AIInitCombatDummyAbility(IAIManager *);
@@ -53,7 +53,6 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICDUMMY_H */

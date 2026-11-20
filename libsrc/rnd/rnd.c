@@ -125,8 +125,6 @@
 
 //	For gruesome interrupt routines, let 'em have their way:
 
-#ifdef __WATCOMC__
-#endif
 
 // RndSeed() seeds a random stream
 void RndSeed(RndStream *prs, ulong seed)

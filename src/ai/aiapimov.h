@@ -20,7 +20,7 @@
 #include <aiapicmp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 class IMotor;
 
@@ -178,8 +178,7 @@ DECLARE_INTERFACE_(IAIMoveRegulator, IAIComponent)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 #endif /* !__AIAPIMOV_H */
 
 

@@ -18,7 +18,7 @@
 #include <shkaircp.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -79,8 +79,7 @@ private:
    ObjID m_selectedProjID;
    sAIProjectileRel* m_pSelectedProjData;
 };
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__SHKAIRCA_H */
 

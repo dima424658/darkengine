@@ -15,7 +15,7 @@
 #include <aimultcb.h>
 
 #pragma once
-#pragma pack(4)
+#pragma pack(push, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -215,8 +215,7 @@ inline cAICombatRanged::cAICombatRanged()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#pragma pack()
+#pragma pack(pop)
 
 #endif /* !__AICBTRNG_H */
 

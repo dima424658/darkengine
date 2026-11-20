@@ -242,7 +242,7 @@ float uiGameGetLogicalTextScale(void)
 
    if (logical_width > 0 && logical_height > 0)
    {
-      if (RenderBackendGetSettledClientSize(&client_width, &client_height) &&
+      if (RenderBackendGetClientSize(&client_width, &client_height) &&
           client_width > 0 && client_height > 0)
       {
          const float scale_x = (float)client_width / logical_width;
