@@ -9,6 +9,15 @@ services are supplied by platform backends. The engine experimentally
 implements many of the anonymously created but closed-source NewDark
 extensions.
 
+The desktop game runner is now fairly stable and has been tested on Windows,
+Linux, and macOS. Compatibility still varies by mission and script module;
+Android and DromEd remain under active development.
+
+The [NewDark compatibility plan](docs/newdark-compatibility-plan.md),
+[feature matrix](docs/newdark-compatibility-matrix.md), and
+[script contracts](docs/newdark-script-contracts.md) track the remaining work
+and distinguish implemented features from verified compatibility.
+
 The repository does not include retail missions, movies, sounds, scripts, or
 other game assets. A legally obtained installation of *Thief: The Dark
 Project*, *Thief Gold*, or *Thief II: The Metal Age* is required.
@@ -67,7 +76,7 @@ repository.
 
 | Capability | Windows x86 | Windows x64 | macOS | Linux x64 | Android ARM64 |
 | --- | --- | --- | --- | --- | --- |
-| Thief 2 | Playable | Playable; broader validation ongoing | Build target; runtime unvalidated | Playable early port | Playable early port |
+| Thief 2 | Playable | Playable; broader validation ongoing | Playable; runtime tested | Playable; runtime tested | Playable early port |
 | Thief Gold/TDP | Playable; less stable than Thief 2 | Playable; less stable than Thief 2 | Build target; runtime unvalidated | Playable early port; less stable than Thief 2 | Playable early port; less stable than Thief 2 |
 | Thief FMs | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP | Build target; runtime unvalidated | Playable subset; less stable than Gold/TDP | Playable subset; less stable than Gold/TDP |
 | System Shock 2 | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available | Unsupported; source available |
@@ -91,9 +100,9 @@ The x86 builds are the established target; native x64 builds compile and run
 but remain under active runtime validation. In particular, x64 relies on the
 IA-32 interpreter and service bridge for 32-bit mission `.osm` binaries, while
 many NewDark FMs rely on the newer Squirrel provider. Both compatibility
-layers need broader mission coverage. macOS is an early port with limited runtime
-validation. The Linux CMake target builds a native 64-bit ELF executable that
-can load retail missions and run gameplay.
+layers need broader mission coverage. Windows, Linux, and macOS have been
+tested in gameplay; this does not establish compatibility with every mission
+or fan mission. The Linux CMake target builds a native 64-bit ELF executable.
 
 The game runner retains mission loading, the game UI, inventory, automap, and
 the in-game command console. On Windows it also retains the normal startup and
@@ -105,7 +114,7 @@ supported.
 
 ### Mission compatibility and goals
 
-`ThiefRunner.exe` replaces the retail `Thief2.exe`. It is more than a straight
+`thief-runner.exe` replaces the retail `Thief2.exe`. It is more than a straight
 port: the same runner supports all three Thief releases and selected NewDark
 content, while continuing to read an existing installation in place. It is
 not a complete NewDark implementation. Compatibility currently breaks down as
@@ -204,7 +213,7 @@ The runner currently provides:
   for the supplied Windows presets.
 - CMake 4.2 or later for those presets, MSYS2 Bash and Make, and the Vulkan SDK
   (including `glslc`).
-- Bison 2.3 or later on the build host (`bison` or `win_bison` on `PATH`).
+- Bison 3.0 or later on the build host (`bison` or `win_bison` on `PATH`).
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
 
@@ -230,7 +239,11 @@ cmake --build build-win64 --config Release --target thief2 dromed
 
 SDL3, zlib, libpng, Squirrel, libogg, libvorbis, FFmpeg, and the PKWARE DCL
 decoder are built statically from pinned submodules. Install the Vulkan SDK
-separately; CMake uses its Vulkan package and `glslc` shader compiler.
+separately; CMake uses its Vulkan package and `glslc` shader compiler. vcpkg is
+not required. FFmpeg is compiled with MSVC; MSYS2 supplies its shell utilities
+and GNU Make, so keep `C:\msys64\usr\bin` on `PATH` during both configuration
+and builds. If Bison is not detected, pass
+`-DBISON_EXECUTABLE=C:/path/to/win_bison.exe` when configuring.
 
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
 SDL3 is linked statically into both executables.
@@ -247,7 +260,7 @@ selected:
 
 ```powershell
 Set-Location 'C:\Games\Thief Gold'
-& 'C:\src\darkengine\build\Release\Win32\ThiefRunner\ThiefRunner.exe'
+& 'C:\src\darkengine\build-win64\Release\thief-runner.exe'
 ```
 
 The chosen game directory is used in place; retail data is not copied. The picker
@@ -260,7 +273,7 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 #### Prerequisites
 
 - macOS with Xcode Command Line Tools, CMake 3.21 or later, Ninja, and Bison
-  2.3 or later (the system Bison is sufficient).
+  3.0 or later (install Homebrew Bison; the system Bison is too old).
 - The Vulkan SDK (including `glslc`) and CMake submodules; macOS supplies the
   OpenAL framework.
 - A retail TDP, Thief Gold, or Thief II installation.
@@ -268,7 +281,7 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 With Homebrew:
 
 ```sh
-brew install cmake ninja
+brew install cmake ninja bison
 ```
 
 Initialize source dependencies with `git submodule update --init --recursive`.
@@ -513,7 +526,7 @@ captured.
 - JDK 17 or later.
 - Android SDK platform and build tools 36.
 - Android SDK CMake 3.31.6 and NDK 30.0.16248370.
-- GNU Make, Bash, and Bison 2.3 or later on the build host (Windows hosts
+- GNU Make, Bash, and Bison 3.0 or later on the build host (Windows hosts
   can use MSYS2 tools or a native `win_bison` executable).
 - Vulkan SDK with `glslc` available on `PATH` or through `VULKAN_SDK`.
 - An ARM64 device running Android 8.0 (API 26) or later and a retail game
