@@ -662,14 +662,6 @@ BOOL PlatformGetExecutableDirectory(char *path, int capacity)
    return TRUE;
 }
 
-BOOL PlatformRunProcess(const char *, const char *const *, int, const char *,
-                        tPlatformProcessOutput, void *, uint32 *exit_code)
-{
-   if (exit_code)
-      *exit_code = UINT32_MAX;
-   return FALSE;
-}
-
 BOOL PlatformRelaunchSelf(const char *const *arguments, int argument_count,
                           const char *working_directory)
 {
