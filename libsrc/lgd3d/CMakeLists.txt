@@ -1,12 +1,13 @@
 add_library(dark_lgd3d STATIC
+  canvas_snapshot.cpp
   legacy_driver.cpp
   legacy_textures.cpp
   legacy_primitives.c
   legacy_texture_manager.c
-  vulkan.cpp
-  vulkan_context.cpp
-  vulkan_render_backend.cpp
-  vulkan_scene_renderer.cpp
+  vulkan/vulkan_runtime.cpp
+  vulkan/vulkan_context.cpp
+  vulkan/vulkan_render_backend.cpp
+  vulkan/vulkan_scene_renderer.cpp
 )
 dark_configure_library(dark_lgd3d)
 

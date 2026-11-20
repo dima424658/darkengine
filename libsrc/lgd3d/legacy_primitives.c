@@ -20,11 +20,12 @@
 static int texture_level;
 
 #ifdef MONO_SPEW
-#define put_mono(c) \
-do { \
-   uchar *p_mono = (uchar *)0xb0080; \
-   *p_mono = c;                      \
-} while (0)
+#define put_mono(c)                                                            \
+   do                                                                          \
+   {                                                                           \
+      uchar * p_mono = (uchar *)0xb0080;                                       \
+      *p_mono = c;                                                             \
+   } while (0)
 #else
 #define put_mono(c)
 #endif
@@ -33,14 +34,15 @@ BOOL lgd3d_punt_buffer = FALSE;
 static BOOL primitives_pending = FALSE;
 static void flush_primitives(void);
 
-#define Flush()               \
-do {                          \
-   if (primitives_pending)    \
-      flush_primitives();     \
-} while (0)
+#define Flush()                                                                \
+   do                                                                          \
+   {                                                                           \
+      if (primitives_pending)                                                  \
+         flush_primitives();                                                   \
+   } while (0)
 
-
-typedef struct sLgd3dVertex {
+typedef struct sLgd3dVertex
+{
    float sx, sy, sz, rhw;
    uint32 color, specular;
    float tu, tv;
@@ -59,7 +61,8 @@ static float fog_tabledensity;
 static float fog_linear_distance;
 static int fog_linear_table = TRUE;
 
-typedef struct cliprect {
+typedef struct cliprect
+{
    float left, right, top, bot;
 } cliprect;
 
@@ -67,7 +70,7 @@ cliprect lgd3d_clip;
 
 #ifdef REALLY_EGREGIOUS_SPEW
 #include <mprintf.h>
-#define start(s) mprintf("tf%s",s)
+#define start(s) mprintf("tf%s", s)
 #define end() mprint(".")
 #else
 #define start(s)
@@ -105,12 +108,12 @@ void lgd3d_set_z(float z)
 
 int lgd3d_is_zwrite_on(void)
 {
-    return zwrite;
+   return zwrite;
 }
 
 int lgd3d_is_zcompare_on(void)
 {
-    return zcompare;
+   return zcompare;
 }
 
 double lgd3d_set_zbias(double new_bias)
@@ -147,7 +150,6 @@ void lgd3d_pop_zbias(void)
    lgd3d_set_zbias(zbias_stack[--zbias_stack_depth]);
 }
 
-
 void lgd3d_set_znearfar(double znear, double zfar)
 {
    z_near = znear;
@@ -160,56 +162,61 @@ void lgd3d_set_znearfar(double znear, double zfar)
 static float x_offset = 0.0f;
 static float y_offset = 0.0f;
 
-#define setxy(p, __sx, __sy) \
-do { \
-   fix _sx = __sx + 0x8000;       \
-   fix _sy = __sy + 0x8000;       \
-   if (_sx > grd_gc.clip.f.right) \
-      _sx = grd_gc.clip.f.right;  \
-   if (_sx < grd_gc.clip.f.left)  \
-      _sx = grd_gc.clip.f.left;   \
-   if (_sy > grd_gc.clip.f.bot)   \
-      _sy = grd_gc.clip.f.bot;    \
-   if (_sy < grd_gc.clip.f.top)   \
-      _sy = grd_gc.clip.f.top;    \
-   (p)->sx = fix_float(_sx)+x_offset; \
-   (p)->sy = fix_float(_sy)+y_offset; \
-} while (0)
+#define setxy(p, __sx, __sy)                                                   \
+   do                                                                          \
+   {                                                                           \
+      fix _sx = __sx + 0x8000;                                                 \
+      fix _sy = __sy + 0x8000;                                                 \
+      if (_sx > grd_gc.clip.f.right)                                           \
+         _sx = grd_gc.clip.f.right;                                            \
+      if (_sx < grd_gc.clip.f.left)                                            \
+         _sx = grd_gc.clip.f.left;                                             \
+      if (_sy > grd_gc.clip.f.bot)                                             \
+         _sy = grd_gc.clip.f.bot;                                              \
+      if (_sy < grd_gc.clip.f.top)                                             \
+         _sy = grd_gc.clip.f.top;                                              \
+      (p)->sx = fix_float(_sx) + x_offset;                                     \
+      (p)->sy = fix_float(_sy) + y_offset;                                     \
+   } while (0)
 
-#define setz(_dest, z, w) \
-do { \
-   sLgd3dVertex *__dest = _dest; \
-   if (zlinear) \
-      __dest->sz = (float)z2d; \
-   else if (lgd3d_z_normal) \
-      __dest->sz = (float)(z * inv_z_far); \
-   else { \
-      __dest->sz = (float)(z1 - z2 * w); \
-      if (__dest->sz > 1.0f) \
-         __dest->sz = 1.0f;  \
-      else if (__dest->sz < 0.0f) \
-         __dest->sz = 0.0f;  }\
-   __dest->rhw = (float)(w);  \
-} while (0)
+#define setz(_dest, z, w)                                                      \
+   do                                                                          \
+   {                                                                           \
+      sLgd3dVertex * __dest = _dest;                                           \
+      if (zlinear)                                                             \
+         __dest->sz = (float)z2d;                                              \
+      else if (lgd3d_z_normal)                                                 \
+         __dest->sz = (float)(z * inv_z_far);                                  \
+      else                                                                     \
+      {                                                                        \
+         __dest->sz = (float)(z1 - z2 * w);                                    \
+         if (__dest->sz > 1.0f)                                                \
+            __dest->sz = 1.0f;                                                 \
+         else if (__dest->sz < 0.0f)                                           \
+            __dest->sz = 0.0f;                                                 \
+      }                                                                        \
+      __dest->rhw = (float)(w);                                                \
+   } while (0)
 
-#define setxyz(dest, src) \
-do { \
-   sLgd3dVertex *_dest = dest; \
-   r3s_point *_src = src;         \
-   fix _sx = _src->grp.sx + 0x8000; \
-   fix _sy = _src->grp.sy + 0x8000; \
-   if (_sx > grd_gc.clip.f.right) \
-      _sx = grd_gc.clip.f.right;  \
-   if (_sx < grd_gc.clip.f.left)  \
-      _sx = grd_gc.clip.f.left;   \
-   if (_sy > grd_gc.clip.f.bot)   \
-      _sy = grd_gc.clip.f.bot;    \
-   if (_sy < grd_gc.clip.f.top)   \
-      _sy = grd_gc.clip.f.top;    \
-   _dest->sx = fix_float(_sx)+x_offset; \
-   _dest->sy = fix_float(_sy)+y_offset; \
-   setz(_dest, _src->p.z, _src->grp.w); \
-} while (0)
+#define setxyz(dest, src)                                                      \
+   do                                                                          \
+   {                                                                           \
+      sLgd3dVertex * _dest = dest;                                             \
+      r3s_point * _src = src;                                                  \
+      fix _sx = _src->grp.sx + 0x8000;                                         \
+      fix _sy = _src->grp.sy + 0x8000;                                         \
+      if (_sx > grd_gc.clip.f.right)                                           \
+         _sx = grd_gc.clip.f.right;                                            \
+      if (_sx < grd_gc.clip.f.left)                                            \
+         _sx = grd_gc.clip.f.left;                                             \
+      if (_sy > grd_gc.clip.f.bot)                                             \
+         _sy = grd_gc.clip.f.bot;                                              \
+      if (_sy < grd_gc.clip.f.top)                                             \
+         _sy = grd_gc.clip.f.top;                                              \
+      _dest->sx = fix_float(_sx) + x_offset;                                   \
+      _dest->sy = fix_float(_sy) + y_offset;                                   \
+      setz(_dest, _src->p.z, _src->grp.w);                                     \
+   } while (0)
 
 void lgd3d_set_offsets(int x, int y)
 {
@@ -221,15 +228,16 @@ void lgd3d_set_offsets(int x, int y)
 // Macros for internal use
 //
 
-#define make_scolor(pColor, c0, intensity) \
-do { \
-   ulong __c0 = (c0);                                          \
-   float __i = (intensity);                                    \
-   *(pColor) = ((ulong )((__c0 & 0xff) * __i)) +               \
-             (((ulong )(((__c0 >> 8) & 0xff) * __i)) << 8) +   \
-             (((ulong )(((__c0 >> 16) & 0xff) * __i)) << 16) + \
-             (__c0 & 0xff000000);                              \
-} while (0)
+#define make_scolor(pColor, c0, intensity)                                     \
+   do                                                                          \
+   {                                                                           \
+      ulong __c0 = (c0);                                                       \
+      float __i = (intensity);                                                 \
+      *(pColor) = ((ulong)((__c0 & 0xff) * __i)) +                             \
+                  (((ulong)(((__c0 >> 8) & 0xff) * __i)) << 8) +               \
+                  (((ulong)(((__c0 >> 16) & 0xff) * __i)) << 16) +             \
+                  (__c0 & 0xff000000);                                         \
+   } while (0)
 
 static BOOL lgd3d_blend = FALSE;
 static BOOL lgd3d_trans = BMF_TRANS;
@@ -251,7 +259,7 @@ void lgd3d_set_iterated_alpha(BOOL enabled)
    lgd3d_iterated_alpha = enabled;
 }
 
-static int get_vertex_alpha(const g2s_point *point)
+static int get_vertex_alpha(const g2s_point * point)
 {
    float alpha = (float)lgd3d_alpha;
 
@@ -279,40 +287,45 @@ void lgd3d_enable_palette(void)
 static uint32 get_color(void)
 {
    uint32 color;
-   if (use_palette) {
-      int index = grd_gc.fcolor&0xff;
+   if (use_palette)
+   {
+      int index = grd_gc.fcolor & 0xff;
 
-      switch (grd_gc.fill_type) {
-      default:
-         Warning(("lgd3d: unsupported fill type: %i\n", grd_gc.fill_type));
-      case FILL_NORM:
-         break;
-      case FILL_CLUT:
-         index = ((uchar *)grd_gc.fill_parm)[index];
-         break;
-      case FILL_SOLID:
-         index = (int)grd_gc.fill_parm;
+      switch (grd_gc.fill_type)
+      {
+         default:
+            Warning(("lgd3d: unsupported fill type: %i\n", grd_gc.fill_type));
+         case FILL_NORM:
+            break;
+         case FILL_CLUT:
+            index = ((uchar *)grd_gc.fill_parm)[index];
+            break;
+         case FILL_SOLID:
+            index = (int)grd_gc.fill_parm;
       }
 
-      // This hack effectively simulates the lighting table 
+      // This hack effectively simulates the lighting table
       // hacks done in flight2
       if (lgd3d_clut != NULL)
          index = lgd3d_clut[index];
 
       index *= 3;
-      color = PackColor(grd_pal[index], grd_pal[index+1],
-                        grd_pal[index+2], lgd3d_alpha);
-   } else {
-      switch (grd_gc.fill_type) {
-      default:
-         Warning(("lgd3d: unsupported fill type: %i\n", grd_gc.fill_type));
-      case FILL_NORM:
-         color = grd_gc.fcolor;
-         break;
-      case FILL_SOLID:
-         color = (uint32)grd_gc.fill_parm;
+      color = PackColor(grd_pal[index], grd_pal[index + 1], grd_pal[index + 2],
+                        lgd3d_alpha);
+   }
+   else
+   {
+      switch (grd_gc.fill_type)
+      {
+         default:
+            Warning(("lgd3d: unsupported fill type: %i\n", grd_gc.fill_type));
+         case FILL_NORM:
+            color = grd_gc.fcolor;
+            break;
+         case FILL_SOLID:
+            color = (uint32)grd_gc.fill_parm;
       }
-      color = (color&0xffffff) + (lgd3d_alpha<<24);
+      color = (color & 0xffffff) + (lgd3d_alpha << 24);
    }
    return color;
 }
@@ -331,15 +344,15 @@ void lgd3d_set_fog_color(int r, int g, int b)
 {
    if (r > 255)
       r = 255;
-   else if (r <0)
+   else if (r < 0)
       r = 0;
    if (g > 255)
       g = 255;
-   else if (g <0)
+   else if (g < 0)
       g = 0;
    if (b > 255)
       b = 255;
-   else if (b <0)
+   else if (b < 0)
       b = 0;
 
    // Fog color is part of queued draw state in the active rendering backend.  Submit
@@ -372,7 +385,7 @@ void lgd3d_set_zwrite(BOOL val)
 
    put_mono('c');
    Flush();
-   zwrite=val;
+   zwrite = val;
    RenderBackendSetDepth(zcompare, zwrite);
    put_mono('.');
 }
@@ -385,13 +398,17 @@ void lgd3d_zclear(void)
 void lgd3d_blend_normal(void)
 {
    Flush();
-   RenderBackendSetBlend(lgd3d_blend || lgd3d_trans ? kRenderBackendBlendAlpha : kRenderBackendBlendOpaque);
+   RenderBackendSetBlend(lgd3d_blend || lgd3d_trans
+                            ? kRenderBackendBlendAlpha
+                            : kRenderBackendBlendOpaque);
 }
 
 void lgd3d_blend_multiply(int blend_mode)
 {
    Flush();
-   RenderBackendSetBlend(blend_mode == BLEND_SRC_DEST ? kRenderBackendBlendMultiply : kRenderBackendBlendAdd);
+   RenderBackendSetBlend(blend_mode == BLEND_SRC_DEST
+                            ? kRenderBackendBlendMultiply
+                            : kRenderBackendBlendAdd);
 }
 
 //
@@ -400,9 +417,9 @@ void lgd3d_blend_multiply(int blend_mode)
 //
 //
 
-void lgd3d_render_init(lgd3ds_device_info *info)
+void lgd3d_render_init(lgd3ds_device_info * info)
 {
-   zbuffer = info->flags&LGD3DF_ZBUFFER;
+   zbuffer = info->flags & LGD3DF_ZBUFFER;
    fog_tabledensity = 0.025f;
    fog_linear_distance = 0.0f;
    zbias_stack_depth = 0;
@@ -425,7 +442,6 @@ void lgd3d_set_fog_enable(BOOL enable)
    put_mono('.');
 }
 
-
 //
 // Called once per frame from lgd3d_start_frame() to initialize render state.
 //
@@ -436,10 +452,10 @@ static int num_points;
 void lgd3d_render_start_frame(void)
 {
    num_points = num_polys = tri_index = num_poly_verts = 0;
-   lgd3d_clip.left = fix_float(grd_gc.clip.f.left)+x_offset;
-   lgd3d_clip.right = fix_float(grd_gc.clip.f.right)+x_offset;
-   lgd3d_clip.top = fix_float(grd_gc.clip.f.top)+y_offset;
-   lgd3d_clip.bot = fix_float(grd_gc.clip.f.bot)+y_offset;
+   lgd3d_clip.left = fix_float(grd_gc.clip.f.left) + x_offset;
+   lgd3d_clip.right = fix_float(grd_gc.clip.f.right) + x_offset;
+   lgd3d_clip.top = fix_float(grd_gc.clip.f.top) + y_offset;
+   lgd3d_clip.bot = fix_float(grd_gc.clip.f.bot) + y_offset;
 
    lgd3d_set_fog_enable(FALSE);
    lgd3d_set_fog_level(0.0);
@@ -461,32 +477,34 @@ void lgd3d_set_fog_density(float density)
 
 int lgd3d_is_fog_on(void)
 {
-    return fog_enabled;
+   return fog_enabled;
 }
 
 int lgd3d_use_linear_table_fog(int bUseIt)
 {
-    // The shared renderer evaluates legacy table fog per vertex, using the
-    // reciprocal view-space depth carried by the transformed vertex.
-    int old = fog_linear_table;
-    int enabled = bUseIt != 0;
-    if (old != enabled) {
-       Flush();
-       fog_linear_table = enabled;
-    }
-    return old;
+   // The shared renderer evaluates legacy table fog per vertex, using the
+   // reciprocal view-space depth carried by the transformed vertex.
+   int old = fog_linear_table;
+   int enabled = bUseIt != 0;
+   if (old != enabled)
+   {
+      Flush();
+      fog_linear_table = enabled;
+   }
+   return old;
 }
 
 void lgd3d_set_linear_fog_distance(float fDistance)
 {
-    // Dark's portal renderer specifies the distance where fog becomes fully
-    // opaque.  A non-positive value disables the distance ramp and preserves
-    // the per-vertex fog level supplied by legacy callers.
-    float distance = fDistance > 0.0f ? fDistance : 0.0f;
-    if (fog_linear_distance != distance) {
-       Flush();
-       fog_linear_distance = distance;
-    }
+   // Dark's portal renderer specifies the distance where fog becomes fully
+   // opaque.  A non-positive value disables the distance ramp and preserves
+   // the per-vertex fog level supplied by legacy callers.
+   float distance = fDistance > 0.0f ? fDistance : 0.0f;
+   if (fog_linear_distance != distance)
+   {
+      Flush();
+      fog_linear_distance = distance;
+   }
 }
 
 void lgd3d_set_texture_level(int n)
@@ -498,7 +516,6 @@ void lgd3d_set_texture_level(int n)
 // Interface to texture manager
 //
 
-
 static void SetTransparent(int trans)
 {
    // BMF_TRANS is a binary color key. FILL_BLEND textures instead carry
@@ -507,9 +524,9 @@ static void SetTransparent(int trans)
    // before the legacy state-cache early-out because fill type can change
    // while the bitmap flags remain identical.
    RenderBackendSetAlphaTest((trans & BMF_TRANS) != 0 &&
-                           gr_get_fill_type() != FILL_BLEND);
+                             gr_get_fill_type() != FILL_BLEND);
 
-   if (lgd3d_trans == (int )trans)
+   if (lgd3d_trans == (int)trans)
       return;
 
    lgd3d_trans = trans;
@@ -517,16 +534,14 @@ static void SetTransparent(int trans)
    // bilinear filtering.  The modern backend converts the key to alpha and
    // performs the alpha test in its shader, so point-sampling cutout foliage
    // only creates severe crawling and hard silhouettes as the camera moves.
-   RenderBackendSetSampler(0,
-                         lgd3d_get_texture_wrapping(0),
-                         TRUE);
-   RenderBackendSetBlend((trans || lgd3d_blend) ? kRenderBackendBlendAlpha : kRenderBackendBlendOpaque);
+   RenderBackendSetSampler(0, lgd3d_get_texture_wrapping(0), TRUE);
+   RenderBackendSetBlend((trans || lgd3d_blend) ? kRenderBackendBlendAlpha
+                                                : kRenderBackendBlendOpaque);
 }
 
-
-static int next_id=TDRV_ID_INVALID;
-static int modern_next_id1=TDRV_ID_INVALID;
-static int modern_tex_id1=TDRV_ID_INVALID;
+static int next_id = TDRV_ID_INVALID;
+static int modern_next_id1 = TDRV_ID_INVALID;
+static int modern_tex_id1 = TDRV_ID_INVALID;
 
 #define SetPoly() next_id = TDRV_ID_SOLID
 
@@ -537,11 +552,13 @@ void SetTextureId(int n)
    // levels request a new upload before the draw.  Resolve it while the
    // manager's callback bitmap still identifies this texture and retain the
    // resulting concrete ID in the appropriate texture level.
-   if (n == TDRV_ID_CALLBACK) {
+   if (n == TDRV_ID_CALLBACK)
+   {
       g_tmgr->set_texture_callback();
       return;
    }
-   if (texture_level != 0) {
+   if (texture_level != 0)
+   {
       modern_next_id1 = n;
       return;
    }
@@ -550,39 +567,45 @@ void SetTextureId(int n)
 
 // used when a texture is released to make sure state is reset
 
-static int tex_id=TDRV_ID_INVALID;
+static int tex_id = TDRV_ID_INVALID;
 
 void lgd3d_reset_texture_bindings(void)
 {
-   next_id=tex_id=TDRV_ID_INVALID;
-   modern_next_id1=modern_tex_id1=TDRV_ID_INVALID;
+   next_id = tex_id = TDRV_ID_INVALID;
+   modern_next_id1 = modern_tex_id1 = TDRV_ID_INVALID;
 }
 
 static void doPolySetup(int n)
 {
    int trans = 0;
    Flush();
-   if (n == TDRV_ID_SOLID) {
+   if (n == TDRV_ID_SOLID)
+   {
       RenderBackendBindTexture(0, NULL);
-   } else {
-      AssertMsg1((n>=0)&&(n<LGD3D_MAX_TEXTURES), "Invalid texture id: %i", n);
+   }
+   else
+   {
+      AssertMsg1((n >= 0) && (n < LGD3D_MAX_TEXTURES), "Invalid texture id: %i",
+                 n);
       RenderBackendBindTexture(0, g_legacyTextures[n]);
       if (g_legacyBitmaps[n] != NULL)
-         trans = g_legacyBitmaps[n]->flags & (BMF_TRANS|BMF_TLUC);
+         trans = g_legacyBitmaps[n]->flags & (BMF_TRANS | BMF_TLUC);
    }
    SetTransparent(trans);
 }
 
 void UnsetTextureId(int n)
 {
-   if (n==tex_id) {
-      doPolySetup(tex_id=TDRV_ID_SOLID);
+   if (n == tex_id)
+   {
+      doPolySetup(tex_id = TDRV_ID_SOLID);
    }
-   if (n==modern_tex_id1) {
+   if (n == modern_tex_id1)
+   {
       Flush();
-      modern_tex_id1=TDRV_ID_SOLID;
-      modern_next_id1=TDRV_ID_SOLID;
-      RenderBackendBindTexture(1,NULL);
+      modern_tex_id1 = TDRV_ID_SOLID;
+      modern_next_id1 = TDRV_ID_SOLID;
+      RenderBackendBindTexture(1, NULL);
    }
 }
 
@@ -593,7 +616,8 @@ static void prim_setup(void)
    if (lgd3d_punt_d3d)
       return;
 
-   if (next_id == TDRV_ID_CALLBACK) {
+   if (next_id == TDRV_ID_CALLBACK)
+   {
       Flush();
       g_tmgr->set_texture_callback();
    }
@@ -611,22 +635,29 @@ static void modern_setup_second_texture(void)
    n = modern_tex_id1 = modern_next_id1;
    if (n == TDRV_ID_SOLID)
       RenderBackendBindTexture(1, NULL);
-   else {
-      AssertMsg1((n>=0)&&(n<LGD3D_MAX_TEXTURES), "Invalid lightmap id: %i", n);
+   else
+   {
+      AssertMsg1((n >= 0) && (n < LGD3D_MAX_TEXTURES),
+                 "Invalid lightmap id: %i", n);
       RenderBackendBindTexture(1, g_legacyTextures[n]);
    }
    RenderBackendSetSampler(1, lgd3d_get_texture_wrapping(1), TRUE);
 }
 
-static void ModernConvertVertex(sRenderBackendVertex *d, const sLgd3dVertex *s)
+static void ModernConvertVertex(sRenderBackendVertex * d,
+                                const sLgd3dVertex * s)
 {
-   d->x=s->sx; d->y=s->sy; d->z=s->sz; d->rhw=s->rhw;
-   d->r=((s->color>>16)&255)/255.0f;
-   d->g=((s->color>>8)&255)/255.0f;
-   d->b=(s->color&255)/255.0f;
-   d->a=((s->color>>24)&255)/255.0f;
-   d->fog=((s->specular>>24)&255)/255.0f;
-   if (fog_linear_table && fog_linear_distance > 0.0f) {
+   d->x = s->sx;
+   d->y = s->sy;
+   d->z = s->sz;
+   d->rhw = s->rhw;
+   d->r = ((s->color >> 16) & 255) / 255.0f;
+   d->g = ((s->color >> 8) & 255) / 255.0f;
+   d->b = (s->color & 255) / 255.0f;
+   d->a = ((s->color >> 24) & 255) / 255.0f;
+   d->fog = ((s->specular >> 24) & 255) / 255.0f;
+   if (fog_linear_table && fog_linear_distance > 0.0f)
+   {
       float depth = s->rhw > 0.0f ? 1.0f / s->rhw : fog_linear_distance;
       float visibility = 1.0f - depth / fog_linear_distance;
       if (visibility < 0.0f)
@@ -635,13 +666,18 @@ static void ModernConvertVertex(sRenderBackendVertex *d, const sLgd3dVertex *s)
          visibility = 1.0f;
       d->fog *= visibility;
    }
-   d->u0=s->tu; d->v0=s->tv; d->u1=d->v1=0.0f;
+   d->u0 = s->tu;
+   d->v0 = s->tv;
+   d->u1 = d->v1 = 0.0f;
 }
 
-static void ModernMaterialDraw(int primitive, sRenderBackendVertex *vertices, int count, BOOL second)
+static void ModernMaterialDraw(int primitive, sRenderBackendVertex * vertices,
+                               int count, BOOL second)
 {
-   grs_bitmap *bitmap = tex_id >= 0 && tex_id < LGD3D_MAX_TEXTURES ? g_legacyBitmaps[tex_id] : NULL;
-   const sTextureMaterial *material = ResMaterialGet(bitmap);
+   grs_bitmap * bitmap = tex_id >= 0 && tex_id < LGD3D_MAX_TEXTURES
+                            ? g_legacyBitmaps[tex_id]
+                            : NULL;
+   const sTextureMaterial * material = ResMaterialGet(bitmap);
    float u = 1;
    float v = 1;
    int i;
@@ -673,11 +709,12 @@ static void ModernMaterialDraw(int primitive, sRenderBackendVertex *vertices, in
    RenderBackendDraw(primitive, vertices, count, second);
    if (primitive == kRenderBackendTriangles && material->illumination > 0)
    {
-      void *illumination = LegacyMaterialIllumination(bitmap);
+      void * illumination = LegacyMaterialIllumination(bitmap);
       if (illumination)
       {
          // illum_map is an unlit SRC_ALPHA/ONE pass over the base surface.
-         sRenderBackendVertex *glow = (sRenderBackendVertex *)temp_malloc(count * sizeof(*glow));
+         sRenderBackendVertex * glow =
+            (sRenderBackendVertex *)temp_malloc(count * sizeof(*glow));
          memcpy(glow, vertices, count * sizeof(*glow));
          for (i = 0; i < count; ++i)
          {
@@ -697,68 +734,82 @@ static void ModernMaterialDraw(int primitive, sRenderBackendVertex *vertices, in
    RenderBackendPopDrawState();
 }
 
-static void ModernSubmitList(int primitive, int n, const sLgd3dVertex *src)
+static void ModernSubmitList(int primitive, int n, const sLgd3dVertex * src)
 {
    int i;
-   sRenderBackendVertex *dst=(sRenderBackendVertex *)temp_malloc(n*sizeof(*dst));
-   for(i=0;i<n;++i) ModernConvertVertex(&dst[i],&src[i]);
+   sRenderBackendVertex * dst =
+      (sRenderBackendVertex *)temp_malloc(n * sizeof(*dst));
+   for (i = 0; i < n; ++i)
+      ModernConvertVertex(&dst[i], &src[i]);
    ModernMaterialDraw(primitive, dst, n, FALSE);
    temp_free(dst);
 }
 
-static void ModernSubmitFan(int n, const sLgd3dVertex *src)
+static void ModernSubmitFan(int n, const sLgd3dVertex * src)
 {
-   int i,j=0,count=(n-2)*3;
-   sRenderBackendVertex *dst;
-   if(n<3)return;
-   dst=(sRenderBackendVertex *)temp_malloc(count*sizeof(*dst));
-   for(i=2;i<n;++i) {
-      ModernConvertVertex(&dst[j++],&src[0]);
-      ModernConvertVertex(&dst[j++],&src[i-1]);
-      ModernConvertVertex(&dst[j++],&src[i]);
+   int i, j = 0, count = (n - 2) * 3;
+   sRenderBackendVertex * dst;
+   if (n < 3)
+      return;
+   dst = (sRenderBackendVertex *)temp_malloc(count * sizeof(*dst));
+   for (i = 2; i < n; ++i)
+   {
+      ModernConvertVertex(&dst[j++], &src[0]);
+      ModernConvertVertex(&dst[j++], &src[i - 1]);
+      ModernConvertVertex(&dst[j++], &src[i]);
    }
    ModernMaterialDraw(kRenderBackendTriangles, dst, count, FALSE);
    temp_free(dst);
 }
 
-static void ModernSubmitIndexed(int count,const ushort *indices,const sLgd3dVertex *src)
+static void ModernSubmitIndexed(int count, const ushort * indices,
+                                const sLgd3dVertex * src)
 {
    int i;
-   sRenderBackendVertex *dst=(sRenderBackendVertex *)temp_malloc(count*sizeof(*dst));
-   for(i=0;i<count;++i)ModernConvertVertex(&dst[i],&src[indices[i]]);
+   sRenderBackendVertex * dst =
+      (sRenderBackendVertex *)temp_malloc(count * sizeof(*dst));
+   for (i = 0; i < count; ++i)
+      ModernConvertVertex(&dst[i], &src[indices[i]]);
    ModernMaterialDraw(kRenderBackendTriangles, dst, count, FALSE);
    temp_free(dst);
 }
 
-static void do_points(int n, sLgd3dVertex *vlist)
+static void do_points(int n, sLgd3dVertex * vlist)
 {
-   if (lgd3d_punt_d3d) return;
-   prim_setup(); ModernSubmitList(kRenderBackendPoints,n,vlist);
+   if (lgd3d_punt_d3d)
+      return;
+   prim_setup();
+   ModernSubmitList(kRenderBackendPoints, n, vlist);
 }
 
 //
 // guts of all polygon drawing routines
 //
 
-static void do_trifan(int n, sLgd3dVertex *vlist)
+static void do_trifan(int n, sLgd3dVertex * vlist)
 {
-   AssertMsg(next_id>TDRV_ID_INVALID, "Current Texture is invalid!");
-   if (lgd3d_punt_d3d) return;
-   prim_setup(); ModernSubmitFan(n,vlist);
+   AssertMsg(next_id > TDRV_ID_INVALID, "Current Texture is invalid!");
+   if (lgd3d_punt_d3d)
+      return;
+   prim_setup();
+   ModernSubmitFan(n, vlist);
 }
 
 #define MAX_POLY_VERTS 50
 sLgd3dVertex poly_vertex_buffer[MAX_POLY_VERTS];
-ushort tri_index_buffer[3*MAX_POLY_VERTS];
+ushort tri_index_buffer[3 * MAX_POLY_VERTS];
 
 static void flush_polys(void)
 {
    if (!num_polys)
       return;
 
-   if (!lgd3d_punt_d3d) {
-      if(num_polys==1)ModernSubmitFan(num_poly_verts,poly_vertex_buffer);
-      else ModernSubmitIndexed(tri_index,tri_index_buffer,poly_vertex_buffer);
+   if (!lgd3d_punt_d3d)
+   {
+      if (num_polys == 1)
+         ModernSubmitFan(num_poly_verts, poly_vertex_buffer);
+      else
+         ModernSubmitIndexed(tri_index, tri_index_buffer, poly_vertex_buffer);
    }
 
    num_polys = tri_index = num_poly_verts = 0;
@@ -772,8 +823,9 @@ static void flush_points(void)
    if (!num_points)
       return;
 
-   if (!lgd3d_punt_d3d) {
-      ModernSubmitList(kRenderBackendPoints,num_points,point_buffer);
+   if (!lgd3d_punt_d3d)
+   {
+      ModernSubmitList(kRenderBackendPoints, num_points, point_buffer);
    }
    num_points = 0;
 }
@@ -790,35 +842,35 @@ void lgd3d_render_flush(void)
    Flush();
 }
 
-
-static sLgd3dVertex *PolyMalloc(int n)
+static sLgd3dVertex * PolyMalloc(int n)
 {
-   sLgd3dVertex *retval;
+   sLgd3dVertex * retval;
    int i;
 
    if (lgd3d_punt_buffer)
-      return (sLgd3dVertex *)temp_malloc(n*sizeof(sLgd3dVertex));
+      return (sLgd3dVertex *)temp_malloc(n * sizeof(sLgd3dVertex));
 
    prim_setup();
 
    if (num_poly_verts + n > MAX_POLY_VERTS)
       flush_polys();
 
-   AssertMsg(num_poly_verts + n <= MAX_POLY_VERTS, "PolyMalloc(): poly too large!");
+   AssertMsg(num_poly_verts + n <= MAX_POLY_VERTS,
+             "PolyMalloc(): poly too large!");
 
    retval = &poly_vertex_buffer[num_poly_verts];
 
    // Do the fan index thing...
    tri_index_buffer[tri_index] = num_poly_verts;
-   tri_index_buffer[tri_index+1] = num_poly_verts+1;
-   tri_index_buffer[tri_index+2] = num_poly_verts+2;
-   tri_index+=3;
-   for (i=3; i<n; i++)
+   tri_index_buffer[tri_index + 1] = num_poly_verts + 1;
+   tri_index_buffer[tri_index + 2] = num_poly_verts + 2;
+   tri_index += 3;
+   for (i = 3; i < n; i++)
    {
       tri_index_buffer[tri_index] = num_poly_verts;
-      tri_index_buffer[tri_index+1] = num_poly_verts+i-1;
-      tri_index_buffer[tri_index+2] = num_poly_verts+i;
-      tri_index+=3;
+      tri_index_buffer[tri_index + 1] = num_poly_verts + i - 1;
+      tri_index_buffer[tri_index + 2] = num_poly_verts + i;
+      tri_index += 3;
    }
 
    num_polys++;
@@ -828,7 +880,7 @@ static sLgd3dVertex *PolyMalloc(int n)
    return retval;
 }
 
-static void PolyFree(int n, sLgd3dVertex *vlist)
+static void PolyFree(int n, sLgd3dVertex * vlist)
 {
    if (!lgd3d_punt_buffer)
       return;
@@ -837,12 +889,12 @@ static void PolyFree(int n, sLgd3dVertex *vlist)
    temp_free(vlist);
 }
 
-static sLgd3dVertex *PointMalloc(int n)
+static sLgd3dVertex * PointMalloc(int n)
 {
-   sLgd3dVertex *retval;
+   sLgd3dVertex * retval;
 
    if (lgd3d_punt_buffer)
-      return (sLgd3dVertex *)temp_malloc(n*sizeof(sLgd3dVertex));
+      return (sLgd3dVertex *)temp_malloc(n * sizeof(sLgd3dVertex));
 
    prim_setup();
    if (num_points + n > MAX_POINTS)
@@ -858,7 +910,7 @@ static sLgd3dVertex *PointMalloc(int n)
    return retval;
 }
 
-static void PointFree(int n, sLgd3dVertex *vlist)
+static void PointFree(int n, sLgd3dVertex * vlist)
 {
    if (!lgd3d_punt_buffer)
       return;
@@ -866,7 +918,6 @@ static void PointFree(int n, sLgd3dVertex *vlist)
    do_points(n, vlist);
    temp_free(vlist);
 }
-
 
 static BOOL zlinear = FALSE;
 void lgd3d_set_zlinear(BOOL lin)
@@ -877,20 +928,23 @@ void lgd3d_set_zlinear(BOOL lin)
 void lgd3d_set_blend(BOOL blend_enable)
 {
    put_mono('k');
-   if (lgd3d_blend != blend_enable) {
+   if (lgd3d_blend != blend_enable)
+   {
       lgd3d_blend = blend_enable;
       Flush();
-      RenderBackendSetBlend((blend_enable||lgd3d_trans) ? kRenderBackendBlendAlpha : kRenderBackendBlendOpaque);
+      RenderBackendSetBlend((blend_enable || lgd3d_trans)
+                               ? kRenderBackendBlendAlpha
+                               : kRenderBackendBlendOpaque);
    }
    put_mono('.');
 }
 
-void lgd3d_draw_line(r3s_point *p0, r3s_point *p1)
+void lgd3d_draw_line(r3s_point * p0, r3s_point * p1)
 {
    fix x10, y10;
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    int i, save_id;
-   uint32 c=get_color();
+   uint32 c = get_color();
    fix temp, left, right, top, bot;
    float x0, x1, y0, y1;
 
@@ -911,7 +965,8 @@ void lgd3d_draw_line(r3s_point *p0, r3s_point *p1)
 
    vlist = PolyMalloc(4);
 
-   for (i=0; i<4; i++) {
+   for (i = 0; i < 4; i++)
+   {
       vlist[i].color = c;
       vlist[i].specular = fog_specular;
       setz(&vlist[i], p0->p.z, p0->grp.w);
@@ -920,23 +975,30 @@ void lgd3d_draw_line(r3s_point *p0, r3s_point *p1)
 
    x10 = p1->grp.sx - p0->grp.sx;
    y10 = p1->grp.sy - p0->grp.sy;
-   if (x10 < 0) x10 = -x10;
-   if (y10 < 0) y10 = -y10;
+   if (x10 < 0)
+      x10 = -x10;
+   if (y10 < 0)
+      y10 = -y10;
 
-   if (y10 > x10) {
+   if (y10 > x10)
+   {
       left += 0x8000;
       right -= 0x8000;
 
-      if (p0->grp.sy > p1->grp.sy) {
-         r3s_point *tmp = p0;
+      if (p0->grp.sy > p1->grp.sy)
+      {
+         r3s_point * tmp = p0;
          p0 = p1;
          p1 = tmp;
       }
-   } else {
+   }
+   else
+   {
       top += 0x8000;
       bot -= 0x8000;
-      if (p0->grp.sx > p1->grp.sx) {
-         r3s_point *tmp = p0;
+      if (p0->grp.sx > p1->grp.sx)
+      {
+         r3s_point * tmp = p0;
          p0 = p1;
          p1 = tmp;
       }
@@ -947,30 +1009,31 @@ void lgd3d_draw_line(r3s_point *p0, r3s_point *p1)
       temp = left;
    if (temp > right)
       temp = right;
-   x0 = fix_float(temp)+x_offset;
+   x0 = fix_float(temp) + x_offset;
 
    temp = p1->grp.sx + 0x8000;
    if (temp < left)
       temp = left;
    if (temp > right)
       temp = right;
-   x1 = fix_float(temp)+x_offset;
+   x1 = fix_float(temp) + x_offset;
 
    temp = p0->grp.sy + 0x8000;
    if (temp < top)
       temp = top;
    if (temp > bot)
       temp = bot;
-   y0 = fix_float(temp)+y_offset;
+   y0 = fix_float(temp) + y_offset;
 
    temp = p1->grp.sy + 0x8000;
    if (temp < top)
       temp = top;
    if (temp > bot)
       temp = bot;
-   y1 = fix_float(temp)+y_offset;
+   y1 = fix_float(temp) + y_offset;
 
-   if (y10 > x10) {
+   if (y10 > x10)
+   {
       vlist[0].sx = x0 - 0.5f;
       vlist[1].sx = x0 + 0.5f;
       vlist[2].sx = x1 + 0.5f;
@@ -979,7 +1042,9 @@ void lgd3d_draw_line(r3s_point *p0, r3s_point *p1)
       vlist[1].sy = y0;
       vlist[2].sy = y1;
       vlist[3].sy = y1;
-   } else {
+   }
+   else
+   {
       vlist[0].sy = y0 + 0.5f;
       vlist[1].sy = y0 - 0.5f;
       vlist[2].sy = y1 - 0.5f;
@@ -994,84 +1059,59 @@ void lgd3d_draw_line(r3s_point *p0, r3s_point *p1)
    next_id = save_id;
 }
 
-static grs_bitmap *hack_light_bm = NULL;
-static ushort hack_light_alpha_pal[16] =
-{
+static ushort hack_light_alpha_pal[16] = {
    0x0fff, 0x1fff, 0x2fff, 0x3fff, 0x4fff, 0x5fff, 0x6fff, 0x7fff,
    0x8fff, 0x9fff, 0xafff, 0xbfff, 0xcfff, 0xdfff, 0xefff, 0xffff,
 };
 
-void lgd3d_render_shutdown(void)
+static void do_quad_light(r3s_point * p, float r, grs_bitmap * bm)
 {
-   if (hack_light_bm != NULL) {
-      lgd3d_unload_texture(hack_light_bm);
-      gr_free(hack_light_bm);
-      hack_light_bm = NULL;
-   }
-}
-
-
-static void init_hack_light_bm(void)
-{
-   uchar *bits;
-   int i,j;
-
-   hack_light_bm = gr_alloc_bitmap(BMT_FLAT8, BMF_TLUC, 32, 32);
-   bits = hack_light_bm->bits;
-   for (i=0; i<32; i++) {
-      for (j=0; j<32; j++) {
-         float alpha = 8.0f * 16.0f / ((i-15.5f)*(i-15.5f) + (j-15.5f)*(j-15.5f));
-         uchar val;
-         if (alpha > 15.0f)
-            val = 15;
-         else {
-            val = (uchar)alpha;
-         }
-         bits[j] = val;
-      }
-      bits += 32;
-   }
-}
-
-
-static void do_quad_light(r3s_point *p, float r, grs_bitmap *bm)
-{
-   float x = fix_float(p->grp.sx)+x_offset;
-   float y = fix_float(p->grp.sy)+y_offset;
+   float x = fix_float(p->grp.sx) + x_offset;
+   float y = fix_float(p->grp.sy) + y_offset;
    float x_right, x_left, y_top, y_bot;
    float u_right, u_left, v_top, v_bot;
-   sLgd3dVertex *vl;
+   sLgd3dVertex * vl;
    uint32 c;
 
-   if ((x+r < lgd3d_clip.left) || (x-r > lgd3d_clip.right) ||
-       (y+r < lgd3d_clip.top) || (y-r > lgd3d_clip.bot))
+   if ((x + r < lgd3d_clip.left) || (x - r > lgd3d_clip.right) ||
+       (y + r < lgd3d_clip.top) || (y - r > lgd3d_clip.bot))
       return;
 
-   c = get_color()|0xff000000;
+   c = get_color() | 0xff000000;
 
    gr_set_fill_type(FILL_BLEND);
    lgd3d_set_alpha_pal(hack_light_alpha_pal);
    lgd3d_set_texture(bm);
 
    vl = PolyMalloc(4);
-   x_right = x+r; x_left = x-r;
-   u_left = 0; u_right = 1.0f;
-   if (x_left < lgd3d_clip.left) {
-      u_left = (lgd3d_clip.left - x_left) / (2*r);
+   x_right = x + r;
+   x_left = x - r;
+   u_left = 0;
+   u_right = 1.0f;
+   if (x_left < lgd3d_clip.left)
+   {
+      u_left = (lgd3d_clip.left - x_left) / (2 * r);
       x_left = lgd3d_clip.left;
    }
-   if (x_right > lgd3d_clip.right) {
-      u_right = u_left + (u_right - u_left)*(lgd3d_clip.right - x_left) / (x_right - x_left);
+   if (x_right > lgd3d_clip.right)
+   {
+      u_right = u_left + (u_right - u_left) * (lgd3d_clip.right - x_left) /
+                            (x_right - x_left);
       x_right = lgd3d_clip.right;
    }
-   y_bot = y+r; y_top = y-r;
-   v_top = 0; v_bot = 1.0f;
-   if (y_top < lgd3d_clip.top) {
-      v_top = (lgd3d_clip.top - y_top) / (2*r);
+   y_bot = y + r;
+   y_top = y - r;
+   v_top = 0;
+   v_bot = 1.0f;
+   if (y_top < lgd3d_clip.top)
+   {
+      v_top = (lgd3d_clip.top - y_top) / (2 * r);
       y_top = lgd3d_clip.top;
    }
-   if (y_bot > lgd3d_clip.bot) {
-      v_bot = v_top + (1.0f - v_top)*(lgd3d_clip.bot - y_top) / (y_bot - y_top);
+   if (y_bot > lgd3d_clip.bot)
+   {
+      v_bot =
+         v_top + (1.0f - v_top) * (lgd3d_clip.bot - y_top) / (y_bot - y_top);
       y_bot = lgd3d_clip.bot;
    }
 
@@ -1109,12 +1149,12 @@ static void do_quad_light(r3s_point *p, float r, grs_bitmap *bm)
    gr_set_fill_type(FILL_NORM);
 }
 
-int lgd3d_draw_point(r3s_point *p)
+int lgd3d_draw_point(r3s_point * p)
 {
    fix sx = p->grp.sx + 0x8000;
    fix sy = p->grp.sy + 0x8000;
-   sLgd3dVertex *vp;
-   uint32 c=get_color()|0xff000000;
+   sLgd3dVertex * vp;
+   uint32 c = get_color() | 0xff000000;
    int save_id;
 
    if ((sx > grd_gc.clip.f.right) || (sx < grd_gc.clip.f.left) ||
@@ -1137,19 +1177,19 @@ int lgd3d_draw_point(r3s_point *p)
    return CLIP_NONE;
 }
 
-int lgd3d_draw_point_alpha(r3s_point *p, float alpha)
+int lgd3d_draw_point_alpha(r3s_point * p, float alpha)
 {
    fix sx = p->grp.sx + 0x8000;
    fix sy = p->grp.sy + 0x8000;
-   sLgd3dVertex *vp;
-   uint32 c=get_color()&0xffffff;
+   sLgd3dVertex * vp;
+   uint32 c = get_color() & 0xffffff;
    int save_id;
 
    if ((sx > grd_gc.clip.f.right) || (sx < grd_gc.clip.f.left) ||
        (sy > grd_gc.clip.f.bot) || (sy < grd_gc.clip.f.top))
       return CLIP_ALL;
 
-   c += ((int) (255 * alpha)) << 24;
+   c += ((int)(255 * alpha)) << 24;
 
    save_id = next_id;
    SetPoly();
@@ -1167,42 +1207,32 @@ int lgd3d_draw_point_alpha(r3s_point *p, float alpha)
    return CLIP_NONE;
 }
 
-
-void lgd3d_hack_light(r3s_point *p, float r)
+void lgd3d_hack_light_extra(r3s_point * p, float r, grs_bitmap * bm)
 {
-   if (r <= 1.0) {
-      lgd3d_draw_point(p);
-   } else {
-      if (hack_light_bm == NULL)
-         init_hack_light_bm();
-
-      do_quad_light(p,r, hack_light_bm);
-   }
-}
-
-void lgd3d_hack_light_extra(r3s_point *p, float r, grs_bitmap *bm)
-{
-   if (r <= 1.0) {
-      float alpha = r*r;
+   if (r <= 1.0)
+   {
+      float alpha = r * r;
       // scale by the overall alpha for this guy: what a hack:
-   alpha *= bm->bits[bm->row*(bm->h>>1) + (bm->w>>1)] / 15.0f;
+      alpha *= bm->bits[bm->row * (bm->h >> 1) + (bm->w >> 1)] / 15.0f;
       lgd3d_draw_point(p);
-   } else
-      do_quad_light(p,r,bm);
+   }
+   else
+      do_quad_light(p, r, bm);
 }
 
 //
 // r3d-like api
 //
 
-static int lgd3d_poly(int n, r3s_point **ppl)
+static int lgd3d_poly(int n, r3s_point ** ppl)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    int j;
    uint32 c = get_color();
 
    vlist = PolyMalloc(n);
-   for (j=0; j<n; j++) {
+   for (j = 0; j < n; j++)
+   {
       vlist[j].color = c;
       vlist[j].specular = fog_specular;
       setxyz(&vlist[j], ppl[j]);
@@ -1213,21 +1243,23 @@ static int lgd3d_poly(int n, r3s_point **ppl)
    return CLIP_NONE;
 }
 
-static int lgd3d_spoly(int n, r3s_point **ppl)
+static int lgd3d_spoly(int n, r3s_point ** ppl)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    int j;
    uint32 c0 = get_color();
 
-//   if (grd_gc.fill_type == FILL_CLUT)
-//      Warning(("lgd3d_spoly in FILL_CLUT mode!\n"));
+   //   if (grd_gc.fill_type == FILL_CLUT)
+   //      Warning(("lgd3d_spoly in FILL_CLUT mode!\n"));
 
-   vlist = PolyMalloc(n );
-   for (j=0; j<n; j++) {
+   vlist = PolyMalloc(n);
+   for (j = 0; j < n; j++)
+   {
       float i;
 
       i = ppl[j]->grp.i;
-      if (i>1.0) i = 1.0;
+      if (i > 1.0)
+         i = 1.0;
       make_scolor(&vlist[j].color, c0, i);
       vlist[j].specular = fog_specular;
       setxyz(&vlist[j], ppl[j]);
@@ -1238,24 +1270,31 @@ static int lgd3d_spoly(int n, r3s_point **ppl)
    return CLIP_NONE;
 }
 
-static int lgd3d_rgb_poly(int n, r3s_point **ppl)
+static int lgd3d_rgb_poly(int n, r3s_point ** ppl)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    int j;
    uint32 c0 = get_color();
-   int rc,gc,bc;
+   int rc, gc, bc;
    rc = (c0 >> 16) & 255;
-   gc = (c0 >>  8) & 255;
-   bc = (c0 >>  0) & 255;
+   gc = (c0 >> 8) & 255;
+   bc = (c0 >> 0) & 255;
 
    start("l");
    vlist = PolyMalloc(n);
-   for (j=0; j<n; j++) {
-      int r,g,b;
-      g2s_point *g2p = (g2s_point *) &ppl[j]->grp;
-      r = (int)(rc*g2p->i); if (r>255) r = 255;
-      g = (int)(gc*g2p->h); if (g>255) g = 255;
-      b = (int)(bc*g2p->d); if (b>255) b = 255;
+   for (j = 0; j < n; j++)
+   {
+      int r, g, b;
+      g2s_point * g2p = (g2s_point *)&ppl[j]->grp;
+      r = (int)(rc * g2p->i);
+      if (r > 255)
+         r = 255;
+      g = (int)(gc * g2p->h);
+      if (g > 255)
+         g = 255;
+      b = (int)(bc * g2p->d);
+      if (b > 255)
+         b = 255;
       vlist[j].color = PackColor(r, g, b, get_vertex_alpha(g2p));
       vlist[j].specular = fog_specular;
       setxyz(&vlist[j], ppl[j]);
@@ -1267,21 +1306,23 @@ static int lgd3d_rgb_poly(int n, r3s_point **ppl)
    return CLIP_NONE;
 }
 
-int lgd3d_lit_trifan(int n, r3s_point **ppl)
+int lgd3d_lit_trifan(int n, r3s_point ** ppl)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    int j;
    uint32 c0 = (lgd3d_alpha << 24) + 0xffffff;
 
    start("l");
    vlist = PolyMalloc(n);
-   for (j=0; j<n; j++) {
-      float u,v,i;
+   for (j = 0; j < n; j++)
+   {
+      float u, v, i;
       u = ppl[j]->grp.u;
       v = ppl[j]->grp.v;
       i = ppl[j]->grp.i;
-      if (i>1.0) i = 1.0;
-      vlist[j].tu = u; 
+      if (i > 1.0)
+         i = 1.0;
+      vlist[j].tu = u;
       vlist[j].tv = v;
       make_scolor(&vlist[j].color, c0, i);
       vlist[j].specular = fog_specular;
@@ -1294,24 +1335,37 @@ int lgd3d_lit_trifan(int n, r3s_point **ppl)
    return CLIP_NONE;
 }
 
-static int lgd3d_rgblit_trifan(int n, r3s_point **ppl)
+static int lgd3d_rgblit_trifan(int n, r3s_point ** ppl)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    int j;
 
    start("l");
    vlist = PolyMalloc(n);
-   for (j=0; j<n; j++) {
-      float u,v;
-      int r,g,b;
-      g2s_point *g2p = (g2s_point *) &ppl[j]->grp;
+   for (j = 0; j < n; j++)
+   {
+      float u, v;
+      int r, g, b;
+      g2s_point * g2p = (g2s_point *)&ppl[j]->grp;
       u = ppl[j]->grp.u;
       v = ppl[j]->grp.v;
-      vlist[j].tu = u; 
+      vlist[j].tu = u;
       vlist[j].tv = v;
-      r = (int)(255*g2p->i); if (r>255) r = 255; else if (r<0) r = 0;
-      g = (int)(255*g2p->h); if (g>255) g = 255; else if (g<0) g = 0;
-      b = (int)(255*g2p->d); if (b>255) b = 255; else if (b<0) b = 0;
+      r = (int)(255 * g2p->i);
+      if (r > 255)
+         r = 255;
+      else if (r < 0)
+         r = 0;
+      g = (int)(255 * g2p->h);
+      if (g > 255)
+         g = 255;
+      else if (g < 0)
+         g = 0;
+      b = (int)(255 * g2p->d);
+      if (b > 255)
+         b = 255;
+      else if (b < 0)
+         b = 0;
       vlist[j].color = PackColor(r, g, b, get_vertex_alpha(g2p));
       vlist[j].specular = fog_specular;
       setxyz(&vlist[j], ppl[j]);
@@ -1323,21 +1377,22 @@ static int lgd3d_rgblit_trifan(int n, r3s_point **ppl)
    return CLIP_NONE;
 }
 
-int lgd3d_trifan(int n, r3s_point **ppl)
+int lgd3d_trifan(int n, r3s_point ** ppl)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    uint32 c0 = (lgd3d_alpha << 24) + 0xffffff;
    int i;
 
    start("f");
    vlist = PolyMalloc(n);
 
-   for (i=0; i<n; i++) {
-      float u,v;
+   for (i = 0; i < n; i++)
+   {
+      float u, v;
       u = ppl[i]->grp.u;
       v = ppl[i]->grp.v;
 
-      vlist[i].tu = u; 
+      vlist[i].tu = u;
       vlist[i].tv = v;
       setxyz(&vlist[i], ppl[i]);
       vlist[i].color = c0;
@@ -1354,57 +1409,57 @@ int lgd3d_trifan(int n, r3s_point **ppl)
 // actual r3d interface: setup functions + global function ptr
 //
 
-int (*lgd3d_draw_poly_func)(int n, r3s_phandle *pl);
+int (*lgd3d_draw_poly_func)(int n, r3s_phandle * pl);
 
-void lgd3d_lit_tmap_setup(grs_bitmap *bm)
+void lgd3d_lit_tmap_setup(grs_bitmap * bm)
 {
    g_tmgr->set_texture(bm);
    lgd3d_draw_poly_func = lgd3d_lit_trifan;
 }
 
-void lgd3d_tmap_setup(grs_bitmap *bm)
+void lgd3d_tmap_setup(grs_bitmap * bm)
 {
    g_tmgr->set_texture(bm);
    lgd3d_draw_poly_func = lgd3d_trifan;
 }
 
-void lgd3d_rgblit_tmap_setup(grs_bitmap *bm)
+void lgd3d_rgblit_tmap_setup(grs_bitmap * bm)
 {
    g_tmgr->set_texture(bm);
    lgd3d_draw_poly_func = lgd3d_rgblit_trifan;
 }
 
-void lgd3d_poly_setup(grs_bitmap *bm)
+void lgd3d_poly_setup(grs_bitmap * bm)
 {
    SetPoly();
    lgd3d_draw_poly_func = lgd3d_poly;
 }
 
-void lgd3d_spoly_setup(grs_bitmap *bm)
+void lgd3d_spoly_setup(grs_bitmap * bm)
 {
    SetPoly();
    lgd3d_draw_poly_func = lgd3d_spoly;
 }
 
-void lgd3d_rgb_poly_setup(grs_bitmap *bm)
+void lgd3d_rgb_poly_setup(grs_bitmap * bm)
 {
    SetPoly();
    lgd3d_draw_poly_func = lgd3d_rgb_poly;
 }
 
-
 //
 // g2 - like interface: take g2s_point handle lists
 //
 
-int lgd3d_g2utrifan(int n, g2s_point **ppl)
+int lgd3d_g2utrifan(int n, g2s_point ** ppl)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    uint32 c0 = (lgd3d_alpha << 24) + 0xffffff;
    int i;
 
    vlist = PolyMalloc(n);
-   for (i=0; i<n; i++) {
+   for (i = 0; i < n; i++)
+   {
       float j = ppl[i]->i;
       setxy(&vlist[i], ppl[i]->sx, ppl[i]->sy);
       vlist[i].sz = (float)z2d;
@@ -1420,21 +1475,21 @@ int lgd3d_g2utrifan(int n, g2s_point **ppl)
    return CLIP_NONE;
 }
 
-
-int lgd3d_g2upoly(int n, g2s_point **ppl)
+int lgd3d_g2upoly(int n, g2s_point ** ppl)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    int j;
-   uint32 c=get_color();
+   uint32 c = get_color();
 
    vlist = PolyMalloc(n);
-   for (j=0; j<n; j++) {
+   for (j = 0; j < n; j++)
+   {
       vlist[j].color = c;
       vlist[j].specular = fog_specular;
       setxy(&vlist[j], ppl[j]->sx, ppl[j]->sy);
       vlist[j].sz = (float)z2d;
       vlist[j].rhw = (float)w2d;
-//      vlist[j].tu = vlist[j].tv = 0.0;
+      //      vlist[j].tu = vlist[j].tv = 0.0;
    }
 
    PolyFree(n, vlist);
@@ -1442,40 +1497,45 @@ int lgd3d_g2upoly(int n, g2s_point **ppl)
    return CLIP_NONE;
 }
 
-
-int lgd3d_g2poly(int n, g2s_point **ppl)
+int lgd3d_g2poly(int n, g2s_point ** ppl)
 {
    int m, code;
-   g2s_point **cpl=NULL;
+   g2s_point ** cpl = NULL;
 
    m = g2_clip_poly(n, G2C_CLIP_NONE, ppl, &cpl);
 
-   if (m<3) {
+   if (m < 3)
+   {
       code = CLIP_ALL;
-   } else {
+   }
+   else
+   {
       lgd3d_g2upoly(m, cpl);
       code = CLIP_NONE;
    }
-   if ((cpl!=NULL)&&(cpl!=ppl))
+   if ((cpl != NULL) && (cpl != ppl))
       temp_free(cpl);
 
    return code;
 }
 
-int lgd3d_g2trifan(int n, g2s_point **ppl)
+int lgd3d_g2trifan(int n, g2s_point ** ppl)
 {
    int m, code;
-   g2s_point **cpl=NULL;
+   g2s_point ** cpl = NULL;
 
    m = g2_clip_poly(n, G2C_CLIP_UVI, ppl, &cpl);
 
-   if (m<3) {
+   if (m < 3)
+   {
       code = CLIP_ALL;
-   } else {
+   }
+   else
+   {
       lgd3d_g2utrifan(m, cpl);
       code = CLIP_NONE;
    }
-   if ((cpl!=NULL)&&(cpl!=ppl))
+   if ((cpl != NULL) && (cpl != ppl))
       temp_free(cpl);
 
    return code;
@@ -1483,7 +1543,7 @@ int lgd3d_g2trifan(int n, g2s_point **ppl)
 
 void lgd3d_clear(int c)
 {
-   sLgd3dVertex *vlist;
+   sLgd3dVertex * vlist;
    float x0, y0, x1, y1;
    int i, save_id;
    int fc_save = gr_get_fcolor();
@@ -1504,13 +1564,13 @@ void lgd3d_clear(int c)
    y0 = fix_float(grd_gc.clip.f.top) + y_offset;
    y1 = fix_float(grd_gc.clip.f.bot) + y_offset;
 
-   for (i=0; i<4; i++)
-      {
+   for (i = 0; i < 4; i++)
+   {
       vlist[i].sz = (float)z2d;
       vlist[i].rhw = (float)w2d;
       vlist[i].color = c;
       vlist[i].specular = fog_specular;
-      }
+   }
 
    vlist[0].sx = x0;
    vlist[0].sy = y0;
@@ -1526,27 +1586,31 @@ void lgd3d_clear(int c)
    next_id = save_id;
 }
 
-int lgd3d_TrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **uv2)
+int lgd3d_TrifanMTD(int n, r3s_point ** ppl, LGD3D_tex_coord ** uv2)
 {
-   int i,j=0,count;
-   sRenderBackendVertex *v;
-   if(n<3)return CLIP_ALL;
+   int i, j = 0, count;
+   sRenderBackendVertex * v;
+   if (n < 3)
+      return CLIP_ALL;
    prim_setup();
    modern_setup_second_texture();
-   count=(n-2)*3;
-   v=(sRenderBackendVertex *)temp_malloc(count*sizeof(*v));
-   for(i=2;i<n;++i) {
-      int k,indices[3]={0,i-1,i};
-      for(k=0;k<3;++k) {
-         r3s_point *p=ppl[indices[k]];
+   count = (n - 2) * 3;
+   v = (sRenderBackendVertex *)temp_malloc(count * sizeof(*v));
+   for (i = 2; i < n; ++i)
+   {
+      int k, indices[3] = {0, i - 1, i};
+      for (k = 0; k < 3; ++k)
+      {
+         r3s_point * p = ppl[indices[k]];
          sLgd3dVertex old;
-         old.color=(lgd3d_alpha<<24)|0xffffff;
-         old.specular=fog_specular;
-         old.tu=p->grp.u;old.tv=p->grp.v;
-         setxyz(&old,p);
-         ModernConvertVertex(&v[j],&old);
-         v[j].u1=uv2[indices[k]]->u;
-         v[j].v1=uv2[indices[k]]->v;
+         old.color = (lgd3d_alpha << 24) | 0xffffff;
+         old.specular = fog_specular;
+         old.tu = p->grp.u;
+         old.tv = p->grp.v;
+         setxyz(&old, p);
+         ModernConvertVertex(&v[j], &old);
+         v[j].u1 = uv2[indices[k]]->u;
+         v[j].v1 = uv2[indices[k]]->v;
          ++j;
       }
    }
@@ -1554,4 +1618,3 @@ int lgd3d_TrifanMTD(int n, r3s_point **ppl, LGD3D_tex_coord **uv2)
    temp_free(v);
    return CLIP_NONE;
 }
-

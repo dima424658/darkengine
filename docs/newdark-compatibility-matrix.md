@@ -356,7 +356,7 @@ those documented declarations still require ABI/behavioral review.
 | ND-599898740f66 | `DOC/new_config_vars.txt` | ffmpeg_force_intern_indeo5 | actmovie/movie.cpp uses avcodec decoder lookup, not ir50_32.dll selection; prefers available MP4 sibling | External DLL codec selection replaced; key unsupported |
 | ND-70f590b96646 | `DOC/new_config_vars.txt` | widescreen_lock_hfov | No exact token; inspect aliases | Unverified |
 | ND-f5641948eacd | `DOC/new_config_vars.txt` | fov | No exact token; inspect aliases | Unverified |
-| ND-3a98c1a96f01 | `DOC/new_config_vars.txt` | vsync_mode | `libsrc/lgd3d/vulkan.cpp` reads boolean `vsync`; documented mode values are not equivalent | Partial alternative; NewDark key unsupported |
+| ND-3a98c1a96f01 | `DOC/new_config_vars.txt` | vsync_mode | `libsrc/lgd3d/vulkan/vulkan_runtime.cpp` reads boolean `vsync`; documented mode values are not equivalent | Partial alternative; NewDark key unsupported |
 | ND-00284ae775c0 | `DOC/new_config_vars.txt` | d3d_disp_limit_gpu_frames | Vulkan uses fixed frame resources/swapchain policy, not documented pair of menu/game queue-depth settings | Missing per-menu/game configurable frame queue limit |
 | ND-b41a21881bc8 | `DOC/new_config_vars.txt` | d3d_disp_refreshrate | SDL window code toggles fullscreen without mapping this requested-rate/fallback control | Missing documented refresh-rate selection policy |
 | ND-14f998cafcb3 | `DOC/new_config_vars.txt` | framerate_cap | simtime.cpp reads SlowFrame milliseconds, not framerate_cap FPS; min_frame_time is simulation timing, not equivalent cap | Missing FPS config; millisecond pacing exists separately |

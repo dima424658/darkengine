@@ -1,5 +1,5 @@
-#include "canvas_snapshot.hpp"
-#include "vulkan_scene_renderer.hpp"
+#include "canvas_snapshot.h"
+#include "vulkan/vulkan_scene_renderer.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <algorithm>

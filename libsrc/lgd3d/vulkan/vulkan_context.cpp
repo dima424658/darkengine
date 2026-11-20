@@ -1,4 +1,5 @@
-#include "vulkan_context.hpp"
+#include "vulkan_upload.h"
+#include "vulkan_context.h"
 
 #include <algorithm>
 #include <array>
@@ -13,68 +14,66 @@
 
 namespace
 {
-constexpr vk::Format kDepthFormats[] = {vk::Format::eD32Sfloat,
-   vk::Format::eD24UnormS8Uint, vk::Format::eD16Unorm};
-constexpr char kPortabilitySubsetExtension[] =
-   "VK_KHR_portability_subset";
+constexpr vk::Format kDepthFormats[] = {
+   vk::Format::eD32Sfloat, vk::Format::eD24UnormS8Uint, vk::Format::eD16Unorm};
+constexpr char kPortabilitySubsetExtension[] = "VK_KHR_portability_subset";
 
-void SetError(char *buffer, unsigned capacity, const char *message)
+void SetError(char * buffer, unsigned capacity, const char * message)
 {
    if (buffer && capacity)
-      std::snprintf(buffer, capacity, "%s", message ? message : "unknown error");
+      std::snprintf(buffer, capacity, "%s",
+                    message ? message : "unknown error");
 }
 
-bool HasInstanceExtension(const std::vector<vk::ExtensionProperties> &extensions,
-   const char *name)
+bool HasInstanceExtension(
+   const std::vector<vk::ExtensionProperties> & extensions, const char * name)
 {
-   return std::any_of(extensions.begin(), extensions.end(),
-      [name](const vk::ExtensionProperties &extension) {
-         return std::strcmp(extension.extensionName, name) == 0;
-      });
+   return std::any_of(
+      extensions.begin(), extensions.end(),
+      [name](const vk::ExtensionProperties & extension)
+      { return std::strcmp(extension.extensionName, name) == 0; });
 }
 
-bool HasDeviceExtension(vk::PhysicalDevice device, const char *name)
+bool HasDeviceExtension(vk::PhysicalDevice device, const char * name)
 {
    const auto extensions = device.enumerateDeviceExtensionProperties();
-   return std::any_of(extensions.begin(), extensions.end(),
-      [name](const vk::ExtensionProperties &extension) {
-         return std::strcmp(extension.extensionName, name) == 0;
-      });
+   return std::any_of(
+      extensions.begin(), extensions.end(),
+      [name](const vk::ExtensionProperties & extension)
+      { return std::strcmp(extension.extensionName, name) == 0; });
 }
 
-bool SupportsColorAttachmentFormat(vk::PhysicalDevice device,
-   vk::Format format)
+bool SupportsColorAttachmentFormat(vk::PhysicalDevice device, vk::Format format)
 {
    if (format == vk::Format::eUndefined)
       return false;
    const auto properties = device.getFormatProperties(format);
    return (properties.optimalTilingFeatures &
-      vk::FormatFeatureFlagBits::eColorAttachment) !=
-      vk::FormatFeatureFlags{};
+           vk::FormatFeatureFlagBits::eColorAttachment) !=
+          vk::FormatFeatureFlags{};
 }
 
 bool SelectSurfaceFormat(vk::PhysicalDevice device,
-   const std::vector<vk::SurfaceFormatKHR> &formats,
-   vk::SurfaceFormatKHR *selected)
+                         const std::vector<vk::SurfaceFormatKHR> & formats,
+                         vk::SurfaceFormatKHR * selected)
 {
    if (formats.empty() || !selected)
       return false;
-   if (formats.size() == 1 &&
-       formats.front().format == vk::Format::eUndefined)
+   if (formats.size() == 1 && formats.front().format == vk::Format::eUndefined)
    {
       const vk::Format preferred[] = {vk::Format::eB8G8R8A8Unorm,
-         vk::Format::eR8G8B8A8Unorm};
+                                      vk::Format::eR8G8B8A8Unorm};
       for (vk::Format format : preferred)
          if (SupportsColorAttachmentFormat(device, format))
          {
-            *selected = vk::SurfaceFormatKHR(format,
-               formats.front().colorSpace);
+            *selected =
+               vk::SurfaceFormatKHR(format, formats.front().colorSpace);
             return true;
          }
       return false;
    }
 
-   for (const auto &format : formats)
+   for (const auto & format : formats)
       if ((format.format == vk::Format::eB8G8R8A8Unorm ||
            format.format == vk::Format::eR8G8B8A8Unorm) &&
           format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear &&
@@ -83,7 +82,7 @@ bool SelectSurfaceFormat(vk::PhysicalDevice device,
          *selected = format;
          return true;
       }
-   for (const auto &format : formats)
+   for (const auto & format : formats)
       if (SupportsColorAttachmentFormat(device, format.format))
       {
          *selected = format;
@@ -92,36 +91,38 @@ bool SelectSurfaceFormat(vk::PhysicalDevice device,
    return false;
 }
 
-std::vector<std::string> &EnumeratedPhysicalDeviceNames()
+std::vector<std::string> & EnumeratedPhysicalDeviceNames()
 {
    static std::vector<std::string> names;
    return names;
 }
-}
+} // namespace
 
 extern "C" int RenderBackendVulkanEnumeratePhysicalDevices(void)
 {
-   std::vector<std::string> &names = EnumeratedPhysicalDeviceNames();
+   std::vector<std::string> & names = EnumeratedPhysicalDeviceNames();
    names.clear();
    try
    {
       vk::raii::Context context;
       std::vector<const char *> extensions;
-      const auto availableExtensions = vk::enumerateInstanceExtensionProperties();
+      const auto availableExtensions =
+         vk::enumerateInstanceExtensionProperties();
       vk::InstanceCreateFlags instanceFlags{};
 #ifdef VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
       if (HasInstanceExtension(availableExtensions,
-            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
+                               VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
       {
          extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
          instanceFlags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
       }
 #endif
-      vk::ApplicationInfo applicationInfo("Dark Engine", 1,
-         "Dark Engine Vulkan Device Enumeration", 1, VK_API_VERSION_1_1);
-      vk::InstanceCreateInfo instanceInfo(instanceFlags, &applicationInfo,
-         0, nullptr, static_cast<uint32_t>(extensions.size()),
-         extensions.data());
+      vk::ApplicationInfo applicationInfo(
+         "Dark Engine", 1, "Dark Engine Vulkan Device Enumeration", 1,
+         VK_API_VERSION_1_1);
+      vk::InstanceCreateInfo instanceInfo(
+         instanceFlags, &applicationInfo, 0, nullptr,
+         static_cast<uint32_t>(extensions.size()), extensions.data());
       vk::raii::Instance instance = context.createInstance(instanceInfo);
       for (vk::PhysicalDevice device : (*instance).enumeratePhysicalDevices())
       {
@@ -130,30 +131,31 @@ extern "C" int RenderBackendVulkanEnumeratePhysicalDevices(void)
       }
       if (names.empty())
          std::fprintf(stderr,
-            "Vulkan device enumeration found no physical devices\n");
+                      "Vulkan device enumeration found no physical devices\n");
       return static_cast<int>(names.size());
    }
-   catch (const std::exception &exception)
+   catch (const std::exception & exception)
    {
       names.clear();
       std::fprintf(stderr, "Vulkan device enumeration failed: %s\n",
-         exception.what());
+                   exception.what());
       return 0;
    }
    catch (...)
    {
       names.clear();
       std::fprintf(stderr,
-         "Vulkan device enumeration failed with an unknown error\n");
+                   "Vulkan device enumeration failed with an unknown error\n");
       return 0;
    }
 }
 
-extern "C" const char *RenderBackendVulkanPhysicalDeviceName(int index)
+extern "C" const char * RenderBackendVulkanPhysicalDeviceName(int index)
 {
-   const std::vector<std::string> &names = EnumeratedPhysicalDeviceNames();
+   const std::vector<std::string> & names = EnumeratedPhysicalDeviceNames();
    return index >= 0 && static_cast<size_t>(index) < names.size()
-      ? names[static_cast<size_t>(index)].c_str() : nullptr;
+             ? names[static_cast<size_t>(index)].c_str()
+             : nullptr;
 }
 
 cVulkanContext::~cVulkanContext()
@@ -161,8 +163,9 @@ cVulkanContext::~cVulkanContext()
    Shutdown();
 }
 
-uint32_t cVulkanContext::FindMemoryType(uint32_t typeBits,
-   vk::MemoryPropertyFlags properties) const
+uint32_t
+cVulkanContext::FindMemoryType(uint32_t typeBits,
+                               vk::MemoryPropertyFlags properties) const
 {
    const auto memory = m_physicalDevice.getMemoryProperties();
    for (uint32_t index = 0; index < memory.memoryTypeCount; ++index)
@@ -173,7 +176,7 @@ uint32_t cVulkanContext::FindMemoryType(uint32_t typeBits,
 }
 
 uint32_t cVulkanContext::FindHostVisibleMemoryType(uint32_t typeBits,
-   bool *hostCoherent) const
+                                                   bool * hostCoherent) const
 {
    const auto memory = m_physicalDevice.getMemoryProperties();
    const vk::MemoryPropertyFlags hostVisible =
@@ -196,15 +199,16 @@ uint32_t cVulkanContext::FindHostVisibleMemoryType(uint32_t typeBits,
 }
 
 bool cVulkanContext::Initialize(
-   const std::vector<const char *> &surfaceExtensions,
-   const tSurfaceFactory &createSurface, uint32_t drawableWidth,
-   uint32_t drawableHeight, int physicalDeviceIndex, char *error,
+   const std::vector<const char *> & surfaceExtensions,
+   const tSurfaceFactory & createSurface, uint32_t drawableWidth,
+   uint32_t drawableHeight, int physicalDeviceIndex, char * error,
    unsigned errorCapacity)
 {
    Shutdown();
    if (!createSurface || !drawableWidth || !drawableHeight)
    {
-      SetError(error, errorCapacity, "invalid Vulkan surface provider or extent");
+      SetError(error, errorCapacity,
+               "invalid Vulkan surface provider or extent");
       return false;
    }
 
@@ -212,32 +216,35 @@ bool cVulkanContext::Initialize(
    {
       std::vector<const char *> extensions = surfaceExtensions;
 
-      const auto availableExtensions = vk::enumerateInstanceExtensionProperties();
+      const auto availableExtensions =
+         vk::enumerateInstanceExtensionProperties();
       vk::InstanceCreateFlags instanceFlags{};
 #ifdef VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
       if (HasInstanceExtension(availableExtensions,
-            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
+                               VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
       {
          extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
          instanceFlags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
       }
 #endif
       vk::ApplicationInfo applicationInfo("Dark Engine", 1,
-         "Dark Engine Vulkan Renderer", 1, VK_API_VERSION_1_1);
-      vk::InstanceCreateInfo instanceInfo(instanceFlags, &applicationInfo,
-         0, nullptr, static_cast<uint32_t>(extensions.size()),
-         extensions.data());
+                                          "Dark Engine Vulkan Renderer", 1,
+                                          VK_API_VERSION_1_1);
+      vk::InstanceCreateInfo instanceInfo(
+         instanceFlags, &applicationInfo, 0, nullptr,
+         static_cast<uint32_t>(extensions.size()), extensions.data());
       m_instance = m_raiiContext.createInstance(instanceInfo);
 
       const vk::SurfaceKHR surface = createSurface(*m_instance);
       if (!surface)
       {
-         SetError(error, errorCapacity, "platform Vulkan surface creation failed");
+         SetError(error, errorCapacity,
+                  "platform Vulkan surface creation failed");
          Shutdown();
          return false;
       }
-      m_surface = vk::raii::SurfaceKHR(m_instance,
-         static_cast<VkSurfaceKHR>(surface));
+      m_surface =
+         vk::raii::SurfaceKHR(m_instance, static_cast<VkSurfaceKHR>(surface));
 
       struct sCandidate
       {
@@ -262,8 +269,9 @@ bool cVulkanContext::Initialize(
          {
             if (queueFamilies[i].queueCount == 0)
                continue;
-            const bool supportsGraphics = (queueFamilies[i].queueFlags &
-               vk::QueueFlagBits::eGraphics) != vk::QueueFlags{};
+            const bool supportsGraphics =
+               (queueFamilies[i].queueFlags & vk::QueueFlagBits::eGraphics) !=
+               vk::QueueFlags{};
             const bool supportsPresent =
                device.getSurfaceSupportKHR(i, *m_surface);
             if (supportsGraphics && supportsPresent)
@@ -300,56 +308,61 @@ bool cVulkanContext::Initialize(
          if (!supportsDepthAttachment)
             continue;
          vk::PhysicalDeviceProperties properties = device.getProperties();
-         int score = properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu
-            ? 100 : properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu
-            ? 50 : 0;
-         candidates.push_back({device, graphics, present, properties, score,
-            deviceIndex});
+         int score =
+            properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu ? 100
+            : properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu
+               ? 50
+               : 0;
+         candidates.push_back(
+            {device, graphics, present, properties, score, deviceIndex});
       }
       if (candidates.empty())
       {
          SetError(error, errorCapacity,
-            "no Vulkan device supports graphics, presentation, and VK_KHR_swapchain");
+                  "no Vulkan device supports graphics, presentation, and "
+                  "VK_KHR_swapchain");
          Shutdown();
          return false;
       }
-      const sCandidate *chosen = nullptr;
+      const sCandidate * chosen = nullptr;
       if (physicalDeviceIndex >= 0)
       {
-         const auto selected = std::find_if(candidates.begin(), candidates.end(),
-            [physicalDeviceIndex](const sCandidate &candidate) {
-               return candidate.enumerationIndex ==
-                  static_cast<uint32_t>(physicalDeviceIndex);
-            });
+         const auto selected =
+            std::find_if(candidates.begin(), candidates.end(),
+                         [physicalDeviceIndex](const sCandidate & candidate)
+                         {
+                            return candidate.enumerationIndex ==
+                                   static_cast<uint32_t>(physicalDeviceIndex);
+                         });
          if (selected != candidates.end())
             chosen = &*selected;
       }
       if (!chosen)
-         chosen = &*std::max_element(candidates.begin(),
-         candidates.end(), [](const sCandidate &a, const sCandidate &b) {
-            return a.score < b.score;
-         });
-      m_physicalDevice = vk::raii::PhysicalDevice(m_instance, static_cast<VkPhysicalDevice>(chosen->device));
+         chosen =
+            &*std::max_element(candidates.begin(), candidates.end(),
+                               [](const sCandidate & a, const sCandidate & b)
+                               { return a.score < b.score; });
+      m_physicalDevice = vk::raii::PhysicalDevice(
+         m_instance, static_cast<VkPhysicalDevice>(chosen->device));
       m_graphicsQueueFamily = chosen->graphicsFamily;
       m_presentQueueFamily = chosen->presentFamily;
       m_properties = chosen->properties;
 
       const float priority = 1.0f;
       std::set<uint32_t> uniqueFamilies{m_graphicsQueueFamily,
-         m_presentQueueFamily};
+                                        m_presentQueueFamily};
       std::vector<vk::DeviceQueueCreateInfo> queueInfos;
       for (uint32_t family : uniqueFamilies)
          queueInfos.emplace_back(vk::DeviceQueueCreateFlags{}, family, 1,
-            &priority);
+                                 &priority);
       std::vector<const char *> deviceExtensions{
          VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-      if (HasDeviceExtension(m_physicalDevice,
-            kPortabilitySubsetExtension))
+      if (HasDeviceExtension(m_physicalDevice, kPortabilitySubsetExtension))
          deviceExtensions.push_back(kPortabilitySubsetExtension);
       vk::PhysicalDeviceFeatures features{};
-      vk::DeviceCreateInfo deviceInfo({},
-         static_cast<uint32_t>(queueInfos.size()), queueInfos.data(),
-         0, nullptr, static_cast<uint32_t>(deviceExtensions.size()),
+      vk::DeviceCreateInfo deviceInfo(
+         {}, static_cast<uint32_t>(queueInfos.size()), queueInfos.data(), 0,
+         nullptr, static_cast<uint32_t>(deviceExtensions.size()),
          deviceExtensions.data(), &features);
       m_device = m_physicalDevice.createDevice(deviceInfo);
       m_graphicsQueue = (*m_device).getQueue(m_graphicsQueueFamily, 0);
@@ -366,7 +379,7 @@ bool cVulkanContext::Initialize(
          error[0] = '\0';
       return true;
    }
-   catch (const std::exception &exception)
+   catch (const std::exception & exception)
    {
       SetError(error, errorCapacity, exception.what());
       Shutdown();
@@ -381,7 +394,13 @@ void cVulkanContext::Shutdown()
    m_surfaceLost = false;
    if (*m_device)
    {
-      try { (void)(*m_device).waitIdle(); } catch (...) {}
+      try
+      {
+         (void)(*m_device).waitIdle();
+      }
+      catch (...)
+      {
+      }
       m_pendingUploads.clear();
       m_pendingUploadHead = 0;
       m_uploadPool.clear();
@@ -413,7 +432,8 @@ void cVulkanContext::Shutdown()
 
 bool cVulkanContext::CreateSwapchain()
 {
-   const auto capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(*m_surface);
+   const auto capabilities =
+      m_physicalDevice.getSurfaceCapabilitiesKHR(*m_surface);
    const auto formats = m_physicalDevice.getSurfaceFormatsKHR(*m_surface);
    vk::SurfaceFormatKHR surfaceFormat{};
    if (!SelectSurfaceFormat(*m_physicalDevice, formats, &surfaceFormat))
@@ -425,19 +445,19 @@ bool cVulkanContext::CreateSwapchain()
       m_swapchainExtent = capabilities.currentExtent;
    else
    {
-      m_swapchainExtent.width = std::clamp(
-         m_drawableWidth,
-         capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-      m_swapchainExtent.height = std::clamp(
-         m_drawableHeight,
-         capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+      m_swapchainExtent.width =
+         std::clamp(m_drawableWidth, capabilities.minImageExtent.width,
+                    capabilities.maxImageExtent.width);
+      m_swapchainExtent.height =
+         std::clamp(m_drawableHeight, capabilities.minImageExtent.height,
+                    capabilities.maxImageExtent.height);
    }
 
    uint32_t imageCount = capabilities.minImageCount + 1;
    if (capabilities.maxImageCount && imageCount > capabilities.maxImageCount)
       imageCount = capabilities.maxImageCount;
    const uint32_t queueFamilies[] = {m_graphicsQueueFamily,
-      m_presentQueueFamily};
+                                     m_presentQueueFamily};
    vk::SwapchainCreateInfoKHR swapchainInfo{};
    swapchainInfo.surface = *m_surface;
    swapchainInfo.minImageCount = imageCount;
@@ -479,8 +499,8 @@ bool cVulkanContext::CreateSwapchain()
       const auto modes = m_physicalDevice.getSurfacePresentModesKHR(*m_surface);
       // Mailbox allows uncapped rendering without tearing. Immediate is the
       // fallback for surfaces (including some Wayland drivers) without it.
-      for (const auto preferred : {vk::PresentModeKHR::eMailbox,
-                                  vk::PresentModeKHR::eImmediate})
+      for (const auto preferred :
+           {vk::PresentModeKHR::eMailbox, vk::PresentModeKHR::eImmediate})
          if (std::find(modes.begin(), modes.end(), preferred) != modes.end())
          {
             swapchainInfo.presentMode = preferred;
@@ -501,8 +521,8 @@ bool cVulkanContext::CreateSwapchain()
       viewInfo.viewType = vk::ImageViewType::e2D;
       viewInfo.format = m_swapchainFormat;
       viewInfo.components = vk::ComponentMapping{};
-      viewInfo.subresourceRange = vk::ImageSubresourceRange(
-         vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+      viewInfo.subresourceRange =
+         vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
       m_imageViews.push_back(m_device.createImageView(viewInfo));
    }
 
@@ -524,8 +544,8 @@ bool cVulkanContext::CreateSwapchain()
       vk::ImageCreateInfo imageInfo{};
       imageInfo.imageType = vk::ImageType::e2D;
       imageInfo.format = m_depthFormat;
-      imageInfo.extent = vk::Extent3D(m_swapchainExtent.width,
-         m_swapchainExtent.height, 1);
+      imageInfo.extent =
+         vk::Extent3D(m_swapchainExtent.width, m_swapchainExtent.height, 1);
       imageInfo.mipLevels = 1;
       imageInfo.arrayLayers = 1;
       imageInfo.samples = vk::SampleCountFlagBits::e1;
@@ -536,9 +556,10 @@ bool cVulkanContext::CreateSwapchain()
       vk::raii::DeviceMemory memory{nullptr};
       vk::raii::Image image = m_device.createImage(imageInfo);
       const auto requirements = (*m_device).getImageMemoryRequirements(*image);
-      vk::MemoryAllocateInfo allocation(requirements.size,
+      vk::MemoryAllocateInfo allocation(
+         requirements.size,
          FindMemoryType(requirements.memoryTypeBits,
-            vk::MemoryPropertyFlagBits::eDeviceLocal));
+                        vk::MemoryPropertyFlagBits::eDeviceLocal));
       memory = m_device.allocateMemory(allocation);
       (*m_device).bindImageMemory(*image, *memory, 0);
       vk::ImageViewCreateInfo viewInfo{};
@@ -548,7 +569,8 @@ bool cVulkanContext::CreateSwapchain()
       vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eDepth;
       if (m_depthFormat == vk::Format::eD24UnormS8Uint)
          aspects |= vk::ImageAspectFlagBits::eStencil;
-      viewInfo.subresourceRange = vk::ImageSubresourceRange(aspects, 0, 1, 0, 1);
+      viewInfo.subresourceRange =
+         vk::ImageSubresourceRange(aspects, 0, 1, 0, 1);
       m_depthImages.push_back(std::move(image));
       m_depthMemory.push_back(std::move(memory));
       m_depthViews.push_back(m_device.createImageView(viewInfo));
@@ -563,21 +585,22 @@ bool cVulkanContext::CreateSwapchain()
    colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
    colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
    colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-   vk::AttachmentReference colorReference(0,
-      vk::ImageLayout::eColorAttachmentOptimal);
+   vk::AttachmentReference colorReference(
+      0, vk::ImageLayout::eColorAttachmentOptimal);
    vk::AttachmentDescription depthAttachment{};
    depthAttachment.format = m_depthFormat;
    depthAttachment.samples = vk::SampleCountFlagBits::e1;
    depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
    depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
-   depthAttachment.stencilLoadOp =
-      m_depthFormat == vk::Format::eD24UnormS8Uint
-         ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eDontCare;
+   depthAttachment.stencilLoadOp = m_depthFormat == vk::Format::eD24UnormS8Uint
+                                      ? vk::AttachmentLoadOp::eClear
+                                      : vk::AttachmentLoadOp::eDontCare;
    depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
    depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
-   depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-   vk::AttachmentReference depthReference(1,
-      vk::ImageLayout::eDepthStencilAttachmentOptimal);
+   depthAttachment.finalLayout =
+      vk::ImageLayout::eDepthStencilAttachmentOptimal;
+   vk::AttachmentReference depthReference(
+      1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
    vk::SubpassDescription subpass{};
    subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
    subpass.colorAttachmentCount = 1;
@@ -593,7 +616,7 @@ bool cVulkanContext::CreateSwapchain()
    dependency.dstAccessMask |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
    vk::RenderPassCreateInfo renderPassInfo{};
    const vk::AttachmentDescription attachments[] = {colorAttachment,
-      depthAttachment};
+                                                    depthAttachment};
    renderPassInfo.attachmentCount = 2;
    renderPassInfo.pAttachments = attachments;
    renderPassInfo.subpassCount = 1;
@@ -622,11 +645,11 @@ bool cVulkanContext::CreateSwapchain()
          m_graphicsQueueFamily);
       m_commandPool = m_device.createCommandPool(poolInfo);
    }
-   vk::CommandBufferAllocateInfo commandInfo(*m_commandPool,
-      vk::CommandBufferLevel::ePrimary, kVulkanFramesInFlight);
+   vk::CommandBufferAllocateInfo commandInfo(
+      *m_commandPool, vk::CommandBufferLevel::ePrimary, kVulkanFramesInFlight);
    m_commandBuffers.clear();
    auto commandBuffers = m_device.allocateCommandBuffers(commandInfo);
-   for (auto &commandBuffer : commandBuffers)
+   for (auto & commandBuffer : commandBuffers)
       m_commandBuffers.push_back(std::move(commandBuffer));
    if (m_imageAvailable.empty())
    {
@@ -702,8 +725,8 @@ bool cVulkanContext::Resize(uint32_t drawableWidth, uint32_t drawableHeight)
    }
 }
 
-bool cVulkanContext::BeginFrame(const std::array<float, 4> &clearColor,
-   vk::CommandBuffer *commandBuffer)
+bool cVulkanContext::BeginFrame(const std::array<float, 4> & clearColor,
+                                vk::CommandBuffer * commandBuffer)
 {
    if (!*m_device || m_frameActive || !commandBuffer)
       return false;
@@ -714,14 +737,14 @@ bool cVulkanContext::BeginFrame(const std::array<float, 4> &clearColor,
    {
       const vk::Fence frameFence = *m_inFlightFences[m_frameIndex];
       (void)(*m_device).waitForFences(frameFence, VK_TRUE, UINT64_MAX);
-      const auto acquired = (*m_device).acquireNextImageKHR(*m_swapchain,
-         UINT64_MAX, *m_imageAvailable[m_frameIndex], nullptr);
+      const auto acquired = (*m_device).acquireNextImageKHR(
+         *m_swapchain, UINT64_MAX, *m_imageAvailable[m_frameIndex], nullptr);
       if (acquired.result == vk::Result::eSuboptimalKHR)
          m_recreateSwapchain = true;
       m_acquiredImage = acquired.value;
       if (m_imageFences[m_acquiredImage])
-         (void)(*m_device).waitForFences(m_imageFences[m_acquiredImage], VK_TRUE,
-            UINT64_MAX);
+         (void)(*m_device).waitForFences(m_imageFences[m_acquiredImage],
+                                         VK_TRUE, UINT64_MAX);
       m_imageFences[m_acquiredImage] = frameFence;
 
       vk::CommandBuffer active = *m_commandBuffers[m_frameIndex];
@@ -759,11 +782,12 @@ bool cVulkanContext::BeginFrame(const std::array<float, 4> &clearColor,
    }
 }
 
-bool cVulkanContext::RecreateSurface(const tSurfaceFactory &createSurface,
-   uint32_t drawableWidth, uint32_t drawableHeight)
+bool cVulkanContext::RecreateSurface(const tSurfaceFactory & createSurface,
+                                     uint32_t drawableWidth,
+                                     uint32_t drawableHeight)
 {
-   if (!*m_instance || !*m_device || !createSurface ||
-       !drawableWidth || !drawableHeight)
+   if (!*m_instance || !*m_device || !createSurface || !drawableWidth ||
+       !drawableHeight)
       return false;
    try
    {
@@ -771,9 +795,9 @@ bool cVulkanContext::RecreateSurface(const tSurfaceFactory &createSurface,
       if (!surface)
          return false;
       vk::raii::SurfaceKHR replacement(m_instance,
-         static_cast<VkSurfaceKHR>(surface));
+                                       static_cast<VkSurfaceKHR>(surface));
       if (!m_physicalDevice.getSurfaceSupportKHR(m_presentQueueFamily,
-            *replacement))
+                                                 *replacement))
          return false;
 
       m_frameActive = false;
@@ -851,16 +875,22 @@ bool cVulkanContext::EndFrame()
          m_surfaceLost = true;
          m_recreateSwapchain = true;
       }
-      m_frameIndex = (m_frameIndex + 1) %
-         static_cast<uint32_t>(m_commandBuffers.size());
+      m_frameIndex =
+         (m_frameIndex + 1) % static_cast<uint32_t>(m_commandBuffers.size());
       m_frameActive = false;
       return result == vk::Result::eSuccess ||
-         result == vk::Result::eSuboptimalKHR;
+             result == vk::Result::eSuboptimalKHR;
    }
    catch (const vk::OutOfDateKHRError &)
    {
       if (frameSubmitted)
-         try { (void)(*m_device).waitIdle(); } catch (...) {}
+         try
+         {
+            (void)(*m_device).waitIdle();
+         }
+         catch (...)
+         {
+         }
       m_frameActive = false;
       m_recreateSwapchain = true;
       return false;
@@ -868,7 +898,13 @@ bool cVulkanContext::EndFrame()
    catch (const vk::SurfaceLostKHRError &)
    {
       if (frameSubmitted)
-         try { (void)(*m_device).waitIdle(); } catch (...) {}
+         try
+         {
+            (void)(*m_device).waitIdle();
+         }
+         catch (...)
+         {
+         }
       m_frameActive = false;
       m_surfaceLost = true;
       m_recreateSwapchain = true;
@@ -877,21 +913,28 @@ bool cVulkanContext::EndFrame()
    catch (const std::exception &)
    {
       if (frameSubmitted)
-         try { (void)(*m_device).waitIdle(); } catch (...) {}
+         try
+         {
+            (void)(*m_device).waitIdle();
+         }
+         catch (...)
+         {
+         }
       m_frameActive = false;
       m_recreateSwapchain = true;
       return false;
    }
 }
 
-std::unique_ptr<cVulkanContext::sPendingUpload> cVulkanContext::AcquireUpload(
-   vk::DeviceSize bytes)
+std::unique_ptr<cVulkanContext::sPendingUpload>
+cVulkanContext::AcquireUpload(vk::DeviceSize bytes)
 {
    CollectCompletedUploads();
    size_t best = m_uploadPool.size();
    for (size_t i = 0; i < m_uploadPool.size(); ++i)
       if (m_uploadPool[i]->capacity >= bytes &&
-          (best == m_uploadPool.size() || m_uploadPool[i]->capacity < m_uploadPool[best]->capacity))
+          (best == m_uploadPool.size() ||
+           m_uploadPool[i]->capacity < m_uploadPool[best]->capacity))
          best = i;
    if (best != m_uploadPool.size())
    {
@@ -906,50 +949,68 @@ std::unique_ptr<cVulkanContext::sPendingUpload> cVulkanContext::AcquireUpload(
    upload->device = *m_device;
    // Geometric size classes let different texture sizes share staging slots.
    vk::DeviceSize capacity = 4096;
-   while (capacity < bytes && capacity <= std::numeric_limits<vk::DeviceSize>::max() / 2)
+   while (capacity < bytes &&
+          capacity <= std::numeric_limits<vk::DeviceSize>::max() / 2)
       capacity *= 2;
    upload->capacity = std::max(capacity, bytes);
-   upload->stagingBuffer = m_device.createBuffer(vk::BufferCreateInfo({}, upload->capacity,
-      vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive));
-   const auto requirements = (*m_device).getBufferMemoryRequirements(*upload->stagingBuffer);
+   upload->stagingBuffer = m_device.createBuffer(vk::BufferCreateInfo(
+      {}, upload->capacity, vk::BufferUsageFlagBits::eTransferSrc,
+      vk::SharingMode::eExclusive));
+   const auto requirements =
+      (*m_device).getBufferMemoryRequirements(*upload->stagingBuffer);
    upload->allocationBytes = requirements.size;
-   const auto memoryType = FindHostVisibleMemoryType(requirements.memoryTypeBits, &upload->coherent);
-   upload->stagingMemory = m_device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryType));
-   (*m_device).bindBufferMemory(*upload->stagingBuffer, *upload->stagingMemory, 0);
-   upload->mapped = (*m_device).mapMemory(*upload->stagingMemory, 0, requirements.size);
+   const auto memoryType =
+      FindHostVisibleMemoryType(requirements.memoryTypeBits, &upload->coherent);
+   upload->stagingMemory = m_device.allocateMemory(
+      vk::MemoryAllocateInfo(requirements.size, memoryType));
+   (*m_device).bindBufferMemory(*upload->stagingBuffer, *upload->stagingMemory,
+                                0);
+   upload->mapped =
+      (*m_device).mapMemory(*upload->stagingMemory, 0, requirements.size);
    upload->fence = m_device.createFence({});
-   upload->commandBuffers = m_device.allocateCommandBuffers(vk::CommandBufferAllocateInfo(
-      *m_commandPool, vk::CommandBufferLevel::ePrimary, 1));
+   upload->commandBuffers =
+      m_device.allocateCommandBuffers(vk::CommandBufferAllocateInfo(
+         *m_commandPool, vk::CommandBufferLevel::ePrimary, 1));
    return upload;
 }
 
-bool cVulkanContext::SubmitUpload(const void *pixels, int width, int height, int rowBytes,
-   const std::function<void(vk::CommandBuffer, vk::Buffer)> &record)
+bool cVulkanContext::SubmitUpload(
+   const void * pixels, int width, int height, int rowBytes,
+   const std::function<void(vk::CommandBuffer, vk::Buffer)> & record)
 {
-   if (!*m_device || !*m_commandPool || !record || !pixels || width <= 0 || height <= 0 ||
-       rowBytes <= 0 || static_cast<uint64_t>(width) * 4 > static_cast<uint64_t>(rowBytes))
+   if (!*m_device || !*m_commandPool || !record || !pixels || width <= 0 ||
+       height <= 0 || rowBytes <= 0 ||
+       static_cast<uint64_t>(width) * 4 > static_cast<uint64_t>(rowBytes))
       return false;
    const size_t rowSize = static_cast<size_t>(width) * 4;
-   if (static_cast<size_t>(height) > std::numeric_limits<size_t>::max() / rowSize ||
+   if (static_cast<size_t>(height) >
+          std::numeric_limits<size_t>::max() / rowSize ||
        static_cast<size_t>(height - 1) >
-          (std::numeric_limits<size_t>::max() - rowSize) / static_cast<size_t>(rowBytes))
+          (std::numeric_limits<size_t>::max() - rowSize) /
+             static_cast<size_t>(rowBytes))
       return false;
    try
    {
       // Reserve before submitting: registering a successful submission must
       // never throw and destroy an upload that the GPU is still reading.
       if (m_pendingUploads.size() == m_pendingUploads.capacity())
-         m_pendingUploads.reserve(std::max<size_t>(8, m_pendingUploads.size() * 2));
-      auto upload = AcquireUpload(static_cast<vk::DeviceSize>(rowSize) * height);
+         m_pendingUploads.reserve(
+            std::max<size_t>(8, m_pendingUploads.size() * 2));
+      auto upload =
+         AcquireUpload(static_cast<vk::DeviceSize>(rowSize) * height);
       for (int y = 0; y < height; ++y)
-         std::memcpy(static_cast<uint8_t *>(upload->mapped) + static_cast<size_t>(y) * rowSize,
-            static_cast<const uint8_t *>(pixels) + static_cast<size_t>(y) * rowBytes, rowSize);
+         std::memcpy(static_cast<uint8_t *>(upload->mapped) +
+                        static_cast<size_t>(y) * rowSize,
+                     static_cast<const uint8_t *>(pixels) +
+                        static_cast<size_t>(y) * rowBytes,
+                     rowSize);
       if (!upload->coherent)
          (*m_device).flushMappedMemoryRanges(
             vk::MappedMemoryRange(*upload->stagingMemory, 0, VK_WHOLE_SIZE));
       const vk::CommandBuffer commandBuffer = *upload->commandBuffers.front();
       commandBuffer.reset();
-      commandBuffer.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+      commandBuffer.begin(vk::CommandBufferBeginInfo(
+         vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
       record(commandBuffer, *upload->stagingBuffer);
       commandBuffer.end();
       (*m_device).resetFences(*upload->fence);
@@ -977,18 +1038,22 @@ void cVulkanContext::CollectCompletedUploads()
    {
       try
       {
-         auto &upload = m_pendingUploads[m_pendingUploadHead];
+         auto & upload = m_pendingUploads[m_pendingUploadHead];
          if ((*m_device).getFenceStatus(*upload->fence) != vk::Result::eSuccess)
             break;
          if (upload->allocationBytes <= cacheBudget)
          {
             // Adapt to changes in upload sizes: a cache full of tiny level
             // textures must not prevent reuse of larger HUD/movie buffers.
-            while (!m_uploadPool.empty() && (m_uploadPool.size() >= maxCachedSlots ||
-                   upload->allocationBytes > cacheBudget - m_cachedUploadBytes))
+            while (
+               !m_uploadPool.empty() &&
+               (m_uploadPool.size() >= maxCachedSlots ||
+                upload->allocationBytes > cacheBudget - m_cachedUploadBytes))
             {
-               const auto smallest = std::min_element(m_uploadPool.begin(), m_uploadPool.end(),
-                  [](const auto &a, const auto &b) { return a->allocationBytes < b->allocationBytes; });
+               const auto smallest = std::min_element(
+                  m_uploadPool.begin(), m_uploadPool.end(),
+                  [](const auto & a, const auto & b)
+                  { return a->allocationBytes < b->allocationBytes; });
                m_cachedUploadBytes -= (*smallest)->allocationBytes;
                *smallest = std::move(m_uploadPool.back());
                m_uploadPool.pop_back();
@@ -999,7 +1064,8 @@ void cVulkanContext::CollectCompletedUploads()
             m_cachedUploadBytes += upload->allocationBytes;
             m_uploadPool.back() = std::move(upload);
          }
-         else upload.reset();
+         else
+            upload.reset();
          ++m_pendingUploadHead;
       }
       catch (const std::exception &)
@@ -1012,18 +1078,123 @@ void cVulkanContext::CollectCompletedUploads()
       m_pendingUploads.clear();
       m_pendingUploadHead = 0;
    }
-   else if (m_pendingUploadHead >= 64 && m_pendingUploadHead >= m_pendingUploads.size() / 2)
+   else if (m_pendingUploadHead >= 64 &&
+            m_pendingUploadHead >= m_pendingUploads.size() / 2)
    {
       // Amortize bookkeeping compaction; no live GPU resources are removed.
-      m_pendingUploads.erase(m_pendingUploads.begin(),
-         m_pendingUploads.begin() + static_cast<std::ptrdiff_t>(m_pendingUploadHead));
+      m_pendingUploads.erase(
+         m_pendingUploads.begin(),
+         m_pendingUploads.begin() +
+            static_cast<std::ptrdiff_t>(m_pendingUploadHead));
       m_pendingUploadHead = 0;
    }
 }
 
 bool cVulkanContext::PresentClearFrame(float red, float green, float blue,
-   float alpha)
+                                       float alpha)
 {
    vk::CommandBuffer commandBuffer{};
    return BeginFrame({red, green, blue, alpha}, &commandBuffer) && EndFrame();
+}
+
+void cVulkanContext::SetVSync(bool enabled)
+{
+   m_vsync = enabled;
+}
+
+bool cVulkanContext::NeedsSwapchainRecreation() const
+{
+   return m_recreateSwapchain;
+}
+
+bool cVulkanContext::NeedsSurfaceRecreation() const
+{
+   return m_surfaceLost;
+}
+
+vk::Instance cVulkanContext::Instance() const
+{
+   return m_instance;
+}
+
+vk::SurfaceKHR cVulkanContext::Surface() const
+{
+   return *m_surface;
+}
+
+vk::PhysicalDevice cVulkanContext::PhysicalDevice() const
+{
+   return m_physicalDevice;
+}
+
+vk::Device cVulkanContext::Device() const
+{
+   return m_device;
+}
+
+vk::Queue cVulkanContext::GraphicsQueue() const
+{
+   return m_graphicsQueue;
+}
+
+vk::Queue cVulkanContext::PresentQueue() const
+{
+   return m_presentQueue;
+}
+
+uint32_t cVulkanContext::GraphicsQueueFamily() const
+{
+   return m_graphicsQueueFamily;
+}
+
+uint32_t cVulkanContext::PresentQueueFamily() const
+{
+   return m_presentQueueFamily;
+}
+
+vk::Extent2D cVulkanContext::SwapchainExtent() const
+{
+   return m_swapchainExtent;
+}
+
+uint32_t cVulkanContext::SwapchainImageCount() const
+{
+   return static_cast<uint32_t>(m_swapchainImages.size());
+}
+
+vk::RenderPass cVulkanContext::RenderPass() const
+{
+   return *m_renderPass;
+}
+
+vk::Format cVulkanContext::SwapchainFormat() const
+{
+   return m_swapchainFormat;
+}
+
+vk::Format cVulkanContext::DepthFormat() const
+{
+   return m_depthFormat;
+}
+
+uint32_t cVulkanContext::FrameIndex() const
+{
+   return m_frameIndex;
+}
+
+bool cVulkanContext::FrameActive() const
+{
+   return m_frameActive;
+}
+
+cVulkanContext::cVulkanContext() = default;
+
+const vk::raii::Device & cVulkanContext::RaiiDevice() const
+{
+   return m_device;
+}
+
+const vk::PhysicalDeviceProperties & cVulkanContext::Properties() const
+{
+   return m_properties;
 }

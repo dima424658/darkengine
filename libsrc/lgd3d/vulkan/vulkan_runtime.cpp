@@ -1,3 +1,4 @@
+#include "vulkan_runtime.h"
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -19,17 +20,17 @@
 #include "runtime.h"
 #include "event_bridge.h"
 #include <display_window.h>
-#include "vulkan_context.hpp"
-#include "vulkan_render_backend.hpp"
+#include "vulkan_context.h"
+#include "vulkan_backend_bridge.h"
 #include <sdl_vulkan.hpp>
-#include "vulkan_scene_renderer.hpp"
-#include "canvas_snapshot.hpp"
+#include "vulkan_scene_renderer.h"
+#include <canvas_snapshot.h>
 #include <config.h>
 
-namespace
+namespace lgd3d
 {
 vk::SurfaceKHR CreateSDLVulkanSurface(vk::Instance instance,
-   std::string &surfaceError)
+                                      std::string & surfaceError)
 {
    char error[512]{};
    vk::SurfaceKHR surface{};
@@ -38,78 +39,12 @@ vk::SurfaceKHR CreateSDLVulkanSurface(vk::Instance instance,
    return surface;
 }
 
-class cVulkanRuntime
+bool cVulkanRuntime::HasDirectCanvas() const
 {
-public:
-   bool Open(int width, int height, const char *title);
-   void Close();
-   bool TakeResize(int *width, int *height);
-   bool BeginEventPump();
-   void WindowResized();
-   void WindowMinimized();
-   void WindowRestored();
-   void ApplicationSuspended();
-   void ApplicationResumed();
-   void EndEventPump();
-   void SetPhysicalDeviceIndex(int index);
-   void BeginApplicationFrame();
-   void EndApplicationFrame();
-   void PresentProgress();
-   bool PresentCanvasRect(const void *pixels, int width, int height, int rowBytes,
-      int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
-   bool ClearOverlay(void *pixels, int width, int height, int rowBytes, int depth);
-   bool HasDirectCanvas() const { return m_directCanvas; }
-   void InvalidateCanvas();
-   void PresentRect(const void *pixels, int width, int height, int rowBytes,
-      int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
-   void Present(const void *pixels, int width, int height, int rowBytes,
-      int bitDepth, const uint8_t *palette);
-   bool PresentMovieFrame(const void *rgba, int width, int height,
-      int rowBytes);
-private:
-   void UpdateWindowDimensions();
-   void HandleSwapchainRecreation();
-   void ProcessPendingLifecycleResize();
-   bool ApplyPendingResize();
-   bool CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
-      int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
-   bool PrepareCanvasTexture();
-   void DrawCanvas(vk::CommandBuffer commandBuffer, bool transparent);
+   return m_directCanvas;
+}
 
-   bool m_windowOpen{};
-   cVulkanContext m_context;
-   cVulkanSceneRenderer m_renderer;
-   vk::CommandBuffer m_activeCommandBuffer{};
-   int m_width{}, m_height{};
-   int m_clientWidth{}, m_clientHeight{};
-   int m_drawableWidth{}, m_drawableHeight{};
-   int m_canvasWidth{}, m_canvasHeight{};
-   std::array<void *, kVulkanFramesInFlight> m_canvasTextures{};
-   std::array<int, kVulkanFramesInFlight> m_canvasTextureWidths{};
-   std::array<int, kVulkanFramesInFlight> m_canvasTextureHeights{};
-   std::array<uint64_t, kVulkanFramesInFlight>
-      m_canvasTextureGenerations{};
-   std::array<void *, kVulkanFramesInFlight> m_canvasPaletteTextures{};
-   std::array<uint64_t, kVulkanFramesInFlight> m_canvasPaletteGenerations{};
-   std::atomic<bool> m_windowMinimized{};
-   std::atomic<bool> m_appInBackground{};
-   std::atomic<bool> m_lifecycleResizePending{};
-   std::atomic<bool> m_surfaceRecreationPending{};
-   std::chrono::steady_clock::time_point m_nextSurfaceRecreationAttempt{};
-   bool m_surfaceRecreationErrorReported{};
-   bool m_frameActive{};
-   int m_physicalDeviceIndex{-1};
-   bool m_resizePending{};
-   bool m_windowSizeChanged{};
-   bool m_exitHookRegistered{};
-   void *m_movieTexture{};
-   cCanvasSnapshot m_canvas;
-   const void *m_canvasSource{};
-   bool m_directCanvas{};
-   bool m_overlayClearEligible{};
-};
-
-cVulkanRuntime &VulkanRuntime()
+cVulkanRuntime & VulkanRuntime()
 {
    static cVulkanRuntime runtime;
    return runtime;
@@ -117,22 +52,22 @@ cVulkanRuntime &VulkanRuntime()
 
 void cVulkanRuntime::UpdateWindowDimensions()
 {
-   if (!m_windowOpen) return;
+   if (!m_windowOpen)
+      return;
    const int oldWidth = m_clientWidth, oldHeight = m_clientHeight;
    const int oldDrawableWidth = m_drawableWidth;
    const int oldDrawableHeight = m_drawableHeight;
-   SDLDisplayGetWindowMetrics(&m_clientWidth, &m_clientHeight,
-      &m_drawableWidth, &m_drawableHeight);
+   SDLDisplayGetWindowMetrics(&m_clientWidth, &m_clientHeight, &m_drawableWidth,
+                              &m_drawableHeight);
    if (m_clientWidth > 0 && m_clientHeight > 0 &&
        (m_clientWidth != oldWidth || m_clientHeight != oldHeight))
       m_windowSizeChanged = true;
    RenderBackendVulkanSetWindowMetrics(m_clientWidth, m_clientHeight,
-      m_drawableWidth, m_drawableHeight);
-   const bool drawableSizeChanged =
-      m_drawableWidth != oldDrawableWidth ||
-      m_drawableHeight != oldDrawableHeight;
+                                       m_drawableWidth, m_drawableHeight);
+   const bool drawableSizeChanged = m_drawableWidth != oldDrawableWidth ||
+                                    m_drawableHeight != oldDrawableHeight;
    const bool resizeNeeded = drawableSizeChanged || m_resizePending ||
-      m_context.NeedsSwapchainRecreation();
+                             m_context.NeedsSwapchainRecreation();
    if (m_context.NeedsSurfaceRecreation())
       m_surfaceRecreationPending.store(true, std::memory_order_release);
    if (m_surfaceRecreationPending.load(std::memory_order_acquire))
@@ -147,9 +82,9 @@ void cVulkanRuntime::UpdateWindowDimensions()
          m_resizePending = true;
       else
       {
-         const bool resized = m_context.Resize(
-            static_cast<uint32_t>(m_drawableWidth),
-            static_cast<uint32_t>(m_drawableHeight));
+         const bool resized =
+            m_context.Resize(static_cast<uint32_t>(m_drawableWidth),
+                             static_cast<uint32_t>(m_drawableHeight));
          m_renderer.ResetPipelines();
          m_resizePending = !resized;
       }
@@ -192,21 +127,21 @@ bool cVulkanRuntime::ApplyPendingResize()
       uint32_t drawableHeight = 0;
       std::string surfaceError;
       if (!SDLVulkanGetDrawableSize(drawableWidth, drawableHeight, error,
-             sizeof(error)) ||
+                                    sizeof(error)) ||
           !m_context.RecreateSurface(
-             [&surfaceError](vk::Instance instance) {
-                return CreateSDLVulkanSurface(instance, surfaceError);
-             }, drawableWidth, drawableHeight))
+             [&surfaceError](vk::Instance instance)
+             { return CreateSDLVulkanSurface(instance, surfaceError); },
+             drawableWidth, drawableHeight))
       {
          if (!surfaceError.empty())
             std::snprintf(error, sizeof(error), "%s", surfaceError.c_str());
          else if (!error[0])
             std::snprintf(error, sizeof(error), "%s",
-               "Vulkan surface recreation failed");
+                          "Vulkan surface recreation failed");
          if (error[0] && !m_surfaceRecreationErrorReported)
          {
             std::fprintf(stderr, "Vulkan surface recreation failed: %s\n",
-               error);
+                         error);
             m_surfaceRecreationErrorReported = true;
          }
          return false;
@@ -222,8 +157,9 @@ bool cVulkanRuntime::ApplyPendingResize()
    }
    if (!m_resizePending)
       return true;
-   const bool resized = m_context.Resize(static_cast<uint32_t>(m_drawableWidth),
-      static_cast<uint32_t>(m_drawableHeight));
+   const bool resized =
+      m_context.Resize(static_cast<uint32_t>(m_drawableWidth),
+                       static_cast<uint32_t>(m_drawableHeight));
    m_renderer.ResetPipelines();
    if (!resized)
       return false;
@@ -231,8 +167,10 @@ bool cVulkanRuntime::ApplyPendingResize()
    return true;
 }
 
-bool cVulkanRuntime::CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
-   int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
+bool cVulkanRuntime::CaptureCanvas(const void * pixels, int width, int height,
+                                   int rowBytes, int depth,
+                                   const uint8_t * palette, int x0, int y0,
+                                   int x1, int y1)
 {
    try
    {
@@ -243,13 +181,15 @@ bool cVulkanRuntime::CaptureCanvas(const void *pixels, int width, int height, in
          y1 = height;
       }
       if (m_canvas.UpdateRect(pixels, width, height, rowBytes, depth, palette,
-            RenderBackendVulkanSceneActive() != 0, x0, y0, x1, y1))
+                              RenderBackendVulkanSceneActive() != 0, x0, y0, x1,
+                              y1))
       {
          m_canvasWidth = width;
          m_canvasHeight = height;
          m_canvasSource = pixels;
          // Partial flushes cannot prove that other rows were not written.
-         m_overlayClearEligible = x0 <= 0 && y0 <= 0 && x1 >= width && y1 >= height;
+         m_overlayClearEligible =
+            x0 <= 0 && y0 <= 0 && x1 >= width && y1 >= height;
          return true;
       }
    }
@@ -271,67 +211,79 @@ bool cVulkanRuntime::PrepareCanvasTexture()
       return false;
    const int rowBytes = m_canvas.RowBytes();
    const int textureWidth = rowBytes / 4;
-   void *&texture = m_canvasTextures[slot];
+   void *& texture = m_canvasTextures[slot];
    if (!texture || m_canvasTextureWidths[slot] != textureWidth ||
        m_canvasTextureHeights[slot] != m_canvasHeight)
    {
       if (texture)
          m_renderer.DestroyTexture(texture);
       texture = m_renderer.CreateTexture(textureWidth, m_canvasHeight,
-         m_canvas.Pixels().data(), rowBytes);
-      if (!texture) return false;
+                                         m_canvas.Pixels().data(), rowBytes);
+      if (!texture)
+         return false;
       m_canvasTextureWidths[slot] = textureWidth;
       m_canvasTextureHeights[slot] = m_canvasHeight;
       m_canvasTextureGenerations[slot] = m_canvas.Generation();
    }
    else if (m_canvasTextureGenerations[slot] != m_canvas.Generation())
    {
-      if (!m_renderer.UpdateFrameTexture(texture, textureWidth,
-            m_canvasHeight, m_canvas.Pixels().data(), rowBytes))
+      if (!m_renderer.UpdateFrameTexture(texture, textureWidth, m_canvasHeight,
+                                         m_canvas.Pixels().data(), rowBytes))
          return false;
       m_canvasTextureGenerations[slot] = m_canvas.Generation();
    }
    if (m_canvas.Depth() == 8)
    {
-      void *&palette = m_canvasPaletteTextures[slot];
+      void *& palette = m_canvasPaletteTextures[slot];
       if (!palette)
-         palette = m_renderer.CreateTexture(256, 1, m_canvas.Palette().data(), 1024);
-      else if (m_canvasPaletteGenerations[slot] != m_canvas.PaletteGeneration() &&
+         palette =
+            m_renderer.CreateTexture(256, 1, m_canvas.Palette().data(), 1024);
+      else if (m_canvasPaletteGenerations[slot] !=
+                  m_canvas.PaletteGeneration() &&
                !m_renderer.UpdateFrameTexture(palette, 256, 1,
-                  m_canvas.Palette().data(), 1024))
+                                              m_canvas.Palette().data(), 1024))
          return false;
-      if (!palette) return false;
+      if (!palette)
+         return false;
       m_canvasPaletteGenerations[slot] = m_canvas.PaletteGeneration();
    }
 
    return true;
 }
 
-void cVulkanRuntime::DrawCanvas(vk::CommandBuffer commandBuffer, bool transparent)
+void cVulkanRuntime::DrawCanvas(vk::CommandBuffer commandBuffer,
+                                bool transparent)
 {
    const uint32_t slot = m_context.FrameIndex();
    if (!RenderBackendVulkanCanvasOverlayEnabled() ||
        slot >= m_canvasTextures.size() || !m_canvasTextures[slot] ||
-       !m_canvasWidth || !m_canvasHeight) return;
+       !m_canvasWidth || !m_canvasHeight)
+      return;
    const bool smooth = RenderBackendVulkanUseLinearCanvasSampling() != 0;
    const uint32_t canvasMode = static_cast<uint32_t>(m_canvas.Depth()) |
-      (m_canvas.Transparent() ? 0x100u : 0u) | (smooth ? 0x200u : 0u);
+                               (m_canvas.Transparent() ? 0x100u : 0u) |
+                               (smooth ? 0x200u : 0u);
    int x, y, width, height;
-   RenderBackendVulkanGetViewport(m_canvasWidth, m_canvasHeight,
+   RenderBackendVulkanGetViewport(
+      m_canvasWidth, m_canvasHeight,
       static_cast<int>(m_context.SwapchainExtent().width),
-      static_cast<int>(m_context.SwapchainExtent().height), 1, &x, &y, &width, &height);
-   (void)m_renderer.DrawOverlay(commandBuffer, m_canvasTextures[slot],
+      static_cast<int>(m_context.SwapchainExtent().height), 1, &x, &y, &width,
+      &height);
+   (void)m_renderer.DrawOverlay(
+      commandBuffer, m_canvasTextures[slot],
       m_canvas.Depth() == 8 ? m_canvasPaletteTextures[slot] : nullptr,
       m_canvasWidth, m_canvasHeight,
-      vk::Rect2D({x, y}, {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}),
+      vk::Rect2D({x, y},
+                 {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}),
       true, smooth, canvasMode, transparent);
 }
 
-bool cVulkanRuntime::Open(int width, int height, const char *title)
+bool cVulkanRuntime::Open(int width, int height, const char * title)
 {
    if (m_windowOpen)
    {
-      m_width = width; m_height = height;
+      m_width = width;
+      m_height = height;
       SDLDisplaySetTitle(title);
       UpdateWindowDimensions();
       return true;
@@ -344,14 +296,15 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    m_appInBackground.store(false, std::memory_order_relaxed);
    m_windowMinimized.store(false, std::memory_order_relaxed);
    m_lifecycleResizePending.store(false, std::memory_order_relaxed);
-   m_width = width; m_height = height;
+   m_width = width;
+   m_height = height;
    UpdateWindowDimensions();
    char error[512]{};
    std::vector<const char *> surfaceExtensions;
    uint32_t drawableWidth = 0;
    uint32_t drawableHeight = 0;
    if (!SDLVulkanGetInstanceExtensions(surfaceExtensions, drawableWidth,
-          drawableHeight, error, sizeof(error)))
+                                       drawableHeight, error, sizeof(error)))
    {
       std::fprintf(stderr, "Vulkan initialization failed: %s\n", error);
       Close();
@@ -361,11 +314,11 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    int vsync = 1;
    config_get_int("vsync", &vsync);
    m_context.SetVSync(vsync != 0);
-   if (!m_context.Initialize(surfaceExtensions,
-         [&surfaceError](vk::Instance instance) {
-            return CreateSDLVulkanSurface(instance, surfaceError);
-         }, drawableWidth, drawableHeight, m_physicalDeviceIndex, error,
-         sizeof(error)))
+   if (!m_context.Initialize(
+          surfaceExtensions, [&surfaceError](vk::Instance instance)
+          { return CreateSDLVulkanSurface(instance, surfaceError); },
+          drawableWidth, drawableHeight, m_physicalDeviceIndex, error,
+          sizeof(error)))
    {
       if (!surfaceError.empty())
          std::snprintf(error, sizeof(error), "%s", surfaceError.c_str());
@@ -391,17 +344,17 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
 #if !defined(__ANDROID__)
    char executablePath[1024]{};
    if (PlatformGetExecutableDirectory(executablePath,
-         static_cast<int>(sizeof(executablePath))))
+                                      static_cast<int>(sizeof(executablePath))))
    {
       std::string executableDirectory(executablePath);
       while (!executableDirectory.empty() &&
              (executableDirectory.back() == '/' ||
               executableDirectory.back() == '\\'))
          executableDirectory.pop_back();
-      std::string executableShaderDir = executableDirectory + "/" +
-         DARK_VULKAN_SHADER_DIR;
+      std::string executableShaderDir =
+         executableDirectory + "/" + DARK_VULKAN_SHADER_DIR;
       std::ifstream vertexShader(executableShaderDir + "/scene.vert.spv",
-         std::ios::binary);
+                                 std::ios::binary);
       if (vertexShader.good())
          shaderDir = std::move(executableShaderDir);
       else
@@ -421,8 +374,8 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    }
 #endif
    if (!m_renderer.Initialize(m_context,
-         (shaderDir + "/scene.vert.spv").c_str(),
-         (shaderDir + "/scene.frag.spv").c_str()))
+                              (shaderDir + "/scene.vert.spv").c_str(),
+                              (shaderDir + "/scene.frag.spv").c_str()))
    {
       std::fprintf(stderr, "Vulkan scene renderer initialization failed\n");
       Close();
@@ -431,8 +384,8 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    RenderBackendVulkanSetRenderer(&m_renderer);
    m_windowMinimized = SDLDisplayWindowIsMinimized();
    std::fprintf(stderr, "SDL3 window opened (%dx%d points, %dx%d pixels)\n",
-      m_clientWidth, m_clientHeight,
-      m_drawableWidth, m_drawableHeight);
+                m_clientWidth, m_clientHeight, m_drawableWidth,
+                m_drawableHeight);
    return true;
 }
 
@@ -447,7 +400,7 @@ void cVulkanRuntime::Close()
       m_frameActive = false;
    }
    RenderBackendVulkanSetRenderer(nullptr);
-   for (void *&texture : m_canvasTextures)
+   for (void *& texture : m_canvasTextures)
    {
       if (texture)
       {
@@ -455,9 +408,10 @@ void cVulkanRuntime::Close()
          texture = nullptr;
       }
    }
-   for (void *&texture : m_canvasPaletteTextures)
+   for (void *& texture : m_canvasPaletteTextures)
    {
-      if (texture) m_renderer.DestroyTexture(texture);
+      if (texture)
+         m_renderer.DestroyTexture(texture);
       texture = nullptr;
    }
    if (m_movieTexture)
@@ -492,7 +446,7 @@ void cVulkanRuntime::Close()
    m_surfaceRecreationErrorReported = false;
 }
 
-bool cVulkanRuntime::TakeResize(int *width, int *height)
+bool cVulkanRuntime::TakeResize(int * width, int * height)
 {
    if (!m_windowOpen || !m_windowSizeChanged || !width || !height)
       return false;
@@ -504,7 +458,8 @@ bool cVulkanRuntime::TakeResize(int *width, int *height)
 
 bool cVulkanRuntime::BeginEventPump()
 {
-   if (!m_windowOpen) return false;
+   if (!m_windowOpen)
+      return false;
    ProcessPendingLifecycleResize();
    return true;
 }
@@ -545,7 +500,9 @@ void cVulkanRuntime::EndEventPump()
 }
 
 void cVulkanRuntime::SetPhysicalDeviceIndex(int index)
-{ m_physicalDeviceIndex = index; }
+{
+   m_physicalDeviceIndex = index;
+}
 
 void cVulkanRuntime::BeginApplicationFrame()
 {
@@ -562,7 +519,8 @@ void cVulkanRuntime::BeginApplicationFrame()
        m_windowMinimized.load(std::memory_order_acquire) ||
        m_drawableWidth <= 0 || m_drawableHeight <= 0)
       return;
-   if (!ApplyPendingResize()) return;
+   if (!ApplyPendingResize())
+      return;
    vk::CommandBuffer commandBuffer{};
    if (!m_context.BeginFrame({0.0f, 0.0f, 0.0f, 1.0f}, &commandBuffer))
    {
@@ -575,14 +533,15 @@ void cVulkanRuntime::BeginApplicationFrame()
    m_activeCommandBuffer = commandBuffer;
    m_renderer.BeginFrame(m_context.FrameIndex());
    RenderBackendVulkanAttach(commandBuffer, m_width, m_height, m_clientWidth,
-      m_clientHeight, m_drawableWidth, m_drawableHeight);
+                             m_clientHeight, m_drawableWidth, m_drawableHeight);
    m_frameActive = true;
 }
 
 void cVulkanRuntime::EndApplicationFrame()
 {
    ZoneScopedN("Vulkan present");
-   if (!m_frameActive) return;
+   if (!m_frameActive)
+      return;
    if (!PrepareCanvasTexture())
       std::fprintf(stderr, "Vulkan canvas texture update failed\n");
    DrawCanvas(m_activeCommandBuffer, RenderBackendVulkanSceneActive() != 0);
@@ -616,17 +575,22 @@ void cVulkanRuntime::PresentProgress()
       BeginApplicationFrame();
 }
 
-void cVulkanRuntime::Present(const void *pixels, int width, int height, int rowBytes,
-   int bitDepth, const uint8_t *palette)
+void cVulkanRuntime::Present(const void * pixels, int width, int height,
+                             int rowBytes, int bitDepth,
+                             const uint8_t * palette)
 {
-   PresentRect(pixels, width, height, rowBytes, bitDepth, palette, 0, 0, width, height);
+   PresentRect(pixels, width, height, rowBytes, bitDepth, palette, 0, 0, width,
+               height);
 }
 
-void cVulkanRuntime::PresentRect(const void *pixels, int width, int height,
-   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
+void cVulkanRuntime::PresentRect(const void * pixels, int width, int height,
+                                 int rowBytes, int depth,
+                                 const uint8_t * palette, int x0, int y0,
+                                 int x1, int y1)
 {
    m_directCanvas = false;
-   CaptureCanvas(pixels, width, height, rowBytes, depth, palette, x0, y0, x1, y1);
+   CaptureCanvas(pixels, width, height, rowBytes, depth, palette, x0, y0, x1,
+                 y1);
 }
 
 void cVulkanRuntime::InvalidateCanvas()
@@ -640,30 +604,34 @@ void cVulkanRuntime::InvalidateCanvas()
    m_canvasPaletteGenerations.fill(0);
 }
 
-bool cVulkanRuntime::PresentCanvasRect(const void *pixels, int width, int height,
-   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
+bool cVulkanRuntime::PresentCanvasRect(const void * pixels, int width,
+                                       int height, int rowBytes, int depth,
+                                       const uint8_t * palette, int x0, int y0,
+                                       int x1, int y1)
 {
    // Preserve the legacy visible-canvas path for menus, software rendering,
    // retained editor panes, and out-of-frame progress updates.
-   if (!m_frameActive || !RenderBackendVulkanSceneActive() || RenderBackendPreserveCanvas())
+   if (!m_frameActive || !RenderBackendVulkanSceneActive() ||
+       RenderBackendPreserveCanvas())
       return false;
-   if (!CaptureCanvas(pixels, width, height, rowBytes, depth, palette, x0, y0, x1, y1))
+   if (!CaptureCanvas(pixels, width, height, rowBytes, depth, palette, x0, y0,
+                      x1, y1))
       return false;
    m_directCanvas = true;
    return true;
 }
 
-bool cVulkanRuntime::ClearOverlay(void *pixels, int width, int height,
-   int rowBytes, int depth)
+bool cVulkanRuntime::ClearOverlay(void * pixels, int width, int height,
+                                  int rowBytes, int depth)
 {
    const bool eligible = m_overlayClearEligible;
    m_overlayClearEligible = false;
    return eligible && pixels == m_canvasSource &&
-      m_canvas.ClearOverlay(pixels, width, height, rowBytes, depth);
+          m_canvas.ClearOverlay(pixels, width, height, rowBytes, depth);
 }
 
-bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
-   int rowBytes)
+bool cVulkanRuntime::PresentMovieFrame(const void * rgba, int width, int height,
+                                       int rowBytes)
 {
    if (!m_windowOpen || !rgba || width <= 0 || height <= 0 || rowBytes <= 0 ||
        width > std::numeric_limits<int>::max() / 4)
@@ -673,8 +641,8 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    const size_t rowCount = static_cast<size_t>(height);
    const size_t maxSize = std::numeric_limits<size_t>::max();
    if (sourceStride < pixelStride || rowCount > maxSize / pixelStride ||
-       (rowCount > 1 && (rowCount - 1) >
-          (maxSize - pixelStride) / sourceStride))
+       (rowCount > 1 &&
+        (rowCount - 1) > (maxSize - pixelStride) / sourceStride))
       return false;
 
    std::vector<uint8_t> pixels;
@@ -688,8 +656,9 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    }
    for (int y = 0; y < height; ++y)
       std::memcpy(pixels.data() + static_cast<size_t>(y) * pixelStride,
-         static_cast<const uint8_t *>(rgba) +
-            static_cast<size_t>(y) * sourceStride, pixelStride);
+                  static_cast<const uint8_t *>(rgba) +
+                     static_cast<size_t>(y) * sourceStride,
+                  pixelStride);
    // Movie frames are presented synchronously from the game loop. Suspend its
    // current swapchain frame so the movie can acquire and present its own
    // frame, then leave the game loop ready to render the next frame.
@@ -712,7 +681,8 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
       if (m_movieTexture)
       {
          if (!m_renderer.UpdateTexture(m_movieTexture, width, height,
-               pixels.data(), static_cast<int>(pixelStride)))
+                                       pixels.data(),
+                                       static_cast<int>(pixelStride)))
          {
             if (resumeFrame)
                BeginApplicationFrame();
@@ -721,8 +691,8 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
       }
       else
       {
-         m_movieTexture = m_renderer.CreateTexture(width, height,
-            pixels.data(), static_cast<int>(pixelStride));
+         m_movieTexture = m_renderer.CreateTexture(
+            width, height, pixels.data(), static_cast<int>(pixelStride));
          if (!m_movieTexture)
          {
             if (resumeFrame)
@@ -739,7 +709,8 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    }
 
    vk::CommandBuffer commandBuffer{};
-   const bool began = m_context.BeginFrame({0.0f,0.0f,0.0f,1.0f}, &commandBuffer);
+   const bool began =
+      m_context.BeginFrame({0.0f, 0.0f, 0.0f, 1.0f}, &commandBuffer);
    bool drew = false;
    if (began)
    {
@@ -747,18 +718,18 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
       {
          m_renderer.BeginFrame(m_context.FrameIndex());
          const vk::Extent2D extent = m_context.SwapchainExtent();
-         const double scale = std::min(
-            static_cast<double>(extent.width) / width,
-            static_cast<double>(extent.height) / height);
-         const int viewportWidth = std::max(
-            static_cast<int>(width * scale), 1);
-         const int viewportHeight = std::max(
-            static_cast<int>(height * scale), 1);
-         drew = m_renderer.DrawOverlay(commandBuffer, m_movieTexture, nullptr,
-            width, height, vk::Rect2D(
-               {(static_cast<int>(extent.width) - viewportWidth) / 2,
-                (static_cast<int>(extent.height) - viewportHeight) / 2},
-               {static_cast<uint32_t>(viewportWidth), static_cast<uint32_t>(viewportHeight)}),
+         const double scale =
+            std::min(static_cast<double>(extent.width) / width,
+                     static_cast<double>(extent.height) / height);
+         const int viewportWidth = std::max(static_cast<int>(width * scale), 1);
+         const int viewportHeight =
+            std::max(static_cast<int>(height * scale), 1);
+         drew = m_renderer.DrawOverlay(
+            commandBuffer, m_movieTexture, nullptr, width, height,
+            vk::Rect2D({(static_cast<int>(extent.width) - viewportWidth) / 2,
+                        (static_cast<int>(extent.height) - viewportHeight) / 2},
+                       {static_cast<uint32_t>(viewportWidth),
+                        static_cast<uint32_t>(viewportHeight)}),
             false, true);
       }
       catch (...)
@@ -774,62 +745,112 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    return began && drew;
 }
 
-}
+} // namespace lgd3d
 
-bool DarkRenderOpen(int width, int height, const char *title)
-{ return VulkanRuntime().Open(width, height, title); }
-void DarkRenderClose(void) { VulkanRuntime().Close(); }
-bool DarkRenderTakeResize(int *width, int *height)
-{ return VulkanRuntime().TakeResize(width, height); }
+using namespace lgd3d;
+
+bool DarkRenderOpen(int width, int height, const char * title)
+{
+   return VulkanRuntime().Open(width, height, title);
+}
+void DarkRenderClose(void)
+{
+   VulkanRuntime().Close();
+}
+bool DarkRenderTakeResize(int * width, int * height)
+{
+   return VulkanRuntime().TakeResize(width, height);
+}
 bool DarkRenderBeginEventPump(void)
-{ return VulkanRuntime().BeginEventPump(); }
-void DarkRenderWindowResized(void) { VulkanRuntime().WindowResized(); }
-void DarkRenderWindowMinimized(void) { VulkanRuntime().WindowMinimized(); }
-void DarkRenderWindowRestored(void) { VulkanRuntime().WindowRestored(); }
+{
+   return VulkanRuntime().BeginEventPump();
+}
+void DarkRenderWindowResized(void)
+{
+   VulkanRuntime().WindowResized();
+}
+void DarkRenderWindowMinimized(void)
+{
+   VulkanRuntime().WindowMinimized();
+}
+void DarkRenderWindowRestored(void)
+{
+   VulkanRuntime().WindowRestored();
+}
 void DarkRenderApplicationSuspended(void)
-{ VulkanRuntime().ApplicationSuspended(); }
+{
+   VulkanRuntime().ApplicationSuspended();
+}
 void DarkRenderApplicationResumed(void)
-{ VulkanRuntime().ApplicationResumed(); }
-void DarkRenderEndEventPump(void) { VulkanRuntime().EndEventPump(); }
+{
+   VulkanRuntime().ApplicationResumed();
+}
+void DarkRenderEndEventPump(void)
+{
+   VulkanRuntime().EndEventPump();
+}
 void DarkRenderBeginApplicationFrame(void)
-{ VulkanRuntime().BeginApplicationFrame(); }
+{
+   VulkanRuntime().BeginApplicationFrame();
+}
 void DarkRenderEndApplicationFrame(void)
-{ VulkanRuntime().EndApplicationFrame(); }
+{
+   VulkanRuntime().EndApplicationFrame();
+}
 void DarkRenderPresentProgress(void)
-{ VulkanRuntime().PresentProgress(); }
+{
+   VulkanRuntime().PresentProgress();
+}
 extern "C" void RenderBackendSetWindowedClientSizeHint(int width, int height)
-{ SDLDisplaySetWindowedClientSizeHint(width, height); }
-void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes,
-   int bitDepth, const uint8_t *palette)
-{ VulkanRuntime().Present(pixels, width, height, rowBytes, bitDepth, palette); }
-bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
-   int rowBytes)
-{ return VulkanRuntime().PresentMovieFrame(rgba, width, height, rowBytes); }
+{
+   SDLDisplaySetWindowedClientSizeHint(width, height);
+}
+void DarkRenderPresent(const void * pixels, int width, int height, int rowBytes,
+                       int bitDepth, const uint8_t * palette)
+{
+   VulkanRuntime().Present(pixels, width, height, rowBytes, bitDepth, palette);
+}
+bool DarkRenderPresentMovieFrame(const void * rgba, int width, int height,
+                                 int rowBytes)
+{
+   return VulkanRuntime().PresentMovieFrame(rgba, width, height, rowBytes);
+}
 
 extern "C" void RenderBackendSetPhysicalDeviceIndex(int index)
-{ VulkanRuntime().SetPhysicalDeviceIndex(index); }
-
-extern "C" int RenderBackendPresentCanvasRect(const void *pixels, int width, int height,
-   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
 {
-   return VulkanRuntime().PresentCanvasRect(pixels, width, height, rowBytes,
-      depth, palette, x0, y0, x1, y1);
+   VulkanRuntime().SetPhysicalDeviceIndex(index);
 }
 
-extern "C" int RenderBackendClearOverlayPixels(void *pixels, int width, int height,
-   int rowBytes, int depth)
+extern "C" int RenderBackendPresentCanvasRect(const void * pixels, int width,
+                                              int height, int rowBytes,
+                                              int depth,
+                                              const uint8_t * palette, int x0,
+                                              int y0, int x1, int y1)
+{
+   return VulkanRuntime().PresentCanvasRect(pixels, width, height, rowBytes,
+                                            depth, palette, x0, y0, x1, y1);
+}
+
+extern "C" int RenderBackendClearOverlayPixels(void * pixels, int width,
+                                               int height, int rowBytes,
+                                               int depth)
 {
    return VulkanRuntime().ClearOverlay(pixels, width, height, rowBytes, depth);
 }
 
 bool DarkRenderHasDirectCanvas()
-{ return VulkanRuntime().HasDirectCanvas(); }
-
-void DarkRenderPresentRect(const void *pixels, int width, int height,
-   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
 {
-   VulkanRuntime().PresentRect(pixels, width, height, rowBytes, depth,
-      palette, x0, y0, x1, y1);
+   return VulkanRuntime().HasDirectCanvas();
+}
+
+void DarkRenderPresentRect(const void * pixels, int width, int height,
+                           int rowBytes, int depth, const uint8_t * palette,
+                           int x0, int y0, int x1, int y1)
+{
+   VulkanRuntime().PresentRect(pixels, width, height, rowBytes, depth, palette,
+                               x0, y0, x1, y1);
 }
 void DarkRenderInvalidateCanvas()
-{ VulkanRuntime().InvalidateCanvas(); }
+{
+   VulkanRuntime().InvalidateCanvas();
+}

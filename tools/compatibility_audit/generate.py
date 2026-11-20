@@ -187,7 +187,7 @@ def review(doc, name, evidence):
         evidence = "`src/script/engscrpt.cpp` returns the full resource search path, including FM/base entries, rather than just mod paths"
     if doc.name == "new_config_vars.txt":
         replacements = {
-            "vsync_mode": ("Partial alternative; NewDark key unsupported", "`libsrc/lgd3d/vulkan.cpp` reads boolean `vsync`; documented mode values are not equivalent"),
+            "vsync_mode": ("Partial alternative; NewDark key unsupported", "`libsrc/lgd3d/vulkan/vulkan_runtime.cpp` reads boolean `vsync`; documented mode values are not equivalent"),
             "force_windowed": ("Alternative controls; NewDark key unsupported", "`src/framewrk/init.cpp` persists `game_full_screen`; SDL display provider owns window modes"),
             "use_d3d_display": ("Intentionally replaced", "Shared SDL/Vulkan display path replaces Direct3D provider selection; no DX9 provider"),
         }

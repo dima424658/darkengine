@@ -2,7 +2,8 @@
 #ifndef __TMGR_H
 #define __TMGR_H
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 typedef struct grs_bitmap grs_bitmap;
@@ -13,25 +14,27 @@ typedef struct grs_bitmap grs_bitmap;
 
 #define TMGRF_SPEW 1
 
-typedef struct texture_manager {
-   int (*init)(grs_bitmap *bm, int max_textures, int *texture_size_list, int num_texture_sizes, int flags);
+typedef struct texture_manager
+{
+   int (*init)(grs_bitmap * bm, int max_textures, int * texture_size_list,
+               int num_texture_sizes, int flags);
    void (*shutdown)(void);
    void (*start_frame)(int frame);
-   void (*load_texture)(grs_bitmap *bm);
-   void (*unload_texture)(grs_bitmap *bm);
-   void (*set_texture)(grs_bitmap *bm);
+   void (*load_texture)(grs_bitmap * bm);
+   void (*unload_texture)(grs_bitmap * bm);
+   void (*set_texture)(grs_bitmap * bm);
    void (*set_texture_callback)(void);
-   void (*stats)(void);                      // spew stats to the mono screen
-   uint (*bytes_loaded)(void);               // bytes downloaded this frame
-   BOOL (*get_utilization)(float *utilization);
-   uchar *(*set_clut)(uchar *clut);
-   void (*restore_bits)(grs_bitmap *bm);
-   void (*reload_texture)(grs_bitmap *bm);
+   void (*stats)(void);        // spew stats to the mono screen
+   uint (*bytes_loaded)(void); // bytes downloaded this frame
+   BOOL (*get_utilization)(float * utilization);
+   uchar * (*set_clut)(uchar * clut);
+   void (*restore_bits)(grs_bitmap * bm);
+   void (*reload_texture)(grs_bitmap * bm);
 } texture_manager;
 
-extern texture_manager *lgd3d_get_texture_manager(void);
+extern texture_manager * lgd3d_get_texture_manager(void);
 
-extern texture_manager        *g_tmgr;       // this is kinda silly, but it'll do for now...
+extern texture_manager * g_tmgr; // this is kinda silly, but it'll do for now...
 
 #ifdef __cplusplus
 }

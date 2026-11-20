@@ -10,11 +10,12 @@
 #ifndef SHIP
 #include <mprintf.h>
 static BOOL spew;
-#define mono_printf(x) \
-do {              \
-   if (spew)      \
-      mprintf x ; \
-} while (0)
+#define mono_printf(x)                                                         \
+   do                                                                          \
+   {                                                                           \
+      if (spew)                                                                \
+         mprintf x;                                                            \
+   } while (0)
 #else
 #define mono_printf(x)
 #endif
@@ -23,16 +24,18 @@ do {              \
 #include "legacy_texture_driver.h"
 
 #ifdef MONO_SPEW
-#define put_mono(c) \
-do { \
-   uchar *p_mono = (uchar *)0xb0082; \
-   *p_mono = c;                      \
-} while (0)
+#define put_mono(c)                                                            \
+   do                                                                          \
+   {                                                                           \
+      uchar * p_mono = (uchar *)0xb0082;                                       \
+      *p_mono = c;                                                             \
+   } while (0)
 #else
 #define put_mono(c)
 #endif
 
-static int tmgr_init(r3s_texture bm, int max_textures, int* texture_size_list, int num_texture_sizes, int flags);
+static int tmgr_init(r3s_texture bm, int max_textures, int * texture_size_list,
+                     int num_texture_sizes, int flags);
 static void tmgr_shutdown(void);
 static void tmgr_start_frame(int f);
 static void tmgr_load_texture(r3s_texture bm);
@@ -42,14 +45,14 @@ static void tmgr_set_texture(r3s_texture bm);
 static void tmgr_set_texture_callback(void);
 static void tmgr_stats(void);
 static uint tmgr_bytes_loaded(void);
-static BOOL tmgr_get_utilization(float *utilization);
-static uchar *tmgr_set_clut(uchar *);
-static void tmgr_restore_bits(grs_bitmap *bm);
+static BOOL tmgr_get_utilization(float * utilization);
+static uchar * tmgr_set_clut(uchar *);
+static void tmgr_restore_bits(grs_bitmap * bm);
 
 static texture_manager tmgr;
 
 // Look! it's our one and only export!
-texture_manager *lgd3d_get_texture_manager(void)
+texture_manager * lgd3d_get_texture_manager(void)
 {
    tmgr.init = tmgr_init;
    tmgr.shutdown = tmgr_shutdown;
@@ -67,33 +70,34 @@ texture_manager *lgd3d_get_texture_manager(void)
    return &tmgr;
 }
 
-
 #define BMF_HACK 0x80
 #define TMGR_UNLOADED (-1)
 
 typedef struct tmgr_texture_info tmgr_texture_info;
 
-struct tmgr_texture_info {
-   grs_bitmap *bitmap; // back ptr to bitmap
-   uchar *bits;        // bits ptr from bitmap
-   int frame;          // frame last used
-   uchar *clut;        // ptr to clut used when loaded
-   int next;           // index of next texture of this size
+struct tmgr_texture_info
+{
+   grs_bitmap * bitmap; // back ptr to bitmap
+   uchar * bits;        // bits ptr from bitmap
+   int frame;           // frame last used
+   uchar * clut;        // ptr to clut used when loaded
+   int next;            // index of next texture of this size
    int size;
-   ulong cookie;       // cookie from tmgr. Can reload when these match!
+   ulong cookie; // cookie from tmgr. Can reload when these match!
 };
 
-typedef struct tmap_chain {
+typedef struct tmap_chain
+{
    int size;
    int head;
 } tmap_chain;
 
-static tmgr_texture_info *texinfo = NULL;
-static tmap_chain *chain_list = NULL;
+static tmgr_texture_info * texinfo = NULL;
+static tmap_chain * chain_list = NULL;
 static int num_texture_sizes = 0;
 static int chain_capacity = 0;
 
-static uchar *texture_clut;
+static uchar * texture_clut;
 static r3s_texture default_bm;
 static r3s_texture callback_bm;
 
@@ -107,11 +111,10 @@ static uint texmem_loaded;
 static BOOL swapout = FALSE;
 static BOOL overloaded = FALSE;
 
-
 // returns old clut
-static uchar *tmgr_set_clut(uchar *clut)
+static uchar * tmgr_set_clut(uchar * clut)
 {
-   uchar *retval = texture_clut;
+   uchar * retval = texture_clut;
    texture_clut = clut;
    return retval;
 }
@@ -122,9 +125,10 @@ static uint tmgr_bytes_loaded(void)
    return bytes_loaded;
 }
 
-static BOOL tmgr_get_utilization(float *utilization)
+static BOOL tmgr_get_utilization(float * utilization)
 {
-   if (overloaded) { // we're really overutilized
+   if (overloaded)
+   { // we're really overutilized
       *utilization = 1.0;
       return TRUE;
    }
@@ -133,33 +137,32 @@ static BOOL tmgr_get_utilization(float *utilization)
       // we're not loaded to capacity yet; stats wouldn't be valid
       return FALSE;
 
-   *utilization = ((float )texmem_used)/texmem_loaded;
+   *utilization = ((float)texmem_used) / texmem_loaded;
    return TRUE;
 }
 
-const char *bad_bm_string = "Bitmap data out of synch.";
+const char * bad_bm_string = "Bitmap data out of synch.";
 
-static int bitmap_texture_id(const grs_bitmap *bm)
+static int bitmap_texture_id(const grs_bitmap * bm)
 {
    return (int)(uintptr_t)bm->bits;
 }
 
-static uchar *texture_id_bits(int id)
+static uchar * texture_id_bits(int id)
 {
    return (uchar *)(uintptr_t)(uint)id;
 }
 
-#define is_valid(bm) \
-   ((bm != NULL) && \
-    (bitmap_texture_id(bm) >= 0) && \
-    (bitmap_texture_id(bm) < max_textures) && \
+#define is_valid(bm)                                                           \
+   ((bm != NULL) && (bitmap_texture_id(bm) >= 0) &&                            \
+    (bitmap_texture_id(bm) < max_textures) &&                                  \
     (bm == texinfo[bitmap_texture_id(bm)].bitmap))
 
 #define validate_bm(bm) AssertMsg(is_valid(bm), bad_bm_string)
 
-static void tmgr_restore_bits(grs_bitmap *bm)
+static void tmgr_restore_bits(grs_bitmap * bm)
 {
-   if ((bm == NULL)||((bm->flags&BMF_LOADED)==0))
+   if ((bm == NULL) || ((bm->flags & BMF_LOADED) == 0))
       return;
    validate_bm(bm);
    bm->bits = texinfo[bitmap_texture_id(bm)].bits;
@@ -167,10 +170,10 @@ static void tmgr_restore_bits(grs_bitmap *bm)
 
 // eliminate bitmap pointer from list, mark
 // vidmem as ready to be released.
-static void do_unload(grs_bitmap *bm)
+static void do_unload(grs_bitmap * bm)
 {
    int i;
-   tmgr_texture_info *info;
+   tmgr_texture_info * info;
 
    validate_bm(bm);
 
@@ -186,30 +189,32 @@ static void do_unload(grs_bitmap *bm)
    LegacyTextureUnload(i);
 }
 
-
 // really for sure get rid of this texture
 static void release_texture(int i)
 {
-   tmgr_texture_info *info = &texinfo[i];
-   grs_bitmap *bm = info->bitmap;
-   if (bm!=NULL)
+   tmgr_texture_info * info = &texinfo[i];
+   grs_bitmap * bm = info->bitmap;
+   if (bm != NULL)
       do_unload(bm);
    info->frame = 0;
-   if (info->bits!=NULL) {
+   if (info->bits != NULL)
+   {
       LegacyTextureRelease(i);
       info->bits = NULL;
       texmem_loaded -= info->size;
    }
 }
 
-static void set_flags(tdrv_texture_info *info)
+static void set_flags(tdrv_texture_info * info)
 {
    info->flags = 0;
-   if (gr_get_fill_type() == FILL_BLEND) {
+   if (gr_get_fill_type() == FILL_BLEND)
+   {
       info->flags |= TF_ALPHA;
    }
 
-   if ((!(info->flags&TF_ALPHA)) && (info->bm->flags&BMF_TRANS)) {
+   if ((!(info->flags & TF_ALPHA)) && (info->bm->flags & BMF_TRANS))
+   {
       info->flags |= TF_TRANS;
    }
 
@@ -219,23 +224,26 @@ static void set_flags(tdrv_texture_info *info)
       info->bits = info->bm->bits;
 }
 
-
 #define TMGR_SUCCESS 0
-static int do_load(tdrv_texture_info *info)
+static int do_load(tdrv_texture_info * info)
 {
-   grs_bitmap *bm = info->bm;
-   tmgr_texture_info *tmgr_info = &texinfo[info->id];
+   grs_bitmap * bm = info->bm;
+   tmgr_texture_info * tmgr_info = &texinfo[info->id];
 
-   AssertMsg((!swapout)||(tmgr_info->size == info->size), "do_load(): size mismatch.");
+   AssertMsg((!swapout) || (tmgr_info->size == info->size),
+             "do_load(): size mismatch.");
 
-   if (tmgr_info->bits != NULL) {
+   if (tmgr_info->bits != NULL)
+   {
 
       AssertMsg(info->cookie == tmgr_info->cookie,
-         "do_load(): cookie doesn't match original.");
+                "do_load(): cookie doesn't match original.");
 
       LegacyTextureReload(info);
-   } else {
-      if (LegacyTextureLoad(info) == TDRV_FAILURE) 
+   }
+   else
+   {
+      if (LegacyTextureLoad(info) == TDRV_FAILURE)
          return TMGR_FAILURE;
       texmem_loaded += info->size;
    }
@@ -254,9 +262,10 @@ static int do_load(tdrv_texture_info *info)
 static void init_bitmap_list(void)
 {
    int i;
-   tmgr_texture_info *tmgr_info = texinfo;
+   tmgr_texture_info * tmgr_info = texinfo;
 
-   for (i=0; i<max_textures; i++) {
+   for (i = 0; i < max_textures; i++)
+   {
       tmgr_info->bitmap = NULL;
       tmgr_info->bits = NULL;
       tmgr_info->frame = 0;
@@ -269,10 +278,11 @@ static void init_bitmap_list(void)
 static void do_set_texture(r3s_texture bm)
 {
    int i;
-   tmgr_texture_info *info;
+   tmgr_texture_info * info;
 
-   if (bm->flags & BMF_HACK) {
-      if (!(default_bm->flags&BMF_LOADED))
+   if (bm->flags & BMF_HACK)
+   {
+      if (!(default_bm->flags & BMF_LOADED))
          tmgr_load_texture(default_bm);
       do_set_texture(default_bm);
       return;
@@ -283,7 +293,8 @@ static void do_set_texture(r3s_texture bm)
    i = bitmap_texture_id(bm);
    info = &texinfo[i];
 
-   if (info->frame != cur_frame) {
+   if (info->frame != cur_frame)
+   {
       texmem_used += info->size;
       info->frame = cur_frame;
    }
@@ -292,16 +303,17 @@ static void do_set_texture(r3s_texture bm)
 
 #define TMGR_INVALID_TEXTURE_SIZE (-1)
 #define MAX_SIZE 9
-typedef struct tmap_size_entry {
+typedef struct tmap_size_entry
+{
    int size;
-   tmap_chain *chain;
+   tmap_chain * chain;
 } tmap_size_entry;
 
-static tmap_size_entry alpha_size_table[MAX_SIZE*MAX_SIZE];
-static tmap_size_entry norm8_size_table[MAX_SIZE*MAX_SIZE];
-static tmap_size_entry norm16_size_table[MAX_SIZE*MAX_SIZE];
+static tmap_size_entry alpha_size_table[MAX_SIZE * MAX_SIZE];
+static tmap_size_entry norm8_size_table[MAX_SIZE * MAX_SIZE];
+static tmap_size_entry norm16_size_table[MAX_SIZE * MAX_SIZE];
 
-static tmap_chain *find_or_create_chain(int size)
+static tmap_chain * find_or_create_chain(int size)
 {
    int i;
    for (i = 0; i < num_texture_sizes; ++i)
@@ -315,31 +327,32 @@ static tmap_chain *find_or_create_chain(int size)
    return &chain_list[num_texture_sizes++];
 }
 
-static tmap_chain *calc_size(tdrv_texture_info *info)
+static tmap_chain * calc_size(tdrv_texture_info * info)
 {
-   int i,j,w,h;
-   tmap_size_entry *size_table;
-   tmap_chain *chain = NULL;
-   grs_bitmap *bm = info->bm;
+   int i, j, w, h;
+   tmap_size_entry * size_table;
+   tmap_chain * chain = NULL;
+   grs_bitmap * bm = info->bm;
 
    set_flags(info);
    info->scale_w = info->scale_h = 0;
 
-   
    if (info->flags & TF_ALPHA)
       size_table = alpha_size_table;
    else if (bm->type == BMT_FLAT8)
       size_table = norm8_size_table;
    else
       size_table = norm16_size_table;
-   
 
-   for (i=0, w=1; i<MAX_SIZE; i++, w+=w)
-      if (w==bm->w) break;
-   for (j=0, h=1; j<MAX_SIZE; j++, h+=h)
-      if (h==bm->h) break;
+   for (i = 0, w = 1; i < MAX_SIZE; i++, w += w)
+      if (w == bm->w)
+         break;
+   for (j = 0, h = 1; j < MAX_SIZE; j++, h += h)
+      if (h == bm->h)
+         break;
 
-   if ((i>=MAX_SIZE)||(j>=MAX_SIZE)) {
+   if ((i >= MAX_SIZE) || (j >= MAX_SIZE))
+   {
       // The original hardware manager enumerated only power-of-two textures
       // through 256x256. Modern hardware backends accept larger and NPOT
       // resources, including NewDark's 2048x512 distant-sky panoramas.  Ask
@@ -350,25 +363,30 @@ static tmap_chain *calc_size(tdrv_texture_info *info)
       LegacyTextureCook(info);
       chain = find_or_create_chain(info->size);
       if (!chain)
-         bm->flags|=BMF_HACK;
+         bm->flags |= BMF_HACK;
       return chain;
    }
 
-   else while ((chain = size_table[i*MAX_SIZE+j].chain)==NULL)
-   {
-      if (i<j) {
-         i++, info->scale_w++;
-      } else {
-         j++, info->scale_h++;
-         if (j<MAX_SIZE)
-            continue;
+   else
+      while ((chain = size_table[i * MAX_SIZE + j].chain) == NULL)
+      {
+         if (i < j)
+         {
+            i++, info->scale_w++;
+         }
+         else
+         {
+            j++, info->scale_h++;
+            if (j < MAX_SIZE)
+               continue;
 
-         mono_printf(("Unsupported texture size: w=%i h=%i\n", bm->w, bm->h));
-         bm->flags|=BMF_HACK;
-         break;
+            mono_printf(
+               ("Unsupported texture size: w=%i h=%i\n", bm->w, bm->h));
+            bm->flags |= BMF_HACK;
+            break;
+         }
       }
-   }
-   if (chain!=NULL)
+   if (chain != NULL)
       info->size = chain->size;
 
    info->w = bm->w << info->scale_w;
@@ -376,16 +394,17 @@ static tmap_chain *calc_size(tdrv_texture_info *info)
    return chain;
 }
 
-
-static void init_size_table(tmap_size_entry *size_table, int type)
+static void init_size_table(tmap_size_entry * size_table, int type)
 {
    int i, j;
    int w, h;
    tdrv_texture_info info;
    info.id = 0;
 
-   for (i=0,w=1; i<MAX_SIZE * MAX_SIZE; w+=w, i+=MAX_SIZE) {
-      for (j=0,h=1; j<MAX_SIZE; h+=h, j++) {
+   for (i = 0, w = 1; i < MAX_SIZE * MAX_SIZE; w += w, i += MAX_SIZE)
+   {
+      for (j = 0, h = 1; j < MAX_SIZE; h += h, j++)
+      {
          info.bm = gr_alloc_bitmap(type, 0, w, h);
          set_flags(&info);
          info.scale_w = info.scale_h = 0;
@@ -396,7 +415,9 @@ static void init_size_table(tmap_size_entry *size_table, int type)
          if (LegacyTextureLoad(&info) == TDRV_FAILURE)
          { // can't load this size texture
             size_table[i + j].size = TMGR_INVALID_TEXTURE_SIZE;
-         } else {
+         }
+         else
+         {
             size_table[i + j].size = info.size;
             LegacyTextureRelease(info.id);
          }
@@ -406,40 +427,47 @@ static void init_size_table(tmap_size_entry *size_table, int type)
    }
 }
 
-#define MAX_TMAP_SIZES 3*MAX_SIZE*MAX_SIZE
+#define MAX_TMAP_SIZES 3 * MAX_SIZE * MAX_SIZE
 
 // here we're just trying to figure out how many distinct texture sizes there are...
-static int get_num_sizes(int *size_list, int num_sizes, tmap_size_entry *size_table)
+static int get_num_sizes(int * size_list, int num_sizes,
+                         tmap_size_entry * size_table)
 {
-   int i,j;
-   for (i=0; i<MAX_SIZE*MAX_SIZE; i++) {
-      if (size_table[i].size==TMGR_INVALID_TEXTURE_SIZE)
+   int i, j;
+   for (i = 0; i < MAX_SIZE * MAX_SIZE; i++)
+   {
+      if (size_table[i].size == TMGR_INVALID_TEXTURE_SIZE)
          continue;
 
-      for (j=0; j<num_sizes; j++) {
-         if (size_list[j]==size_table[i].size)
+      for (j = 0; j < num_sizes; j++)
+      {
+         if (size_list[j] == size_table[i].size)
             break;
       }
-      if (j==num_sizes)
+      if (j == num_sizes)
          size_list[num_sizes++] = size_table[i].size;
    }
    return num_sizes;
 }
 
 // here we actually munge the size table to have real (tmap_chain *)'s
-static int munge_table(int num_sizes, tmap_size_entry *size_table)
+static int munge_table(int num_sizes, tmap_size_entry * size_table)
 {
-   int i,j;
-   for (i=0; i<MAX_SIZE*MAX_SIZE; i++) {
-      if (size_table[i].size==TMGR_INVALID_TEXTURE_SIZE) {
+   int i, j;
+   for (i = 0; i < MAX_SIZE * MAX_SIZE; i++)
+   {
+      if (size_table[i].size == TMGR_INVALID_TEXTURE_SIZE)
+      {
          size_table[i].chain = NULL;
          continue;
       }
-      for (j=0; j<num_sizes; j++) {
-         if (chain_list[j].size==size_table[i].size)
+      for (j = 0; j < num_sizes; j++)
+      {
+         if (chain_list[j].size == size_table[i].size)
             break;
       }
-      if (j==num_sizes) {
+      if (j == num_sizes)
+      {
          chain_list[num_sizes].head = -1;
          chain_list[num_sizes].size = size_table[i].size;
          num_sizes++;
@@ -449,13 +477,12 @@ static int munge_table(int num_sizes, tmap_size_entry *size_table)
    return num_sizes;
 }
 
-
 static void munge_size_tables(void)
 {
    int num_sizes;
-   int *size_list;
+   int * size_list;
 
-   size_list = (int *)Malloc(MAX_TMAP_SIZES*sizeof(int));
+   size_list = (int *)Malloc(MAX_TMAP_SIZES * sizeof(int));
    num_sizes = get_num_sizes(size_list, 0, alpha_size_table);
    num_sizes = get_num_sizes(size_list, num_sizes, norm8_size_table);
    num_sizes = get_num_sizes(size_list, num_sizes, norm16_size_table);
@@ -469,10 +496,10 @@ static void munge_size_tables(void)
    num_texture_sizes = munge_table(0, alpha_size_table);
    num_texture_sizes = munge_table(num_texture_sizes, norm8_size_table);
    num_texture_sizes = munge_table(num_texture_sizes, norm16_size_table);
-   AssertMsg(num_texture_sizes==num_sizes,
+   AssertMsg(
+      num_texture_sizes == num_sizes,
       "munge_size_tables(): detected bug in get_num_sizes() or munge_table()");
 }
-
 
 static int init_size_tables(void)
 {
@@ -494,25 +521,25 @@ static void dump_all_textures(void)
    swapout = FALSE;
    next_id = 0;
 
-   for (i=0; i<max_textures; i++)
+   for (i = 0; i < max_textures; i++)
       release_texture(i);
-
 
    overloaded = TRUE;
 
    // reset all the size chains
-   for (i=0; i<num_texture_sizes; i++)
-      chain_list[i].head=-1;
+   for (i = 0; i < num_texture_sizes; i++)
+      chain_list[i].head = -1;
 }
 
-void swapout_bitmap(tdrv_texture_info *info, tmap_chain *chain)
+void swapout_bitmap(tdrv_texture_info * info, tmap_chain * chain)
 {
-   tmgr_texture_info *tmgr_info;
-   int i,n=-1;
-   int min_frame=cur_frame-1;
+   tmgr_texture_info * tmgr_info;
+   int i, n = -1;
+   int min_frame = cur_frame - 1;
    BOOL reload = FALSE;
 
-   for (i = chain->head; i>=0; i=tmgr_info->next) {
+   for (i = chain->head; i >= 0; i = tmgr_info->next)
+   {
       int frame;
 
       tmgr_info = &texinfo[i];
@@ -521,9 +548,9 @@ void swapout_bitmap(tdrv_texture_info *info, tmap_chain *chain)
       // old enough?
       frame = tmgr_info->frame;
 
-      if (frame >= cur_frame-1)
+      if (frame >= cur_frame - 1)
          continue;
-      
+
       if (reload && (info->cookie != tmgr_info->cookie))
          continue;
 
@@ -534,23 +561,28 @@ void swapout_bitmap(tdrv_texture_info *info, tmap_chain *chain)
 
       min_frame = frame;
       n = i;
-      if (reload && (min_frame==TMGR_UNLOADED))
+      if (reload && (min_frame == TMGR_UNLOADED))
          // can't do better than this!
          break;
    }
 
    // if we're not in swapout mode, we only want to reload unloaded textures
-   if ((!swapout) && ((!reload) || (min_frame != TMGR_UNLOADED))) {
+   if ((!swapout) && ((!reload) || (min_frame != TMGR_UNLOADED)))
+   {
       info->id = next_id;
       return;
    }
 
-   if (n==-1) { // can't find suitable swapout; dump everything!
-      mono_printf(("Can't find suitable swapout candidate; dumping all textures!\n"));
+   if (n == -1)
+   { // can't find suitable swapout; dump everything!
+      mono_printf(
+         ("Can't find suitable swapout candidate; dumping all textures!\n"));
 
       dump_all_textures();
       info->id = next_id;
-   } else {
+   }
+   else
+   {
       if (!reload)
          release_texture(n);
       else if (texinfo[n].bitmap != NULL)
@@ -560,19 +592,21 @@ void swapout_bitmap(tdrv_texture_info *info, tmap_chain *chain)
    }
 }
 
-
 static void tmgr_unload_texture(r3s_texture bm)
 {
    put_mono('e');
-   if ((bm->flags&BMF_LOADED)==0) {
+   if ((bm->flags & BMF_LOADED) == 0)
+   {
       put_mono('.');
       return;
    }
 
-   if (is_valid(bm)) {
+   if (is_valid(bm))
+   {
       // synch now in case we want to swap out this texture later this frame...
-         do_unload(bm);
-   } else
+      do_unload(bm);
+   }
+   else
       Warning(("bad bitmap pointer for unload!\n"));
 
    put_mono('.');
@@ -582,7 +616,8 @@ static void tmgr_reload_texture(r3s_texture bm)
 {
    tdrv_texture_info info;
 
-   if ((bm == NULL)||((bm->flags&BMF_LOADED)==0)) {
+   if ((bm == NULL) || ((bm->flags & BMF_LOADED) == 0))
+   {
       Warning(("tmgr_reload_texture(): NULL bitmap or bitmap not loaded.\n"));
       return;
    }
@@ -595,7 +630,7 @@ static void tmgr_reload_texture(r3s_texture bm)
    LegacyTextureCook(&info);
 
    AssertMsg(info.cookie == texinfo[info.id].cookie,
-      "tmgr_reload_texture(): cookie doesn't match original.");
+             "tmgr_reload_texture(): cookie doesn't match original.");
 
    LegacyTextureReload(&info);
 }
@@ -603,12 +638,12 @@ static void tmgr_reload_texture(r3s_texture bm)
 static void tmgr_load_texture(r3s_texture bm)
 {
    tdrv_texture_info info;
-   tmap_chain *chain;
+   tmap_chain * chain;
 
    put_mono('d');
 
    if (bm->flags & BMF_LOADED)
-   {  // must have meant _re_load ;)
+   { // must have meant _re_load ;)
       tmgr_reload_texture(bm);
       return;
    }
@@ -624,17 +659,21 @@ static void tmgr_load_texture(r3s_texture bm)
 
    swapout_bitmap(&info, chain);
 
-   do {
+   do
+   {
       put_mono('1');
-      if (do_load(&info)!=TDRV_FAILURE)
+      if (do_load(&info) != TDRV_FAILURE)
          break;
 
-      if (swapout) {
+      if (swapout)
+      {
          put_mono('2');
          mono_printf(("swapout _really_ failed; dumping all textures!"));
          dump_all_textures();
          info.id = next_id;
-      } else {
+      }
+      else
+      {
          put_mono('3');
          mono_printf(("Out of texture memory; entring swapout mode.\n"));
          swapout = TRUE;
@@ -643,13 +682,15 @@ static void tmgr_load_texture(r3s_texture bm)
    } while (TRUE);
 
    put_mono('4');
-   if ((!swapout)&&(info.id==next_id)) {
+   if ((!swapout) && (info.id == next_id))
+   {
       // add new texture to head of chain...
       texinfo[next_id].next = chain->head;
       chain->head = next_id;
       AssertMsg(texinfo[next_id].size == chain->size, "wrong size!");
 
-      if (++next_id == max_textures) {
+      if (++next_id == max_textures)
+      {
          mono_printf(("Out of texture handles; entering swapout mode.\n"));
          swapout = TRUE;
       }
@@ -660,14 +701,17 @@ static void tmgr_load_texture(r3s_texture bm)
 static void tmgr_set_texture(r3s_texture bm)
 {
    put_mono('f');
-   if (bm==NULL) {
+   if (bm == NULL)
+   {
       SetTextureId(TDRV_ID_SOLID);
       put_mono('.');
       return;
    }
-   if (bm->flags & BMF_LOADED) {
+   if (bm->flags & BMF_LOADED)
+   {
       validate_bm(bm);
-      if (texture_clut == texinfo[bitmap_texture_id(bm)].clut) {
+      if (texture_clut == texinfo[bitmap_texture_id(bm)].clut)
+      {
          do_set_texture(bm);
          put_mono('.');
          return;
@@ -684,7 +728,7 @@ static void tmgr_set_texture(r3s_texture bm)
 static void tmgr_set_texture_callback(void)
 {
    put_mono('g');
-   AssertMsg(callback_bm!=NULL, "can't load NULL bitmap!\n");
+   AssertMsg(callback_bm != NULL, "can't load NULL bitmap!\n");
    tmgr_load_texture(callback_bm);
    put_mono('g');
    do_set_texture(callback_bm);
@@ -695,10 +739,11 @@ static void tmgr_start_frame(int frame)
 {
    static uint abl = 0;
    put_mono('c');
-   if (frame != cur_frame) {
+   if (frame != cur_frame)
+   {
       cur_frame = frame;
       overloaded = FALSE;
-      abl = (abl*7 + bytes_loaded)/8;
+      abl = (abl * 7 + bytes_loaded) / 8;
       if ((frame & 0xf) == 0)
          mono_printf(("avg bytes downloaded per frame: %i        \n", abl));
       bytes_loaded = 0;
@@ -707,10 +752,10 @@ static void tmgr_start_frame(int frame)
    put_mono('.');
 }
 
-
-static int tmgr_init(r3s_texture bm, int in_max_textures, int *texture_size_list, int num_texture_sizes, int flags)
+static int tmgr_init(r3s_texture bm, int in_max_textures,
+                     int * texture_size_list, int num_texture_sizes, int flags)
 {
-   if (texinfo!=NULL)
+   if (texinfo != NULL)
       tmgr_shutdown();
 
 #ifndef SHIP
@@ -744,7 +789,8 @@ static void tmgr_shutdown(void)
    Free(texinfo);
    texinfo = NULL;
 
-   if (chain_list != NULL) {
+   if (chain_list != NULL)
+   {
       Free(chain_list);
       chain_list = NULL;
    }
@@ -753,48 +799,46 @@ static void tmgr_shutdown(void)
    put_mono('.');
 }
 
-
-
-
 #ifndef SHIP
 
 static void tmgr_stats(void)
 {
-   int i, current_total=0, global_total=0;
+   int i, current_total = 0, global_total = 0;
 
-   mono_setxy(0,0);
+   mono_setxy(0, 0);
    mprint("Texture Manager Stats:       \n");
    mprintf("texmem_loaded: %i  texmem_used: %i  swapout: %i      \n",
-      texmem_loaded, texmem_used, swapout);
-   for (i = 0; i<num_texture_sizes; i++)
+           texmem_loaded, texmem_used, swapout);
+   for (i = 0; i < num_texture_sizes; i++)
    {
       int size = chain_list[i].size;
       int index = chain_list[i].head;
-      int current=0, total=0;
+      int current = 0, total = 0;
 
       while (index >= 0)
       {
          AssertMsg(size == texinfo[index].size, "wrong size!");
-         if (texinfo[index].bits != NULL) {
+         if (texinfo[index].bits != NULL)
+         {
             total++;
             if (texinfo[index].frame == cur_frame)
                current++;
          }
          index = texinfo[index].next;
       }
-      if (total > 0) {
-         mprintf("size %i: this frame: %i total: %i            \n",
-            size, current, total);
-         current_total += current*size;
-         global_total += total*size;
+      if (total > 0)
+      {
+         mprintf("size %i: this frame: %i total: %i            \n", size,
+                 current, total);
+         current_total += current * size;
+         global_total += total * size;
       }
    }
    mprintf("checksum:       \n");
-   mprintf("texmem_loaded: %i  texmem_used: %i               \n",
-      global_total, current_total);
-   AssertMsg(global_total==texmem_loaded, "stats incorrect!");
+   mprintf("texmem_loaded: %i  texmem_used: %i               \n", global_total,
+           current_total);
+   AssertMsg(global_total == texmem_loaded, "stats incorrect!");
 }
 #else
 static void tmgr_stats(void) {}
 #endif
-
