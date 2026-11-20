@@ -1,8 +1,11 @@
-# Build libpng from the pinned source submodule on every platform.
-set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/zlib"
-  CACHE PATH "Bundled zlib include directory" FORCE)
-set(ZLIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/zlib"
-  CACHE PATH "Bundled zlib root" FORCE)
+# FindZLIB still runs inside libpng; provide the bundled target rather than
+# searching for an already-built host library.
+set(ZLIB_LIBRARY zlibstatic)
+set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/zlib")
+if(NOT TARGET ZLIB::ZLIB)
+  add_library(ZLIB::ZLIB ALIAS zlibstatic)
+endif()
+
 set(DARK_PNG_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libpng" CACHE PATH
   "Pinned libpng source submodule" FORCE)
 if(NOT EXISTS "${DARK_PNG_SOURCE}/CMakeLists.txt")

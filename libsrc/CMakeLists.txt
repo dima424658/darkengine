@@ -109,7 +109,7 @@ target_include_directories(dark_engine_config INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/vec2"
   # Keep legacy input GUID headers after compapis/inpguid.h.
   "${CMAKE_CURRENT_SOURCE_DIR}/input"
-  $<$<PLATFORM_ID:Windows>:"${PROJECT_SOURCE_DIR}/libsrc/platform">
+  "$<$<PLATFORM_ID:Windows>:${PROJECT_SOURCE_DIR}/libsrc/platform>"
 )
 
 # Apply shared settings before a library adds its own dependencies, preserving

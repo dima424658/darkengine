@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
                            HasEnabledArgument(argc, argv, "batch");
     PlatformSetBatchMode(batchMode ? TRUE : FALSE);
     if (batchMode)
-        setenv("DARK_HIDE_MAIN_WINDOW", "1", 1);
+        SetEnvironmentValue("DARK_HIDE_MAIN_WINDOW", "1");
 
     bool explicitContent = false;
     const char *requestedGamePath = nullptr;
