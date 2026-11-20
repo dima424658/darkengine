@@ -12,3 +12,10 @@ add_library(dark_sound STATIC
   volconv.cpp
 )
 dark_configure_library(dark_sound)
+
+target_compile_definitions(dark_sound PRIVATE
+  $<$<PLATFORM_ID:Windows>:DARK_OPENAL_LIBRARY="OpenAL32.dll">
+  $<$<PLATFORM_ID:Android>:DARK_OPENAL_LIBRARY="libopenal.so">
+  $<$<PLATFORM_ID:Darwin>:DARK_OPENAL_LIBRARY="/System/Library/Frameworks/OpenAL.framework/OpenAL">
+  $<$<PLATFORM_ID:Linux>:DARK_OPENAL_LIBRARY="libopenal.so.1">
+)

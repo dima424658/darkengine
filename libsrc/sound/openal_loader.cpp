@@ -1,28 +1,15 @@
-#ifdef _WIN32
-#include <windows.h>
-#include <string.h>
-#else
-#include <dlfcn.h>
-#include <stdlib.h>
-#include <string.h>
-#endif
+#include <cstdlib>
+#include <cstring>
 
 #include <openal_api.h>
+#include <platform_library.h>
 
-#ifdef _WIN32
-static HMODULE g_openal;
-#else
 static void *g_openal;
-#endif
 
 template <class T>
 static bool LoadProc(T &target, const char *name)
 {
-#ifdef _WIN32
-    target = reinterpret_cast<T>(GetProcAddress(g_openal, name));
-#else
-    target = reinterpret_cast<T>(dlsym(g_openal, name));
-#endif
+    target = reinterpret_cast<T>(PlatformFindSymbol(g_openal, name));
     return target != nullptr;
 }
 
@@ -30,30 +17,16 @@ bool OpenALLoad(sOpenALApi *api)
 {
     if (!api)
         return false;
-    memset(api, 0, sizeof(*api));
+    std::memset(api, 0, sizeof(*api));
 
-#ifdef _WIN32
-    if (!g_openal)
-        g_openal = LoadLibraryA("OpenAL32.dll");
-#else
-    // WSLg exports audio through PulseAudio. Avoid OpenAL Soft's ALSA probe
-    // after a Pulse failure because WSL does not expose an ALSA device.
-    if (getenv("WSL2_GUI_APPS_ENABLED") && !getenv("ALSOFT_DRIVERS"))
+#ifndef _WIN32
+    // WSLg exports audio through PulseAudio. Avoid the ALSA fallback probe.
+    if (std::getenv("WSL2_GUI_APPS_ENABLED") && !std::getenv("ALSOFT_DRIVERS"))
         setenv("ALSOFT_DRIVERS", "pulse", 0);
+#endif
     if (!g_openal)
-    {
-#if defined(__ANDROID__)
-        // OpenAL Soft is packaged in the APK and uses an unversioned name.
-        g_openal = dlopen("libopenal.so", RTLD_NOW | RTLD_LOCAL);
-#elif defined(__APPLE__)
-        g_openal = dlopen(
-            "/System/Library/Frameworks/OpenAL.framework/OpenAL",
-            RTLD_NOW | RTLD_LOCAL);
-#endif
-        if (!g_openal)
-            g_openal = dlopen("libopenal.so.1", RTLD_NOW | RTLD_LOCAL);
-    }
-#endif
+        g_openal = PlatformLoadLibrary(DARK_OPENAL_LIBRARY);
+
     if (!g_openal)
         return false;
 
