@@ -39,7 +39,6 @@
 //  to "draw" a surface, we paint light onto it.
 
 #ifdef RGB_LIGHTING
-#ifdef RGB_888
 
 extern int hack_red;
 extern int hack_green;
@@ -91,35 +90,6 @@ LightmapEntry rgb_sub_clamp(LightmapEntry cur, int add)
 
    return cur;
 }
-
-#else // RGB_888
-
-// for each light we process, we write out the following tables
-// so we can compute things fast
-ulong pl_red_color[256], pl_green_color[256], pl_blue_color[256];
-extern ulong pl_red_mask, pl_green_mask, pl_blue_mask;
-LightmapEntry rgb_add_clamp(LightmapEntry cur, int add)
-{
-   ulong r = pl_red_color[add] + (cur & pl_red_mask);
-   ulong g = pl_green_color[add] + (cur & pl_green_mask);
-   ulong b = pl_blue_color[add] + (cur & pl_blue_mask);
-   if (r > pl_red_mask) r = pl_red_mask; else r &= pl_red_mask;
-   if (g > pl_green_mask) g = pl_green_mask; else g &= pl_green_mask;
-   if (b > pl_blue_mask) b = pl_blue_mask; else b &= pl_blue_mask;
-   return (LightmapEntry)(r | g | b);
-}
-
-LightmapEntry rgb_sub_clamp(LightmapEntry cur, int add)
-{
-   int r = (cur & pl_red_mask) - pl_red_color[add];
-   int g = (cur & pl_green_mask) - pl_green_color[add];
-   int b = (cur & pl_blue_mask) - pl_blue_color[add];
-   if (r < 0) r = 0; else r &= pl_red_mask;
-   if (g < 0) g = 0; else g &= pl_green_mask;
-   if (b < 0) b = 0; else b &= pl_blue_mask;
-   return r | g | b;
-}
-#endif // RGB_888
 
 #endif
 

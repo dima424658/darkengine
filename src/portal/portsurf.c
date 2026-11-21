@@ -497,11 +497,8 @@ void set_up_temp_lightmap(PortalLightMap *map)
 
 void add_to_temp_lightmap(LightmapEntry *source, uchar intensity)
 {
-   ulong r,g,b;
    uint i, j;
-#if !defined(RGB_LIGHTING) || defined(RGB_888)
    uint v;
-#endif
    LightmapEntry *dest = &temp_lightmap_bits[0];
 
 #ifndef RGB_LIGHTING
@@ -518,8 +515,6 @@ void add_to_temp_lightmap(LightmapEntry *source, uchar intensity)
 #else
    for (i = 0; i < _portal_lightmap_height; i++) {
       for (j = 0; j < _portal_lightmap_width; j++) {
-
-#ifdef RGB_888
          v = ((intensity * source[j].A[0]) >> 8) + dest[j].A[0];
          if (v > 255)
             v = 255;
@@ -534,39 +529,6 @@ void add_to_temp_lightmap(LightmapEntry *source, uchar intensity)
          if (v > 255)
             v = 255;
          dest[j].A[2] = v;
-#else // RGB_888
-         // as an optimization for RGB lighting, we add it with no scaling
-         int cur,plus,sum;
-         cur = dest[j];
-         plus = source[j];
-
-         r = ((((plus & pl_red_mask)>>RED_SHIFT)*intensity)>>8)<<RED_SHIFT;
-         g = ((((plus & pl_green_mask)>>GREEN_SHIFT)*intensity)>>8)<<GREEN_SHIFT;
-         b = ((((plus & pl_blue_mask)>>BLUE_SHIFT)*intensity)>>8)<<BLUE_SHIFT;
-          plus = (int)(r+g+b);
-
-         sum = cur + plus;
-
-         // test for overflow
-         //    how can we tell if overflow occured?  if we carried
-         //    into a given bit (the next up bit).  How can we tell
-         //    if we carried?  Because bit #n =
-         //                (cur-n ^ plus-n ^ carry-n)
-         //    so we can infer the carries with:
-         //        (cur-n ^ plus-n ^ sum-n)
-         if ((cur ^ plus ^ sum) & (32 + (32<<5) + (32<<10))) {
-            // overflow, so do it the slow way
-            r = (cur & pl_red_mask) + (plus & pl_red_mask);
-            g = (cur & pl_green_mask) + (plus & pl_green_mask);
-            b = (cur & pl_blue_mask) + (plus & pl_blue_mask);
-            if (r > pl_red_mask) r = pl_red_mask;
-            if (g > pl_green_mask) g = pl_green_mask;
-            if (b > pl_blue_mask) b = pl_blue_mask;
-             sum = (int)(r + g + b);
-         }
-
-         dest[j] = sum;
-#endif // RGB_888
       }
       source += _portal_lightmap_row;
       dest += _portal_lightmap_row;
@@ -699,24 +661,6 @@ void uncache_surface(PortalPolygonRenderInfo *render)
    }
 }
 
-#ifdef RGB_LIGHTING
-#ifndef RGB_888
-ulong pl_red_convert[32], pl_blue_convert[32], pl_green_convert[32];
-#define RED_SHIFT 0
-#define GREEN_SHIFT 5
-#define BLUE_SHIFT 10
-
-ushort portal_color_convert(ushort color)
-{
-   int r,g,b;
-   r = (color & pl_red_mask) >> RED_SHIFT;
-   g = (color & pl_green_mask) >> GREEN_SHIFT;
-   b = (color & pl_blue_mask) >> BLUE_SHIFT;
-   return (ushort)(pl_red_convert[r] + pl_blue_convert[b] + pl_green_convert[g]);
-}
-#endif // ~RGB_888
-#endif
-
 // This is called only from porthw.c, and is only called
 // to produce the final output format--we never add dynamic
 // light on top of this or anything
@@ -734,15 +678,10 @@ void portsurf_update_bits(uchar *dst, int row, PortalLightMap *lt)
    for (y=0; y < lt->h; y++) {
       for (x=0; x < lt->w; ++x) {
 #ifdef RGB_LIGHTING
-#ifdef RGB_888
-//         ((LightmapEntry *) dst)[x].I = src[x].I;
          ((LightmapEntry *) dst)[x].A[0] = src[x].A[2];
          ((LightmapEntry *) dst)[x].A[1] = src[x].A[1];
          ((LightmapEntry *) dst)[x].A[2] = src[x].A[0];
-#else // RGB_888
-         LightmapEntry color = portal_color_convert(src[x]);
-         ((LightmapEntry *) dst)[x] = color;
-#endif // RGB_888
+         ((LightmapEntry *) dst)[x].A[3] = 255;
 #else
          dst[x] = src[x];
 #endif

@@ -178,6 +178,34 @@ typedef struct sPortalLightMapDisk
 
 static_assert(sizeof(sPortalLightMapDisk) == 20, "Unexpected WRRGB light-map record layout");
 
+#ifdef RGB_LIGHTING
+static LightmapEntry LightmapFromRGB(uchar red, uchar green, uchar blue)
+{
+   LightmapEntry entry;
+   entry.A[0] = red;
+   entry.A[1] = green;
+   entry.A[2] = blue;
+   entry.A[3] = 0;
+   return entry;
+}
+
+static LightmapEntry LightmapFromRGB555(ushort value)
+{
+   const uchar red = (uchar)(((value & 0x1f) * 255 + 15) / 31);
+   const uchar green = (uchar)((((value >> 5) & 0x1f) * 255 + 15) / 31);
+   const uchar blue = (uchar)((((value >> 10) & 0x1f) * 255 + 15) / 31);
+   return LightmapFromRGB(red,green,blue);
+}
+
+static ushort LightmapToRGB555(const LightmapEntry& entry)
+{
+   const uint red = (entry.A[0] * 31 + 127) / 255;
+   const uint green = (entry.A[1] * 31 + 127) / 255;
+   const uint blue = (entry.A[2] * 31 + 127) / 255;
+   return (ushort)(red | (green << 5) | (blue << 10));
+}
+#endif
+
 // The live render record has a 16-bit texture id for WREXT.  WR/WRRGB keep
 // the original byte id and 48-byte layout on disk.
 typedef struct sPortalPolygonRenderInfoDiskLegacy
@@ -604,31 +632,47 @@ ulong WriteWR(PortalReadWrite func, BOOL extended = FALSE)
             uint32* pixels = new uint32[lightmap_entries];
             for (int pixel = 0; pixel < lightmap_entries; ++pixel)
             {
+#ifdef RGB_LIGHTING
+               uint red = packed[pixel].A[0];
+               uint green = packed[pixel].A[1];
+               uint blue = packed[pixel].A[2];
+#else
                const uint value = packed[pixel];
                uint red = (value & 0x1f) * 255 / 31;
                uint green = ((value >> 5) & 0x1f) * 255 / 31;
                uint blue = ((value >> 10) & 0x1f) * 255 / 31;
+#endif
                if (gExtendedLightmapFormat == 2)
                {
                   red >>= 1;
                   green >>= 1;
                   blue >>= 1;
                }
-               pixels[pixel] = blue | (green << 8) | (red << 16) |
-                               0xff000000;
+               pixels[pixel] = blue | (green << 8) | (red << 16);
             }
             (*func)(pixels,sizeof(uint32),lightmap_entries);
             delete [] pixels;
          }
-         else if (extended)
-            (*func)(packed,sizeof(LightmapEntry),lightmap_entries);
          else
-            (*func)(p->light_list[i].data,sizeof(LightmapEntry),
-                    lightmap_entries);
+         {
+#ifdef RGB_LIGHTING
+            ushort* pixels = new ushort[lightmap_entries];
+            const LightmapEntry* source = extended
+               ? packed : p->light_list[i].data;
+            for (int pixel = 0; pixel < lightmap_entries; ++pixel)
+               pixels[pixel] = LightmapToRGB555(source[pixel]);
+            (*func)(pixels,sizeof(ushort),lightmap_entries);
+            delete [] pixels;
+#else
+            const LightmapEntry* source = extended
+               ? packed : p->light_list[i].data;
+            (*func)((void*)source,sizeof(LightmapEntry),lightmap_entries);
+#endif
+         }
          delete [] packed;
          alloced_bytes_written +=
             (extended && gExtendedLightmapFormat != 0
-               ? sizeof(uint32) : sizeof(LightmapEntry)) * lightmap_entries;
+               ? sizeof(uint32) : sizeof(ushort)) * lightmap_entries;
       }
 
       // write the light_indices
@@ -816,9 +860,13 @@ void ReadWR(PortalReadWrite func)
             (*func)(scalar, 1, serializedEntries);
             for (int pixel = 0; pixel < serializedEntries; ++pixel)
             {
+#ifdef RGB_LIGHTING
+               packed[pixel] = LightmapFromRGB(scalar[pixel],scalar[pixel],scalar[pixel]);
+#else
                ushort component = (ushort)(scalar[pixel] >> 3);
                packed[pixel] =
                   (LightmapEntry)(component | (component << 5) | (component << 10));
+#endif
             }
             delete [] scalar;
          }
@@ -840,6 +888,9 @@ void ReadWR(PortalReadWrite func)
                   green = green > 127 ? 255 : green * 2;
                   blue = blue > 127 ? 255 : blue * 2;
                }
+#ifdef RGB_LIGHTING
+               packed[pixel] = LightmapFromRGB((uchar)red,(uchar)green,(uchar)blue);
+#else
                // Preserve the nearest representable RGB555 value.  A shift
                // always rounds down; at NewDark's common low-light floor of
                // 14 that produced 1/31 instead of the much closer 2/31 and
@@ -849,11 +900,22 @@ void ReadWR(PortalReadWrite func)
                blue = (blue * 31 + 127) / 255;
                packed[pixel] = (LightmapEntry)
                   (red | (green << 5) | (blue << 10));
+#endif
             }
             delete [] extended;
          }
          else
+         {
+#ifdef RGB_LIGHTING
+            ushort* pixels = new ushort[serializedEntries];
+            (*func)(pixels,sizeof(ushort),serializedEntries);
+            for (int pixel = 0; pixel < serializedEntries; ++pixel)
+               packed[pixel] = LightmapFromRGB555(pixels[pixel]);
+            delete [] pixels;
+#else
             (*func)(packed,sizeof(LightmapEntry),serializedEntries);
+#endif
+         }
 
          if (gReadExtendedWorldRep)
          {

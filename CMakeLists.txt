@@ -10,7 +10,24 @@ if(APPLE)
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Bison.cmake")
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFFmpeg.cmake")
+set(DARK_WINDOWS_MOVIE_BACKEND "ffmpeg" CACHE STRING
+  "Windows movie backend: ffmpeg, ffmpeg-source, or mfplay")
+set_property(CACHE DARK_WINDOWS_MOVIE_BACKEND PROPERTY STRINGS
+  ffmpeg ffmpeg-source mfplay)
+set(DARK_WINDOWS_FFMPEG_ROOT "" CACHE PATH
+  "Optional custom prebuilt FFmpeg SDK root for Windows")
+if(WIN32)
+  if(DARK_WINDOWS_MOVIE_BACKEND STREQUAL "ffmpeg")
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFFmpegPrebuilt.cmake")
+  elseif(DARK_WINDOWS_MOVIE_BACKEND STREQUAL "ffmpeg-source")
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFFmpeg.cmake")
+  elseif(NOT DARK_WINDOWS_MOVIE_BACKEND STREQUAL "mfplay")
+    message(FATAL_ERROR
+      "DARK_WINDOWS_MOVIE_BACKEND must be 'ffmpeg', 'ffmpeg-source', or 'mfplay'")
+  endif()
+else()
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFFmpeg.cmake")
+endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Zlib.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibPng.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenALSoft.cmake")

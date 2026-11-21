@@ -9,9 +9,15 @@ if(NOT EXISTS "${DARK_FFMPEG_SOURCE}/configure")
     "git submodule update --init --recursive.")
 endif()
 
-find_program(DARK_FFMPEG_MAKE NAMES gmake make REQUIRED)
+find_program(DARK_FFMPEG_MAKE NAMES gmake make)
 if(WIN32 OR ANDROID)
-  find_program(DARK_FFMPEG_BASH NAMES bash REQUIRED)
+  find_program(DARK_FFMPEG_BASH NAMES bash)
+endif()
+if(NOT DARK_FFMPEG_MAKE OR ((WIN32 OR ANDROID) AND NOT DARK_FFMPEG_BASH))
+  message(FATAL_ERROR
+    "The source FFmpeg build requires GNU Make and Bash. On Windows, use "
+    "DARK_WINDOWS_MOVIE_BACKEND=ffmpeg for the native prebuilt default, or "
+    "install the GNU tools and explicitly select ffmpeg-source.")
 endif()
 
 set(DARK_FFMPEG_PREFIX "${CMAKE_BINARY_DIR}/third_party/ffmpeg-install")
@@ -73,7 +79,18 @@ if(ANDROID)
     "--extra-cflags=--target=${dark_ffmpeg_compiler_target} -fvisibility=hidden"
     "--extra-ldflags=--target=${dark_ffmpeg_compiler_target}")
 elseif(WIN32)
-  list(APPEND dark_ffmpeg_configure_args --toolchain=msvc)
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(dark_ffmpeg_arch x86_64)
+  else()
+    set(dark_ffmpeg_arch x86)
+  endif()
+  list(APPEND dark_ffmpeg_configure_args
+    --toolchain=msvc
+    --target-os=win32
+    "--arch=${dark_ffmpeg_arch}"
+    "--cc=${CMAKE_C_COMPILER}"
+    "--ld=${CMAKE_LINKER}"
+    "--ar=${CMAKE_AR}")
 endif()
 
 if(DARK_FFMPEG_BASH)
