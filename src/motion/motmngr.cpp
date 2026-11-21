@@ -23,6 +23,7 @@
 #include <objquery.h>
 #include <cfgtool.h>
 #include <timings.h>
+#include <dbfile.h>
 
 #include <dbmem.h> // must be last included header
 
@@ -100,6 +101,8 @@ void MotionManagerReset()
 void MotionManagerLoad()
 {
    AUTO_TIMER(MOTMNGR_PF_LOAD);
+   if (dbLoadHasFailed())
+      return;
    AutoAppIPtr(AIManager);
 
    // An active FM or mod may provide a root motion database.  Honor the
@@ -140,12 +143,12 @@ void MotionManagerLoad()
    if (result == S_OK
     && FoundVersion.major == g_MotDBVersion.major
     && FoundVersion.minor == g_MotDBVersion.minor) {
-      g_pMotionSet->Load(pFile);
-      g_pMotionDatabase->Load(pFile);
+      if (g_pMotionSet->Load(pFile) && !dbLoadHasFailed())
+         g_pMotionDatabase->Load(pFile);
       ITagFile_CloseBlock(pFile);
-      SafeRelease(pFile);
    }
+   SafeRelease(pFile);
 
-   if (!!pAIManager)
+   if (!!pAIManager && !dbLoadHasFailed())
       pAIManager->ResetMotionTags();
 }

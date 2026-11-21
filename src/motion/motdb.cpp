@@ -16,6 +16,7 @@
 #include <schfile.h>
 #include <motdb_.h>
 #include <motdbase.h>
+#include <dbfile.h>
 
 #include <dbmem.h> // must be last included header
 
@@ -215,20 +216,37 @@ BOOL cMotionDatabase::Load(ITagFile *pFile)
    int i;
 
    // load name maps
+   if (dbLoadHasFailed())
+      return FALSE;
    m_NameMap.Load(pFile);
+   if (dbLoadHasFailed())
+      return FALSE;
    m_TagNameMap.Load(pFile);
+   if (dbLoadHasFailed())
+      return FALSE;
 
-   // load tag database
-   ITagFile_Read(pFile, (char *)&num, sizeof(num));
+   // Each actor database contains at least a count word.
+   if (ITagFile_Read(pFile, (char *)&num, sizeof(num)) != sizeof(num) ||
+       num > 65536 || num > pFile->TellFromEnd() / sizeof(uint))
+   {
+      dbLoadReportFailure("motion-reader", "Motion actor count is invalid");
+      return FALSE;
+   }
    m_nActors=num;
    m_pDatabase=NewIFancyTagDatabase(m_nActors);
-   m_pDatabase->Load(pFile);
+   if (!m_pDatabase->Load(pFile) || dbLoadHasFailed())
+      return FALSE;
    g_pSwizzleDatabase = this;
    m_pDatabase->Swizzle(LocalToGlobal);
    m_pDatabase->SwizzleRequiredFlags(&m_Remap);
 
    // load schemas
-   ITagFile_Read(pFile, (char *)&num, sizeof(num));
+   if (ITagFile_Read(pFile, (char *)&num, sizeof(num)) != sizeof(num) ||
+       num > 1048576 || num > pFile->TellFromEnd())
+   {
+      dbLoadReportFailure("motion-reader", "Motion schema count is invalid");
+      return FALSE;
+   }
    m_SchemaSet.SetSize(num);
    for(i = 0; i < (int)num; i++)
    {
