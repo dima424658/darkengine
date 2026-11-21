@@ -1232,7 +1232,7 @@ and was never released under an open-source license.
 The repository exists for preservation, research, and modernization of the
 engine. It does not include retail game assets. Users and contributors are 
 expected to use game data from their own lawfully acquired copies of the relevant 
-Dark Engine games when testing their code contributions.
+Dark Engine games when playing the games or testing their code contributions.
 
 Contributors freely license only their own original additions and modifications.
 No rights are claimed in the underlying Dark Engine source or other third-party
