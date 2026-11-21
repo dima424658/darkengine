@@ -36,6 +36,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <lg.h>
 #include <mprintf.h>
@@ -94,6 +95,13 @@ void AnimLightClear(void)
 {
    g_iCurAnimLightToCell = 0;
    num_lit = 0;
+
+   // Mission loading can expose animated-light surfaces before every
+   // concrete light has reset its slot. Start all slots at the matching dark
+   // state instead of sampling stale allocator contents during those frames.
+   if (portal_anim_light_intensity)
+      memset(portal_anim_light_intensity, 0,
+             sizeof(uchar) * MAX_ANIM_LIGHTS);
 }
 
 
@@ -118,6 +126,7 @@ void AnimLightInit(void)
 void AnimLightCleanup(void)
 {
    Free(portal_anim_light_intensity);
+   portal_anim_light_intensity = NULL;
 }
 
 
