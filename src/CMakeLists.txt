@@ -194,6 +194,20 @@ if(WIN32)
       endif()
     endif()
   endforeach()
+
+  if(DARK_FFMPEG_RUNTIME_DLLS)
+    install(FILES ${DARK_FFMPEG_RUNTIME_DLLS} DESTINATION bin)
+    foreach(runtime_target thief2 dromed)
+      if(TARGET ${runtime_target})
+        add_custom_command(TARGET ${runtime_target} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${DARK_FFMPEG_RUNTIME_DLLS}
+            "$<TARGET_FILE_DIR:${runtime_target}>"
+          COMMAND_EXPAND_LISTS
+          VERBATIM)
+      endif()
+    endforeach()
+  endif()
 endif()
 
 if(ANDROID)

@@ -211,8 +211,7 @@ The runner currently provides:
 - 64-bit Windows 10 or Windows 11.
 - Visual Studio 2019 or newer with MSVC x86/x64 build tools and a Windows 10
   or 11 SDK. The configure helper prefers Visual Studio 2026 when installed.
-- CMake 3.21 or later, MSYS2 Bash and Make, and the Vulkan SDK (including
-  `glslc`).
+- CMake 3.21 or later and the Vulkan SDK (including `glslc`).
 - Bison 3.0 or later (`bison` or `win_bison` on `PATH`). It is a host-side
   generator and works with every supported Visual Studio version and target
   architecture.
@@ -220,8 +219,7 @@ The runner currently provides:
   the stock mission data.
 
 Initialize the pinned source dependencies and configure/build either
-architecture from a Visual Studio Developer PowerShell with MSYS2 tools on
-`PATH`:
+architecture from a Visual Studio Developer PowerShell:
 
 ```powershell
 git submodule update --init --recursive
@@ -239,13 +237,19 @@ cmake -S . -B build-win64 -G "Visual Studio 17 2022" -A x64 -DDARK_BUILD_DROMED=
 cmake --build build-win64 --config Release --target thief2 dromed
 ```
 
-SDL3, zlib, libpng, Squirrel, libogg, libvorbis, FFmpeg, and the PKWARE DCL
-decoder are built statically from pinned submodules. Install the Vulkan SDK
-separately; CMake uses its Vulkan package and `glslc` shader compiler. vcpkg is
-not required. FFmpeg is compiled with MSVC; MSYS2 supplies its shell utilities
-and GNU Make, so keep `C:\msys64\usr\bin` on `PATH` during both configuration
-and builds. Pass `-DBISON_EXECUTABLE=C:/path/to/win_bison.exe` when Bison is
-installed outside `PATH`.
+SDL3, zlib, libpng, Squirrel, libogg, libvorbis, and the PKWARE DCL decoder are
+built statically from pinned submodules. Install the Vulkan SDK separately;
+CMake uses its Vulkan package and `glslc` shader compiler. Windows defaults to
+pinned, prebuilt FFmpeg x86/x64 packages for consistent FM codec support; it
+does not run FFmpeg's GNU build system. CMake downloads the package matching
+the target architecture and copies its DLLs next to the executables. Set
+`DARK_WINDOWS_FFMPEG_ROOT` to use a custom prebuilt SDK containing `include`,
+`lib`, and `bin`. Set `DARK_WINDOWS_MOVIE_BACKEND=ffmpeg-source` to opt into
+the same static source build used on Linux when Bash and GNU Make are present,
+or set it to `mfplay` to build against Windows Media Foundation instead.
+Neither alternative is selected automatically; normal Windows builds do not
+require GNU tools. MSYS2 and vcpkg are not required. Pass
+`-DBISON_EXECUTABLE=C:/path/to/win_bison.exe` when Bison is outside `PATH`.
 
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
 SDL3 is linked statically into both executables.
@@ -836,8 +840,9 @@ The engine's gamma setting is applied in the SDL3/Vulkan scene shader using the
 legacy palette-correction power curve.
 
 The retail game writes `skip_intro` after the intro has played. Add
-`always_play_intro` to `cam.cfg` to show it on every launch. All platforms build
-FFmpeg statically from the pinned source submodule for movie playback.
+`always_play_intro` to `cam.cfg` to show it on every launch. Windows uses pinned
+prebuilt FFmpeg packages by default; other platforms build FFmpeg statically from
+the pinned source submodule.
 
 ## Controls
 

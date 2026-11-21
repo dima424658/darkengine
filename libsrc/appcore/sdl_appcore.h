@@ -15,19 +15,19 @@ public:
    cSDLApplication(IUnknown *outer, int argumentCount,
       const char *arguments[], const char *name, const char *defaultPath);
    ~cSDLApplication();
-   HRESULT QueryQuit() override;
-   void Quit() override;
-   void Abort(const char *reason) override;
-   void SetCaption(const char *text) override;
-   const char *GetCaption() override;
-   void SetDefaultFilePath(const char *path) override;
-   const char *GetDefaultFilePath() override;
-   const char *GetFullName() override;
-   const char *GetPath() override;
-   int MessageBox(const char *message, const char *caption, int) override;
-   HRESULT Advise(IAppAdviseSink *sink, DWORD *cookie) override;
-   HRESULT Unadvise(DWORD cookie) override;
-   void AppCommand(unsigned command) override;
+   STDMETHOD(QueryQuit)() override;
+   STDMETHOD_(void, Quit)() override;
+   STDMETHOD_(void, Abort)(const char *reason) override;
+   STDMETHOD_(void, SetCaption)(const char *text) override;
+   STDMETHOD_(const char *, GetCaption)() override;
+   STDMETHOD_(void, SetDefaultFilePath)(const char *path) override;
+   STDMETHOD_(const char *, GetDefaultFilePath)() override;
+   STDMETHOD_(const char *, GetFullName)() override;
+   STDMETHOD_(const char *, GetPath)() override;
+   STDMETHOD_(int, MessageBox)(const char *message, const char *caption, int) override;
+   STDMETHOD(Advise)(IAppAdviseSink *sink, DWORD *cookie) override;
+   STDMETHOD(Unadvise)(DWORD cookie) override;
+   STDMETHOD_(void, AppCommand)(unsigned command) override;
 
 private:
    std::string m_caption;
