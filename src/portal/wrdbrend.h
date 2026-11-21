@@ -10,8 +10,6 @@
 #define __WRDBREND_H
 
 #ifdef RGB_LIGHTING
-
-#ifdef RGB_888
 typedef struct LightmapEntry {
    union {
       uint I;
@@ -19,11 +17,12 @@ typedef struct LightmapEntry {
    };
 } LightmapEntry;
 #else
-typedef ushort LightmapEntry;
+typedef uchar LightmapEntry;
 #endif
 
-#else
-typedef uchar LightmapEntry;
+#if defined(__cplusplus) && defined(RGB_LIGHTING)
+static_assert(sizeof(LightmapEntry) == 4,
+              "RGB lightmap texels must use four-byte live storage");
 #endif
 
 struct st_PortalPolygonRenderInfo

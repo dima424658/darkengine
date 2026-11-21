@@ -339,8 +339,6 @@ extern int portal_hack_blend;
 
 #define TEST_TEXTURE 1
 
-extern ushort portal_color_convert(ushort);
-
 static r3s_point bt_verts[4];
 static r3s_phandle bt_vlist[4] = { bt_verts+0, bt_verts+1, bt_verts+2, bt_verts+3 };
 
@@ -348,8 +346,7 @@ static grs_bitmap blend_texture;
 void portal_do_blendtest(void)
 {
 #ifdef RGB_LIGHTING
-#ifdef RGB_888
-   ushort blend_tex_out[16];
+   uint32 blend_tex_out[16] = {0};
 
    r3s_texture texture = portal_get_texture(TEST_TEXTURE);
 
@@ -392,13 +389,12 @@ void portal_do_blendtest(void)
    bt_verts[2].grp.v = bt_verts[3].grp.v = 1 - 0.25*1.5;
 
    // build lightmap texture in device space
-   gr_init_bitmap(&blend_texture, (char *) blend_tex_out, BMT_FLAT32, 0, 4, 4);
+   gr_init_bitmap(&blend_texture, (char *) blend_tex_out, BMT_FLAT32,
+                  BMF_RGB_8888, 4, 4);
 
-   /* @TODO: figger out what todo.
-   blend_tex_out[0] = portal_color_convert(0);
-   blend_tex_out[4] = portal_color_convert(15+15*32+15*32*32);
-   blend_tex_out[8] = portal_color_convert(31+31*32+31*32*32);
-   */
+   blend_tex_out[0] = 0xff000000;
+   blend_tex_out[4] = 0xff7b7b7b;
+   blend_tex_out[8] = 0xffffffff;
    blend_tex_out[2] = blend_tex_out[1] = blend_tex_out[0];
    blend_tex_out[6] = blend_tex_out[5] = blend_tex_out[4];
    blend_tex_out[10] = blend_tex_out[9] = blend_tex_out[8];
@@ -416,73 +412,6 @@ void portal_do_blendtest(void)
    r3_end_block();
 
    lgd3d_unload_texture(&blend_texture);
-#else // RGB_888
-   ushort blend_tex_out[16];
-
-   r3s_texture texture = portal_get_texture(TEST_TEXTURE);
-
-   if (!g_lgd3d) return;
-
-   r3_start_block();
-
-   r3_set_texture(texture);
-
-   bt_verts[0].p.z = bt_verts[1].p.z =
-   bt_verts[2].p.z = bt_verts[3].p.z = 1.0;
-   bt_verts[0].grp.w = bt_verts[1].grp.w =
-   bt_verts[2].grp.w = bt_verts[3].grp.w = 1.0;
-
-   bt_verts[0].grp.sx = bt_verts[3].grp.sx = fix_make(10,0);
-   bt_verts[1].grp.sx = bt_verts[2].grp.sx = fix_make(60,0);
-   bt_verts[0].grp.sy = bt_verts[1].grp.sy = fix_make(10,0);
-   bt_verts[2].grp.sy = bt_verts[3].grp.sy = fix_make(60,0);
-
-   r3_set_polygon_context(R3_PL_POLYGON | R3_PL_TEXTURE | R3_PL_GOURAUD);
-   bt_verts[0].grp.i = bt_verts[1].grp.i = 0;
-   bt_verts[2].grp.i = bt_verts[3].grp.i = 1.0;
-
-   bt_verts[0].grp.u = bt_verts[3].grp.u = 0;
-   bt_verts[1].grp.u = bt_verts[2].grp.u = 1;
-   bt_verts[0].grp.v = bt_verts[1].grp.v = 0;
-   bt_verts[2].grp.v = bt_verts[3].grp.v = 1;
-
-   r3_draw_poly(4, bt_vlist);
-
-   bt_verts[0].grp.sx = bt_verts[3].grp.sx = fix_make(10+80,0);
-   bt_verts[1].grp.sx = bt_verts[2].grp.sx = fix_make(60+80,0);
-
-   r3_set_polygon_context(R3_PL_POLYGON | R3_PL_TEXTURE | R3_PL_UNLIT);
-   r3_draw_poly(4, bt_vlist);
-
-   bt_verts[0].grp.u = bt_verts[3].grp.u = 0.25 * 0.5;
-   bt_verts[1].grp.u = bt_verts[2].grp.u = 0.25 * 0.5;
-   bt_verts[0].grp.v = bt_verts[1].grp.v = 0.25 * 0.5;
-   bt_verts[2].grp.v = bt_verts[3].grp.v = 1 - 0.25*1.5;
-
-   // build lightmap texture in device space
-   gr_init_bitmap(&blend_texture, (char *) blend_tex_out, BMT_FLAT16, 0, 4, 4);
-
-   blend_tex_out[0] = portal_color_convert(0);
-   blend_tex_out[4] = portal_color_convert(15+15*32+15*32*32);
-   blend_tex_out[8] = portal_color_convert(31+31*32+31*32*32);
-   blend_tex_out[2] = blend_tex_out[1] = blend_tex_out[0];
-   blend_tex_out[6] = blend_tex_out[5] = blend_tex_out[4];
-   blend_tex_out[10] = blend_tex_out[9] = blend_tex_out[8];
-   blend_tex_out[12] = blend_tex_out[8];
-
-   lgd3d_blend_multiply(portal_hack_blend);
-   lgd3d_set_blend(TRUE);
-   lgd3d_set_alpha(0.5);
-   r3_set_texture(&blend_texture);
-   r3_draw_poly(4, bt_vlist);
-   lgd3d_blend_normal();
-   lgd3d_set_blend(FALSE);
-   lgd3d_set_alpha(1.0);
-
-   r3_end_block();
-
-   lgd3d_unload_texture(&blend_texture);
-#endif // RGB_888
 #endif
 }
 #endif

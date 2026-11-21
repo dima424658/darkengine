@@ -1948,41 +1948,14 @@ int PortalRenderPick(Position *pos, int x, int y, float zoom)
 
 #ifdef RGB_LIGHTING
 
-#ifndef RGB_888
-extern ulong pl_red_color[256], pl_green_color[256], pl_blue_color[256];
-extern ulong pl_blue_mask, pl_green_mask, pl_red_mask;
-ulong pl_blue_mask=0x7c00, pl_green_mask=0x03e0, pl_red_mask=0x001f;
-#endif // ~RGB_888
-
 int hack_red, hack_green, hack_blue;
 
 // set color tables given color 0..255 in each thing, one of them 255
 void portal_set_normalized_color(int rm, int gm, int bm)
 {
-#ifdef RGB_888
    hack_red = (rm * 256) / 255;
    hack_green = (gm * 256) / 255;
    hack_blue = (bm * 256) / 255;
-#else // RGB_888
-   int r,g,b,dr,dg,db,i;
-   hack_red = rm;
-   hack_green = gm;
-   hack_blue = bm;
-
-   // after 256 steps, r should reach rm% of red_mask, << 8:
-   dr = pl_red_mask * rm;
-   dg = pl_green_mask * gm;
-   db = pl_blue_mask * bm;
-   r = g = b = 0;
-   for (i=0; i < 256; ++i) {
-      pl_red_color[i]   = (r >> 16) & pl_red_mask;
-      pl_green_color[i] = (g >> 16) & pl_green_mask;
-      pl_blue_color[i]  = (b >> 16) & pl_blue_mask;
-      r += dr;
-      g += dg;
-      b += db;
-   }
-#endif // RGB_888
 }
 
 void portal_convert_hsb_to_rgb(int *rp, int *gp, int *bp, float hue, float saturation)
@@ -2060,27 +2033,8 @@ void portal_convert_hsb_to_rgb(int *rp, int *gp, int *bp, float hue, float satur
 #endif // ~DEEPC
 }
 
-extern ulong pl_red_convert[32], pl_blue_convert[32], pl_green_convert[32];
-
 void portal_setup_light_masks(void)
 {
-   grs_rgb_bitmask bm;
-   if (g_lgd3d)
-      lgd3d_get_opaque_texture_bitmask(&bm);
-   else
-      gr_get_screen_rgb_bitmask(&bm);
-
-#ifndef RGB_888
-   {
-      int i;
-
-      for (i=0; i < 32; ++i) {
-         pl_red_convert[i]   = (i * bm.red   / 31) & bm.red;
-         pl_green_convert[i] = (i * bm.green / 31) & bm.green;
-         pl_blue_convert[i]  = (i * bm.blue  / 31) & bm.blue;
-      }
-   }
-#endif // ~RGB_888
    portal_set_normalized_color(255,255,255);
 }
 #endif

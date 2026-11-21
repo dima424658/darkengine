@@ -612,17 +612,13 @@ void reset_cell_lighting(PortalCell *p)
    mx_copy_vec(&rgb, &GetMissionRenderParams()->ambient_light);
 
 #ifdef RGB_LIGHTING
-#ifdef RGB_888
-   r = rgb.x * 256;
-   g = rgb.y * 256;
-   b = rgb.z * 256;
+   r = (int)(rgb.x * 255.0f + 0.5f);
+   g = (int)(rgb.y * 255.0f + 0.5f);
+   b = (int)(rgb.z * 255.0f + 0.5f);
+   if (r < 0) r = 0; else if (r > 255) r = 255;
+   if (g < 0) g = 0; else if (g > 255) g = 255;
+   if (b < 0) b = 0; else if (b > 255) b = 255;
    ambient = r + (g << 8) + (b << 16);
-#else // RGB_888
-   r = (int)(rgb.x * 32);
-   g = (int)(rgb.y * 32);
-   b = (int)(rgb.z * 32);
-   ambient = r + (g << 5) + (b << 10);
-#endif // RGB_888
 
 #else
    ambient = mx_mag_vec(&rgb);
@@ -639,13 +635,8 @@ void reset_cell_lighting(PortalCell *p)
 #else
             {
                int j;
-#ifdef RGB_888
                for (j = 0; j < lm->h * lm->w; ++j)
                   lm->data[j].I = ambient;
-#else // RGB_888
-               for (j=0; j < lm->h * lm->w; ++j)
-                  lm->data[j] = ambient;
-#endif // RGB_888
             }
 #endif
          }

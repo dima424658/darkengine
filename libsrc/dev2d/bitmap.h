@@ -24,6 +24,7 @@ enum {
    BMT_BANK16,
    BMT_BANK24,
    BMT_TLUC8,
+   BMT_FLAT32,
    BMT_TYPES
 };
 /*

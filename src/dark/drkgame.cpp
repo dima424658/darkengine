@@ -729,7 +729,7 @@ static void console_format_retinfo(char* message, int size)
       int lightWidth = 0;
       int lightHeight = 0;
       int lightRow = 0;
-      int lightMin = 31;
+      int lightMin = 255;
       int lightMax = 0;
       int lightAverage = 0;
       if (PortalRaycastCell >= 0 && PortalRaycastCell < wr_num_cells &&
@@ -752,7 +752,10 @@ static void console_format_retinfo(char* message, int size)
                for (int y = 0; lightmap->data && y < lightHeight; ++y)
                   for (int x = 0; x < lightWidth; ++x)
                   {
-                     int sample = lightmap->data[y * lightRow + x] & 0x1f;
+                     const LightmapEntry& entry =
+                        lightmap->data[y * lightRow + x];
+                     int sample =
+                        (entry.A[0] + entry.A[1] + entry.A[2]) / 3;
                      if (sample < lightMin) lightMin = sample;
                      if (sample > lightMax) lightMax = sample;
                      lightTotal += sample;
@@ -763,7 +766,7 @@ static void console_format_retinfo(char* message, int size)
          }
       }
       _snprintf(message, size - 1,
-                "Terrain: cell %d, polygon %d, texture %d, flags %d, lightmap %dx%d/%d RGB5 %d-%d avg %d",
+                "Terrain: cell %d, polygon %d, texture %d, flags %d, lightmap %dx%d/%d RGB8 %d-%d avg %d",
                 PortalRaycastCell, polygon, texture, flags,
                 lightWidth, lightHeight, lightRow,
                 lightMin, lightMax, lightAverage);
