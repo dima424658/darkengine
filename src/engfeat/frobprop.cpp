@@ -45,10 +45,15 @@ public:
          return cClassDataOps<sFrobInfo>::Read(dat,file,version);
       else 
       {
-         sOldFrobInfo old; 
-         if (!dat->value) *dat = New(); 
+         if (version != sizeof(sOldFrobInfo))
+            return E_FAIL;
+         sOldFrobInfo old;
+         if (file->Read(&old, sizeof(old)) != sizeof(old))
+            return E_FAIL;
+         if (!dat->value)
+            *dat = New();
          sFrobInfo& young = *(sFrobInfo*)dat->value; 
-         file->Read(&old,sizeof(old)); 
+
          for (int i = 0; i < 3; i++)
             young.actions[i] = old.actions[i];  
          return S_OK; 

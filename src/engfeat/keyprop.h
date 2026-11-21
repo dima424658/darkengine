@@ -22,11 +22,17 @@
 #define PROP_KEYSRC_NAME "KeySrc"
 #define PROP_KEYDST_NAME "KeyDst"
 
+#pragma pack(push, 1)
 typedef struct {
    bool   master_bit;
    uint region_mask;
    uchar  lock_id;
 } sKeyInfo;
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(sKeyInfo) == 6, "Key records must be six bytes");
+#endif
 
 #undef INTERFACE
 #define INTERFACE IKeyInfoProperty
