@@ -26,6 +26,7 @@ typedef struct _ScrnManContext
    } mode_params; 
    const char* pal_res;  // palette resource name 
    BOOL preserve_screen; // leave the active renderer intact for nested modes
+   void (*prepare_mode)(void); // refresh dynamic parameters before enter/resume
 } ScrnManContext; 
 
 

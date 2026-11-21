@@ -90,6 +90,9 @@ eLoopMessageResult LGAPI ScrnManLoopFunc(void* context, eLoopMessage msg, tLoopM
          }
 #endif 
 
+         if (data->prepare_mode != NULL)
+            data->prepare_mode();
+
          if (!auto_fail)
             gScrnLoopSetModeFailed = !ScrnModeSet(data->mode_params.min_mode,
                                                   data->mode_params.preferred,
