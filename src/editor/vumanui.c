@@ -15,7 +15,7 @@
 #include <gcompose.h>
 #include <config.h>
 #include <cfgdbg.h>
-#include <platform_services.h>
+#include <menubar.h>
 
 #include <command.h>
 #include <vumanui.h>
@@ -105,7 +105,7 @@ void vm_popup_menu(uiMouseEvent *ev, int c)
 
    vm_get_popup_menu(c, &names, &commands, &count, ev->pos.x, ev->pos.y);
    vm_display_enable=FALSE;
-   selection=PlatformPopupMenu((const char *const *)names,count,
+   selection=EditorViewportMenu((const char *const *)names,count,
                                ev->pos.x,ev->pos.y);
 
    if (selection>0 && selection<=count)

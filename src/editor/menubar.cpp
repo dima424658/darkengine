@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 
@@ -7,7 +8,10 @@
 #include <appagg.h>
 #include <darkdlgs/darkdlgs.h>
 #include <dispwnd.h>
+#include <editorplatform.h>
+#include <gshelapi.h>
 #include <menubar.h>
+#include <render_backend.h>
 #include <uiedit.h>
 #include <vkrend.h>
 #include <vulkan_imgui.hpp>
@@ -15,6 +19,21 @@
 
 namespace
 {
+constexpr const char *kViewportMenu = "Viewport menu";
+
+struct ViewportMenu
+{
+   const char *const *items;
+   int count;
+   int x, y;
+   int selection = 0;
+   ImVec2 rightRelease{};
+   bool releasedRight = false;
+   bool drewInputFrame = false;
+   bool opening = true;
+   bool open = true;
+};
+
 ImVec4 StyleRgb(const guiStyle &palette, StyleColorKind kind)
 {
    const StyleColor color = palette.colors[kind];
@@ -96,11 +115,14 @@ public:
    void SetDraw(void (*pfnDraw)());
    bool Active() const { return m_pfnDraw != nullptr; }
    bool OwnsPointer() const;
+   int RunViewportMenu(const char *const *items, int count, int x, int y);
 
 private:
    void SetHeight(int height);
+   void DrawViewportMenu();
 
    cVulkanImGui m_ImGui;
+   ViewportMenu *m_ViewportMenu{};
    void (*m_pfnDraw)(){};
    int m_Height{};
    bool m_fFrame{};
@@ -148,9 +170,100 @@ void cMenuBarOverlay::Draw(vk::CommandBuffer commands)
       ImGui::EndMainMenuBar();
    }
    DrawDarkDlgs();
+   DrawViewportMenu();
    m_ImGui.Render(commands);
    m_PlatformWindowsPending = true;
    m_fFrame = false;
+}
+
+int cMenuBarOverlay::RunViewportMenu(const char *const *items, int count, int x, int y)
+{
+   if (!Active() || m_ViewportMenu || count <= 0)
+      return 0;
+
+   AutoAppIPtr_(GameShell, shell);
+   AutoAppIPtr_(VulkanRenderer, renderer);
+   if (!shell || !renderer)
+      return 0;
+
+   RenderBackendLogicalToClientPoint(&x, &y);
+   ViewportMenu menu{items, count, x, y};
+   m_ViewportMenu = &menu;
+   EditorUpdateCursor();
+   while (menu.open && Active())
+   {
+      shell->PumpEvents(kPumpAll);
+      renderer->PresentProgress();
+      if (menu.open)
+         SDL_Delay(8);
+   }
+   m_ViewportMenu = nullptr;
+   EditorUpdateCursor();
+   return menu.selection;
+}
+
+void cMenuBarOverlay::DrawViewportMenu()
+{
+   if (!m_ViewportMenu)
+      return;
+   auto &menu = *m_ViewportMenu;
+   if (menu.opening)
+   {
+      // The legacy event can arrive after ImGui started its frame. Let ImGui
+      // consume the right press before opening a popup it would dismiss.
+      if (!menu.drewInputFrame)
+      {
+         menu.drewInputFrame = true;
+         return;
+      }
+      if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+         return;
+
+      const ImGuiViewport *viewport = ImGui::GetMainViewport();
+      const auto &style = ImGui::GetStyle();
+      float labelWidth = 0;
+      for (int i = 0; i < menu.count; ++i)
+         labelWidth = std::max(labelWidth, ImGui::CalcTextSize(menu.items[i]).x);
+      const float width = labelWidth + 2.0f * (style.WindowPadding.x + ImGui::GetFontSize());
+      const float height = menu.count * ImGui::GetTextLineHeightWithSpacing() + 2.0f * style.WindowPadding.y;
+      const ImVec2 limit(viewport->WorkPos.x + std::max(0.0f, viewport->WorkSize.x - width),
+                         viewport->WorkPos.y + std::max(0.0f, viewport->WorkSize.y - height));
+      const ImVec2 position(std::clamp(viewport->Pos.x + menu.x - 1, viewport->WorkPos.x, limit.x),
+                            std::clamp(viewport->Pos.y + menu.y - 1, viewport->WorkPos.y, limit.y));
+      ImGui::OpenPopup(kViewportMenu);
+      ImGui::SetNextWindowPos(position);
+      menu.opening = false;
+   }
+   if (!ImGui::BeginPopup(kViewportMenu))
+   {
+      menu.open = false;
+      return;
+   }
+
+   for (int i = 0; i < menu.count; ++i)
+   {
+      ImGui::PushID(i);
+      const bool selected = ImGui::MenuItem(menu.items[i]);
+      const ImVec2 min = ImGui::GetItemRectMin();
+      const ImVec2 max = ImGui::GetItemRectMax();
+      const bool released = menu.releasedRight && menu.rightRelease.x >= min.x && menu.rightRelease.x < max.x &&
+         menu.rightRelease.y >= min.y && menu.rightRelease.y < max.y;
+      ImGui::PopID();
+      if (selected || released)
+      {
+         menu.selection = i + 1;
+         ImGui::CloseCurrentPopup();
+         menu.open = false;
+         break;
+      }
+   }
+   menu.releasedRight = false;
+   if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+   {
+      ImGui::CloseCurrentPopup();
+      menu.open = false;
+   }
+   ImGui::EndPopup();
 }
 
 void cMenuBarOverlay::PresentPlatformWindows()
@@ -179,13 +292,21 @@ bool cMenuBarOverlay::ProcessEvent(const SDL_Event &event)
       return false;
 
    const bool modal = DarkDlgsModalActive();
-   bool popupOpen = false;
+   bool popupOpen = m_ViewportMenu != nullptr;
    if (m_ImGui.ProcessEvent(event))
    {
+      if (m_ViewportMenu && event.type == SDL_EVENT_MOUSE_BUTTON_UP && event.button.button == SDL_BUTTON_RIGHT)
+      {
+         int x = 0, y = 0;
+         if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+            SDL_GetWindowPosition(SDL_GetWindowFromID(event.button.windowID), &x, &y);
+         m_ViewportMenu->rightRelease = ImVec2(x + event.button.x, y + event.button.y);
+         m_ViewportMenu->releasedRight = true;
+      }
       if (!modal && event.type == SDL_EVENT_WINDOW_FOCUS_LOST &&
           event.window.windowID == SDL_GetWindowID(window->GetSDLWindow()))
          ImGui::SetWindowFocus(NULL);
-      popupOpen = ImGui::IsPopupOpen(NULL, ImGuiPopupFlags_AnyPopup);
+      popupOpen |= ImGui::IsPopupOpen(NULL, ImGuiPopupFlags_AnyPopup);
    }
    // Use the event coordinates so moving into the bar and clicking within
    // a single frame cannot send an editor click.
@@ -225,7 +346,7 @@ void cMenuBarOverlay::SetDraw(void (*pfnDraw)())
 
 bool cMenuBarOverlay::OwnsPointer() const
 {
-   if (DarkDlgsModalActive())
+   if (DarkDlgsModalActive() || m_ViewportMenu)
       return true;
    if (!m_pfnDraw || !m_ImGui.SetCurrentContext())
       return false;
@@ -256,6 +377,11 @@ void SetMenuBar(void (*pfnDraw)())
       if (renderer)
          renderer->SetOverlay(&g_MenuBarOverlay);
    }
+}
+
+extern "C" int EditorViewportMenu(const char *const *items, int count, int x, int y)
+{
+   return g_MenuBarOverlay.RunViewportMenu(items, count, x, y);
 }
 
 bool MenuBarActive()

@@ -265,32 +265,6 @@ BOOL PlatformAskYesNo(const char *title, const char *message)
                       MB_YESNO | MB_ICONQUESTION | MB_SYSTEMMODAL) == IDYES;
 }
 
-int PlatformPopupMenu(const char *const *items, int count,
-                      int client_x, int client_y)
-{
-   HWND window = GetActiveWindow();
-   HMENU menu = CreatePopupMenu();
-   POINT screen_pos = { client_x, client_y };
-   UINT selection;
-
-   if (!window || !menu)
-   {
-      if (menu)
-         DestroyMenu(menu);
-      return 0;
-   }
-
-   for (int i = 0; i < count; ++i)
-      AppendMenuA(menu, MF_STRING, (UINT_PTR)(i + 1), items[i]);
-
-   ClientToScreen(window, &screen_pos);
-   selection = TrackPopupMenu(menu,
-                              TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON,
-                              screen_pos.x, screen_pos.y, 0, window, NULL);
-   DestroyMenu(menu);
-   return (int)selection;
-}
-
 uint32 PlatformMilliseconds(void)
 {
    return (uint32)GetTickCount();
