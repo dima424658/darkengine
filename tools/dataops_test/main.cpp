@@ -5,6 +5,15 @@
 #include <lootprop.h>
 #include <camera.h>
 #include <linkbase.h>
+#include <aipsdscr.h>
+#include <aialert.h>
+#include <aiapiinf.h>
+#include <aiaware.h>
+#include <aisched.h>
+#include <pjfli.h>
+#include <schbase.h>
+#include <gunbase.h>
+#include <projbase.h>
 #include <array>
 #include <climits>
 #include <cstdio>
@@ -39,6 +48,49 @@ static_assert(sizeof(sAdvPickSoundCfg) == 648);
 static_assert(sizeof(sLootProp) == 16);
 static_assert(sizeof(Camera) == 36);
 static_assert(sizeof(sLink) == 10);
+static_assert(sizeof(sAIPsdScrAct) == 260);
+static_assert(sizeof(sAIInform) == 56);
+static_assert(sizeof(sAIAwareness) == 68);
+static_assert(sizeof(sAIAlertness) == 8);
+static_assert(sizeof(sAIScheduleSettings) == 8);
+static_assert(sizeof(sSchemaMsg) == 48);
+static_assert(sizeof(sSchemaMsg::data) == sizeof(mxs_vector));
+static_assert(sizeof(sSchemaCallParams::msgData) == sizeof(mxs_vector));
+static_assert(sizeof(sSchemaPlayParams) == 20);
+static_assert(sizeof(sSchemaLoopParams) == 8);
+static_assert(sizeof(sAIGunDesc) == 30);
+static_assert(sizeof(sProjectile) == 6);
+static_assert(offsetof(sProjectile, m_spread) == 4);
+static_assert(offsetof(sAIGunDesc, m_aimError) == 28);
+static_assert(offsetof(sAIFrustrated, pPath) == 8);
+
+static void TestAnimationHeader()
+{
+   const unsigned char prefix[] = {154, 0, 0, 0, 0x12, 0xaf, 1, 0, 2, 0, 2, 0, 8, 0};
+   std::array<unsigned char, 128> bytes{};
+   std::memcpy(bytes.data(), prefix, sizeof(prefix));
+   bytes[80] = 128;
+   Fli_head header;
+   std::memcpy(&header, bytes.data(), sizeof(header));
+   Check(header.size == 154 && header.type == FLIHR_MAGIC, "animation file header shifted");
+   Check(header.width == 2 && header.height == 2 && header.frame1_oset == 128,
+         "animation dimensions or frame offset shifted");
+   static_assert(offsetof(Fli_head, frame1_oset) == 80);
+   static_assert(offsetof(Chunk_id, type) == 4);
+}
+
+static void TestSchemaMessagePayload()
+{
+   const mxs_vector input = {-3.5f, 5.0f, 0.125f};
+   sSchemaCallParams call{};
+   sSchemaMsg message{};
+   std::memcpy(call.msgData, &input, sizeof(input));
+   for (int i = 0; i < SCHEMA_MSG_DATA_SIZE; ++i)
+      message.data[i] = call.msgData[i];
+   mxs_vector output;
+   std::memcpy(&output, message.data, sizeof(output));
+   Check(std::memcmp(&input, &output, sizeof(input)) == 0, "sound message vector bits changed");
+}
 
 static void TestMemoryFile()
 {
@@ -125,6 +177,8 @@ static void TestPackedKey()
 
 int main()
 {
+   TestAnimationHeader();
+   TestSchemaMessagePayload();
    TestMemoryFile();
    TestFixedRecords();
    TestPackedKey();
