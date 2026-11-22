@@ -171,6 +171,10 @@ errtype mouse_get_xy(short* x, short* y);
 // Set the mouse position
 errtype mouse_put_xy(short x, short y);
 
+// Synchronize the logical pointer when another UI returns mouse ownership.
+// This leaves the native pointer and the input queue untouched.
+void mouse_sync_xy(short x, short y);
+
 // Select SDL relative pointer capture for contexts that bind mouse axes.
 errtype mouse_set_relative_mode(bool enabled);
 // Return and clear the platform's accumulated raw motion. Coordinates remain

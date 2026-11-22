@@ -10,6 +10,8 @@
 #include <vkrend.h>
 #include <dispwnd.h>
 #include <menubar.h>
+#include <mouse.h>
+#include <render_backend.h>
 
 namespace {
 bool g_tracking;
@@ -73,7 +75,16 @@ void EditorUpdateCursor(void)
       if (hide)
          uiHideMouse(NULL);
       else
+      {
+         // The menu can consume motion while the software cursor is hidden.
+         float clientX, clientY;
+         SDL_GetMouseState(&clientX, &clientY);
+         int x = static_cast<int>(clientX);
+         int y = static_cast<int>(clientY);
+         if (RenderBackendClientToLogicalPoint(&x, &y))
+            mouse_sync_xy(static_cast<short>(x), static_cast<short>(y));
          uiShowMouse(NULL);
+      }
       g_cursorHidden=hide;
    }
    const LGadRoot *root=LGadCurrentRoot();

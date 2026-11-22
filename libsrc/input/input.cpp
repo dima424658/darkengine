@@ -170,6 +170,13 @@ errtype _mouse_get_xy(short *x, short *y)
    *x = g_x; *y = g_y; return OK;
 }
 errtype mouse_get_xy(short *x, short *y) { return _mouse_get_xy(x, y); }
+void mouse_sync_xy(short x, short y)
+{
+   std::lock_guard<std::mutex> lock(g_mutex);
+   g_x = x;
+   g_y = y;
+   clamp_mouse();
+}
 errtype mouse_put_xy(short x, short y)
 {
    g_x = x; g_y = y; clamp_mouse();
