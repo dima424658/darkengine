@@ -20,7 +20,6 @@
 
 #include <SDL3/SDL_main.h>
 
-#include <runtime.h>
 
 extern "C" int LGAPI _AppMain(int argc, const char *argv[]);
 

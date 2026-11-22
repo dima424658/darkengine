@@ -12,6 +12,7 @@
 #include <gshelapi.h>
 #include <dispapi.h>
 #include <dispwnd.h>
+#include <vkrend.h>
 #include <appapi.h>
 #include <appagg.h>
 #include <loopapi.h>
@@ -489,6 +490,7 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
    {
       AutoAppIPtr_(Unknown,pOuter);
       DisplayWindowCreate(pOuter);
+      VulkanRendererCreate(pOuter);
    }
    ScriptManCreate(GetSimTime, ScriptPrintString);
    Gr2dCreate();

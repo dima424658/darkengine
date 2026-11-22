@@ -19,7 +19,7 @@
 #include <dispwnd.h>
 #include <menus.h>
 #include <platform_services.h>
-#include <vulkan_imgui.hpp>
+#include <menubar.h>
 
 namespace
 {
@@ -227,7 +227,7 @@ void SetMainMenu(const char *pszName)
    if (window)
       window->SetTitle(pszName ? "DromEd - editor" : "DromEd");
    g_MenuSet.Load(PlatformBatchMode() ? NULL : pszName);
-   VulkanImGuiSetMenuBar(g_MenuSet.Empty() ? NULL : DrawMenuBar);
+   SetMenuBar(g_MenuSet.Empty() ? NULL : DrawMenuBar);
 }
 
 void MenuCommand(unsigned id)

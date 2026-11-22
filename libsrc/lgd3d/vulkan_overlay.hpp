@@ -6,15 +6,16 @@
 class cVulkanContext;
 union SDL_Event;
 
-struct sVulkanOverlay
+struct IVulkanOverlay
 {
-   void (*prepare)(const cVulkanContext &context);
-   void (*draw)(vk::CommandBuffer commands);
+   virtual void Prepare(const cVulkanContext &context) = 0;
+   virtual void Draw(vk::CommandBuffer commands) = 0;
    // Called after the device goes idle and before its swapchain is destroyed.
-   void (*reset)();
-   bool (*processEvent)(const SDL_Event &event);
-};
+   virtual void Reset() = 0;
+   virtual bool ProcessEvent(const SDL_Event &event) = 0;
 
-void DarkRenderSetOverlay(const sVulkanOverlay &overlay);
+protected:
+   ~IVulkanOverlay() = default;
+};
 
 #endif

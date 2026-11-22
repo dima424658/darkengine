@@ -4,7 +4,7 @@
 #include <objcoll.h>
 #include <movieapi.h>
 #include <appsfxi.h>
-#include <runtime.h>
+#include <vkrend.h>
 #include <dispwnd.h>
 
 #include <cstdio>
@@ -36,9 +36,13 @@ int main(int argc, char *argv[])
     _AppSetAggregate(aggregate);
 
     config_init();
-    if (FAILED(DisplayWindowCreate(aggregate)) ||
-        !DarkRenderOpen(640, 480, "Dark Engine movie test"))
+    IVulkanRenderer *renderer = nullptr;
+    if (SUCCEEDED(DisplayWindowCreate(aggregate)) &&
+        SUCCEEDED(VulkanRendererCreate(aggregate)))
+        renderer = AppGetObj(IVulkanRenderer);
+    if (!renderer || !renderer->Open(640, 480, "Dark Engine movie test"))
     {
+        SafeRelease(renderer);
         _AppSetAggregate(nullptr);
         aggregate->ReleaseAll();
         config_shutdown();
@@ -56,7 +60,8 @@ int main(int argc, char *argv[])
         std::fprintf(stderr, "Could not initialize the movie test audio mixer\n");
         if (g_testMixer)
             g_testMixer->Release();
-        DarkRenderClose();
+        renderer->Close();
+        SafeRelease(renderer);
         _AppSetAggregate(nullptr);
         aggregate->ReleaseAll();
         config_shutdown();
@@ -78,7 +83,8 @@ int main(int argc, char *argv[])
         player->Close();
         played = played && player->GetState() == kMP1NothingOpen && !player->CanPlay();
     }
-    DarkRenderClose();
+    renderer->Close();
+    SafeRelease(renderer);
     aggregate->ReleaseAll();
     _AppSetAggregate(nullptr);
     g_testMixer->Release();

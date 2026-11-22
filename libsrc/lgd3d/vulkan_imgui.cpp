@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cmath>
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
@@ -11,30 +10,22 @@
 
 #include "vulkan_context.hpp"
 #include "vulkan_imgui.hpp"
-#include "vulkan_overlay.hpp"
-#include "vulkan_render_backend.hpp"
 
-namespace
+void cVulkanImGui::ContextDeleter::operator()(ImGuiContext *context) const noexcept
 {
-void (*g_pDrawMenuBar)();
-ImGuiContext *g_pImGui;
-bool g_fMenuFrame;
-int g_MenuBarHeight;
-
-void SetMenuBarHeight(int height)
-{
-   g_MenuBarHeight = height;
-   RenderBackendVulkanSetTopInset(height);
+   ImGui::DestroyContext(context);
 }
 
-bool InitMenuOverlay(const cVulkanContext &context)
+bool cVulkanImGui::Init(const cVulkanContext &context)
 {
    AutoAppIPtr_(DisplayWindow,window);
    if (!window || !window->GetSDLWindow())
       return false;
 
    IMGUI_CHECKVERSION();
-   g_pImGui = ImGui::CreateContext();
+   ImGuiContext *previous = ImGui::GetCurrentContext();
+   m_pContext.reset(ImGui::CreateContext());
+   ImGui::SetCurrentContext(m_pContext.get());
    ImGuiIO &io = ImGui::GetIO();
    io.IniFilename = nullptr;
    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard |
@@ -43,8 +34,8 @@ bool InitMenuOverlay(const cVulkanContext &context)
 
    if (!ImGui_ImplSDL3_InitForVulkan(window->GetSDLWindow()))
    {
-      ImGui::DestroyContext(g_pImGui);
-      g_pImGui = nullptr;
+      m_pContext.reset();
+      ImGui::SetCurrentContext(previous);
       return false;
    }
    ImGui_ImplSDL3_SetMouseCaptureMode(ImGui_ImplSDL3_MouseCaptureMode_Disabled);
@@ -65,128 +56,63 @@ bool InitMenuOverlay(const cVulkanContext &context)
    return true;
 }
 
-void PrepareMenuOverlay(const cVulkanContext &context)
+bool cVulkanImGui::BeginFrame(const cVulkanContext &context)
 {
-   if (!g_pDrawMenuBar)
-      return;
-   if (!g_pImGui && !InitMenuOverlay(context))
-   {
-      SetMenuBarHeight(0);
-      return;
-   }
+   if (!SetCurrentContext() && !Init(context))
+      return false;
 
    ImGui_ImplVulkan_NewFrame();
    ImGui_ImplSDL3_NewFrame();
    ImGuiIO &io = ImGui::GetIO();
    const vk::Extent2D extent = context.SwapchainExtent();
    if (io.DisplaySize.x <= 0.0f || io.DisplaySize.y <= 0.0f)
-      return;
+      return false;
    io.DisplayFramebufferScale = ImVec2(extent.width / io.DisplaySize.x,
       extent.height / io.DisplaySize.y);
    ImGui::NewFrame();
-   g_fMenuFrame = true;
-   SetMenuBarHeight(static_cast<int>(std::ceil(ImGui::GetFrameHeight())));
+   return true;
 }
 
-void DrawMenuOverlay(vk::CommandBuffer commands)
+void cVulkanImGui::Render(vk::CommandBuffer commands)
 {
-   if (!g_fMenuFrame)
-      return;
-   if (g_pDrawMenuBar && ImGui::BeginMainMenuBar())
-   {
-      g_pDrawMenuBar();
-      ImGui::EndMainMenuBar();
-   }
+   ImGui::SetCurrentContext(m_pContext.get());
    ImGui::Render();
    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commands);
-   g_fMenuFrame = false;
 }
 
-void ResetMenuOverlay()
+void cVulkanImGui::Reset()
 {
-   if (g_pImGui)
-   {
-      ImGui_ImplVulkan_Shutdown();
-      ImGui_ImplSDL3_Shutdown();
-      ImGui::DestroyContext(g_pImGui);
-      g_pImGui = nullptr;
-      g_fMenuFrame = false;
-   }
+   ImGuiContext *previous = ImGui::GetCurrentContext();
+   if (!SetCurrentContext())
+      return;
+
+   if (previous == m_pContext.get())
+      previous = nullptr;
+
+   ImGui_ImplVulkan_Shutdown();
+   ImGui_ImplSDL3_Shutdown();
+   m_pContext.reset();
+   ImGui::SetCurrentContext(previous);
 }
 
-bool ProcessMenuEvent(const SDL_Event &event)
+bool cVulkanImGui::ProcessEvent(const SDL_Event &event)
 {
-   if (!g_pDrawMenuBar)
-      return false;
-   AutoAppIPtr_(DisplayWindow,window);
-   if (!window || window->IsRelativeMouseActive())
+   if (!SetCurrentContext())
       return false;
 
-   bool popupOpen = false;
-   if (g_pImGui)
-   {
-      // The SDL backend forwards button state without the pointer position.
-      // After a swapchain rebuild, the pointer may not have moved yet.
-      if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
-          event.type == SDL_EVENT_MOUSE_BUTTON_UP)
-         ImGui::GetIO().AddMousePosEvent(event.button.x, event.button.y);
-      ImGui_ImplSDL3_ProcessEvent(&event);
-      if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST)
-         ImGui::SetWindowFocus(nullptr);
-      popupOpen = ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup);
-   }
-   // Use the event coordinates so moving into the bar and clicking within
-   // a single frame cannot send an editor click.
-   switch (event.type)
-   {
-   case SDL_EVENT_MOUSE_MOTION:
-      return popupOpen || event.motion.y < g_MenuBarHeight;
-   case SDL_EVENT_MOUSE_BUTTON_DOWN:
-   case SDL_EVENT_MOUSE_BUTTON_UP:
-      return popupOpen || event.button.y < g_MenuBarHeight;
-   case SDL_EVENT_MOUSE_WHEEL:
-      return popupOpen || event.wheel.mouse_y < g_MenuBarHeight;
-   case SDL_EVENT_KEY_DOWN:
-   case SDL_EVENT_KEY_UP:
-      return popupOpen;
-   default:
-      return false;
-   }
+   // The SDL backend forwards button state without the pointer position.
+   // After a swapchain rebuild, the pointer may not have moved yet.
+   if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+       event.type == SDL_EVENT_MOUSE_BUTTON_UP)
+      ImGui::GetIO().AddMousePosEvent(event.button.x, event.button.y);
+   ImGui_ImplSDL3_ProcessEvent(&event);
+   return true;
 }
 
-const sVulkanOverlay kMenuBarOverlay =
+bool cVulkanImGui::SetCurrentContext() const
 {
-   PrepareMenuOverlay, DrawMenuOverlay, ResetMenuOverlay, ProcessMenuEvent
-};
-
-}
-
-void VulkanImGuiSetMenuBar(void (*draw)())
-{
-   if (g_pImGui)
-   {
-      ImGui::SetWindowFocus(nullptr);
-      ImGuiIO &io = ImGui::GetIO();
-      io.ClearEventsQueue();
-      io.ClearInputKeys();
-      io.ClearInputMouse();
-   }
-
-   g_pDrawMenuBar = draw;
-   if (draw)
-      DarkRenderSetOverlay(kMenuBarOverlay);
-   else
-      SetMenuBarHeight(0);
-}
-
-bool VulkanImGuiMenuOwnsPointer()
-{
-   if (!g_pDrawMenuBar || !g_pImGui)
+   if (!m_pContext)
       return false;
-   AutoAppIPtr_(DisplayWindow,window);
-   if (!window || SDL_GetMouseFocus() != window->GetSDLWindow())
-      return false;
-   float y;
-   SDL_GetMouseState(nullptr, &y);
-   return y < g_MenuBarHeight || ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup);
+   ImGui::SetCurrentContext(m_pContext.get());
+   return true;
 }

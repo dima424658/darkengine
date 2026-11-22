@@ -8,7 +8,7 @@
 #include <gshelapi.h>
 
 #include <dispwnd.h>
-#include <runtime.h>
+#include <vkrend.h>
 #include "sdl_events.h"
 
 bool DarkPumpEvents(void)
@@ -29,7 +29,11 @@ public:
 
    STDMETHOD_(void, BeginFrame)() override
    {
-      DarkRenderBeginApplicationFrame();
+      {
+         AutoAppIPtr_(VulkanRenderer,renderer);
+         if (renderer)
+            renderer->BeginApplicationFrame();
+      }
       PumpEvents(kPumpAll);
       if (m_flags & kLockFrame)
          DisplayLock();
@@ -50,7 +54,9 @@ public:
       }
       else if (m_flags & kFlushOnEndFrame)
          DisplayFlush();
-      DarkRenderEndApplicationFrame();
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (renderer)
+         renderer->EndApplicationFrame();
    }
 
    STDMETHOD(BringToFront)() override { return S_OK; }

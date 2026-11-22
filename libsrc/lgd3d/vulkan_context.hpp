@@ -7,10 +7,11 @@
 #include <array>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class cVulkanSceneRenderer;
-struct sVulkanOverlay;
+struct IVulkanOverlay;
 
 inline constexpr uint32_t kVulkanFramesInFlight = 2;
 
@@ -32,7 +33,7 @@ public:
    // Applied when creating or recreating the swapchain.
    void SetVSync(bool enabled) { m_vsync = enabled; }
    bool PresentClearFrame(float red, float green, float blue, float alpha);
-   void SetOverlay(const sVulkanOverlay *overlay) { m_overlay = overlay; }
+   void SetOverlay(IVulkanOverlay *overlay) { m_overlay = overlay; }
    // BeginFrame acquires a swapchain image and starts its render pass. The
    // returned command buffer is valid until EndFrame submits and presents it.
    bool BeginFrame(const std::array<float, 4> &clearColor,
@@ -97,8 +98,8 @@ private:
    void CollectCompletedUploads();
    std::unique_ptr<sPendingUpload> AcquireUpload(vk::DeviceSize bytes);
 
-   const sVulkanOverlay *m_overlay{};
-   vk::raii::Context m_raiiContext;
+   IVulkanOverlay *m_overlay{};
+   std::optional<vk::raii::Context> m_raiiContext;
    std::vector<std::unique_ptr<sPendingUpload>> m_pendingUploads;
    size_t m_pendingUploadHead{};
    std::vector<std::unique_ptr<sPendingUpload>> m_uploadPool;

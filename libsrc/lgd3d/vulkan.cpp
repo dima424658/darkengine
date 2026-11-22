@@ -1,3 +1,5 @@
+#include <SDL3/SDL.h>
+
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -5,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <limits>
@@ -16,10 +19,10 @@
 #include <tracy/Tracy.hpp>
 #include <platform_services.h>
 
-#include "runtime.h"
-#include "event_bridge.h"
+#include <aggmemb.h>
 #include <appagg.h>
 #include <dispwnd.h>
+#include <vkrend.h>
 #include "vulkan_context.hpp"
 #include "vulkan_overlay.hpp"
 #include "vulkan_render_backend.hpp"
@@ -40,37 +43,51 @@ vk::SurfaceKHR CreateVulkanSurface(IVulkanWindow &window, vk::Instance instance,
    return surface;
 }
 
-class cVulkanRuntime
+void CloseVulkanRendererOnExit()
 {
+   AutoAppIPtr_(VulkanRenderer,renderer);
+   if (renderer)
+      renderer->Close();
+}
+
+class cVulkanRuntime final : public IVulkanRenderer
+{
+   DECLARE_SIMPLE_AGGREGATION(cVulkanRuntime);
+
 public:
-   bool Open(int width, int height, const char *title);
-   void Close();
-   bool TakeResize(int *width, int *height);
-   bool BeginEventPump();
-   void WindowResized();
-   void WindowMinimized();
-   void WindowRestored();
-   void ApplicationSuspended();
-   void ApplicationResumed();
-   void EndEventPump();
-   void SetPhysicalDeviceIndex(int index);
-   void SetOverlay(const sVulkanOverlay &overlay);
-   bool ProcessOverlayEvent(const SDL_Event &event);
-   void BeginApplicationFrame();
-   void EndApplicationFrame();
-   void PresentProgress();
-   bool PresentCanvasRect(const void *pixels, int width, int height, int rowBytes,
-      int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
-   bool ClearOverlay(void *pixels, int width, int height, int rowBytes, int depth);
-   bool HasDirectCanvas() const { return m_directCanvas; }
-   void InvalidateCanvas();
-   void PresentRect(const void *pixels, int width, int height, int rowBytes,
-      int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
-   void Present(const void *pixels, int width, int height, int rowBytes,
-      int bitDepth, const uint8_t *palette);
-   bool PresentMovieFrame(const void *rgba, int width, int height,
-      int rowBytes);
+   explicit cVulkanRuntime(IUnknown *pOuter);
+   ~cVulkanRuntime();
+
+   STDMETHOD_(BOOL, Open)(int width, int height, const char *title) override;
+   STDMETHOD_(void, Close)() override;
+   STDMETHOD_(BOOL, TakeResize)(int *width, int *height) override;
+   STDMETHOD_(BOOL, BeginEventPump)() override;
+   STDMETHOD_(void, EndEventPump)() override;
+   STDMETHOD_(void, WindowResized)() override;
+   STDMETHOD_(void, WindowMinimized)() override;
+   STDMETHOD_(void, WindowRestored)() override;
+   STDMETHOD_(void, SetPhysicalDeviceIndex)(int index) override;
+   STDMETHOD_(void, SetOverlay)(IVulkanOverlay *overlay) override;
+   STDMETHOD_(void, SetTopInset)(int points) override;
+   STDMETHOD_(BOOL, ProcessOverlayEvent)(const SDL_Event *event) override;
+   STDMETHOD_(void, BeginApplicationFrame)() override;
+   STDMETHOD_(void, EndApplicationFrame)() override;
+   STDMETHOD_(void, PresentProgress)() override;
+   STDMETHOD_(BOOL, PresentCanvasRect)(const void *pixels, int width, int height,
+      int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1) override;
+   STDMETHOD_(BOOL, ClearOverlay)(void *pixels, int width, int height, int rowBytes,
+      int depth) override;
+   STDMETHOD_(BOOL, HasDirectCanvas)() override { return m_directCanvas; }
+   STDMETHOD_(void, InvalidateCanvas)() override;
+   STDMETHOD_(void, PresentRect)(const void *pixels, int width, int height,
+      int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1) override;
+   STDMETHOD_(void, Present)(const void *pixels, int width, int height, int rowBytes,
+      int bitDepth, const uint8_t *palette) override;
+   STDMETHOD_(BOOL, PresentMovieFrame)(const void *rgba, int width, int height,
+      int rowBytes) override;
+
 private:
+   static bool SDLCALL LifecycleEvent(void *userdata, SDL_Event *event);
    void UpdateWindowDimensions();
    void HandleSwapchainRecreation();
    void ProcessPendingLifecycleResize();
@@ -84,7 +101,7 @@ private:
    IDisplayWindow *m_window{};
    IVulkanWindow *m_vulkanWindow{};
    cVulkanContext m_context;
-   const sVulkanOverlay *m_overlay{};
+   IVulkanOverlay *m_overlay{};
    cVulkanSceneRenderer m_renderer;
    vk::CommandBuffer m_activeCommandBuffer{};
    int m_width{}, m_height{};
@@ -109,6 +126,7 @@ private:
    bool m_resizePending{};
    bool m_windowSizeChanged{};
    bool m_exitHookRegistered{};
+   bool m_lifecycleWatchRegistered{};
    void *m_movieTexture{};
    cCanvasSnapshot m_canvas;
    const void *m_canvasSource{};
@@ -116,10 +134,16 @@ private:
    bool m_overlayClearEligible{};
 };
 
-cVulkanRuntime &VulkanRuntime()
+IMPLEMENT_SIMPLE_AGGREGATION_SELF_DELETE(cVulkanRuntime);
+
+cVulkanRuntime::cVulkanRuntime(IUnknown *pOuter)
 {
-   static cVulkanRuntime runtime;
-   return runtime;
+   INIT_AGGREGATION_1(pOuter, IID_IVulkanRenderer, this, kPriorityLibrary, nullptr);
+}
+
+cVulkanRuntime::~cVulkanRuntime()
+{
+   Close();
 }
 
 void cVulkanRuntime::UpdateWindowDimensions()
@@ -334,7 +358,7 @@ void cVulkanRuntime::DrawCanvas(vk::CommandBuffer commandBuffer, bool transparen
       true, smooth, canvasMode, transparent);
 }
 
-bool cVulkanRuntime::Open(int width, int height, const char *title)
+STDMETHODIMP_(BOOL) cVulkanRuntime::Open(int width, int height, const char *title)
 {
    if (m_window)
    {
@@ -400,7 +424,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    // state while tearing down the renderer and device.
    if (!m_exitHookRegistered)
    {
-      std::atexit(DarkRenderClose);
+      std::atexit(CloseVulkanRendererOnExit);
       m_exitHookRegistered = true;
    }
 #ifndef DARK_VULKAN_SHADER_DIR
@@ -455,8 +479,17 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    return true;
 }
 
-void cVulkanRuntime::Close()
+STDMETHODIMP_(void) cVulkanRuntime::Close()
 {
+   if (!m_window)
+      return;
+
+   if (m_lifecycleWatchRegistered)
+   {
+      SDL_RemoveEventWatch(LifecycleEvent, this);
+      m_lifecycleWatchRegistered = false;
+   }
+
    if (m_frameActive)
    {
       RenderBackendVulkanDetach();
@@ -486,8 +519,7 @@ void cVulkanRuntime::Close()
    }
    m_renderer.Shutdown();
    m_context.Shutdown();
-   if (m_window)
-      m_window->Close();
+   m_window->Close();
    SafeRelease(m_vulkanWindow);
    SafeRelease(m_window);
    m_width = m_height = m_clientWidth = m_clientHeight = 0;
@@ -513,7 +545,7 @@ void cVulkanRuntime::Close()
    m_surfaceRecreationErrorReported = false;
 }
 
-bool cVulkanRuntime::TakeResize(int *width, int *height)
+STDMETHODIMP_(BOOL) cVulkanRuntime::TakeResize(int *width, int *height)
 {
    if (!m_window || !m_windowSizeChanged || !width || !height)
       return false;
@@ -523,49 +555,64 @@ bool cVulkanRuntime::TakeResize(int *width, int *height)
    return true;
 }
 
-bool cVulkanRuntime::BeginEventPump()
+STDMETHODIMP_(BOOL) cVulkanRuntime::BeginEventPump()
 {
-   if (!m_window) return false;
+   if (!m_window)
+      return false;
    ProcessPendingLifecycleResize();
+   if (!m_lifecycleWatchRegistered)
+   {
+      m_lifecycleWatchRegistered = SDL_AddEventWatch(LifecycleEvent, this);
+      if (!m_lifecycleWatchRegistered)
+         SDL_Log("SDL lifecycle event watcher registration failed: %s", SDL_GetError());
+   }
    return true;
 }
 
-void cVulkanRuntime::WindowResized()
+STDMETHODIMP_(void) cVulkanRuntime::WindowResized()
 {
    UpdateWindowDimensions();
 }
 
-void cVulkanRuntime::WindowMinimized()
+STDMETHODIMP_(void) cVulkanRuntime::WindowMinimized()
 {
    m_windowMinimized = true;
    UpdateWindowDimensions();
 }
 
-void cVulkanRuntime::WindowRestored()
+STDMETHODIMP_(void) cVulkanRuntime::WindowRestored()
 {
    m_windowMinimized = false;
    UpdateWindowDimensions();
 }
 
-void cVulkanRuntime::ApplicationSuspended()
+bool SDLCALL cVulkanRuntime::LifecycleEvent(void *userdata, SDL_Event *event)
 {
-   m_appInBackground.store(true, std::memory_order_relaxed);
-   m_windowMinimized.store(true, std::memory_order_relaxed);
+   auto &runtime = *static_cast<cVulkanRuntime *>(userdata);
+   switch (event->type)
+   {
+   case SDL_EVENT_WILL_ENTER_BACKGROUND:
+   case SDL_EVENT_DID_ENTER_BACKGROUND:
+      runtime.m_appInBackground.store(true, std::memory_order_relaxed);
+      runtime.m_windowMinimized.store(true, std::memory_order_relaxed);
+      break;
+   case SDL_EVENT_DID_ENTER_FOREGROUND:
+      runtime.m_appInBackground.store(false, std::memory_order_relaxed);
+      runtime.m_surfaceRecreationPending.store(true, std::memory_order_release);
+      runtime.m_lifecycleResizePending.store(true, std::memory_order_release);
+      break;
+   default:
+      break;
+   }
+   return true;
 }
 
-void cVulkanRuntime::ApplicationResumed()
-{
-   m_appInBackground.store(false, std::memory_order_relaxed);
-   m_surfaceRecreationPending.store(true, std::memory_order_release);
-   m_lifecycleResizePending.store(true, std::memory_order_release);
-}
-
-void cVulkanRuntime::EndEventPump()
+STDMETHODIMP_(void) cVulkanRuntime::EndEventPump()
 {
    ProcessPendingLifecycleResize();
 }
 
-void cVulkanRuntime::SetPhysicalDeviceIndex(int index)
+STDMETHODIMP_(void) cVulkanRuntime::SetPhysicalDeviceIndex(int index)
 { m_physicalDeviceIndex = index; }
 
 bool cVulkanRuntime::PreparePresentation()
@@ -579,18 +626,23 @@ bool cVulkanRuntime::PreparePresentation()
    return m_drawableWidth > 0 && m_drawableHeight > 0 && ApplyPendingResize();
 }
 
-void cVulkanRuntime::SetOverlay(const sVulkanOverlay &overlay)
+STDMETHODIMP_(void) cVulkanRuntime::SetOverlay(IVulkanOverlay *overlay)
 {
-   m_overlay = &overlay;
-   m_context.SetOverlay(&overlay);
+   m_overlay = overlay;
+   m_context.SetOverlay(overlay);
 }
 
-bool cVulkanRuntime::ProcessOverlayEvent(const SDL_Event &event)
+STDMETHODIMP_(void) cVulkanRuntime::SetTopInset(int points)
 {
-   return m_overlay && m_overlay->processEvent(event);
+   RenderBackendVulkanSetTopInset(points);
 }
 
-void cVulkanRuntime::BeginApplicationFrame()
+STDMETHODIMP_(BOOL) cVulkanRuntime::ProcessOverlayEvent(const SDL_Event *event)
+{
+   return event && m_overlay && m_overlay->ProcessEvent(*event);
+}
+
+STDMETHODIMP_(void) cVulkanRuntime::BeginApplicationFrame()
 {
    ZoneScopedN("Vulkan begin frame");
    if (!m_frameActive)
@@ -615,14 +667,14 @@ void cVulkanRuntime::BeginApplicationFrame()
    }
    m_activeCommandBuffer = commandBuffer;
    if (m_overlay)
-      m_overlay->prepare(m_context);
+      m_overlay->Prepare(m_context);
    m_renderer.BeginFrame(m_context.FrameIndex());
    RenderBackendVulkanAttach(commandBuffer, m_width, m_height, m_clientWidth,
       m_clientHeight, m_drawableWidth, m_drawableHeight);
    m_frameActive = true;
 }
 
-void cVulkanRuntime::EndApplicationFrame()
+STDMETHODIMP_(void) cVulkanRuntime::EndApplicationFrame()
 {
    ZoneScopedN("Vulkan present");
    if (!m_frameActive) return;
@@ -632,7 +684,7 @@ void cVulkanRuntime::EndApplicationFrame()
    const bool sceneActive = RenderBackendVulkanSceneActive() != 0;
    DrawCanvas(m_activeCommandBuffer, sceneActive);
    if (m_overlay)
-      m_overlay->draw(m_activeCommandBuffer);
+      m_overlay->Draw(m_activeCommandBuffer);
    // Scene pixels are composited into this swapchain image only. The next
    // frame starts from a freshly acquired image, so don't let later canvas
    // updates treat palette index zero as transparent over a nonexistent
@@ -646,7 +698,7 @@ void cVulkanRuntime::EndApplicationFrame()
    HandleSwapchainRecreation();
 }
 
-void cVulkanRuntime::PresentProgress()
+STDMETHODIMP_(void) cVulkanRuntime::PresentProgress()
 {
    if (!m_window)
       return;
@@ -664,20 +716,20 @@ void cVulkanRuntime::PresentProgress()
       BeginApplicationFrame();
 }
 
-void cVulkanRuntime::Present(const void *pixels, int width, int height, int rowBytes,
+STDMETHODIMP_(void) cVulkanRuntime::Present(const void *pixels, int width, int height, int rowBytes,
    int bitDepth, const uint8_t *palette)
 {
    PresentRect(pixels, width, height, rowBytes, bitDepth, palette, 0, 0, width, height);
 }
 
-void cVulkanRuntime::PresentRect(const void *pixels, int width, int height,
+STDMETHODIMP_(void) cVulkanRuntime::PresentRect(const void *pixels, int width, int height,
    int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
 {
    m_directCanvas = false;
    CaptureCanvas(pixels, width, height, rowBytes, depth, palette, x0, y0, x1, y1);
 }
 
-void cVulkanRuntime::InvalidateCanvas()
+STDMETHODIMP_(void) cVulkanRuntime::InvalidateCanvas()
 {
    m_canvas = cCanvasSnapshot{};
    m_canvasWidth = m_canvasHeight = 0;
@@ -688,7 +740,7 @@ void cVulkanRuntime::InvalidateCanvas()
    m_canvasPaletteGenerations.fill(0);
 }
 
-bool cVulkanRuntime::PresentCanvasRect(const void *pixels, int width, int height,
+STDMETHODIMP_(BOOL) cVulkanRuntime::PresentCanvasRect(const void *pixels, int width, int height,
    int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
 {
    // Preserve the legacy visible-canvas path for menus, software rendering,
@@ -701,7 +753,7 @@ bool cVulkanRuntime::PresentCanvasRect(const void *pixels, int width, int height
    return true;
 }
 
-bool cVulkanRuntime::ClearOverlay(void *pixels, int width, int height,
+STDMETHODIMP_(BOOL) cVulkanRuntime::ClearOverlay(void *pixels, int width, int height,
    int rowBytes, int depth)
 {
    const bool eligible = m_overlayClearEligible;
@@ -710,7 +762,7 @@ bool cVulkanRuntime::ClearOverlay(void *pixels, int width, int height,
       m_canvas.ClearOverlay(pixels, width, height, rowBytes, depth);
 }
 
-bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
+STDMETHODIMP_(BOOL) cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    int rowBytes)
 {
    if (!m_window || !rgba || width <= 0 || height <= 0 || rowBytes <= 0 ||
@@ -825,70 +877,36 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
 
 }
 
-bool DarkRenderOpen(int width, int height, const char *title)
-{ return VulkanRuntime().Open(width, height, title); }
-void DarkRenderClose(void) { VulkanRuntime().Close(); }
-bool DarkRenderTakeResize(int *width, int *height)
-{ return VulkanRuntime().TakeResize(width, height); }
-bool DarkRenderBeginEventPump(void)
-{ return VulkanRuntime().BeginEventPump(); }
-void DarkRenderWindowResized(void) { VulkanRuntime().WindowResized(); }
-void DarkRenderWindowMinimized(void) { VulkanRuntime().WindowMinimized(); }
-void DarkRenderWindowRestored(void) { VulkanRuntime().WindowRestored(); }
-void DarkRenderApplicationSuspended(void)
-{ VulkanRuntime().ApplicationSuspended(); }
-void DarkRenderApplicationResumed(void)
-{ VulkanRuntime().ApplicationResumed(); }
-void DarkRenderEndEventPump(void) { VulkanRuntime().EndEventPump(); }
-void DarkRenderBeginApplicationFrame(void)
-{ VulkanRuntime().BeginApplicationFrame(); }
-void DarkRenderEndApplicationFrame(void)
-{ VulkanRuntime().EndApplicationFrame(); }
-void DarkRenderSetOverlay(const sVulkanOverlay &overlay)
-{ VulkanRuntime().SetOverlay(overlay); }
+tResult LGAPI VulkanRendererCreate(IUnknown *pOuter)
+{
+   return pOuter && new cVulkanRuntime(pOuter) ? S_OK : E_FAIL;
+}
 
-bool DarkRenderProcessOverlayEvent(const SDL_Event &event)
-{ return VulkanRuntime().ProcessOverlayEvent(event); }
-
-void DarkRenderPresentProgress(void)
-{ VulkanRuntime().PresentProgress(); }
 extern "C" void RenderBackendSetWindowedClientSizeHint(int width, int height)
 {
    AutoAppIPtr_(DisplayWindow,window);
    if (window)
       window->SetWindowedClientSizeHint(width, height);
 }
-void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes,
-   int bitDepth, const uint8_t *palette)
-{ VulkanRuntime().Present(pixels, width, height, rowBytes, bitDepth, palette); }
-bool DarkRenderPresentMovieFrame(const void *rgba, int width, int height,
-   int rowBytes)
-{ return VulkanRuntime().PresentMovieFrame(rgba, width, height, rowBytes); }
 
 extern "C" void RenderBackendSetPhysicalDeviceIndex(int index)
-{ VulkanRuntime().SetPhysicalDeviceIndex(index); }
+{
+   AutoAppIPtr_(VulkanRenderer,renderer);
+   if (renderer)
+      renderer->SetPhysicalDeviceIndex(index);
+}
 
 extern "C" int RenderBackendPresentCanvasRect(const void *pixels, int width, int height,
    int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
 {
-   return VulkanRuntime().PresentCanvasRect(pixels, width, height, rowBytes,
+   AutoAppIPtr_(VulkanRenderer,renderer);
+   return renderer && renderer->PresentCanvasRect(pixels, width, height, rowBytes,
       depth, palette, x0, y0, x1, y1);
 }
 
 extern "C" int RenderBackendClearOverlayPixels(void *pixels, int width, int height,
    int rowBytes, int depth)
 {
-   return VulkanRuntime().ClearOverlay(pixels, width, height, rowBytes, depth);
+   AutoAppIPtr_(VulkanRenderer,renderer);
+   return renderer && renderer->ClearOverlay(pixels, width, height, rowBytes, depth);
 }
-
-bool DarkRenderHasDirectCanvas()
-{ return VulkanRuntime().HasDirectCanvas(); }
-
-void DarkRenderPresentRect(const void *pixels, int width, int height,
-   int rowBytes, int depth, const uint8_t *palette, int x0, int y0, int x1, int y1)
-{
-   VulkanRuntime().PresentRect(pixels, width, height, rowBytes, depth,
-      palette, x0, y0, x1, y1);
-}
-void DarkRenderInvalidateCanvas()
-{ VulkanRuntime().InvalidateCanvas(); }

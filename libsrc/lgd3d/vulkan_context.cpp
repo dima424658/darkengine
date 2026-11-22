@@ -216,6 +216,8 @@ bool cVulkanContext::Initialize(
 
    try
    {
+      if (!m_raiiContext)
+         m_raiiContext.emplace();
       std::vector<const char *> extensions = surfaceExtensions;
 
       const auto availableExtensions = vk::enumerateInstanceExtensionProperties();
@@ -233,7 +235,7 @@ bool cVulkanContext::Initialize(
       vk::InstanceCreateInfo instanceInfo(instanceFlags, &applicationInfo,
          0, nullptr, static_cast<uint32_t>(extensions.size()),
          extensions.data());
-      m_instance = m_raiiContext.createInstance(instanceInfo);
+      m_instance = m_raiiContext->createInstance(instanceInfo);
 
       const vk::SurfaceKHR surface = createSurface(*m_instance);
       if (!surface)
@@ -661,7 +663,7 @@ void cVulkanContext::DestroySwapchain()
       return;
    m_commandBuffers.clear();
    if (m_overlay)
-      m_overlay->reset();
+      m_overlay->Reset();
    m_framebuffers.clear();
    m_renderPass.clear();
    m_depthViews.clear();

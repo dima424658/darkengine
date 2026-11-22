@@ -7,9 +7,9 @@
 #include <cursors.h>
 #include <gadget.h>
 #include <gshelapi.h>
-#include <runtime.h>
+#include <vkrend.h>
 #include <dispwnd.h>
-#include <vulkan_imgui.hpp>
+#include <menubar.h>
 
 namespace {
 bool g_tracking;
@@ -20,7 +20,9 @@ extern "C" void EditorStartWindowResizeTracking(void)
 {
    int width;
    int height;
-   DarkRenderTakeResize(&width, &height);
+   AutoAppIPtr_(VulkanRenderer,renderer);
+   if (renderer)
+      renderer->TakeResize(&width, &height);
    g_tracking = true;
 }
 
@@ -35,7 +37,10 @@ extern "C" void EditorRestoreWindowRect(void)
 
 extern "C" BOOL EditorGetPendingWindowSize(int *width, int *height)
 {
-   return g_tracking && DarkRenderTakeResize(width, height);
+   if (!g_tracking)
+      return FALSE;
+   AutoAppIPtr_(VulkanRenderer,renderer);
+   return renderer && renderer->TakeResize(width, height);
 }
 
 extern "C" void EditorPlatformInitializeControls(void)
@@ -60,7 +65,7 @@ void EditorShowNativeCursor(BOOL show)
 
 void EditorUpdateCursor(void)
 {
-   const bool menu=VulkanImGuiMenuOwnsPointer();
+   const bool menu=MenuBarOwnsPointer();
    AutoAppIPtr_(DisplayWindow,window);
    const bool hide=menu || !window || SDL_GetMouseFocus()!=window->GetSDLWindow();
    if (hide!=g_cursorHidden)

@@ -2,7 +2,8 @@
 
 #include <cstdio>
 
-#include <event_bridge.h>
+#include <appagg.h>
+#include <vkrend.h>
 #include <render_backend.h>
 
 #include "sdl_window.h"
@@ -188,7 +189,9 @@ STDMETHODIMP_(void) cSDLDisplayWindow::SetWindowedClientSizeHint(int width, int 
        (SDL_GetWindowFlags(m_window.get()) & SDL_WINDOW_FULLSCREEN))
       return;
    SDL_SetWindowSize(m_window.get(), width, height);
-   DarkRenderWindowResized();
+   AutoAppIPtr_(VulkanRenderer,renderer);
+   if (renderer)
+      renderer->WindowResized();
 }
 
 STDMETHODIMP_(BOOL) cSDLDisplayWindow::IsMinimized()

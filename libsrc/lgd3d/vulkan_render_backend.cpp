@@ -1,6 +1,7 @@
 #include "vulkan_render_backend.hpp"
 #include <render_backend.h>
-#include "runtime.h"
+#include <appagg.h>
+#include <vkrend.h>
 
 #include <algorithm>
 #include <cstdarg>
@@ -193,7 +194,6 @@ public:
       return 1;
    }
 
-   void PresentProgress() { DarkRenderPresentProgress(); }
    void DeactivateScene() { m_sceneActive = false; }
 
    void ClearDepth()
@@ -439,7 +439,13 @@ int RenderBackendLogicalToClientPoint(int *x, int *y)
 int RenderBackendBeginScene(void)
 { return ReturnZeroOnFailure([] { return Backend().BeginScene(); }); }
 void RenderBackendPresentProgress(void)
-{ IgnoreOperationFailure([] { Backend().PresentProgress(); }); }
+{
+   IgnoreOperationFailure([] {
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (renderer)
+         renderer->PresentProgress();
+   });
+}
 void RenderBackendDeactivateScene(void) { Backend().DeactivateScene(); }
 void RenderBackendClearDepth(void)
 { IgnoreOperationFailure([] { Backend().ClearDepth(); }); }
