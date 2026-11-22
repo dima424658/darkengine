@@ -40,7 +40,7 @@ public:
    Hierarchy(const sObjTreeEditorDesc &desc, ObjID focus)
       : DarkDlgsModal((desc.title[0] ?
          std::string(desc.title, std::find(desc.title, desc.title + sizeof(desc.title), '\0')) :
-         "Object Hierarchy") + "###DarkDlgsHierarchy", ImVec2(580, 480)),
+         "Object Hierarchy") + "###DarkDlgsHierarchy", ImVec2(520, 445)),
         m_flags(desc.flags)
    {
       AutoAppIPtr_(ObjectSystem, objects);
@@ -81,6 +81,7 @@ private:
    void DrawNode(ObjID obj, const std::string &label);
    void DrawContents() override;
    void AfterFrame() override;
+   bool KeepVisibleBehindModal() const override { return true; }
    void AddNode();
    void DeleteNode();
    void FinishAction(eTreeCBResult result);
@@ -124,7 +125,8 @@ void Hierarchy::DrawNode(ObjID obj, const std::string &label)
    if (!m_path.insert(obj).second)
       return;
    const auto &children = Children(obj);
-   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow;
+   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow |
+      ImGuiTreeNodeFlags_DrawLinesFull;
    if (obj == m_selected)
       flags |= ImGuiTreeNodeFlags_Selected;
    if (children.empty())
@@ -162,12 +164,17 @@ void Hierarchy::DrawContents()
    if (m_trees.empty())
    {
       ImGui::TextUnformatted("No hierarchy roots in this database.");
-      if (ImGui::Button("Done") || ImGui::IsKeyPressed(ImGuiKey_Escape, false))
+      if (ImGui::Button("Close") || (HasKeyboardFocus() && ImGui::IsKeyPressed(ImGuiKey_Escape, false)))
          Close();
       return;
    }
 
-   if (ImGui::BeginCombo("Tree", m_trees[m_tree].desc.treename))
+   const float sidebar = ImGui::GetFontSize() * 8.0f;
+   ImGui::AlignTextToFramePadding();
+   ImGui::TextUnformatted("Show Tree");
+   ImGui::SameLine();
+   ImGui::SetNextItemWidth(220.0f);
+   if (ImGui::BeginCombo("##tree", m_trees[m_tree].desc.treename))
    {
       for (size_t i = 0; i < m_trees.size(); ++i)
          if (ImGui::Selectable(m_trees[i].desc.treename, m_tree == i))
@@ -180,38 +187,39 @@ void Hierarchy::DrawContents()
       ImGui::EndCombo();
    }
 
-   const float footer = ImGui::GetFrameHeightWithSpacing() * (m_message ? 2 : 1);
    const Tree &tree = m_trees[m_tree];
-   if (ImGui::BeginChild("Hierarchy", ImVec2(0, -footer), ImGuiChildFlags_Borders))
+   const float footer = m_message ? ImGui::GetTextLineHeightWithSpacing() : 0.0f;
+   if (ImGui::BeginChild("Hierarchy", ImVec2(-sidebar - ImGui::GetStyle().ItemSpacing.x, -footer),
+                        ImGuiChildFlags_Borders))
       DrawNode(tree.root, ObjEditName(tree.root));
    ImGui::EndChild();
    m_expand.clear();
 
-   if (ImGui::Button("Properties"))
-      m_action = TreeAction::Properties;
-   const ulong flags = tree.desc.flags | m_flags;
-   if (!(flags & kObjTreeNoAddButton))
-   {
-      ImGui::SameLine();
-      if (ImGui::Button("Add"))
-         m_action = TreeAction::Add;
-   }
-   if (!(flags & kObjTreeNoDelButton))
-   {
-      ImGui::SameLine();
-      ImGui::BeginDisabled(m_selected == tree.root);
-      if (ImGui::Button("Delete"))
-         m_action = TreeAction::Delete;
-      ImGui::EndDisabled();
-   }
-   if (!(flags & kObjTreeNoCreateButton) && tree.desc.func.create)
-   {
-      ImGui::SameLine();
-      if (ImGui::Button("Create"))
-         m_action = TreeAction::Create;
-   }
    ImGui::SameLine();
-   if (ImGui::Button("Done") || ImGui::IsKeyPressed(ImGuiKey_Escape, false))
+   if (ImGui::BeginChild("Actions", ImVec2(sidebar, -footer)))
+   {
+      const ImVec2 button(-1, 0);
+      const ulong flags = tree.desc.flags | m_flags;
+      if (!(flags & kObjTreeNoAddButton) && ImGui::Button("Add", button))
+         m_action = TreeAction::Add;
+      if (!(flags & kObjTreeNoDelButton))
+      {
+         ImGui::BeginDisabled(m_selected == tree.root);
+         if (ImGui::Button("Delete", button))
+            m_action = TreeAction::Delete;
+         ImGui::EndDisabled();
+      }
+      if (ImGui::Button("Edit", button))
+         m_action = TreeAction::Properties;
+      if (!(flags & kObjTreeNoCreateButton) && tree.desc.func.create && ImGui::Button("Create", button))
+         m_action = TreeAction::Create;
+      const float bottom = ImGui::GetCursorPosY() + ImGui::GetContentRegionAvail().y;
+      ImGui::SetCursorPosY(std::max(ImGui::GetCursorPosY(), bottom - ImGui::GetFrameHeight()));
+      if (ImGui::Button("Close", button))
+         Close();
+   }
+   ImGui::EndChild();
+   if (HasKeyboardFocus() && ImGui::IsKeyPressed(ImGuiKey_Escape, false))
       Close();
    if (m_message)
       ImGui::TextUnformatted(m_message);

@@ -24,9 +24,14 @@ std::vector<DarkDlgsModal *> g_modeless;
 }
 
 DarkDlgsModal::DarkDlgsModal(std::string title, ImVec2 size)
-   : m_title(std::move(title)), m_size(size)
+   : m_size(size)
 {
-   m_title += "/" + std::to_string(reinterpret_cast<uintptr_t>(this));
+   SetTitle(std::move(title));
+}
+
+void DarkDlgsModal::SetTitle(std::string title)
+{
+   m_title = std::move(title) + "/" + std::to_string(reinterpret_cast<uintptr_t>(this));
 }
 
 bool DarkDlgsModalActive()
@@ -66,6 +71,11 @@ void DarkDlgsModal::Draw()
    if (!m_open)
       return;
 
+   const bool showParent = m_parent && m_parent->KeepVisibleBehindModal();
+   if (showParent)
+      m_parent->Draw();
+
+   const bool background = g_modal && this != g_modal;
    const ImGuiViewport *mainViewport = ImGui::GetMainViewport();
    const bool detached = (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0;
    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
@@ -79,25 +89,42 @@ void DarkDlgsModal::Draw()
       flags |= ImGuiWindowFlags_NoTitleBar;
    }
 
-   ImGui::SetNextWindowPos(mainViewport->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-   ImGui::SetNextWindowSize(m_size, ImGuiCond_Appearing);
-   ImGui::SetNextWindowSizeConstraints(ImVec2(240, 150), ImVec2(FLT_MAX, FLT_MAX));
+   if (m_firstFrame)
+   {
+      const ImVec2 center = showParent ? m_parent->m_windowCenter : mainViewport->GetCenter();
+      ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+   }
+   SetWindowSizing(m_size, *mainViewport);
    if (m_focus)
       ImGui::SetNextWindowFocus();
-   if (ImGui::Begin(m_title.c_str(), &m_open, flags) && m_open)
+   if (background)
+      flags |= ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+   if (ImGui::Begin(m_title.c_str(), background ? nullptr : &m_open, flags) && m_open)
    {
+      const ImVec2 position = ImGui::GetWindowPos();
+      const ImVec2 size = ImGui::GetWindowSize();
+      m_windowCenter = ImVec2(position.x + size.x * 0.5f, position.y + size.y * 0.5f);
       if (detached)
          BindPlatformWindow(*mainViewport);
+      ImGui::BeginDisabled(background);
       DrawContents();
+      ImGui::EndDisabled();
       m_firstFrame = false;
    }
    ImGui::End();
    m_focus = false;
 }
 
+void DarkDlgsModal::SetWindowSizing(ImVec2 size, const ImGuiViewport &) const
+{
+   if (FirstFrame())
+      ImGui::SetNextWindowSize(size);
+   ImGui::SetNextWindowSizeConstraints(ImVec2(240, 150), ImVec2(FLT_MAX, FLT_MAX));
+}
+
 bool DarkDlgsModal::HasKeyboardFocus() const
 {
-   return this == g_modal || ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+   return g_modal ? this == g_modal : ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 }
 
 void DarkDlgsModal::Open()
@@ -173,6 +200,7 @@ bool DarkDlgsModal::Run()
       previous->Suspend();
 
    Open();
+   m_parent = previous;
    g_modal = this;
    EditorUpdateCursor();
 
@@ -190,8 +218,12 @@ bool DarkDlgsModal::Run()
 
    Suspend();
    g_modal = previous;
+   m_parent = nullptr;
    if (previous)
+   {
       previous->m_focus = true;
+      previous->m_windowId = 0;
+   }
    EditorUpdateCursor();
    renderer->PresentProgress();
    return true;

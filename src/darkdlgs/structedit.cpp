@@ -23,6 +23,16 @@ std::string StructTitle(const sStructEditorDesc &editor, const sStructDesc &stru
    return std::string(name, std::find(name, name + limit, '\0')) + "###DarkDlgsStructEditor";
 }
 
+bool VisibleField(const sFieldDesc &field)
+{
+   return !(field.flags & (kFieldFlagInvisible | kFieldFlagIrrelevant));
+}
+
+float FieldRowHeight()
+{
+   return ImGui::GetFrameHeight() + 2.0f * ImGui::GetStyle().CellPadding.y;
+}
+
 template<class T, int Count = 1>
 void EditNumbers(char *data, const sFieldDesc &field, ImGuiDataType type, const char *format = nullptr,
                  ImGuiInputTextFlags flags = 0)
@@ -271,7 +281,7 @@ class StructEditor final : public cCTUnaggregated<IStructEditor, &IID_IStructEdi
 {
 public:
    StructEditor(const sStructEditorDesc &editor, const sStructDesc &structure, void *data)
-      : DarkDlgsModal(StructTitle(editor, structure), ImVec2(560, 400)),
+      : DarkDlgsModal(StructTitle(editor, structure), ImVec2(500, 0)),
         m_editor(editor), m_structure(structure), m_data(data)
    {
    }
@@ -288,7 +298,10 @@ public:
    STDMETHOD_(void *, Struct)() override { return m_data; }
 
 private:
+   void SetWindowSizing(ImVec2 size, const ImGuiViewport &viewport) const override;
    void DrawContents() override;
+   bool HasLabel(const sFieldDesc &field) const;
+   float FooterHeight() const;
    void AfterFrame() override;
    void Notify(ulong event);
    void Finish();
@@ -305,44 +318,102 @@ private:
    bool m_apply = false;
 };
 
+bool StructEditor::HasLabel(const sFieldDesc &field) const
+{
+   return field.name[0] && !(m_editor.flags & kStructEditNoFieldNames);
+}
+
+float StructEditor::FooterHeight() const
+{
+   const auto flags = m_editor.flags;
+   const bool hasButtons = !(flags & kStructEditNoOKButton) || !(flags & kStructEditNoCancelButton) ||
+      (m_callback && !(flags & kStructEditNoApplyButton));
+   return hasButtons ? ImGui::GetFrameHeightWithSpacing() : 0.0f;
+}
+
+void StructEditor::SetWindowSizing(ImVec2 size, const ImGuiViewport &viewport) const
+{
+   const auto &style = ImGui::GetStyle();
+   const bool detached = (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0;
+   const float titleHeight = detached ? 0.0f : ImGui::GetFrameHeight();
+   const float padding = 4.0f * style.WindowPadding.y + 2.0f * style.ChildBorderSize;
+   const float minimum = titleHeight + padding + FieldRowHeight() + FooterHeight();
+   if (FirstFrame())
+   {
+      float height = titleHeight + padding + FooterHeight();
+      int columns = 0;
+      for (int i = 0; i < m_structure.nfields; ++i)
+      {
+         const auto &field = m_structure.fields[i];
+         if (!VisibleField(field))
+            continue;
+         const int rowColumns = HasLabel(field) ? 2 : 1;
+         if (columns && columns != rowColumns)
+            height += style.ItemSpacing.y;
+         columns = rowColumns;
+         height += FieldRowHeight();
+      }
+      const float maximum = std::max(minimum, viewport.WorkSize.y - 2.0f * ImGui::GetFrameHeightWithSpacing());
+      size.y = std::clamp(height, minimum, maximum);
+      ImGui::SetNextWindowSize(size);
+   }
+   constexpr float unconstrained = std::numeric_limits<float>::max();
+   ImGui::SetNextWindowSizeConstraints(ImVec2(240, minimum), ImVec2(unconstrained, unconstrained));
+}
+
 void StructEditor::DrawContents()
 {
-   const float footer = ImGui::GetFrameHeightWithSpacing();
+   const float footer = FooterHeight();
    if (FirstFrame())
       ImGui::SetNextWindowScroll(ImVec2(0, 0));
    if (ImGui::BeginChild("Fields", ImVec2(0, -footer), ImGuiChildFlags_Borders))
    {
-      const bool names = !(m_editor.flags & kStructEditNoFieldNames);
-      if (ImGui::BeginTable("Values", names ? 2 : 1, ImGuiTableFlags_RowBg))
+      int columns = 0;
+      bool tableOpen = false;
+      for (int i = 0; i < m_structure.nfields; ++i)
       {
-         if (names)
-            ImGui::TableSetupColumn("Field", ImGuiTableColumnFlags_WidthStretch, 0.55f);
-         ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.45f);
-         for (int i = 0; i < m_structure.nfields; ++i)
-         {
-            const sFieldDesc &field = m_structure.fields[i];
-            if (field.flags & (kFieldFlagInvisible | kFieldFlagIrrelevant))
-               continue;
+         const sFieldDesc &field = m_structure.fields[i];
+         if (!VisibleField(field))
+            continue;
 
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            if (names)
+         const bool hasLabel = HasLabel(field);
+         const int rowColumns = hasLabel ? 2 : 1;
+         if (columns != rowColumns)
+         {
+            if (tableOpen)
+               ImGui::EndTable();
+            columns = rowColumns;
+            const std::string tableId = "Values##" + std::to_string(i);
+            tableOpen = ImGui::BeginTable(tableId.c_str(), columns, ImGuiTableFlags_RowBg);
+            if (tableOpen)
             {
-               ImGui::AlignTextToFramePadding();
-               ImGui::TextUnformatted(field.name, std::find(field.name, field.name + sizeof(field.name), '\0'));
-               ImGui::TableNextColumn();
+               if (hasLabel)
+                  ImGui::TableSetupColumn("Field", ImGuiTableColumnFlags_WidthStretch, 0.55f);
+               ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.45f);
             }
-            ImGui::PushID(i);
-            ImGui::SetNextItemWidth(-1.0f);
-            ImGui::BeginDisabled((m_structure.flags & kStructFlagNotEdit) || (field.flags & kFieldFlagNotEdit));
-            if (!field.size || field.offset > m_draft.size() || field.size > m_draft.size() - field.offset ||
-                !EditField(m_draft.data() + field.offset, field))
-               ImGui::TextDisabled("Unsupported field");
-            ImGui::EndDisabled();
-            ImGui::PopID();
          }
-         ImGui::EndTable();
+         if (!tableOpen)
+            continue;
+
+         ImGui::TableNextRow(ImGuiTableRowFlags_None, FieldRowHeight());
+         ImGui::TableNextColumn();
+         if (hasLabel)
+         {
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted(field.name, std::find(field.name, field.name + sizeof(field.name), '\0'));
+            ImGui::TableNextColumn();
+         }
+         ImGui::PushID(i);
+         ImGui::SetNextItemWidth(-1.0f);
+         ImGui::BeginDisabled((m_structure.flags & kStructFlagNotEdit) || (field.flags & kFieldFlagNotEdit));
+         if (!field.size || field.offset > m_draft.size() || field.size > m_draft.size() - field.offset ||
+             !EditField(m_draft.data() + field.offset, field))
+            ImGui::TextDisabled("Unsupported field");
+         ImGui::EndDisabled();
+         ImGui::PopID();
       }
+      if (tableOpen)
+         ImGui::EndTable();
    }
    ImGui::EndChild();
 
