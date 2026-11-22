@@ -147,7 +147,7 @@ void EditorDestroyGUI(void)
 
 guiStyle editStyle;     // this is the current usable style
 
-guiStyle masterEditStyle =
+const guiStyle masterEditStyle =
 {
    0, // palette
    {  // colors

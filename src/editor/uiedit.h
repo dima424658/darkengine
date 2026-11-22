@@ -15,6 +15,9 @@
 EXTERN void EditorCreateGUI(void);
 EXTERN void EditorDestroyGUI(void);
 
+// Uncompiled editor colors in RGB form.
+EXTERN const guiStyle masterEditStyle;
+
 EXTERN void uieditStyleSetup(void);
 EXTERN void uieditStyleCleanup(void); 
 EXTERN void uieditRedrawAll(void);

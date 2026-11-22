@@ -85,7 +85,7 @@ bool PropertyTreeNode(const char *id, ImGuiTreeNodeFlags flags, PropertyIcon ico
    {
    case PropertyIcon::Object:
    {
-      const ImU32 color = ImGui::GetColorU32(ImVec4(0.53f, 0.82f, 0.95f, 1.0f));
+      const ImU32 color = ImGui::GetColorU32(ImGuiCol_Border);
       const ImVec2 outline[] = {point(0.5f, 0.06f), point(0.92f, 0.29f), point(0.92f, 0.73f),
          point(0.5f, 0.96f), point(0.08f, 0.73f), point(0.08f, 0.29f)};
       draw->AddPolyline(outline, IM_ARRAYSIZE(outline), color, 1.0f, ImDrawFlags_Closed);
@@ -97,7 +97,7 @@ bool PropertyTreeNode(const char *id, ImGuiTreeNodeFlags flags, PropertyIcon ico
    }
    case PropertyIcon::Category:
    {
-      const ImU32 color = ImGui::GetColorU32(ImVec4(0.98f, 0.76f, 0.42f, 1.0f));
+      const ImU32 color = ImGui::GetColorU32(ImGuiCol_NavCursor);
       const ImVec2 outline[] = {point(0.08f, 0.86f), point(0.08f, 0.19f), point(0.42f, 0.19f),
          point(0.56f, 0.36f), point(0.92f, 0.36f), point(0.92f, 0.86f)};
       draw->AddPolyline(outline, IM_ARRAYSIZE(outline), color, 1.0f, ImDrawFlags_Closed);
@@ -105,7 +105,7 @@ bool PropertyTreeNode(const char *id, ImGuiTreeNodeFlags flags, PropertyIcon ico
    }
    case PropertyIcon::Field:
    {
-      const ImU32 color = ImGui::GetColorU32(ImGuiCol_Text);
+      const ImU32 color = ImGui::GetColorU32(ImGuiCol_CheckMark);
       draw->AddQuadFilled(point(0.5f, 0.22f), point(0.78f, 0.5f),
                           point(0.5f, 0.78f), point(0.22f, 0.5f), color);
       break;
