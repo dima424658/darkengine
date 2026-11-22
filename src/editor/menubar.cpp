@@ -63,7 +63,7 @@ void ApplyEditorTheme()
 
    ImGuiStyle &style = ImGui::GetStyle();
    style.FrameBorderSize = 1.5f;
-   style.WindowBorderSize = 1.5f;
+   style.WindowBorderSize = 0.0f;
    style.ChildBorderSize = 1.5f;
    ImVec4 *colors = style.Colors;
    colors[ImGuiCol_Text] = text;
