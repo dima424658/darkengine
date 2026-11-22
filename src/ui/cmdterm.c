@@ -941,6 +941,14 @@ void cmdterm_execute_command(const char* command)
    if (error)
       Status(error);
    cmdterm_end_command_capture();
+
+   // A menu command can write output without repainting the editor canvas.
+   if ((CmdTerm.statebits & (kStateInUse | kStateVisible)) ==
+       (kStateInUse | kStateVisible))
+   {
+      cmdterm_redraw();
+      ScrnForceUpdateRect(&CmdTerm.bounds);
+   }
 }
 
 void cmdterm_capture_status(const char* text)
@@ -974,6 +982,12 @@ void cmdterm_redraw(void)
    cmdterm_rebuild_output();
    LGadUpdateTextBox(&CmdTerm.outputbox);
    LGadUpdateTextBox(&CmdTerm.textbox);
+   if (!(CmdTerm.flags & kCmdTermHideUnfocused))
+   {
+      LGadDrawBox(VB(&CmdTerm.root), NULL);
+      return;
+   }
+
    gr_init_sub_canvas(ScrnGetDrawCanvas(), &canvas,
                       CmdTerm.bounds.ul.x, CmdTerm.bounds.ul.y,
                       RectWidth(&CmdTerm.bounds), RectHeight(&CmdTerm.bounds));
