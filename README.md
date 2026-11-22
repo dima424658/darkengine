@@ -211,7 +211,7 @@ The runner currently provides:
 - 64-bit Windows 10 or Windows 11.
 - Visual Studio 2019 or newer with MSVC x86/x64 build tools and a Windows 10
   or 11 SDK. The configure helper prefers Visual Studio 2026 when installed.
-- CMake 3.21 or later and the Vulkan SDK (including `glslc`).
+- CMake 3.24 or later and the Vulkan SDK (including `glslc`).
 - Bison 3.0 or later (`bison` or `win_bison` on `PATH`). It is a host-side
   generator and works with every supported Visual Studio version and target
   architecture.
@@ -230,7 +230,7 @@ tools/configure-windows.ps1 -Architecture x86
 cmake --build --preset windows-x86-release
 ```
 
-Visual Studio 2022 can instead be selected explicitly with CMake 3.21 or newer:
+To select Visual Studio 2022 explicitly, run:
 
 ```powershell
 cmake -S . -B build-win64 -G "Visual Studio 17 2022" -A x64 -DDARK_BUILD_DROMED=ON
@@ -239,16 +239,12 @@ cmake --build build-win64 --config Release --target thief2 dromed
 
 SDL3, zlib, libpng, Squirrel, libogg, libvorbis, and the PKWARE DCL decoder are
 built statically from pinned submodules. Install the Vulkan SDK separately;
-CMake uses its Vulkan package and `glslc` shader compiler. Windows defaults to
-pinned, prebuilt FFmpeg x86/x64 packages for consistent FM codec support; it
-does not run FFmpeg's GNU build system. CMake downloads the package matching
-the target architecture and copies its DLLs next to the executables. Set
-`DARK_WINDOWS_FFMPEG_ROOT` to use a custom prebuilt SDK containing `include`,
-`lib`, and `bin`. Set `DARK_WINDOWS_MOVIE_BACKEND=ffmpeg-source` to opt into
-the same static source build used on Linux when Bash and GNU Make are present,
-or set it to `mfplay` to build against Windows Media Foundation instead.
-Neither alternative is selected automatically; normal Windows builds do not
-require GNU tools. MSYS2 and vcpkg are not required. Pass
+CMake uses its Vulkan package and `glslc` shader compiler. On Windows, CMake
+downloads a pinned LGPL shared FFmpeg SDK for the target architecture (x86 or
+x64) from [System233/ffmpeg-msvc-prebuilt](https://github.com/System233/ffmpeg-msvc-prebuilt)
+and copies its DLLs next to the executables. To use Windows Media Foundation
+for movies, set `DARK_WINDOWS_MOVIE_BACKEND=mfplay`. MSYS2 and vcpkg are not
+required. Pass
 `-DBISON_EXECUTABLE=C:/path/to/win_bison.exe` when Bison is outside `PATH`.
 
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
@@ -278,7 +274,7 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 
 #### Prerequisites
 
-- macOS with Xcode Command Line Tools, CMake 3.21 or later, Ninja, and Bison
+- macOS with Xcode Command Line Tools, CMake 3.24 or later, Ninja, and Bison
   3.0 or later (install Homebrew Bison; the system Bison is too old).
 - The Vulkan SDK (including `glslc`) and CMake submodules; macOS supplies the
   OpenAL framework.
@@ -327,7 +323,7 @@ cd "/path/to/Thief II"
 
 #### Prerequisites
 
-- A 64-bit Linux distribution, GCC, CMake 3.21 or later, and Ninja.
+- A 64-bit Linux distribution, GCC, CMake 3.24 or later, and Ninja.
 - The Vulkan SDK (including `glslc`) and the standard CMake build tools.
 - OpenAL Soft at runtime, loaded dynamically. Ogg Vorbis decoding is built
   statically from the pinned submodules.
@@ -840,8 +836,8 @@ The engine's gamma setting is applied in the SDL3/Vulkan scene shader using the
 legacy palette-correction power curve.
 
 The retail game writes `skip_intro` after the intro has played. Add
-`always_play_intro` to `cam.cfg` to show it on every launch. Windows uses pinned
-prebuilt FFmpeg packages by default; other platforms build FFmpeg statically from
+`always_play_intro` to `cam.cfg` to show it on every launch. Windows uses
+prebuilt FFmpeg packages by default. Other platforms build FFmpeg statically from
 the pinned source submodule.
 
 ## Controls
