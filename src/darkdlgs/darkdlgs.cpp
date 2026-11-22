@@ -1,7 +1,6 @@
 #include <stdio.h>
 
 #include "darkdlgs.h"
-#include <isdescst.h>
 #include <platform_services.h>
 #include <status.h>
 
@@ -17,20 +16,6 @@ void DarkDlgsUnavailable(const char *title)
 // The original provider receives the application aggregate at startup.
 void LGAPI DarkDlgsSetAggregate(IUnknown *)
 {
-}
-
-IStructEditor *LGAPI ConstructStructEditor(const sStructEditorDesc *eddesc,
-                                          const sStructDesc *, void *)
-{
-   char title[sizeof(eddesc->title) + 1];
-   if (eddesc && eddesc->title[0])
-   {
-      snprintf(title, sizeof(title), "%.*s", (int)sizeof(eddesc->title), eddesc->title);
-      DarkDlgsUnavailable(title);
-   }
-   else
-      DarkDlgsUnavailable("Structure editor");
-   return NULL;
 }
 
 IObjEditor *LGAPI ConstructObjEditor(const sObjEditorDesc *, ObjID)
