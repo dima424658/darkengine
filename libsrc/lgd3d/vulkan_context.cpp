@@ -102,7 +102,12 @@ std::vector<std::string> &EnumeratedPhysicalDeviceNames()
 extern "C" int RenderBackendVulkanEnumeratePhysicalDevices(void)
 {
    std::vector<std::string> &names = EnumeratedPhysicalDeviceNames();
-   names.clear();
+   // Screen-mode changes query this list on every menu/game transition.
+   // Keep a successful discovery for the process lifetime instead of creating
+   // another Vulkan instance and probing every driver each time. Failed
+   // discovery remains retryable, and device indices stay stable while playing.
+   if (!names.empty())
+      return static_cast<int>(names.size());
    try
    {
       vk::raii::Context context;

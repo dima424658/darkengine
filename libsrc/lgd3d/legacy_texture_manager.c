@@ -393,13 +393,13 @@ static void init_size_table(tmap_size_entry *size_table, int type)
          info.h = info.bm->h;
          info.size = 0;
          LegacyTextureCook(&info);
-         if (LegacyTextureLoad(&info) == TDRV_FAILURE)
-         { // can't load this size texture
-            size_table[i + j].size = TMGR_INVALID_TEXTURE_SIZE;
-         } else {
-            size_table[i + j].size = info.size;
-            LegacyTextureRelease(info.id);
-         }
+         // Vulkan uses RGBA storage for all three legacy texture formats.
+         // Cook computes its size without uploading pixels. The old hardware
+         // probe created and immediately destroyed 243 GPU textures on every
+         // screen transition, including transitions between two menus.
+         // Actual texture loads still handle allocation/upload failures.
+         size_table[i + j].size = info.size > 0
+            ? info.size : TMGR_INVALID_TEXTURE_SIZE;
          size_table[i + j].chain = NULL;
          gr_free(info.bm);
       }
