@@ -680,6 +680,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          if (gExitGameModeToEditor)
          {
             gExitGameModeToEditor = FALSE;
+            metaSndExitPanel(TRUE);
             enter_edit_mode("");
             break;
          }

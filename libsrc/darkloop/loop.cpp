@@ -90,11 +90,12 @@ int cLoop::Go(sLoopInstantiator* loop)
 
 			m_pCurrentDispatch = m_pNextDispatch;
 			m_pNextDispatch = nullptr;
+			// Enter and resume handlers can schedule another transition.
+			m_fState &= ~(0x80 | 0x20 | 0x10);
 			m_pCurrentDispatch->SetDiagnostics(m_fTempDiagnostics, m_tempDiagnosticSet);
 			m_pCurrentDispatch->SetProfile(m_TempProfileSet, m_pTempProfileClientId);
 			m_pCurrentDispatch->SendMessage(inmsg, reinterpret_cast<tLoopMessageData>(&trans), 1);
-			
-			m_fState &= ~(0x80 | 0x20 | 0x10);
+
 			m_FrameInfo.nTicks = tm_get_millisec();
 			m_FrameInfo.dTicks = 0;
 		}
