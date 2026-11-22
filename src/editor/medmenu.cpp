@@ -78,7 +78,7 @@ bool SaveLoadMenuFunc(int sel, LGadMenu *vm)
    switch(sel)
    {
    case 0:
-      char buf[32], *res;
+      char buf[PROMPT_STR_LEN], *res;
       res=prompt_string(g_MotEditMotionName,buf);
       if (res)
          MotEditSetEditMotion(res);
@@ -150,7 +150,7 @@ bool PlayOptButtonFunc(short action,void *data, LGadBox *b)
 
    IStructEditor *ed = CreateStructEditor(&editdesc,&playOptions_desc,&playOptions);
 
-   if(ed->Go(kStructEdModal))
+   if (ed && ed->Go(kStructEdModal))
    {
       PlayOptApply();
       EditorEraseMinorMode(EDITMODE_NONE);
@@ -267,7 +267,7 @@ bool FrameMenuFunc(int sel, LGadMenu *vm)
 
       IStructEditor *ed = CreateStructEditor(&editdesc,&frame_flag_desc,&flagValue);
 
-      if(ed->Go(kStructEdModal))
+      if (ed && ed->Go(kStructEdModal))
       {
          FlagBoxAddFlag(flagValue.value);
       }

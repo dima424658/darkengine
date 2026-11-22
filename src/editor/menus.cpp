@@ -12,7 +12,7 @@
 #include <imgui.h>
 
 #include <lg.h>
-#include <command.h>
+#include <cmdterm.h>
 #include <config.h>
 #include <darklimit.h>
 #include <display_window.h>
@@ -206,7 +206,7 @@ void cMenuSet::ExecuteCommands()
    std::vector<std::string> commands;
    commands.swap(m_PendingCommands);
    for (const std::string &command : commands)
-      CommandExecute(command.c_str());
+      cmdterm_execute_command(command.c_str());
 }
 
 cMenuSet g_MenuSet;

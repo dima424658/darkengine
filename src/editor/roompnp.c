@@ -180,7 +180,8 @@ static void roomPnP_PopUp(int data)
          IObjEditors* eds = AppGetObj(IObjEditors); 
 
          IObjEditor* ed = IObjEditors_Create(eds,&eddesc,room_id); 
-         IObjEditor_Go(ed,kObjEdModal);
+         if (ed)
+            IObjEditor_Go(ed,kObjEdModal);
          SafeRelease(ed);
          SafeRelease(eds);
 

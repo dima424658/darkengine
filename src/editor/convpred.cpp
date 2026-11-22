@@ -162,7 +162,7 @@ public:
          strncpy(eddesc.title, Desc.strings.friendly_name, sizeof(eddesc.title)); 
          IStructEditor* sed = CreateStructEditor(&eddesc, &_g_AIConversationStructDesc, pConvDesc); 
          
-         if (sed->Go(kStructEdModal))
+         if (sed && sed->Go(kStructEdModal))
          {
             prop->Set(obj, pConvDesc); 
             retval = S_OK; 
@@ -178,7 +178,7 @@ public:
          strncpy(eddesc.title, Desc.strings.friendly_name, sizeof(eddesc.title)); 
          IStructEditor* sed = CreateStructEditor(&eddesc, &_g_AIConvAbortStructDesc, pConvDesc); 
          
-         if (sed->Go(kStructEdModal))
+         if (sed && sed->Go(kStructEdModal))
          {
             prop->Set(obj, pConvDesc); 
             retval = S_OK; 

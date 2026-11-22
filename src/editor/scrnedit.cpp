@@ -58,7 +58,7 @@ BOOL EditScreenMode(const char* title, struct sScrnMode* mode)
 
    IStructEditor* ed = CreateStructEditor(&eddesc,(sStructDesc*)&mode_sdesc,mode);
 
-   BOOL result = ed->Go(kStructEdModal);
+   BOOL result = ed && ed->Go(kStructEdModal);
    SafeRelease(ed);
    return result;
 }

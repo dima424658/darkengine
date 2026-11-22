@@ -43,45 +43,51 @@ typedef struct { BOOL data; } sBoolPrompt;
 static sFieldDesc bool_fields[]={{"Bool Arg",kFieldTypeBool,FieldLocation(sBoolPrompt,data) } };
 static sStructDesc bool_struct = StructDescBuild(sBoolPrompt,kStructFlagNone,bool_fields);
 
-BOOL prompt_bool(const char *def)
+BOOL prompt_bool(const char *def, BOOL *value)
 {
    sBoolPrompt bdata;
    bdata.data=TRUE;
    if (def)
       if ((def[0]=='f')||(def[0]=='F')||(def[0]=='0'))
          bdata.data=FALSE;
-   do_prompt_editor(&bdata,&bool_struct,"Bool Argument");
-   return bdata.data;
+   if (!do_prompt_editor(&bdata,&bool_struct,"Bool Argument"))
+      return FALSE;
+   *value = bdata.data;
+   return TRUE;
 }
 
 typedef struct { int data; } sIntPrompt;
 static sFieldDesc int_fields[]={{"Int Arg",kFieldTypeInt,FieldLocation(sIntPrompt,data) } };
 static sStructDesc int_struct = StructDescBuild(sIntPrompt,kStructFlagNone,int_fields);
 
-int prompt_int(const char *def)
+BOOL prompt_int(const char *def, int *value)
 {
    sIntPrompt idata;
    if (def)
       idata.data=atoi(def);
    else
       idata.data=0;
-   do_prompt_editor(&idata,&int_struct,"Int Argument");
-   return idata.data;
+   if (!do_prompt_editor(&idata,&int_struct,"Int Argument"))
+      return FALSE;
+   *value = idata.data;
+   return TRUE;
 }
 
 typedef struct { double data; } sDoublePrompt;
 static sFieldDesc double_fields[]={{"Double Arg",kFieldTypeFloat,FieldLocation(sDoublePrompt,data) } };
 static sStructDesc double_struct = StructDescBuild(sDoublePrompt,kStructFlagNone,double_fields);
 
-double prompt_double(const char *def)
+BOOL prompt_double(const char *def, double *value)
 {
    sDoublePrompt ddata;
    if (def)
       ddata.data=atof(def);
    else
       ddata.data=0.0;
-   do_prompt_editor(&ddata,&double_struct,"Double Argument");
-   return ddata.data;
+   if (!do_prompt_editor(&ddata,&double_struct,"Double Argument"))
+      return FALSE;
+   *value = ddata.data;
+   return TRUE;
 }
 
 // major memory tracking issue here!!! - not going to work
@@ -89,10 +95,8 @@ typedef struct { char data[PROMPT_STR_LEN]; } sStringPrompt;
 static sFieldDesc string_fields[]={{"String Arg",kFieldTypeString,FieldLocation(sStringPrompt,data) } };
 static sStructDesc string_struct = StructDescBuild(sStringPrompt,kStructFlagNone,string_fields);
 
-// ok, this one is funky, since it needs a valid tmp buffer
-// it uses the "data" field
-// then, if the editor was real, moves it into buf and returns it, else returns def
-char *prompt_string(const char *def, char *buf)
+// Copy the accepted text to the caller's PROMPT_STR_LEN buffer.
+BOOL prompt_string_arg(const char *def, char *buf)
 {
    sStringPrompt sdata;
    if (def)
@@ -103,8 +107,12 @@ char *prompt_string(const char *def, char *buf)
    if (do_prompt_editor(&sdata,&string_struct,"String Argument"))
    {
       strcpy(buf,sdata.data);
-      return buf;
+      return TRUE;
    }
-   else
-      return (char *)def;
+   return FALSE;
+}
+
+char *prompt_string(const char *def, char *buf)
+{
+   return prompt_string_arg(def,buf) ? buf : (char *)def;
 }

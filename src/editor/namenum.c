@@ -328,7 +328,8 @@ static int PickMenu(char **list, int cnt)
    mono_clear();
    for (i=0; i<cnt; i++)
       mprintf("%d> %s\n",i,list[i]);
-   rv=prompt_int(NULL);
+   if (!prompt_int(NULL,&rv) || rv < 0 || rv >= cnt)
+      return NAMENUM_NO_TAG;
    mprintf("Choosing %d - %s\n",rv,rv==-1?"Cancel":list[rv]);
    return rv;
 }

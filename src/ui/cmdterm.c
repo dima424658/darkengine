@@ -931,6 +931,18 @@ static void cmdterm_end_command_capture(void)
       cmdterm_remove_output_hook();
 }
 
+void cmdterm_execute_command(const char* command)
+{
+   const char* error;
+
+   cmdterm_set_scroll(0);
+   cmdterm_begin_command_capture();
+   error = CommandExecute(command);
+   if (error)
+      Status(error);
+   cmdterm_end_command_capture();
+}
+
 void cmdterm_capture_status(const char* text)
 {
    if (PlatformAtomicLoad(&CmdTermCommandCaptureDepth) > 0 &&

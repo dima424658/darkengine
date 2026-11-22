@@ -49,6 +49,7 @@
 #include <hilight.h>
 #include <iobjed.h>
 #include <lnktrait.h>
+#include <darkdlgs/darkdlgs.h>
 
 
 #include <dbmem.h>
@@ -389,7 +390,7 @@ static void link_edit_from_multibrush ()
     bool twoObjs = false;
     cnt=0;
     dst=vBrush_GetSel();
-    if (brushGetType(dst)==brType_OBJECT)
+    if (dst && brushGetType(dst)==brType_OBJECT)
     {
         vBrush_GroupOp(FALSE,getOurBrushes);
         if ((cnt==2)&&(brushGetType(src)==brType_OBJECT))
@@ -410,10 +411,9 @@ static void link_edit_from_multibrush ()
 
 	//	Display the new link dialog, with the objects filled in
 	//
-	if (FALSE)
+	if (DisplayLinkDialog(link))
 	{
         AutoAppIPtr_(LinkManager,pLinkMan);
-		pLinkMan = AppGetObj(ILinkManager);
 		cAutoIPtr<IRelation> rel (pLinkMan->GetRelation(link.flavor));
 		rel->Add(link.source, link.dest);
 		Status("Linked");

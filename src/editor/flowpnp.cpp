@@ -116,7 +116,8 @@ static void flowPnP_DoGroupClick(int button)
          AutoAppIPtr_(ObjEditors,pEditors);
          IObjEditor* ed = pEditors->Create(&objeddesc,obj); 
 
-         ed->Go(kObjEdModal);
+         if (ed)
+            ed->Go(kObjEdModal);
 
          SafeRelease(ed); 
          break; 

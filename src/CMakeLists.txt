@@ -60,6 +60,7 @@ target_sources(dark_game_core PRIVATE ${dark_root_sources})
 
 if(TARGET dark_dromed_core)
   target_sources(dark_dromed_core PRIVATE ${dark_root_sources})
+  add_subdirectory(darkdlgs)
 endif()
 
 add_subdirectory(actreact)
@@ -109,6 +110,7 @@ if(DARK_BUILD_DROMED)
   add_executable(dromed
     $<TARGET_OBJECTS:dark_dromed_core>
   )
+  target_link_libraries(dromed PRIVATE dark_darkdlgs)
 
   if(APPLE)
     target_link_libraries(dromed PRIVATE dark_engine_config

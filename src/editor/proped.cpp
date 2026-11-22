@@ -216,7 +216,7 @@ STDMETHODIMP cSdescPropEditTrait::Edit(ObjID obj)
       {
           sed = CreateStructEditor(&eddesc,Sdesc,struc);
           
-          if (sed->Go(kStructEdModal))
+          if (sed && sed->Go(kStructEdModal))
           {
              store->Set(obj,dat); 
              Prop->Touch(obj); 

@@ -148,7 +148,8 @@ static void obj_edit(char* arg)
 
    AutoAppIPtr_(ObjEditors,pEditors);
    IObjEditor* ed = pEditors->Create(&objeddesc,obj); 
-   ed->Go(kObjEdModal);
+   if (ed)
+      ed->Go(kObjEdModal);
    SafeRelease(ed); 
 
 }

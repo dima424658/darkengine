@@ -19,6 +19,7 @@
 #include <dynarray.h>
 
 #include <proped.h>
+#include <darkdlgs/darkdlgs.h>
 
 
 
@@ -179,7 +180,7 @@ STDMETHODIMP_(IEditTrait*) cObjEditors::NextTrait(sEditTraitIter* iter)
 
 STDMETHODIMP_(IObjEditor*) cObjEditors::Create(sObjEditorDesc* desc, ObjID obj)
 {
-   return NULL;
+   return ConstructObjEditor(desc,obj);
 }
 
 STDMETHODIMP cObjEditors::End()

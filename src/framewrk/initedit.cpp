@@ -31,6 +31,7 @@
 #include <edittool.h>
 #include <sdestool.h>
 #include <iobjed.h>
+#include <darkdlgs/darkdlgs.h>
 #ifdef THIEF2_GAME
 #include <motmngr.h>
 #endif
@@ -170,6 +171,10 @@ tResult LGAPI AppInit()
 #endif
    }
 
+   {
+      AutoAppIPtr_(Unknown,pUnk);
+      DarkDlgsSetAggregate(pUnk);
+   }
 
    char buf[260];
    const char *load_var = config_is_defined("render_test") ? "render_test" : "file";
