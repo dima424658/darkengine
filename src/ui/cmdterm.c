@@ -132,7 +132,7 @@ static const char* CmdTermPopupFontNames[] =
 };
 static int CmdTermFontIndices[2] = { 0, 2 };
 static const int CmdTermDefaultFontIndices[2] = { 0, 2 };
-static BOOL CmdTermFontManuallyAdjusted[2] = { FALSE, FALSE };
+static BOOL CmdTermFontSelectionLocked[2] = { FALSE, FALSE };
 static BOOL CmdTermUsesConfiguredFont[2] = { FALSE, FALSE };
 static char CmdTermConfiguredFonts[2][64];
 
@@ -2141,7 +2141,7 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
    CmdTerm.style.colors[StyleColorFG] = 0xffff;
    CmdTerm.style.colors[StyleColorText] = 0xffff;
    font_profile = (flags & kCmdTermHideUnfocused) ? 1 : 0;
-   if (!CmdTermFontManuallyAdjusted[font_profile])
+   if (!CmdTermFontSelectionLocked[font_profile])
    {
       char configured_font[64];
       const char* config_var = font_profile ? "console_font"
@@ -2172,6 +2172,9 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
                break;
             }
       }
+      // Keep the docked console's face when playtest rebuilds the editor.
+      if (!font_profile)
+         CmdTermFontSelectionLocked[font_profile] = TRUE;
    }
    if (CmdTermUsesConfiguredFont[font_profile])
       font_name = CmdTermConfiguredFonts[font_profile];
@@ -2383,10 +2386,6 @@ static BOOL cmdterm_apply_pending_font_change(void)
       return FALSE;
 
    profile = (CmdTerm.flags & kCmdTermHideUnfocused) ? 1 : 0;
-   // Once the user changes the live size, switch an arbitrary configured
-   // face onto the stock size ladder so subsequent wheel steps are stable.
-   CmdTermFontManuallyAdjusted[profile] = TRUE;
-   CmdTermUsesConfiguredFont[profile] = FALSE;
    font_count = profile ? (int)CMDTERM_POPUP_FONT_COUNT
                         : (int)CMDTERM_EDITOR_FONT_COUNT;
    index = CmdTermFontIndices[profile] + delta;
@@ -2407,6 +2406,9 @@ static BOOL cmdterm_apply_pending_font_change(void)
    strncpy(command, CmdTerm.cmdbuf, sizeof(command));
    command[sizeof(command) - 1] = '\0';
 
+   // A successful wheel adjustment selects a face from the stock size ladder.
+   CmdTermFontSelectionLocked[profile] = TRUE;
+   CmdTermUsesConfiguredFont[profile] = FALSE;
    CmdTermFontIndices[profile] = index;
    DestroyCommandTerminal();
    CreateCommandTerminal(parent, &bounds, flags);
