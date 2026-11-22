@@ -187,7 +187,6 @@ errtype mouse_put_xy(short x, short y)
    }
    return OK;
 }
-#ifndef _WIN32
 errtype mouse_set_relative_mode(bool enabled)
 {
    {
@@ -215,7 +214,6 @@ bool mouse_consume_relative_motion(int *x, int *y)
    g_relativeX = g_relativeY = 0;
    return true;
 }
-#endif
 int DarkInputRelativeMouseActive(void)
 {
    std::lock_guard<std::mutex> lock(g_mutex);
@@ -349,10 +347,10 @@ class cUnixInputManager : public IInputManager
 public:
    explicit cUnixInputManager(IUnknown *outer)
    { INIT_AGGREGATION_1(outer, IID_IInputManager, this, kPriorityLibrary, nullptr); }
-   void IterStart(sInputDeviceIter *it, GUID) override { it->m_pDev = nullptr; }
-   void IterNext(sInputDeviceIter *it) override { it->m_pDev = nullptr; }
-   IInputDevice *IterGet(sInputDeviceIter *) override { return nullptr; }
-   BOOL IterFinished(sInputDeviceIter *) override { return TRUE; }
+   STDMETHODIMP_(void) IterStart(sInputDeviceIter *it, GUID) override { it->m_pDev = nullptr; }
+   STDMETHODIMP_(void) IterNext(sInputDeviceIter *it) override { it->m_pDev = nullptr; }
+   STDMETHODIMP_(IInputDevice *) IterGet(sInputDeviceIter *) override { return nullptr; }
+   STDMETHODIMP_(BOOL) IterFinished(sInputDeviceIter *) override { return TRUE; }
    HRESULT Init() { return S_OK; }
    HRESULT End() { return S_OK; }
 };
