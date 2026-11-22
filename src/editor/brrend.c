@@ -1404,7 +1404,7 @@ void *brushConvertPortal(editBrush *eb)
 {
    int edge_cnt, face_cnt, i;          // temps for edge and face cnt, loop var
    BspVertex pts[MAX_PRIMAL_PTS];      // should we malloc this stuff, as opposed to putting it on the stack?
-   void *first_usr[MAX_PRIMAL_EDGES];  // keep track of first user in poly of this edge, since CSG database is stupid 
+   void *first_usr[MAX_PRIMAL_EDGES] = { NULL };  // first polygon using each edge
    void *poly_edge[MAX_PRIMAL_EDGES];  // get the PolyEdge data from the CSG database
    void *ph;
 
@@ -1429,7 +1429,6 @@ void *brushConvertPortal(editBrush *eb)
    edge_cnt=primFastUnsafe_EdgeCnt();
    face_cnt=primFastUnsafe_FaceCnt();
    
-   memset(first_usr,0,sizeof(int)*edge_cnt);  // first_usr's all start at 0
    for (i=0; i<edge_cnt; i++)   // go setup all the inital edges
       poly_edge[i]=PortalMakeEdge(&pts[primFastUnsafe_EdgePt(i,0)],
                                   &pts[primFastUnsafe_EdgePt(i,1)]);

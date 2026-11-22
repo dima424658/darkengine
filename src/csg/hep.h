@@ -7,11 +7,16 @@
 #ifndef HEP_H
 #define HEP_H
 
+#include <stddef.h>
+
+union HepBlock;
+
 typedef struct {
    void *next;
    char *block;
-   char *last;
-   int left, size;
+   union HepBlock *last;
+   size_t left, stride;
+   int size;
    int alloc, total;
 } Hep;
 
