@@ -24,5 +24,7 @@ int LGAPI DoSimpleMenu(const char *title, const menustring *list, int count);
 IActReactEditors *LGAPI ExportActReactEditors(void);
 
 void DarkDlgsUnavailable(const char *title);
+bool DarkDlgsModalActive();
+void DrawDarkDlgs();
 
 #endif

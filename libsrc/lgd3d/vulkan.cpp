@@ -695,6 +695,8 @@ STDMETHODIMP_(void) cVulkanRuntime::EndApplicationFrame()
       m_window->RevealAfterPresent();
    m_activeCommandBuffer = nullptr;
    m_frameActive = false;
+   if (m_overlay)
+      m_overlay->PresentPlatformWindows();
    HandleSwapchainRecreation();
 }
 

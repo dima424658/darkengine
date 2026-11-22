@@ -4,6 +4,7 @@
 #include <imgui.h>
 
 #include <appagg.h>
+#include <darkdlgs/darkdlgs.h>
 #include <dispwnd.h>
 #include <menubar.h>
 #include <vkrend.h>
@@ -17,10 +18,12 @@ class cMenuBarOverlay final : public IVulkanOverlay
 public:
    void Prepare(const cVulkanContext &context) override;
    void Draw(vk::CommandBuffer commands) override;
+   void PresentPlatformWindows() override;
    void Reset() override;
    bool ProcessEvent(const SDL_Event &event) override;
 
    void SetDraw(void (*pfnDraw)());
+   bool Active() const { return m_pfnDraw != nullptr; }
    bool OwnsPointer() const;
 
 private:
@@ -30,6 +33,7 @@ private:
    void (*m_pfnDraw)(){};
    int m_Height{};
    bool m_fFrame{};
+   bool m_PlatformWindowsPending{};
 };
 
 cMenuBarOverlay g_MenuBarOverlay;
@@ -61,17 +65,31 @@ void cMenuBarOverlay::Draw(vk::CommandBuffer commands)
    m_ImGui.SetCurrentContext();
    if (m_pfnDraw && ImGui::BeginMainMenuBar())
    {
+      ImGui::BeginDisabled(DarkDlgsModalActive());
       m_pfnDraw();
+      ImGui::EndDisabled();
       ImGui::EndMainMenuBar();
    }
+   DrawDarkDlgs();
    m_ImGui.Render(commands);
+   m_PlatformWindowsPending = true;
    m_fFrame = false;
+}
+
+void cMenuBarOverlay::PresentPlatformWindows()
+{
+   if (m_PlatformWindowsPending)
+   {
+      m_PlatformWindowsPending = false;
+      m_ImGui.PresentPlatformWindows();
+   }
 }
 
 void cMenuBarOverlay::Reset()
 {
    m_ImGui.Reset();
    m_fFrame = false;
+   m_PlatformWindowsPending = false;
 }
 
 bool cMenuBarOverlay::ProcessEvent(const SDL_Event &event)
@@ -82,10 +100,12 @@ bool cMenuBarOverlay::ProcessEvent(const SDL_Event &event)
    if (!window || window->IsRelativeMouseActive())
       return false;
 
+   const bool modal = DarkDlgsModalActive();
    bool popupOpen = false;
    if (m_ImGui.ProcessEvent(event))
    {
-      if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST)
+      if (!modal && event.type == SDL_EVENT_WINDOW_FOCUS_LOST &&
+          event.window.windowID == SDL_GetWindowID(window->GetSDLWindow()))
          ImGui::SetWindowFocus(NULL);
       popupOpen = ImGui::IsPopupOpen(NULL, ImGuiPopupFlags_AnyPopup);
    }
@@ -94,15 +114,15 @@ bool cMenuBarOverlay::ProcessEvent(const SDL_Event &event)
    switch (event.type)
    {
    case SDL_EVENT_MOUSE_MOTION:
-      return popupOpen || event.motion.y < m_Height;
+      return modal || popupOpen || event.motion.y < m_Height;
    case SDL_EVENT_MOUSE_BUTTON_DOWN:
    case SDL_EVENT_MOUSE_BUTTON_UP:
-      return popupOpen || event.button.y < m_Height;
+      return modal || popupOpen || event.button.y < m_Height;
    case SDL_EVENT_MOUSE_WHEEL:
-      return popupOpen || event.wheel.mouse_y < m_Height;
+      return modal || popupOpen || event.wheel.mouse_y < m_Height;
    case SDL_EVENT_KEY_DOWN:
    case SDL_EVENT_KEY_UP:
-      return popupOpen;
+      return modal || popupOpen;
    default:
       return false;
    }
@@ -126,6 +146,8 @@ void cMenuBarOverlay::SetDraw(void (*pfnDraw)())
 
 bool cMenuBarOverlay::OwnsPointer() const
 {
+   if (DarkDlgsModalActive())
+      return true;
    if (!m_pfnDraw || !m_ImGui.SetCurrentContext())
       return false;
    AutoAppIPtr_(DisplayWindow,window);
@@ -147,6 +169,11 @@ void SetMenuBar(void (*pfnDraw)())
       if (renderer)
          renderer->SetOverlay(&g_MenuBarOverlay);
    }
+}
+
+bool MenuBarActive()
+{
+   return g_MenuBarOverlay.Active();
 }
 
 bool MenuBarOwnsPointer()

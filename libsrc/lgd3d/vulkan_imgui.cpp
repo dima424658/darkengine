@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdint>
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
@@ -40,6 +41,10 @@ bool cVulkanImGui::Init(const cVulkanContext &context)
    }
    ImGui_ImplSDL3_SetMouseCaptureMode(ImGui_ImplSDL3_MouseCaptureMode_Disabled);
    ImGui_ImplSDL3_SetGamepadMode(ImGui_ImplSDL3_GamepadMode_Manual, nullptr, 0);
+   // ImGui's secondary swapchains submit and present on the graphics queue.
+   if ((io.BackendFlags & ImGuiBackendFlags_PlatformHasViewports) &&
+       context.GraphicsQueueFamily() == context.PresentQueueFamily())
+      io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
    ImGui_ImplVulkan_InitInfo info{};
    info.ApiVersion = VK_API_VERSION_1_1;
@@ -80,6 +85,15 @@ void cVulkanImGui::Render(vk::CommandBuffer commands)
    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commands);
 }
 
+void cVulkanImGui::PresentPlatformWindows()
+{
+   if (SetCurrentContext() && (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+   {
+      ImGui::UpdatePlatformWindows();
+      ImGui::RenderPlatformWindowsDefault();
+   }
+}
+
 void cVulkanImGui::Reset()
 {
    ImGuiContext *previous = ImGui::GetCurrentContext();
@@ -104,9 +118,18 @@ bool cVulkanImGui::ProcessEvent(const SDL_Event &event)
    // After a swapchain rebuild, the pointer may not have moved yet.
    if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
        event.type == SDL_EVENT_MOUSE_BUTTON_UP)
-      ImGui::GetIO().AddMousePosEvent(event.button.x, event.button.y);
-   ImGui_ImplSDL3_ProcessEvent(&event);
-   return true;
+   {
+      const auto handle = reinterpret_cast<void *>(static_cast<uintptr_t>(event.button.windowID));
+      if (ImGui::FindViewportByPlatformHandle(handle))
+      {
+         int x = 0;
+         int y = 0;
+         if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+            SDL_GetWindowPosition(SDL_GetWindowFromID(event.button.windowID), &x, &y);
+         ImGui::GetIO().AddMousePosEvent(event.button.x + x, event.button.y + y);
+      }
+   }
+   return ImGui_ImplSDL3_ProcessEvent(&event);
 }
 
 bool cVulkanImGui::SetCurrentContext() const

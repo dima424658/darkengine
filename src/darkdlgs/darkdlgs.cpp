@@ -55,12 +55,6 @@ void LGAPI DoHierarchy(const sObjTreeEditorDesc *, ObjID)
    DarkDlgsUnavailable("Object hierarchy");
 }
 
-int LGAPI DoSimpleMenu(const char *title, const menustring *, int)
-{
-   DarkDlgsUnavailable(title && *title ? title : "List selection");
-   return -1;
-}
-
 IActReactEditors *LGAPI ExportActReactEditors(void)
 {
    DarkDlgsUnavailable("Act/React");

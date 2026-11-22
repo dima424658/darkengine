@@ -19,6 +19,7 @@ public:
    bool BeginFrame(const cVulkanContext &context);
    // Render after a successful BeginFrame.
    void Render(vk::CommandBuffer commands);
+   void PresentPlatformWindows();
    // Reset while the Vulkan device is still alive and idle.
    void Reset();
    bool ProcessEvent(const SDL_Event &event);
