@@ -25,6 +25,8 @@
 #ifndef PJFLI_H
 #define PJFLI_H
 
+#include <types.h>
+
 /*----------------------------------------------------------------------------
  * magic numbers for Animator Pro file types.
  *	These values appear in the type field of a file header.
@@ -107,13 +109,15 @@ enum {		/* postage stamp sub-chunk types... */
  * The Chunk_id datatypes.
  *--------------------------------------------------------------------------*/
 
+#pragma pack(push, 1)
+
 typedef struct chunk_id {
-	long	size;					/* total size of this chunk */
+	int32	size;					/* total size of this chunk */
 	unsigned short	type;			/* type of data in this chunk */
 	} Chunk_id;
 
 typedef struct fat_chunk {
-	long	size;					/* total size of this chunk */
+	int32	size;					/* total size of this chunk */
 	unsigned short	type;			/* type of data in this chunk */
 	unsigned short	version;		/* version of data in this chunk */
 	} Fat_chunk;
@@ -128,10 +132,10 @@ typedef struct fat_chunk {
  *--------------------------------------------------------------------------*/
 
 typedef struct fli_id {
-	long	create_time;			/* time file created */
-	long	create_user;			/* user id of creator */
-	long	update_time;			/* time of last update */
-	long	update_user;			/* user id of last update */
+	int32	create_time;			/* time file created */
+	int32	create_user;			/* user id of creator */
+	int32	update_time;			/* time of last update */
+	int32	update_user;			/* user id of last update */
 	} Fli_id;
 
 /*----------------------------------------------------------------------------
@@ -142,7 +146,7 @@ typedef struct fli_id {
  *--------------------------------------------------------------------------*/
 
 typedef struct fhead_1_0 {
-	long	size;			/* total file size */
+	int32	size;			/* total file size */
 	unsigned short	type;	/* file type, FLIH_MAGIC for old-style FLI file */
 	unsigned short	frame_count; /* frames in flic (not including ring frame) */
 	unsigned short	width;		 /* flic width  (always 320) */
@@ -159,21 +163,21 @@ typedef struct fhead_1_0 {
  *--------------------------------------------------------------------------*/
 
 typedef struct fli_head {
-	long	size;				/* total file size */
+	int32	size;				/* total file size */
 	unsigned short	type;		/* file type, FLIH_MAGIC or FLIHR_MAGIC */
 	unsigned short	frame_count;/* frames in flic (not including ring frame) */
 	unsigned short	width;		/* flic width */
 	unsigned short	height; 	/* flic height */
 	unsigned short	bits_a_pixel;	/* pixel depth (always 8 for now) */
 	short	flags;			/* (mapped out above) */
-	long	speed;			/* speed (millisecs for FLIHR or jiffies for FLIH) */
+	int32	speed;			/* speed (millisecs for FLIHR or jiffies for FLIH) */
 	unsigned short	unused;	/* reserved word */
 	Fli_id	id; 			/* creator and updater id */
 	unsigned short	aspect_dx;		/* aspect ratio x (most always 1) */
 	unsigned short	aspect_dy;		/* aspect ratio y (most always 1) */
 	char	commonpad[38];	/* size down to here s/b total of 80 bytes */
-	long	frame1_oset;	/* file offset to first frame chunk */
-	long	frame2_oset;	/* file offset to second frame chunk (for ring) */
+	int32	frame1_oset;	/* file offset to first frame chunk */
+	int32	frame2_oset;	/* file offset to second frame chunk (for ring) */
 	char	padfill[40];	/* pad to total size of 128 bytes */
 	} Fli_head;
 
@@ -183,6 +187,8 @@ typedef struct fli_head {
  *	the file managment routines and data compression routines.	For clients
  *	of the fliclib, the handles point to black-box structures.
  *--------------------------------------------------------------------------*/
+
+#pragma pack(pop)
 
 typedef struct flifile {
 	Fli_head		hdr;		/* the fli hdr for the flic */
@@ -194,8 +200,10 @@ typedef struct flifile {
  * The Fli_frame datatype.
  *--------------------------------------------------------------------------*/
 
+#pragma pack(push, 1)
+
 typedef struct fli_frame {
-	long	 size;
+	int32	 size;
 	unsigned short	 type;		/* type = FCID_FRAME or FCID_PREFIX */
 	short	chunks;
 	char	pad[8];
@@ -206,12 +214,21 @@ typedef struct fli_frame {
  *--------------------------------------------------------------------------*/
 
 typedef struct pstamp_chunk {
-	long	 size;
+	int32	 size;
 	unsigned short	 type;		/* type = FLI_PSTAMP */
 	short	 height;
 	short	 width;
 	short	 xlat_type;
 	Chunk_id data;		/* this is a fli chunk either copy or brun */
 	} Pstamp_chunk;
+
+#pragma pack(pop)
+
+typedef char ChunkIdSizeCheck[sizeof(Chunk_id) == 6 ? 1 : -1];
+typedef char FatChunkSizeCheck[sizeof(Fat_chunk) == 8 ? 1 : -1];
+typedef char FliIdSizeCheck[sizeof(Fli_id) == 16 ? 1 : -1];
+typedef char FliOldHeadSizeCheck[sizeof(Fhead_1_0) == 128 ? 1 : -1];
+typedef char FliHeadSizeCheck[sizeof(Fli_head) == 128 ? 1 : -1];
+typedef char FliFrameSizeCheck[sizeof(Fli_frame) == 16 ? 1 : -1];
 
 #endif /* PJFLI_H */

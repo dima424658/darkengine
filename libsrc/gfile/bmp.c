@@ -17,6 +17,7 @@
 #include <lg.h>
 #include <gfile.h>
 
+#pragma pack(push, 1)
 typedef struct {
 	ushort bfType;			// "BM"
 	ulong bfSize;			// size in longwords of file
@@ -38,6 +39,10 @@ typedef struct {
 	ulong biClrUsed;			// number of colors used
 	ulong biClrImportant;	// number of "important" colors
 } BmpInfo;
+#pragma pack(pop)
+
+typedef char BmpHeadSizeCheck[sizeof(BmpHead) == 14 ? 1 : -1];
+typedef char BmpInfoSizeCheck[sizeof(BmpInfo) == 40 ? 1 : -1];
 
 static bool BmpReadImage(GfileInfo *pgfi, BmpInfo *pInfo, FILE *fp);
 
