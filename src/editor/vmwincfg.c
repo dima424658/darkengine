@@ -36,6 +36,7 @@
 #include <kbcook.h>
 #include <config.h>
 #include <status.h>
+#include <scrnman.h>
 #include <matrix.h>
 
 #include <modalui.h>
@@ -276,9 +277,15 @@ float vmGetSizeRatio(int r, float *xrat, float *yrat)
 static BOOL _doWinDrag(int axis_mask)
 {
    Point init_center=vmGUICenter;
+   const grs_canvas *canvas=ScrnGetDrawCanvas();
+   Point screen_size, min_center, max_center;
    uiEvent ev;
 
-   if (!modal_ui_start(MODAL_CHECK_LEFT)) return FALSE;
+   if (!canvas || !modal_ui_start(MODAL_CHECK_LEFT)) return FALSE;
+   screen_size=MakePoint(canvas->bm.w,canvas->bm.h);
+   min_center=MakePoint(vmGUITop.x+DRAG_BORDER,vmGUITop.y+DRAG_BORDER);
+   max_center=MakePoint(vmGUITop.x+vmGUIDims.x-DRAG_BORDER-1,
+                        vmGUITop.y+vmGUIDims.y-DRAG_BORDER-1);
    uiHideMouse(NULL);
    do {
       modal_ui_update();
@@ -290,26 +297,21 @@ static BOOL _doWinDrag(int axis_mask)
             uiMouseEvent *mev = (uiMouseEvent *)&ev;
             if (mev->action & MOUSE_LUP)
                goto mouse_up;
-            if ((mev->pos.x<0)||(mev->pos.x>=grd_visible_canvas->bm.w)||
-                (mev->pos.y<0)||(mev->pos.y>=grd_visible_canvas->bm.h))
+            if (mev->pos.x<0 || mev->pos.x>=screen_size.x ||
+                mev->pos.y<0 || mev->pos.y>=screen_size.y)
                slam_mouse=TRUE;
-            else if (axis_mask&AXIS_MASK_X)
+            else
             {
-               vmGUICenter.x=mev->pos.x;  // must clip to our box
-               if (vmGUICenter.x<vmGUITop.x+DRAG_BORDER)
-                  vmGUICenter.x=vmGUITop.x+DRAG_BORDER;
-               else if (vmGUICenter.x>=vmGUITop.x+vmGUIDims.x-DRAG_BORDER)
-                  vmGUICenter.x=vmGUITop.x+vmGUIDims.x-DRAG_BORDER-1;
-               slam_mouse|=(vmGUICenter.x!=mev->pos.x);
-            }
-            if (axis_mask&AXIS_MASK_Y)
-            {
-               vmGUICenter.y=mev->pos.y;
-               if (vmGUICenter.y<vmGUITop.y+DRAG_BORDER)
-                  vmGUICenter.y=vmGUITop.y+DRAG_BORDER;
-               else if (vmGUICenter.y>=vmGUITop.y+vmGUIDims.y-DRAG_BORDER)
-                  vmGUICenter.y=vmGUITop.y+vmGUIDims.y-DRAG_BORDER-1;
-               slam_mouse|=(vmGUICenter.y!=mev->pos.y);
+               if (axis_mask&AXIS_MASK_X)
+               {
+                  vmGUICenter.x=max(min_center.x,min(mev->pos.x,max_center.x));
+                  slam_mouse|=(vmGUICenter.x!=mev->pos.x);
+               }
+               if (axis_mask&AXIS_MASK_Y)
+               {
+                  vmGUICenter.y=max(min_center.y,min(mev->pos.y,max_center.y));
+                  slam_mouse|=(vmGUICenter.y!=mev->pos.y);
+               }
             }
             if (slam_mouse)
                mouse_put_xy(vmGUICenter.x,vmGUICenter.y);
