@@ -11,10 +11,16 @@
 #include <mxang.h>
 
 // info structure attached to a projectile archetype object
+#pragma pack(push, 1)
 typedef struct sProjectile
 {
    int m_spray;             // number of projectiles/trigger pull (instantaneous)
    mxs_ang m_spread;        // random angular error per shot
 } sProjectile;
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(sProjectile) == 6, "Projectile property must match its disk layout");
+#endif
 
 #endif //!__PROJBASE_H

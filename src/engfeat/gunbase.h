@@ -92,6 +92,7 @@ typedef struct sGunReliability
 
 const float kShockGunDefaultMaxRange = 10;
 
+#pragma pack(push, 1)
 typedef struct sAIGunDesc
 {
    float m_maxRange;      // max range at which an AI will fire this gun
@@ -101,6 +102,11 @@ typedef struct sAIGunDesc
    tSimTime m_endTime;     // lag between bursts
    mxs_ang m_aimError; 
 } sAIGunDesc;
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(sAIGunDesc) == 30, "AI gun descriptors must match their disk layout");
+#endif
 
 // describes a cannister-like projectile
 typedef struct sCannister
