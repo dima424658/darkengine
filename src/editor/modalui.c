@@ -11,6 +11,7 @@
 #include <stupidui.h>
 #include <modalui.h>
 #include <scrnman.h>
+#include <render_backend.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -41,6 +42,8 @@ void modal_ui_update(void)
 {
    vBrush_FrameCallback();
    ScrnForceUpdate();
+   // The normal editor frame loop is suspended during a modal drag.
+   RenderBackendPresentProgress();
 }
 
 void modal_ui_end(void)

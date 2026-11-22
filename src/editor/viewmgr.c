@@ -813,7 +813,7 @@ static void render_grid_with_color(int c, int color)
       end.y += 20 * cur_global_grid.line_spacing;
       end.z += 20 * cur_global_grid.line_spacing;
 
-      gedit_render_grid(&cur_global_grid, vm_3d_grid_axis, vm_3d_grid_height, &start, &end);
+      gedit_render_grid(&cur_global_grid, vm_3d_grid_axis, vm_3d_grid_height, &start, &end, FALSE);
    } else {
       int rc = real_camera(c), a = camera[c].axis;
       mxs_real x_scale, y_scale;
@@ -832,7 +832,8 @@ static void render_grid_with_color(int c, int color)
       start.el[y_axis[a]] -= y_scale/2;
         end.el[y_axis[a]] += y_scale/2;
 
-      gedit_render_grid(&cur_global_grid, bogus_axis[a], 0, &start, &end);
+      // Orthographic panes draw on the software canvas even when the 3D view uses Vulkan.
+      gedit_render_grid(&cur_global_grid, bogus_axis[a], 0, &start, &end, TRUE);
    }
 }
 
