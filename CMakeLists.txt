@@ -32,6 +32,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/EngineConfig.cmake")
 
+if(APPLE OR WIN32)
+  set(dark_build_dromed_default ON)
+else()
+  set(dark_build_dromed_default OFF)
+endif()
+
+option(DARK_BUILD_DROMED "Compile the native SDL DromEd editor" ${dark_build_dromed_default})
+
+if(DARK_BUILD_DROMED)
+  add_subdirectory(3rdparty "${CMAKE_BINARY_DIR}/third_party/editor")
+endif()
+
 add_subdirectory(libsrc)
 add_subdirectory(src)
 add_subdirectory(assets)

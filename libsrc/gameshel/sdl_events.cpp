@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 
 #include <algorithm>
+#include <bitset>
 #include <cmath>
 #include <cstring>
 
@@ -143,6 +144,8 @@ private:
       m_wheelY = 0;
       m_pendingWheel = false;
       m_buttons = 0;
+      m_overlayKeys.reset();
+      m_overlayButtons.reset();
    }
 
    static uchar KeyScan(SDL_Scancode key)
@@ -236,6 +239,7 @@ private:
       if (event.type != SDL_EVENT_MOUSE_MOTION && event.type != SDL_EVENT_MOUSE_WHEEL)
          FlushWheel();
 
+      const bool overlayCaptured = DarkRenderProcessOverlayEvent(event);
       if (event.type == SDL_EVENT_QUIT ||
           event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
          m_quit = true;
@@ -249,15 +253,41 @@ private:
       {
          const uchar scan = KeyScan(event.key.scancode);
          const bool down = event.type == SDL_EVENT_KEY_DOWN;
+         const auto key = static_cast<size_t>(event.key.scancode);
+         if (key < m_overlayKeys.size())
+         {
+            if (down && !event.key.repeat)
+               m_overlayKeys[key] = overlayCaptured;
+            const bool captured = m_overlayKeys[key];
+            if (!down)
+               m_overlayKeys.reset(key);
+            if (captured || (down && overlayCaptured))
+               return;
+         }
          if (scan != KBC_NONE && (!event.key.repeat || !SDLDisplayRelativeMouseActive()))
             DarkInputKey(scan, down);
       }
       else if (event.type == SDL_EVENT_MOUSE_MOTION)
-         HandleMouseMotion(event.motion);
+      {
+         if (!overlayCaptured || m_buttons)
+            HandleMouseMotion(event.motion);
+      }
       else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                event.type == SDL_EVENT_MOUSE_BUTTON_UP)
-         HandleMouseButton(event.button, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
-      else if (event.type == SDL_EVENT_MOUSE_WHEEL)
+      {
+         // Keep each press and release with the same recipient, even if
+         // the popup closes or the pointer crosses the menu bar in between.
+         const bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+         const auto button = event.button.button;
+         if (down)
+            m_overlayButtons[button] = overlayCaptured;
+         const bool captured = m_overlayButtons[button];
+         if (!down)
+            m_overlayButtons.reset(button);
+         if (!captured)
+            HandleMouseButton(event.button, down);
+      }
+      else if (event.type == SDL_EVENT_MOUSE_WHEEL && !overlayCaptured)
          HandleMouseWheel(event.wheel);
    }
 
@@ -415,6 +445,8 @@ private:
    short m_mouseX{};
    short m_mouseY{};
    uchar m_buttons{};
+   std::bitset<SDL_SCANCODE_COUNT> m_overlayKeys;
+   std::bitset<256> m_overlayButtons;
    bool m_lifecycleWatchRegistered{};
 };
 

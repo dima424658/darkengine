@@ -1,4 +1,5 @@
 #include "vulkan_context.hpp"
+#include "vulkan_overlay.hpp"
 
 #include <algorithm>
 #include <array>
@@ -659,6 +660,8 @@ void cVulkanContext::DestroySwapchain()
    if (!*m_device)
       return;
    m_commandBuffers.clear();
+   if (m_overlay)
+      m_overlay->reset();
    m_framebuffers.clear();
    m_renderPass.clear();
    m_depthViews.clear();

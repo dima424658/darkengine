@@ -962,7 +962,10 @@ resource directories remain ahead of ordinary mods and retail data.
 DromEd reads the selected installation's `cam_ext.cfg` and `cam.cfg`, followed
 by its game and editor includes and any selected FM configuration. Put
 editor-specific overrides in the editor configuration included by that stack;
-command-line assignments still take priority for the current launch.
+command-line assignments still take priority for the current launch. DromEd
+builds the editor menu bar from `MENUS.CFG` in the selected game installation
+or its configured include path. Menu items run the editor commands named in
+that file.
 
 The CMake DromEd viewer uses the same SDL3/Vulkan scene renderer and presenter
 as the game. The editor canvas remains 16-bit internally, while the presenter

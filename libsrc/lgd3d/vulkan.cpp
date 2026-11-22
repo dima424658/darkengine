@@ -20,6 +20,7 @@
 #include "event_bridge.h"
 #include <display_window.h>
 #include "vulkan_context.hpp"
+#include "vulkan_overlay.hpp"
 #include "vulkan_render_backend.hpp"
 #include <sdl_vulkan.hpp>
 #include "vulkan_scene_renderer.hpp"
@@ -52,6 +53,8 @@ public:
    void ApplicationResumed();
    void EndEventPump();
    void SetPhysicalDeviceIndex(int index);
+   void SetOverlay(const sVulkanOverlay &overlay);
+   bool ProcessOverlayEvent(const SDL_Event &event);
    void BeginApplicationFrame();
    void EndApplicationFrame();
    void PresentProgress();
@@ -79,6 +82,7 @@ private:
 
    bool m_windowOpen{};
    cVulkanContext m_context;
+   const sVulkanOverlay *m_overlay{};
    cVulkanSceneRenderer m_renderer;
    vk::CommandBuffer m_activeCommandBuffer{};
    int m_width{}, m_height{};
@@ -559,6 +563,17 @@ bool cVulkanRuntime::PreparePresentation()
    return m_drawableWidth > 0 && m_drawableHeight > 0 && ApplyPendingResize();
 }
 
+void cVulkanRuntime::SetOverlay(const sVulkanOverlay &overlay)
+{
+   m_overlay = &overlay;
+   m_context.SetOverlay(&overlay);
+}
+
+bool cVulkanRuntime::ProcessOverlayEvent(const SDL_Event &event)
+{
+   return m_overlay && m_overlay->processEvent(event);
+}
+
 void cVulkanRuntime::BeginApplicationFrame()
 {
    ZoneScopedN("Vulkan begin frame");
@@ -583,6 +598,8 @@ void cVulkanRuntime::BeginApplicationFrame()
       return;
    }
    m_activeCommandBuffer = commandBuffer;
+   if (m_overlay)
+      m_overlay->prepare(m_context);
    m_renderer.BeginFrame(m_context.FrameIndex());
    RenderBackendVulkanAttach(commandBuffer, m_width, m_height, m_clientWidth,
       m_clientHeight, m_drawableWidth, m_drawableHeight);
@@ -598,6 +615,8 @@ void cVulkanRuntime::EndApplicationFrame()
       std::fprintf(stderr, "Vulkan canvas texture update failed\n");
    const bool sceneActive = RenderBackendVulkanSceneActive() != 0;
    DrawCanvas(m_activeCommandBuffer, sceneActive);
+   if (m_overlay)
+      m_overlay->draw(m_activeCommandBuffer);
    // Scene pixels are composited into this swapchain image only. The next
    // frame starts from a freshly acquired image, so don't let later canvas
    // updates treat palette index zero as transparent over a nonexistent
@@ -809,6 +828,12 @@ void DarkRenderBeginApplicationFrame(void)
 { VulkanRuntime().BeginApplicationFrame(); }
 void DarkRenderEndApplicationFrame(void)
 { VulkanRuntime().EndApplicationFrame(); }
+void DarkRenderSetOverlay(const sVulkanOverlay &overlay)
+{ VulkanRuntime().SetOverlay(overlay); }
+
+bool DarkRenderProcessOverlayEvent(const SDL_Event &event)
+{ return VulkanRuntime().ProcessOverlayEvent(event); }
+
 void DarkRenderPresentProgress(void)
 { VulkanRuntime().PresentProgress(); }
 extern "C" void RenderBackendSetWindowedClientSizeHint(int width, int height)

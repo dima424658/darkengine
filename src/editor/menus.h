@@ -16,5 +16,7 @@
 
 EXTERN void SetMainMenu(const char * pszName);
 EXTERN void MenuCommand(unsigned);
+EXTERN void SetRadioCheckmark(int menu, int firstPos, int lastPos, int checkPos);
+EXTERN void ExecutePendingMenuCommands(void);
 
 #endif /* !__MENUS_H */

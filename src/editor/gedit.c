@@ -31,6 +31,7 @@
 #include <portal.h>
 #include <command.h>
 #include <cfgtool.h>
+#include <menus.h>
 
 #include <objpos.h>
 #include <objedit.h>
@@ -1014,8 +1015,6 @@ void gedit_set_primal_sides(int n)
    prim_cur_sides=n;
    prim_finish();
 }
-
-extern void SetRadioCheckmark (int menu, int firstPos, int lastPos, int checkPos);
 
 // 0 is cube, 1 cyl, 2 pyr, 3 corner pyr
 void gedit_set_primal_type(int t)

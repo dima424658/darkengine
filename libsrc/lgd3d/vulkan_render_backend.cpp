@@ -78,9 +78,11 @@ public:
             ? static_cast<double>(drawableWidth) / m_clientWidth : 1.0;
          const double pixelScaleY = m_clientHeight > 0
             ? static_cast<double>(drawableHeight) / m_clientHeight : 1.0;
+         *y = std::clamp(static_cast<int>(std::lround(m_topInset * pixelScaleY)),
+            0, drawableHeight - 1);
          *width = std::min(drawableWidth,
             std::max(static_cast<int>(logicalWidth * pixelScaleX), 0));
-         *height = std::min(drawableHeight,
+         *height = std::min(drawableHeight - *y,
             std::max(static_cast<int>(logicalHeight * pixelScaleY), 0));
          return;
       }
@@ -99,6 +101,7 @@ public:
       *y = (drawableHeight - *height) / 2;
    }
 
+   void SetTopInset(int points) { m_topInset = points; }
    int UseLinearCanvasSampling() const { return m_scaleToWindow ? 1 : 0; }
    int Available() const { return m_renderer != nullptr; }
    void SetGamma(float gamma)
@@ -335,6 +338,7 @@ private:
    bool m_canvasOverlayEnabled{true};
    bool m_scaleToWindow{true};
    bool m_fitToViewport{};
+   int m_topInset{};
    float m_gamma{1.0f};
    FILE *m_trace{};
 };
@@ -401,6 +405,9 @@ void RenderBackendVulkanGetViewport(int logicalWidth, int logicalHeight,
    Backend().GetViewport(logicalWidth, logicalHeight, drawableWidth,
       drawableHeight, overlay != 0, x, y, width, height);
 }
+
+void RenderBackendVulkanSetTopInset(int points)
+{ Backend().SetTopInset(points); }
 
 int RenderBackendVulkanUseLinearCanvasSampling(void)
 { return Backend().UseLinearCanvasSampling(); }

@@ -581,6 +581,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
          }
 
+         ExecutePendingMenuCommands();
          vm_redraw_view_label();
 
          break;
