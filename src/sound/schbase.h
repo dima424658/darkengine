@@ -85,7 +85,7 @@ typedef struct sSchemaCallParams
    SchemaCallback loop_callback;
    void *pData;         // user data for callback
    Label *pMsg;         
-   long msgData[3];     // data attached to schema message
+   int32 msgData[3];     // data attached to schema message
 } sSchemaCallParams;
 
 // for when you only want to modify one call parameter
@@ -100,8 +100,12 @@ typedef struct sSchemaMsg
    int volume;
    ObjID sourceID; 
    mxs_vector sourceLoc;
-   long data[SCHEMA_MSG_DATA_SIZE]; 
+   int32 data[SCHEMA_MSG_DATA_SIZE];
 } sSchemaMsg;
+
+#ifdef __cplusplus
+static_assert(sizeof(sSchemaMsg) == 48, "Schema messages retain the original 32-bit layout");
+#endif
 
 
 // these sound schema types must be in the same order as those in schema.y
