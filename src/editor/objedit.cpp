@@ -153,8 +153,8 @@ void edit_link_cmd(char* arg)
    if (*arg == '\0')  // No args
    {
       editBrush* cur = vBrush_GetSel();
-      if (brushGetType(cur) == brType_OBJECT)
-         arg[0] = brObj_ID(cur);
+      if (cur && brushGetType(cur) == brType_OBJECT)
+         args[0] = brObj_ID(cur);
    }
    else  // Find three args
       for (int i = 0; i < num_args; i++)
@@ -171,6 +171,8 @@ void edit_link_cmd(char* arg)
             args[i] = EditGetObjNamed(arg);
 
          *delim = save;
+         if (!save)
+            break;
          arg = delim+1;
       }
 

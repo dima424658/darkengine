@@ -21,6 +21,7 @@
 #include <menus.h>
 
 #include <editmode.h>
+#include <editorplatform.h>
 #include <gamemode.h>
 #include <gameapp.h>
 
@@ -327,6 +328,7 @@ static void db_message(DispatchData* msg)
    switch (DB_MSG(msg->subtype))
    {
       case kDatabaseReset:
+         EditorCloseDialogs();
          GFHSetCurrentBrush(NULL);
          break;
       case kDatabasePostLoad:

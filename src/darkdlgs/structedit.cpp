@@ -10,6 +10,7 @@
 #include <sdesguid.h>
 
 #include "darkdlgs.h"
+#include "h2ocolor.h"
 #include "modal.h"
 #include <isdescst.h>
 
@@ -130,6 +131,41 @@ void EditIntegral(char *data, const sFieldDesc &field, ImGuiDataType type)
                   hex ? ImGuiInputTextFlags_CharsHexadecimal : 0);
 }
 
+template<int Count, bool Angle>
+bool EditScaledNumbers(char *data, const sFieldDesc &field)
+{
+   using Stored = std::conditional_t<Angle, ImU16, ImS32>;
+   Stored stored[Count];
+   if (field.size != sizeof(stored))
+      return false;
+   std::memcpy(stored, data, sizeof(stored));
+   double values[Count];
+   constexpr double scale = Angle ? 65536.0 / 360.0 : 65536.0;
+   for (int i = 0; i < Count; ++i)
+      values[i] = stored[Angle ? Count - 1 - i : i] / scale;
+
+   EditNumbers<double, Count>(reinterpret_cast<char *>(values), field, ImGuiDataType_Double, "%.10g");
+   for (int i = 0; i < Count; ++i)
+   {
+      Stored &value = stored[Angle ? Count - 1 - i : i];
+      if (values[i] == value / scale)
+         continue;
+      if constexpr (Angle)
+      {
+         const double units = std::floor(std::fmod(values[i], 360.0) * scale + 0.5);
+         value = static_cast<Stored>(static_cast<int>(units));
+      }
+      else
+      {
+         const double units = std::round(values[i] * scale);
+         value = static_cast<Stored>(std::clamp<double>(
+            units, std::numeric_limits<Stored>::min(), std::numeric_limits<Stored>::max()));
+      }
+   }
+   std::memcpy(data, stored, sizeof(stored));
+   return true;
+}
+
 bool EditField(char *data, const sFieldDesc &field)
 {
    switch (field.type)
@@ -179,6 +215,41 @@ bool EditField(char *data, const sFieldDesc &field)
       if (field.size != 3 * sizeof(double)) break;
       EditNumbers<double, 3>(data, field, ImGuiDataType_Double, "%.17g");
       return true;
+   case kFieldTypeFix:
+      return EditScaledNumbers<1, false>(data, field);
+   case kFieldTypeFixVec:
+      return EditScaledNumbers<3, false>(data, field);
+   case kFieldTypeAng:
+      return EditScaledNumbers<1, true>(data, field);
+   case kFieldTypeAngVec:
+      return EditScaledNumbers<3, true>(data, field);
+   case kFieldTypeRGBA:
+   {
+      sRGBA color;
+      if (field.size != sizeof(color))
+         break;
+      std::memcpy(&color, data, sizeof(color));
+      float rgba[] = {color.rgb[0] / 255.0f, color.rgb[1] / 255.0f, color.rgb[2] / 255.0f, color.alpha};
+      if (ImGui::ColorEdit4("##value", rgba) &&
+          std::all_of(std::begin(rgba), std::end(rgba), [](float value) { return std::isfinite(value); }))
+      {
+         for (int i = 0; i < 3; ++i)
+            color.rgb[i] = static_cast<uchar>(std::lround(std::clamp(rgba[i], 0.0f, 1.0f) * 255.0f));
+         color.alpha = std::clamp(rgba[3], 0.0f, 1.0f);
+         std::memcpy(data, &color, sizeof(color));
+      }
+      return true;
+   }
+   case kFieldTypeStringPtr:
+   case kFieldTypeVoidPtr:
+   {
+      const void *pointer;
+      if (field.size != sizeof(pointer))
+         break;
+      std::memcpy(&pointer, data, sizeof(pointer));
+      ImGui::TextDisabled("%s", pointer ? "Assigned (read-only)" : "Null (read-only)");
+      return true;
+   }
    case kFieldTypePoint:
       if (field.size != 2 * sizeof(ImS16)) break;
       EditNumbers<ImS16, 2>(data, field, ImGuiDataType_S16);
@@ -220,6 +291,8 @@ private:
    void DrawContents() override;
    void AfterFrame() override;
    void Notify(ulong event);
+   void Finish();
+   void OnModelessClosed() override;
    void Commit();
 
    sStructEditorDesc m_editor;
@@ -285,8 +358,10 @@ void StructEditor::DrawContents()
    }
    if (showCancel && (showOK || showApply))
       ImGui::SameLine();
-   const bool cancel = (showCancel && ImGui::Button("Cancel")) || ImGui::IsKeyPressed(ImGuiKey_Escape, false);
-   if (showOK && !m_apply && !ImGui::GetIO().WantTextInput)
+   const bool keyboard = HasKeyboardFocus();
+   const bool cancel = (showCancel && ImGui::Button("Cancel")) ||
+      (keyboard && ImGui::IsKeyPressed(ImGuiKey_Escape, false));
+   if (showOK && keyboard && !m_apply && !ImGui::GetIO().WantTextInput)
       accept |= ImGui::IsKeyPressed(ImGuiKey_Enter, false) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false);
    if (cancel || accept)
    {
@@ -313,33 +388,49 @@ void StructEditor::AfterFrame()
 {
    if (m_apply)
    {
+      AddRef();
+      cAutoIPtr<IStructEditor> keepAlive(this);
       m_apply = false;
       Commit();
       Notify(kStructEdApply);
-      std::memcpy(m_draft.data(), m_data, m_draft.size());
+      if (IsOpen())
+         std::memcpy(m_draft.data(), m_data, m_draft.size());
    }
+}
+
+void StructEditor::Finish()
+{
+   if (m_accepted)
+      Commit();
+   Notify(m_accepted ? kStructEdOK : kStructEdCancel);
+}
+
+void StructEditor::OnModelessClosed()
+{
+   Finish();
+   Release();
 }
 
 STDMETHODIMP_(BOOL) StructEditor::Go(eSdescModality modality)
 {
+   if (IsOpen())
+      return FALSE;
+
    // Callbacks can release the caller's reference.
    AddRef();
    cAutoIPtr<IStructEditor> keepAlive(this);
-   if (modality != kStructEdModal)
-   {
-      DarkDlgsUnavailable("Modeless structure editor");
-      Notify(kStructEdCancel);
-      return FALSE;
-   }
-
    const char *data = static_cast<const char *>(m_data);
    m_draft.assign(data, data + m_structure.size);
    m_accepted = m_apply = false;
-   const bool accepted = Run() && m_accepted;
-   if (accepted)
-      Commit();
-   Notify(accepted ? kStructEdOK : kStructEdCancel);
-   return accepted;
+   if (modality == kStructEdModeless && ShowModeless())
+   {
+      AddRef(); // Held by the modeless window until it closes.
+      return FALSE;
+   }
+   if (modality == kStructEdModal)
+      Run();
+   Finish();
+   return m_accepted;
 }
 }
 

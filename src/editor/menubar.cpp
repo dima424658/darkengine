@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdint>
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
@@ -151,8 +152,14 @@ bool cMenuBarOverlay::OwnsPointer() const
    if (!m_pfnDraw || !m_ImGui.SetCurrentContext())
       return false;
    AutoAppIPtr_(DisplayWindow,window);
-   if (!window || SDL_GetMouseFocus() != window->GetSDLWindow())
+   SDL_Window *focus = SDL_GetMouseFocus();
+   if (!window || !focus)
       return false;
+   if (focus != window->GetSDLWindow())
+   {
+      const auto handle = reinterpret_cast<void *>(static_cast<uintptr_t>(SDL_GetWindowID(focus)));
+      return ImGui::FindViewportByPlatformHandle(handle) != nullptr;
+   }
    float y;
    SDL_GetMouseState(NULL, &y);
    return y < m_Height || ImGui::IsPopupOpen(NULL, ImGuiPopupFlags_AnyPopup);
@@ -163,6 +170,8 @@ bool cMenuBarOverlay::OwnsPointer() const
 void SetMenuBar(void (*pfnDraw)())
 {
    g_MenuBarOverlay.SetDraw(pfnDraw);
+   if (!pfnDraw)
+      CloseDarkDlgs();
    if (pfnDraw)
    {
       AutoAppIPtr_(VulkanRenderer,renderer);

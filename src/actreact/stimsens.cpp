@@ -914,8 +914,14 @@ STDMETHODIMP cStimSensors::SetReceptron(ReceptronID tronid, const sReceptron* tr
    sReceptron* getron = (sReceptron*)pReceptrons->GetData(id);
    if (getron != NULL)
    {
-      pReceptrons->SetData(id,(void*)tron); 
-      return S_OK;
+      const bool updateParams =
+         getron->effect.param.obj[kReactDirectObj] != tron->effect.param.obj[kReactDirectObj] ||
+         getron->effect.param.obj[kReactIndirectObj] != tron->effect.param.obj[kReactIndirectObj];
+      const HRESULT result = pReceptrons->SetData(id,(void*)tron);
+      sLink link;
+      if (result == S_OK && updateParams && pReceptrons->Get(id,&link))
+         AddObjParams(id,link.source);
+      return result;
    }
    return E_FAIL;
 }

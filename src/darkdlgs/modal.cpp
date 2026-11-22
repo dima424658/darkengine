@@ -1,8 +1,10 @@
 #include "modal.h"
 
+#include <algorithm>
 #include <cfloat>
 #include <cstdint>
 #include <utility>
+#include <vector>
 
 #include <SDL3/SDL.h>
 
@@ -18,11 +20,13 @@
 namespace
 {
 DarkDlgsModal *g_modal;
+std::vector<DarkDlgsModal *> g_modeless;
 }
 
 DarkDlgsModal::DarkDlgsModal(std::string title, ImVec2 size)
    : m_title(std::move(title)), m_size(size)
 {
+   m_title += "/" + std::to_string(reinterpret_cast<uintptr_t>(this));
 }
 
 bool DarkDlgsModalActive()
@@ -34,6 +38,9 @@ void DrawDarkDlgs()
 {
    if (g_modal)
       g_modal->Draw();
+   else
+      for (auto *dialog : g_modeless)
+         dialog->Draw();
 }
 
 void DarkDlgsModal::BindPlatformWindow(const ImGuiViewport &parent)
@@ -49,7 +56,7 @@ void DarkDlgsModal::BindPlatformWindow(const ImGuiViewport &parent)
    const auto parentId = static_cast<SDL_WindowID>(reinterpret_cast<uintptr_t>(parent.PlatformHandle));
    SDL_Window *window = SDL_GetWindowFromID(id);
    SDL_Window *parentWindow = SDL_GetWindowFromID(parentId);
-   if (window && parentWindow && SDL_SetWindowParent(window, parentWindow))
+   if (window && parentWindow && SDL_SetWindowParent(window, parentWindow) && this == g_modal)
       SDL_SetWindowModal(window, true);
    m_windowId = id;
 }
@@ -75,7 +82,7 @@ void DarkDlgsModal::Draw()
    ImGui::SetNextWindowPos(mainViewport->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
    ImGui::SetNextWindowSize(m_size, ImGuiCond_Appearing);
    ImGui::SetNextWindowSizeConstraints(ImVec2(240, 150), ImVec2(FLT_MAX, FLT_MAX));
-   if (m_firstFrame)
+   if (m_focus)
       ImGui::SetNextWindowFocus();
    if (ImGui::Begin(m_title.c_str(), &m_open, flags) && m_open)
    {
@@ -85,11 +92,75 @@ void DarkDlgsModal::Draw()
       m_firstFrame = false;
    }
    ImGui::End();
+   m_focus = false;
+}
+
+bool DarkDlgsModal::HasKeyboardFocus() const
+{
+   return this == g_modal || ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+}
+
+void DarkDlgsModal::Open()
+{
+   m_open = true;
+   m_firstFrame = true;
+   m_focus = true;
+   m_windowId = 0;
+}
+
+void DarkDlgsModal::Suspend()
+{
+   if (m_windowId)
+      if (SDL_Window *window = SDL_GetWindowFromID(m_windowId))
+         SDL_SetWindowModal(window, false);
+   m_windowId = 0;
+}
+
+bool DarkDlgsModal::ShowModeless()
+{
+   if (PlatformBatchMode() || !MenuBarActive() || m_open)
+      return false;
+   Open();
+   g_modeless.push_back(this);
+   return true;
+}
+
+void DarkDlgsModal::DismissModeless()
+{
+   g_modeless.erase(std::remove(g_modeless.begin(), g_modeless.end(), this), g_modeless.end());
+   Close();
+}
+
+void UpdateDarkDlgs()
+{
+   const auto dialogs = g_modeless;
+   for (auto *dialog : dialogs)
+   {
+      if (std::find(g_modeless.begin(), g_modeless.end(), dialog) == g_modeless.end())
+         continue;
+      if (dialog->m_open)
+         dialog->AfterFrame();
+      if (std::find(g_modeless.begin(), g_modeless.end(), dialog) != g_modeless.end() && !dialog->m_open)
+      {
+         dialog->DismissModeless();
+         dialog->OnModelessClosed();
+      }
+   }
+}
+
+void CloseDarkDlgs()
+{
+   while (!g_modeless.empty())
+   {
+      auto *dialog = g_modeless.back();
+      dialog->DismissModeless();
+      dialog->OnModelessClosed();
+   }
 }
 
 bool DarkDlgsModal::Run()
 {
-   if (PlatformBatchMode() || !MenuBarActive() || g_modal)
+   if (PlatformBatchMode() || !MenuBarActive() || m_open)
       return false;
 
    AutoAppIPtr_(GameShell, shell);
@@ -97,9 +168,11 @@ bool DarkDlgsModal::Run()
    if (!shell || !renderer)
       return false;
 
-   m_open = true;
-   m_firstFrame = true;
-   m_windowId = 0;
+   auto *previous = g_modal;
+   if (previous)
+      previous->Suspend();
+
+   Open();
    g_modal = this;
    EditorUpdateCursor();
 
@@ -109,12 +182,16 @@ bool DarkDlgsModal::Run()
    {
       shell->PumpEvents(kPumpAll);
       renderer->PresentProgress();
-      AfterFrame();
+      if (m_open)
+         AfterFrame();
       if (m_open)
          SDL_Delay(8);
    }
 
-   g_modal = nullptr;
+   Suspend();
+   g_modal = previous;
+   if (previous)
+      previous->m_focus = true;
    EditorUpdateCursor();
    renderer->PresentProgress();
    return true;

@@ -85,6 +85,7 @@
 #include <bldstair.h>
 #include <hilight.h>
 #include <gedmedmo.h>
+#include <rendtest.h>
 #include <doorphys.h>
 #include <iobjsys.h>
 #include <physapi.h>
@@ -1831,6 +1832,9 @@ Command gedit_edit_only_keys[] =
 #endif
 
    { "info_window", FUNC_VOID, gedit_info_window },
+#ifndef SHIP
+   { "rendtest", FUNC_INT, do_rendtest_cmd, "Run a render test, or open its parameters with no arguments" },
+#endif
 
    { "lazy_update", TOGGLE_BOOL, &gedit_allow_lazy_updates, "do we update instantly, or only on new brush selection" },
    { "run_cmd_script", FUNC_STRING, gedit_run_script_hack,

@@ -411,12 +411,6 @@ static sFieldDesc gMotionEdit[] = {
 static sStructDesc Desc_Desc
   = StructDescBuild(sMotionEdit, kStructFlagNone, gMotionEdit);
 
-// the structure we edit
-static sMotionEdit popup_sMotionEdit;
-
-// temporary storage so we can cancel editing within SDESC
-static sMotionEdit temp_sMotionEdit;
-
 
 /* ----- /-/-/-/-/-/-/-/-/ <<< (((((( /\ )))))) >>> \-\-\-\-\-\-\-\-\ ----- *\
 
@@ -496,35 +490,17 @@ static void SetMotionStructuresFromSDESC(sMotionEdit *data)
 // This is from gedmedmo.c.
 extern void GEdMedMoMarkWaterAllBrushes(void);
 
-/* ----- /-/-/-/-/-/-/-/-/ <<< (((((( /\ )))))) >>> \-\-\-\-\-\-\-\-\ ----- *\
-
-   This is called from the wide world of SDESC.  No matter the event
-   we update the textures in the world.
-
-\* ----- \-\-\-\-\-\-\-\-\ <<< (((((( \/ )))))) >>> /-/-/-/-/-/-/-/-/ ----- */
+// Apply an accepted edit and release the data when its window closes.
 static void LGAPI SDESCCallback(sStructEditEvent *event, StructEditCBData data)
 {
    sMotionEdit *result = (sMotionEdit *) data;
-
-   switch (event->kind) {
-      case kStructEdOK:
-         {
-            SetMotionStructuresFromSDESC(result);
-            break;
-         }
-      case kStructEdCancel:
-         {
-            *result = temp_sMotionEdit;
-            SetMotionStructuresFromSDESC(result);
-            break;
-         }
-      case kStructEdApply:
-         {
-            SetMotionStructuresFromSDESC(result);
-            break;
-         }
+   if (event->kind == kStructEdOK || event->kind == kStructEdApply)
+   {
+      SetMotionStructuresFromSDESC(result);
+      GEdMedMoMarkWaterAllBrushes();
    }
-   GEdMedMoMarkWaterAllBrushes();
+   if (event->kind == kStructEdOK || event->kind == kStructEdCancel)
+      Free(result);
 }
 
 
@@ -536,24 +512,25 @@ static void LGAPI SDESCCallback(sStructEditEvent *event, StructEditCBData data)
 \* ----- \-\-\-\-\-\-\-\-\ <<< (((((( \/ )))))) >>> /-/-/-/-/-/-/-/-/ ----- */
 BOOL EdMedMoSDESC(int motion_index)
 {
-   IStructEditor *sed;
    sStructEditorDesc editdesc;
+   sMotionEdit *draft = Malloc(sizeof(*draft));
+   IStructEditor *sed;
+   if (!draft)
+      return FALSE;
 
    sprintf(editdesc.title, "flow group %d", motion_index);
    editdesc.flags = kStructEditNoApplyButton;
-
-   SetSDESCFromMotionStructures(motion_index, &popup_sMotionEdit);
-   SetSDESCFromMotionStructures(motion_index, &temp_sMotionEdit);
-
-   sed = CreateStructEditor(&editdesc, &Desc_Desc, &popup_sMotionEdit);
-   if (sed) 
+   SetSDESCFromMotionStructures(motion_index, draft);
+   sed = CreateStructEditor(&editdesc, &Desc_Desc, draft);
+   if (!sed)
    {
-      IStructEditor_SetCallback(sed, SDESCCallback, &popup_sMotionEdit);
-      IStructEditor_Go(sed,kStructEdModeless);
-      SafeRelease(sed);
-      return TRUE;
-   } else
+      Free(draft);
       return FALSE;
+   }
+   IStructEditor_SetCallback(sed, SDESCCallback, draft);
+   IStructEditor_Go(sed, kStructEdModeless);
+   SafeRelease(sed);
+   return TRUE;
 }
 
 

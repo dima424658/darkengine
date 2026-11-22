@@ -3,6 +3,7 @@
 1996,1997,1998,1999,2000 Unpublished Work.
 */
 
+#include <darkdlgs/darkdlgs.h>
 #include <algorithm>
 #include <string>
 #include <string_view>
@@ -243,4 +244,5 @@ void SetRadioCheckmark(int menu, int firstPos, int lastPos, int checkPos)
 void ExecutePendingMenuCommands(void)
 {
    g_MenuSet.ExecuteCommands();
+   UpdateDarkDlgs();
 }

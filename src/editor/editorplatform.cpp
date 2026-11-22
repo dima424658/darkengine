@@ -5,6 +5,7 @@
 
 #include <appagg.h>
 #include <cursors.h>
+#include <darkdlgs/darkdlgs.h>
 #include <gadget.h>
 #include <gshelapi.h>
 #include <vkrend.h>
@@ -51,6 +52,11 @@ extern "C" void EditorPlatformInitializeControls(void)
 
 extern "C" void EditorPlatformDestroyAuxiliaryWindows(void)
 {
+}
+
+extern "C" void EditorCloseDialogs(void)
+{
+   CloseDarkDlgs();
 }
 
 void EditorShowNativeCursor(BOOL show)

@@ -212,13 +212,13 @@ static void add_source(char* arg)
    if (editors->SourceDialog(kARDlgModal,&pair,&desc) == S_OK)
    {
       if (pair.obj == OBJ_NULL || pair.stim == OBJ_NULL 
-          || &desc.propagator == PGATOR_NULL)
+          || desc.propagator == PGATOR_NULL)
          return; 
       
       AutoAppIPtr_(StimSources,pSources);
       
 
-      if (SUCCEEDED(pSources->AddSource(pair.obj,pair.stim,&desc)))
+      if (pSources->AddSource(pair.obj,pair.stim,&desc) != SRCID_NULL)
          Status ("Added Source");
       else
          Status ("Source Add Failed");      
@@ -275,7 +275,7 @@ static void add_tron(char* arg)
       AutoAppIPtr_(StimSensors,pSensors);
       
 
-      if (SUCCEEDED(pSensors->AddReceptron(pair.obj,pair.stim,&tron)))
+      if (pSensors->AddReceptron(pair.obj,pair.stim,&tron) != RECEPTRON_NULL)
          Status ("Added Receptron");
       else
          Status ("Receptron Add Failed");      

@@ -219,7 +219,11 @@ void parse_string(const sFieldDesc* desc, void* val, const char* in)
 
 void unparse_string(const sFieldDesc* desc, const void* val, char* out)
 {
-	strncpy(out, static_cast<const char*>(val), desc->size);
+	if (desc->size)
+	{
+		strncpy(out, static_cast<const char*>(val), desc->size);
+		out[desc->size - 1] = '\0';
+	}
 }
 
 void parse_stringptr(const sFieldDesc* desc, void* val, const char* in)
@@ -295,7 +299,9 @@ void parse_fix(const sFieldDesc* desc, void* val, const char* in)
 
 void unparse_fix(const sFieldDesc* desc, const void* val, char* out)
 {
-	sprintf(out, "%0.2f", *reinterpret_cast<const double*>(val) / 65536.0);
+	sint32 fixed;
+	memcpy(&fixed, val, sizeof(fixed));
+	sprintf(out, "%0.2f", fixed / 65536.0);
 }
 
 void parse_fixvec(const sFieldDesc* desc, void* rawVal, const char* in)
@@ -311,7 +317,8 @@ void parse_fixvec(const sFieldDesc* desc, void* rawVal, const char* in)
 
 void unparse_fixvec(const sFieldDesc* desc, const void* rawVal, char* out)
 {
-	auto* val = reinterpret_cast<const double*>(rawVal);
+	sint32 val[3];
+	memcpy(val, rawVal, sizeof(val));
 	sprintf(out, "%0.2f %0.2f %0.2f", val[0] / 65536.0, val[1] / 65536.0, val[2] / 65536.0);
 }
 
@@ -356,7 +363,9 @@ void parse_ang(const sFieldDesc* desc, void* val, const char* in)
 
 void unparse_ang(const sFieldDesc* desc, const void* val, char* out)
 {
-	sprintf(out, "%0.2f", *reinterpret_cast<const double*>(val) * 180.0 / 32768.0);
+	uint16 angle;
+	memcpy(&angle, val, sizeof(angle));
+	sprintf(out, "%0.2f", angle * 360.0 / 65536.0);
 }
 
 void parse_ang_vec(const sFieldDesc* desc, void* rawVal, const char* in)

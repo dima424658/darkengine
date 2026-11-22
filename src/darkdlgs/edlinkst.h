@@ -15,14 +15,12 @@
 // Link Editor Flags (part of the editor descriptor)
 //
 
-enum _eLinkEditorFlags
+enum eLegacyLinkEditorFlags
 {
-   kLinkEditDoneButton    = (1 << 0),  // Add a "Done" button
-   kLinkEditCancelButton  = (1 << 1),  // Add a "Cancel" button
-   kLinkEditApplyButton   = (1 << 2),  // Add an "Apply" button
+   kLegacyLinkEditDoneButton   = (1 << 0),
+   kLegacyLinkEditCancelButton = (1 << 1),
+   kLegacyLinkEditApplyButton  = (1 << 2),
 };
-
-#define kLinkEditAllButtons (kLinkEditDoneButton | kLinkEditCancelButton | kLinkEditApplyButton)
 
 //
 // Link Editor Descriptor

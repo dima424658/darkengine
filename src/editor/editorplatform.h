@@ -10,6 +10,7 @@ EXTERN void EditorRestoreWindowRect(void);
 EXTERN BOOL EditorGetPendingWindowSize(int *width, int *height);
 EXTERN void EditorPlatformInitializeControls(void);
 EXTERN void EditorPlatformDestroyAuxiliaryWindows(void);
+EXTERN void EditorCloseDialogs(void);
 EXTERN void EditorShowNativeCursor(BOOL show);
 EXTERN void EditorUpdateCursor(void);
 EXTERN void EditorResetCursor(void);
