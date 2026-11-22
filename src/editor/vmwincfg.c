@@ -45,6 +45,7 @@
 #include <viewmgr.h>
 #include <viewmgr_.h>
 #include <editor.h>
+#include <editorplatform.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
 
@@ -286,6 +287,7 @@ static BOOL _doWinDrag(int axis_mask)
    min_center=MakePoint(vmGUITop.x+DRAG_BORDER,vmGUITop.y+DRAG_BORDER);
    max_center=MakePoint(vmGUITop.x+vmGUIDims.x-DRAG_BORDER-1,
                         vmGUITop.y+vmGUIDims.y-DRAG_BORDER-1);
+   EditorShowNativeCursor(FALSE);
    uiHideMouse(NULL);
    do {
       modal_ui_update();
@@ -331,6 +333,7 @@ esc:
 mouse_up:
    modal_ui_end();
    uiShowMouse(NULL);
+   EditorUpdateCursor();
    return (vmGUICenter.x!=init_center.x)||(vmGUICenter.y!=init_center.y);
 }
 

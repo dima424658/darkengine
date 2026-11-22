@@ -1,10 +1,17 @@
 #include <lg.h>
 #include <editorplatform.h>
 
+#include <appagg.h>
+#include <cursors.h>
+#include <gadget.h>
+#include <gshelapi.h>
 #include <runtime.h>
+#include <sdl_window.h>
+#include <vulkan_imgui.hpp>
 
 namespace {
 bool g_tracking;
+bool g_cursorHidden;
 }
 
 extern "C" void EditorStartWindowResizeTracking(void)
@@ -35,4 +42,42 @@ extern "C" void EditorPlatformInitializeControls(void)
 
 extern "C" void EditorPlatformDestroyAuxiliaryWindows(void)
 {
+}
+
+void EditorShowNativeCursor(BOOL show)
+{
+   AutoAppIPtr_(GameShell,pShell);
+   int flags=0;
+   pShell->GetFlags(&flags);
+   if (show)
+      flags|=kShowNativeCursor;
+   else
+      flags&=~kShowNativeCursor;
+   pShell->SetFlags(flags);
+}
+
+void EditorUpdateCursor(void)
+{
+   const bool menu=VulkanImGuiMenuOwnsPointer();
+   const bool hide=menu || SDL_GetMouseFocus()!=SDLDisplayGetWindow();
+   if (hide!=g_cursorHidden)
+   {
+      if (hide)
+         uiHideMouse(NULL);
+      else
+         uiShowMouse(NULL);
+      g_cursorHidden=hide;
+   }
+   const LGadRoot *root=LGadCurrentRoot();
+   EditorShowNativeCursor(menu || !root || !root->curs);
+}
+
+void EditorResetCursor(void)
+{
+   if (g_cursorHidden)
+   {
+      uiShowMouse(NULL);
+      g_cursorHidden=false;
+   }
+   EditorShowNativeCursor(FALSE);
 }

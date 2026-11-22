@@ -170,3 +170,12 @@ void VulkanImGuiSetMenuBar(void (*draw)())
    else
       SetMenuBarHeight(0);
 }
+
+bool VulkanImGuiMenuOwnsPointer()
+{
+   if (!g_pDrawMenuBar || !g_pImGui || SDL_GetMouseFocus() != SDLDisplayGetWindow())
+      return false;
+   float y;
+   SDL_GetMouseState(nullptr, &y);
+   return y < g_MenuBarHeight || ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup);
+}

@@ -151,6 +151,8 @@ public:
 
    void SetNativeCursorVisible(bool visible)
    {
+      if (m_showNativeCursor == visible)
+         return;
       m_showNativeCursor = visible;
       UpdateRelativeMouse();
    }

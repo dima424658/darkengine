@@ -155,21 +155,8 @@ static ScrnManContext _scrndata =
 // context for ui client
 static uiLoopContext _uidata = 
 {
-   NULL, // DromEd uses the native Windows arrow in its desktop window.
+   "editor\\cursor",
 };
-
-static void show_native_editor_cursor(BOOL show)
-{
-   IGameShell *shell = AppGetObj(IGameShell);
-   int flags = 0;
-   IGameShell_GetFlags(shell, &flags);
-   if (show)
-      flags |= kShowNativeCursor;
-   else
-      flags &= ~kShowNativeCursor;
-   IGameShell_SetFlags(shell, flags);
-   SafeRelease(shell);
-}
 
 // context for resource sys client
 static ResLoopContext _resdata =
@@ -405,8 +392,8 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          // restores aspect-fit scaling when DromEd switches into play preview.
          RenderBackendSetScaleToWindow(FALSE);
          RenderBackendSetPreserveCanvas(TRUE);
-         show_native_editor_cursor(TRUE);
-         pal_update();  // set the palette 
+         pal_update();  // set the palette
+         EditorUpdateCursor();
          EditorCreateGUI();
          // run the scripts
          state->first_frame = TRUE;
@@ -460,6 +447,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          // resize/flicker loop.
          EditorStopWindowResizeTracking();
          SetMainMenu(NULL);
+         EditorResetCursor();
          EditorDestroyGUI();
          StatusDisable();
          
@@ -467,7 +455,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          if (IsEqualGUID(info.mode->to.pID,&LOOPID_GameMode) ||
 			    GameToolIsToGameModeGUID(info.mode->to.pID))
          {
-            show_native_editor_cursor(FALSE);
             ISimManager* pSimMan = AppGetObj(ISimManager); 
             sDispatchMsg msg = { kSimInit}; 
 
@@ -516,6 +503,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
                }
             }
          }
+         EditorUpdateCursor();
          time(&ltime);
          memcpy(&time_of_day, localtime(&ltime), sizeof(struct tm));
          StatusField(SF_TIME,asctime(&time_of_day));
