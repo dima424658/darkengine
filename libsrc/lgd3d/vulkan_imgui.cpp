@@ -93,6 +93,23 @@ void cVulkanImGui::PresentPlatformWindows()
    if (SetCurrentContext() && (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
    {
       ImGui::UpdatePlatformWindows();
+#if defined(__APPLE__)
+      // The SDL ImGui backend leaves viewports unparented on macOS. Popups
+      // from detached dialogs need a native parent to appear above them.
+      const auto *mainViewport = ImGui::GetMainViewport();
+      for (const auto *viewport : ImGui::GetPlatformIO().Viewports)
+      {
+         const auto *parent = viewport->ParentViewport;
+         if (!parent || parent == mainViewport)
+            continue;
+         const auto id = static_cast<SDL_WindowID>(reinterpret_cast<uintptr_t>(viewport->PlatformHandle));
+         const auto parentId = static_cast<SDL_WindowID>(reinterpret_cast<uintptr_t>(parent->PlatformHandle));
+         SDL_Window *window = SDL_GetWindowFromID(id);
+         SDL_Window *parentWindow = SDL_GetWindowFromID(parentId);
+         if (window && parentWindow && SDL_GetWindowParent(window) != parentWindow)
+            SDL_SetWindowParent(window, parentWindow);
+      }
+#endif
       ImGui::RenderPlatformWindowsDefault();
    }
 }
