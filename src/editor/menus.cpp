@@ -15,7 +15,8 @@
 #include <cmdterm.h>
 #include <config.h>
 #include <darklimit.h>
-#include <display_window.h>
+#include <appagg.h>
+#include <dispwnd.h>
 #include <menus.h>
 #include <platform_services.h>
 #include <vulkan_imgui.hpp>
@@ -222,7 +223,9 @@ void DrawMenuBar()
 
 void SetMainMenu(const char *pszName)
 {
-   SDLDisplaySetTitle(pszName ? "DromEd - editor" : "DromEd");
+   AutoAppIPtr_(DisplayWindow,window);
+   if (window)
+      window->SetTitle(pszName ? "DromEd - editor" : "DromEd");
    g_MenuSet.Load(PlatformBatchMode() ? NULL : pszName);
    VulkanImGuiSetMenuBar(g_MenuSet.Empty() ? NULL : DrawMenuBar);
 }

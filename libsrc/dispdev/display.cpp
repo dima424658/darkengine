@@ -12,7 +12,7 @@
 #include <render_backend.h>
 
 #include "dispbase.h"
-#include "display_window.h"
+#include <dispwnd.h>
 #include <runtime.h>
 #include <event_bridge.h>
 
@@ -132,7 +132,8 @@ public:
          ? application->GetCaption() : "Dark Engine";
       const bool opened = DarkRenderOpen(modeInfo.w, modeInfo.h, title);
       SafeRelease(application);
-      if (!opened || !SDLDisplaySetFullscreen(m_kind == kDispFullScreen))
+      AutoAppIPtr_(DisplayWindow,window);
+      if (!opened || !window || !window->SetFullscreen(m_kind == kDispFullScreen))
       {
          std::fprintf(stderr,
             "SDL SetMode could not open the render surface (opened=%d).\n",

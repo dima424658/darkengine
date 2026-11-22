@@ -7,7 +7,7 @@
 #include <dispapi.h>
 #include <gshelapi.h>
 
-#include <display_window.h>
+#include <dispwnd.h>
 #include <runtime.h>
 #include "sdl_events.h"
 
@@ -119,7 +119,9 @@ public:
    STDMETHOD_(BOOL, SetFlags)(int flags) override
    {
       m_flags = flags;
-      SDLDisplaySetNativeCursorVisible((flags & kShowNativeCursor) != 0);
+      AutoAppIPtr_(DisplayWindow,window);
+      if (window)
+         window->SetNativeCursorVisible((flags & kShowNativeCursor) != 0);
       return TRUE;
    }
 

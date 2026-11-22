@@ -55,6 +55,7 @@ void AppOnExit()
         ulong ulRefsRemaining = pAppAggregate->ReleaseAll();
         //AssertMsg1(!g_fReturnedFromMain || ulRefsRemaining == 1, "Reference of application object is incorrect on exit (was %d, expected 1)", ulRefsRemaining);
         pAppAggregate = NULL;
+        _AppSetAggregate(NULL);
     }
 }
 

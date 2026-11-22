@@ -30,7 +30,7 @@ IUnknown * LGAPI _AppGetAggregated(REFIID iid)
 
 void LGAPI _AppSetAggregate(IUnknown * pUnknown)
 {
-    AssertMsg(!pAppAggregate, "Application aggregate already set!");
+    AssertMsg(!pUnknown || !pAppAggregate, "Application aggregate already set!");
     pAppAggregate = pUnknown;
 }
 

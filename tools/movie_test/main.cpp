@@ -1,9 +1,11 @@
 #include <lg.h>
+#include <appagg.h>
 #include <config.h>
 #include <objcoll.h>
 #include <movieapi.h>
 #include <appsfxi.h>
 #include <runtime.h>
+#include <dispwnd.h>
 
 #include <cstdio>
 #include <SDL3/SDL_main.h>
@@ -28,9 +30,17 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    IAggregate *aggregate = CreateGenericAggregate("Movie test", kISetKeyLGGUIDs);
+    if (!aggregate)
+        return 1;
+    _AppSetAggregate(aggregate);
+
     config_init();
-    if (!DarkRenderOpen(640, 480, "Dark Engine movie test"))
+    if (FAILED(DisplayWindowCreate(aggregate)) ||
+        !DarkRenderOpen(640, 480, "Dark Engine movie test"))
     {
+        _AppSetAggregate(nullptr);
+        aggregate->ReleaseAll();
         config_shutdown();
         return 1;
     }
@@ -47,11 +57,12 @@ int main(int argc, char *argv[])
         if (g_testMixer)
             g_testMixer->Release();
         DarkRenderClose();
+        _AppSetAggregate(nullptr);
+        aggregate->ReleaseAll();
         config_shutdown();
         return 1;
     }
 
-    IAggregate *aggregate = CreateGenericAggregate("Movie test", kISetKeyLGGUIDs);
     void *created = nullptr;
     const HRESULT result = _MoviePlayerCreate(IID_IMoviePlayer1, &created,
         aggregate, CLSID_ActiveMoviePlayer, 0);
@@ -67,10 +78,11 @@ int main(int argc, char *argv[])
         player->Close();
         played = played && player->GetState() == kMP1NothingOpen && !player->CanPlay();
     }
+    DarkRenderClose();
     aggregate->ReleaseAll();
+    _AppSetAggregate(nullptr);
     g_testMixer->Release();
     g_testMixer = nullptr;
-    DarkRenderClose();
     config_shutdown();
     std::fprintf(stderr, "%s: movie playback, replay and lifecycle\n",
         played ? "PASS" : "FAIL");

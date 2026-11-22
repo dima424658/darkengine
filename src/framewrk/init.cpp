@@ -11,6 +11,7 @@
 #include <recapi.h>
 #include <gshelapi.h>
 #include <dispapi.h>
+#include <dispwnd.h>
 #include <appapi.h>
 #include <appagg.h>
 #include <loopapi.h>
@@ -485,6 +486,10 @@ tResult LGAPI CoreEngineCreateObjects(int argc, const char *argv[])
 
    // Use the convenience macro to create all the basic game components
    CoreGameLibrariesCreate(APPNAME, argc, argv, dispkind, opt);
+   {
+      AutoAppIPtr_(Unknown,pOuter);
+      DisplayWindowCreate(pOuter);
+   }
    ScriptManCreate(GetSimTime, ScriptPrintString);
    Gr2dCreate();
    ResSysCreate();

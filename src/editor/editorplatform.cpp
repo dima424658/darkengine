@@ -1,3 +1,5 @@
+#include <SDL3/SDL.h>
+
 #include <lg.h>
 #include <editorplatform.h>
 
@@ -6,7 +8,7 @@
 #include <gadget.h>
 #include <gshelapi.h>
 #include <runtime.h>
-#include <sdl_window.h>
+#include <dispwnd.h>
 #include <vulkan_imgui.hpp>
 
 namespace {
@@ -59,7 +61,8 @@ void EditorShowNativeCursor(BOOL show)
 void EditorUpdateCursor(void)
 {
    const bool menu=VulkanImGuiMenuOwnsPointer();
-   const bool hide=menu || SDL_GetMouseFocus()!=SDLDisplayGetWindow();
+   AutoAppIPtr_(DisplayWindow,window);
+   const bool hide=menu || !window || SDL_GetMouseFocus()!=window->GetSDLWindow();
    if (hide!=g_cursorHidden)
    {
       if (hide)

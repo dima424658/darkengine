@@ -1,4 +1,3 @@
-#include "sdl_vulkan.hpp"
 #include "sdl_window.h"
 
 #include <SDL3/SDL_vulkan.h>
@@ -14,11 +13,10 @@ void SetError(char *error, unsigned errorCapacity, const char *message)
 }
 }
 
-bool SDLVulkanGetDrawableSize(uint32_t &drawableWidth,
+STDMETHODIMP_(BOOL) cSDLDisplayWindow::GetDrawableSize(uint32_t &drawableWidth,
    uint32_t &drawableHeight, char *error, unsigned errorCapacity)
 {
-   SDL_Window *window = SDLDisplayGetWindow();
-   if (!window)
+   if (!m_window)
    {
       SetError(error, errorCapacity, "SDL window is null");
       return false;
@@ -26,7 +24,7 @@ bool SDLVulkanGetDrawableSize(uint32_t &drawableWidth,
 
    int width = 0;
    int height = 0;
-   if (!SDL_GetWindowSizeInPixels(window, &width, &height) ||
+   if (!SDL_GetWindowSizeInPixels(m_window.get(), &width, &height) ||
        width <= 0 || height <= 0)
    {
       SetError(error, errorCapacity, "SDL Vulkan window has no drawable area");
@@ -39,12 +37,11 @@ bool SDLVulkanGetDrawableSize(uint32_t &drawableWidth,
    return true;
 }
 
-bool SDLVulkanGetInstanceExtensions(std::vector<const char *> &extensions,
-   uint32_t &drawableWidth, uint32_t &drawableHeight, char *error,
-   unsigned errorCapacity)
+STDMETHODIMP_(BOOL) cSDLDisplayWindow::GetInstanceExtensions(
+   std::vector<const char *> &extensions, uint32_t &drawableWidth,
+   uint32_t &drawableHeight, char *error, unsigned errorCapacity)
 {
-   SDL_Window *window = SDLDisplayGetWindow();
-   if (!window)
+   if (!m_window)
    {
       SetError(error, errorCapacity, "SDL window is null");
       return false;
@@ -60,25 +57,20 @@ bool SDLVulkanGetInstanceExtensions(std::vector<const char *> &extensions,
    }
    extensions.assign(requiredExtensions,
       requiredExtensions + extensionCount);
-   if (!SDLVulkanGetDrawableSize(drawableWidth, drawableHeight, error,
-         errorCapacity))
-      return false;
-   SetError(error, errorCapacity, "");
-   return true;
+   return GetDrawableSize(drawableWidth, drawableHeight, error, errorCapacity);
 }
 
-bool SDLVulkanCreateSurface(vk::Instance instance, vk::SurfaceKHR &surface,
-   char *error, unsigned errorCapacity)
+STDMETHODIMP_(BOOL) cSDLDisplayWindow::CreateSurface(vk::Instance instance,
+   vk::SurfaceKHR &surface, char *error, unsigned errorCapacity)
 {
-   SDL_Window *window = SDLDisplayGetWindow();
-   if (!window)
+   if (!m_window)
    {
       SetError(error, errorCapacity, "SDL window is null");
       return false;
    }
 
    VkSurfaceKHR rawSurface = VK_NULL_HANDLE;
-   if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(instance),
+   if (!SDL_Vulkan_CreateSurface(m_window.get(), static_cast<VkInstance>(instance),
          nullptr, &rawSurface))
    {
       SetError(error, errorCapacity, SDL_GetError());

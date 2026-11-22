@@ -2,7 +2,8 @@
 #include <nfd.h>
 #include <nfd_sdl3.h>
 
-#include <sdl_window.h>
+#include <appagg.h>
+#include <dispwnd.h>
 #include <dbfile.h>
 #include <filemenu.h>
 #include <lg.h>
@@ -46,10 +47,12 @@ extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *filters,
    if (!buffer || bufferLength <= 0)
       return NULL;
 
+   AutoAppIPtr_(DisplayWindow,window);
+   SDL_Window *parent = window ? window->GetSDLWindow() : nullptr;
    if (NFD_Init() != NFD_OKAY)
    {
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DromEd", NFD_GetError(),
-                               SDLDisplayGetWindow());
+                               parent);
       return NULL;
    }
    struct DialogSession
@@ -93,7 +96,8 @@ extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *filters,
       args.filterList = items.data();
       args.filterCount = items.size();
       args.defaultPath = directoryError ? nullptr : directory.c_str();
-      NFD_GetNativeWindowFromSDLWindow(SDLDisplayGetWindow(), &args.parentWindow);
+      if (parent)
+         NFD_GetNativeWindowFromSDLWindow(parent, &args.parentWindow);
       outcome = NFD_SaveDialogU8_With(&selected, &args);
    }
    else
@@ -102,14 +106,15 @@ extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *filters,
       args.filterList = items.data();
       args.filterCount = items.size();
       args.defaultPath = directoryError ? nullptr : directory.c_str();
-      NFD_GetNativeWindowFromSDLWindow(SDLDisplayGetWindow(), &args.parentWindow);
+      if (parent)
+         NFD_GetNativeWindowFromSDLWindow(parent, &args.parentWindow);
       outcome = NFD_OpenDialogU8_With(&selected, &args);
    }
    std::unique_ptr<nfdu8char_t, decltype(&NFD_FreePathU8)> selection(selected, &NFD_FreePathU8);
    std::string path = outcome == NFD_OKAY && selected ? selected : "";
    if (outcome == NFD_ERROR)
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DromEd", NFD_GetError(),
-                               SDLDisplayGetWindow());
+                               parent);
    if (path.empty())
       return NULL;
 

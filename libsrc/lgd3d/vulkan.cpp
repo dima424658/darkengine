@@ -18,23 +18,24 @@
 
 #include "runtime.h"
 #include "event_bridge.h"
-#include <display_window.h>
+#include <appagg.h>
+#include <dispwnd.h>
 #include "vulkan_context.hpp"
 #include "vulkan_overlay.hpp"
 #include "vulkan_render_backend.hpp"
-#include <sdl_vulkan.hpp>
+#include <vkwnd.h>
 #include "vulkan_scene_renderer.hpp"
 #include "canvas_snapshot.hpp"
 #include <config.h>
 
 namespace
 {
-vk::SurfaceKHR CreateSDLVulkanSurface(vk::Instance instance,
+vk::SurfaceKHR CreateVulkanSurface(IVulkanWindow &window, vk::Instance instance,
    std::string &surfaceError)
 {
    char error[512]{};
    vk::SurfaceKHR surface{};
-   if (!SDLVulkanCreateSurface(instance, surface, error, sizeof(error)))
+   if (!window.CreateSurface(instance, surface, error, sizeof(error)))
       surfaceError = error;
    return surface;
 }
@@ -80,7 +81,8 @@ private:
    bool PrepareCanvasTexture();
    void DrawCanvas(vk::CommandBuffer commandBuffer, bool transparent);
 
-   bool m_windowOpen{};
+   IDisplayWindow *m_window{};
+   IVulkanWindow *m_vulkanWindow{};
    cVulkanContext m_context;
    const sVulkanOverlay *m_overlay{};
    cVulkanSceneRenderer m_renderer;
@@ -122,11 +124,11 @@ cVulkanRuntime &VulkanRuntime()
 
 void cVulkanRuntime::UpdateWindowDimensions()
 {
-   if (!m_windowOpen) return;
+   if (!m_window) return;
    const int oldWidth = m_clientWidth, oldHeight = m_clientHeight;
    const int oldDrawableWidth = m_drawableWidth;
    const int oldDrawableHeight = m_drawableHeight;
-   SDLDisplayGetWindowMetrics(&m_clientWidth, &m_clientHeight,
+   m_window->GetMetrics(&m_clientWidth, &m_clientHeight,
       &m_drawableWidth, &m_drawableHeight);
    if (m_clientWidth > 0 && m_clientHeight > 0 &&
        (m_clientWidth != oldWidth || m_clientHeight != oldHeight))
@@ -196,11 +198,11 @@ bool cVulkanRuntime::ApplyPendingResize()
       uint32_t drawableWidth = 0;
       uint32_t drawableHeight = 0;
       std::string surfaceError;
-      if (!SDLVulkanGetDrawableSize(drawableWidth, drawableHeight, error,
-             sizeof(error)) ||
+      if (!m_vulkanWindow->GetDrawableSize(drawableWidth, drawableHeight,
+             error, sizeof(error)) ||
           !m_context.RecreateSurface(
-             [&surfaceError](vk::Instance instance) {
-                return CreateSDLVulkanSurface(instance, surfaceError);
+             [this, &surfaceError](vk::Instance instance) {
+                return CreateVulkanSurface(*m_vulkanWindow, instance, surfaceError);
              }, drawableWidth, drawableHeight))
       {
          if (!surfaceError.empty())
@@ -334,18 +336,30 @@ void cVulkanRuntime::DrawCanvas(vk::CommandBuffer commandBuffer, bool transparen
 
 bool cVulkanRuntime::Open(int width, int height, const char *title)
 {
-   if (m_windowOpen)
+   if (m_window)
    {
       m_width = width; m_height = height;
-      SDLDisplaySetTitle(title);
+      m_window->SetTitle(title);
       UpdateWindowDimensions();
       return true;
    }
-   if (!SDLDisplayOpenWindow(width, height, title))
+   m_window = AppGetObj(IDisplayWindow);
+   if (!m_window)
+      return false;
+   void *vulkanWindow = nullptr;
+   if (FAILED(m_window->QueryInterface(IID_IVulkanWindow, &vulkanWindow)))
    {
+      std::fprintf(stderr, "Display window does not support Vulkan\n");
+      SafeRelease(m_window);
       return false;
    }
-   m_windowOpen = true;
+   m_vulkanWindow = static_cast<IVulkanWindow *>(vulkanWindow);
+   if (!m_window->Open(width, height, title))
+   {
+      SafeRelease(m_vulkanWindow);
+      SafeRelease(m_window);
+      return false;
+   }
    m_appInBackground.store(false, std::memory_order_relaxed);
    m_windowMinimized.store(false, std::memory_order_relaxed);
    m_lifecycleResizePending.store(false, std::memory_order_relaxed);
@@ -355,7 +369,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    std::vector<const char *> surfaceExtensions;
    uint32_t drawableWidth = 0;
    uint32_t drawableHeight = 0;
-   if (!SDLVulkanGetInstanceExtensions(surfaceExtensions, drawableWidth,
+   if (!m_vulkanWindow->GetInstanceExtensions(surfaceExtensions, drawableWidth,
           drawableHeight, error, sizeof(error)))
    {
       std::fprintf(stderr, "Vulkan initialization failed: %s\n", error);
@@ -367,8 +381,8 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
    config_get_int("vsync", &vsync);
    m_context.SetVSync(vsync != 0);
    if (!m_context.Initialize(surfaceExtensions,
-         [&surfaceError](vk::Instance instance) {
-            return CreateSDLVulkanSurface(instance, surfaceError);
+         [this, &surfaceError](vk::Instance instance) {
+            return CreateVulkanSurface(*m_vulkanWindow, instance, surfaceError);
          }, drawableWidth, drawableHeight, m_physicalDeviceIndex, error,
          sizeof(error)))
    {
@@ -434,7 +448,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       return false;
    }
    RenderBackendVulkanSetRenderer(&m_renderer);
-   m_windowMinimized = SDLDisplayWindowIsMinimized();
+   m_windowMinimized = m_window->IsMinimized() != FALSE;
    std::fprintf(stderr, "SDL3 window opened (%dx%d points, %dx%d pixels)\n",
       m_clientWidth, m_clientHeight,
       m_drawableWidth, m_drawableHeight);
@@ -472,8 +486,10 @@ void cVulkanRuntime::Close()
    }
    m_renderer.Shutdown();
    m_context.Shutdown();
-   SDLDisplayCloseWindow();
-   m_windowOpen = false;
+   if (m_window)
+      m_window->Close();
+   SafeRelease(m_vulkanWindow);
+   SafeRelease(m_window);
    m_width = m_height = m_clientWidth = m_clientHeight = 0;
    m_drawableWidth = m_drawableHeight = 0;
    m_canvasWidth = m_canvasHeight = 0;
@@ -499,7 +515,7 @@ void cVulkanRuntime::Close()
 
 bool cVulkanRuntime::TakeResize(int *width, int *height)
 {
-   if (!m_windowOpen || !m_windowSizeChanged || !width || !height)
+   if (!m_window || !m_windowSizeChanged || !width || !height)
       return false;
    *width = m_clientWidth;
    *height = m_clientHeight;
@@ -509,7 +525,7 @@ bool cVulkanRuntime::TakeResize(int *width, int *height)
 
 bool cVulkanRuntime::BeginEventPump()
 {
-   if (!m_windowOpen) return false;
+   if (!m_window) return false;
    ProcessPendingLifecycleResize();
    return true;
 }
@@ -554,9 +570,9 @@ void cVulkanRuntime::SetPhysicalDeviceIndex(int index)
 
 bool cVulkanRuntime::PreparePresentation()
 {
-   if (SDLDisplayStartupWindowPending())
+   if (m_window->StartupWindowPending())
    {
-      if (!SDLDisplayShowForPresentation())
+      if (!m_window->ShowForPresentation())
          return false;
       UpdateWindowDimensions();
    }
@@ -585,7 +601,7 @@ void cVulkanRuntime::BeginApplicationFrame()
       m_directCanvas = false;
    }
    ProcessPendingLifecycleResize();
-   if (!m_windowOpen || m_frameActive ||
+   if (!m_window || m_frameActive ||
        m_windowMinimized.load(std::memory_order_acquire) || !PreparePresentation())
       return;
    vk::CommandBuffer commandBuffer{};
@@ -624,7 +640,7 @@ void cVulkanRuntime::EndApplicationFrame()
    RenderBackendDeactivateScene();
    RenderBackendVulkanDetach();
    if (m_context.EndFrame() && (sceneActive || (canvasReady && m_canvasWidth > 0)))
-      SDLDisplayRevealAfterPresent();
+      m_window->RevealAfterPresent();
    m_activeCommandBuffer = nullptr;
    m_frameActive = false;
    HandleSwapchainRecreation();
@@ -632,7 +648,7 @@ void cVulkanRuntime::EndApplicationFrame()
 
 void cVulkanRuntime::PresentProgress()
 {
-   if (!m_windowOpen)
+   if (!m_window)
       return;
 
    const bool resumeFrame = m_frameActive;
@@ -697,7 +713,7 @@ bool cVulkanRuntime::ClearOverlay(void *pixels, int width, int height,
 bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    int rowBytes)
 {
-   if (!m_windowOpen || !rgba || width <= 0 || height <= 0 || rowBytes <= 0 ||
+   if (!m_window || !rgba || width <= 0 || height <= 0 || rowBytes <= 0 ||
        width > std::numeric_limits<int>::max() / 4)
       return false;
    const size_t pixelStride = static_cast<size_t>(width) * 4;
@@ -798,7 +814,7 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
          // Keep Vulkan and allocation failures inside this C ABI boundary.
       }
       if (m_context.EndFrame() && drew)
-         SDLDisplayRevealAfterPresent();
+         m_window->RevealAfterPresent();
       m_renderer.BindTexture(0, nullptr);
       HandleSwapchainRecreation();
    }
@@ -837,7 +853,11 @@ bool DarkRenderProcessOverlayEvent(const SDL_Event &event)
 void DarkRenderPresentProgress(void)
 { VulkanRuntime().PresentProgress(); }
 extern "C" void RenderBackendSetWindowedClientSizeHint(int width, int height)
-{ SDLDisplaySetWindowedClientSizeHint(width, height); }
+{
+   AutoAppIPtr_(DisplayWindow,window);
+   if (window)
+      window->SetWindowedClientSizeHint(width, height);
+}
 void DarkRenderPresent(const void *pixels, int width, int height, int rowBytes,
    int bitDepth, const uint8_t *palette)
 { VulkanRuntime().Present(pixels, width, height, rowBytes, bitDepth, palette); }

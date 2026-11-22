@@ -6,7 +6,8 @@
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
 
-#include <display_window.h>
+#include <appagg.h>
+#include <dispwnd.h>
 
 #include "vulkan_context.hpp"
 #include "vulkan_imgui.hpp"
@@ -28,6 +29,10 @@ void SetMenuBarHeight(int height)
 
 bool InitMenuOverlay(const cVulkanContext &context)
 {
+   AutoAppIPtr_(DisplayWindow,window);
+   if (!window || !window->GetSDLWindow())
+      return false;
+
    IMGUI_CHECKVERSION();
    g_pImGui = ImGui::CreateContext();
    ImGuiIO &io = ImGui::GetIO();
@@ -36,7 +41,7 @@ bool InitMenuOverlay(const cVulkanContext &context)
       ImGuiConfigFlags_NoMouseCursorChange;
    io.ConfigNavCaptureKeyboard = false;
 
-   if (!ImGui_ImplSDL3_InitForVulkan(SDLDisplayGetWindow()))
+   if (!ImGui_ImplSDL3_InitForVulkan(window->GetSDLWindow()))
    {
       ImGui::DestroyContext(g_pImGui);
       g_pImGui = nullptr;
@@ -111,7 +116,10 @@ void ResetMenuOverlay()
 
 bool ProcessMenuEvent(const SDL_Event &event)
 {
-   if (!g_pDrawMenuBar || SDLDisplayRelativeMouseActive())
+   if (!g_pDrawMenuBar)
+      return false;
+   AutoAppIPtr_(DisplayWindow,window);
+   if (!window || window->IsRelativeMouseActive())
       return false;
 
    bool popupOpen = false;
@@ -173,7 +181,10 @@ void VulkanImGuiSetMenuBar(void (*draw)())
 
 bool VulkanImGuiMenuOwnsPointer()
 {
-   if (!g_pDrawMenuBar || !g_pImGui || SDL_GetMouseFocus() != SDLDisplayGetWindow())
+   if (!g_pDrawMenuBar || !g_pImGui)
+      return false;
+   AutoAppIPtr_(DisplayWindow,window);
+   if (!window || SDL_GetMouseFocus() != window->GetSDLWindow())
       return false;
    float y;
    SDL_GetMouseState(nullptr, &y);
