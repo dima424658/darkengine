@@ -22,7 +22,7 @@
 
 // The isolated codec test supplies only the COM identity and fatal diagnostic.
 const GUID IID_IUnknown = {};
-extern "C" void _CriticalMsg(const char *message, const char *file, unsigned line)
+extern "C" void LGAPI _CriticalMsg(const char *message, const char *file, unsigned line)
 {
    std::fprintf(stderr, "%s:%u: %s\n", file, line, message ? message : "critical error");
    std::abort();
@@ -108,7 +108,10 @@ static void TestMemoryFile()
    Check(file.Tell() == 0, "seek before start wrapped");
    file.Seek(kDataOpSeekFromHere, UINT32_MAX);
    Check(file.Tell() == input.size(), "seek past EOF did not clamp");
-   Check(FAILED(file.Seek(static_cast<eDataOpSeek>(99), 0)), "invalid seek accepted");
+   file.Seek(kDataOpSeekFromHere, UINT32_MAX);
+   Check(file.Tell() == input.size(), "relative seek from EOF wrapped");
+   // Three is within the enum's representable range but is not a valid seek mode.
+   Check(FAILED(file.Seek(static_cast<eDataOpSeek>(3), 0)), "invalid seek accepted");
 
    std::array<unsigned char, 300> large;
    large.fill(77);
