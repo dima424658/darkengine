@@ -74,6 +74,9 @@ bool cVulkanImGui::BeginFrame(const cVulkanContext &context)
       return false;
    io.DisplayFramebufferScale = ImVec2(extent.width / io.DisplaySize.x,
       extent.height / io.DisplaySize.y);
+   for (const auto &event : m_windowEvents)
+      ImGui_ImplSDL3_ProcessEvent(&event);
+   m_windowEvents.clear();
    ImGui::NewFrame();
    return true;
 }
@@ -96,6 +99,7 @@ void cVulkanImGui::PresentPlatformWindows()
 
 void cVulkanImGui::Reset()
 {
+   m_windowEvents.clear();
    ImGuiContext *previous = ImGui::GetCurrentContext();
    if (!SetCurrentContext())
       return;
@@ -113,6 +117,18 @@ bool cVulkanImGui::ProcessEvent(const SDL_Event &event)
 {
    if (!SetCurrentContext())
       return false;
+
+   // The backend sets viewport requests immediately. Dispatch these at the
+   // start of a frame so UpdatePlatformWindows cannot clear them before NewFrame.
+   if (event.type == SDL_EVENT_WINDOW_MOVED || event.type == SDL_EVENT_WINDOW_RESIZED ||
+       event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
+   {
+      const auto handle = reinterpret_cast<void *>(static_cast<uintptr_t>(event.window.windowID));
+      if (!ImGui::FindViewportByPlatformHandle(handle))
+         return false;
+      m_windowEvents.push_back(event);
+      return true;
+   }
 
    // The SDL backend forwards button state without the pointer position.
    // After a swapchain rebuild, the pointer may not have moved yet.

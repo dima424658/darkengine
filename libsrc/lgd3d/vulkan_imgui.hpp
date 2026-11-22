@@ -2,12 +2,13 @@
 #define DARK_VULKAN_IMGUI_HPP
 
 #include <memory>
+#include <vector>
 
+#include <SDL3/SDL_events.h>
 #include <vulkan/vulkan.hpp>
 
 class cVulkanContext;
 struct ImGuiContext;
-union SDL_Event;
 
 class cVulkanImGui
 {
@@ -34,6 +35,7 @@ private:
    };
 
    std::unique_ptr<ImGuiContext, ContextDeleter> m_pContext;
+   std::vector<SDL_Event> m_windowEvents;
 };
 
 #endif
