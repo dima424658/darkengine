@@ -244,7 +244,9 @@ void UiJoyInit ()
 
 void UiJoyTerm(void)
 {
-   GamepadTerm();
+   // The backend belongs to the application, not an individual panel.
+   // Ending a child panel must not tear it down under a suspended parent.
+   GamepadStopAllRumble();
    g_pJoystick = NULL;
    gGamepadWasOwner = FALSE;
    gGamepadMenuCursorRemainderX = 0.0f;
