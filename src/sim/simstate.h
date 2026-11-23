@@ -44,5 +44,10 @@ EXTERN void SimStateSetFlags(SimFlags flags,BOOL set); // sets or clears flags
 EXTERN void SimStatePause(void);
 EXTERN void SimStateUnpause(void);
 
+// Paired pause for overlays over a live view. Rendering continues if it was
+// enabled before the pause and all active pauses allow it.
+EXTERN void SimStatePauseKeepRendering(void);
+EXTERN void SimStateUnpauseKeepRendering(void);
+
 
 #endif // SIMSTATE_H
