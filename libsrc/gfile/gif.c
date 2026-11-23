@@ -13,6 +13,7 @@
 #include <lg.h>
 #include <gfile.h>
 
+#pragma pack(push, 1)
 typedef struct {
 	char sig[6];
 	ushort screenwidth;
@@ -29,6 +30,10 @@ typedef struct {
 	ushort depth;
 	uchar flags;
 } ImageBlock;
+#pragma pack(pop)
+
+typedef char GifHeaderSizeCheck[sizeof(GifHeader) == 13 ? 1 : -1];
+typedef char ImageBlockSizeCheck[sizeof(ImageBlock) == 9 ? 1 : -1];
 
 static ImageBlock imageBlock;
 static uchar *buffer;

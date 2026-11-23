@@ -187,7 +187,6 @@ errtype mouse_put_xy(short x, short y)
    }
    return OK;
 }
-#ifndef _WIN32
 errtype mouse_set_relative_mode(bool enabled)
 {
    {
@@ -215,7 +214,6 @@ bool mouse_consume_relative_motion(int *x, int *y)
    g_relativeX = g_relativeY = 0;
    return true;
 }
-#endif
 int DarkInputRelativeMouseActive(void)
 {
    std::lock_guard<std::mutex> lock(g_mutex);
@@ -291,7 +289,7 @@ void joy_read_pots(char *pots) { if (pots) std::fill(pots, pots + 4, 0); }
 void joy_read_pots_raw(short *pots) { if (pots) std::fill(pots, pots + 4, 0); }
 
 void DarkInputKey(uchar scan, int down) { kb_generate({scan, static_cast<uchar>(down != 0)}); }
-void DarkInputMouse(short x, short y, uchar type, uchar buttons, char wheel)
+void DarkInputMouse(short x, short y, uchar type, uchar buttons, schar wheel)
 {
    lgMouseEvent event{}; event.x = x; event.y = y; event.type = type;
    event.buttons = buttons; event.wheel = wheel; event.timestamp = now_ms(); mouse_generate(event);

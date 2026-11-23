@@ -14,7 +14,7 @@
 
 extern "C" void DarkInputKey(uchar scan, int down);
 extern "C" void DarkInputMouse(short x, short y, uchar type, uchar buttons,
-   char wheel);
+   schar wheel);
 extern "C" void DarkInputMouseSide(short x, short y, uchar buttons, int side, int down);
 extern "C" void DarkInputMouseRelative(int x, int y, uchar buttons);
 
@@ -399,7 +399,7 @@ private:
       m_wheelY -= wheel; // Retain high-resolution trackpad fractions.
       if (wheel)
          DarkInputMouse(m_wheelX, m_wheelMouseY,
-            MOUSE_WHEEL, m_buttons, static_cast<char>(wheel));
+            MOUSE_WHEEL, m_buttons, static_cast<schar>(wheel));
    }
 
 

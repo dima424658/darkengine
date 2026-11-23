@@ -372,9 +372,14 @@ GhostLoopContext ghostdata = { TRUE, };
 #endif
 
 
+static void prepare_game_screen_mode(void);
+
 static ScrnManContext scrndata = 
 {
-   NULL, 
+   { NULL },
+   NULL,
+   FALSE,
+   prepare_game_screen_mode,
 };
 
 // Fit mode owns a runtime screen description whose dimensions follow the
@@ -436,6 +441,16 @@ static BOOL build_fit_screen_mode(sScrnMode* mode)
    return TRUE;
 }
 
+// A suspended game may resume after video options changed. Refresh the Fit
+// snapshot before the screen manager applies it, including presentation flags.
+static void prepare_game_screen_mode(void)
+{
+   if (build_fit_screen_mode(&gFitScreenMode))
+      scrndata.mode_params.preferred = &gFitScreenMode;
+   else
+      scrndata.mode_params.preferred = (sScrnMode*)GetGameScreenMode();
+}
+
 sLoopInstantiator* DescribeGameMode(GameMinorMode minorMode, GameModeDesc* desc)
 {
    if (minorMode != mmGameNoChange)
@@ -448,10 +463,7 @@ sLoopInstantiator* DescribeGameMode(GameMinorMode minorMode, GameModeDesc* desc)
          SetGameScreenMode(desc->scrnmode); 
    }
 
-   if (build_fit_screen_mode(&gFitScreenMode))
-      scrndata.mode_params.preferred = &gFitScreenMode;
-   else
-      scrndata.mode_params.preferred = (sScrnMode*)GetGameScreenMode();
+   prepare_game_screen_mode();
 
    return &_instantiator;
 }

@@ -32,9 +32,12 @@ public:
       }
       m_sdlInitialized = true;
 
-      m_window = SDL_CreateWindow(title ? title : "Dark Engine", width, height,
-         SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE |
-         SDL_WINDOW_HIGH_PIXEL_DENSITY);
+      SDL_WindowFlags flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE |
+         SDL_WINDOW_HIGH_PIXEL_DENSITY;
+#ifndef __ANDROID__
+      flags |= SDL_WINDOW_HIDDEN;
+#endif
+      m_window = SDL_CreateWindow(title ? title : "Dark Engine", width, height, flags);
       if (!m_window)
       {
          std::fprintf(stderr, "SDL3 window creation failed: %s\n", SDL_GetError());
@@ -43,6 +46,7 @@ public:
          return false;
       }
 
+      m_showPending = (flags & SDL_WINDOW_HIDDEN) != 0;
       const Uint8 cursorBits[8]{};
       m_invisibleCursor = SDL_CreateCursor(cursorBits, cursorBits, 8, 8, 0, 0);
       m_focused = (SDL_GetWindowFlags(m_window) & SDL_WINDOW_INPUT_FOCUS) != 0;
@@ -64,6 +68,8 @@ public:
          SDL_DestroyWindow(m_window);
          m_window = nullptr;
       }
+      m_showPending = false;
+      m_revealPending = false;
       m_relativeRequested = false;
       m_relativeActive = false;
       m_focused = false;
@@ -101,6 +107,40 @@ public:
          return false;
       }
       return true;
+   }
+
+   bool StartupWindowPending() const { return m_showPending; }
+
+   bool ShowForPresentation()
+   {
+      if (!m_showPending)
+         return true;
+
+      // SDL applies a hidden window's pending fullscreen mode on show.
+      // Keep the native window transparent while the platform maps and
+      // resizes it, where window opacity is supported.
+      const bool fullscreen = HasFlag(SDL_WINDOW_FULLSCREEN);
+      if (fullscreen && !m_revealPending)
+         m_revealPending = SDL_SetWindowOpacity(m_window, 0.0f);
+      if (!SDL_ShowWindow(m_window))
+      {
+         std::fprintf(stderr, "SDL window could not be shown: %s\n", SDL_GetError());
+         return false;
+      }
+      if (fullscreen)
+         SDL_SyncWindow(m_window);
+      m_showPending = false;
+      return true;
+   }
+
+   void RevealAfterPresent()
+   {
+      if (m_revealPending)
+      {
+         if (!SDL_SetWindowOpacity(m_window, 1.0f))
+            std::fprintf(stderr, "SDL window could not restore opacity: %s\n", SDL_GetError());
+         m_revealPending = false;
+      }
    }
 
    void SetTitle(const char *title)
@@ -179,6 +219,8 @@ private:
    bool m_focused{};
    bool m_showNativeCursor{};
    bool m_sdlInitialized{};
+   bool m_showPending{};
+   bool m_revealPending{};
 };
 
 cSDLDisplayWindow &DisplayWindow()
@@ -225,3 +267,9 @@ bool SDLDisplayWindowHasFlag(SDL_WindowFlags flag)
 { return DisplayWindow().HasFlag(flag); }
 bool SDLDisplayWindowIsMinimized(void)
 { return DisplayWindow().HasFlag(SDL_WINDOW_MINIMIZED); }
+bool SDLDisplayStartupWindowPending(void)
+{ return DisplayWindow().StartupWindowPending(); }
+bool SDLDisplayShowForPresentation(void)
+{ return DisplayWindow().ShowForPresentation(); }
+void SDLDisplayRevealAfterPresent(void)
+{ DisplayWindow().RevealAfterPresent(); }

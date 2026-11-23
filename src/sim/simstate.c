@@ -7,6 +7,7 @@
 
 #include <simstate.h>
 #include <simbase.h>
+#include <simflags.h>
 #ifdef __ANDROID__
 #include <stdio.h>
 #include <simtime.h>
@@ -23,6 +24,7 @@ static SimState PausedState; // Sim state we use when pausing the sim
 static SimState PausedValues = { 0 }; // intial values for the "paused" state
 
 static ulong PauseCount = 0;
+static ulong RenderPauseCount = 0;
 
 #ifdef __ANDROID__
 static void trace_sim_state(const char* action)
@@ -62,7 +64,11 @@ SimState* SimStateGet(void)
 
 SimFlags SimStateCheckFlags(SimFlags flags)
 {
-   return TheSimState->flags & flags;
+   SimFlags active = TheSimState->flags;
+   if (TheSimState == &PausedState && RenderPauseCount > 0 &&
+       RenderPauseCount == PauseCount)
+      active |= SaveSimState->flags & kSimRender;
+   return active & flags;
 }
 
 ////////////////////////////////////////
@@ -107,6 +113,18 @@ EXTERN void SimStateUnpause()
    }
    PauseCount -= 2;
    trace_sim_state("unpause");
+}
+
+void SimStatePauseKeepRendering(void)
+{
+   SimStatePause();
+   ++RenderPauseCount;
+}
+
+void SimStateUnpauseKeepRendering(void)
+{
+   --RenderPauseCount;
+   SimStateUnpause();
 }
 
 

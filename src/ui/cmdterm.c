@@ -632,6 +632,30 @@ static BOOL cmdterm_is_scrollable(void)
    return (CmdTerm.flags & kCmdTermScrollable) != 0;
 }
 
+static void cmdterm_pause_sim(void)
+{
+   if (CmdTerm.statebits & kStatePaused)
+      return;
+
+   if (cmdterm_is_scrollable())
+      SimStatePauseKeepRendering();
+   else
+      SimStatePause();
+   CmdTerm.statebits |= kStatePaused;
+}
+
+static void cmdterm_unpause_sim(void)
+{
+   if (!(CmdTerm.statebits & kStatePaused))
+      return;
+
+   if (cmdterm_is_scrollable())
+      SimStateUnpauseKeepRendering();
+   else
+      SimStateUnpause();
+   CmdTerm.statebits &= ~kStatePaused;
+}
+
 static int cmdterm_max_scroll(void)
 {
    int max_scroll;
@@ -1741,11 +1765,7 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
          {
             Status("");
 
-            if (CmdTerm.statebits & kStatePaused)
-            {
-               SimStateUnpause();
-               CmdTerm.statebits &= ~kStatePaused;
-            }
+            cmdterm_unpause_sim();
 
             IInputBinder_GetContext (g_pInputBinder, &context);
             if (context == HK_COMMAND_MODE && HotkeyContext == HK_GAME_MODE)
@@ -1780,11 +1800,7 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
 
             // Temporarily unpause while executing so commands may safely
             // change modes or simulation state.
-            if (CmdTerm.statebits & kStatePaused)
-            {
-               SimStateUnpause();
-               CmdTerm.statebits &= ~kStatePaused;
-            }
+            cmdterm_unpause_sim();
 
             IInputBinder_GetContext (g_pInputBinder, &context);
             if (context == HK_COMMAND_MODE && HotkeyContext == HK_GAME_MODE)
@@ -1804,8 +1820,7 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
             if ((CmdTerm.statebits & kStateInUse) &&
                 !(CmdTerm.flags & kCmdTermNoPause))
             {
-               SimStatePause();
-               CmdTerm.statebits |= kStatePaused;
+               cmdterm_pause_sim();
                if (HotkeyContext == HK_GAME_MODE)
                   IInputBinder_SetContext (g_pInputBinder,
                                            HK_COMMAND_MODE, TRUE);
@@ -2015,11 +2030,7 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
          LGadUnfocusTextBox(box);
          if (CmdTerm.flags & kCmdTermHideUnfocused)
             region_set_invisible(LGadBoxRegion(&CmdTerm.root),TRUE);
-         if (CmdTerm.statebits & kStatePaused)
-         {
-            SimStateUnpause();
-            CmdTerm.statebits &= ~kStatePaused;
-         }
+         cmdterm_unpause_sim();
          if (cmdterm_is_scrollable())
             cmdterm_restore_canvas();
          cmdterm_set_popup_cursor(FALSE);
@@ -2029,12 +2040,8 @@ uchar cmdterm_textbox_cb(LGadTextBox* box, LGadTextBoxEvent event, int evdata, v
          // tiled console buffer before gameplay redraws.
          PlatformSetTextInputActive(FALSE);
       }
-      else if (!(CmdTerm.flags & kCmdTermNoPause) &&
-               !(CmdTerm.statebits & kStatePaused))
-      {
-         SimStatePause();
-         CmdTerm.statebits |= kStatePaused;
-      }
+      else if (!(CmdTerm.flags & kCmdTermNoPause))
+         cmdterm_pause_sim();
 
       if (!clear && cmdterm_is_scrollable())
          cmdterm_draw();
@@ -2294,11 +2301,7 @@ void DestroyCommandTerminal(void)
    int i;
 
    cmdterm_set_popup_cursor(FALSE);
-   if (CmdTerm.statebits & kStatePaused)
-   {
-      SimStateUnpause();
-      CmdTerm.statebits &= ~kStatePaused;
-   }
+   cmdterm_unpause_sim();
    IInputBinder_GetContext (g_pInputBinder, &context);
    if (context == HK_COMMAND_MODE && HotkeyContext == HK_GAME_MODE)
       IInputBinder_SetContext (g_pInputBinder, HK_GAME_MODE, TRUE);
@@ -2445,17 +2448,13 @@ static void cmdterm_activate_focus(BOOL position_cursor)
    // Gameplay pauses while the console owns input. The editor uses the same
    // view without changing its distinct simulation lifecycle.
    if (!(CmdTerm.flags & kCmdTermNoPause))
-      SimStatePause();
-   
+      cmdterm_pause_sim();
 
    IInputBinder_GetContext (g_pInputBinder, &context);
    if (context == HK_GAME_MODE)
       IInputBinder_SetContext (g_pInputBinder, HK_COMMAND_MODE, TRUE);
 
    cmdterm_set_popup_cursor(TRUE);
-   
-   if (!(CmdTerm.flags & kCmdTermNoPause))
-      CmdTerm.statebits |= kStatePaused;
 }
 
 void cmdterm_focus(char* prefix)

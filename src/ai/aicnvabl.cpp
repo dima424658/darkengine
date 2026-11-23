@@ -256,6 +256,16 @@ STDMETHODIMP_(void) cAIConverse::OnGoalChange(const cAIGoal * pPrevious, const c
 
 ///////////////////////////////////////
 
+STDMETHODIMP_(BOOL) cAIConverse::FinalizeGoal(cAIGoal *)
+{
+   // Terminate can run inside a goal-change notification, after this
+   // ability's suggestion was collected. Never select that cached goal
+   // again once its conversation has ended.
+   return m_pConversation != NULL && m_state != kAIConvNotStarted;
+}
+
+///////////////////////////////////////
+
 STDMETHODIMP cAIConverse::SuggestActions(cAIGoal * pGoal, const cAIActions & previous, cAIActions * pNew)
 {
    if (m_pActionScript != NULL)
@@ -323,6 +333,11 @@ STDMETHODIMP_(void) cAIConverse::Terminate(void)
    m_pConversation = NULL;
    SetState(kAIConvNotStarted);
    SpeechUninstallEndCallback(m_pAIState->GetID(), SpeechEndCallback);
+   SafeRelease(m_pCurrentAction);
+   free(m_pActionScript);
+   m_pActionScript = NULL;
+   m_nActions = 0;
+   m_hSchema = SCH_HANDLE_NULL;
 }
 
 ///////////////////////////////////////

@@ -311,7 +311,7 @@ inline mxs_vector &cCreature::GetStandingOffset()
 
 struct sCreatureHandle
 {
-   int type;
+   int32 type;
    cCreature     *pCreature;
 
    sCreatureHandle(int t = kCreatureTypeInvalid, cCreature* c = NULL) 

@@ -244,8 +244,13 @@ STDMETHODIMP cBaseLinkStore::Load(RelationID id, IUnknown* fileunk, int partitio
       {  
          LinkID linkid;
          sLink link; 
-         file->Read((char*)&linkid,sizeof(linkid));
-         file->Read((char*)&link,sizeof(link));
+         if (file->Read((char*)&linkid, sizeof(linkid)) != sizeof(linkid) ||
+             file->Read((char*)&link, sizeof(link)) != sizeof(link))
+         {
+            dbLoadReportFailure("relation-reader", "Truncated link record");
+            retval = E_FAIL;
+            break;
+         }
          link.source = ObjRemapOnLoad(link.source);
          link.dest   = ObjRemapOnLoad(link.dest);
 
@@ -409,10 +414,12 @@ STDMETHODIMP cBaseLinkDataStore::Load(RelationID id , IUnknown* fileunk, int fil
          ops = new cFixedSizeDataOps(desc->size); 
 
       // Read in data version;
-      ulong version;
-      file->Read((char*)&version,sizeof(version));
-      if (version > (ulong)ops->ReadVersion())
+      ulong version = 0;
+      const bool readVersion = file->Read((char*)&version, sizeof(version)) == sizeof(version);
+      if (!readVersion || version > (ulong)ops->ReadVersion())
       {
+         if (!readVersion)
+            dbLoadReportFailure("relation-reader", "Truncated relation-data version");
          Warning(("Unsupported relation-data version for %s (file:%u max:%d)\n",
                   desc->type,version,ops->ReadVersion()));
          SafeRelease(ops);
@@ -439,10 +446,21 @@ STDMETHODIMP cBaseLinkDataStore::Load(RelationID id , IUnknown* fileunk, int fil
       {
          LinkID link;
          // read in the link id
-         file->Read((char*)&link,sizeof(link));
-         // read in the data
+         if (file->Read((char*)&link, sizeof(link)) != sizeof(link))
+         {
+            dbLoadReportFailure("relation-reader", "Truncated relation-data link ID");
+            retval = E_FAIL;
+            break;
+         }
+         // Decode completely before installing any relation data.
          sDatum dat = ops->New();
-         ops->Read(&dat,opfile,version);
+         if (FAILED(ops->Read(&dat, opfile, version)))
+         {
+            ops->Delete(dat);
+            dbLoadReportFailure("relation-reader", "Failed to decode relation-data record");
+            retval = E_FAIL;
+            break;
+         }
 
          // re-swizzle the link id.
          if (v.major < kLinkIDFormat) // old link id format

@@ -172,7 +172,7 @@ struct sSchemaPlay : public SchemaPlayListNode
    SchemaCallback loop_callback;// optional callback
    void *userData;              // for callbacks
    Label msg;
-   long msgData[3];
+   int32 msgData[3];
    ulong nextTime;              // when to start next sample (if looping)
 };
 

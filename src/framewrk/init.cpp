@@ -23,6 +23,7 @@
 #include <resapi.h>
 #include <inpapi.h>
 #include <inpinit.h>
+#include <gamepad.h>
 #include <tminit.h>
 #include <timer.h>
 #include <resagg.h>
@@ -654,6 +655,7 @@ tResult LGAPI CoreEngineAppInit()
 tResult LGAPI CoreEngineAppExit()
 {
    MovieOnExit();
+   GamepadTerm();
    g_pInputBinder->Term ();
    DispatchMsgAllClients(kMsgAppTerm,NULL,kDispatchReverse);
    DispatchShutdown();

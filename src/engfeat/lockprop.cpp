@@ -69,11 +69,15 @@
 // look, a whole pile of identical stuff
 #define KEY_IMPL kPropertyImplSparseHash
 
+#pragma pack(push, 1)
 typedef struct {
    bool   master_bit;
    ushort region_mask;
    uchar  lock_id;
 } sOldKeyInfo;
+#pragma pack(pop)
+
+static_assert(sizeof(sOldKeyInfo) == 4, "Legacy key records must be four bytes");
 
 typedef cGenericProperty<IKeyInfoProperty,&IID_IKeyInfoProperty,sKeyInfo*> cKeyInfoPropertyBase;
 
@@ -86,10 +90,14 @@ public:
          return cClassDataOps<sKeyInfo>::Read(dat,file,version);
       else 
       {
-         sOldKeyInfo old; 
-         if (!dat->value) *dat = New(); 
+         if (version != sizeof(sOldKeyInfo))
+            return E_FAIL;
+         sOldKeyInfo old;
+         if (file->Read(&old, sizeof(old)) != sizeof(old))
+            return E_FAIL;
+         if (!dat->value)
+            *dat = New();
          sKeyInfo& young = *(sKeyInfo*)dat->value; 
-         file->Read(&old,sizeof(old)); 
 
          // now actually do the conversion.
          young.master_bit = old.master_bit;

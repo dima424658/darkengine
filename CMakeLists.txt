@@ -40,6 +40,7 @@ if(NOT ANDROID)
   enable_testing()
   add_subdirectory(tools/material_test EXCLUDE_FROM_ALL)
   add_subdirectory(tools/movie_test EXCLUDE_FROM_ALL)
+  add_subdirectory(tools/md_hit_test EXCLUDE_FROM_ALL)
 endif()
 
 if(NOT ANDROID AND DARK_COMPILE_VULKAN_SHADERS)

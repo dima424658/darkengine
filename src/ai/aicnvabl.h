@@ -73,6 +73,7 @@ public:
 
    // Ability flow
    STDMETHOD (SuggestGoal)   (cAIGoal * pPrevious, cAIGoal ** ppNew);
+   STDMETHOD_(BOOL, FinalizeGoal)(cAIGoal * pGoal);
    STDMETHOD (SuggestActions)(cAIGoal * pGoal, const cAIActions & previous, cAIActions * pNew);
 
    STDMETHOD_(void, OnSpeechStart)(int hSchema);

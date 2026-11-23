@@ -775,7 +775,7 @@ BOOL cAIPsdScrAction::StartActions()
 
 STDMETHODIMP_(BOOL) cAIPsdScrAction::Save(ITagFile * pTagFile)
 {
-   size_t versionSize = sizeof(*this);  // Rough version checking.
+   uint32 versionSize = 80;  // Original 32-bit Windows class size.
    AITagMove(pTagFile, &versionSize);
    SaveActionBase(pTagFile);
    AITagMove(pTagFile, &m_iCurrent);
@@ -794,9 +794,9 @@ STDMETHODIMP_(BOOL) cAIPsdScrAction::Save(ITagFile * pTagFile)
 
 STDMETHODIMP_(BOOL) cAIPsdScrAction::Load(ITagFile * pTagFile)
 {
-   size_t versionSize;   // Rough version checking.
+   uint32 versionSize;   // Rough version checking.
    AITagMove(pTagFile, &versionSize);
-   AssertMsg(versionSize == sizeof(*this), "Invalid saved pseudo action encountered");
+   AssertMsg(versionSize == 80, "Invalid saved pseudo action encountered");
    LoadActionBase(pTagFile);
    AITagMove(pTagFile, &m_iCurrent);
    AITagMoveDynarray(pTagFile, &m_actions);

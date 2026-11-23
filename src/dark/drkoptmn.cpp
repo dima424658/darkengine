@@ -2601,7 +2601,7 @@ protected:
          case 1:
             switch (mCurSub) {
                case kSubBind:
-                  if (mTopBind <= mNumBindable - NUM_BIND_SLOTS) {
+                  if (mTopBind < mNumBindable - NUM_BIND_SLOTS) {
                      mTopBind++;
                      FillBindStrs ();
                   }

@@ -546,7 +546,9 @@ void cIBInputMapper::TrapBind(const char* p_cmd, tTrapBindFilter filter_cb, tTra
 
 	uiSlab* slab = nullptr;
 	uiGetCurrentSlab(&slab);
-	uiInstallRegionHandler(slab->creg, SCANCODE_LCTRL, cIBInputMapper::StaticTrapHandler, nullptr, &g_id);
+	uiInstallRegionHandler(slab->creg, UI_EVENT_KBD_RAW | UI_EVENT_MOUSE |
+		UI_EVENT_MOUSE_MOVE | UI_EVENT_JOY, cIBInputMapper::StaticTrapHandler,
+		nullptr, &g_id);
 
 	m_bind_cmd = p_cmd;
 	m_filter_cb = filter_cb;
@@ -628,7 +630,11 @@ BOOL cIBInputMapper::TrapHandler(uiEvent* p_event)
 	}
 	case UI_EVENT_MOUSE: {
 		auto* mouse_event = reinterpret_cast<uiMouseEvent*>(p_event);
-		unsigned short action = static_cast<unsigned short>(p_event->subtype);
+		// A click that opened the binding prompt can still produce a delayed
+		// single-click event. Only a new input should complete the bind.
+		constexpr unsigned short timeouts = UI_MOUSE_LTIMEOUT |
+			UI_MOUSE_RTIMEOUT | UI_MOUSE_CTIMEOUT;
+		const unsigned short action = static_cast<unsigned short>(mouse_event->action) & ~timeouts;
 		if (action & MOUSE_SIDE_MARKER)
 		{
 			if (action & MOUSE_SIDE_UP) return true;
@@ -637,7 +643,7 @@ BOOL cIBInputMapper::TrapHandler(uiEvent* p_event)
 		}
 		if (action)
 		{
-			if (mouse_event->wheel && action == 128)
+			if (mouse_event->wheel && action == MOUSE_WHEEL)
 			{
 				strcpy(bind_control, "mouse_wheel");
 				break;

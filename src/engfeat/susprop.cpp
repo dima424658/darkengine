@@ -26,12 +26,15 @@ F_DECLARE_INTERFACE(ISuspiciousProperty);
 
 #define SUSPTYPELEN 32
 
+#pragma pack(push, 1)
 struct sSuspiciousInfo
 {
    bool   is_suspicious;
    char   suspicious_type[SUSPTYPELEN];
    float  min_light_level;
 };
+#pragma pack(pop)
+static_assert(sizeof(sSuspiciousInfo) == 37, "Suspicious property must match its disk layout");
 
 /////////////////////////////
 #undef INTERFACE

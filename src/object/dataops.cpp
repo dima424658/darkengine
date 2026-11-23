@@ -51,16 +51,20 @@ STDMETHODIMP cDataOpsTagFile::Seek(eDataOpSeek seek, ulong where)
       return E_INVALIDARG;
    if (Bounded)
    {
-      uint64_t target = 0;
+      ulong target;
       if (seek == kDataOpSeekFromStart)
          target = where;
-      else if (seek == kDataOpSeekFromHere)
-         target = (uint64_t)File->Tell() + where;
       else
-         target = (uint64_t)BoundEnd + where;
+      {
+         const ulong origin = seek == kDataOpSeekFromHere
+            ? File->Tell() : BoundEnd;
+         if (origin > BoundEnd || where > BoundEnd - origin)
+            return E_FAIL;
+         target = origin + where;
+      }
       if (target < BoundStart || target > BoundEnd)
          return E_FAIL;
-      return File->Seek((ulong)target,kTagSeekFromStart);
+      return File->Seek(target,kTagSeekFromStart);
    }
 
    return File->Seek(where,seek_map[seek]); 
@@ -83,10 +87,14 @@ cDataOpsMemFile::cDataOpsMemFile()
 }
 
 cDataOpsMemFile::cDataOpsMemFile(const void *buf, int len)
-   : mAllocatedSize(len), mUsedSize(len), mCursor(0)
+   : mAllocatedSize(buf && len > 0 ? len : 0), mUsedSize(0), mCursor(0)
 {
    mBuffer = (char *)malloc(mAllocatedSize);
-   memcpy(mBuffer, buf, len);
+   if (mBuffer && mAllocatedSize)
+   {
+      memcpy(mBuffer, buf, mAllocatedSize);
+      mUsedSize = mAllocatedSize;
+   }
 }
 
 cDataOpsMemFile::~cDataOpsMemFile(void) 
@@ -94,9 +102,11 @@ cDataOpsMemFile::~cDataOpsMemFile(void)
    free(mBuffer);
 }
 
-STDMETHODIMP_(long)cDataOpsMemFile::Read(void* buf, int len) 
-{ 
-   long length = (long)((len > 0) ? min((ulong)len, mUsedSize - mCursor) : 0);
+STDMETHODIMP_(long)cDataOpsMemFile::Read(void* buf, int len)
+{
+   if (!buf || len <= 0 || mCursor >= mUsedSize)
+      return 0;
+   const ulong length = min((ulong)len, mUsedSize - mCursor);
    memcpy(buf, mBuffer + mCursor, length);
    mCursor += length;
    return length;
@@ -104,32 +114,52 @@ STDMETHODIMP_(long)cDataOpsMemFile::Read(void* buf, int len)
 
 STDMETHODIMP_(long)cDataOpsMemFile::Write(const void* buf, int len)
 {
-   if (buf == NULL) {
-      // Let's try not to crash...
+   if (!buf || len <= 0)
       return 0;
-   }
-   while (mCursor + len > mAllocatedSize)
+   if ((uint)len > UINT32_MAX - mCursor)
+      return 0;
+   const ulong required = mCursor + (uint)len;
+
+   if (!mBuffer || required > mAllocatedSize)
    {
-      mAllocatedSize *= 2;
-      char *newBuf = (char *)malloc(mAllocatedSize);
-      memcpy(newBuf, mBuffer, mCursor);
+      ulong capacity = mAllocatedSize ? mAllocatedSize : 128;
+      while (capacity < required)
+         capacity = capacity > UINT32_MAX / 2 ? required : capacity * 2;
+      char *newBuffer = (char *)malloc((size_t)capacity);
+      if (!newBuffer)
+         return 0;
+      if (mUsedSize)
+         memcpy(newBuffer, mBuffer, mUsedSize);
       free(mBuffer);
-      mBuffer = newBuf;
+      mBuffer = newBuffer;
+      mAllocatedSize = capacity;
    }
    memcpy(mBuffer + mCursor, buf, len);
    mCursor += len;
+   if (mCursor > mUsedSize)
+      mUsedSize = mCursor;
    return len;
 }
 
 STDMETHODIMP cDataOpsMemFile::Seek(eDataOpSeek seek, ulong where)
 {
-   switch (seek) {
-      case kDataOpSeekFromStart: mCursor = where; break;
-      case kDataOpSeekFromHere: mCursor += where; break;
-      case kDataOpSeekFromEnd: mCursor = mUsedSize - where; break;
+   ulong cursor;
+   switch (seek)
+   {
+      case kDataOpSeekFromStart:
+         cursor = where;
+         break;
+      case kDataOpSeekFromHere:
+         cursor = where > mUsedSize - mCursor
+            ? mUsedSize : mCursor + where;
+         break;
+      case kDataOpSeekFromEnd:
+         cursor = where > mUsedSize ? 0 : mUsedSize - where;
+         break;
+      default:
+         return E_INVALIDARG;
    }
-   if (mCursor < 0) mCursor = 0;
-   if (mCursor > mUsedSize) mCursor = mUsedSize;
+   mCursor = min(cursor, mUsedSize);
    return S_OK;
 }
 
@@ -187,16 +217,25 @@ STDMETHODIMP_(int) cFixedSizeDataOps::Version()
 
 STDMETHODIMP cFixedSizeDataOps::Read(sDatum* pdat, IDataOpsFile* file, int version ) 
 {
+   // A version is a serialized byte count, not a trusted allocation size.
+   if (version < 0 || version > 64 * 1024 * 1024)
+      return E_FAIL;
+
+   char *buf = new (std::nothrow) char[version];
+   if (!buf)
+      return E_OUTOFMEMORY;
+   if (file->Read(buf, version) != version)
+   {
+      delete [] buf;
+      return E_FAIL;
+   }
+
    if (!pdat->value)
-      *pdat = New(); 
-
-   char* buf = new char[version]; 
-   file->Read(buf,version); 
-
-   int size = (mSize < version) ? mSize : version; 
-   memcpy(pdat->value,buf,size); 
+      *pdat = New();
+   const int size = (mSize < version) ? mSize : version;
+   memcpy(pdat->value, buf, size);
    delete [] buf;
-   return S_OK; 
+   return S_OK;
 }
 
 STDMETHODIMP cFixedSizeDataOps::Write(sDatum val, IDataOpsFile* file) 

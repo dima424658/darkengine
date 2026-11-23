@@ -177,7 +177,7 @@ STDMETHODIMP_(BOOL) cAIPatrol::Save(ITagFile * pTagFile)
 
 STDMETHODIMP_(BOOL) cAIPatrol::Load(ITagFile * pTagFile)
 {
-   if (AIOpenTagBlock(GetID(), kAISL_Patrol, 0, 0, pTagFile))
+   if (AIOpenTagBlock(GetID(), kAISL_Patrol, 0, 1, pTagFile))
    {
       BaseAbilityLoad(pTagFile);
       m_CheckPropTimer.Load(pTagFile);
