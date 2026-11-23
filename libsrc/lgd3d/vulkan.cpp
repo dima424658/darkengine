@@ -71,6 +71,7 @@ private:
    void HandleSwapchainRecreation();
    void ProcessPendingLifecycleResize();
    bool ApplyPendingResize();
+   bool PreparePresentation();
    bool CaptureCanvas(const void *pixels, int width, int height, int rowBytes,
       int depth, const uint8_t *palette, int x0, int y0, int x1, int y1);
    bool PrepareCanvasTexture();
@@ -547,6 +548,17 @@ void cVulkanRuntime::EndEventPump()
 void cVulkanRuntime::SetPhysicalDeviceIndex(int index)
 { m_physicalDeviceIndex = index; }
 
+bool cVulkanRuntime::PreparePresentation()
+{
+   if (SDLDisplayStartupWindowPending())
+   {
+      if (!SDLDisplayShowForPresentation())
+         return false;
+      UpdateWindowDimensions();
+   }
+   return m_drawableWidth > 0 && m_drawableHeight > 0 && ApplyPendingResize();
+}
+
 void cVulkanRuntime::BeginApplicationFrame()
 {
    ZoneScopedN("Vulkan begin frame");
@@ -559,10 +571,8 @@ void cVulkanRuntime::BeginApplicationFrame()
    }
    ProcessPendingLifecycleResize();
    if (!m_windowOpen || m_frameActive ||
-       m_windowMinimized.load(std::memory_order_acquire) ||
-       m_drawableWidth <= 0 || m_drawableHeight <= 0)
+       m_windowMinimized.load(std::memory_order_acquire) || !PreparePresentation())
       return;
-   if (!ApplyPendingResize()) return;
    vk::CommandBuffer commandBuffer{};
    if (!m_context.BeginFrame({0.0f, 0.0f, 0.0f, 1.0f}, &commandBuffer))
    {
@@ -583,16 +593,19 @@ void cVulkanRuntime::EndApplicationFrame()
 {
    ZoneScopedN("Vulkan present");
    if (!m_frameActive) return;
-   if (!PrepareCanvasTexture())
+   const bool canvasReady = PrepareCanvasTexture();
+   if (!canvasReady)
       std::fprintf(stderr, "Vulkan canvas texture update failed\n");
-   DrawCanvas(m_activeCommandBuffer, RenderBackendVulkanSceneActive() != 0);
+   const bool sceneActive = RenderBackendVulkanSceneActive() != 0;
+   DrawCanvas(m_activeCommandBuffer, sceneActive);
    // Scene pixels are composited into this swapchain image only. The next
    // frame starts from a freshly acquired image, so don't let later canvas
    // updates treat palette index zero as transparent over a nonexistent
    // retained scene.
    RenderBackendDeactivateScene();
    RenderBackendVulkanDetach();
-   (void)m_context.EndFrame();
+   if (m_context.EndFrame() && (sceneActive || (canvasReady && m_canvasWidth > 0)))
+      SDLDisplayRevealAfterPresent();
    m_activeCommandBuffer = nullptr;
    m_frameActive = false;
    HandleSwapchainRecreation();
@@ -700,7 +713,7 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
    // Movie frames acquire their own swapchain image instead of passing
    // through BeginApplicationFrame. Apply a resize deferred while the game
    // frame was active before calculating this movie frame's fit viewport.
-   if (!ApplyPendingResize())
+   if (!PreparePresentation())
    {
       if (resumeFrame)
          BeginApplicationFrame();
@@ -765,7 +778,8 @@ bool cVulkanRuntime::PresentMovieFrame(const void *rgba, int width, int height,
       {
          // Keep Vulkan and allocation failures inside this C ABI boundary.
       }
-      (void)m_context.EndFrame();
+      if (m_context.EndFrame() && drew)
+         SDLDisplayRevealAfterPresent();
       m_renderer.BindTexture(0, nullptr);
       HandleSwapchainRecreation();
    }

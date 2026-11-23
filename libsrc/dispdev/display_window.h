@@ -9,6 +9,9 @@ SDL_Window *SDLDisplayGetWindow(void);
 void SDLDisplayGetWindowMetrics(int *clientWidth, int *clientHeight,
    int *drawableWidth, int *drawableHeight);
 bool SDLDisplayWindowIsMinimized(void);
+bool SDLDisplayStartupWindowPending(void);
+bool SDLDisplayShowForPresentation(void);
+void SDLDisplayRevealAfterPresent(void);
 bool SDLDisplaySetFullscreen(bool enabled);
 void SDLDisplaySetTitle(const char *title);
 void SDLDisplaySetNativeCursorVisible(bool visible);
