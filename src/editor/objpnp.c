@@ -169,11 +169,11 @@ static void objPnP_PopUp(int data)
       Warning(("Watch it... thats XXXX"));
 }
 
-void Create_objPnP(LGadRoot* root, Rect* bounds, editBrush *br)
+void Create_objPnP(Rect* bounds, editBrush *br)
 {
    GFHSetCoordMask(0);
    objPnP_buildRects(bounds);
-   PnP_GadgStart(&objPnP,root);
+   PnP_GadgStart(&objPnP);
    objPnP_setvars(br,FALSE);
    PnP_PictureBox(getRect(0),NULL,0);
 

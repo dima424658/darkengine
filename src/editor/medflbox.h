@@ -9,12 +9,9 @@
 #ifndef __MEDFLBOX_H
 #define __MEDFLBOX_H
 
-#include <gadbox.h>
-
-EXTERN uint edit_flag;
+EXTERN int leftMark, rightMark;
 
 EXTERN uint FlagBoxGetCurrentFlag();
-EXTERN void FlagBoxDrawCallback(void *data, LGadBox *vb);
 EXTERN void FlagBoxSetMark(int frame,uchar side);
 EXTERN void FlagBoxResetMarks(int num_frames);
 EXTERN bool FlagBoxAddFlag(ulong value);

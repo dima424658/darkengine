@@ -102,8 +102,9 @@ enum eCmdTermSuggestionMode
 #define CMDTERM_MAX_ARGUMENT_OPTIONS \
    (sizeof(CmdTerm.argumentoptions) / sizeof(CmdTerm.argumentoptions[0]))
 
-#define CMDTERM_MAX_LINES 4096
-#define CMDTERM_LINE_LENGTH 256
+static CmdTermFocusHandler editor_focus;
+static unsigned output_revision = 1;
+static int editor_first_line, editor_visible_lines;
 
 static char CmdTermLines[CMDTERM_MAX_LINES][CMDTERM_LINE_LENGTH];
 static int CmdTermLineCount = 0;
@@ -399,7 +400,7 @@ static void cmdterm_refresh_suggestions(BOOL force)
    int fragment_length;
    int i;
 
-   if (!(CmdTerm.flags & kCmdTermScrollable))
+   if (!editor_focus && !(CmdTerm.flags & kCmdTermScrollable))
    {
       CmdTerm.suggestionmode = kCmdTermSuggestionNone;
       return;
@@ -792,6 +793,7 @@ static void cmdterm_add_line_locked(const char* text, int length)
       length = CMDTERM_LINE_LENGTH - 1;
    memcpy(CmdTermLines[CmdTermNextLine], text, length);
    CmdTermLines[CmdTermNextLine][length] = '\0';
+   ++output_revision;
    CmdTermNextLine = (CmdTermNextLine + 1) % CMDTERM_MAX_LINES;
    if (CmdTermLineCount < CMDTERM_MAX_LINES)
       ++CmdTermLineCount;
@@ -1204,6 +1206,11 @@ static BOOL cmdterm_copy_output(BOOL all)
       (CmdTermLineCount < CmdTerm.visiblelines
          ? CmdTermLineCount : CmdTerm.visiblelines);
    first = all ? 0 : CmdTermLineCount - shown - CmdTerm.scroll;
+   if (!all && editor_focus)
+   {
+      first = editor_first_line;
+      shown = editor_visible_lines;
+   }
    if (first < 0)
       first = 0;
    oldest = (CmdTermNextLine - CmdTermLineCount + CMDTERM_MAX_LINES)
@@ -2487,6 +2494,11 @@ static void cmdterm_activate_focus(BOOL position_cursor)
 
 void cmdterm_focus(char* prefix)
 {
+   if (editor_focus)
+   {
+      editor_focus(prefix, FALSE);
+      return;
+   }
    char* buf = &CmdTerm.cmdbuf[0];
    int bufsiz = sizeof(CmdTerm.cmdbuf);
 
@@ -2509,6 +2521,12 @@ static void new_cmdterm(char *prefix)
 
 static void toggle_cmdterm(void)
 {
+   if (editor_focus)
+   {
+      history_new_cmdterm();
+      editor_focus("", TRUE);
+      return;
+   }
    if (!(CmdTerm.statebits & kStateInUse))
       return;
 
@@ -2588,4 +2606,116 @@ void cmdterm_setup_cmds(void)
      COMMANDS(commands,HK_ALL);
      setup = TRUE;
    }
+}
+
+void cmdterm_set_editor_focus(CmdTermFocusHandler handler)
+{
+   static BOOL greeted;
+   editor_focus = handler;
+   if (handler)
+   {
+      cmdterm_setup_cmds();
+      history_new_cmdterm();
+      CmdTerm.suggestioninput[0] = '\0';
+      if (!greeted)
+      {
+         cmdterm_print("Console ready. Type help for commands.");
+         greeted = TRUE;
+      }
+   }
+}
+
+int cmdterm_editor_output(char (*lines)[CMDTERM_LINE_LENGTH], unsigned *revision)
+{
+   int count = -1;
+   cmdterm_model_lock();
+   if (*revision != output_revision)
+   {
+      const int oldest = (CmdTermNextLine - CmdTermLineCount + CMDTERM_MAX_LINES) % CMDTERM_MAX_LINES;
+      const int first = CmdTermLineCount < CMDTERM_MAX_LINES - oldest ?
+         CmdTermLineCount : CMDTERM_MAX_LINES - oldest;
+      memcpy(lines, CmdTermLines + oldest, first * CMDTERM_LINE_LENGTH);
+      memcpy(lines + first, CmdTermLines, (CmdTermLineCount - first) * CMDTERM_LINE_LENGTH);
+      *revision = output_revision;
+      count = CmdTermLineCount;
+   }
+   cmdterm_model_unlock();
+   return count;
+}
+
+void cmdterm_editor_visible_range(int first, int count)
+{
+   editor_first_line = first;
+   editor_visible_lines = count;
+}
+
+void cmdterm_editor_execute(char *command)
+{
+   char entered[CMDTERM_LINE_LENGTH + 3];
+   const char *error;
+   snprintf(entered, sizeof(entered), "> %s", command);
+   cmdterm_print(entered);
+   Status("");
+   cmdterm_begin_command_capture();
+   error = IInputBinder_ProcessCmd(g_pInputBinder, command);
+   if (error)
+   {
+      Status(error);
+      cmdterm_print(error);
+   }
+   else
+      history_add(command);
+   cmdterm_end_command_capture();
+   history_new_cmdterm();
+}
+
+const char *cmdterm_editor_history(int direction)
+{
+   if (direction > 0 && _history_get_idx(1) == cmd_history_idx)
+   {
+      history_new_cmdterm();
+      return "";
+   }
+   return history_get(direction);
+}
+
+static int editor_suggestions(const char *input)
+{
+   strncpy(CmdTerm.cmdbuf, input, sizeof(CmdTerm.cmdbuf) - 1);
+   CmdTerm.cmdbuf[sizeof(CmdTerm.cmdbuf) - 1] = '\0';
+   cmdterm_refresh_suggestions(FALSE);
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+      return CmdTerm.argumentoptioncount;
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionCommands)
+      return CmdTerm.suggestioncount;
+   return 0;
+}
+
+const char *cmdterm_editor_suggestion(const char *input, int index)
+{
+   if (index < 0 || index >= editor_suggestions(input))
+      return NULL;
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+      return CmdTerm.argumentoptions[index];
+   return CmdTerm.suggestions[index]->name;
+}
+
+const char *cmdterm_editor_complete(const char *input)
+{
+   static char completed[CMDTERM_LINE_LENGTH];
+   if (!editor_suggestions(input))
+      return NULL;
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+   {
+      int index = (CmdTerm.argumentoptionselected + 1) % CmdTerm.argumentoptioncount;
+      CmdTerm.argumentoptionselected = index;
+      snprintf(completed, sizeof(completed), "%s %s", CmdTerm.argumentcommand->name, CmdTerm.argumentoptions[index]);
+   }
+   else
+   {
+      const Command *command = CmdTerm.suggestions[CmdTerm.suggestionselected];
+      snprintf(completed, sizeof(completed), "%s%s", command->name,
+               cmdterm_command_accepts_argument(command) ? " " : "");
+   }
+   return completed;
 }

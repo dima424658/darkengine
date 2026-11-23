@@ -104,11 +104,11 @@ static void lightPnP_ChangeInt(Rect *where, bool val, int data)
    lightPnP_setvars(lightPnP_br,TRUE);
 }
 
-void Create_lightPnP(LGadRoot* root, Rect* bounds, editBrush *br)
+void Create_lightPnP(Rect* bounds, editBrush *br)
 {
    GFHSetCoordMask(GFH_NO_D|GFH_NO_W|GFH_NO_H);
    lightPnP_buildRects(bounds);   
-   PnP_GadgStart(&lightPnP,root);   
+   PnP_GadgStart(&lightPnP);
    lightPnP_setvars(br,FALSE);
    PnP_PictureBox(getRect(0),NULL,0);       // making this a bool * is super icky
    PnP_ButtonToggle(getRect(1),"Type:Omni","Type:Spot",&_local_type,lightPnP_ChangeInt,0);

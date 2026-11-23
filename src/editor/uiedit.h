@@ -9,9 +9,18 @@
 #ifndef __UIEDIT_H
 #define __UIEDIT_H
 #include <guistyle.h>
+#include <rect.h>
 #include <uigame.h>
 #include <editorplatform.h>
 
+typedef struct sEditorWorkspaceLayout
+{
+   Rect views, tools, console, status;
+} sEditorWorkspaceLayout;
+
+EXTERN const sEditorWorkspaceLayout *EditorWorkspaceLayout(void);
+EXTERN void EditorResizeWorkspace(Point split);
+EXTERN Rect EditorMapBrushPanelRect(Rect rect);
 EXTERN void EditorCreateGUI(void);
 EXTERN void EditorDestroyGUI(void);
 

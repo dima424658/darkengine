@@ -35,6 +35,7 @@
 #include <gcompose.h>
 #include <kbcook.h>
 #include <config.h>
+#include <platform_services.h>
 #include <status.h>
 #include <scrnman.h>
 #include <matrix.h>
@@ -60,6 +61,7 @@ static Point vmGUIDims;          // size of the current GUI
 static Point vmGUITop;           // absolute UpperLeft corner of GUI
 static Point vmGUICenter={0,0};  // sliding center point of GUI - 0,0 means uninitialized
 static Rect  vmGUIRect;
+static float vmSplitX, vmSplitY;
 
 // locals
 static int par_handler_cookie;
@@ -67,7 +69,6 @@ static Region *vmWinParent=NULL;
 
 // definitions/constants
 #define VIEW_MARGIN_X 3  // xsize pixel border, per side
-#define VIEW_MARGIN_Y 2  // ysize pixel border, per side
 
 // THE BIG THING - determines where the windows are in real life...
 // returns whether the rect is currently visible? fills in params
@@ -101,8 +102,8 @@ BOOL vmGetRegionInfo(int i, Point *origin, Point *size)
 
       if (row)
       {
-         origin->y+=vmGUICenter.y + VIEW_MARGIN_Y;
-         size->y=vmGUIDims.y - vmGUICenter.y - VIEW_MARGIN_Y - 1;
+         origin->y+=vmGUICenter.y + VM_VIEW_GAP_Y;
+         size->y=vmGUIDims.y - vmGUICenter.y - VM_VIEW_GAP_Y;
       }
       else
          size->y=vmGUICenter.y;
@@ -115,27 +116,26 @@ BOOL vmGetRegionInfo(int i, Point *origin, Point *size)
          if (vmLayoutVerticalSplit)
             size->x=vmGUICenter.x - VIEW_MARGIN_X;
          else
-            size->y=vmGUICenter.y - VIEW_MARGIN_Y;
+            size->y=vmGUICenter.y;
       }
       else  // equispaced other 3
       {
          if (vmLayoutVerticalSplit)
          {
             size->x=vmGUIDims.x - vmGUICenter.x - VIEW_MARGIN_X;
-            size->y=vmGUIDims.y/3;
+            const int height = vmGUIDims.y - 2 * VM_VIEW_GAP_Y;
+            const int top = (i - 1) * height / 3;
+            size->y = i * height / 3 - top;
             origin->x+=vmGUICenter.x + VIEW_MARGIN_X;
-            if (i!=1)  // keep first 1 flush
-               origin->y+=(i-1)*size->y + VIEW_MARGIN_Y;
-            if (i!=3)  // keep last 1 flush
-               size->y-=VIEW_MARGIN_Y;
+            origin->y += top + (i - 1) * VM_VIEW_GAP_Y;
          }
          else
          {
             size->x=vmGUIDims.x/3;
-            size->y=vmGUIDims.y - vmGUICenter.y - VIEW_MARGIN_Y;
+            size->y=vmGUIDims.y - vmGUICenter.y - VM_VIEW_GAP_Y;
             if (i!=1)  // keep first 1 flush
                origin->x+=(i-1)*size->x + VIEW_MARGIN_X;
-            origin->y+=vmGUICenter.y + VIEW_MARGIN_Y;
+            origin->y+=vmGUICenter.y + VM_VIEW_GAP_Y;
             if (i!=3)  // keep last 1 flush
                size->x-=VIEW_MARGIN_X;
          }
@@ -144,20 +144,20 @@ BOOL vmGetRegionInfo(int i, Point *origin, Point *size)
    return rv;
 }
 
-// draw outline skeletons of each window
-void vmDrawWindowSkeletons(void)
+BOOL vmWinCfgGetBounds(Rect *bounds, Point *split)
 {
-   Point loc, size;
-   int i;
-   
-   GUIErase(&vmGUIRect);
-   gr_set_fcolor(guiStyleGetColor(NULL,StyleColorFG));
-   for (i=0; i<MAX_CAMERAS_REAL; i++)
-      if (vmGetRegionInfo(i,&loc,&size))  // draw the rectangle for our region info, eh?
-         gd_box(loc.x,loc.y,loc.x+size.x-2,loc.y+size.y-2);
+   if (!vmWinParent || vmGUIDims.x <= 0 || vmGUIDims.y <= 0)
+      return FALSE;
+   *bounds = vmGUIRect;
+   *split = vmGUICenter;
+   return TRUE;
 }
 
-// do region math and then clear the area out
+BOOL vmWinCfgUsesImGui(void)
+{
+   return !PlatformBatchMode();
+}
+
 static void cleanup_region(int which)
 {
    Rect r;
@@ -166,23 +166,15 @@ static void cleanup_region(int which)
 }
 
 // actually toggle from soloed to nonsoloed
+void vmWindowsRefresh(BOOL resize);
+
 void vmToggleGUIFull(void)
 {
    int i=vm_get_cur_region(), j;
-   Region *reg=&vmRegions[i];
-   Point loc, size;
-
    if (!vmAllViewsAvailable()) return;
    if (vmSoloed) cleanup_region(i);   // we were soloed
    else if (vm_menu_inprog) vm_menu_camera_lock=TRUE;  // we arent, so keep new window
    vmSoloed=!vmSoloed;
-   if (!vmGetRegionInfo(i,&loc,&size))
-   {
-      Warning(("Hey! GetRegionInfo of bogus region %d in ToggleFull\n",i));
-      return;
-   }
-   region_resize(reg,size.x,size.y);
-   region_move(reg,loc.x,loc.y,reg->z);
    for (j=0; j<MAX_CAMERAS_REAL; j++)
       if (i!=j)
       {
@@ -195,7 +187,7 @@ void vmToggleGUIFull(void)
          else
             vm_enable_region(j);
       }
-   vm_redraw();
+   vmWindowsRefresh(TRUE);
 }
 
 // correctly redraw all windows, if "resize" is set, first regenerate and size them
@@ -214,24 +206,36 @@ void vmWindowsRefresh(BOOL resize)
          {
             reg=&vmRegions[i];
             region_resize(reg,size.x,size.y);
-            region_move(reg,loc.x,loc.y,reg->z);
+            region_move(reg,loc.x-vmGUITop.x,loc.y-vmGUITop.y,reg->z);
          }
    }
    vm_redraw();   // do we have to expose or something here?
+}
+
+void vmWinCfgSetSplit(Point split)
+{
+   const int minWidth = min(80,vmGUIDims.x/2);
+   const int minHeight = min(80,vmGUIDims.y/2);
+   const Point center = MakePoint(max(minWidth,min(split.x,vmGUIDims.x-minWidth)),
+                                  max(minHeight,min(split.y,vmGUIDims.y-minHeight)));
+   if (!vmWinParent || (center.x == vmGUICenter.x && center.y == vmGUICenter.y))
+      return;
+
+   vmGUICenter = center;
+   vmSplitX = (float)center.x / vmGUIDims.x;
+   vmSplitY = (float)center.y / vmGUIDims.y;
+   vmWindowsRefresh(TRUE);
 }
 
 // set a new bounding rectangle
 // why cant we set an origin too? who knows, have to fix it, clearly
 void vmNewBoundingRect(Rect *bounds)
 {
-   float scale_x=(float)RectWidth(bounds)/(float)RectWidth(&vmGUIRect);
-   float scale_y=(float)RectHeight(bounds)/(float)RectHeight(&vmGUIRect);
-
-   vmGUIDims   = MakePoint(RectWidth(bounds),RectHeight(bounds));
+   vmGUIDims   = MakePoint(RectWidth(bounds)-1,RectHeight(bounds));
    vmGUIRect   = *bounds;
+   vmGUITop    = bounds->ul;
 
-   vmGUICenter.x = (short) (scale_x * vmGUICenter.x);
-   vmGUICenter.y = (short) (scale_y * vmGUICenter.y);
+   vmGUICenter = MakePoint((int)(vmSplitX * vmGUIDims.x + 0.5f), (int)(vmSplitY * vmGUIDims.y + 0.5f));
 }
 
 // utilities to find out about scale/size of current window layout
@@ -257,85 +261,8 @@ float vmGetSizeRatio(int r, float *xrat, float *yrat)
 ///////////////////
 // window layout control UI
 
-#define AXIS_MASK_X        0x01
-#define AXIS_MASK_Y        0x02
-
-// maybe someday?
-#define AXIS_MASK_LEFT_EDGE    0x04
-#define AXIS_MASK_RIGHT_EDGE   0x08
-#define AXIS_MASK_TOP_EDGE     0x10
-#define AXIS_MASK_BOTTOM_EDGE  0x20
-
 #define ismouse(ev) ((ev).type & (UI_EVENT_MOUSE | UI_EVENT_MOUSE_MOVE))
-#define iskbd(ev)   ((ev).type == UI_EVENT_KBD_COOKED)
-
-// modal drag window layout commands
-
-#define DRAG_BORDER 10
-
-// should we perhaps put the mouse back in the right place at some point?
-// returns whether we moved anything or not
-static BOOL _doWinDrag(int axis_mask)
-{
-   Point init_center=vmGUICenter;
-   const grs_canvas *canvas=ScrnGetDrawCanvas();
-   Point screen_size, min_center, max_center;
-   uiEvent ev;
-
-   if (!canvas || !modal_ui_start(MODAL_CHECK_LEFT)) return FALSE;
-   screen_size=MakePoint(canvas->bm.w,canvas->bm.h);
-   min_center=MakePoint(vmGUITop.x+DRAG_BORDER,vmGUITop.y+DRAG_BORDER);
-   max_center=MakePoint(vmGUITop.x+vmGUIDims.x-DRAG_BORDER-1,
-                        vmGUITop.y+vmGUIDims.y-DRAG_BORDER-1);
-   EditorShowNativeCursor(FALSE);
-   uiHideMouse(NULL);
-   do {
-      modal_ui_update();
-      while (modal_ui_get_event(&ev))
-      {
-         if (ismouse(ev))
-         {
-            BOOL slam_mouse=FALSE;
-            uiMouseEvent *mev = (uiMouseEvent *)&ev;
-            if (mev->action & MOUSE_LUP)
-               goto mouse_up;
-            if (mev->pos.x<0 || mev->pos.x>=screen_size.x ||
-                mev->pos.y<0 || mev->pos.y>=screen_size.y)
-               slam_mouse=TRUE;
-            else
-            {
-               if (axis_mask&AXIS_MASK_X)
-               {
-                  vmGUICenter.x=max(min_center.x,min(mev->pos.x,max_center.x));
-                  slam_mouse|=(vmGUICenter.x!=mev->pos.x);
-               }
-               if (axis_mask&AXIS_MASK_Y)
-               {
-                  vmGUICenter.y=max(min_center.y,min(mev->pos.y,max_center.y));
-                  slam_mouse|=(vmGUICenter.y!=mev->pos.y);
-               }
-            }
-            if (slam_mouse)
-               mouse_put_xy(vmGUICenter.x,vmGUICenter.y);
-            vmDrawWindowSkeletons();
-         }
-         else if (iskbd(ev))
-         {
-            uiCookedKeyEvent *kev = (uiCookedKeyEvent *) &ev;
-            if (kev->code == (27 | KB_FLAG_DOWN))
-               goto esc;
-         }
-      }
-   } while (1);
-
-esc:
-   vmGUICenter=init_center;
-mouse_up:
-   modal_ui_end();
-   uiShowMouse(NULL);
-   EditorUpdateCursor();
-   return (vmGUICenter.x!=init_center.x)||(vmGUICenter.y!=init_center.y);
-}
+#define iskbd(ev) ((ev).type == UI_EVENT_KBD_COOKED)
 
 #define DEAD_SPOT_SIZE (8)
 static BOOL _doWinScroll(int c)
@@ -400,32 +327,6 @@ mouse_up:
    return (start_loc.x!=cur_loc.x)||(start_loc.y!=cur_loc.y)||(start_loc.z!=cur_loc.z);
 }
 
-#define CENTER_TOL (VIEW_MARGIN_X*4)
-// actually setup for and execute the windows resizing drag
-static BOOL setup_center_drag(int x_pos, int y_pos)
-{
-   Point offset;
-   int allowAxisMask;
-   
-   offset.x=x_pos-vmGUICenter.x;   // get distance from center of GUI
-   offset.y=y_pos-vmGUICenter.y;
-   
-   if ((abs(offset.x)<CENTER_TOL)&&(abs(offset.y)<CENTER_TOL))
-      allowAxisMask=AXIS_MASK_X|AXIS_MASK_Y;
-   else
-      if (abs(offset.x)>abs(offset.y))
-         allowAxisMask=AXIS_MASK_Y;
-      else
-         allowAxisMask=AXIS_MASK_X;
-   if (!vmLayout2by2)  // 1by3, dont allow off axis motion
-      if (vmLayoutVerticalSplit) allowAxisMask&=~AXIS_MASK_Y;
-      else                       allowAxisMask&=~AXIS_MASK_X;
-   if (allowAxisMask&AXIS_MASK_X) x_pos=vmGUICenter.x;
-   if (allowAxisMask&AXIS_MASK_Y) y_pos=vmGUICenter.y;
-   mouse_put_xy(x_pos,y_pos);
-   return _doWinDrag(allowAxisMask);
-}
-
 // this is really ugly, eh?
 BOOL vmScrollCamera(int c)
 {
@@ -473,9 +374,7 @@ static BOOL vm_parent_mouse_handler(uiEvent* _ev, Region* reg, void* _data)
       if (vmSoloed || !vmAllViewsAvailable())
          return FALSE;
       
-      if (ev->action&MOUSE_LDOWN)
-         changed_setup=setup_center_drag(ev->pos.x,ev->pos.y);
-      else if (ev->action&MOUSE_RDOWN)
+      if (ev->action&MOUSE_RDOWN)
       {  // for now, we cycle through the available layouts
          vmWinCfgCycleLayout(vmWINCFG_C_NOUPDATE);
          changed_setup=TRUE;
@@ -510,7 +409,10 @@ void vmWinCfgCycleLayout(int new_layout)
    case vmWINCFG_2by2:       vmLayout2by2=TRUE;  vmLayoutVerticalSplit=TRUE;  noSolo=TRUE; break;
    case vmWINCFG_1by3_VERT:  vmLayout2by2=FALSE; vmLayoutVerticalSplit=TRUE;  noSolo=TRUE; break;
    case vmWINCFG_1by3_HORIZ: vmLayout2by2=FALSE; vmLayoutVerticalSplit=FALSE; noSolo=TRUE; break;
-   case vmWINCFG_RECENTER:   vmGUICenter.x=vmGUIDims.x/2; vmGUICenter.y=vmGUIDims.y/2; break;
+   case vmWINCFG_RECENTER:
+      vmSplitX = vmSplitY = 0.5f;
+      vmGUICenter = MakePoint(vmGUIDims.x/2,vmGUIDims.y/2);
+      break;
    case vmWINCFG_SOLO:       vmToggleGUIFull(); return;
    }
    if (noSolo && vmSoloed)
@@ -536,12 +438,14 @@ void vmWinCfgCreate(Region* parent, Rect* bounds)
    float cenX=0.5, cenY=0.5;
    
    vmGUITop    = bounds->ul;  // should do this in some better way
-   vmGUIDims   = MakePoint(RectWidth(bounds)-1,RectHeight(bounds)-1);
+   vmGUIDims   = MakePoint(RectWidth(bounds)-1,RectHeight(bounds));
    vmGUIRect   = *bounds;
 
    config_get_float("vmCenterX",&cenX);
    config_get_float("vmCenterY",&cenY);
-   vmGUICenter = MakePoint((int)(RectWidth(bounds) * cenX), (int)(RectHeight(bounds) * cenY));
+   vmSplitX = cenX;
+   vmSplitY = cenY;
+   vmGUICenter = MakePoint((int)(vmGUIDims.x * vmSplitX + 0.5f), (int)(vmGUIDims.y * vmSplitY + 0.5f));
 
 #ifdef SEE_BORDERS_CLEARLY
    vmGUIDims.x -= 10; vmGUIDims.y -= 10;
@@ -555,12 +459,10 @@ void vmWinCfgCreate(Region* parent, Rect* bounds)
 // close down the shop
 void vmWinCfgDestroy(void)
 {
-   float cenX=(float)vmGUICenter.x/(float)vmGUIDims.x;
-   float cenY=(float)vmGUICenter.y/(float)vmGUIDims.y;
    uiRemoveRegionHandler(vmWinParent,par_handler_cookie);
    vmWinParent=NULL;
-   config_set_float_from_var("vmCenterX",cenX);
-   config_set_float_from_var("vmCenterY",cenY);
+   config_set_float_from_var("vmCenterX",vmSplitX);
+   config_set_float_from_var("vmCenterY",vmSplitY);
    config_set_priority("vmCenterX",CONFIG_DFT_LO_PRI);
    config_set_priority("vmCenterY",CONFIG_DFT_LO_PRI);   
 }
@@ -569,6 +471,12 @@ void vmWinCfgDestroy(void)
 // currently just takes bounds, clearly not enough
 void vmWinCfgResize(Rect *bounds)
 {
+   if (bounds->lr.y < vmGUIRect.lr.y)
+   {
+      Rect exposed = {MakePoint(vmGUIRect.ul.x,bounds->lr.y), vmGUIRect.lr};
+      GUIErase(&exposed);
+   }
+   region_resize(vmWinParent,RectWidth(bounds),RectHeight(bounds));
    vmNewBoundingRect(bounds);
    vmWindowsRefresh(TRUE);
 }

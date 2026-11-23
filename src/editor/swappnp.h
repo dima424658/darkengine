@@ -35,8 +35,8 @@ typedef enum PNPkind
 int PnP_ForBrush(editBrush *brush);
 
 // Create the PNP of the specified kind and make it the current PNP
-EXTERN void GFHOpen_a_PNP(int which, PNPkind kind, LGadRoot* root, Rect* bounds, editBrush* brush);
-#define GFHOpenPNP(kind,root,bounds,brush) GFHOpen_a_PNP(0,kind,root,bounds,brush)
+EXTERN void GFHOpen_a_PNP(int which, PNPkind kind, Rect* bounds, editBrush* brush);
+#define GFHOpenPNP(kind,bounds,brush) GFHOpen_a_PNP(0,kind,bounds,brush)
 
 //
 //  Update the current pnp
@@ -71,7 +71,7 @@ typedef enum GFHSwapKind
 } GFHSwapKind;
 
 // Create the swappable of the specified kind and make it the current swappable
-EXTERN void GFHOpenSwappable(GFHSwapKind kind, LGadRoot* root, Rect* bounds, editBrush* brush);
+EXTERN void GFHOpenSwappable(GFHSwapKind kind, Rect* bounds, editBrush* brush);
 
 //  Update the current swappable
 EXTERN void GFHUpdateSwappable(GFHUpdateOp op, editBrush* brush);

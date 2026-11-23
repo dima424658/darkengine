@@ -38,6 +38,17 @@ EXTERN void cmdterm_redraw(void);
 EXTERN void cmdterm_capture_status(const char* text);
 EXTERN void cmdterm_execute_command(const char* command);
 
+#define CMDTERM_MAX_LINES 4096
+#define CMDTERM_LINE_LENGTH 256
+typedef void (*CmdTermFocusHandler)(const char *prefix, BOOL toggle);
+EXTERN void cmdterm_set_editor_focus(CmdTermFocusHandler handler);
+EXTERN int cmdterm_editor_output(char (*lines)[CMDTERM_LINE_LENGTH], unsigned *revision);
+EXTERN void cmdterm_editor_execute(char *command);
+EXTERN void cmdterm_editor_visible_range(int first, int count);
+EXTERN const char *cmdterm_editor_history(int direction);
+EXTERN const char *cmdterm_editor_complete(const char *input);
+EXTERN const char *cmdterm_editor_suggestion(const char *input, int index);
+
 #endif // __CMDTERM_H
 
 

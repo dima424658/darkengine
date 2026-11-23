@@ -24,16 +24,18 @@ EXTERN int vmWinCfgGetMode(void);
 EXTERN void vmWinCfgCreate(Region* parent, Rect* bounds);
 EXTERN void vmWinCfgDestroy(void);
 
+#define VM_VIEW_GAP_Y 2
+
 // get origin and size of a region
 EXTERN BOOL vmGetRegionInfo(int i, Point *origin, Point *size);
+EXTERN BOOL vmWinCfgGetBounds(Rect *bounds, Point *split);
+EXTERN BOOL vmWinCfgUsesImGui(void);
+EXTERN void vmWinCfgSetSplit(Point split);
 
 // utilities to find out about sizes/shapes of windows at the moment
 // in relation to expected values
 EXTERN void vmGetReferenceSize(Point *size);
 EXTERN float vmGetSizeRatio(int r, float *xrat, float *yrat);
-
-// draw the current window config outlines
-EXTERN void vmDrawWindowSkeletons(void);
 
 // go in and out of vmSoloed mode
 EXTERN void vmToggleGUIFull(void);

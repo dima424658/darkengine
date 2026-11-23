@@ -408,7 +408,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          IInputBinder_SetContext (g_pInputBinder, HK_BRUSH_EDIT, TRUE);
          HotkeyContext = HK_BRUSH_EDIT;
 
-         StatusEnable();
          gedit_enter();
          if (config_is_defined("editorcam_from_game"))
             synch_edit_camera();
@@ -439,6 +438,9 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          if (!state->in_mode)
             break; 
       case kMsgSuspendMode:
+      {
+         const BOOL entering_game = IsEqualGUID(info.mode->to.pID,&LOOPID_GameMode) ||
+            GameToolIsToGameModeGUID(info.mode->to.pID);
          state->in_mode = FALSE; 
          ParticleGroupExitMode(); 
          if(g_InMotionEditor)
@@ -448,19 +450,16 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          // messages cannot schedule another rebuild and create an endless
          // resize/flicker loop.
          EditorStopWindowResizeTracking();
+         if (entering_game)
+            gedit_exit();
          SetMainMenu(NULL);
          EditorResetCursor();
          EditorDestroyGUI();
-         StatusDisable();
          
          // Determine if we're going into game mode...
-         if (IsEqualGUID(info.mode->to.pID,&LOOPID_GameMode) ||
-			    GameToolIsToGameModeGUID(info.mode->to.pID))
+         if (entering_game)
          {
-            ISimManager* pSimMan = AppGetObj(ISimManager); 
-            sDispatchMsg msg = { kSimInit}; 
-
-            gedit_exit();
+            ISimManager* pSimMan = AppGetObj(ISimManager);
             SaveBrushSelection(); 
             BackupMission(); 
             ISimManager_StartSim(pSimMan); 
@@ -469,6 +468,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
 
 
          break;
+      }
 
       case kMsgAppInit:
          InitDrawnRelations();
@@ -509,9 +509,7 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          time(&ltime);
          memcpy(&time_of_day, localtime(&ltime), sizeof(struct tm));
          StatusField(SF_TIME,asctime(&time_of_day));
-         StatusUpdate();
          GFHUpdate(GFH_FRAME);
-         cmdterm_redraw();
          if(g_InMotionEditor)
             MotEditUpdate((float)info.frame->dTicks);
 
@@ -580,7 +578,6 @@ static eLoopMessageResult LGAPI _LoopFunc(void* data, eLoopMessage msg, tLoopMes
          uieditStyleSetup();   // recompute the guiStyle
          vm_redraw();
          uieditRedrawAll();
-         StatusDrawStringAll();
          break;
 
       case kMsgDatabase:

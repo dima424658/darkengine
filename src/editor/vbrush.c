@@ -488,9 +488,8 @@ void vBrush_FrameCallback(void)
                }
                else
                {
-                  extern void label_vs_update(void); // only do this if it isnt the last one, or something
                   memcpy(&curB->sz,&_last_Br.sz,sizeof(mxs_vector));   // save back
-                  label_vs_update();
+                  vm_redraw();
                }
                deal=TRUE;
             }

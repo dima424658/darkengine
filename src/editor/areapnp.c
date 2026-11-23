@@ -257,11 +257,11 @@ static void areaPnP_time(PnP_SliderOp op, Rect *where, int val, intptr_t data)
 //////////////
 // per frame control
 
-void Create_areaPnP(LGadRoot* root, Rect* bounds, editBrush *br)
+void Create_areaPnP(Rect* bounds, editBrush *br)
 {
    GFHSetCoordMask(GFH_ALL_COORDS);
    areaPnP_buildRects(bounds);
-   PnP_GadgStart(&areaPnP,root);
+   PnP_GadgStart(&areaPnP);
    areaPnP_setvars(br,FALSE);
    PnP_ButtonToggle(getRect(0),"Show Hot","Show All",&renderHotsOnly,areaPnP_UpdateFlag,HOTS_OR_ALL);
    PnP_ButtonToggle(getRect(1),"Activate","DeActivate",&actv_hot,areaPnP_UpdateFlag,ACTIVATE);

@@ -7,7 +7,7 @@
 #include <config.h>
 
 #include <userpnp.h>
-#include <cmdbutts.h>
+#include <imgui_pnp.h>
 #include <gadblist.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
@@ -19,14 +19,13 @@
 
 #define USER_PNP_PREFIX "user_menu"
 
-static CmdButtonListDesc user_desc;
-static LGadButtonList user_list;
+static _PnP_GadgData user_panel;
 static int menu_size = 0;
 
 #define MAX_MENU_LINES 7
 #define USER_MENU_SPACING MakePoint(1,1)
 
-void CreateUserPNP(LGadRoot* root, Rect* bounds, editBrush* brush)
+void CreateUserPNP(Rect* bounds, editBrush* brush)
 {
    menu_size = 0;
    config_get_int(USER_PNP_PREFIX"_size",&menu_size);
@@ -34,8 +33,8 @@ void CreateUserPNP(LGadRoot* root, Rect* bounds, editBrush* brush)
    {
       Point dims = MakePoint(1,MAX_MENU_LINES); 
       dims.x = (menu_size+MAX_MENU_LINES-1)/MAX_MENU_LINES;
-      CreateConfigButtonDesc(&user_desc,menu_size,bounds,USER_PNP_PREFIX,dims,USER_MENU_SPACING);
-      CreateCmdButtonList(&user_list,root,&user_desc);
+      PnP_GadgStart(&user_panel);
+      PnP_CommandButtons(bounds, USER_PNP_PREFIX, menu_size, dims);
    }
 }
 
@@ -43,15 +42,14 @@ void CreateUserPNP(LGadRoot* root, Rect* bounds, editBrush* brush)
 void UpdateUserPNP(GFHUpdateOp op, editBrush* brush)
 {
    if (menu_size > 0 && op == GFH_FORCE)
-      LGadDrawBox(VB(&user_list),NULL);
+      PnP_FullRedraw(&user_panel);
 }
 
 void DestroyUserPNP(void)
 {
    if (menu_size > 0)
    {
-      LGadDestroyButtonList(&user_list);
-      DestroyConfigButtonDesc(&user_desc);
+      PnP_GadgFree(&user_panel);
    }
    menu_size = 0;
 }

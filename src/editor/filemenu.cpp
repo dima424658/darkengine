@@ -5,6 +5,7 @@
 #include <appagg.h>
 #include <dispwnd.h>
 #include <dbfile.h>
+#include <darkdlgs/darkdlgs.h>
 #include <filemenu.h>
 #include <lg.h>
 #include <platform_services.h>
@@ -51,8 +52,7 @@ extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *filters,
    SDL_Window *parent = window ? window->GetSDLWindow() : nullptr;
    if (NFD_Init() != NFD_OKAY)
    {
-      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DromEd", NFD_GetError(),
-                               parent);
+      winui_Text(NFD_GetError());
       return NULL;
    }
    struct DialogSession
@@ -113,8 +113,7 @@ extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *filters,
    std::unique_ptr<nfdu8char_t, decltype(&NFD_FreePathU8)> selection(selected, &NFD_FreePathU8);
    std::string path = outcome == NFD_OKAY && selected ? selected : "";
    if (outcome == NFD_ERROR)
-      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DromEd", NFD_GetError(),
-                               parent);
+      winui_Text(NFD_GetError());
    if (path.empty())
       return NULL;
 
@@ -130,45 +129,27 @@ extern "C" char *FileDialog(eFileMenuMode mode, sFileMenuFilter *filters,
 
    if (path.size() >= static_cast<size_t>(bufferLength))
    {
-      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "DromEd", "The selected path is too long.",
-                               NULL);
+      winui_Text("The selected path is too long.");
       return NULL;
    }
    memcpy(buffer, path.c_str(), path.size() + 1);
    return buffer;
 }
 
-extern "C" void FileMenu(void)
+void FileMenu(void)
 {
    if (PlatformBatchMode())
    {
-      PlatformBatchReportError("DromEd", "File menu requested in batch mode");
+      PlatformBatchReportError("DromEd batch", "File menu requested in batch mode");
       return;
    }
-   const SDL_MessageBoxButtonData buttons[] = {
-       {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Cancel"},
-       {0, 1, "Load world"},
-       {0, 2, "Save world"},
-       {0, 3, "Clear world"},
-   };
-   const SDL_MessageBoxData data = {
-       SDL_MESSAGEBOX_INFORMATION,
-       NULL,
-       "DromEd: File",
-       "Choose a file operation",
-       4,
-       buttons,
-       NULL,
-   };
-   int selected = 0;
-   if (!SDL_ShowMessageBox(&data, &selected))
-      return;
-
-   char path[4096] = {};
-   if (selected == 1 && FileDialog(kFileMenuLoad, NULL, "mis", path, sizeof(path)))
+   const menustring choices[] = {"Load world", "Save world", "Clear world"};
+   const int selected = DoSimpleMenu("DromEd: File", choices, 3);
+   char path[4096]{};
+   if (selected == 0 && FileDialog(kFileMenuLoad, nullptr, "mis", path, sizeof(path)))
       load_file(path);
-   else if (selected == 2 && FileDialog(kFileMenuSave, NULL, "mis", path, sizeof(path)))
+   else if (selected == 1 && FileDialog(kFileMenuSave, nullptr, "mis", path, sizeof(path)))
       save_world(path);
-   else if (selected == 3 && winui_GetYorN("Clear the current world?"))
+   else if (selected == 2 && winui_GetYorN("Clear the current world?"))
       dbBuildDefault();
 }

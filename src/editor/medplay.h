@@ -41,6 +41,7 @@ EXTERN void PlayOptInit();
 EXTERN void PlayOptApply();
 EXTERN BOOL PlayMotionStart();
 EXTERN void PlayMotionStop();
+EXTERN BOOL PlayMotionActive(void);
 EXTERN void PlayMotionUpdate(float dt);
 EXTERN void PlayMotionPoseAtFrame(int frame);
 

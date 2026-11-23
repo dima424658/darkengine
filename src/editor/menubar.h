@@ -8,6 +8,7 @@ EXTERN int EditorViewportMenu(const char *const *items, int count, int x, int y)
 void SetMenuBar(void (*pfnDraw)());
 bool MenuBarActive();
 bool MenuBarOwnsPointer();
+void UpdateEditorImGuiCursor(bool ownsPointer);
 #endif
 
 #endif

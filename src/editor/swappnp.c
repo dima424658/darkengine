@@ -5,6 +5,7 @@
 
 // $Header: r:/t2repos/thief2/src/editor/swappnp.c,v 1.16 2000/02/19 13:11:33 toml Exp $
 #include <gcompose.h>
+#include <imgui_pnp.h>
 
 #include <swappnp.h>
 #include <userpnp.h>
@@ -20,7 +21,7 @@
 
 typedef struct methods 
 {
-   void (*open)(LGadRoot* root, Rect* bounds, editBrush* brush);
+   void (*open)(Rect* bounds, editBrush* brush);
    void (*update)(GFHUpdateOp op, editBrush* brush);
    void (*close)(void);
 } Methods;
@@ -30,7 +31,6 @@ typedef struct methodizer
    char* name;
    int max;
    Methods* methods;
-   LGadRoot root;
    int which;
 } Methodizer;
 
@@ -38,29 +38,17 @@ typedef struct methodizer
 // Generic methodizer stuff
 ////////////////////////////////////////////////////////////
 
-void MethodOpen(Methodizer* m, int  kind, LGadRoot* root, Rect* bounds, editBrush* brush)
+static void MethodOpen(Methodizer *method, int kind, Rect *bounds, editBrush *brush)
 {
-   if (m->which > 0)
-   {
-      Warning(("opening %s %d when %d is already open!\n",m->name,kind,m->which));
-   }
-   
-   if (kind >= m->max)
-   {
-      Warning(("There is no %s #%d\n",m->name,kind));
+   if (kind < 0 || kind >= method->max)
       return;
-   }
-
-   if (m->methods[kind].open != NULL)
+   method->which = kind;
+   if (method->methods[kind].open)
    {
-      Rect r = { { 0,0},}; 
-      
-      r.lr = MakePoint(RectWidth(bounds),RectHeight(bounds));
-      LGadSetupSubRoot(&m->root,root,bounds->ul.x,bounds->ul.y,
-                       (short)RectWidth(bounds),(short)RectHeight(bounds));
-      m->methods[kind].open(&m->root,&r,brush);
+      Rect rect = { {0, 0}, {RectWidth(bounds), RectHeight(bounds)} };
+      PnP_SetOrigin(bounds->ul);
+      method->methods[kind].open(&rect, brush);
    }
-   m->which = kind;
 }
 
 ////////////////////////////////////////
@@ -79,27 +67,12 @@ void MethodUpdate(Methodizer* m, GFHUpdateOp op,editBrush* brush)
 
 ////////////////////////////////////////
 
-void MethodClose(Methodizer* m)
+static void MethodClose(Methodizer *method)
 {
-   if (m->which < 0)
-   {
-      Warning(("Closing the null %s\n",m->name));
-      return;
-   }
-   Assrt(m->which < m->max);
-   if (m->methods[m->which].close != NULL)
-   {
-      Rect r;
-      GUIcompose c;
-      m->methods[m->which].close();
-      region_abs_rect(&VB(&m->root)->r,BOX_RECT(VB(&m->root)),&r);
-      GUIsetup(&c,&r,ComposeFlagClear,GUI_CANV_ANY);
-      GUIdone(&c);
-      LGadDestroyRoot(&m->root);
-   }
-   m->which = -1;
+   if (method->which >= 0 && method->methods[method->which].close)
+      method->methods[method->which].close();
+   method->which = -1;
 }
-
 
 ////////////////////////////////////////////////////////////
 // PNP methods
@@ -107,7 +80,7 @@ void MethodClose(Methodizer* m)
 
 #define PnPFunctionList(x) Create_##x##PnP, Update_##x##PnP, Destroy_##x##PnP, 
 #define PnPProto(x) \
-   EXTERN void Create_##x##PnP(LGadRoot *root, Rect *bounds, editBrush *br); \
+   EXTERN void Create_##x##PnP(Rect *bounds, editBrush *br); \
    EXTERN void Destroy_##x##PnP(void); \
    EXTERN void Update_##x##PnP(GFHUpdateOp op, editBrush *br)
 
@@ -138,8 +111,8 @@ Methods pnp_methods[] =
 
 static Methodizer PNPizer[2] =
 {
-   { "PNP 1", NUM_PNPS, pnp_methods, { 0 }, -1 },
-   { "PNP 2", NUM_PNPS, pnp_methods, { 0 }, -1 }
+   { "PNP 1", NUM_PNPS, pnp_methods, -1 },
+   { "PNP 2", NUM_PNPS, pnp_methods, -1 }
 };
 
 int PnP_ForBrush(editBrush *brush)
@@ -159,9 +132,9 @@ int PnP_ForBrush(editBrush *brush)
 
 ////////////////////////////////////////
 
-void GFHOpen_a_PNP(int which, PNPkind kind, LGadRoot* root, Rect* bounds, editBrush* brush)
+void GFHOpen_a_PNP(int which, PNPkind kind, Rect* bounds, editBrush* brush)
 {
-   MethodOpen(&PNPizer[which],kind,root,bounds,brush);
+   MethodOpen(&PNPizer[which], kind, bounds, brush);
 }
 
 ////////////////////////////////////////
@@ -194,7 +167,7 @@ int GFH_PNP_Control_2Up(int me)
 // since swaps are really just PnPs in a different place, for all practical purposes
 #define SwapFunctionList(x) Create_##x##Swap, Update_##x##Swap, Destroy_##x##Swap, 
 #define SwapProto(x) \
-   extern void Create_##x##Swap(LGadRoot *root, Rect *bounds, editBrush *br); \
+   extern void Create_##x##Swap(Rect *bounds, editBrush *br); \
    extern void Destroy_##x##Swap(void); \
    extern void Update_##x##Swap(GFHUpdateOp op, editBrush *br)
 
@@ -216,11 +189,11 @@ Methods swappable_methods[] =
 
 #define NUM_SWAPPABLES (sizeof(swappable_methods)/sizeof(swappable_methods[0]))
 
-static Methodizer Swapizer = { "Swappable", NUM_SWAPPABLES, swappable_methods, { 0 }, -1 };
+static Methodizer Swapizer = { "Swappable", NUM_SWAPPABLES, swappable_methods, -1 };
 
-void GFHOpenSwappable(GFHSwapKind kind, LGadRoot* root, Rect* bounds, editBrush *brush)
+void GFHOpenSwappable(GFHSwapKind kind, Rect* bounds, editBrush *brush)
 {
-   MethodOpen(&Swapizer, kind,root,bounds,brush);
+   MethodOpen(&Swapizer, kind, bounds, brush);
 }
 
 ////////////////////////////////////////

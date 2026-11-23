@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 
@@ -10,15 +11,23 @@
 #include <dispwnd.h>
 #include <editorplatform.h>
 #include <gshelapi.h>
+#include <imgui_workspace.h>
+#include <gadget.h>
+#include <imgui_pnp.h>
 #include <menubar.h>
 #include <render_backend.h>
 #include <uiedit.h>
+#include <txtrpal.h>
 #include <vkrend.h>
 #include <vulkan_imgui.hpp>
 #include <vulkan_overlay.hpp>
 
 namespace
 {
+std::array<SDL_Cursor *, SDL_SYSTEM_CURSOR_COUNT> editorCursors{};
+SDL_Cursor *currentEditorCursor;
+
+constexpr bool kUseDromEdTheme = false;
 constexpr const char *kViewportMenu = "Viewport menu";
 
 struct ViewportMenu
@@ -148,12 +157,14 @@ void cMenuBarOverlay::Prepare(const cVulkanContext &context)
       return;
 
    m_fFrame = m_ImGui.BeginFrame(context);
-   if (m_fFrame && !m_ThemeApplied)
+   if (kUseDromEdTheme && m_fFrame && !m_ThemeApplied)
    {
       ApplyEditorTheme();
       m_ThemeApplied = true;
    }
    SetHeight(m_fFrame ? static_cast<int>(std::ceil(ImGui::GetFrameHeight())) : 0);
+   if (m_fFrame)
+      PrepareEditorWorkspace();
 }
 
 void cMenuBarOverlay::Draw(vk::CommandBuffer commands)
@@ -169,6 +180,7 @@ void cMenuBarOverlay::Draw(vk::CommandBuffer commands)
       ImGui::EndDisabled();
       ImGui::EndMainMenuBar();
    }
+   DrawEditorWorkspace();
    DrawDarkDlgs();
    DrawViewportMenu();
    m_ImGui.Render(commands);
@@ -277,7 +289,17 @@ void cMenuBarOverlay::PresentPlatformWindows()
 
 void cMenuBarOverlay::Reset()
 {
+   UpdateEditorImGuiCursor(false);
+   for (SDL_Cursor *&cursor : editorCursors)
+   {
+      if (cursor)
+         SDL_DestroyCursor(cursor);
+      cursor = nullptr;
+   }
    m_ImGui.Reset();
+   ResetEditorPanelRenderer();
+   ResetTexturePaletteRenderer();
+   ResetEditorImageRenderer();
    m_fFrame = false;
    m_PlatformWindowsPending = false;
    m_ThemeApplied = false;
@@ -313,15 +335,20 @@ bool cMenuBarOverlay::ProcessEvent(const SDL_Event &event)
    switch (event.type)
    {
    case SDL_EVENT_MOUSE_MOTION:
-      return modal || popupOpen || event.motion.y < m_Height;
+      return modal || popupOpen || event.motion.y < m_Height || EditorWorkspaceOwnsPointer(event.motion.x, event.motion.y);
    case SDL_EVENT_MOUSE_BUTTON_DOWN:
    case SDL_EVENT_MOUSE_BUTTON_UP:
-      return modal || popupOpen || event.button.y < m_Height;
+      return modal || popupOpen || event.button.y < m_Height || EditorWorkspaceOwnsPointer(event.button.x, event.button.y, event.button.button);
    case SDL_EVENT_MOUSE_WHEEL:
-      return modal || popupOpen || event.wheel.mouse_y < m_Height;
+      return modal || popupOpen || event.wheel.mouse_y < m_Height || EditorWorkspaceOwnsPointer(event.wheel.mouse_x, event.wheel.mouse_y);
    case SDL_EVENT_KEY_DOWN:
+      if (!modal && !popupOpen && event.key.scancode == SDL_SCANCODE_ESCAPE && CancelEditorWorkspaceResize())
+         return true;
+      [[fallthrough]];
    case SDL_EVENT_KEY_UP:
-      return modal || popupOpen;
+   case SDL_EVENT_TEXT_INPUT:
+   case SDL_EVENT_TEXT_EDITING:
+      return modal || popupOpen || EditorWorkspaceOwnsKeyboard();
    default:
       return false;
    }
@@ -338,6 +365,7 @@ void cMenuBarOverlay::SetDraw(void (*pfnDraw)())
       io.ClearInputMouse();
    }
 
+   ResetEditorWorkspaceInput();
    m_pfnDraw = pfnDraw;
    m_ThemeApplied = false;
    if (!pfnDraw)
@@ -359,9 +387,9 @@ bool cMenuBarOverlay::OwnsPointer() const
       const auto handle = reinterpret_cast<void *>(static_cast<uintptr_t>(SDL_GetWindowID(focus)));
       return ImGui::FindViewportByPlatformHandle(handle) != nullptr;
    }
-   float y;
-   SDL_GetMouseState(NULL, &y);
-   return y < m_Height || ImGui::IsPopupOpen(NULL, ImGuiPopupFlags_AnyPopup);
+   float x, y;
+   SDL_GetMouseState(&x, &y);
+   return y < m_Height || EditorWorkspaceOwnsPointer(x, y) || ImGui::IsPopupOpen(NULL, ImGuiPopupFlags_AnyPopup);
 }
 
 }
@@ -392,4 +420,35 @@ bool MenuBarActive()
 bool MenuBarOwnsPointer()
 {
    return g_MenuBarOverlay.OwnsPointer();
+}
+
+void UpdateEditorImGuiCursor(bool ownsPointer)
+{
+   SDL_Cursor *cursor = SDL_GetDefaultCursor();
+   if (ownsPointer && ImGui::GetCurrentContext())
+   {
+      SDL_SystemCursor shape = SDL_SYSTEM_CURSOR_DEFAULT;
+      switch (ImGui::GetMouseCursor())
+      {
+      case ImGuiMouseCursor_TextInput: shape = SDL_SYSTEM_CURSOR_TEXT; break;
+      case ImGuiMouseCursor_ResizeEW: shape = SDL_SYSTEM_CURSOR_EW_RESIZE; break;
+      case ImGuiMouseCursor_ResizeNS: shape = SDL_SYSTEM_CURSOR_NS_RESIZE; break;
+      case ImGuiMouseCursor_ResizeAll: shape = SDL_SYSTEM_CURSOR_MOVE; break;
+      case ImGuiMouseCursor_ResizeNESW: shape = SDL_SYSTEM_CURSOR_NESW_RESIZE; break;
+      case ImGuiMouseCursor_ResizeNWSE: shape = SDL_SYSTEM_CURSOR_NWSE_RESIZE; break;
+      case ImGuiMouseCursor_Hand: shape = SDL_SYSTEM_CURSOR_POINTER; break;
+      default: break;
+      }
+      if (shape != SDL_SYSTEM_CURSOR_DEFAULT)
+      {
+         if (!editorCursors[shape])
+            editorCursors[shape] = SDL_CreateSystemCursor(shape);
+         if (editorCursors[shape])
+            cursor = editorCursors[shape];
+      }
+   }
+
+   if (cursor && SDL_GetCursor() != cursor && (ownsPointer || currentEditorCursor))
+      SDL_SetCursor(cursor);
+   currentEditorCursor = ownsPointer ? cursor : nullptr;
 }

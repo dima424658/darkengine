@@ -11,6 +11,7 @@
 #include <vkrend.h>
 #include <dispwnd.h>
 #include <menubar.h>
+#include <imgui_workspace.h>
 #include <mouse.h>
 #include <render_backend.h>
 
@@ -73,32 +74,38 @@ void EditorShowNativeCursor(BOOL show)
 
 void EditorUpdateCursor(void)
 {
-   const bool menu=MenuBarOwnsPointer();
+   const bool overlay = MenuBarOwnsPointer();
    AutoAppIPtr_(DisplayWindow,window);
-   const bool hide=menu || !window || SDL_GetMouseFocus()!=window->GetSDLWindow();
-   if (hide!=g_cursorHidden)
+   const bool inEditor = window && SDL_GetMouseFocus() == window->GetSDLWindow();
+   float clientX, clientY;
+   SDL_GetMouseState(&clientX, &clientY);
+   const LGadRoot *root = LGadCurrentRoot();
+   const bool custom = inEditor && !overlay && root && root->curs &&
+      EditorWorkspaceUsesCameraCursor(clientX, clientY);
+
+   UpdateEditorImGuiCursor(overlay);
+   const bool hide = !custom;
+   if (hide != g_cursorHidden)
    {
-      if (hide)
-         uiHideMouse(NULL);
-      else
+      if (custom)
       {
-         // The menu can consume motion while the software cursor is hidden.
-         float clientX, clientY;
-         SDL_GetMouseState(&clientX, &clientY);
+         // ImGui may have consumed motion while the software cursor was hidden.
          int x = static_cast<int>(clientX);
          int y = static_cast<int>(clientY);
          if (RenderBackendClientToLogicalPoint(&x, &y))
             mouse_sync_xy(static_cast<short>(x), static_cast<short>(y));
          uiShowMouse(NULL);
       }
-      g_cursorHidden=hide;
+      else
+         uiHideMouse(NULL);
+      g_cursorHidden = hide;
    }
-   const LGadRoot *root=LGadCurrentRoot();
-   EditorShowNativeCursor(menu || !root || !root->curs);
+   EditorShowNativeCursor(!custom);
 }
 
 void EditorResetCursor(void)
 {
+   UpdateEditorImGuiCursor(false);
    if (g_cursorHidden)
    {
       uiShowMouse(NULL);

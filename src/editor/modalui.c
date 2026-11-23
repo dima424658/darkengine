@@ -10,6 +10,7 @@
 
 #include <stupidui.h>
 #include <modalui.h>
+#include <editorplatform.h>
 #include <scrnman.h>
 #include <render_backend.h>
 #include <memall.h>
@@ -41,8 +42,9 @@ BOOL modal_ui_start(int btn_check)
 void modal_ui_update(void)
 {
    vBrush_FrameCallback();
-   ScrnForceUpdate();
    // The normal editor frame loop is suspended during a modal drag.
+   EditorUpdateCursor();
+   ScrnForceUpdate();
    RenderBackendPresentProgress();
 }
 

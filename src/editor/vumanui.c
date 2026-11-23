@@ -36,7 +36,7 @@ typedef struct vmMouseData
 } vmMouseData;
 
 static vmMouseData ViewRegionData[MAX_CAMERAS_REAL];
-static LGadRoot* view_roots[MAX_CAMERAS_REAL];
+static int reserved_views;
 
 //////////////////////////////////////////
 // VIEW MOUSE HANDLER
@@ -101,7 +101,7 @@ void vm_popup_menu(uiMouseEvent *ev, int c)
    int count;
 
    vm_menu_click_x=ev->pos.x-reg->abs_x;
-   vm_menu_click_y=ev->pos.y-reg->abs_y;
+   vm_menu_click_y=max(0,ev->pos.y-reg->abs_y);
 
    vm_get_popup_menu(c, &names, &commands, &count, ev->pos.x, ev->pos.y);
    vm_display_enable=FALSE;
@@ -148,7 +148,7 @@ void vmCreateGUI(Region* parent, Rect* bounds)
       int cookie;
 
       vmGetRegionInfo(i,&base,&size);
-      area.ul=base;
+      area.ul=MakePoint(base.x-bounds->ul.x,base.y-bounds->ul.y);
       area.lr.x=area.ul.x + size.x;
       area.lr.y=area.ul.y + size.y;
       
@@ -156,7 +156,6 @@ void vmCreateGUI(Region* parent, Rect* bounds)
       make_region(parent,reg,&area,0,NULL);
 
       ViewRegionData[i].viewnum = i;   // fill in data      
-      view_roots[i] = NULL;            // initialize roots      
 
       // install mouse handler
       uiInstallRegionHandler(reg, UI_EVENT_MOUSE|UI_EVENT_MOUSE_MOVE, vm_mouse_handler, &ViewRegionData[i], &cookie);
@@ -166,10 +165,11 @@ void vmCreateGUI(Region* parent, Rect* bounds)
 void vmDestroyGUI(void)
 {
    int i;
-   vmReleaseAllViews();
+   reserved_views = 0;
    for (i = 0; i < MAX_CAMERAS_REAL; i++)
       region_destroy(&vmRegions[i],FALSE);
-   vmWinCfgDestroy();   
+   vmWinCfgDestroy();
+   region_destroy(&vmParent,FALSE);
 }
 
 ////////////////////////////////////////////////////////////
@@ -233,126 +233,64 @@ static ubyte view_layouts[vmNumParms][8] =
 };
 
 
-ubyte find_view_mask(vmGrabParm parm)
+int vmGrabViews(vmGrabParm parm, Rect *bounds)
 {
-   int i;
-   ubyte* layouts = &view_layouts[parm][0];
-   for (i = 0; layouts[i] != 0; i++)
-   {
-      ubyte mask = layouts[i];
-      bool accept = TRUE;
-      int j;
-      // check the mask for availible views
-      for (j = 0; j < MAX_CAMERAS_REAL; j++)
-         if (mask & (1 << j))
-            if (view_roots[j] != NULL)
-            {
-               accept = FALSE;
-               break;
-            }
-      if (accept) return mask;
-   }
-   return 0;
-}
-
-#define MIN_COORD (1 << 16)
-#define MAX_COORD (MIN_COORD - 1)
-
-static void build_mask_rect(ulong mask, Rect* r)
-{
-   bool first = TRUE;
+   const ubyte *layouts = view_layouts[parm];
+   int layout = 0;
    int i;
 
-   for (i = 0; i < MAX_CAMERAS_REAL; i++)
-      if (mask & (1 << i))
-      {     
-         Region* reg = &vmRegions[i];
-         Rect regr;
-
-         region_abs_rect(reg,reg->r,&regr);
-         
-         if (first) 
-         {
-            *r = regr;
-            first = FALSE;
-         }
-         else
-         {
-            RECT_UNION(&regr,r,r);
-         }
-      }
-}
-
-LGadRoot* vmGrabViews(vmGrabParm parm)
-{
-   ubyte layout = find_view_mask(parm);
-   Rect r;
-   LGadRoot* root;
-   int i;
-   
-   if (layout == 0)
-   {
-      Warning(("Failed to grab views. parm = %d\n",parm));
-      return NULL;
-   }
-   
-   build_mask_rect(layout,&r);
-   root = LGadSetupSubRoot(NULL, LGadCurrentRoot(),r.ul.x,r.ul.y,
-        (short)RectWidth(&r),(short)RectHeight(&r));
-   GUIErase(&r);
-
-   for (i = 0; i < MAX_CAMERAS_REAL; i++)
-      if (layout & (1 << i))
+   for (i = 0; layouts[i]; ++i)
+      if ((layouts[i] & reserved_views) == 0 && (layouts[i] & vm_avail_regions) == layouts[i])
       {
-         view_roots[i] = root;
+         layout = layouts[i];
+         break;
+      }
+   if (!layout)
+      return 0;
+
+   vmGetReservedBounds(layout, bounds);
+   for (i = 0; i < MAX_CAMERAS_REAL; ++i)
+      if (layout & VIEW(i))
          vm_disable_region(i);
-      }
-   return root;
+   reserved_views |= layout;
+   GUIErase(bounds);
+   vm_redraw();
+   return layout;
 }
 
-////////////////////////////////////////
-
-int vmReleaseViews(LGadRoot* release)
+void vmGetReservedBounds(int mask, Rect *bounds)
 {
    int i;
-   int count = 0;
-   for (i = 0; i < MAX_CAMERAS_REAL; i++)
-   {
-      if (view_roots[i] == release)
+   BOOL first = TRUE;
+   for (i = 0; i < MAX_CAMERAS_REAL; ++i)
+      if (mask & VIEW(i))
       {
-         view_roots[i] = NULL;
-         vm_enable_region(i);
-         count++;
+         Point origin, size;
+         Rect view;
+         if (!vmGetRegionInfo(i, &origin, &size))
+            continue;
+         view.ul = origin;
+         view.lr = MakePoint(origin.x + size.x, origin.y + size.y);
+         if (first)
+            *bounds = view;
+         else
+            RECT_UNION(bounds, &view, bounds);
+         first = FALSE;
       }
-   }
-   if (count > 0)
-   {  
-      LGadDestroyRoot(release);  
-      vm_redraw();
-   }
-   else
-   {
-      Warning(("Tried to release a root with no associated views\n"));
-   }
-   return count;
 }
 
-int vmReleaseAllViews(void)
+void vmReleaseViews(int mask)
 {
    int i;
-   int count = 0;
-
-   for(i = 0; i < MAX_CAMERAS_REAL; i++)
-      if (view_roots[i] != NULL)
-         count += vmReleaseViews(view_roots[i]);
-   return count;
+   mask &= reserved_views;
+   for (i = 0; i < MAX_CAMERAS_REAL; ++i)
+      if (mask & VIEW(i))
+         vm_enable_region(i);
+   reserved_views &= ~mask;
+   vm_redraw();
 }
 
 BOOL vmAllViewsAvailable(void)
 {
-   int i;
-   for(i = 0; i < MAX_CAMERAS_REAL; i++)
-      if (view_roots[i] != NULL)
-         return FALSE;
-   return TRUE;
+   return !reserved_views;
 }

@@ -64,6 +64,7 @@ void vm_fit_cameras_to_region(mxs_vector *, mxs_vector *);
 void vm_render_camera(int c);
 void vm_render_cameras(void);
 void vm_redraw_view_label(void);
+const char *vm_get_pane_title(int region);
 // grid control for now - used by render to decide about grids
 EXTERN bool vm_show_grid, vm_show_grid_3d;
 

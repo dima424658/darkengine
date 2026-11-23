@@ -21,6 +21,7 @@
 #include <menus.h>
 #include <platform_services.h>
 #include <menubar.h>
+#include <imgui_workspace.h>
 
 namespace
 {
@@ -215,7 +216,8 @@ cMenuSet g_MenuSet;
 
 void DrawMenuBar()
 {
-   g_MenuSet.Draw();
+   if (!g_MenuSet.Empty())
+      g_MenuSet.Draw();
 }
 
 }
@@ -228,7 +230,7 @@ void SetMainMenu(const char *pszName)
    if (window)
       window->SetTitle(pszName ? "DromEd - editor" : "DromEd");
    g_MenuSet.Load(PlatformBatchMode() ? NULL : pszName);
-   SetMenuBar(g_MenuSet.Empty() ? NULL : DrawMenuBar);
+   SetMenuBar(!pszName || PlatformBatchMode() ? NULL : DrawMenuBar);
 }
 
 void MenuCommand(unsigned id)
@@ -243,6 +245,7 @@ void SetRadioCheckmark(int menu, int firstPos, int lastPos, int checkPos)
 
 void ExecutePendingMenuCommands(void)
 {
+   ExecuteEditorWorkspaceActions();
    g_MenuSet.ExecuteCommands();
    UpdateDarkDlgs();
 }

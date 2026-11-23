@@ -9,17 +9,15 @@
 #ifndef __MEDIFACE_H
 #define __MEDIFACE_H
 
-#include <gadget.h>
+#include <rect.h>
 
-EXTERN LGadRoot *main_root;
-
-#define MOTEDIT_BUTTON_HEIGHT 40
-
-EXTERN void CreateMotionEditorInterface();
-EXTERN void DestroyMotionEditorInterface();
-
+EXTERN BOOL CreateMotionEditorInterface(void);
+EXTERN void DestroyMotionEditorInterface(void);
 EXTERN void MainInterfaceResetBotSlider(int num_frames);
-EXTERN void MainInterfaceRefreshFlagBox();
-EXTERN void MainInterfaceReset();
+EXTERN const Rect *MotionEditorBounds(void);
+
+#ifdef __cplusplus
+void DrawMotionEditor();
+#endif
 
 #endif
