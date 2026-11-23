@@ -34,16 +34,37 @@ BOOL cScriptMan::LoadModule(const cFileSpec &module, sScrModuleInfo *info)
         return FALSE;
     }
 
-    info->hModule = PlatformLoadLibrary(module.GetName());
-    if (info->hModule)
+    bool allowNativeModule = true;
+#if defined(_WIN32)
+    // Retail Dark 1 modules expose an older C++ interface ABI, and PE32 OSMs
+    // cannot be loaded by a 64-bit host. Keep both on the compatibility path.
+#if defined(DARK_WIN32_NATIVE_OSM)
+    allowNativeModule = sizeof(void *) == 4 &&
+        (!profile || _stricmp(profile, "thief2") == 0);
+#else
+    allowNativeModule = false;
+#endif
+#endif
+
+    if (allowNativeModule)
     {
-        auto init = reinterpret_cast<tScriptModuleInitFunc>(
-            PlatformFindSymbol(info->hModule, "ScriptModuleInit"));
-        if (init && init(module.GetFileName(), this, m_pfnPrint, g_pMalloc,
-                         &info->pModule))
-            return TRUE;
-        PlatformUnloadLibrary(info->hModule);
-        info->hModule = nullptr;
+        info->hModule = PlatformLoadLibrary(module.GetName());
+        if (info->hModule)
+        {
+            tScriptModuleInitFunc init = nullptr;
+#if defined(_WIN32)
+            init = reinterpret_cast<tScriptModuleInitFunc>(
+                PlatformFindSymbol(info->hModule, "_ScriptModuleInit@20"));
+#endif
+            if (!init)
+                init = reinterpret_cast<tScriptModuleInitFunc>(
+                    PlatformFindSymbol(info->hModule, "ScriptModuleInit"));
+            if (init && init(module.GetFileName(), this, m_pfnPrint, g_pMalloc,
+                             &info->pModule))
+                return TRUE;
+            PlatformUnloadLibrary(info->hModule);
+            info->hModule = nullptr;
+        }
     }
 
     std::string error;
