@@ -10,16 +10,7 @@ if(APPLE)
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Bison.cmake")
-set(DARK_WINDOWS_MOVIE_BACKEND "ffmpeg" CACHE STRING
-  "Windows movie backend: ffmpeg or mfplay")
-set_property(CACHE DARK_WINDOWS_MOVIE_BACKEND PROPERTY STRINGS
-  ffmpeg mfplay)
-if(WIN32 AND NOT DARK_WINDOWS_MOVIE_BACKEND MATCHES "^(ffmpeg|mfplay)$")
-  message(FATAL_ERROR "DARK_WINDOWS_MOVIE_BACKEND must be 'ffmpeg' or 'mfplay'")
-endif()
-if(NOT WIN32 OR DARK_WINDOWS_MOVIE_BACKEND STREQUAL "ffmpeg")
-  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFFmpeg.cmake")
-endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibFFmpeg.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Zlib.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/LibPng.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenALSoft.cmake")

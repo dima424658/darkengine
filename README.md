@@ -242,9 +242,8 @@ built statically from pinned submodules. Install the Vulkan SDK separately;
 CMake uses its Vulkan package and `glslc` shader compiler. On Windows, CMake
 downloads a pinned LGPL shared FFmpeg SDK for the target architecture (x86 or
 x64) from [System233/ffmpeg-msvc-prebuilt](https://github.com/System233/ffmpeg-msvc-prebuilt)
-and copies its DLLs next to the executables. To use Windows Media Foundation
-for movies, set `DARK_WINDOWS_MOVIE_BACKEND=mfplay`. MSYS2 and vcpkg are not
-required. Pass
+and copies its DLLs next to the executables. MSYS2 and vcpkg are not required.
+Pass
 `-DBISON_EXECUTABLE=C:/path/to/win_bison.exe` when Bison is outside `PATH`.
 
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
