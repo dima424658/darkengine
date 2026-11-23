@@ -95,17 +95,17 @@ pfv g_timerFunctions[TMC_TIMER_FNS] = {
 };
 }
 
-extern "C" long tm_get_millisec_unrecorded()
+extern "C" long LGAPI tm_get_millisec_unrecorded()
 {
     return static_cast<long>(PlatformMilliseconds());
 }
 
-extern "C" long tm_get_millisec()
+extern "C" long LGAPI tm_get_millisec()
 {
     return tm_get_millisec_unrecorded();
 }
 
-extern "C" fix tm_get_fix()
+extern "C" fix LGAPI tm_get_fix()
 {
     return fix_make(tm_get_millisec(), 0);
 }

@@ -65,6 +65,7 @@ void gr_init_bitmap (grs_bitmap *bm, uchar *p, uint type, uint flags,
    case BMT_TLUC8: row = w; break;
    case BMT_FLAT16: row = 2*w; break;
    case BMT_FLAT24: row = 3*w; break;
+   case BMT_FLAT32: row = 4*w; break;
    case BMT_RSD8: row = 0; break;
    default:
       Warning(("gr_init_bm(): unsupported type\n"));
@@ -135,6 +136,9 @@ void gr_init_sub_bitmap_unsafe (grs_bitmap *sbm, grs_bitmap *dbm, int x, int y,
    case BMT_FLAT24:
    case BMT_BANK24:
       dbm->bits += 3*x;
+      break;
+   case BMT_FLAT32:
+      dbm->bits += 4*x;
       break;
    case BMT_RSD8:
    default: break;

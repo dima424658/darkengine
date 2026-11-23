@@ -713,11 +713,7 @@ void draw_surface_lgd3d(PortalPolygonCore *poly, PortalPolygonRenderInfo *render
 // This is necessary because wlog is actually log2(row), _not_ log2(w)
 // Shoot me now; it's my own fault. -kevin
 #ifdef RGB_LIGHTING
-#ifdef RGB_888
       info.scale_u = two_to_n(log_scale_u - (hw.lm->wlog - 2));
-#else // RGB_888
-      info.scale_u = two_to_n(log_scale_u - (hw.lm->wlog - 1));
-#endif // RGB_888
 #else
       info.scale_u = two_to_n(log_scale_u - hw.lm->wlog);
 #endif
@@ -1067,11 +1063,7 @@ void draw_surface_multitexture(PortalPolygonCore *poly, PortalPolygonRenderInfo 
 // This is necessary because wlog is actually log2(row), _not_ log2(w)
 // Shoot me now; it's my own fault. -kevin
 #ifdef RGB_LIGHTING
-#ifdef RGB_888
       info.scale_u = two_to_n(log_scale_u - (hw.lm->wlog - 2));
-#else // RGB_888
-      info.scale_u = two_to_n(log_scale_u - (hw.lm->wlog - 1));
-#endif // RGB_888
 #else
       info.scale_u = two_to_n(log_scale_u - hw.lm->wlog);
 #endif
@@ -1452,11 +1444,7 @@ void draw_surface_lightmap_only(PortalPolygonCore *poly, PortalPolygonRenderInfo
 // This is necessary because wlog is actually log2(row), _not_ log2(w)
 // Shoot me now; it's my own fault. -kevin
 #ifdef RGB_LIGHTING
-#ifdef RGB_888
       u_scale = two_to_n(2-(hw.lm->wlog-2));
-#else // RGB_888
-      u_scale = two_to_n(2-(hw.lm->wlog-1));
-#endif // RGB_888
 #else
       u_scale = two_to_n(2-hw.lm->wlog);
 #endif

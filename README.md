@@ -209,41 +209,42 @@ The runner currently provides:
 #### Prerequisites
 
 - 64-bit Windows 10 or Windows 11.
-- Visual Studio 2026 with MSVC x86/x64 build tools and a Windows 10 or 11 SDK
-  for the supplied Windows presets.
-- CMake 4.2 or later for those presets, MSYS2 Bash and Make, and the Vulkan SDK
-  (including `glslc`).
-- Bison 3.0 or later on the build host (`bison` or `win_bison` on `PATH`).
+- Visual Studio 2019 or newer with MSVC x86/x64 build tools and a Windows 10
+  or 11 SDK. The configure helper prefers Visual Studio 2026 when installed.
+- CMake 3.24 or later and the Vulkan SDK (including `glslc`).
+- Bison 3.0 or later (`bison` or `win_bison` on `PATH`). It is a host-side
+  generator and works with every supported Visual Studio version and target
+  architecture.
 - A retail TDP, Thief Gold, or Thief II installation containing `cam.cfg` and
   the stock mission data.
 
 Initialize the pinned source dependencies and configure/build either
-architecture from a Visual Studio Developer PowerShell with MSYS2 tools on
-`PATH`:
+architecture from a Visual Studio Developer PowerShell:
 
 ```powershell
 git submodule update --init --recursive
-cmake --preset windows-x64
+tools/configure-windows.ps1 -Architecture x64
 cmake --build --preset windows-x64-release
 
-cmake --preset windows-x86
+tools/configure-windows.ps1 -Architecture x86
 cmake --build --preset windows-x86-release
 ```
 
-Visual Studio 2022 can instead be selected explicitly with CMake 3.21 or newer:
+To select Visual Studio 2022 explicitly, run:
 
 ```powershell
 cmake -S . -B build-win64 -G "Visual Studio 17 2022" -A x64 -DDARK_BUILD_DROMED=ON
 cmake --build build-win64 --config Release --target thief2 dromed
 ```
 
-SDL3, zlib, libpng, Squirrel, libogg, libvorbis, FFmpeg, and the PKWARE DCL
-decoder are built statically from pinned submodules. Install the Vulkan SDK
-separately; CMake uses its Vulkan package and `glslc` shader compiler. vcpkg is
-not required. FFmpeg is compiled with MSVC; MSYS2 supplies its shell utilities
-and GNU Make, so keep `C:\msys64\usr\bin` on `PATH` during both configuration
-and builds. If Bison is not detected, pass
-`-DBISON_EXECUTABLE=C:/path/to/win_bison.exe` when configuring.
+SDL3, zlib, libpng, Squirrel, libogg, libvorbis, and the PKWARE DCL decoder are
+built statically from pinned submodules. Install the Vulkan SDK separately;
+CMake uses its Vulkan package and `glslc` shader compiler. On Windows, CMake
+downloads a pinned LGPL shared FFmpeg SDK for the target architecture (x86 or
+x64) from [System233/ffmpeg-msvc-prebuilt](https://github.com/System233/ffmpeg-msvc-prebuilt)
+and copies its DLLs next to the executables. MSYS2 and vcpkg are not required.
+Pass
+`-DBISON_EXECUTABLE=C:/path/to/win_bison.exe` when Bison is outside `PATH`.
 
 Windows uses the same SDL3 surface and Vulkan renderer as macOS and Linux.
 SDL3 is linked statically into both executables.
@@ -272,7 +273,7 @@ as `quickstart=MISS1.MIS` or `auto_stop=60`; there are no GNU `--` prefixes.
 
 #### Prerequisites
 
-- macOS with Xcode Command Line Tools, CMake 3.21 or later, Ninja, and Bison
+- macOS with Xcode Command Line Tools, CMake 3.24 or later, Ninja, and Bison
   3.0 or later (install Homebrew Bison; the system Bison is too old).
 - The Vulkan SDK (including `glslc`) and CMake submodules; macOS supplies the
   OpenAL framework.
@@ -321,7 +322,7 @@ cd "/path/to/Thief II"
 
 #### Prerequisites
 
-- A 64-bit Linux distribution, GCC, CMake 3.21 or later, and Ninja.
+- A 64-bit Linux distribution, GCC, CMake 3.24 or later, and Ninja.
 - The Vulkan SDK (including `glslc`) and the standard CMake build tools.
 - OpenAL Soft at runtime, loaded dynamically. Ogg Vorbis decoding is built
   statically from the pinned submodules.
@@ -449,8 +450,8 @@ Plain Debug builds are available on all desktop platforms:
 | --- | --- | --- |
 | macOS | `cmake --preset macos-debug` | `cmake --build --preset macos-debug -j 8` |
 | Linux | `cmake --preset linux-debug` | `cmake --build --preset linux-debug -j 8` |
-| Windows x64 | `cmake --preset windows-x64` | `cmake --build --preset windows-x64-debug` |
-| Windows x86 | `cmake --preset windows-x86` | `cmake --build --preset windows-x86-debug` |
+| Windows x64 | `tools/configure-windows.ps1 -Architecture x64` | `cmake --build --preset windows-x64-debug` |
+| Windows x86 | `tools/configure-windows.ps1 -Architecture x86` | `cmake --build --preset windows-x86-debug` |
 
 macOS and Linux use `build-macos-debug` and `build-linux-debug`. Visual Studio
 keeps Debug and Release configurations in the same Windows build directory.
@@ -834,8 +835,9 @@ The engine's gamma setting is applied in the SDL3/Vulkan scene shader using the
 legacy palette-correction power curve.
 
 The retail game writes `skip_intro` after the intro has played. Add
-`always_play_intro` to `cam.cfg` to show it on every launch. All platforms build
-FFmpeg statically from the pinned source submodule for movie playback.
+`always_play_intro` to `cam.cfg` to show it on every launch. Windows uses
+prebuilt FFmpeg packages by default. Other platforms build FFmpeg statically from
+the pinned source submodule.
 
 ## Controls
 

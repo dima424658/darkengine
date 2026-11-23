@@ -278,9 +278,9 @@ errtype mouse_extremes(short *xl, short *yl, short *xh, short *yh)
 { *xl = *yl = 0; *xh = g_xmax; *yh = g_ymax; return OK; }
 errtype _mouse_extremes(short *xl, short *yl, short *xh, short *yh) { return mouse_extremes(xl, yl, xh, yh); }
 errtype mouse_set_lefty(bool) { return OK; }
-void mouse_wait_for_queue_mutex(void) { g_mutex.lock(); }
-void mouse_release_queue_mutex(void) { g_mutex.unlock(); }
-HANDLE mouse_get_queue_available_signal(void) { return nullptr; }
+void LGAPI mouse_wait_for_queue_mutex(void) { g_mutex.lock(); }
+void LGAPI mouse_release_queue_mutex(void) { g_mutex.unlock(); }
+HANDLE LGAPI mouse_get_queue_available_signal(void) { return nullptr; }
 errtype mouse_set_velocity_range(int, int, int, int) { return OK; }
 errtype mouse_set_velocity(int x, int y) { g_vx = x; g_vy = y; return OK; }
 errtype mouse_add_velocity(int x, int y) { g_vx += x; g_vy += y; return OK; }
@@ -349,10 +349,10 @@ class cUnixInputManager : public IInputManager
 public:
    explicit cUnixInputManager(IUnknown *outer)
    { INIT_AGGREGATION_1(outer, IID_IInputManager, this, kPriorityLibrary, nullptr); }
-   void IterStart(sInputDeviceIter *it, GUID) override { it->m_pDev = nullptr; }
-   void IterNext(sInputDeviceIter *it) override { it->m_pDev = nullptr; }
-   IInputDevice *IterGet(sInputDeviceIter *) override { return nullptr; }
-   BOOL IterFinished(sInputDeviceIter *) override { return TRUE; }
+   STDMETHOD_(void, IterStart)(sInputDeviceIter *it, GUID) override { it->m_pDev = nullptr; }
+   STDMETHOD_(void, IterNext)(sInputDeviceIter *it) override { it->m_pDev = nullptr; }
+   STDMETHOD_(IInputDevice *, IterGet)(sInputDeviceIter *) override { return nullptr; }
+   STDMETHOD_(BOOL, IterFinished)(sInputDeviceIter *) override { return TRUE; }
    HRESULT Init() { return S_OK; }
    HRESULT End() { return S_OK; }
 };

@@ -176,6 +176,8 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
     sourcePixelBytes = 2;
   else if (bm->type == BMT_FLAT24)
     sourcePixelBytes = 3;
+  else if (bm->type == BMT_FLAT32)
+    sourcePixelBytes = 4;
   if (sourcePixelBytes &&
       (size_t)bm->row < (size_t)bm->w * sourcePixelBytes)
     return NULL;
@@ -230,6 +232,13 @@ static uchar *ConvertTexture(tdrv_texture_info *info) {
         if ((info->flags & TF_TRANS) && r == g_chromaR &&
             g == g_chromaG && b == g_chromaB)
           a = 0;
+      } else if (bm->type == BMT_FLAT32) {
+        if (gr_test_bitmap_format(bm, BMF_RGB_8888)) {
+          b = source[0];
+          g = source[1];
+          r = source[2];
+          a = source[3];
+        }
       }
       if (material)
       {

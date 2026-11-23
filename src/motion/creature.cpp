@@ -899,18 +899,28 @@ BOOL CreatureGetRenderHandle(const ObjID objID, long *pHandle)
 
 void CreatureMeshJointPosCallback(const mms_model *m, const int jointID, mxs_trans *pTrans)
 {
-   AssertMsg(m->app_data,"Invalid Creature Pointer In Joint Callback");
-
-   CreatureFromObj((ObjID)m->app_data)->MeshJointPosCallback(jointID,pTrans);
+   // A model can remain in the hardware render queue for the rest of the
+   // frame after its creature has left visibility or been destroyed. A stale
+   // callback has no pose to contribute, so leave the supplied transform
+   // unchanged rather than dereferencing a missing creature.
+   if (!m || !m->app_data)
+      return;
+   cCreature *pCreature = CreatureFromObj((ObjID)m->app_data);
+   if (!pCreature)
+      return;
+   pCreature->MeshJointPosCallback(jointID,pTrans);
 }
 
 ///////////////////////////////////////////////////
 
 void CreatureMeshStretchyJointCallback(const mms_model *m, const int jointID, mxs_trans *pTrans, quat *pRot)
 {
-   AssertMsg(m->app_data,"Invalid Creature Pointer In Joint Callback");
-
-   CreatureFromObj((ObjID)m->app_data)->MeshStretchyJointCallback(jointID,pTrans,pRot);
+   if (!m || !m->app_data)
+      return;
+   cCreature *pCreature = CreatureFromObj((ObjID)m->app_data);
+   if (!pCreature)
+      return;
+   pCreature->MeshStretchyJointCallback(jointID,pTrans,pRot);
 }
 
 ///////////////////////////////////////////////////

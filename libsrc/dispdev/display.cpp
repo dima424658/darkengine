@@ -38,27 +38,27 @@ public:
       Close();
    }
 
-   eDisplayDeviceKind GetKind() override { return m_kind; }
+   STDMETHOD_(eDisplayDeviceKind, GetKind)() override { return m_kind; }
 
-   void SetKind(eDisplayDeviceKind kind, int flags) override
+   STDMETHOD_(void, SetKind)(eDisplayDeviceKind kind, int flags) override
    {
       m_kind = kind;
       m_options = flags;
    }
 
-   void SetKind2(eDisplayDeviceKind kind, int flags, GUID *) override
+   STDMETHOD_(void, SetKind2)(eDisplayDeviceKind kind, int flags, GUID *) override
    {
       SetKind(kind, flags);
    }
 
-   void GetKind2(eDisplayDeviceKind *kind, int *flags, GUID **guid) override
+   STDMETHOD_(void, GetKind2)(eDisplayDeviceKind *kind, int *flags, GUID **guid) override
    {
       if (kind) *kind = m_kind;
       if (flags) *flags = m_options;
       if (guid) *guid = nullptr;
    }
 
-   void GetInfo(sGrDeviceInfo *info, sGrModeInfo *modes) override
+   STDMETHOD_(void, GetInfo)(sGrDeviceInfo *info, sGrModeInfo *modes) override
    {
       if (!info)
          return;
@@ -83,13 +83,13 @@ public:
       info->modes[supportedModes] = -1;
    }
 
-   HRESULT Open(sGrModeCap *cap, int) override
+   STDMETHOD(Open)(sGrModeCap *cap, int) override
    {
       m_cap = cap;
       return S_OK;
    }
 
-   HRESULT Close() override
+   STDMETHOD(Close)() override
    {
       // Dark closes the logical display device during mode changes. Keep the
       // native window and presentation context alive for menus, movies, and
@@ -102,7 +102,7 @@ public:
       return S_OK;
    }
 
-   HRESULT SetMode(eGrDispMode mode, int flags) override
+   STDMETHOD(SetMode)(eGrDispMode mode, int flags) override
    {
       if (!m_cap || mode < 0 || mode >= GRD_MODES)
          return E_FAIL;
@@ -149,7 +149,7 @@ public:
       return S_OK;
    }
 
-   eGrDispMode GetMode(sGrModeInfoEx *out) override
+   STDMETHOD_(eGrDispMode, GetMode)(sGrModeInfoEx *out) override
    {
       if (!out)
          return m_mode;
@@ -177,7 +177,7 @@ public:
       return m_mode;
    }
 
-   BOOL SetPalette(unsigned start, unsigned count,
+   STDMETHOD_(BOOL, SetPalette)(unsigned start, unsigned count,
       const unsigned char *rgb) override
    {
       if (!rgb || start > 256 || count > 256 - start)
@@ -186,7 +186,7 @@ public:
       return TRUE;
    }
 
-   BOOL GetPalette(unsigned start, unsigned count,
+   STDMETHOD_(BOOL, GetPalette)(unsigned start, unsigned count,
       unsigned char *rgb) override
    {
       if (!rgb || start > 256 || count > 256 - start)
@@ -195,7 +195,7 @@ public:
       return TRUE;
    }
 
-   HRESULT PageFlip() override
+   STDMETHOD(PageFlip)() override
    {
       // An offscreen hardware overlay was already captured by ScrnEndFrame.
       // Its visible compatibility buffer deliberately has not been blitted.
@@ -203,26 +203,26 @@ public:
       return S_OK;
    }
 
-   int Lock() override { return ++m_locks; }
+   STDMETHOD_(int, Lock)() override { return ++m_locks; }
 
-   int Unlock() override
+   STDMETHOD_(int, Unlock)() override
    {
       if (m_locks > 0)
          --m_locks;
       return m_locks;
    }
 
-   int BreakLock() override
+   STDMETHOD_(int, BreakLock)() override
    {
       const int locks = m_locks;
       m_locks = 0;
       return locks;
    }
 
-   void RestoreLock(int count) override { m_locks = count; }
-   BOOL IsLocked() override { return m_locks != 0; }
+   STDMETHOD_(void, RestoreLock)(int count) override { m_locks = count; }
+   STDMETHOD_(BOOL, IsLocked)() override { return m_locks != 0; }
 
-   void Flush() override
+   STDMETHOD_(void, Flush)() override
    {
       if (m_mode < 0 || IsFlushingPaused())
          return;
@@ -231,19 +231,19 @@ public:
          m_cap->rowBytes, modeInfo.bitDepth, m_palette);
    }
 
-   void FlushRect(int x0, int y0, int x1, int y1) override
+   STDMETHOD_(void, FlushRect)(int x0, int y0, int x1, int y1) override
    {
       if (m_mode < 0 || IsFlushingPaused()) return;
       const sGrModeInfo &modeInfo = grd_mode_info[m_mode];
       DarkRenderPresentRect(m_pixels.data(), modeInfo.w, modeInfo.h,
          m_cap->rowBytes, modeInfo.bitDepth, m_palette, x0, y0, x1, y1);
    }
-   BOOL SetGamma(double gamma) override
+   STDMETHOD_(BOOL, SetGamma)(double gamma) override
    {
       RenderBackendSetGamma(static_cast<float>(gamma));
       return TRUE;
    }
-   BOOL SetFlip(BOOL) override { return FALSE; }
+   STDMETHOD_(BOOL, SetFlip)(BOOL) override { return FALSE; }
 
 private:
    eDisplayDeviceKind m_kind;

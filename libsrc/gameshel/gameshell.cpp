@@ -27,7 +27,7 @@ public:
       INIT_AGGREGATION_1(outer, IID_IGameShell, this, kPriorityLibrary, nullptr);
    }
 
-   void BeginFrame() override
+   STDMETHOD_(void, BeginFrame)() override
    {
       DarkRenderBeginApplicationFrame();
       PumpEvents(kPumpAll);
@@ -35,7 +35,7 @@ public:
          DisplayLock();
    }
 
-   void EndFrame() override
+   STDMETHOD_(void, EndFrame)() override
    {
       if (m_flags & kLockFrame)
          DisplayUnlock();
@@ -53,10 +53,10 @@ public:
       DarkRenderEndApplicationFrame();
    }
 
-   HRESULT BringToFront() override { return S_OK; }
-   HRESULT Obsolete1() override { return S_OK; }
+   STDMETHOD(BringToFront)() override { return S_OK; }
+   STDMETHOD(Obsolete1)() override { return S_OK; }
 
-   void PumpEvents(int) override
+   STDMETHOD_(void, PumpEvents)(int) override
    {
       if (DarkPumpEvents() && (m_flags & kExitOnQuitEvent))
       {
@@ -69,7 +69,7 @@ public:
       }
    }
 
-   int DisplayLock() override
+   STDMETHOD_(int, DisplayLock)() override
    {
       auto *display = AppGetObj(IDisplayDevice);
       const int result = display ? display->Lock() : 0;
@@ -77,7 +77,7 @@ public:
       return result;
    }
 
-   int DisplayUnlock() override
+   STDMETHOD_(int, DisplayUnlock)() override
    {
       auto *display = AppGetObj(IDisplayDevice);
       const int result = display ? display->Unlock() : 0;
@@ -85,7 +85,7 @@ public:
       return result;
    }
 
-   void DisplayFlush() override
+   STDMETHOD_(void, DisplayFlush)() override
    {
       auto *display = AppGetObj(IDisplayDevice);
       if (display)
@@ -93,37 +93,37 @@ public:
       SafeRelease(display);
    }
 
-   unsigned long GetTimerTick() override
+   STDMETHOD_(unsigned long, GetTimerTick)() override
    {
       const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
          clock::now() - m_epoch).count();
       return m_offset + static_cast<unsigned long>(elapsed);
    }
 
-   void SetTimer(unsigned long value) override
+   STDMETHOD_(void, SetTimer)(unsigned long value) override
    {
       m_offset = value;
       m_epoch = clock::now();
    }
 
-   BOOL ShowHelp(const char *,uint,ulong) override { return FALSE; }
-   BOOL SetOSCursor(sGrBitmap *,const Point *) override { return FALSE; }
-   BOOL ShowOSCursor(BOOL) override { return FALSE; }
-   void SetCursorCallback(tGSCursorCallbackFunc callback) override { m_cursor=callback; }
+   STDMETHOD_(BOOL, ShowHelp)(const char *,uint,ulong) override { return FALSE; }
+   STDMETHOD_(BOOL, SetOSCursor)(sGrBitmap *,const Point *) override { return FALSE; }
+   STDMETHOD_(BOOL, ShowOSCursor)(BOOL) override { return FALSE; }
+   STDMETHOD_(void, SetCursorCallback)(tGSCursorCallbackFunc callback) override { m_cursor=callback; }
 
-   BOOL Exec(const char *command) override
+   STDMETHOD_(BOOL, Exec)(const char *command) override
    {
       return command && std::system(command) == 0;
    }
 
-   BOOL SetFlags(int flags) override
+   STDMETHOD_(BOOL, SetFlags)(int flags) override
    {
       m_flags = flags;
       SDLDisplaySetNativeCursorVisible((flags & kShowNativeCursor) != 0);
       return TRUE;
    }
 
-   BOOL GetFlags(int *flags) override
+   STDMETHOD_(BOOL, GetFlags)(int *flags) override
    {
       if (!flags)
          return FALSE;
