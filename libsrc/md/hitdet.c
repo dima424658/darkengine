@@ -171,6 +171,7 @@ static mds_pgon *get_next(mds_model *m, mds_pgon *p)
 
 #define n_split(x) ((mds_node_split *)(x))
 #define n_raw(x)   ((mds_node_raw *)(x))
+#define n_call(x)  ((mds_node_call *)(x))
 
 // Prototype these so forward-referencing doesn't produce warnings
 void intersect_segment_node(mds_segment_hit_detect_info *hdi, uchar *n);
@@ -216,10 +217,30 @@ void md_segment_hit_detect(mds_model *m, mds_segment_hit_detect_info *hdi)
 
 void intersect_segment_node(mds_segment_hit_detect_info *hdi, uchar *n)
 {
-   static int i;               // static to cut down on stack thrashing
-   static mxs_real a_side, b_side;
+   int i;
+   mxs_real a_side, b_side;
 
    switch (*n) {
+      case MD_NODE_CALL:
+      {
+         // CALL nodes own polygons as well as a child subtree. Skipping
+         // them makes those faces (including door panels) transparent to
+         // sight casts. Keep loop state local across recursive calls.
+         for (i=0; i<n_call(n)->pgons_before; ++i) {
+            check_pgon((mds_pgon *)(hdi->pgons + n_call(n)->polys[i]), hdi);
+            if (hdi->hit && hdi->early_out)
+               return;
+         }
+         intersect_segment_node(hdi, hdi->nodes + n_call(n)->node_call);
+         if (hdi->hit && hdi->early_out)
+            return;
+         for (i=0; i<n_call(n)->pgons_after; ++i) {
+            check_pgon((mds_pgon *)(hdi->pgons + n_call(n)->polys[i+n_call(n)->pgons_before]), hdi);
+            if (hdi->hit && hdi->early_out)
+               return;
+         }
+         break;
+      }
       case MD_NODE_SPLIT:
       {
          // Intersect with "after" polygons first because they're more
@@ -353,10 +374,34 @@ void md_sphere_hit_detect(mds_model *m, mds_sphere_hit_detect_info *hdi)
 
 void intersect_sphere_node(mds_sphere_hit_detect_info *hdi, uchar *n)
 {
-   static int i;            // static to cut down on stack thrashing
-   static mxs_real dist;
+   int i;
+   mxs_real dist;
 
    switch (*n) {
+      case MD_NODE_CALL:
+      {
+         for (i=0; i<n_call(n)->pgons_before; ++i) {
+            if (check_sphere_pgon((mds_pgon *)(hdi->pgons + n_call(n)->polys[i]), hdi)) {
+               hdi->hit = TRUE;
+               if (hdi->early_out)
+                  return;
+               hdi->polys[hdi->num++] = n_call(n)->polys[i];
+            }
+         }
+         intersect_sphere_node(hdi, hdi->nodes + n_call(n)->node_call);
+         if (hdi->hit && hdi->early_out)
+            return;
+         for (i=0; i<n_call(n)->pgons_after; ++i) {
+            int polygon = n_call(n)->polys[i+n_call(n)->pgons_before];
+            if (check_sphere_pgon((mds_pgon *)(hdi->pgons + polygon), hdi)) {
+               hdi->hit = TRUE;
+               if (hdi->early_out)
+                  return;
+               hdi->polys[hdi->num++] = (ushort)polygon;
+            }
+         }
+         break;
+      }
       case MD_NODE_SPLIT:
       {
          // Intersect with "after" polygons first because they're more
