@@ -289,7 +289,7 @@ void joy_read_pots(char *pots) { if (pots) std::fill(pots, pots + 4, 0); }
 void joy_read_pots_raw(short *pots) { if (pots) std::fill(pots, pots + 4, 0); }
 
 void DarkInputKey(uchar scan, int down) { kb_generate({scan, static_cast<uchar>(down != 0)}); }
-void DarkInputMouse(short x, short y, uchar type, uchar buttons, char wheel)
+void DarkInputMouse(short x, short y, uchar type, uchar buttons, schar wheel)
 {
    lgMouseEvent event{}; event.x = x; event.y = y; event.type = type;
    event.buttons = buttons; event.wheel = wheel; event.timestamp = now_ms(); mouse_generate(event);

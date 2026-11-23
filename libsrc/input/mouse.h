@@ -86,7 +86,7 @@ typedef struct _lgMouseEvent
    uchar type; // Event mask, bits defined below
    ulong timestamp;
    uchar buttons;
-   char wheel;   // signed wheel detents; zero for other mouse events
+   schar wheel;  // signed wheel detents; zero for other mouse events
    char pad[5];  // pad to sixteen bytes
 } lgMouseEvent;
 

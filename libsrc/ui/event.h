@@ -73,16 +73,23 @@ typedef struct _ui_cooked_key_event
   UIEVBACK(0);
 } uiCookedKeyEvent;
 
-// mouse events
+// Mouse events travel through the generic uiEvent queue and dispatcher.
+#pragma pack(push, 1)
 typedef struct _ui_mouse_event
 {
   UIEVFRONT
   short action;        /* mouse event type, as per mouse library */
   ulong tstamp;
   ubyte buttons;
-  char wheel;   // would rather make it short, but we're out of space!
-  // Full house!   UIEVBACK(sizeof(ulong)+sizeof(ubyte)+sizeof(char));
+  schar wheel;        /* signed wheel detents */
 } uiMouseEvent;
+#pragma pack(pop)
+
+#ifdef __cplusplus
+static_assert(sizeof(uiMouseEvent) == sizeof(uiEvent), "uiEvent copies must preserve mouse data");
+#else
+_Static_assert(sizeof(uiMouseEvent) == sizeof(uiEvent), "uiEvent copies must preserve mouse data");
+#endif
 
 // joystick events
 typedef struct _ui_joy_event
