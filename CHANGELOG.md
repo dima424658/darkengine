@@ -35,6 +35,8 @@
 
 - 2026-11-24: Completed Handheld Remaster TASK 12. Verified final compact ARMv7 trilogy bootstrap rebuild and package parity; THFG00001, THFG00002, and THFG00003 VPKs contain eboot.bin and matching title metadata.
 
+- 2026-11-24: Added Vita Spatial Upscaling configuration: 960x544 Native, 816x462 85%, 720x408 Uncharted, and 640x368 Extreme, with an AMD FSR 1.0 Mobile GLES 2.0 vitaGL upscaling pass for every sub-native profile.
+
 - TASK 6 controls: added physical Layout A/B mappings, config-backed custom bindings, per-finger LB/RB touch triggers, and temporary icons; clean host build and CTest passed.
 
 - TASK 6 verification: clean host build/CTest passed and the ARMv7 Vita build regenerated all three bootstrap VPKs; physical-device behavior remains unverified.

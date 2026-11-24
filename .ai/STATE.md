@@ -1,8 +1,8 @@
 # CURRENT RUNTIME STATE
 
 ## CURRENT WORK BLOCK
-- Objective: Project handheld remaster pipeline complete; physical Vita 2000 calibration remains the only external hardware step.
-- Progress: TASK 6-12 are complete in host and Vita build tooling. The compact trilogy bootstrap rebuilds locally; THFG00001/2/3 VPKs contain eboot.bin and correct title names/IDs.
+- Objective: Project handheld remaster pipeline complete, including Spatial Upscaling profiles; physical Vita 2000 calibration remains the only external hardware step.
+- Progress: TASK 6-12 are complete. Spatial Upscaling offers 960x544 native, 816x462, 720x408, and 640x368; every sub-native profile uses the Mobile GLES 2.0 FSR 1.0 vitaGL pass.
 - Blockers: Physical Vita runtime, shader visual calibration, and OpenAL device acoustics await hardware.
 
 ## ENCOUNTERED DEAD ENDS & DEFERRED TASKS

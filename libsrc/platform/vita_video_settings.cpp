@@ -16,6 +16,38 @@ constexpr float kBrightnessRange = 0.12f;
 constexpr float kMinimumGamma = 0.80f;
 constexpr float kMaximumGamma = 1.20f;
 
+const char kFsrVertexShader[] =
+   "#version 100\n"
+   "attribute vec2 aPosition;\n"
+   "attribute vec2 aTexCoord;\n"
+   "varying vec2 vTexCoord;\n"
+   "void main() {\n"
+   "  gl_Position = vec4(aPosition, 0.0, 1.0);\n"
+   "  vTexCoord = aTexCoord;\n"
+   "}\n";
+const char kFsrFragmentShader[] =
+   "#version 100\n"
+   "precision mediump float;\n"
+   "varying vec2 vTexCoord;\n"
+   "uniform sampler2D uTexture;\n"
+   "uniform vec2 uTexelSize;\n"
+   "uniform float uSharpness;\n"
+   "void main() {\n"
+   "  vec3 c = texture2D(uTexture, vTexCoord).rgb;\n"
+   "  vec3 n = texture2D(uTexture, vTexCoord + vec2(0.0, -uTexelSize.y)).rgb;\n"
+   "  vec3 s = texture2D(uTexture, vTexCoord + vec2(0.0, uTexelSize.y)).rgb;\n"
+   "  vec3 w = texture2D(uTexture, vTexCoord + vec2(-uTexelSize.x, 0.0)).rgb;\n"
+   "  vec3 e = texture2D(uTexture, vTexCoord + vec2(uTexelSize.x, 0.0)).rgb;\n"
+   "  vec3 mn = min(c, min(min(n, s), min(w, e)));\n"
+   "  vec3 mx = max(c, max(max(n, s), max(w, e)));\n"
+   "  vec3 rangeC = mx - mn;\n"
+   "  vec3 high = clamp((c - mn) / max(rangeC, vec3(0.0001)), 0.0, 1.0);\n"
+   "  vec3 neighbors = (n + s + w + e) * 0.25;\n"
+   "  vec3 sharpened = clamp(c * (1.0 - high * uSharpness) "
+   "+ (c - neighbors) * uSharpness, 0.0, 1.0);\n"
+   "  gl_FragColor = vec4(sharpened, 1.0);\n"
+   "}\n";
+
 const char kFragmentShader[] =
    "#version 100\n"
    "precision mediump float;\n"
@@ -87,6 +119,65 @@ float GammaValue(const Settings &settings)
              (kMaximumGamma - kMinimumGamma);
 }
 
+SpatialUpscale ParseSpatialUpscale(const std::string &name)
+{
+   if (name == "85")
+      return SpatialUpscale::Balanced85;
+   if (name == "uncharted")
+      return SpatialUpscale::Uncharted;
+   if (name == "extreme")
+      return SpatialUpscale::Extreme;
+   return SpatialUpscale::Native100;
+}
+
+const char *SpatialUpscaleName(SpatialUpscale mode)
+{
+   switch (mode)
+   {
+   case SpatialUpscale::Balanced85:
+      return "85% Scale";
+   case SpatialUpscale::Uncharted:
+      return "Uncharted Scale";
+   case SpatialUpscale::Extreme:
+      return "Extreme Performance";
+   case SpatialUpscale::Native100:
+   default:
+      return "100% Native";
+   }
+}
+
+void SpatialRenderResolution(SpatialUpscale mode,
+                             int *width, int *height)
+{
+   if (!width || !height)
+      return;
+   switch (mode)
+   {
+   case SpatialUpscale::Balanced85:
+      *width = 816;
+      *height = 462;
+      break;
+   case SpatialUpscale::Uncharted:
+      *width = 720;
+      *height = 408;
+      break;
+   case SpatialUpscale::Extreme:
+      *width = 640;
+      *height = 368;
+      break;
+   case SpatialUpscale::Native100:
+   default:
+      *width = 960;
+      *height = 544;
+      break;
+   }
+}
+
+bool SpatialUpscaleNeedsFsr(SpatialUpscale mode)
+{
+   return mode != SpatialUpscale::Native100;
+}
+
 Color ApplyCorrection(Color color, const Settings &settings)
 {
    const float brightness = BrightnessOffset(settings);
@@ -107,6 +198,16 @@ const char *FragmentShaderSource()
 const char *VertexShaderSource()
 {
    return kVertexShader;
+}
+
+const char *FsrVertexShaderSource()
+{
+   return kFsrVertexShader;
+}
+
+const char *FsrFragmentShaderSource()
+{
+   return kFsrFragmentShader;
 }
 
 LoadResult Load(const std::string &path)
@@ -184,6 +285,10 @@ LoadResult Load(const std::string &path)
          loaded.gammaSlider = parsed;
          foundGamma = true;
       }
+      else if (key == "spatial_upscaling")
+      {
+         loaded.spatialUpscale = ParseSpatialUpscale(value);
+      }
    }
    if (input.bad())
    {
@@ -218,9 +323,17 @@ bool Save(const std::string &path, const Settings &settings,
          SetError(error, "cannot create temporary video settings file");
          return false;
       }
+      const char *spatial = "native";
+      if (settings.spatialUpscale == SpatialUpscale::Balanced85)
+         spatial = "85";
+      else if (settings.spatialUpscale == SpatialUpscale::Uncharted)
+         spatial = "uncharted";
+      else if (settings.spatialUpscale == SpatialUpscale::Extreme)
+         spatial = "extreme";
       output << "version=1\n"
              << "brightness=" << settings.brightnessSlider << '\n'
-             << "gamma=" << settings.gammaSlider << '\n';
+             << "gamma=" << settings.gammaSlider << '\n'
+             << "spatial_upscaling=" << spatial << '\n';
       output.flush();
       if (!output)
       {

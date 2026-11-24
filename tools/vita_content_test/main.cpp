@@ -171,6 +171,31 @@ void TestVideoSettings()
          std::string::npos &&
          std::string(FragmentShaderSource()).find("uGamma") !=
          std::string::npos, "shader exposes separate brightness and gamma");
+   int width = 0;
+   int height = 0;
+   SpatialRenderResolution(SpatialUpscale::Native100, &width, &height);
+   Check(width == 960 && height == 544 &&
+         !SpatialUpscaleNeedsFsr(SpatialUpscale::Native100),
+         "native spatial upscaling remains 960x544 without FSR");
+   SpatialRenderResolution(SpatialUpscale::Balanced85, &width, &height);
+   Check(width == 816 && height == 462 &&
+         SpatialUpscaleNeedsFsr(SpatialUpscale::Balanced85) &&
+         SpatialUpscaleName(SpatialUpscale::Balanced85) ==
+            std::string("85% Scale"),
+         "85 percent spatial profile renders 816x462 through FSR");
+   SpatialRenderResolution(SpatialUpscale::Uncharted, &width, &height);
+   Check(width == 720 && height == 408 &&
+         SpatialUpscaleNeedsFsr(SpatialUpscale::Uncharted),
+         "Uncharted spatial profile renders 720x408 through FSR");
+   SpatialRenderResolution(SpatialUpscale::Extreme, &width, &height);
+   Check(width == 640 && height == 368 &&
+         SpatialUpscaleNeedsFsr(SpatialUpscale::Extreme),
+         "Extreme spatial profile renders 640x368 through FSR");
+   Check(std::string(FsrFragmentShaderSource()).find("uSharpness") !=
+         std::string::npos &&
+         std::string(FsrFragmentShaderSource()).find("texture2D") !=
+         std::string::npos,
+         "Mobile FSR 1.0 GLES2 shader is available");
 
    const std::filesystem::path root =
       std::filesystem::temp_directory_path() / "thief-vita-video-test";
@@ -182,12 +207,14 @@ void TestVideoSettings()
    Check(Save(path, settings, &error), "save Vita video options");
    settings.brightnessSlider = 5;
    settings.gammaSlider = 5;
+   settings.spatialUpscale = SpatialUpscale::Uncharted;
    Check(Save(path, settings, &error), "replace Vita video options");
    const LoadResult loaded = Load(path);
    Check(loaded.found && loaded.error.empty() &&
          loaded.settings.brightnessSlider == 5 &&
-         loaded.settings.gammaSlider == 5,
-         "load independently persisted video sliders");
+         loaded.settings.gammaSlider == 5 &&
+         loaded.settings.spatialUpscale == SpatialUpscale::Uncharted,
+         "load independently persisted video sliders and spatial upscaling");
 
    WriteFile(root / "vita_options.cfg", "version=1\nbrightness=999\ngamma=50\n");
    const LoadResult invalid = Load(path);
