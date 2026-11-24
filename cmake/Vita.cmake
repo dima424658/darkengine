@@ -58,6 +58,7 @@ foreach(_platform IN LISTS DARK_VITA_PLATFORMS)
     VERSION "01.00"
     NAME "${_title}"
   )
+  add_dependencies("${_target}.vpk-vpk" "${_target}.self-self")
   list(APPEND _vita_vpk_targets "${_target}.vpk-vpk")
 endforeach()
 
