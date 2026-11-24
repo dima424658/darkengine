@@ -18,16 +18,16 @@
 #include <uiedit.h>
 #include <viewmgr.h>
 #include <vumanui.h>
+#include <vmwincfg.h>
 #include <scrnman.h>
 #include <uiapp.h>
 #include <hotkey.h>
 #include <brushgfh.h>
-#include <cmdterm.h>
 #include <txtrpal.h>
-#include <status.h>
 #include <editorplatform.h>
 
 #include <mprintf.h>
+#include <imgui_workspace.h>
 
 // res files
 #include <editor.h>
@@ -109,10 +109,76 @@ static Rect* get_layout_rect(Layout* lay, int idx)
 ////////////////////////////////////////////////////////////
 
 
+static sEditorWorkspaceLayout workspace;
+static sEditorWorkspaceLayout workspace_default;
+static float workspace_width_ratio = 1.0f;
+static float workspace_height_ratio = 1.0f;
+static BOOL workspace_active;
+
+const sEditorWorkspaceLayout *EditorWorkspaceLayout(void)
+{
+   return workspace_active ? &workspace : NULL;
+}
+
+// Scale brush controls and the alignment panel together within the lower-left strip.
+static Point map_brush_panel_point(Point point)
+{
+   const Rect *align = GFHGetAlignLayoutBounds();
+   const Rect *source = &workspace_default.tools;
+   const Rect *target = &workspace.tools;
+   const int source_width = (align ? align->lr.x : source->lr.x) - source->ul.x;
+   return MakePoint(target->ul.x + (point.x - source->ul.x) * RectWidth(target) / source_width,
+                    target->ul.y + (point.y - source->ul.y) * RectHeight(target) / RectHeight(source));
+}
+
+Rect EditorMapBrushPanelRect(Rect rect)
+{
+   Rect mapped = {map_brush_panel_point(rect.ul), map_brush_panel_point(rect.lr)};
+   return mapped;
+}
+
+static void set_workspace_split(Point split)
+{
+   const int left = workspace_default.tools.ul.x;
+   const int right = workspace_default.console.lr.x;
+   const int top = workspace_default.views.ul.y;
+   const int bottom = workspace_default.console.lr.y;
+   const int default_width = workspace_default.console.ul.x - left;
+   const int default_height = bottom - workspace_default.console.ul.y;
+   const int min_width = default_width * 3 / 5;
+   const int min_height = default_height * 3 / 4;
+   const int max_width = max(default_width, right - left - 150);
+   const int max_height = max(default_height, bottom - top - 150);
+   const int width = max(min_width, min(split.x - left, max_width));
+   const int height = max(min_height, min(bottom - split.y, max_height));
+
+   workspace.console.ul.x = left + width;
+   workspace.console.ul.y = bottom - height;
+   workspace.views.lr.y = workspace.console.ul.y - VM_VIEW_GAP_Y;
+   workspace.tools.ul.y = workspace.console.ul.y;
+   workspace.tools.lr.x = workspace.console.ul.x;
+   workspace.tools.lr.y = workspace.console.lr.y;
+}
+
+void EditorResizeWorkspace(Point split)
+{
+   const int old_x = workspace.console.ul.x;
+   const int old_y = workspace.console.ul.y;
+   if (!workspace_active)
+      return;
+   set_workspace_split(split);
+   if (workspace.console.ul.x != old_x)
+      workspace_width_ratio = (float)(workspace.console.ul.x - workspace_default.tools.ul.x) /
+         (workspace_default.console.ul.x - workspace_default.tools.ul.x);
+   if (workspace.console.ul.y != old_y)
+   {
+      workspace_height_ratio = (float)RectHeight(&workspace.console) / RectHeight(&workspace_default.console);
+      vmWinCfgResize(&workspace.views);
+   }
+}
+
 void EditorCreateGUI(void)
 {
-   extern void StatusSetRect(Rect *);
-
    Region* root = GetRootRegion();
    Layout* lay = screen_layout();
 
@@ -121,23 +187,31 @@ void EditorCreateGUI(void)
    uieditStyleSetup();
    SetCurrentStyle(&editStyle);
 
-   vmCreateGUI(root,get_layout_rect(lay,REFINDEX(REF_RECT_layViewMan)));
-   StatusSetRect(get_layout_rect(lay,REFINDEX(REF_RECT_layStatus)));
-   CreateBrushGFH(get_layout_rect(lay,REFINDEX(REF_RECT_layGFH)));
-   CreateCommandTerminal(LGadCurrentRoot(),
-                         get_layout_rect(lay,REFINDEX(REF_RECT_layCommand)),
-                         kCmdTermScrollable | kCmdTermNoPause);
+   workspace_default.views = *get_layout_rect(lay,REFINDEX(REF_RECT_layViewMan));
+   workspace_default.tools = *get_layout_rect(lay,REFINDEX(REF_RECT_layGFH));
+   workspace_default.console = *get_layout_rect(lay,REFINDEX(REF_RECT_layCommand));
+   workspace_default.status = *get_layout_rect(lay,REFINDEX(REF_RECT_layStatus));
+   workspace = workspace_default;
+   set_workspace_split(MakePoint(
+      workspace_default.tools.ul.x + (int)((workspace_default.console.ul.x - workspace_default.tools.ul.x) *
+         workspace_width_ratio + 0.5f),
+      workspace_default.console.lr.y - (int)(RectHeight(&workspace_default.console) * workspace_height_ratio + 0.5f)));
+   vmCreateGUI(root, &workspace.views);
+   workspace_active = TRUE;
+   InitializeEditorWorkspace();
+   CreateBrushGFH(&workspace_default.tools);
 
    EditorPlatformInitializeControls();
 }
 
 void EditorDestroyGUI(void)
 {
+   workspace_active = FALSE;
    EditorPlatformDestroyAuxiliaryWindows();
 
    if (TexturePaletteVisible())
       DestroyTexturePalette();
-   DestroyCommandTerminal();
+   ShutdownEditorWorkspace();
    DestroyBrushGFH();
    vmDestroyGUI();
    uieditStyleCleanup();
@@ -147,7 +221,7 @@ void EditorDestroyGUI(void)
 
 guiStyle editStyle;     // this is the current usable style
 
-guiStyle masterEditStyle =
+const guiStyle masterEditStyle =
 {
    0, // palette
    {  // colors
@@ -187,12 +261,11 @@ void uieditStyleCleanup()
 
 void uieditRedrawAll(void)
 {
-   LGadDrawBox(VB(LGadCurrentRoot()),NULL);
+   GUIErase(GetRootRegion()->r);
 }
 
 void redraw_all_cmd(void)
 {
    uieditRedrawAll();
    vm_redraw();
-   StatusDrawStringAll();
 }

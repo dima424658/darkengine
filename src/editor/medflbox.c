@@ -21,7 +21,6 @@
 
 int leftMark = 0, rightMark = 0;
 static int num_slots=0;
-EXTERN LGadBox *flag_box;
 
 uint FlagBoxGetCurrentFlag()
 {
@@ -121,50 +120,7 @@ bool FlagBoxAddFlag(ulong value)
    {
       FlagBoxSetMark(g_CurMotEditFrame,1);
    }
-   LGadDrawBox(flag_box,NULL);
    return TRUE;
-}
-
-// assumes that grd_canvas is box gadget screen region.
-void FlagBoxDrawCallback(void *data, LGadBox *vb)
-{
-   float slot_w;
-   mps_motion_flag *mflag;
-   int i;
-   int bdepth=(grd_bpp>16)?16:grd_bpp;
-   int scale=(0x1<<bdepth)/256;
-
-   gr_clear(3);
-   slot_w=((float)grd_bm.w)/num_slots;
-   // draw marks (box between left and right
-   if(bdepth==8)
-      gr_set_fcolor(255);
-   else
-      gr_set_fcolor(0);
-   gr_rect((ushort)(slot_w*leftMark),0,(ushort)(slot_w*(rightMark+1)),grd_bm.h);
-
-   // draw flags
-   if(g_MotEditMotionNum==MP_MOT_INVALID)
-      return;
-   mflag=mp_motion_list[g_MotEditMotionNum].flags;
-   for(i=0;i<mp_motion_list[g_MotEditMotionNum].num_flags;i++,mflag++)
-   {
-      ushort l,r;
-
-      if(bdepth==8)
-      {
-         gr_set_fcolor((mflag->flags)%256);
-      } else
-      {
-         ulong base_col=(0x1<<3)|(0x1<<9)|(0x1<<13);
-         gr_set_fcolor(base_col+(scale/2)*((mflag->flags)%256));
-      }
-      l = (ushort)(slot_w * mflag->frame + 1);
-      r = (ushort)(slot_w * (mflag->frame + 1) - 1);
-      if(r<=l+4)
-         r=l+4;
-      gr_rect(l,2,r,grd_bm.h-2);
-   }
 }
 
 void FlagBoxResetMarks(int num_frames)

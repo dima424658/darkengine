@@ -74,6 +74,8 @@ void PlayOptInit()
 
 #define SIM_FRAME_RESOLUTION 400
 
+BOOL PlayMotionActive(void) { return motionIsPlaying; }
+
 void PlayMotionUpdate(float dt)
 {
    int i;
@@ -88,7 +90,7 @@ void PlayMotionUpdate(float dt)
 
    if(stopMotion)
    {
-      PlayButtonFunc(MOUSE_LUP,NULL,NULL);
+      PlayMotionStop();
       stopMotion=FALSE;
       return;
    }
@@ -173,14 +175,12 @@ BOOL PlayMotionStart()
 
    if(g_MotEditMotionNum<0)
    {
-      PlayButtonFunc(MOUSE_LUP,NULL,NULL);
       Status("no motion loaded to play");
       // XXX TO DO: warn that no motion loaded
       return FALSE;
    }
    if(NULL==(targ=MotEditGetMultiped()))
    {
-      PlayButtonFunc(MOUSE_LUP,NULL,NULL);
       Status("no multiped selected");
       return FALSE;
    }

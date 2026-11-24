@@ -49,6 +49,7 @@
 #include <hilight.h>
 #include <iobjed.h>
 #include <lnktrait.h>
+#include <darkdlgs/darkdlgs.h>
 
 
 #include <dbmem.h>
@@ -152,8 +153,8 @@ void edit_link_cmd(char* arg)
    if (*arg == '\0')  // No args
    {
       editBrush* cur = vBrush_GetSel();
-      if (brushGetType(cur) == brType_OBJECT)
-         arg[0] = brObj_ID(cur);
+      if (cur && brushGetType(cur) == brType_OBJECT)
+         args[0] = brObj_ID(cur);
    }
    else  // Find three args
       for (int i = 0; i < num_args; i++)
@@ -170,6 +171,8 @@ void edit_link_cmd(char* arg)
             args[i] = EditGetObjNamed(arg);
 
          *delim = save;
+         if (!save)
+            break;
          arg = delim+1;
       }
 
@@ -389,7 +392,7 @@ static void link_edit_from_multibrush ()
     bool twoObjs = false;
     cnt=0;
     dst=vBrush_GetSel();
-    if (brushGetType(dst)==brType_OBJECT)
+    if (dst && brushGetType(dst)==brType_OBJECT)
     {
         vBrush_GroupOp(FALSE,getOurBrushes);
         if ((cnt==2)&&(brushGetType(src)==brType_OBJECT))
@@ -410,10 +413,9 @@ static void link_edit_from_multibrush ()
 
 	//	Display the new link dialog, with the objects filled in
 	//
-	if (FALSE)
+	if (DisplayLinkDialog(link))
 	{
         AutoAppIPtr_(LinkManager,pLinkMan);
-		pLinkMan = AppGetObj(ILinkManager);
 		cAutoIPtr<IRelation> rel (pLinkMan->GetRelation(link.flavor));
 		rel->Add(link.source, link.dest);
 		Status("Linked");

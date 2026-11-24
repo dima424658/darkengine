@@ -7,6 +7,8 @@
 // header for PnP maintenance tools
 #pragma once
 
+#include <rect.h>
+
 // the PnP has 7 virtual lines
 
 #define NUM_LINES 7
@@ -29,16 +31,8 @@ EXTERN void PnP_ExecCommandFloat(const char *cmd, float val);
 // anyway, dont screw with these yourself, sheesh
 // hmmmmm
 
-#define MAX_PNP_GADG 48
-
 typedef struct {
-   void     *GadgPtr[MAX_PNP_GADG];
-   int       GadgType[MAX_PNP_GADG];
-   int       GadgSrc[MAX_PNP_GADG];
-   int       GadgIdx;
-   int       GadgOwner;
-   LGadRoot *_root;
-   void     *userData;
+   void *userData;
 } _PnP_GadgData;
 
 EXTERN void PnP_SetCurrent(_PnP_GadgData *thePnP);
@@ -50,7 +44,7 @@ EXTERN void PnP_Hide(int Owner, bool hide_or_show); // true is hide
    
 // call when starting or freeing a gadget list
 // note start implicitly calls SetCurrent, ie it SetCurrent(thePnP)'s at end
-EXTERN void PnP_GadgStart(_PnP_GadgData *thePnP, LGadRoot *root);
+EXTERN void PnP_GadgStart(_PnP_GadgData *thePnP);
 EXTERN void PnP_GadgFree(_PnP_GadgData *thePnP);
 
 // installs a picture frame at space, with an update/render callback of draw

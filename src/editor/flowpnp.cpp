@@ -116,7 +116,8 @@ static void flowPnP_DoGroupClick(int button)
          AutoAppIPtr_(ObjEditors,pEditors);
          IObjEditor* ed = pEditors->Create(&objeddesc,obj); 
 
-         ed->Go(kObjEdModal);
+         if (ed)
+            ed->Go(kObjEdModal);
 
          SafeRelease(ed); 
          break; 
@@ -134,11 +135,11 @@ static void flowPnP_IntFrob(PnP_SliderOp op, Rect *where, int val, intptr_t data
 // If we discover that this is enough, maybe we should shrink the db. 
 #define MAX_FLOW_INDEX 64
 
-EXTERN void Create_flowPnP(LGadRoot* root, Rect* bounds, editBrush *br)
+EXTERN void Create_flowPnP(Rect* bounds, editBrush *br)
 {
    GFHSetCoordMask(GFH_ALL_COORDS);
    flowPnP_buildRects(bounds);
-   PnP_GadgStart(&flowPnP,root);   
+   PnP_GadgStart(&flowPnP);
    flowPnP_setvars(br,FALSE);
    PnP_PictureBox(getRect(0), NULL, 0); // making this a bool * is super icky
    PnP_SliderInt(getRect(1),"Group", 1, MAX_FLOW_INDEX, 1,

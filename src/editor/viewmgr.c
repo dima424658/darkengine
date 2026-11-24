@@ -813,7 +813,7 @@ static void render_grid_with_color(int c, int color)
       end.y += 20 * cur_global_grid.line_spacing;
       end.z += 20 * cur_global_grid.line_spacing;
 
-      gedit_render_grid(&cur_global_grid, vm_3d_grid_axis, vm_3d_grid_height, &start, &end);
+      gedit_render_grid(&cur_global_grid, vm_3d_grid_axis, vm_3d_grid_height, &start, &end, FALSE);
    } else {
       int rc = real_camera(c), a = camera[c].axis;
       mxs_real x_scale, y_scale;
@@ -832,7 +832,8 @@ static void render_grid_with_color(int c, int color)
       start.el[y_axis[a]] -= y_scale/2;
         end.el[y_axis[a]] += y_scale/2;
 
-      gedit_render_grid(&cur_global_grid, bogus_axis[a], 0, &start, &end);
+      // Orthographic panes draw on the software canvas even when the 3D view uses Vulkan.
+      gedit_render_grid(&cur_global_grid, bogus_axis[a], 0, &start, &end, TRUE);
    }
 }
 
@@ -926,6 +927,15 @@ static void _vm_rend_message_2line(char *line1, char *line2)
 #define CORNER_RIGHT  1
 #define CORNER_BOTTOM 2
 static int _vm_name_corner=0;
+
+const char *vm_get_pane_title(int region)
+{
+   if (_vm_name_corner == -1)
+      return NULL;
+   const CameraView *view = &camera[region_to_camera_mapping[region]];
+   return view->camera_3d ? "3d view" : axis_names[view->axis];
+}
+
 static void _vm_rend_message_corner(int corner_id, char *msg)
 {
    int x=1,y=1;
@@ -1476,7 +1486,7 @@ void vm_render_camera(int c)
 
          if (compiled_fallback && c == vm_cur_camera)
             _vm_rend_compiled_geometry_label(c);
-         else
+         else if (!vmWinCfgUsesImGui())
             _vm_rend_message_corner(_vm_name_corner,axis_names[camera[c].axis]);
       }
       else
@@ -1498,8 +1508,8 @@ void vm_render_camera(int c)
    {
       if (compiled_fallback && c == vm_cur_camera)
          _vm_rend_compiled_geometry_label(c);
-      else if (_vm_name_corner!=-1)
-         _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
+      else if (!vmWinCfgUsesImGui() && _vm_name_corner!=-1)
+         _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d view");
    }
 
    if (!camera[c].camera_3d)
@@ -1509,7 +1519,7 @@ void vm_render_camera(int c)
       gedrendRenderView(rv_flag | GEDREND_FLAG_CURSORONLY, c);
 
    vm_end_3d(c);
-   gr_set_fcolor(c == vm_cur_camera ? view_select_color : view_grid_color );
+   gr_set_fcolor(c == vm_cur_camera ? view_select_color : view_grid_color);
    gr_box(0,0,grd_bm.w,grd_bm.h);
    vm_unset_region_canvas();
 }
@@ -1561,6 +1571,8 @@ void vm_redraw_view_label(void)
    if (_vm_name_corner==-1 &&
        !( _vm_has_compiled_geometry_fallback() && c==vm_cur_camera))
       return;
+   if (vmWinCfgUsesImGui() && !_vm_has_compiled_geometry_fallback())
+      return;
 
    reg=camera_to_region_mapping[c];
    region=vmGetRegion(reg);
@@ -1571,7 +1583,7 @@ void vm_redraw_view_label(void)
    if (_vm_has_compiled_geometry_fallback())
       _vm_rend_compiled_geometry_label(c);
    else
-      _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d View");
+      _vm_rend_message_corner(CORNER_RIGHT|CORNER_BOTTOM,"3d view");
    vm_unset_region_canvas();
 }
 

@@ -21,7 +21,6 @@
 
 #include <SDL3/SDL_main.h>
 
-#include <runtime.h>
 
 extern "C" int LGAPI _AppMain(int argc, const char *argv[]);
 #if defined(_MSC_VER) && defined(DARK_WIN32_NATIVE_OSM)

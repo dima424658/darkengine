@@ -9,82 +9,53 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <comtools.h>
+#include <lg.h>
 #include <res.h>
+#include <2d.h>
 #include <rect.h>
 #include <resrect.h>
-#include <drawelem.h>
 #include <gadget.h>
-#include <region.h>
-#include <util2d.h>
-#include <mprintf.h>
 #include <config.h>
-#include <cfgdbg.h>
-#include <lgsprntf.h>
-#include <gcompose.h>
-#include <guistyle.h>
 #include <darklimit.h>
-
 #include <uiapp.h>
 #include <brushgfh.h>
-#include <swappnp.h>
-#include <reg.h>
-#include <editbr_.h>
-#include <editbr.h>
 #include <brlist.h>
-#include <brinfo.h>
-#include <vbrush.h>
-#include <cyclegad.h>
 #include <brundo.h>
-#include <gedit.h>
-#include <vslider.h>
-#include <status.h>
-#include <viewmgr.h>
-#include <dragbox.h>
-#include <cmdbutts.h>
 #include <command.h>
 #include <contexts.h>
-#include <gfhfrobs.h>
-
+#include <editbr.h>
+#include <editbr_.h>
 #include <editor.h>
-#include <memall.h>
-#include <dbmem.h>   // must be last header! 
+#include <gedit.h>
+#include <gfhfrobs.h>
+#include <imgui_pnp.h>
+#include <pnptools.h>
+#include <status.h>
+#include <swappnp.h>
+#include <vbrush.h>
+#include <viewmgr.h>
 
-#define NUM_SPATIAL_DIMS 3 // This will not change unless the universe does
 #define NUM_COORDS 9
 
-////////////////////////////////////////
-
-static struct _BrushGFH
+static struct
 {
-   LGadRoot root;
-   CycleGadg coords[NUM_COORDS];
-   float vals[NUM_COORDS];
-   LGadButton labels[NUM_COORDS];
-   
-   LGadButtonList menu1_buttons;
-   CmdButtonListDesc menu1_desc;
-
-   LGadButtonList menu2_buttons;
-   CmdButtonListDesc menu2_desc;
-
-   Rect pnp1area;
-   BOOL dualpnps;     // this is hideous
-
-   BOOL pnp2isup;
-   Rect pnp2area;     // area for pnp 2
-   LGadRoot pnp2root; // its own special root, cause were crazy
-
-   Rect swaparea;
-   editBrush* brush;
-   BOOL created; 
-   ulong coordmask;
+   Rect bounds;
+   Rect pnp;
+   Rect align;
+   Rect swap;
+   editBrush *brush;
+   int active_pnp;
+   int active_swap;
+   int coords[NUM_COORDS];
+   int labels[NUM_COORDS];
+   float values[NUM_COORDS];
+   BOOL dual;
+   BOOL created;
+   BOOL selection_changed;
+   _PnP_GadgData controls;
 } BrushGFH;
 
-////////////////////////////////////////////////////////////
-// The Nine Coordinate editors
-//////////////////////////////////////////////////////////// 
-
+#define NUM_SPATIAL_DIMS 3 // This will not change unless the universe does
 // convert axis to brush structs 0-2 = xyz, 3-5 = dwh, 6-8 = phb
 
 enum 
@@ -115,7 +86,6 @@ void stuff_brush_axis(editBrush* brush, int axis, float val)
          brush->ang.el[mod3] = (fixang)(val*2*FIXANG_PI/ANGLE_UNITS);
          break;   
    }
-   ConfigSpew("grabstuff",("stuffing %f to axis %d\n",(fix)(val*FIX_UNIT),axis));
 }
 
 ////////////////////////////////////////
@@ -144,7 +114,6 @@ void grab_brush_axis(editBrush* brush, int axis, float* val)
          *val = brush->ang.el[mod3]*1.0f*ANGLE_UNITS/(2*FIXANG_PI);
          break;   
    }
-   //   ConfigSpew("grabstuff",("grabbing %f from axis %d\n",(fix)((*val)*FIX_UNIT),axis));
 }
 
 ////////////////////////////////////////
@@ -167,394 +136,6 @@ CoordDef coord_defs[] =
    { "P", REF_RECT_GFHBrushMidM,},
    { "H", REF_RECT_GFHBrushTopM,},
 };
-
-#define COORD_DELTA (0.01f)
-#define ANG_DELTA (1.00)
-#define AXIS_IS_ANG(axis) (axis>=6)
-
-////////////////////////////////////////
-
-static bool coord_cycle_call(CycleGadg* gadg, ulong action, eCyclePart part, void* var, CycleGadgDesc* desc)
-{
-   float* pval = var; 
-   int axis = (int)(intptr_t)desc->user_data;
-
-   if (CYCLE_ACTION_KIND(action) == kCycleActionUpdate)
-   {
-      grab_brush_axis(BrushGFH.brush,axis,pval);
-      return FALSE;
-   }
-   
-   editUndoStoreStart(BrushGFH.brush);
-   stuff_brush_axis(BrushGFH.brush,axis,*pval);
-   i_changed_the_brush(BrushGFH.brush,FALSE,FALSE,FALSE);
-   editUndoStoreBrush(BrushGFH.brush);
-   
-   return TRUE;
-}
-
-////////////////////////////////////////
-
-#ifdef BITMAP_ARROWS
-DrawElement stupid_arrows[] = 
-{
-   { DRAWTYPE_RES, REF_IMG_LeftArrow,},
-   { DRAWTYPE_RES, REF_IMG_RightArrow,},
-};
-#else
-DrawElement stupid_arrows[] = 
-{
-   { DRAWTYPE_TEXT, "<", 0, 0, 0, BORDER(DRAWFLAG_BORDER_OUTLINE)|FORMAT(DRAWFLAG_FORMAT_RIGHT), },
-   { DRAWTYPE_TEXT, ">", 0, 0, 0, BORDER(DRAWFLAG_BORDER_OUTLINE)|FORMAT(DRAWFLAG_FORMAT_LEFT), },
-};
-#endif 
-
-
-////////////////////////////////////////
-
-extern void get_scaled_rect(Ref ref, Rect* bounds,Rect* out, Rect* anchor);
-
-void create_coord_cycler(LGadRoot* root, Rect* bounds, CycleGadg* gadg, int axis, float* var, 
-                         CycleGadg *next, CycleGadg *prev)
-{
-   floatCycleGadgDesc fdesc;
-   CycleGadgDesc desc;
-   BOOL is_ang=(axis / NUM_SPATIAL_DIMS) == ROT_AXES;
-   
-   memset(&desc,0,sizeof(desc));
-
-   get_scaled_rect(coord_defs[axis].ref,bounds,&desc.bounds,NULL);
-   desc.var = var;
-   desc.arrow_drawelems = stupid_arrows;
-   desc.cb = coord_cycle_call;
-   desc.format_string = "%3.2f"; 
-   desc.flags = CYCLE_FOCUS_FLAG|CYCLE_EDIT_FLAG|CYCLE_NOSPACE_FLAG;
-   desc.next = next;
-   desc.prev = prev;
-   desc.user_data = (void*)(intptr_t)axis;
-   if (is_ang)
-   {
-      fdesc.delta = ANG_DELTA;
-      fdesc.min   = 0.0;
-      fdesc.max   = 360.0;
-      fdesc.wrap  = TRUE;
-   }
-   else
-   {
-      fdesc.delta =  COORD_DELTA;
-      fdesc.min   = -DARK_LIMIT_RUNTIME_WORLD_EXTENT;
-      fdesc.max   = +DARK_LIMIT_RUNTIME_WORLD_EXTENT;
-      fdesc.wrap  =  FALSE;
-   }
-   CreatefloatCycleGadg(gadg,root,&desc,&fdesc);
-}
-
-////////////////////////////////////////
-
-void destroy_coord_cycler(CycleGadg* gadg)
-{
-   DestroyfloatCycleGadg(gadg);
-}
-
-////////////////////////////////////////////////////////////
-// Label Buttons w/ virtual slider mojo
-//
-
-static int vs_update_axis = 0;
-
-void label_vs_update(void)
-{
-   grab_brush_axis(BrushGFH.brush,vs_update_axis,&BrushGFH.vals[vs_update_axis]);
-   UpdateCycleGadg(&BrushGFH.coords[vs_update_axis],TRUE);
-   gedit_raw_change_brush(BrushGFH.brush,FALSE,FALSE,FALSE);
-   vm_render_cameras();
-}
-
-////////////////////////////////////////
-
-bool label_button_call(short action, void* data, LGadBox* vb)
-{
-   if (action & MOUSE_LDOWN)
-   {
-      editBrush* br = BrushGFH.brush;
-      int varnum = (int)(intptr_t)LGadBoxGetUserData(vb);
-      int axis = varnum%NUM_SPATIAL_DIMS;
-      fixangSlider angslider;
-      floatSlider fslider;
-      void* slidah;
-      
-      switch (varnum/NUM_SPATIAL_DIMS)
-      {
-         case ROT_AXES:
-            Status("Drag to rotate brush");
-            slidah = brushVSsetupAng(&angslider,br,axis);
-            break;
-         case TRANS_AXES:
-            Status("Drag to move brush");
-            slidah = brushVSsetupPos(&fslider,br,axis,1.0);
-            break;
-         case SIZE_AXES:
-            Status("Drag to size brush");
-            slidah = brushVSsetupSz(&fslider,br,axis,1.0);
-            break;
-      }
-      editUndoStoreStart(br);
-      vs_update_axis = varnum;
-      gedit_setup_check_lazy_drag();
-      if (virtual_slider(1,&slidah,label_vs_update)==VSLIDER_CHANGED)
-         i_changed_the_brush(br,FALSE,FALSE,FALSE);   // this will do brush updates as it sees fit
-      gedit_finish_check_lazy_drag();
-      editUndoStoreBrush(br);
-      Status("");
-      return TRUE;
-   }
-   return FALSE;
-   
-}
-
-////////////////////////////////////////
-
-static void create_label_button(LGadButton* butt, LGadRoot* root, Rect* bounds, int axis)
-{
-   int idx = coord_defs[axis].ref - REF_RECT_GFHBrushTopL;
-   Rect area;
-   DrawElement draw;
-
-   get_scaled_rect(MKREF(RES_GFHcoord,idx),bounds,&area,NULL);
-
-   ElementClear(&draw); 
-   draw.draw_type = DRAWTYPE_TEXT;
-   draw.draw_data = coord_defs[axis].name;
-   draw.draw_flags = BORDER(DRAWFLAG_BORDER_OUTLINE);
-
-   
-   LGadCreateButtonArgs(butt,root,area.ul.x,area.ul.y,
-                 (short)RectWidth(&area), (short)RectHeight(&area),
-                 &draw, label_button_call,0);
-   LGadButtonSetFlags(butt,LGADBUTT_FLAG_GETDOWNS);
-   LGadBoxSetUserData(VB(butt),(void*)(intptr_t)axis);
-}
-
-////////////////////////////////////////
-// Root draw call. Does nothing.
-//
-
-#ifdef ROOT_DRAW
-static void root_draw_call(void* data, LGadBox* vb)
-{
-   gr_clear(guiStyleGetColor(NULL,StyleColorBG));
-}
-#endif 
-
-////////////////////////////////////////////////////////////
-// GFH API FUNCTIONS
-////////////////////////////////////////////////////////////
-
-static void brushGFH_OpenPnPs(int n);
-static void brushGFH_ClosePnPs(void);
-static void brushGFH_UpdatePnPs(GFHUpdateOp op, editBrush *brush);
-static void set_pnp_mode(int n);
-
-static bool New_Brush_Hack=FALSE;     // so setcur sets it, update does it
-
-void GFHUpdate(GFHUpdateOp op)
-{
-   int i;
-   for (i = 0; i < NUM_COORDS; i++)
-   {
-      float val = BrushGFH.vals[i];
-      bool update = op == GFH_FORCE;
-      grab_brush_axis(BrushGFH.brush,i,&BrushGFH.vals[i]);
-      if (update || BrushGFH.vals[i] != val)
-         UpdateCycleGadg(&BrushGFH.coords[i],TRUE);
-   }
-   if ((New_Brush_Hack)&&(op==GFH_FRAME))
-   {
-      set_pnp_mode(PnP_ForBrush(BrushGFH.brush));
-      Update_GFHFrobs(GFH_FORCE,BrushGFH.brush);
-      New_Brush_Hack=FALSE;
-   }
-   else
-   {
-      brushGFH_UpdatePnPs(op,BrushGFH.brush);
-      Update_GFHFrobs(op,BrushGFH.brush);
-   }
-   GFHUpdateSwappable(op,BrushGFH.brush);
-}
-
-void GFHRedrawPnPnSuch(void)
-{
-   New_Brush_Hack=TRUE;
-}
-
-////////////////////////////////////////
-
-
-void GFHSetCurrentBrush(editBrush* brush)
-{
-   int i;
-   
-   ConfigSpew("brushset",("Setting gfx brush to %x of type %d\n",brush,brush?brushGetType(brush):666));
-   if (!BrushGFH.created)
-   {
-      Warning(("Setting GFH current brush, but GFH hasn't been created\n"));
-      return;
-   }
-
-   if (BrushGFH.brush!=brush)
-   {
-      New_Brush_Hack=TRUE;
-      brushGFH_UpdatePnPs(GFH_MINIMAL,NULL);  // to indicate this one is dead
-   }
-   BrushGFH.brush = brush;
-
-   for (i = 0; i < NUM_COORDS; i++)
-   {
-      grab_brush_axis(brush,i,&BrushGFH.vals[i]);
-      UpdateCycleGadg(&BrushGFH.coords[i],TRUE);
-   }
-}
-
-////////////////////////////////////////
-
-// some zany little tables to make the next/prev thing
-// correspond to actual screen layout instead of internal
-// ordering
-static int next_table[NUM_COORDS] = { 
-   1, 2, 8,
-   4, 5, 0,
-   3, 6, 7,
-};
-static int prev_table[NUM_COORDS] = { 
-   5, 0, 1,
-   6, 3, 4,
-   7, 8, 2, 
-};
-
-void CreateBrushGFHInternal(Rect* bounds, editBrush* brush)
-{
-   Rect area, anchor;
-   Rect top_reg, bot_reg;
-   int pnp = PnP_ForBrush(brush), swap=0;   
-   int i;
-   struct _BrushGFH* gfh = &BrushGFH;
-
-   AssertMsg(!gfh->created,"Hey, brush GFH was already created");
-
-   LGadSetupSubRoot(&gfh->root,LGadCurrentRoot(),
-                    bounds->ul.x,bounds->ul.y,
-                    (short)RectWidth(bounds),(short)RectHeight(bounds));
-   gfh->coordmask = 0;
-   gfh->brush = brush;
-
-   // MAIN PNP AREAS
-   config_get_int("pnp",&pnp);
-   get_scaled_rect(REF_RECT_GFHModalArea,bounds,&area,&anchor);
-   gfh->pnp1area = area;
-   if (grd_visible_canvas->bm.w>640)
-   {
-      gfh->pnp2area.ul.x=0; gfh->pnp2area.ul.y=area.ul.y;
-      gfh->pnp2area.lr.x=RectWidth(&area);
-      gfh->pnp2area.lr.y=area.ul.y+RectHeight(&area);
-      LGadSetupSubRoot(&gfh->pnp2root,LGadCurrentRoot(),
-                       bounds->lr.x+4,bounds->ul.y,
-                       (short)RectWidth(&area),(short)RectHeight(&area));
-      gfh->pnp2isup = FALSE;
-      gfh->dualpnps = TRUE;
-   }
-   else
-      gfh->pnp2isup = gfh->dualpnps = FALSE;
-   brushGFH_OpenPnPs(pnp);
-
-   // SWAPPABLE AREA
-   config_get_int("swap",&swap);
-   get_scaled_rect(REF_RECT_GFHSwapArea,bounds,&area,&anchor);
-   gfh->swaparea = area;
-   GFHOpenSwappable(swap,&gfh->root,&area,brush);
-
-   for (i = 0; i < NUM_COORDS; i++)
-   {
-      grab_brush_axis(brush,i,&gfh->vals[i]);
-      create_coord_cycler(&gfh->root,bounds,&gfh->coords[i],i,&gfh->vals[i],
-         &gfh->coords[next_table[i]],&gfh->coords[prev_table[i]]);
-      create_label_button(&gfh->labels[i],&gfh->root,bounds,i);
-   }
-      
-   gfh->created = TRUE;
-   vBrush_Change_Callback = GFHSetCurrentBrush; 
-
-   get_scaled_rect(REF_RECT_GFH_UndoArea,bounds,&area,&anchor);
-   CreateConfigButtonDesc(&gfh->menu1_desc,2,&area,"gfh_menu1",MakePoint(1,2),MakePoint(1,1));
-   CreateCmdButtonList(&gfh->menu1_buttons,&gfh->root,&gfh->menu1_desc);
-   bot_reg.ul.x=area.ul.x; top_reg.ul.x=area.lr.x+8; top_reg.ul.y=area.ul.y;
-
-   get_scaled_rect(REF_RECT_GFH_DeleteArea,bounds,&area,&anchor);
-   CreateConfigButtonDesc(&gfh->menu2_desc,2,&area,"gfh_menu2",MakePoint(1,2),MakePoint(1,1));
-   CreateCmdButtonList(&gfh->menu2_buttons,&gfh->root,&gfh->menu2_desc);
-   bot_reg.lr.x=area.lr.x; top_reg.lr.x=area.ul.x-8; top_reg.lr.y=area.lr.y;
-   
-   get_scaled_rect(REF_RECT_GFH_TimeArea,bounds,&area,&anchor);
-   bot_reg.ul.y=area.ul.y+1;   bot_reg.lr.y=area.lr.y;
-   Create_GFHFrobs(&gfh->root,&top_reg,&bot_reg,brush);
-   
-   LGadDrawBox(VB(&BrushGFH),NULL);
-}
-   
-
-////////////////////////////////////////
-
-void CreateBrushGFH(Rect* bounds)
-{
-   CreateBrushGFHInternal(bounds, blistGet());
-}
-
-////////////////////////////////////////
-
-void DestroyBrushGFH(void)
-{
-   int i;
-   struct _BrushGFH* gfh = &BrushGFH;
-
-   brushGFH_ClosePnPs();
-   GFHCloseSwappable();
-   for (i = 0; i < NUM_COORDS; i++)
-   {
-      destroy_coord_cycler(&BrushGFH.coords[i]);
-      LGadDestroyBox((LGadBox*)&BrushGFH.labels[i],FALSE);
-   }
-   LGadDestroyButtonList(&gfh->menu1_buttons);
-   DestroyConfigButtonDesc(&gfh->menu1_desc);
-
-   LGadDestroyButtonList(&gfh->menu2_buttons);
-   DestroyConfigButtonDesc(&gfh->menu2_desc);
-
-   Destroy_GFHFrobs();
-
-   LGadDestroyRoot(&BrushGFH.root);
-   if (BrushGFH.dualpnps)
-      LGadDestroyRoot(&BrushGFH.pnp2root);
-    
-   BrushGFH.brush = NULL;
-   BrushGFH.created = FALSE;
-   vBrush_Change_Callback = NULL;
-}           
-
-void GFHSetCoordMask(ulong mask)
-{
-   //   ulong changes = BrushGFH.coordmask ^ mask;
-   int i;
-   if (!BrushGFH.created)
-    { BrushGFH.coordmask = mask; return; }
-   for (i = 0; i < NUM_COORDS; i++)
-   {
-      bool invis = (mask & (1 << i)) != 0;
-      LGadHideBox(VB(&BrushGFH.coords[i]),invis);
-      LGadHideBox(VB(&BrushGFH.labels[i]),invis);
-   }   
-   BrushGFH.coordmask = mask;
-}
-
-////////////////////////////////////////
 
 void get_scaled_rect(Ref ref, Rect* bounds,Rect* out, Rect* anchor)
 {
@@ -597,57 +178,201 @@ void get_scaled_rect(Ref ref, Rect* bounds,Rect* out, Rect* anchor)
       *anchor = ancr;
 }
 
-////////////////////////////////////////////////////////////
-// GFH Commands
-////////////////////////////////////////////////////////////
+
+static void handle_coord(PnP_SliderOp op, Rect *rect, float value, intptr_t axis)
+{
+   editBrush *brush = BrushGFH.brush;
+   if (!brush || op != PnP_SliderUpdateOp)
+      return;
+   editUndoStoreStart(brush);
+   stuff_brush_axis(brush, (int)axis, value);
+   i_changed_the_brush(brush, FALSE, FALSE, FALSE);
+   editUndoStoreBrush(brush);
+}
+
+static void create_coord(int axis, const Rect *height_reference)
+{
+   Rect field, label;
+   const BOOL angular = axis / NUM_SPATIAL_DIMS == ROT_AXES;
+   const float lo = angular ? 0 : -DARK_LIMIT_RUNTIME_WORLD_EXTENT;
+   const float hi = angular ? 360 : DARK_LIMIT_RUNTIME_WORLD_EXTENT;
+   const float step = angular ? 1.0f : 0.01f;
+   const Ref ref = coord_defs[axis].ref;
+   get_scaled_rect(ref, &BrushGFH.bounds, &field, NULL);
+   get_scaled_rect(MKREF(RES_GFHcoord, ref - REF_RECT_GFHBrushTopL), &BrushGFH.bounds, &label, NULL);
+   label.ul.y = field.ul.y;
+   BrushGFH.labels[axis] = PnP_DragLabel(&label, coord_defs[axis].name, lo, hi, angular ? 1.0f : 0.25f,
+      &BrushGFH.values[axis], handle_coord, axis, angular ? PNP_SLIDER_WRAP : 0);
+   PnP_MatchControlHeight(BrushGFH.labels[axis], height_reference);
+   BrushGFH.coords[axis] = PnP_SliderFloat(&field, NULL, lo, hi, step, &BrushGFH.values[axis],
+      handle_coord, axis, angular ? PNP_SLIDER_WRAP : 0);
+   PnP_MatchControlHeight(BrushGFH.coords[axis], height_reference);
+}
 
 BOOL brushGFH_AlignNTextureUp(void)
 {
-   return BrushGFH.pnp2isup;
+   return BrushGFH.dual && BrushGFH.active_pnp == PNP_TEXTURE;
 }
 
-// abstract over the pnp system, since we dont have the same root or area
-static void brushGFH_OpenPnPs(int n)
+const Rect *GFHGetAlignLayoutBounds(void)
 {
-   if ((n==PNP_TEXTURE)&&BrushGFH.dualpnps)
-   {  // do things with PnP 2 here
-      BrushGFH.pnp2isup=TRUE;
-      GFHOpen_a_PNP(1,PNP_ALIGN,&BrushGFH.pnp2root,&BrushGFH.pnp2area,BrushGFH.brush);
-   }
-   GFHOpen_a_PNP(0,n,&BrushGFH.root,&BrushGFH.pnp1area,BrushGFH.brush);
+   return BrushGFH.created && BrushGFH.dual ? &BrushGFH.align : NULL;
 }
 
-static void brushGFH_ClosePnPs(void)
+static void close_pnp(void)
 {
-   if (BrushGFH.pnp2isup)
+   if (brushGFH_AlignNTextureUp())
       GFHClose_a_PNP(1);
    GFHClose_a_PNP(0);
-   BrushGFH.pnp2isup=FALSE;
+   BrushGFH.active_pnp = PNP_NULL;
 }
 
-static void brushGFH_UpdatePnPs(GFHUpdateOp op, editBrush *brush)
+static void open_pnp(int mode)
 {
-   if (BrushGFH.pnp2isup)
-      GFHUpdate_a_PNP(1,op,brush);
-   GFHUpdate_a_PNP(0,op,brush);
+   if (!BrushGFH.brush && mode != PNP_USER)
+      mode = PNP_NULL;
+   BrushGFH.active_pnp = mode;
+   if (brushGFH_AlignNTextureUp())
+      GFHOpen_a_PNP(1, PNP_ALIGN, &BrushGFH.align, BrushGFH.brush);
+   GFHOpen_a_PNP(0, mode, &BrushGFH.pnp, BrushGFH.brush);
 }
 
-// high level call
-static void set_pnp_mode(int n)
+static void set_pnp_mode(int mode)
 {
-   brushGFH_ClosePnPs();
-   brushGFH_OpenPnPs(n);
-   //   GFHOpenPNP(n,&BrushGFH.root,&BrushGFH.pnp1area,BrushGFH.brush);
-   LGadDrawBox(VB(&BrushGFH.root),NULL);
-   if (BrushGFH.pnp2isup)
-      LGadDrawBox(VB(&BrushGFH.pnp2root),NULL);
+   if (!BrushGFH.created || mode < PNP_TEXTURE || mode > PNP_NULL)
+      return;
+   close_pnp();
+   open_pnp(mode);
 }
 
-static void set_swap_mode(int n)
+static void set_swap_mode(int mode)
 {
+   if (!BrushGFH.created || mode < GFH_SWAP_CREATE || mode > GFH_SWAP_TEST)
+      return;
    GFHCloseSwappable();
-   GFHOpenSwappable(n,&BrushGFH.root,&BrushGFH.swaparea,BrushGFH.brush);
-   LGadDrawBox(VB(&BrushGFH.root),NULL);
+   BrushGFH.active_swap = mode;
+   GFHOpenSwappable(mode, &BrushGFH.swap, BrushGFH.brush);
+}
+
+static void update_pnp(GFHUpdateOp op, editBrush *brush)
+{
+   GFHUpdate_a_PNP(0, op, brush);
+   if (brushGFH_AlignNTextureUp())
+      GFHUpdate_a_PNP(1, op, brush);
+}
+
+void GFHUpdate(GFHUpdateOp op)
+{
+   int i;
+   if (!BrushGFH.created)
+      return;
+
+   for (i = 0; i < NUM_COORDS; ++i)
+      grab_brush_axis(BrushGFH.brush, i, &BrushGFH.values[i]);
+
+   if (BrushGFH.selection_changed && op == GFH_FRAME)
+   {
+      set_pnp_mode(PnP_ForBrush(BrushGFH.brush));
+      BrushGFH.selection_changed = FALSE;
+      op = GFH_FORCE;
+   }
+   if (!BrushGFH.selection_changed)
+      update_pnp(op, BrushGFH.brush);
+   Update_GFHFrobs(op, BrushGFH.brush);
+   GFHUpdateSwappable(op, BrushGFH.brush);
+}
+
+void GFHRedrawPnPnSuch(void)
+{
+   BrushGFH.selection_changed = TRUE;
+}
+
+void GFHSetCurrentBrush(editBrush *brush)
+{
+   if (!BrushGFH.created || BrushGFH.brush == brush)
+      return;
+   if (!BrushGFH.selection_changed)
+      update_pnp(GFH_MINIMAL, NULL);
+   BrushGFH.selection_changed = TRUE;
+   BrushGFH.brush = brush;
+}
+
+static Rect absolute_area(Ref reference, Rect *bounds)
+{
+   Rect rect;
+   get_scaled_rect(reference, bounds, &rect, NULL);
+   rect.ul.x += bounds->ul.x;
+   rect.lr.x += bounds->ul.x;
+   rect.ul.y += bounds->ul.y;
+   rect.lr.y += bounds->ul.y;
+   return rect;
+}
+
+void CreateBrushGFH(Rect *bounds)
+{
+   Rect undo, del, time, top, bottom, coord_height;
+   int i, mode, swap = GFH_SWAP_CREATE;
+   BrushGFH.bounds = *bounds;
+   BrushGFH.brush = blistGet();
+   BrushGFH.pnp = absolute_area(REF_RECT_GFHModalArea, bounds);
+   BrushGFH.swap = absolute_area(REF_RECT_GFHSwapArea, bounds);
+   BrushGFH.align = BrushGFH.pnp;
+   BrushGFH.align.ul.x = bounds->lr.x + 4;
+   BrushGFH.align.lr.x = BrushGFH.align.ul.x + RectWidth(&BrushGFH.pnp);
+   BrushGFH.dual = grd_visible_canvas->bm.w > 640;
+   BrushGFH.created = TRUE;
+   BrushGFH.selection_changed = FALSE;
+   vBrush_Change_Callback = GFHSetCurrentBrush;
+
+   PnP_SetOrigin(bounds->ul);
+   PnP_GadgStart(&BrushGFH.controls);
+   get_scaled_rect(REF_RECT_GFHBrushMidL, bounds, &coord_height, NULL);
+   for (i = 0; i < NUM_COORDS; ++i)
+   {
+      grab_brush_axis(BrushGFH.brush, i, &BrushGFH.values[i]);
+      create_coord(i, &coord_height);
+   }
+   get_scaled_rect(REF_RECT_GFH_UndoArea, bounds, &undo, NULL);
+   get_scaled_rect(REF_RECT_GFH_DeleteArea, bounds, &del, NULL);
+   get_scaled_rect(REF_RECT_GFH_TimeArea, bounds, &time, NULL);
+   PnP_CommandButtons(&undo, "gfh_menu1", 2, MakePoint(1, 2));
+   PnP_CommandButtons(&del, "gfh_menu2", 2, MakePoint(1, 2));
+
+   mode = PnP_ForBrush(BrushGFH.brush);
+   config_get_int("pnp", &mode);
+   open_pnp(mode >= PNP_TEXTURE && mode <= PNP_NULL ? mode : PNP_NULL);
+   config_get_int("swap", &swap);
+   BrushGFH.active_swap = swap >= GFH_SWAP_CREATE && swap <= GFH_SWAP_TEST ? swap : GFH_SWAP_CREATE;
+   GFHOpenSwappable(BrushGFH.active_swap, &BrushGFH.swap, BrushGFH.brush);
+
+   PnP_SetOrigin(bounds->ul);
+   top.ul = MakePoint(undo.lr.x + 8, undo.ul.y);
+   top.lr = MakePoint(del.ul.x - 8, del.lr.y);
+   bottom.ul = MakePoint(undo.ul.x, time.ul.y + 1);
+   bottom.lr = MakePoint(del.lr.x, time.lr.y);
+   Create_GFHFrobs(&top, &bottom, BrushGFH.brush);
+}
+
+void DestroyBrushGFH(void)
+{
+   close_pnp();
+   GFHCloseSwappable();
+   Destroy_GFHFrobs();
+   PnP_GadgFree(&BrushGFH.controls);
+   BrushGFH.brush = NULL;
+   BrushGFH.created = FALSE;
+   vBrush_Change_Callback = NULL;
+}
+
+void GFHSetCoordMask(ulong mask)
+{
+   int i;
+   PnP_SetCurrent(&BrushGFH.controls);
+   for (i = 0; i < NUM_COORDS; ++i)
+   {
+      PnP_Hide(BrushGFH.coords[i], (mask & (1 << i)) != 0);
+      PnP_Hide(BrushGFH.labels[i], (mask & (1 << i)) != 0);
+   }
 }
 
 static void deferred_set_pnp_mode(void *data)
@@ -704,13 +429,10 @@ static void coord_edit(char *str)
             break;
          }
    }
-   if ((n>=0)&&(n<NUM_COORDS))
+   if (n >= 0 && n < NUM_COORDS)
    {
-      LGadTextBox *tb=&BrushGFH.coords[n].text;
-      LGadTextBoxSetCursor(tb,0);
-      LGadFocusTextBox(tb);
-      LGadTextBoxSetFlag(tb,TEXTBOX_EDIT_BRANDNEW);
-      LGadDrawBox(VB(tb),NULL);
+      PnP_SetCurrent(&BrushGFH.controls);
+      PnP_FocusControl(BrushGFH.coords[n]);
    }
    else
       Status("Invalid Coordinate");

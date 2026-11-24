@@ -28,7 +28,8 @@ extern "C" {
 #include <platform_services.h>
 #include "movie_audio_output.h"
 
-#include <runtime.h>
+#include <appagg.h>
+#include <vkrend.h>
 #include <sdl_events.h>
 
 namespace
@@ -222,6 +223,9 @@ BOOL STDMETHODCALLTYPE cSDLMoviePlayer::Play(int flags)
 {
     if (m_state != kMP1Ready || !(flags & kMoviePlayBlock))
         return FALSE;
+    AutoAppIPtr_(VulkanRenderer,renderer);
+    if (!renderer)
+        return FALSE;
     if (m_hasPlayed)
     {
         if (av_seek_frame(m_format, -1, 0, AVSEEK_FLAG_BACKWARD) < 0)
@@ -321,7 +325,7 @@ BOOL STDMETHODCALLTYPE cSDLMoviePlayer::Play(int flags)
                     allowSkip, termKeys);
                 if (keepPlaying)
                 {
-                    played = DarkRenderPresentMovieFrame(
+                    played = renderer->PresentMovieFrame(
                         rgba.data(), video.context->width,
                         video.context->height, strides[0]);
                 }

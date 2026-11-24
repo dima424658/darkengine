@@ -102,8 +102,9 @@ enum eCmdTermSuggestionMode
 #define CMDTERM_MAX_ARGUMENT_OPTIONS \
    (sizeof(CmdTerm.argumentoptions) / sizeof(CmdTerm.argumentoptions[0]))
 
-#define CMDTERM_MAX_LINES 4096
-#define CMDTERM_LINE_LENGTH 256
+static CmdTermFocusHandler editor_focus;
+static unsigned output_revision = 1;
+static int editor_first_line, editor_visible_lines;
 
 static char CmdTermLines[CMDTERM_MAX_LINES][CMDTERM_LINE_LENGTH];
 static int CmdTermLineCount = 0;
@@ -132,7 +133,7 @@ static const char* CmdTermPopupFontNames[] =
 };
 static int CmdTermFontIndices[2] = { 0, 2 };
 static const int CmdTermDefaultFontIndices[2] = { 0, 2 };
-static BOOL CmdTermFontManuallyAdjusted[2] = { FALSE, FALSE };
+static BOOL CmdTermFontSelectionLocked[2] = { FALSE, FALSE };
 static BOOL CmdTermUsesConfiguredFont[2] = { FALSE, FALSE };
 static char CmdTermConfiguredFonts[2][64];
 
@@ -399,7 +400,7 @@ static void cmdterm_refresh_suggestions(BOOL force)
    int fragment_length;
    int i;
 
-   if (!(CmdTerm.flags & kCmdTermScrollable))
+   if (!editor_focus && !(CmdTerm.flags & kCmdTermScrollable))
    {
       CmdTerm.suggestionmode = kCmdTermSuggestionNone;
       return;
@@ -792,6 +793,7 @@ static void cmdterm_add_line_locked(const char* text, int length)
       length = CMDTERM_LINE_LENGTH - 1;
    memcpy(CmdTermLines[CmdTermNextLine], text, length);
    CmdTermLines[CmdTermNextLine][length] = '\0';
+   ++output_revision;
    CmdTermNextLine = (CmdTermNextLine + 1) % CMDTERM_MAX_LINES;
    if (CmdTermLineCount < CMDTERM_MAX_LINES)
       ++CmdTermLineCount;
@@ -931,6 +933,26 @@ static void cmdterm_end_command_capture(void)
       cmdterm_remove_output_hook();
 }
 
+void cmdterm_execute_command(const char* command)
+{
+   const char* error;
+
+   cmdterm_set_scroll(0);
+   cmdterm_begin_command_capture();
+   error = CommandExecute(command);
+   if (error)
+      Status(error);
+   cmdterm_end_command_capture();
+
+   // A menu command can write output without repainting the editor canvas.
+   if ((CmdTerm.statebits & (kStateInUse | kStateVisible)) ==
+       (kStateInUse | kStateVisible))
+   {
+      cmdterm_redraw();
+      ScrnForceUpdateRect(&CmdTerm.bounds);
+   }
+}
+
 void cmdterm_capture_status(const char* text)
 {
    if (PlatformAtomicLoad(&CmdTermCommandCaptureDepth) > 0 &&
@@ -962,6 +984,12 @@ void cmdterm_redraw(void)
    cmdterm_rebuild_output();
    LGadUpdateTextBox(&CmdTerm.outputbox);
    LGadUpdateTextBox(&CmdTerm.textbox);
+   if (!(CmdTerm.flags & kCmdTermHideUnfocused))
+   {
+      LGadDrawBox(VB(&CmdTerm.root), NULL);
+      return;
+   }
+
    gr_init_sub_canvas(ScrnGetDrawCanvas(), &canvas,
                       CmdTerm.bounds.ul.x, CmdTerm.bounds.ul.y,
                       RectWidth(&CmdTerm.bounds), RectHeight(&CmdTerm.bounds));
@@ -1178,6 +1206,11 @@ static BOOL cmdterm_copy_output(BOOL all)
       (CmdTermLineCount < CmdTerm.visiblelines
          ? CmdTermLineCount : CmdTerm.visiblelines);
    first = all ? 0 : CmdTermLineCount - shown - CmdTerm.scroll;
+   if (!all && editor_focus)
+   {
+      first = editor_first_line;
+      shown = editor_visible_lines;
+   }
    if (first < 0)
       first = 0;
    oldest = (CmdTermNextLine - CmdTermLineCount + CMDTERM_MAX_LINES)
@@ -2115,7 +2148,7 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
    CmdTerm.style.colors[StyleColorFG] = 0xffff;
    CmdTerm.style.colors[StyleColorText] = 0xffff;
    font_profile = (flags & kCmdTermHideUnfocused) ? 1 : 0;
-   if (!CmdTermFontManuallyAdjusted[font_profile])
+   if (!CmdTermFontSelectionLocked[font_profile])
    {
       char configured_font[64];
       const char* config_var = font_profile ? "console_font"
@@ -2146,6 +2179,9 @@ void CreateCommandTerminal(LGadRoot* root, Rect* bounds, ulong flags)
                break;
             }
       }
+      // Keep the docked console's face when playtest rebuilds the editor.
+      if (!font_profile)
+         CmdTermFontSelectionLocked[font_profile] = TRUE;
    }
    if (CmdTermUsesConfiguredFont[font_profile])
       font_name = CmdTermConfiguredFonts[font_profile];
@@ -2357,10 +2393,6 @@ static BOOL cmdterm_apply_pending_font_change(void)
       return FALSE;
 
    profile = (CmdTerm.flags & kCmdTermHideUnfocused) ? 1 : 0;
-   // Once the user changes the live size, switch an arbitrary configured
-   // face onto the stock size ladder so subsequent wheel steps are stable.
-   CmdTermFontManuallyAdjusted[profile] = TRUE;
-   CmdTermUsesConfiguredFont[profile] = FALSE;
    font_count = profile ? (int)CMDTERM_POPUP_FONT_COUNT
                         : (int)CMDTERM_EDITOR_FONT_COUNT;
    index = CmdTermFontIndices[profile] + delta;
@@ -2381,6 +2413,9 @@ static BOOL cmdterm_apply_pending_font_change(void)
    strncpy(command, CmdTerm.cmdbuf, sizeof(command));
    command[sizeof(command) - 1] = '\0';
 
+   // A successful wheel adjustment selects a face from the stock size ladder.
+   CmdTermFontSelectionLocked[profile] = TRUE;
+   CmdTermUsesConfiguredFont[profile] = FALSE;
    CmdTermFontIndices[profile] = index;
    DestroyCommandTerminal();
    CreateCommandTerminal(parent, &bounds, flags);
@@ -2459,6 +2494,11 @@ static void cmdterm_activate_focus(BOOL position_cursor)
 
 void cmdterm_focus(char* prefix)
 {
+   if (editor_focus)
+   {
+      editor_focus(prefix, FALSE);
+      return;
+   }
    char* buf = &CmdTerm.cmdbuf[0];
    int bufsiz = sizeof(CmdTerm.cmdbuf);
 
@@ -2481,6 +2521,12 @@ static void new_cmdterm(char *prefix)
 
 static void toggle_cmdterm(void)
 {
+   if (editor_focus)
+   {
+      history_new_cmdterm();
+      editor_focus("", TRUE);
+      return;
+   }
    if (!(CmdTerm.statebits & kStateInUse))
       return;
 
@@ -2560,4 +2606,116 @@ void cmdterm_setup_cmds(void)
      COMMANDS(commands,HK_ALL);
      setup = TRUE;
    }
+}
+
+void cmdterm_set_editor_focus(CmdTermFocusHandler handler)
+{
+   static BOOL greeted;
+   editor_focus = handler;
+   if (handler)
+   {
+      cmdterm_setup_cmds();
+      history_new_cmdterm();
+      CmdTerm.suggestioninput[0] = '\0';
+      if (!greeted)
+      {
+         cmdterm_print("Console ready. Type help for commands.");
+         greeted = TRUE;
+      }
+   }
+}
+
+int cmdterm_editor_output(char (*lines)[CMDTERM_LINE_LENGTH], unsigned *revision)
+{
+   int count = -1;
+   cmdterm_model_lock();
+   if (*revision != output_revision)
+   {
+      const int oldest = (CmdTermNextLine - CmdTermLineCount + CMDTERM_MAX_LINES) % CMDTERM_MAX_LINES;
+      const int first = CmdTermLineCount < CMDTERM_MAX_LINES - oldest ?
+         CmdTermLineCount : CMDTERM_MAX_LINES - oldest;
+      memcpy(lines, CmdTermLines + oldest, first * CMDTERM_LINE_LENGTH);
+      memcpy(lines + first, CmdTermLines, (CmdTermLineCount - first) * CMDTERM_LINE_LENGTH);
+      *revision = output_revision;
+      count = CmdTermLineCount;
+   }
+   cmdterm_model_unlock();
+   return count;
+}
+
+void cmdterm_editor_visible_range(int first, int count)
+{
+   editor_first_line = first;
+   editor_visible_lines = count;
+}
+
+void cmdterm_editor_execute(char *command)
+{
+   char entered[CMDTERM_LINE_LENGTH + 3];
+   const char *error;
+   snprintf(entered, sizeof(entered), "> %s", command);
+   cmdterm_print(entered);
+   Status("");
+   cmdterm_begin_command_capture();
+   error = IInputBinder_ProcessCmd(g_pInputBinder, command);
+   if (error)
+   {
+      Status(error);
+      cmdterm_print(error);
+   }
+   else
+      history_add(command);
+   cmdterm_end_command_capture();
+   history_new_cmdterm();
+}
+
+const char *cmdterm_editor_history(int direction)
+{
+   if (direction > 0 && _history_get_idx(1) == cmd_history_idx)
+   {
+      history_new_cmdterm();
+      return "";
+   }
+   return history_get(direction);
+}
+
+static int editor_suggestions(const char *input)
+{
+   strncpy(CmdTerm.cmdbuf, input, sizeof(CmdTerm.cmdbuf) - 1);
+   CmdTerm.cmdbuf[sizeof(CmdTerm.cmdbuf) - 1] = '\0';
+   cmdterm_refresh_suggestions(FALSE);
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+      return CmdTerm.argumentoptioncount;
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionCommands)
+      return CmdTerm.suggestioncount;
+   return 0;
+}
+
+const char *cmdterm_editor_suggestion(const char *input, int index)
+{
+   if (index < 0 || index >= editor_suggestions(input))
+      return NULL;
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+      return CmdTerm.argumentoptions[index];
+   return CmdTerm.suggestions[index]->name;
+}
+
+const char *cmdterm_editor_complete(const char *input)
+{
+   static char completed[CMDTERM_LINE_LENGTH];
+   if (!editor_suggestions(input))
+      return NULL;
+   if (CmdTerm.suggestionmode == kCmdTermSuggestionArguments)
+   {
+      int index = (CmdTerm.argumentoptionselected + 1) % CmdTerm.argumentoptioncount;
+      CmdTerm.argumentoptionselected = index;
+      snprintf(completed, sizeof(completed), "%s %s", CmdTerm.argumentcommand->name, CmdTerm.argumentoptions[index]);
+   }
+   else
+   {
+      const Command *command = CmdTerm.suggestions[CmdTerm.suggestionselected];
+      snprintf(completed, sizeof(completed), "%s%s", command->name,
+               cmdterm_command_accepts_argument(command) ? " " : "");
+   }
+   return completed;
 }

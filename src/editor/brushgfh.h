@@ -9,6 +9,8 @@
 #ifndef __BRUSHGFH_H
 #define __BRUSHGFH_H
 
+#include <rect.h>
+
 struct _editBrush;
 #include <lg.h>
 #include <rect.h>
@@ -36,6 +38,7 @@ EXTERN void GFHUpdate(GFHUpdateOp op);
 
 // hack for dealing with dual PnP stuff
 EXTERN BOOL brushGFH_AlignNTextureUp(void);
+EXTERN const Rect *GFHGetAlignLayoutBounds(void);
 
 // Coordinate mask
 

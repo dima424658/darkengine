@@ -30,5 +30,10 @@ EXTERN bool TexturePaletteVisible(void);
 EXTERN void TexturePaletteUpdate(GFHUpdateOp op);
 
 EXTERN void TexturePaletteSelect(int texture);
+EXTERN const Rect *TexturePaletteBounds(void);
+#ifdef __cplusplus
+void ResetTexturePaletteRenderer();
+void DrawTexturePalette();
+#endif
 
 #endif // __TEXTRPAL_H

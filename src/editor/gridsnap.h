@@ -35,6 +35,6 @@ void gedit_vertex_snap(Grid *g, mxs_vector *dest, mxs_vector *src);
  //  height is location along that axis at which to place grid
  //  start,end are corners of a bounding box of the area to engrid
 void gedit_render_grid(Grid *g, int prime_axis, mxs_real height,
-                       mxs_vector *start, mxs_vector *end);
+                       mxs_vector *start, mxs_vector *end, bool draw_on_canvas);
 
 #endif

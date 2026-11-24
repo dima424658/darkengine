@@ -1,11 +1,3 @@
-if(APPLE OR WIN32)
-  set(dark_build_dromed_default ON)
-else()
-  set(dark_build_dromed_default OFF)
-endif()
-
-option(DARK_BUILD_DROMED "Compile the native SDL DromEd editor" ${dark_build_dromed_default})
-
 add_library(dark_game_core OBJECT)
 target_link_libraries(dark_game_core PRIVATE dark_engine_config)
 target_compile_definitions(dark_game_core PRIVATE
@@ -27,7 +19,7 @@ target_link_libraries(dark_game_core PRIVATE dark_vorbisfile)
 if(DARK_BUILD_DROMED)
   add_library(dark_dromed_core OBJECT)
   target_link_libraries(dark_dromed_core PRIVATE dark_engine_config
-    SDL3::SDL3)
+    dark_lgd3d_imgui)
   target_compile_definitions(dark_dromed_core PRIVATE
     EDITOR REPORT PLAYTEST NEW_NETWORK_ENABLED THIEF STRICT=1 PROPERTY_BLAME
   )
@@ -68,6 +60,7 @@ target_sources(dark_game_core PRIVATE ${dark_root_sources})
 
 if(TARGET dark_dromed_core)
   target_sources(dark_dromed_core PRIVATE ${dark_root_sources})
+  add_subdirectory(darkdlgs)
 endif()
 
 add_subdirectory(actreact)
@@ -122,6 +115,7 @@ if(DARK_BUILD_DROMED)
   add_executable(dromed
     $<TARGET_OBJECTS:dark_dromed_core>
   )
+  target_link_libraries(dromed PRIVATE dark_darkdlgs)
 
   if(APPLE)
     target_link_libraries(dromed PRIVATE dark_engine_config
@@ -240,5 +234,5 @@ if(TARGET dromed)
 endif()
 
 if(TARGET dromed)
- target_link_libraries(dromed PRIVATE nfd)
+ target_link_libraries(dromed PRIVATE nfd dark_lgd3d_imgui)
 endif()

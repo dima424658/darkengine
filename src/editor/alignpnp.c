@@ -247,11 +247,11 @@ static void alignPnP_Picture(int data)
 #define MIN_SCALE 8
 #define MAX_SCALE 24
 
-void Create_alignPnP(LGadRoot *root, Rect *bounds, editBrush *br)
+void Create_alignPnP(Rect *bounds, editBrush *br)
 {
    GFHSetCoordMask(GFH_ALL_COORDS);
    alignPnP_buildRects(bounds);
-   PnP_GadgStart(&alignPnP,root);
+   PnP_GadgStart(&alignPnP);
    alignPnP_setvars(br,FALSE);
    pnpOwners[FROBS_PICTURE]=PnP_PictureBox(getRect(0),alignPnP_Picture,0);
    if (!brushGFH_AlignNTextureUp())

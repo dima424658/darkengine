@@ -10,7 +10,7 @@
 
 #include <swappnp.h>
 
-EXTERN void CreateUserPNP(LGadRoot* root, Rect* bounds, editBrush* brush);
+EXTERN void CreateUserPNP(Rect* bounds, editBrush* brush);
 EXTERN void UpdateUserPNP(GFHUpdateOp op, editBrush* brush);
 EXTERN void DestroyUserPNP(void);
 

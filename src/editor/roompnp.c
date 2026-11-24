@@ -180,7 +180,8 @@ static void roomPnP_PopUp(int data)
          IObjEditors* eds = AppGetObj(IObjEditors); 
 
          IObjEditor* ed = IObjEditors_Create(eds,&eddesc,room_id); 
-         IObjEditor_Go(ed,kObjEdModal);
+         if (ed)
+            IObjEditor_Go(ed,kObjEdModal);
          SafeRelease(ed);
          SafeRelease(eds);
 
@@ -230,11 +231,11 @@ static void roomPnP_PopUp(int data)
 
 }
 
-void Create_roomPnP(LGadRoot* root, Rect* bounds, editBrush *br)
+void Create_roomPnP(Rect* bounds, editBrush *br)
 {
    GFHSetCoordMask(0);
    roomPnP_buildRects(bounds);
-   PnP_GadgStart(&roomPnP,root);
+   PnP_GadgStart(&roomPnP);
    roomPnP_setvars(br,FALSE);
 
    PnP_TextBox(getRect(0),roomPnP_myName);

@@ -64,7 +64,7 @@ STDMETHODIMP cEditTools::EditTypedData(const char* title, const char* type, void
       strncpy(eddesc.title,title,sizeof(eddesc.title));
       eddesc.title[sizeof(eddesc.title)-1] = '\0'; 
 
-      BOOL result;
+      BOOL result = FALSE;
       IStructEditor* ed;
 
 #ifdef EDITOR
@@ -85,12 +85,12 @@ STDMETHODIMP cEditTools::EditTypedData(const char* title, const char* type, void
       else
       {
           ed = CreateStructEditor(&eddesc,(sStructDesc*)desc,data);
-          result = ed->Go(kStructEdModal);
+          result = ed && ed->Go(kStructEdModal);
           SafeRelease(ed);
       }
 #else
       ed = CreateStructEditor(&eddesc,(sStructDesc*)desc,data);
-      result = ed->Go(kStructEdModal);
+      result = ed && ed->Go(kStructEdModal);
       SafeRelease(ed);
 #endif
      

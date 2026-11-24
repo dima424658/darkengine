@@ -69,6 +69,8 @@ void EditDonorCacheParams(void)
    pCache->GetParams(&edit_me);
 
    IStructEditor* ed = CreateStructEditor(&param_edit_desc,&param_desc,&edit_me);
+   if (!ed)
+      return;
    ed->SetCallback(param_edit_CB,NULL);
    if (ed->Go(kStructEdModal))
    {

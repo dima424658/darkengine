@@ -84,8 +84,6 @@ EXTERN void PlatformBatchReportError(const char *title, const char *message);
 EXTERN int PlatformBatchExitCode(void);
 EXTERN void PlatformShowError(const char *title, const char *message);
 EXTERN BOOL PlatformAskYesNo(const char *title, const char *message);
-EXTERN int PlatformPopupMenu(const char *const *items, int count,
-                             int client_x, int client_y);
 EXTERN uint32 PlatformMilliseconds(void);
 // Excludes an OS-level application suspension from the engine clock. These
 // calls are idempotent so duplicate lifecycle notifications remain harmless.

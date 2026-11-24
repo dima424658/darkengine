@@ -388,8 +388,6 @@ BOOL PlatformAskYesNo(const char *title, const char *message)
    return FALSE;
 }
 
-int PlatformPopupMenu(const char *const *, int, int, int) { return 0; }
-
 uint32 PlatformMilliseconds(void)
 {
    using namespace std::chrono;

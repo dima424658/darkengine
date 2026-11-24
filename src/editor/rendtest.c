@@ -113,6 +113,7 @@ static BOOL rendtest_dialog(void)
    if (!sed)
     { _rtP_inuse=FALSE; return FALSE; }
    IStructEditor_SetCallback(sed,rendtest_prop_cb,&rtP);
+   _rtP_inuse=TRUE;
    IStructEditor_Go(sed,kStructEdModeless);
    SafeRelease(sed);
    return TRUE;

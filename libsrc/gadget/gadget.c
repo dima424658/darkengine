@@ -389,9 +389,38 @@ int LGadDestroyRoot(LGadRoot *deadroot)
    return(0);
 }
 
-EXTERN void LGadSetRootCursor(LGadRoot* root, IDataSource* bm, Point hotspot)
+EXTERN void LGadSetRootCursor(LGadRoot* root, IDataSource* source, Point hotspot)
 {
-    // TODO
+   IDataSource *old_source=root->pCursor;
+   Cursor *old_cursor=old_source ? root->curs : NULL;
+   grs_bitmap *bm=source ? (grs_bitmap *)IDataSource_Lock(source) : NULL;
+   Cursor *cursor=NULL;
+
+   if (bm)
+   {
+      cursor=Malloc(sizeof(Cursor));
+      if (cursor)
+      {
+         bm->align=0;
+         uiMakeBitmapCursor(cursor,bm,hotspot);
+      }
+   }
+
+   uiHideMouse(NULL);
+   root->curs=cursor;
+   root->pCursor=cursor ? source : NULL;
+   if (root->subroot)
+      uiSetRegionDefaultCursor(&root->box.r,cursor);
+   else
+      uiSetSlabDefaultCursor(root->root_slab,cursor);
+   uiShowMouse(NULL);
+
+   if (source && !cursor)
+      IDataSource_Unlock(source);
+   if (old_source)
+      IDataSource_Unlock(old_source);
+   if (old_cursor)
+      Free(old_cursor);
 }
 
 LGadRoot* LGadSetupSubRoot(LGadRoot* subroot, LGadRoot* parent, short x, short y, short w, short h)

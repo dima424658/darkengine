@@ -15,7 +15,7 @@
 #include <mouse.h>
 #include <mousevel.h>
 
-#include <display_window.h>
+#include <dispwnd.h>
 
 namespace {
 std::mutex g_mutex;
@@ -170,10 +170,22 @@ errtype _mouse_get_xy(short *x, short *y)
    *x = g_x; *y = g_y; return OK;
 }
 errtype mouse_get_xy(short *x, short *y) { return _mouse_get_xy(x, y); }
+void mouse_sync_xy(short x, short y)
+{
+   std::lock_guard<std::mutex> lock(g_mutex);
+   g_x = x;
+   g_y = y;
+   clamp_mouse();
+}
 errtype mouse_put_xy(short x, short y)
 {
    g_x = x; g_y = y; clamp_mouse();
-   if (!g_relativeMode) SDLDisplaySetMousePositionLogical(g_x, g_y);
+   if (!g_relativeMode)
+   {
+      AutoAppIPtr_(DisplayWindow,window);
+      if (window)
+         window->SetMousePositionLogical(g_x, g_y);
+   }
    // Match the legacy input contract: mouseMask suppresses motion generated
    // by programmatic pointer warps, not motion received from the platform.
    // Relative input already supplies a delta around the logical center; its
@@ -201,7 +213,9 @@ errtype mouse_set_relative_mode(bool enabled)
          g_y = static_cast<short>(g_ymax / 2);
       }
    }
-   SDLDisplaySetRelativeMouse(enabled);
+   AutoAppIPtr_(DisplayWindow,window);
+   if (window)
+      window->SetRelativeMouse(enabled);
    return OK;
 }
 bool mouse_consume_relative_motion(int *x, int *y)

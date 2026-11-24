@@ -7,8 +7,8 @@
 #include <dispapi.h>
 #include <gshelapi.h>
 
-#include <display_window.h>
-#include <runtime.h>
+#include <dispwnd.h>
+#include <vkrend.h>
 #include "sdl_events.h"
 
 bool DarkPumpEvents(void)
@@ -29,7 +29,11 @@ public:
 
    STDMETHOD_(void, BeginFrame)() override
    {
-      DarkRenderBeginApplicationFrame();
+      {
+         AutoAppIPtr_(VulkanRenderer,renderer);
+         if (renderer)
+            renderer->BeginApplicationFrame();
+      }
       PumpEvents(kPumpAll);
       if (m_flags & kLockFrame)
          DisplayLock();
@@ -50,7 +54,9 @@ public:
       }
       else if (m_flags & kFlushOnEndFrame)
          DisplayFlush();
-      DarkRenderEndApplicationFrame();
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (renderer)
+         renderer->EndApplicationFrame();
    }
 
    STDMETHOD(BringToFront)() override { return S_OK; }
@@ -119,7 +125,9 @@ public:
    STDMETHOD_(BOOL, SetFlags)(int flags) override
    {
       m_flags = flags;
-      SDLDisplaySetNativeCursorVisible((flags & kShowNativeCursor) != 0);
+      AutoAppIPtr_(DisplayWindow,window);
+      if (window)
+         window->SetNativeCursorVisible((flags & kShowNativeCursor) != 0);
       return TRUE;
    }
 

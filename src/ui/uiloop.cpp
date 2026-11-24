@@ -73,22 +73,30 @@ static IDataSource* load_cursor(const char* resname)
    IRes* pRes = pResMan->Bind(resname,RESTYPE_IMAGE,gContextPath); 
    if (!pRes) return NULL;  
 
-   grs_bitmap* bm = (grs_bitmap*)pRes->Lock(); 
-   IDataSource* pCopyBm = CreateBitmapImageSource(bm,kBitmapSrcCopyBits); 
-   pRes->Unlock(); 
+   // View the cursor as a palette before mapping it to the active one.
+   IRes* pPalRes = pResMan->Retype(pRes,RESTYPE_PALETTE,0);
+   if (!pPalRes)
+   {
+      SafeRelease(pRes);
+      return NULL;
+   }
+   ubyte* pal = (ubyte*)pPalRes->Lock();
+   const bool has_palette = pal != NULL;
+   if (has_palette)
+      pal_build_clut((ubyte(*)[3])pal,clut);
+   pPalRes->Unlock();
+   SafeRelease(pPalRes);
 
-   bm = (grs_bitmap*)pCopyBm->Lock(); 
-   ubyte* bits = bm->bits; 
+   grs_bitmap* bm = (grs_bitmap*)pRes->Lock();
+   IDataSource* pCopyBm = has_palette && bm && bm->type == BMT_FLAT8
+      ? CreateBitmapImageSource(bm,kBitmapSrcCopyBits) : NULL;
+   pRes->Unlock();
+   SafeRelease(pRes);
+   if (!pCopyBm)
+      return NULL;
 
-   // now view the cursor as a palette
-   IRes* pPalRes = pResMan->Retype(pRes,RESTYPE_PALETTE,0);    
-   Assert_(pPalRes); 
-   ubyte* pal = (ubyte*)pPalRes->Lock(); 
-
-   // build the clut 
-   pal_build_clut((ubyte(*)[3])pal,clut);
-
-   pPalRes->Unlock(); 
+   bm = (grs_bitmap*)pCopyBm->Lock();
+   ubyte* bits = bm->bits;
 
    // now map the bm through the clut
    // @BUG: this assumes 8-bit
@@ -100,10 +108,8 @@ static IDataSource* load_cursor(const char* resname)
             *pixel = clut[*pixel]; 
       }
 
-   pCopyBm->Unlock(); 
-   SafeRelease(pRes);
-   SafeRelease(pPalRes); 
-   return pCopyBm; 
+   pCopyBm->Unlock();
+   return pCopyBm;
 }
 
 static Point cursor_hotspot(const char* resname)
@@ -123,19 +129,10 @@ static void setup_cursor(uiStateRecord* state)
    if (state->context->cursor)
    {
       const char* name = state->context->cursor; 
-      LGadSetRootCursor(&state->root,NULL,MakePoint(0,0));
-      SafeRelease(state->cursor_src);  
-
-      AutoAppIPtr(ResMan); 
-      IRes* pCurRes = pResMan->Bind(name,RESTYPE_IMAGE,gContextPath);
-
-      pCurRes->Lock(); 
-      IDataSource* pSrc = load_cursor(name); 
-      Point hotspot = cursor_hotspot(name); 
-      LGadSetRootCursor(&state->root,pSrc,hotspot); 
-      state->cursor_src = pSrc; 
-      pCurRes->Unlock(); 
-      SafeRelease(pCurRes); 
+      IDataSource* pSrc = load_cursor(name);
+      LGadSetRootCursor(&state->root,pSrc,cursor_hotspot(name));
+      SafeRelease(state->cursor_src);
+      state->cursor_src = pSrc;
    }
 }
 

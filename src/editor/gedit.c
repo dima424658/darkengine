@@ -31,6 +31,7 @@
 #include <portal.h>
 #include <command.h>
 #include <cfgtool.h>
+#include <menus.h>
 
 #include <objpos.h>
 #include <objedit.h>
@@ -61,6 +62,7 @@
 #include <ged_csg.h>
 #include <ged_line.h>
 #include <winui.h>
+#include <imgui_workspace.h>
 #include <ged_room.h>
 #include <animlit.h>
 #include <family.h>     // for texture family loads and unloads, commands
@@ -84,6 +86,7 @@
 #include <bldstair.h>
 #include <hilight.h>
 #include <gedmedmo.h>
+#include <rendtest.h>
 #include <doorphys.h>
 #include <iobjsys.h>
 #include <physapi.h>
@@ -1015,8 +1018,6 @@ void gedit_set_primal_sides(int n)
    prim_finish();
 }
 
-extern void SetRadioCheckmark (int menu, int firstPos, int lastPos, int checkPos);
-
 // 0 is cube, 1 cyl, 2 pyr, 3 corner pyr
 void gedit_set_primal_type(int t)
 {
@@ -1571,9 +1572,7 @@ static void gedit_show_image(char *str)
    if (pRes)
    {  // really should check screen size and mode here, maybe switch in and out
       grs_bitmap *bm=(grs_bitmap *) IRes_Lock(pRes);
-      gr_clear(0);
-      gr_bitmap(bm, 0, 0);
-      gedit_busywait(TRUE);
+      ShowEditorImage(str, bm);
       IRes_Unlock(pRes);
       SafeRelease(pRes);
    }
@@ -1643,60 +1642,7 @@ extern void preload_dump_stats(void);
 
 static void showPalette(void)
 {
-   static bool display=TRUE;
-   static LGadRoot *root;
-   static Rect *box;
-   uchar const *use_ipal=ScrnGetInvPalette();
-   int x, y;
-
-   if (display)
-   {
-      root = vmGrabViews(vmGrabSingle);
-      box = LGadBoxRect(root);
-
-      // do the palette first
-      for (y=0; y<16; y++)
-         for (x=0; x<16; x++)
-         {
-            gr_set_fcolor(x+y*16);
-            gr_rect(x*8+box->ul.x, y*8+box->ul.y, x*8+8+box->ul.x, y*8+8+box->ul.y);
-         }
-
-      // next, show the ipal
-      for (y=0; y<16; y++)
-         for (x=0; x<16; x++)
-         {  // get an 888 rgb value
-            long rgb = grd_pal[(x+y*16)*3];
-            rgb |= grd_pal[(x+y*16)*3+1] << 8;
-            rgb |= grd_pal[(x+y*16)*3+2] << 16;
-            gr_set_fcolor(use_ipal[gr_index_lrgb(rgb)]);
-            gr_rect(x*8+box->ul.x + 150, y*8+box->ul.y, x*8+8+box->ul.x + 150, y*8+8+box->ul.y);
-         }
-
-#ifdef SHOW_PCX
-      {
-         // *If* firetile is already loaded, then fetch it and show it.
-         grs_bitmap *bm;
-         IResMan *pResMan = AppGetObj(pResMan);
-         IRes *pRes = IResMan_Lookup(pResMan, 
-                                     "firetile.pcx", 
-                                     RESTYPE_IMAGE,
-                                     NULL);
-         if (pRes)
-         {
-            bm = (grs_bitmap *) IRes_DataPeek(pRes);
-            if (bm)
-            {
-               gr_bitmap(bm, x*8+box->ul.x, box->ul.y);
-            }
-         }
-      }
-#endif
-   }
-   else
-      vmReleaseViews(root);
-
-   display = !display;
+   ShowEditorColorPalette();
 }
 
 #endif
@@ -1832,6 +1778,9 @@ Command gedit_edit_only_keys[] =
 #endif
 
    { "info_window", FUNC_VOID, gedit_info_window },
+#ifndef SHIP
+   { "rendtest", FUNC_INT, do_rendtest_cmd, "Run a render test, or open its parameters with no arguments" },
+#endif
 
    { "lazy_update", TOGGLE_BOOL, &gedit_allow_lazy_updates, "do we update instantly, or only on new brush selection" },
    { "run_cmd_script", FUNC_STRING, gedit_run_script_hack,

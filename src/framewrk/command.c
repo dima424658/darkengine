@@ -225,8 +225,9 @@ static float atofloat(const char *s)
 // actual execute of the parsed command
 
 // @TODO: the s && *s logic is still wrong!
-#define get_val_and_exec(f,s,cvrt,prmpt,def) \
-   if (do_prompt) f(prmpt(s)); else if ((s)&&(*s)) f(cvrt(s)); else f(def)
+#define get_val_and_exec(f,s,cvrt,prmpt,def,type) \
+   if (do_prompt) { type value; if (prmpt(s,&value)) f(value); } \
+   else if ((s)&&(*s)) f(cvrt(s)); else f(def)
 
 void CommandExecuteParsed(Command *cmd, const char *s)
 {
@@ -265,21 +266,26 @@ void CommandExecuteParsed(Command *cmd, const char *s)
       {
          void (*func)(bool);
          func = (void (*)(bool)) cmd->val;
-         get_val_and_exec(func,s,atobool,prompt_bool,TRUE);
+         get_val_and_exec(func,s,atobool,prompt_bool,TRUE,BOOL);
          break;
       }
       case FUNC_INT: 
       {
          void (*func)(int);
          func = (void (*)(int)) cmd->val;
-         get_val_and_exec(func,s,atoi,prompt_int,0);
+         get_val_and_exec(func,s,atoi,prompt_int,0,int);
          break;
       }
       case FUNC_FLOAT:
       {
          void (*func)(float);
          func = (void (*)(float)) cmd->val;
-         if (do_prompt) func((float)prompt_double(s));
+         if (do_prompt)
+         {
+            double value;
+            if (prompt_double(s,&value))
+               func((float)value);
+         }
          else if ((s)&&(*s)) func(atofloat(s));
          else func(0.0f);
          break;
@@ -288,21 +294,18 @@ void CommandExecuteParsed(Command *cmd, const char *s)
       {
          void (*func)(double);
          func = (void (*)(double)) cmd->val;
-         get_val_and_exec(func,s,atof,prompt_double,0.0);
+         get_val_and_exec(func,s,atof,prompt_double,0.0,double);
          break;
       }
       case FUNC_STRING: 
       {
          void (*func)(char *);
          func = (void (*)(char *)) cmd->val;
-         // perhaps allocate then deallocate the memory
-         // get_val_and_exec(func,s,(char *),prompt_string,s);
-         // ok, strings are funky so do the following "special" get_val_and_exec
          if (do_prompt)
          {
-            char *tmp=Malloc(PROMPT_STR_LEN*sizeof(char *));
-            func(prompt_string(s,tmp));
-            Free(tmp);
+            char tmp[PROMPT_STR_LEN];
+            if (prompt_string_arg(s,tmp))
+               func(tmp);
          }
          else //  if ((s)&&(*s)) - since for strings both elses are the same, ie call with s
             func((char *)s);

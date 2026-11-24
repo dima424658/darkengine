@@ -6,7 +6,17 @@
 
 #include <appagg.h>
 #include <platform_services.h>
-#include <runtime.h>
+#include <vkrend.h>
+
+namespace
+{
+void CloseRenderer()
+{
+   AutoAppIPtr_(VulkanRenderer,renderer);
+   if (renderer)
+      renderer->Close();
+}
+}
 
 cSDLApplication::cSDLApplication(IUnknown *outer, int argumentCount,
    const char *arguments[], const char *name, const char *defaultPath)
@@ -53,7 +63,7 @@ void cSDLApplication::Quit()
 {
    for (auto *sink : m_sinks)
       sink->OnQuit();
-   DarkRenderClose();
+   CloseRenderer();
    std::exit(PlatformBatchMode() ? PlatformBatchExitCode() : 0);
 }
 
@@ -62,7 +72,7 @@ void cSDLApplication::Abort(const char *reason)
    PlatformShowError(m_caption.c_str(), reason ? reason : "Dark Engine aborted");
    for (auto *sink : m_sinks)
       sink->OnCriticalError(1);
-   DarkRenderClose();
+   CloseRenderer();
    std::exit(1);
 }
 

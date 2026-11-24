@@ -88,7 +88,7 @@ static void query_tron()
 
    IStructEditor* ed = CreateStructEditor(&editdesc,&query_tron_desc,&tron);
 
-   if (ed->Go(kStructEdModal))
+   if (ed && ed->Go(kStructEdModal))
    {
       AutoAppIPtr_(StimSensors,pSensors);
       AutoAppIPtr_(Reactions,pReactions);
@@ -161,7 +161,7 @@ static void stimulate()
 
    IStructEditor* ed = CreateStructEditor(&editdesc,&stimulate_desc,&_late);
 
-   if (ed->Go(kStructEdModal))
+   if (ed && ed->Go(kStructEdModal))
    {
       AutoAppIPtr_(Stimulator,pStimulate);
       AutoAppIPtr_(StimSensors,pSensors);
@@ -190,10 +190,9 @@ static void stimulate()
 // IMPORTED ACT/REACT EDITORS
 
 
+#include <darkdlgs/darkdlgs.h>
 #include <memall.h>
 #include <dbmem.h>   // must be last header! 
-
-static IActReactEditors *ImportEditors(void) { return NULL; }
 
 //------------------------------------------------------------
 // Fancy add-source dialog
@@ -204,7 +203,7 @@ static void add_source(char* arg)
 {
    sObjStimPair pair = { EditGetObjNamed(arg), OBJ_NULL};
    sStimSourceDesc desc;
-   cAutoIPtr<IActReactEditors> editors ( ImportEditors() );
+   cAutoIPtr<IActReactEditors> editors ( ExportActReactEditors() );
    if (editors == NULL) 
       return;
    
@@ -213,13 +212,13 @@ static void add_source(char* arg)
    if (editors->SourceDialog(kARDlgModal,&pair,&desc) == S_OK)
    {
       if (pair.obj == OBJ_NULL || pair.stim == OBJ_NULL 
-          || &desc.propagator == PGATOR_NULL)
+          || desc.propagator == PGATOR_NULL)
          return; 
       
       AutoAppIPtr_(StimSources,pSources);
       
 
-      if (SUCCEEDED(pSources->AddSource(pair.obj,pair.stim,&desc)))
+      if (pSources->AddSource(pair.obj,pair.stim,&desc) != SRCID_NULL)
          Status ("Added Source");
       else
          Status ("Source Add Failed");      
@@ -231,7 +230,7 @@ static void view_source(char* arg)
    int srcid;
    sscanf(arg,"%x",&srcid);
 
-   cAutoIPtr<IActReactEditors> editors ( ImportEditors() );
+   cAutoIPtr<IActReactEditors> editors ( ExportActReactEditors() );
    if (editors == NULL) 
       return;
 
@@ -262,7 +261,7 @@ static void add_tron(char* arg)
    sObjStimPair pair = { EditGetObjNamed(arg), OBJ_NULL};
    sReceptron tron;
 
-   cAutoIPtr<IActReactEditors> editors ( ImportEditors() );
+   cAutoIPtr<IActReactEditors> editors ( ExportActReactEditors() );
    if (editors == NULL) 
       return;
 
@@ -276,7 +275,7 @@ static void add_tron(char* arg)
       AutoAppIPtr_(StimSensors,pSensors);
       
 
-      if (SUCCEEDED(pSensors->AddReceptron(pair.obj,pair.stim,&tron)))
+      if (pSensors->AddReceptron(pair.obj,pair.stim,&tron) != RECEPTRON_NULL)
          Status ("Added Receptron");
       else
          Status ("Receptron Add Failed");      
@@ -290,7 +289,7 @@ static void edit_tron(char* arg)
    int tronid;
    sscanf(arg,"%x",&tronid);
 
-   cAutoIPtr<IActReactEditors> editors ( ImportEditors() );
+   cAutoIPtr<IActReactEditors> editors ( ExportActReactEditors() );
    if (editors == NULL) 
       return;
 
@@ -324,7 +323,7 @@ static void list_trons(char* arg)
 
    sObjStimPair pair = { EditGetObjNamed(arg), OBJ_NULL};
 
-   cAutoIPtr<IActReactEditors> editors ( ImportEditors() );
+   cAutoIPtr<IActReactEditors> editors ( ExportActReactEditors() );
    if (editors == NULL) 
       return;
 
@@ -346,7 +345,7 @@ static void list_sources(char* arg)
 
    sObjStimPair pair = { EditGetObjNamed(arg), OBJ_NULL};
 
-   cAutoIPtr<IActReactEditors> editors ( ImportEditors() );
+   cAutoIPtr<IActReactEditors> editors ( ExportActReactEditors() );
    if (editors == NULL) 
       return;
 
@@ -384,7 +383,7 @@ class cTronEditTrait : public cLinkEditTrait
    void LinkDialog(ObjID obj)
    {
       sObjStimPair pair = { obj, OBJ_NULL }; 
-      cAutoIPtr<IActReactEditors> editors ( ImportEditors() );
+      cAutoIPtr<IActReactEditors> editors ( ExportActReactEditors() );
       if (editors == NULL) 
          return;
 
@@ -424,7 +423,7 @@ class cSourceEditTrait : public cLinkEditTrait
    void LinkDialog(ObjID obj)
    {
       sObjStimPair pair = { obj, OBJ_NULL }; 
-      cAutoIPtr<IActReactEditors> editors ( ImportEditors() );
+      cAutoIPtr<IActReactEditors> editors ( ExportActReactEditors() );
       if (editors == NULL) 
          return;
 

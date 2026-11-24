@@ -16,5 +16,6 @@ void RenderBackendVulkanGetViewport(int logicalWidth, int logicalHeight,
    int drawableWidth, int drawableHeight, int overlay, int *x, int *y,
    int *width, int *height);
 int RenderBackendVulkanUseLinearCanvasSampling(void);
+void RenderBackendVulkanSetTopInset(int points);
 
 #endif

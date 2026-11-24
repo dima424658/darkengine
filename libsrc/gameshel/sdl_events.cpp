@@ -1,15 +1,17 @@
 #include <SDL3/SDL.h>
 
 #include <algorithm>
+#include <bitset>
 #include <cmath>
 #include <cstring>
 
+#include <appagg.h>
 #include <kb.h>
 #include <mouse.h>
 
 #include "sdl_events.h"
-#include <sdl_window.h>
-#include <event_bridge.h>
+#include <dispwnd.h>
+#include <vkrend.h>
 #include <render_backend.h>
 
 extern "C" void DarkInputKey(uchar scan, int down);
@@ -23,26 +25,23 @@ namespace
 class cSDLEventPump
 {
 public:
-   ~cSDLEventPump()
-   {
-      if (m_lifecycleWatchRegistered)
-         SDL_RemoveEventWatch(LifecycleEvent, nullptr);
-   }
-
    bool Pump()
    {
-      ResetForWindow();
-      if (!DarkRenderBeginEventPump())
+      AutoAppIPtr_(DisplayWindow,window);
+      if (!window)
          return false;
-      EnsureLifecycleWatch();
+      ResetForWindow(window->GetSDLWindow());
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (!renderer || !renderer->BeginEventPump())
+         return false;
 
       SDL_Event event;
       while (SDL_PollEvent(&event))
-         HandleEvent(event);
+         HandleEvent(event, *window, *renderer);
 
       FlushMotion();
       FlushWheel();
-      if (SDLDisplayRelativeMouseActive())
+      if (window->IsRelativeMouseActive())
       {
          const int relativeX = static_cast<int>(m_relativeX);
          const int relativeY = static_cast<int>(m_relativeY);
@@ -53,18 +52,19 @@ public:
       }
       else
          m_relativeX = m_relativeY = 0;
-      DarkRenderEndEventPump();
+      renderer->EndEventPump();
       return m_quit;
    }
 
    bool PumpMovie(bool allowSkip, const char *termKeys)
    {
-      ResetForWindow();
-      if (!SDLDisplayGetWindow())
+      AutoAppIPtr_(DisplayWindow,window);
+      if (!window || !window->GetSDLWindow())
          return true;
-      if (!DarkRenderBeginEventPump())
+      ResetForWindow(window->GetSDLWindow());
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (!renderer || !renderer->BeginEventPump())
          return true;
-      EnsureLifecycleWatch();
 
       SDL_Event event;
       bool stop = false;
@@ -91,48 +91,18 @@ public:
                   event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN)
             stop = stop || allowSkip;
          else
-            HandleEvent(event);
+            HandleEvent(event, *window, *renderer);
       }
       FlushMotion();
       FlushWheel();
-      DarkRenderEndEventPump();
+      renderer->EndEventPump();
       return stop;
    }
 
 private:
-   static bool SDLCALL LifecycleEvent(void *, SDL_Event *event)
+   void ResetForWindow(SDL_Window *window)
    {
-      if (!event)
-         return true;
-      switch (event->type)
-      {
-      case SDL_EVENT_WILL_ENTER_BACKGROUND:
-      case SDL_EVENT_DID_ENTER_BACKGROUND:
-         DarkRenderApplicationSuspended();
-         break;
-      case SDL_EVENT_DID_ENTER_FOREGROUND:
-         DarkRenderApplicationResumed();
-         break;
-      default:
-         break;
-      }
-      return true;
-   }
-
-   void EnsureLifecycleWatch()
-   {
-      if (m_lifecycleWatchRegistered)
-         return;
-      m_lifecycleWatchRegistered =
-         SDL_AddEventWatch(LifecycleEvent, nullptr);
-      if (!m_lifecycleWatchRegistered)
-         SDL_Log("SDL lifecycle event watcher registration failed: %s",
-            SDL_GetError());
-   }
-
-   void ResetForWindow()
-   {
-      const SDL_WindowID id = SDLDisplayGetWindowId();
+      const SDL_WindowID id = window ? SDL_GetWindowID(window) : 0;
       if (id == m_windowId)
          return;
 
@@ -143,6 +113,8 @@ private:
       m_wheelY = 0;
       m_pendingWheel = false;
       m_buttons = 0;
+      m_overlayKeys.reset();
+      m_overlayButtons.reset();
    }
 
    static uchar KeyScan(SDL_Scancode key)
@@ -223,11 +195,15 @@ private:
       DarkInputMouse(m_mouseX, m_mouseY, MOUSE_MOTION, m_buttons, 0);
    }
 
-   void HandleEvent(const SDL_Event &event)
+   void HandleEvent(const SDL_Event &event, IDisplayWindow &window,
+      IVulkanRenderer &renderer)
    {
       const SDL_WindowID eventWindowId = EventWindowId(event);
       if (eventWindowId && eventWindowId != m_windowId)
+      {
+         renderer.ProcessOverlayEvent(&event);
          return;
+      }
 
       if (event.type != SDL_EVENT_MOUSE_MOTION && event.type != SDL_EVENT_MOUSE_WHEEL)
          FlushMotion();
@@ -236,51 +212,79 @@ private:
       if (event.type != SDL_EVENT_MOUSE_MOTION && event.type != SDL_EVENT_MOUSE_WHEEL)
          FlushWheel();
 
+      const bool overlayCaptured = renderer.ProcessOverlayEvent(&event);
       if (event.type == SDL_EVENT_QUIT ||
           event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
          m_quit = true;
       if (event.type >= SDL_EVENT_WINDOW_FIRST &&
           event.type <= SDL_EVENT_WINDOW_LAST)
       {
-         HandleWindowEvent(event);
+         HandleWindowEvent(event, window, renderer);
          return;
       }
       if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP)
       {
          const uchar scan = KeyScan(event.key.scancode);
          const bool down = event.type == SDL_EVENT_KEY_DOWN;
-         if (scan != KBC_NONE && (!event.key.repeat || !SDLDisplayRelativeMouseActive()))
+         const auto key = static_cast<size_t>(event.key.scancode);
+         if (key < m_overlayKeys.size())
+         {
+            if (down && !event.key.repeat)
+               m_overlayKeys[key] = overlayCaptured;
+            const bool captured = m_overlayKeys[key];
+            if (!down)
+               m_overlayKeys.reset(key);
+            if (captured || (down && overlayCaptured))
+               return;
+         }
+         if (scan != KBC_NONE && (!event.key.repeat || !window.IsRelativeMouseActive()))
             DarkInputKey(scan, down);
       }
       else if (event.type == SDL_EVENT_MOUSE_MOTION)
-         HandleMouseMotion(event.motion);
+      {
+         if (!overlayCaptured || m_buttons)
+            HandleMouseMotion(event.motion, window.IsRelativeMouseActive());
+      }
       else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                event.type == SDL_EVENT_MOUSE_BUTTON_UP)
-         HandleMouseButton(event.button, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
-      else if (event.type == SDL_EVENT_MOUSE_WHEEL)
-         HandleMouseWheel(event.wheel);
+      {
+         // Keep each press and release with the same recipient, even if
+         // the popup closes or the pointer crosses the menu bar in between.
+         const bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+         const auto button = event.button.button;
+         if (down)
+            m_overlayButtons[button] = overlayCaptured;
+         const bool captured = m_overlayButtons[button];
+         if (!down)
+            m_overlayButtons.reset(button);
+         if (!captured)
+            HandleMouseButton(event.button, down, window.IsRelativeMouseActive());
+      }
+      else if (event.type == SDL_EVENT_MOUSE_WHEEL && !overlayCaptured)
+         HandleMouseWheel(event.wheel, window.IsRelativeMouseActive());
    }
 
-   void HandleWindowEvent(const SDL_Event &event)
+   void HandleWindowEvent(const SDL_Event &event, IDisplayWindow &window,
+      IVulkanRenderer &renderer)
    {
       switch (event.type)
       {
       case SDL_EVENT_WINDOW_RESIZED:
       case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-         DarkRenderWindowResized();
+         renderer.WindowResized();
          break;
       case SDL_EVENT_WINDOW_MINIMIZED:
-         DarkRenderWindowMinimized();
+         renderer.WindowMinimized();
          break;
       case SDL_EVENT_WINDOW_RESTORED:
-         DarkRenderWindowRestored();
+         renderer.WindowRestored();
          break;
       case SDL_EVENT_WINDOW_FOCUS_GAINED:
-         SDLDisplaySetFocused(true);
-         DarkRenderWindowRestored();
+         window.SetFocused(TRUE);
+         renderer.WindowRestored();
          break;
       case SDL_EVENT_WINDOW_FOCUS_LOST:
-         SDLDisplaySetFocused(false);
+         window.SetFocused(FALSE);
          break;
       default:
          break;
@@ -292,12 +296,15 @@ private:
       switch (event.type)
       {
       case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+      case SDL_EVENT_WINDOW_MOVED:
+      case SDL_EVENT_WINDOW_MOUSE_ENTER: case SDL_EVENT_WINDOW_MOUSE_LEAVE:
       case SDL_EVENT_WINDOW_FOCUS_GAINED: case SDL_EVENT_WINDOW_FOCUS_LOST:
       case SDL_EVENT_WINDOW_MINIMIZED: case SDL_EVENT_WINDOW_RESTORED:
       case SDL_EVENT_WINDOW_RESIZED: case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
          return event.window.windowID;
       case SDL_EVENT_KEY_DOWN: case SDL_EVENT_KEY_UP:
          return event.key.windowID;
+      case SDL_EVENT_TEXT_INPUT: return event.text.windowID;
       case SDL_EVENT_MOUSE_MOTION: return event.motion.windowID;
       case SDL_EVENT_MOUSE_BUTTON_DOWN: case SDL_EVENT_MOUSE_BUTTON_UP:
          return event.button.windowID;
@@ -306,9 +313,9 @@ private:
       }
    }
 
-   void HandleMouseMotion(const SDL_MouseMotionEvent &event)
+   void HandleMouseMotion(const SDL_MouseMotionEvent &event, bool relative)
    {
-      if (SDLDisplayRelativeMouseActive())
+      if (relative)
       {
          m_relativeX += event.xrel;
          m_relativeY += event.yrel;
@@ -322,7 +329,7 @@ private:
       m_pendingMotion = true;
    }
 
-   void HandleMouseButton(const SDL_MouseButtonEvent &event, bool down)
+   void HandleMouseButton(const SDL_MouseButtonEvent &event, bool down, bool relative)
    {
       const int button = event.button == SDL_BUTTON_LEFT ? 0 :
          event.button == SDL_BUTTON_RIGHT ? 1 :
@@ -340,7 +347,7 @@ private:
       const uchar type = static_cast<uchar>(1 << (1 + 2 * button + !down));
       int x = static_cast<int>(event.x);
       int y = static_cast<int>(event.y);
-      if (SDLDisplayRelativeMouseActive())
+      if (relative)
       {
          int width = 0;
          int height = 0;
@@ -362,7 +369,7 @@ private:
             m_buttons, 0);
    }
 
-   void HandleMouseWheel(const SDL_MouseWheelEvent &event)
+   void HandleMouseWheel(const SDL_MouseWheelEvent &event, bool relative)
    {
       const double delta = event.y *
          (event.direction == SDL_MOUSEWHEEL_FLIPPED ? -1.0 : 1.0);
@@ -376,7 +383,7 @@ private:
       (void)RenderBackendGetLogicalSize(&width, &height);
       int x = width / 2;
       int y = height / 2;
-      if (!SDLDisplayRelativeMouseActive())
+      if (!relative)
       {
          x = static_cast<int>(event.mouse_x);
          y = static_cast<int>(event.mouse_y);
@@ -415,7 +422,8 @@ private:
    short m_mouseX{};
    short m_mouseY{};
    uchar m_buttons{};
-   bool m_lifecycleWatchRegistered{};
+   std::bitset<SDL_SCANCODE_COUNT> m_overlayKeys;
+   std::bitset<256> m_overlayButtons;
 };
 
 cSDLEventPump &EventPump()

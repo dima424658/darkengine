@@ -348,13 +348,13 @@ static void txtPnP_Picture(int data)
 
 BOOL txtPnP_allow_attach=FALSE;
 
-void Create_txtPnP(LGadRoot *root, Rect *bounds, editBrush *br)
+void Create_txtPnP(Rect *bounds, editBrush *br)
 {
    txtPnP_allow_attach=config_is_defined("allow_attach");
 //   im_detached=FALSE;
    GFHSetCoordMask(GFH_ALL_COORDS);
    txtPnP_buildRects(bounds);
-   PnP_GadgStart(&txtPnP,root);
+   PnP_GadgStart(&txtPnP);
    txtPnP_setvars(br,FALSE);
    pnpOwners[FROBS_PICTURE]=PnP_PictureBox(getRect(0),txtPnP_Picture,0);
    if (!brushGFH_AlignNTextureUp())

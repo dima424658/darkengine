@@ -29,7 +29,6 @@ if(TARGET dark_dromed_core)
     cmdbutts.c
     convpred.cpp
     cvtbrush.c
-    cyclegad.c
     doorblok.cpp
     dragbox.c
     editapp.c
@@ -54,14 +53,12 @@ if(TARGET dark_dromed_core)
     gridpnp.c
     gridsnap.c
     hilight.c
-    lgslider.c
     lightpnp.c
     linkdraw.cpp
     linkedit.cpp
     lnktrait.cpp
     medflbox.c
-    mediface.c
-    medmenu.cpp
+    imgui_motion_editor.cpp
     medplay.cpp
     modalui.c
     motedit.cpp
@@ -71,8 +68,8 @@ if(TARGET dark_dromed_core)
     objpnp.c
     otreeed.cpp
     phproped.cpp
-    pnpslide.cpp
     pnptools.c
+    imgui_pnp.cpp
     preload.c
     primal.c
     primshap.c
@@ -91,9 +88,8 @@ if(TARGET dark_dromed_core)
     stupidui.c
     swappnp.c
     swapregs.c
-    swaptool.c
     txtpnp.c
-    txtrpal.c
+    imgui_texture_palette.cpp
     undoredo.c
     userpnp.c
     vbrush.c
@@ -106,7 +102,8 @@ if(TARGET dark_dromed_core)
 endif()
 
 if(TARGET dark_dromed_core)
-  target_sources(dark_dromed_core PRIVATE uiedit.c editorplatform.cpp objedit.cpp filemenu.cpp menus.cpp)
+  target_sources(dark_dromed_core PRIVATE uiedit.c editorplatform.cpp objedit.cpp filemenu.cpp menubar.cpp
+    imgui_editor_preview.cpp imgui_workspace.cpp menus.cpp)
 endif()
 
 if(TARGET dark_dromed_core)

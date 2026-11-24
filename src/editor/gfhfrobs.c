@@ -15,6 +15,7 @@
 #include <pnptools.h>
 #include <swappnp.h>
 #include <brushgfh.h>
+#include <imgui_pnp.h>
 #include <gadblist.h>
 
 #include <brlist.h>
@@ -65,7 +66,7 @@ static _PnP_GadgData GFHFrobs;
 
 static int o_time, g_size, o_brid, o_grp;
 static bool useGrid, showGrid;
-static LGadButtonList swaplist;
+static int swap_owners[4];
 
 static int _get_grid_inv_val(float scale)
 {
@@ -87,8 +88,10 @@ static void GFHFrobs_setvars(editBrush *br, bool update)
    BOOL change=FALSE;
    int l_sc;
    
-   if (br==NULL)     br=GFHFrobs_br;
-   else if (!update) GFHFrobs_br=br;
+   if (update)
+      br = GFHFrobs_br;
+   else
+      GFHFrobs_br = br;
 
    PnP_SetCurrent(&GFHFrobs);
 
@@ -125,7 +128,9 @@ static void GFHFrobs_setvars(editBrush *br, bool update)
       change=TRUE;
    }
 
-   if (brSelect_Flag(br)&brSelect_VIRTUAL)
+   if (!br)
+      brushIDstr[0] = 0;
+   else if (brSelect_Flag(br)&brSelect_VIRTUAL)
    {  // -1 check makes sure we get it if we came from a non multi-brush
       if ((brSelect_Group(br)!=o_grp)||(o_brid!=-1))
       {
@@ -142,11 +147,13 @@ static void GFHFrobs_setvars(editBrush *br, bool update)
       PnP_Redraw(pnpOwners[STRING_BRUSHID],NULL);
    }
 
-   if (!update && LGadRadioButtonSelection(&swaplist) != GFHCurrentSwappable())
+   if (!update)
    {
-      LGadRadioButtonSelect(&swaplist,GFHCurrentSwappable());
-   }  
-   
+      int i;
+      for (i = 0; i < 4; ++i)
+         PnP_SetChoice(swap_owners[i], GFHCurrentSwappable() == i);
+   }
+
    if (change&&update)
       gedit_full_redraw();  // well, most of this might be things like adding a grid or something
 }
@@ -156,12 +163,12 @@ static void GFHFrobs_setvars(editBrush *br, bool update)
 // n of -2 means go to end of time
 static bool do_time_frob(int n)
 {
-   bool rv;
+   bool rv = FALSE;
    extern bool set_brush_to_time_n(editBrush *br, int n);
    int max_time=blistCount();  // wrong, should use the real time
    if (n==END_OF_TIME)
       vBrush_go_EOT();
-   else
+   else if (GFHFrobs_br)
    {
       if (n>=max_time)
          n=max_time-1;
@@ -201,44 +208,22 @@ static void GFHFrobs_Update(PnP_SliderOp op, Rect *where, int val, intptr_t data
 //////////////////////////////
 // actual swap button area
 
-static bool swap_butt_cb(ushort action, int button, void* data, LGadBox* vb)
+static void select_swap(int button)
 {
-   if (action & (BUTTONGADG_LCLICK|BUTTONGADG_RCLICK))
-      PnP_ExecCommandInt("start_swap",button);
-   return TRUE;
+   PnP_ExecCommandInt("start_swap", button);
 }
 
-static DrawElement dvec[] = 
-{ 
-   { DRAWTYPE_TEXT, "Create", NULL, 0,0, BORDER(DRAWFLAG_BORDER_OUTLINE),},
-   { DRAWTYPE_TEXT, "Layout", NULL, 0,0, BORDER(DRAWFLAG_BORDER_OUTLINE),},
-   { DRAWTYPE_TEXT, "Scroll", NULL, 0,0, BORDER(DRAWFLAG_BORDER_OUTLINE),},
-   { DRAWTYPE_TEXT, "Filter", NULL, 0,0, BORDER(DRAWFLAG_BORDER_OUTLINE),},
-};
-
-#define NUM_SWAPBUTTS (sizeof(dvec)/sizeof(dvec[0]))
-
-static void CreateSwapButts(LGadRoot* root, Rect* rvec)
+static void CreateSwapButts(Rect *rects)
 {
-   LGadButtonListDesc desc;
-
-   memset(&desc,0,sizeof(desc));
-   desc.num_buttons = NUM_SWAPBUTTS;
-   desc.button_rects = rvec;
-   desc.button_elems = dvec;
-   desc.cb = swap_butt_cb;
-   desc.flags = BUTTONLIST_RADIO_FLAG;
-   LGadCreateButtonListDesc(&swaplist,root,&desc);
-}
-
-static void DestroySwapButts(void)
-{
-   LGadDestroyButtonList(&swaplist);
+   static const char *labels[] = {"Create", "Layout", "Scroll", "Filter"};
+   int i;
+   for (i = 0; i < 4; ++i)
+      swap_owners[i] = PnP_ChoiceButton(&rects[i], labels[i], select_swap, i);
 }
 
 ////////////////////////
 // actually do the deed
-void Create_GFHFrobs(LGadRoot *root, Rect *top_r, Rect *bot_r, editBrush *br)
+void Create_GFHFrobs(Rect *top_r, Rect *bot_r, editBrush *br)
 {
    LayoutRectangles(top_r,OUR_RECTS+0,4,MakePoint(2,2),MakePoint(2,2));
    getRect(0)->lr.x=getRect(1)->lr.x;  // horizontal merge the top of top region
@@ -247,9 +232,7 @@ void Create_GFHFrobs(LGadRoot *root, Rect *top_r, Rect *bot_r, editBrush *br)
    getRect(9)->lr.x-=BOT_BORDER;  // add a border tween time and swaps
    getRect(6)->ul.x+=BOT_BORDER; getRect(0xA)->ul.x+=BOT_BORDER;
    
-   PnP_GadgStart(&GFHFrobs,root);
-   CreateSwapButts(root,OUR_RECTS+6);
-   GFHFrobs_setvars(br,FALSE);
+   PnP_GadgStart(&GFHFrobs);
 
    pnpOwners[FROBS_GRID]=PnP_SliderInt(getRect(0),"Grid Sz",MIN_GRID,MAX_GRID,1,&g_size,
                     GFHFrobs_Update,FROBS_GRID,PNP_SLIDER_CLICKS);
@@ -263,14 +246,15 @@ void Create_GFHFrobs(LGadRoot *root, Rect *top_r, Rect *bot_r, editBrush *br)
    pnpOwners[STRING_BRUSHID]=PnP_TextBox(getRect(8),brushIDstr);
    PnP_ButtonOneShot(getRect(9),"To End",GFHFrobs_OneShots,BUTTON_TIME_TOEND);
 
-   // I wonder if just copying rects around works.
-   *getRect(8)=*getRect(0xA);  // That's 0xA, NOT 10!
-   *getRect(9)=*getRect(0xB);
+   {
+      Rect swaps[] = {*getRect(6), *getRect(7), *getRect(0xA), *getRect(0xB)};
+      CreateSwapButts(swaps);
+   }
+   GFHFrobs_setvars(br, FALSE);
 }
 
 void Destroy_GFHFrobs(void)
 {
-   DestroySwapButts();
    PnP_GadgFree(&GFHFrobs);
 }
 

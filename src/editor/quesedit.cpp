@@ -197,8 +197,9 @@ void QuestEdit(eQuestDataType type)
 
          IStructEditor* ed = CreateStructEditor(&editdesc,&query_tron_desc,&tron);
 
-         if (ed->Go(kStructEdModal))
+         if (ed && ed->Go(kStructEdModal))
             pQuestData->Create(tron.name, tron.value, type);
+         SafeRelease(ed);
       }
    }
    for (int i = 0; i < iNumMenuSlots; ++i)

@@ -14,6 +14,7 @@
 #include <osystype.h>
 #include <otreeed.h>
 #include <otreebas.h>
+#include <darkdlgs/darkdlgs.h>
 
 // For create archetype
 #include <brtypes.h>
@@ -131,10 +132,12 @@ sObjTreeEditorDesc room_edit_trees =
 
 void EditObjHierarchyRoom(ObjID focus)
 {
+   DoHierarchy(&room_edit_trees,focus);
 }
 
 void EditObjHierarchy(ObjID focus)
 {
+   DoHierarchy(&edit_trees,focus);
 }
 
 

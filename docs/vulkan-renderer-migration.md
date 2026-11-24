@@ -216,10 +216,10 @@ systems only provide the native surface and drawable size:
 frame. DromEd can issue several hardware scene passes while rendering its
 viewports. Legacy primitive batches are flushed by `lgd3d_end_frame`; there is
 no separate backend end-scene operation. Texture residency changes never
-restart a scene. `DarkRenderBegin/EndApplicationFrame`
-is the outer frame boundary where one swapchain image is acquired, completed,
-and presented. `DarkRenderPresent` contributes the legacy software canvas to
-that final image.
+restart a scene. `IVulkanRenderer::BeginApplicationFrame` and
+`IVulkanRenderer::EndApplicationFrame` acquire, complete, and present one
+swapchain image per application frame. `IVulkanRenderer::Present` contributes
+the legacy software canvas to that final image.
 `lgd3d_overlays_master_switch` controls whether this canvas is composited for a
 frame, preserving the legacy inventory-model rendering behavior.
 

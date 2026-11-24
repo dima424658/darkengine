@@ -132,11 +132,11 @@ static short gridVar3;
 #endif
 
 // create a grid PnP
-void Create_gridPnP(LGadRoot *root, Rect *bounds, editBrush *br)
+void Create_gridPnP(Rect *bounds, editBrush *br)
 {
    GFHSetCoordMask(GFH_ALL_COORDS);
    gridPnP_buildRects(bounds);
-   PnP_GadgStart(&gridPnP,root);
+   PnP_GadgStart(&gridPnP);
    PnP_PictureBox(getRect(0),gridPnP_Picture,0);
    PnP_ButtonOneShot(getRect(1),"Texture",gridPnP_OneShots,BUTTON_TEXTURE);
    PnP_ButtonOneShot(getRect(2),"Align",gridPnP_OneShots,BUTTON_ALIGN);   

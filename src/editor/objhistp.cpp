@@ -5,6 +5,8 @@
 
 // $Header: r:/t2repos/thief2/src/editor/objhistp.cpp,v 1.5 2000/02/19 13:11:08 toml Exp $
 
+#include <cstdio>
+
 #include <appagg.h>
 #include <aggmemb.h>
 
@@ -107,6 +109,7 @@ static int BuildObjData(char ***objstrings, ObjHistData **histdata)
    }
 
    SafeRelease(pQuery);
+   SafeRelease(traitman);
    SafeRelease(pOS);
    return total;
 }
@@ -135,20 +138,21 @@ void popup_obj_histogram(void)
    // form the stringlist
    for (count=0; count < entries; count++)
    {
-      sprintf(objstrings[count+1],"(%02d) %03d %s",count, histdata[count].count,pOS->GetName(histdata[count].arch));
+      snprintf(objstrings[count + 1], STRLEN, "(%02d) %03d %s", count,
+               histdata[count].count, pOS->GetName(histdata[count].arch));
    }
    // make the selection
    choice = PickFromStringList("Object Histogram", (const char* const*)objstrings, entries+1);
 
    // now set the default object
-   if (choice >= 0)
+   if (choice > 0 && choice <= entries)
    {
-      arch = histdata[choice].arch;
+      arch = histdata[choice - 1].arch;
       editObjSetDefaultArchetype(arch);
    }
 
    // some cleanup
-   for (i=0; i < entries; i++)
+   for (i=0; i <= entries; i++)
       Free(objstrings[i]);
    Free(objstrings);
    Free(histdata);
@@ -173,7 +177,8 @@ void popup_obj_alpha(void)
    // form the stringlist
    for (count=0; count < entries; count++)
    {
-      sprintf(objstrings[count],"%s %03d",pOS->GetName(histdata[count].arch),histdata[count].count);
+      snprintf(objstrings[count], STRLEN, "%s %03d",
+               pOS->GetName(histdata[count].arch), histdata[count].count);
    }
 
    // make the selection
@@ -187,7 +192,7 @@ void popup_obj_alpha(void)
    }
 
    // some cleanup
-   for (i=0; i < entries; i++)
+   for (i=0; i <= entries; i++)
       Free(objstrings[i]);
    Free(objstrings);
    Free(histdata);

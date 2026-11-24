@@ -55,6 +55,8 @@ void MotEditInit()
    if(g_InMotionEditor)
       return;
 
+   if (!CreateMotionEditorInterface())
+      return;
    g_InMotionEditor=TRUE;
 
    // initialize globals
@@ -67,7 +69,6 @@ void MotEditInit()
    mx_zero_vec(&g_MotEditStartPos);
    quat_identity(&g_MotEditStartRot);
 
-   CreateMotionEditorInterface();
    PlayOptInit();
    MotEditSetEditObj();
 }    
@@ -186,7 +187,6 @@ BOOL MotEditSetEditMotion(char *motname)
       FlagBoxSetMark(left,0);
       if(right>=0)
          FlagBoxSetMark(right,1);
-      MainInterfaceRefreshFlagBox();
    } else
    {
       MainInterfaceResetBotSlider(0);

@@ -12,9 +12,8 @@
 #include <render_backend.h>
 
 #include "dispbase.h"
-#include "display_window.h"
-#include <runtime.h>
-#include <event_bridge.h>
+#include <dispwnd.h>
+#include <vkrend.h>
 
 class cSDLDisplayDevice : public cDisplayDevice
 {
@@ -33,9 +32,7 @@ public:
 
    ~cSDLDisplayDevice() override
    {
-      // Display-device instances are transient across logical mode changes.
-      // The SDL window and Vulkan context are owned by the SDL display layer.
-      Close();
+      ResetMode();
    }
 
    STDMETHOD_(eDisplayDeviceKind, GetKind)() override { return m_kind; }
@@ -94,11 +91,10 @@ public:
       // Dark closes the logical display device during mode changes. Keep the
       // native window and presentation context alive for menus, movies, and
       // gameplay.
-      DarkRenderInvalidateCanvas();
-      m_pixels.clear();
-      m_mode = -1;
-      if (m_cap)
-         std::memset(m_cap, 0, sizeof(*m_cap));
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (renderer)
+         renderer->InvalidateCanvas();
+      ResetMode();
       return S_OK;
    }
 
@@ -118,7 +114,10 @@ public:
       }
 
       const int rowBytes = modeInfo.w * (modeInfo.bitDepth == 8 ? 1 : 2);
-      DarkRenderInvalidateCanvas();
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (!renderer)
+         return E_FAIL;
+      renderer->InvalidateCanvas();
       m_pixels.assign(static_cast<size_t>(rowBytes) * modeInfo.h, 0);
       m_cap->aspect = FIX_UNIT;
       m_cap->w = modeInfo.w;
@@ -130,9 +129,10 @@ public:
       IApplication *application = AppGetObj(IApplication);
       const char *title = application
          ? application->GetCaption() : "Dark Engine";
-      const bool opened = DarkRenderOpen(modeInfo.w, modeInfo.h, title);
+      const bool opened = renderer->Open(modeInfo.w, modeInfo.h, title);
       SafeRelease(application);
-      if (!opened || !SDLDisplaySetFullscreen(m_kind == kDispFullScreen))
+      AutoAppIPtr_(DisplayWindow,window);
+      if (!opened || !window || !window->SetFullscreen(m_kind == kDispFullScreen))
       {
          std::fprintf(stderr,
             "SDL SetMode could not open the render surface (opened=%d).\n",
@@ -141,7 +141,7 @@ public:
          std::memset(m_cap, 0, sizeof(*m_cap));
          return E_FAIL;
       }
-      DarkRenderWindowResized();
+      renderer->WindowResized();
 
       if (flags & MODE_CLEAR_BIT)
          std::fill(m_pixels.begin(), m_pixels.end(), 0);
@@ -199,7 +199,9 @@ public:
    {
       // An offscreen hardware overlay was already captured by ScrnEndFrame.
       // Its visible compatibility buffer deliberately has not been blitted.
-      if (!DarkRenderHasDirectCanvas()) Flush();
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (renderer && !renderer->HasDirectCanvas())
+         Flush();
       return S_OK;
    }
 
@@ -227,16 +229,20 @@ public:
       if (m_mode < 0 || IsFlushingPaused())
          return;
       const sGrModeInfo &modeInfo = grd_mode_info[m_mode];
-      DarkRenderPresent(m_pixels.data(), modeInfo.w, modeInfo.h,
-         m_cap->rowBytes, modeInfo.bitDepth, m_palette);
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (renderer)
+         renderer->Present(m_pixels.data(), modeInfo.w, modeInfo.h,
+            m_cap->rowBytes, modeInfo.bitDepth, m_palette);
    }
 
    STDMETHOD_(void, FlushRect)(int x0, int y0, int x1, int y1) override
    {
       if (m_mode < 0 || IsFlushingPaused()) return;
       const sGrModeInfo &modeInfo = grd_mode_info[m_mode];
-      DarkRenderPresentRect(m_pixels.data(), modeInfo.w, modeInfo.h,
-         m_cap->rowBytes, modeInfo.bitDepth, m_palette, x0, y0, x1, y1);
+      AutoAppIPtr_(VulkanRenderer,renderer);
+      if (renderer)
+         renderer->PresentRect(m_pixels.data(), modeInfo.w, modeInfo.h,
+            m_cap->rowBytes, modeInfo.bitDepth, m_palette, x0, y0, x1, y1);
    }
    STDMETHOD_(BOOL, SetGamma)(double gamma) override
    {
@@ -246,6 +252,14 @@ public:
    STDMETHOD_(BOOL, SetFlip)(BOOL) override { return FALSE; }
 
 private:
+   void ResetMode()
+   {
+      m_pixels.clear();
+      m_mode = -1;
+      if (m_cap)
+         std::memset(m_cap, 0, sizeof(*m_cap));
+   }
+
    eDisplayDeviceKind m_kind;
    int m_options{};
    int m_mode{-1};

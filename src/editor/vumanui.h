@@ -8,7 +8,6 @@
 
 #include <region.h>
 #include <event.h>
-#include <gadbox.h>
 
 #ifndef __VUMANUI_H
 #define __VUMANUI_H
@@ -32,7 +31,7 @@ EXTERN Region vmRegions[];
 #define vmGetRegion(x)  (&vmRegions[x])
 
 //
-// Grab some number of views, and make them into a gadget
+// Reserve camera panes for an editor tool.
 // 
 
 typedef enum 
@@ -44,12 +43,12 @@ typedef enum
 } vmGrabParm;
 
 
-// create and return an LGadRoot from grabbed views.
-EXTERN LGadRoot* vmGrabViews(vmGrabParm parm);
+// Returns the reserved view mask, or zero if the panes are unavailable.
+EXTERN int vmGrabViews(vmGrabParm parm, Rect *bounds);
+EXTERN void vmGetReservedBounds(int mask, Rect *bounds);
 
-// destroy an LGadRoot and release views.  Return number released.
-EXTERN int vmReleaseViews(LGadRoot* release);
-EXTERN int vmReleaseAllViews(void);
+// Return reserved panes to the camera layout.
+EXTERN void vmReleaseViews(int mask);
 
 // see if the views are all free
 EXTERN BOOL vmAllViewsAvailable(void);

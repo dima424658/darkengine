@@ -8,6 +8,7 @@
 // Grid snapping code
 
 #include <r3d.h>
+#include <2d.h>
 #include <gridsnap.h>
 #include <math.h>
 #include <memall.h>
@@ -73,18 +74,21 @@ void gedit_vertex_snap(Grid *g, mxs_vector *dest, mxs_vector *src)
 // We use "height" for the world location of the grid along
 // the prime axis; this is only visible in a 3d view
 
-static void render_line(mxs_vector *a, mxs_vector *b)
+static void render_line(mxs_vector *a, mxs_vector *b, bool draw_on_canvas)
 {
    r3s_point pts[2];
 
    r3_transform_point(pts, a);
    r3_transform_point(pts+1, b);
 
-   r3_draw_line(pts, pts+1);
+   if (draw_on_canvas)
+      gr_fix_line(pts[0].grp.sx, pts[0].grp.sy, pts[1].grp.sx, pts[1].grp.sy);
+   else
+      r3_draw_line(pts, pts+1);
 }
 
 void gedit_render_grid(Grid *g, int prime_axis, mxs_real height,
-                       mxs_vector *start, mxs_vector *end)
+                       mxs_vector *start, mxs_vector *end, bool draw_on_canvas)
 {
    mxs_vector origin;
    mxs_vector s,e;
@@ -134,7 +138,7 @@ void gedit_render_grid(Grid *g, int prime_axis, mxs_real height,
       for (x=s.el[a0]; x <= limit; x += g->line_spacing) {
          pt1.el[a0] = x;     
          pt2.el[a0] = x;     
-         render_line(&pt1, &pt2);
+         render_line(&pt1, &pt2, draw_on_canvas);
       }
    }
 
@@ -149,7 +153,7 @@ void gedit_render_grid(Grid *g, int prime_axis, mxs_real height,
       for (x=s.el[a1]; x <= limit; x += g->line_spacing) {
          pt1.el[a1] = x;
          pt2.el[a1] = x;
-         render_line(&pt1, &pt2);
+         render_line(&pt1, &pt2, draw_on_canvas);
       }
    }
  
