@@ -44,6 +44,25 @@ if(DARK_BUILD_DROMED)
   add_subdirectory(3rdparty "${CMAKE_BINARY_DIR}/third_party/editor")
 endif()
 
+# CMake reports the target pointer size in bytes. A four-byte pointer selects
+# the Windows x86 build that can load compatible PE32 OSM modules natively.
+set(dark_is_windows_x86 OFF)
+if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+  set(dark_is_windows_x86 ON)
+endif()
+
+set(dark_win32_native_osm_default OFF)
+if(dark_is_windows_x86)
+  set(dark_win32_native_osm_default ON)
+endif()
+option(DARK_WIN32_NATIVE_OSM
+  "Load compatible Thief II OSM modules natively in 32-bit Windows builds"
+  ${dark_win32_native_osm_default})
+if(DARK_WIN32_NATIVE_OSM AND NOT dark_is_windows_x86)
+  message(FATAL_ERROR
+    "DARK_WIN32_NATIVE_OSM requires a 32-bit Windows build")
+endif()
+
 add_subdirectory(libsrc)
 add_subdirectory(src)
 add_subdirectory(assets)

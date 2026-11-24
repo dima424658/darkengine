@@ -83,6 +83,11 @@ add_subdirectory(sim)
 add_subdirectory(sound)
 add_subdirectory(ui)
 
+if(DARK_WIN32_NATIVE_OSM)
+  set_property(SOURCE script/scrptmod.cpp APPEND PROPERTY
+    COMPILE_DEFINITIONS DARK_WIN32_NATIVE_OSM=1)
+endif()
+
 if(ANDROID)
   # SDLActivity loads libSDL3.so followed by libmain.so and resolves the
   # SDL_main entry point from this shared library.
@@ -216,6 +221,11 @@ if(NOT ANDROID)
   if(TARGET dromed)
     install(TARGETS dromed RUNTIME DESTINATION bin)
   endif()
+endif()
+
+if(DARK_WIN32_NATIVE_OSM)
+  set_property(SOURCE entry/main.cpp APPEND PROPERTY
+    COMPILE_DEFINITIONS DARK_WIN32_NATIVE_OSM=1)
 endif()
 
 target_sources(thief2 PRIVATE entry/main.cpp)

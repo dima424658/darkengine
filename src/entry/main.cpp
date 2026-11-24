@@ -17,11 +17,15 @@
 #endif
 
 #include <platform_services.h>
+#include <allocapi.h>
 
 #include <SDL3/SDL_main.h>
 
 
 extern "C" int LGAPI _AppMain(int argc, const char *argv[]);
+#if defined(_MSC_VER) && defined(DARK_WIN32_NATIVE_OSM)
+extern "C" int LGAPI HeapInit();
+#endif
 
 extern "C" {
 int _g_referenceEntryPoint = 0;
@@ -231,6 +235,13 @@ bool PrepareDarkDataDirectory(const char *requested, bool interactive)
 
 int main(int argc, char *argv[])
 {
+#if defined(_MSC_VER) && defined(DARK_WIN32_NATIVE_OSM)
+    // The legacy Windows launcher initialized this allocator before entering
+    // the engine. Native Win32 OSMs query it during ScriptModuleInit.
+    if (!g_pMalloc && !HeapInit())
+        return 1;
+#endif
+
 #ifdef TRACY_ENABLE
     tracy::SetThreadName("Main");
 #endif
