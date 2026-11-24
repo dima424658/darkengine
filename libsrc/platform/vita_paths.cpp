@@ -4,11 +4,53 @@
 #include <cstdlib>
 #include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace
 {
-const std::vector<std::string> DefaultVitaRoots()
+struct VitaRootSet
+{
+   std::vector<std::string> baseRoots;
+   std::vector<std::string> readRoots;
+};
+
+std::string TrimRoot(std::string root)
+{
+   while (!root.empty() && root.back() == '/')
+      root.pop_back();
+   return root;
+}
+
+std::vector<std::string> SplitRoots(const char *roots)
+{
+   std::vector<std::string> result;
+   std::string current;
+   if (!roots)
+      return result;
+
+   for (size_t i = 0; ; ++i)
+   {
+      const char c = roots[i];
+      const bool vitaVolumeColon = c == ':' && current == "ux0";
+      if (c == '\0' || ((c == ':' || c == ';') && !vitaVolumeColon))
+      {
+         current = TrimRoot(std::move(current));
+         if (!current.empty())
+            result.push_back(std::move(current));
+         current.clear();
+         if (c == '\0')
+            break;
+      }
+      else
+      {
+         current.push_back(c);
+      }
+   }
+   return result;
+}
+
+std::vector<std::string> DefaultVitaRoots()
 {
    const char *titleId = std::getenv("DARK_VITA_TITLE_ID");
    if (titleId)
@@ -28,30 +70,12 @@ const std::vector<std::string> DefaultVitaRoots()
    };
 }
 
-std::vector<std::string> VitaRoots()
+std::vector<std::string> BaseVitaRoots()
 {
    const char *roots = std::getenv("DARK_VITA_ASSET_ROOTS");
    if (roots && roots[0])
    {
-      std::vector<std::string> result;
-      std::string current;
-      for (const char *p = roots; ; ++p)
-      {
-         if (*p == ':' || *p == '\0')
-         {
-            while (!current.empty() && current.back() == '/')
-               current.pop_back();
-            if (!current.empty())
-               result.push_back(current);
-            current.clear();
-            if (*p == '\0')
-               break;
-         }
-         else
-         {
-            current.push_back(*p);
-         }
-      }
+      std::vector<std::string> result = SplitRoots(roots);
       if (!result.empty())
          return result;
    }
@@ -59,13 +83,67 @@ std::vector<std::string> VitaRoots()
    const char *root = std::getenv("DARK_VITA_ASSET_ROOT");
    if (root && root[0])
    {
-      std::string value(root);
-      while (!value.empty() && value.back() == '/')
-         value.pop_back();
+      std::string value = TrimRoot(root);
       if (!value.empty())
          return {value};
    }
    return DefaultVitaRoots();
+}
+
+std::string FoldName(std::string name)
+{
+   for (char &c : name)
+      if (c >= 'A' && c <= 'Z')
+         c = static_cast<char>(c + ('a' - 'A'));
+   return name;
+}
+
+std::vector<std::string> DiscoverModRoots(const std::string &baseRoot)
+{
+   std::vector<std::string> mods;
+   const std::filesystem::path modDirectory =
+      std::filesystem::path(baseRoot) / "mods";
+   std::error_code error;
+   std::filesystem::directory_iterator it(modDirectory, error), end;
+   for (; !error && it != end; it.increment(error))
+   {
+      const std::string name = it->path().filename().string();
+      if (name.empty() || name.front() == '.' || name == "." || name == "..")
+         continue;
+      std::error_code entryError;
+      if (it->is_symlink(entryError) || entryError ||
+          !it->is_directory(entryError) || entryError)
+         continue;
+      mods.push_back(it->path().generic_string());
+   }
+   std::sort(mods.begin(), mods.end(), [](const std::string &left,
+                                          const std::string &right)
+   {
+      const std::string leftName = FoldName(
+         std::filesystem::path(left).filename().string());
+      const std::string rightName = FoldName(
+         std::filesystem::path(right).filename().string());
+      return leftName == rightName ? left < right : leftName < rightName;
+   });
+   return mods;
+}
+
+const VitaRootSet &VitaRoots()
+{
+   static const VitaRootSet roots = []
+   {
+      VitaRootSet result;
+      result.baseRoots = BaseVitaRoots();
+      for (const std::string &baseRoot : result.baseRoots)
+      {
+         const std::vector<std::string> mods = DiscoverModRoots(baseRoot);
+         result.readRoots.insert(result.readRoots.end(), mods.begin(),
+                                 mods.end());
+         result.readRoots.push_back(baseRoot);
+      }
+      return result;
+   }();
+   return roots;
 }
 }
 
@@ -78,17 +156,26 @@ bool PlatformResolveVitaAssetPath(const char *path, char *resolved,
    resolved[0] = '\0';
    if (exists)
       *exists = false;
-   if (!path[0] || std::filesystem::path(path).is_absolute())
+   if (!path[0])
       return false;
 
-   const std::string relative(path);
-   for (const std::string &root : VitaRoots())
+   std::string relativeText(path);
+   std::replace(relativeText.begin(), relativeText.end(), '\\', '/');
+   const std::filesystem::path relative(relativeText);
+   if (relative.is_absolute() || relative.has_root_path())
+      return false;
+   for (const auto &part : relative)
+      if (part == "..")
+         return false;
+
+   const VitaRootSet &roots = VitaRoots();
+   for (const std::string &root : roots.readRoots)
    {
-      const std::filesystem::path candidate =
-         std::filesystem::path(root) / std::filesystem::path(relative);
+      const std::filesystem::path candidate = std::filesystem::path(root) /
+                                               relative;
       std::error_code error;
       const bool candidateExists = std::filesystem::exists(candidate, error);
-      if (candidateExists)
+      if (!error && candidateExists)
       {
          const std::string native = candidate.generic_string();
          if (native.size() >= capacity)
@@ -103,12 +190,10 @@ bool PlatformResolveVitaAssetPath(const char *path, char *resolved,
 
    if (for_write)
    {
-      const std::vector<std::string> roots = VitaRoots();
-      if (!roots.empty())
+      if (!roots.baseRoots.empty())
       {
          const std::filesystem::path candidate =
-            std::filesystem::path(roots.front()) /
-            std::filesystem::path(relative);
+            std::filesystem::path(roots.baseRoots.front()) / relative;
          const std::string native = candidate.generic_string();
          if (native.size() >= capacity)
             return false;

@@ -1,7 +1,6 @@
 # REPO REMASTER ROADMAP
 
 ## CURRENT FOCUS PIPELINE (Max 3 active tasks allowed)
-- [ ] TASK 4: Implement a universal mod engine for `ux0:data/thiefX/mods/` and a NewDark-style `.sub` parser with Windows-1250 support for Polish translations.
 - [ ] TASK 5: Add separate brightness and gamma shader-correction sliders optimized for the Vita 2000 Slim LCD.
 - [ ] TASK 6: Implement Layout A (Dual Analog FPS), Layout B (Retro D-Pad Move), and Layout C (Custom), including temporary front-touchscreen corner icons for LB/RB and long/short-press behavior.
 

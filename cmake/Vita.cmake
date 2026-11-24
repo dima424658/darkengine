@@ -32,9 +32,17 @@ foreach(_platform IN LISTS DARK_VITA_PLATFORMS)
   list(GET _fields 2 _title)
   list(GET _fields 3 _asset_root)
 
-  add_executable("${_target}" "${PROJECT_SOURCE_DIR}/tools/vita_bootstrap.c")
-  target_include_directories("${_target}" PRIVATE "${DARK_VITAGL_INCLUDE_DIR}")
+  add_executable("${_target}"
+    "${PROJECT_SOURCE_DIR}/tools/vita_bootstrap.c"
+    "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_paths.cpp"
+    "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_subtitles.cpp"
+  )
+  target_include_directories("${_target}" PRIVATE
+    "${DARK_VITAGL_INCLUDE_DIR}"
+    "${PROJECT_SOURCE_DIR}/libsrc/platform"
+  )
   target_compile_features("${_target}" PRIVATE c_std_11)
+  target_compile_features("${_target}" PRIVATE cxx_std_17)
   set_target_properties("${_target}" PROPERTIES LINKER_LANGUAGE CXX)
   target_compile_definitions("${_target}" PRIVATE
     "DARK_VITA_TITLE=\"${_title}\""
