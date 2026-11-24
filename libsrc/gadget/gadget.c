@@ -36,7 +36,13 @@
 #include <uigadget.h>
 #include <uibutton.h>
 
+#ifndef __WATCOMC__
+#ifdef _WIN32
+#define utoa _ultoa
+#else
 #define utoa ultoa
+#endif
+#endif
 
 grs_bitmap ui_draw_bm;
 grs_canvas ui_draw_canvas;

@@ -9,7 +9,7 @@
 DEFINE_LG_GUID (IID_IProperty, 0x74);
 //DEFINE_LG_GUID (IID_IPropertyRaw, 0x81);
 DEFINE_LG_GUID (IID_IPropertyManager, 0x78);
-DEFINE_LG_GUID (IID_IPropertyStore, 0x139); 
+DEFINE_LG_GUID (IID_IDarkPropertyStore, 0x139);
 
 // Doesn't quite belong here, but it's lonely
 DEFINE_LG_GUID(IID_IObjectSystem, 0x90);

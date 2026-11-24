@@ -1,0 +1,11 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#define SHARC_UPDATE 0
+#define SHARC_QUERY 0
+#include "sharc_bridge.glsl"
+layout(local_size_x=256) in;
+void main() {
+    SharcResolveParameters p;p.cameraPositionPrev=di.previousEye.xyz;
+    p.accumulationFrameNum=gi.counts.z;p.responsiveFrameNum=4;p.staleFrameNumMax=gi.counts.w;p.frameIndex=di.runtime.frameIndex;
+    SharcResolveEntry(gl_GlobalInvocationID.x,buildSharcParameters(),p);
+}

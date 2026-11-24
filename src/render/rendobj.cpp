@@ -57,6 +57,8 @@ extern "C" {
 #include <meshatt.h>
 #include <meshtex.h>
 #include <corona.h>
+#include "worldscene.h"
+#include <render_backend.h>
 #include <plycbllm.h>  // PlayerArm()
 #include <weapbow.h>   // PlayerArrow()
 #include <playrobj.h>
@@ -181,7 +183,8 @@ float g_obj_zbias = 4.0/65536.0; // 4 bits, in a 16 bit zbuffer
 // And now, for a moment of weirdness to help us track which objects
 // were visisble last frame...
 
-cPackedBoolSet g_RendObjVisible(1); 
+cPackedBoolSet g_RendObjVisible(1);
+static bool modernAlphaPass;
 
 BOOL rendobj_object_visible(ObjID obj)
 {
@@ -2555,6 +2558,11 @@ void rendobj_render_object(ObjID obj, uchar *clut, ulong fragment)
       CoronaCheckObj(obj);
    }
 
+   // Retain visibility bookkeeping, coronas and diagnostics even when the
+   // modern renderer already drew this model. Only suppress its geometry.
+   if (modernAlphaPass && WorldSceneHasModel(obj))
+      goto done;
+
    if (fragment == OBJ_NO_SPLIT) {
 #ifdef PLAYER_BOW_HACK
       // check if obj has position, since overlay (namely player arrow) may not
@@ -2776,6 +2784,7 @@ static void rq_queue_object(ObjID obj, uchar *clut, ulong fragment)
    p_elem->clut = clut;
    p_elem->fragment = fragment;
    p_elem->flags = lgd3d_is_fog_on()? RQ_FLAG_FOG : 0;
+   WorldSceneCaptureObjectFog(obj,!!(p_elem->flags & RQ_FLAG_FOG));
 }
 
 static void rq_queue_water_poly()
@@ -2839,6 +2848,12 @@ static void rq_render_queue(void)
    int i;
    double old_bias = lgd3d_set_zbias(g_obj_zbias);
 
+   int nativeDrawing = -1;
+   int portalDrawing = 1;
+   config_get_int("renderer_portal_rendering", &portalDrawing);
+   if (!portalDrawing && RenderBackendWorldEnabled() && WorldSceneRender())
+      nativeDrawing = RenderBackendSetNativeWorldDrawing(FALSE);
+
    lgd3d_set_zcompare(TRUE);
    lgd3d_set_zwrite(TRUE);
 
@@ -2857,6 +2872,14 @@ static void rq_render_queue(void)
       r3_use_lgd3d();
       rq_real_render_call(
          rqd_queue[i].obj, rqd_queue[i].clut, rqd_queue[i].fragment);
+   }
+
+   // Retain native translucent effects and water above the modern world.
+   // The native opaque pass keeps its depth buffer for their occlusion.
+   modernAlphaPass = WorldSceneRender() != 0;
+   if (modernAlphaPass) {
+      const int oldDrawing = RenderBackendSetNativeWorldDrawing(TRUE);
+      if (nativeDrawing < 0) nativeDrawing = oldDrawing;
    }
 
    lgd3d_set_zwrite(FALSE);
@@ -2887,6 +2910,7 @@ static void rq_render_queue(void)
       }
    }
 
+   modernAlphaPass = false;
    set_mm_sort(FALSE);
 
    lgd3d_set_blend(FALSE);
@@ -2897,6 +2921,9 @@ static void rq_render_queue(void)
 
    if (next_post_render_cback)
       next_post_render_cback();
+   // Chained late effects (such as coronas/weather) also need drawing. Restore
+   // the caller's opaque-world suppression only after all callbacks finish.
+   if (nativeDrawing >= 0) RenderBackendSetNativeWorldDrawing(nativeDrawing);
 }
 
 

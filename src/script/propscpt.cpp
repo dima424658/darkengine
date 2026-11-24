@@ -132,7 +132,7 @@ public:
       HEY_OBJ_NULL(obj,0);
 
       IPropertyStore* store;
-      Verify(SUCCEEDED(prop->QueryInterface(IID_IPropertyStore,(void**)&store)));
+      Verify(SUCCEEDED(prop->QueryInterface(IID_IDarkPropertyStore,(void**)&store)));
 
       cMultiParm retval = 0;
       
@@ -172,7 +172,7 @@ public:
       HEY_OBJ_NULL(obj,NOTHING);
 
       IPropertyStore* store;
-      Verify(SUCCEEDED(prop->QueryInterface(IID_IPropertyStore,(void**)&store)));
+      Verify(SUCCEEDED(prop->QueryInterface(IID_IDarkPropertyStore,(void**)&store)));
 
       IDataOps* ops = store->GetOps();
       if (!ops) 

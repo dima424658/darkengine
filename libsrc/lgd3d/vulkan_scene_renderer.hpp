@@ -22,6 +22,8 @@ public:
    void Shutdown();
    void ResetPipelines();
    void BeginFrame(uint32_t frameIndex);
+   // Call after another renderer records graphics commands into this buffer.
+   void InvalidateDrawState();
    bool Draw(vk::CommandBuffer commandBuffer,
       const sRenderBackendVertex *vertices, int vertexCount, int primitive,
       bool useSecondTexture, int logicalWidth, int logicalHeight,

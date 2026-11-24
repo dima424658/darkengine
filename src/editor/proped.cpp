@@ -147,7 +147,7 @@ STDMETHODIMP cSdescPropEditTrait::Edit(ObjID obj)
    {
       HRESULT retval = S_FALSE; 
       IPropertyStore* store;
-      Verify(SUCCEEDED(Prop->QueryInterface(IID_IPropertyStore,(void**)&store)));
+      Verify(SUCCEEDED(Prop->QueryInterface(IID_IDarkPropertyStore,(void**)&store)));
 
       // copy property data
       sDatum dat;
@@ -241,7 +241,7 @@ STDMETHODIMP cSdescPropEditTrait::Parse(ObjID obj, const char* val)
    if (Sdesc != NULL)
    {
       IPropertyStore* store;
-      Verify(SUCCEEDED(Prop->QueryInterface(IID_IPropertyStore,(void**)&store)));
+      Verify(SUCCEEDED(Prop->QueryInterface(IID_IDarkPropertyStore,(void**)&store)));
 
       BOOL already_present = store->Relevant(obj); 
       sDatum dat = store->Create(obj); 
@@ -276,7 +276,7 @@ STDMETHODIMP cSdescPropEditTrait::Unparse(ObjID obj, char* buf, int buflen)
    if (Sdesc != NULL)
    {
       IPropertyStore* store;
-      Verify(SUCCEEDED(Prop->QueryInterface(IID_IPropertyStore,(void**)&store)));
+      Verify(SUCCEEDED(Prop->QueryInterface(IID_IDarkPropertyStore,(void**)&store)));
 
       sDatum dat;
       store->Get(obj,&dat); 

@@ -64,6 +64,11 @@ EXTERN int   objmodelAuditObjectTextures(FILE *log, ObjID obj, int idx,
 
 // returns a pointer to the model.  user needs to know how to cast it
 EXTERN void *objmodelGetModel(int idx);
+// Byte extent of the locked native model resource, or zero for an invalid handle.
+EXTERN size_t objmodelGetModelDataSize(int idx);
+// Changes when a slot is loaded again, even if its address/size are reused.
+// Zero for an invalid or unloaded handle. Not part of the model file format.
+EXTERN unsigned long long objmodelGetModelRevision(int idx);
 
 // XXX put these #defines in a different header
 

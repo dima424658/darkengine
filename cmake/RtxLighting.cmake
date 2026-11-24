@@ -1,0 +1,62 @@
+# SDK sources remain separate from the engine and sample applications. Only
+# Linux is enabled by default until the other build hosts have been validated.
+if(NOT DARK_ENABLE_RTX_SDK)
+  return()
+endif()
+if(CMAKE_VERSION VERSION_LESS 3.30)
+  message(FATAL_ERROR "NVIDIA NRD requires CMake 3.30+. Use DARK_ENABLE_RTX_SDK=OFF for the legacy renderer build.")
+endif()
+
+include(FetchContent)
+find_program(DARK_DXC NAMES dxc HINTS "$ENV{VULKAN_SDK}/bin" DOC "DXC compiler with SPIR-V support")
+if(NOT DARK_DXC)
+  if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    FetchContent_Declare(dark_dxc
+      URL https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.8.2505.1/linux_dxc_2025_07_14.x86_64.tar.gz
+      URL_HASH SHA256=f2213da1fc99dc8778c8823078e16ba97c7f80f86a1d4520ab1adf4b462bc48c
+      DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    FetchContent_MakeAvailable(dark_dxc)
+    set(DARK_DXC "${dark_dxc_SOURCE_DIR}/bin/dxc" CACHE FILEPATH "DXC compiler with SPIR-V support" FORCE)
+  else()
+    message(FATAL_ERROR "Set DARK_DXC to a host DXC compiler with SPIR-V support.")
+  endif()
+endif()
+execute_process(COMMAND "${DARK_DXC}" --version RESULT_VARIABLE dark_dxc_result OUTPUT_VARIABLE dark_dxc_version ERROR_VARIABLE dark_dxc_error)
+if(NOT dark_dxc_result EQUAL 0)
+  message(FATAL_ERROR "DXC could not run: ${dark_dxc_error}")
+endif()
+message(STATUS "RTX lighting DXC: ${DARK_DXC}")
+
+set(DARK_SHARC_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/RTXGI/Libraries/Sharc/include")
+if(NOT EXISTS "${DARK_SHARC_INCLUDE_DIR}/SharcCommon.h")
+  message(FATAL_ERROR "Initialize SHaRC: git -C 3rdparty/RTXGI submodule update --init Libraries/Sharc")
+endif()
+add_subdirectory("${PROJECT_SOURCE_DIR}/3rdparty/RTXDI" "${PROJECT_BINARY_DIR}/dark_rtxdi" EXCLUDE_FROM_ALL)
+
+# Use NRD's native API. Do not import a second rendering abstraction (NRI).
+set(NRD_NORMAL_ENCODING "2" CACHE STRING "NRD packed RGB10A2 normals and roughness" FORCE)
+set(NRD_STATIC_LIBRARY ON CACHE BOOL "" FORCE)
+set(NRD_NRI OFF CACHE BOOL "" FORCE)
+set(NRD_EMBEDS_DXIL_SHADERS OFF CACHE BOOL "" FORCE)
+set(NRD_EMBEDS_DXBC_SHADERS OFF CACHE BOOL "" FORCE)
+set(NRD_EMBEDS_SPIRV_SHADERS ON CACHE BOOL "" FORCE)
+set(NRD_SUPPORTS_QUAD_INTRINSICS OFF CACHE BOOL "" FORCE)
+set(NRD_SHADERS_PATH "${PROJECT_BINARY_DIR}/generated/nrd" CACHE STRING "" FORCE)
+set(DXC_SPIRV_PATH "${DARK_DXC}" CACHE FILEPATH "" FORCE)
+set(SHADERMAKE_DXC_VK_PATH "${DARK_DXC}" CACHE FILEPATH "" FORCE)
+set(SHADERMAKE_FIND_DXC OFF CACHE BOOL "" FORCE)
+set(SHADERMAKE_FIND_DXC_SPIRV OFF CACHE BOOL "" FORCE)
+add_subdirectory("${PROJECT_SOURCE_DIR}/3rdparty/NRD" "${PROJECT_BINARY_DIR}/dark_nrd" EXCLUDE_FROM_ALL)
+
+add_library(dark_nrd_vulkan STATIC "${PROJECT_SOURCE_DIR}/libsrc/lgd3d/vulkan_nrd.cpp")
+target_link_libraries(dark_nrd_vulkan PUBLIC NRD Vulkan::Vulkan)
+target_include_directories(dark_nrd_vulkan PUBLIC "${PROJECT_SOURCE_DIR}/libsrc/lgd3d")
+add_executable(dark_nrd_test EXCLUDE_FROM_ALL "${PROJECT_SOURCE_DIR}/tools/rtx_sdk_test/nrd.cpp")
+target_link_libraries(dark_nrd_test PRIVATE dark_nrd_vulkan)
+add_library(dark_rtxdi_vulkan STATIC "${PROJECT_SOURCE_DIR}/libsrc/lgd3d/vulkan_rtxdi.cpp")
+target_link_libraries(dark_rtxdi_vulkan PUBLIC Rtxdi Vulkan::Vulkan dark_nrd_vulkan)
+target_include_directories(dark_rtxdi_vulkan PUBLIC "${PROJECT_SOURCE_DIR}/libsrc/lgd3d" "${PROJECT_SOURCE_DIR}/h")
+
+add_executable(dark_rtxdi_test EXCLUDE_FROM_ALL "${PROJECT_SOURCE_DIR}/tools/rtx_sdk_test/lighting.cpp")
+target_link_libraries(dark_rtxdi_test PRIVATE dark_lgd3d)
+target_compile_definitions(dark_rtxdi_test PRIVATE DARK_RTX_SDK_AVAILABLE=1)

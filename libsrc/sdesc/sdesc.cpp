@@ -99,9 +99,9 @@ void parse_bits(const sFieldDesc* desc, void* val, const char* in)
 			;
 		while (*s)
 		{
-			auto p = strchr(s, ',');
+			const char *p = strchr(s, ',');
 			if (!p)
-				p = &s[strlen(s) + 1];
+				p = &s[strlen(s)];
 			auto tmp = *p;
 			*const_cast<char*>(p) = '\0';
 
@@ -613,7 +613,7 @@ BOOL StructFromFullString(char* struc, const sStructDesc* desc, const char* in)
 	}
 	else if (desc->nfields > 1)
 	{
-		auto* p = strchr(in, 123);
+		const char *p = strchr(in, 123);
 		for (int i = 0; p && i < desc->nfields; ++i)
 		{
 			const char* pa;

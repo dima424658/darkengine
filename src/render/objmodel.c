@@ -86,6 +86,8 @@ typedef struct ModelHandle
 // the first replacement texture does not make every entry appear occupied.
 static signed char g_aReplaceList[MAX_REPL_MODELS][MAX_REPL_TXT];
 static ModelHandle g_aModelHandles[MAX_OBJMODELS];
+// Keep load identity separate from the native model and persisted handle layout.
+static unsigned long long g_aModelLoadRevisions[MAX_OBJMODELS];
 
 #ifndef SHIP         
 BOOL g_bTextureDebug = FALSE;
@@ -999,6 +1001,8 @@ static BOOL LoadFXOrModel(char *objName, int idx)
    int i;
    IResMan *pResMan;
 
+   ++g_aModelLoadRevisions[idx];
+
    i = FindFXHandleByName(objName);
 
    if (i != -1) {
@@ -1529,6 +1533,22 @@ int objmodelGetModelType(int idx)
 //   it is _idiotic_ that mesh is an array of structs full of data
 //   and md is a set of parallel arrays for each data type
 // ACK
+
+unsigned long long objmodelGetModelRevision(int idx)
+{
+   if (!IS_VALID_MH_INDEX(idx) || !g_aModelHandles[idx].used)
+      return 0;
+   return g_aModelLoadRevisions[idx];
+}
+
+// Byte extent of the locked model, for bounded native-format readers.
+size_t objmodelGetModelDataSize(int idx)
+{
+   if (!IS_VALID_MH_INDEX(idx) || !g_aModelHandles[idx].used ||
+       !g_aModelHandles[idx].mhandle)
+      return 0;
+   return IRes_GetSize(g_aModelHandles[idx].mhandle);
+}
 
 // returns a pointer to the model.  user needs to know how to cast it
 void *objmodelGetModel(int idx)

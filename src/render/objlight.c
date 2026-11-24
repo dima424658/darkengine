@@ -47,7 +47,7 @@ static BOOL dynamic_light_overflow_warned;
 #define FIRST_LIGHT (SUNLIGHT_INDEX + 1)// reserve one index for sunlight
 
 // how many feet away sunlight is considered to be for object lighting
-#define SUNLIGHT_DISTANCE 125.0f
+#define SUNLIGHT_DISTANCE OBJLIGHT_SUNLIGHT_DISTANCE
 
 // Thief 2 reserves object-light slot zero for sunlight.  Thief 1/Gold has no
 // such reservation: WR 0.23 may store an ordinary static light in slot zero
@@ -228,7 +228,7 @@ ulong *objGetShadows(ObjID obj)
 
    if (shadow_cache[obj].cell_id != cell)
    {
-      int *shadPtr=&shadow_cache[obj].shadows[0];
+      ulong *shadPtr=&shadow_cache[obj].shadows[0];
       int i,k,n,inner_frac;
       ushort *lt = WR_CELL(cell)->light_indices;
       n = *lt++;
@@ -328,7 +328,7 @@ static BOOL _apply_one_location_light(int i, Location *loc, int *n)
 }
 
 
-static void setup_location_lighting(Location *loc, mxs_vector *newlight, int *shadPtr,float radius)
+static void setup_location_lighting(Location *loc, mxs_vector *newlight, ulong *shadPtr,float radius)
 {
    int i, n, num, k, inner_frac;
    int cell = CellFromLoc(loc);
@@ -464,7 +464,8 @@ float compute_object_lighting(ObjID o)
    Position* pos = ObjPosGet(o);
    Location *loc = &pos->loc;
    int cell = CellFromLoc(loc);
-   int shadows, *shadPtr;
+   int shadows;
+   ulong *shadPtr;
    int i, num, k, inner_frac; // yea, lets loop factor ourselves
    ushort *lt;
    float total=0;
@@ -571,7 +572,8 @@ float blame_object_lighting(ObjID o)
    Position* pos = ObjPosGet(o);
    Location *loc = &pos->loc;
    int cell = CellFromLoc(loc);
-   int shadows, *shadPtr;
+   int shadows;
+   ulong *shadPtr;
    int i, num, k, inner_frac;
    ushort *lt;
    float total=0;

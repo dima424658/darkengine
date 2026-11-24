@@ -1,3 +1,6 @@
+#include "vulkan_world_renderer.hpp"
+#include "canvas_pixels.hpp"
+#include <config.h>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -38,10 +41,17 @@ vk::SurfaceKHR CreateSDLVulkanSurface(vk::Instance instance,
    return surface;
 }
 
+bool ModernWorldRequested() {
+   char mode[32]{};
+   return config_get_raw("renderer_mode",mode,sizeof(mode)) && (std::strcmp(mode,"modern")==0 || std::strcmp(mode,"modern_rt")==0);
+}
 class cVulkanRuntime
 {
 public:
    bool Open(int width, int height, const char *title);
+   bool WorldEnabled() const { return m_modernWorldEnabled; }
+   bool RenderWorld();
+   bool InitializeWorldRenderer();
    void Close();
    bool TakeResize(int *width, int *height);
    bool BeginEventPump();
@@ -79,6 +89,11 @@ private:
 
    bool m_windowOpen{};
    cVulkanContext m_context;
+   dark::VulkanWorldRenderer m_worldRenderer;
+   bool m_modernWorldEnabled{}, m_restoreWorld{}, m_worldRendered{};
+   vk::CommandBuffer m_worldPreparation{};
+   std::string m_worldShaderDirectory;
+   bool m_worldFeaturesAvailable{};
    cVulkanSceneRenderer m_renderer;
    vk::CommandBuffer m_activeCommandBuffer{};
    int m_width{}, m_height{};
@@ -99,6 +114,7 @@ private:
    std::chrono::steady_clock::time_point m_nextSurfaceRecreationAttempt{};
    bool m_surfaceRecreationErrorReported{};
    bool m_frameActive{};
+   std::chrono::steady_clock::time_point m_frameStart{},m_acquiredAt{},m_lastSubmission{};
    int m_physicalDeviceIndex{-1};
    bool m_resizePending{};
    bool m_windowSizeChanged{};
@@ -342,6 +358,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       return false;
    }
    m_windowOpen = true;
+   RenderBackendTraceReset();
    m_appInBackground.store(false, std::memory_order_relaxed);
    m_windowMinimized.store(false, std::memory_order_relaxed);
    m_lifecycleResizePending.store(false, std::memory_order_relaxed);
@@ -366,7 +383,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
          [&surfaceError](vk::Instance instance) {
             return CreateSDLVulkanSurface(instance, surfaceError);
          }, drawableWidth, drawableHeight, m_physicalDeviceIndex, error,
-         sizeof(error)))
+         sizeof(error), ModernWorldRequested()))
    {
       if (!surfaceError.empty())
          std::snprintf(error, sizeof(error), "%s", surfaceError.c_str());
@@ -421,6 +438,7 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       }
    }
 #endif
+   m_worldFeaturesAvailable = m_context.WorldRenderingEnabled();
    if (!m_renderer.Initialize(m_context,
          (shaderDir + "/scene.vert.spv").c_str(),
          (shaderDir + "/scene.frag.spv").c_str()))
@@ -429,6 +447,8 @@ bool cVulkanRuntime::Open(int width, int height, const char *title)
       Close();
       return false;
    }
+   m_worldShaderDirectory = shaderDir;
+   if (ModernWorldRequested()) InitializeWorldRenderer();
    RenderBackendVulkanSetRenderer(&m_renderer);
    m_windowMinimized = SDLDisplayWindowIsMinimized();
    std::fprintf(stderr, "SDL3 window opened (%dx%d points, %dx%d pixels)\n",
@@ -467,6 +487,11 @@ void cVulkanRuntime::Close()
       m_movieTexture = nullptr;
    }
    m_renderer.Shutdown();
+   m_worldRenderer.Shutdown();
+   m_modernWorldEnabled = m_restoreWorld = m_worldRendered = false;
+   m_worldPreparation = nullptr;
+
+   m_worldFeaturesAvailable = false;
    m_context.Shutdown();
    SDLDisplayCloseWindow();
    m_windowOpen = false;
@@ -573,6 +598,16 @@ void cVulkanRuntime::BeginApplicationFrame()
    if (!m_windowOpen || m_frameActive ||
        m_windowMinimized.load(std::memory_order_acquire) || !PreparePresentation())
       return;
+   if (m_restoreWorld)
+   {
+      m_context.RaiiDevice().waitIdle();
+      m_worldRenderer.Shutdown();
+      m_worldFeaturesAvailable = m_context.WorldRenderingEnabled();
+      m_restoreWorld = false;
+      InitializeWorldRenderer();
+   }
+   m_frameStart=std::chrono::steady_clock::now();
+   m_worldRendered = false;m_worldPreparation = nullptr;
    vk::CommandBuffer commandBuffer{};
    if (!m_context.BeginFrame({0.0f, 0.0f, 0.0f, 1.0f}, &commandBuffer))
    {
@@ -582,6 +617,7 @@ void cVulkanRuntime::BeginApplicationFrame()
          UpdateWindowDimensions();
       return;
    }
+   m_acquiredAt=std::chrono::steady_clock::now();
    m_activeCommandBuffer = commandBuffer;
    m_renderer.BeginFrame(m_context.FrameIndex());
    RenderBackendVulkanAttach(commandBuffer, m_width, m_height, m_clientWidth,
@@ -593,6 +629,7 @@ void cVulkanRuntime::EndApplicationFrame()
 {
    ZoneScopedN("Vulkan present");
    if (!m_frameActive) return;
+   const auto canvasStart=std::chrono::steady_clock::now();
    const bool canvasReady = PrepareCanvasTexture();
    if (!canvasReady)
       std::fprintf(stderr, "Vulkan canvas texture update failed\n");
@@ -604,11 +641,118 @@ void cVulkanRuntime::EndApplicationFrame()
    // retained scene.
    RenderBackendDeactivateScene();
    RenderBackendVulkanDetach();
-   if (m_context.EndFrame() && (sceneActive || (canvasReady && m_canvasWidth > 0)))
+   const auto submitStart=std::chrono::steady_clock::now();
+   const bool submitted = m_context.EndFrame(m_worldPreparation);
+   if (submitted && (sceneActive || (canvasReady && m_canvasWidth > 0)))
       SDLDisplayRevealAfterPresent();
+   if(m_worldRendered)m_worldRenderer.CompleteSubmission(submitted);
+   if(submitted) {
+      const auto now=std::chrono::steady_clock::now();
+      const double interval=m_lastSubmission.time_since_epoch().count()?std::chrono::duration<double,std::milli>(now-m_lastSubmission).count():-1;
+      RenderBackendTrace("frame-pacing modern=%u interval_ms=%.3f render_submit_ms=%.3f acquire_ms=%.3f canvas_ms=%.3f submit_present_ms=%.3f",m_worldRendered?1u:0u,
+         interval,std::chrono::duration<double,std::milli>(now-m_frameStart).count(),
+         std::chrono::duration<double,std::milli>(m_acquiredAt-m_frameStart).count(),
+         std::chrono::duration<double,std::milli>(submitStart-canvasStart).count(),
+         std::chrono::duration<double,std::milli>(now-submitStart).count());
+      m_lastSubmission=now;
+   }
+   if (!submitted && m_modernWorldEnabled)
+   {
+      m_modernWorldEnabled = false;m_restoreWorld = true;
+   }
+   m_worldPreparation = nullptr;
    m_activeCommandBuffer = nullptr;
    m_frameActive = false;
    HandleSwapchainRecreation();
+}
+
+bool cVulkanRuntime::InitializeWorldRenderer()
+{
+   std::string failure;
+   int rayTracing=1;config_get_int("renderer_raytracing",&rayTracing);
+   if(!rayTracing)failure="RTX lighting disabled by renderer_raytracing=0";
+   m_modernWorldEnabled = rayTracing!=0 && m_context.WorldRayTracing() && m_worldFeaturesAvailable && m_worldRenderer.Initialize(
+      m_context.PhysicalDevice(),m_context.Device(),m_context.GraphicsQueueFamily(),
+      m_context.RenderPass(),m_context.DepthFormat(),m_context.SwapchainFormat(),m_worldShaderDirectory,failure);
+   if (!m_modernWorldEnabled)
+      std::fprintf(stderr,"Modern world unavailable: %s; retaining legacy renderer\n",
+         failure.empty()?m_context.WorldRenderingUnavailableReason().c_str():failure.c_str());
+   else {
+      char dlssMode[32] = "off";
+      config_get_raw("renderer_dlss", dlssMode, sizeof(dlssMode));
+      auto dlssQuality = dark::VulkanDlss::Quality::Off;
+      if (std::strcmp(dlssMode,"quality")==0) dlssQuality = dark::VulkanDlss::Quality::Quality;
+      else if (std::strcmp(dlssMode,"balanced")==0) dlssQuality = dark::VulkanDlss::Quality::Balanced;
+      else if (std::strcmp(dlssMode,"performance")==0) dlssQuality = dark::VulkanDlss::Quality::Performance;
+      else if (std::strcmp(dlssMode,"dlaa")==0) dlssQuality = dark::VulkanDlss::Quality::Dlaa;
+      else if (std::strcmp(dlssMode,"off")!=0) std::fprintf(stderr,"Unknown renderer_dlss mode '%s'; using off\n",dlssMode);
+      if (!m_worldRenderer.ConfigureDlss(m_context.Instance(), dlssQuality, failure))
+         std::fprintf(stderr,"DLSS unavailable: %s; using native resolution\n",failure.c_str());
+      else if (m_worldRenderer.DlssEnabled()) std::fprintf(stderr,"DLSS enabled: %s\n",dlssMode);
+      dark::VulkanWorldRenderer::RaySettings rays;
+      int gi=1;float strength=rays.giStrength;
+      config_get_int("renderer_gi",&gi);
+      config_get_float("renderer_gi_strength",&strength);
+      rays.gi=gi!=0;rays.giStrength=strength;
+      int sharc=1,entries=int(rays.sharcEntries),downscale=int(rays.sharcDownscale),accumulation=int(rays.sharcAccumulation),stale=int(rays.sharcStaleFrames);
+      config_get_int("renderer_sharc",&sharc);config_get_int("renderer_sharc_entries",&entries);config_get_int("renderer_sharc_downscale",&downscale);
+      config_get_int("renderer_sharc_accumulation",&accumulation);config_get_int("renderer_sharc_stale_frames",&stale);
+      config_get_float("renderer_sharc_scene_scale",&rays.sharcSceneScale);
+      rays.sharc=sharc!=0;rays.sharcEntries=uint32_t(std::clamp(entries,65536,4194304));
+      // Round capacity down to a power of two, as required by the hash grid.
+      uint32_t capacity=65536;while(capacity*2<=rays.sharcEntries)capacity*=2;rays.sharcEntries=capacity;
+      rays.sharcDownscale=uint32_t(std::clamp(downscale,1,10));rays.sharcAccumulation=uint32_t(std::clamp(accumulation,1,100));rays.sharcStaleFrames=uint32_t(std::clamp(stale,8,100));
+      rays.sharcSceneScale=std::isfinite(rays.sharcSceneScale)?std::clamp(rays.sharcSceneScale,1.f,100.f):50.f;
+      m_worldRenderer.SetRaySettings(rays);
+
+      if(m_worldRenderer.RayTracingEnabled())std::fprintf(stderr,"RTXDI + SHaRC + NRD lighting enabled; indirect lighting %s\n",rays.gi?"enabled":"disabled");
+      std::fprintf(stderr,"Modern world lighting enabled (RTXDI + SHaRC + NRD)\n");
+   }
+   return m_modernWorldEnabled;
+}
+
+bool cVulkanRuntime::RenderWorld()
+{
+   if (!m_modernWorldEnabled || !m_frameActive || m_worldRendered ||
+       !dark::GetWorldScene().hasCamera || dark::GetWorldScene().meshes.empty()) return false;
+   int x,y,width,height;
+   const auto extent=m_context.SwapchainExtent();
+   RenderBackendVulkanGetViewport(m_width,m_height,extent.width,extent.height,0,&x,&y,&width,&height);
+   if (width<=0 || height<=0) return false;
+   std::string failure;
+   const auto recordStart=std::chrono::steady_clock::now();
+   m_worldPreparation=m_worldRenderer.Record(m_context.FrameIndex(),dark::GetWorldScene(),
+      uint32_t(width),uint32_t(height),failure);
+   if (!m_worldPreparation)
+   {
+      std::fprintf(stderr,"Modern world disabled: %s; retaining legacy renderer\n",failure.c_str());
+      m_modernWorldEnabled = false;m_worldFeaturesAvailable = false;
+      return false;
+   }
+   m_worldRenderer.Composite(m_activeCommandBuffer,m_context.FrameIndex(),x,y,uint32_t(width),uint32_t(height));
+   m_renderer.InvalidateDrawState();
+   const auto work=m_worldRenderer.GetWorkload(m_context.FrameIndex());
+   RenderBackendTrace("world-ray-scene blas_builds=%u tlas_builds=%u instances=%u bytes=%llu",work.blasBuilds,work.tlasBuilds,work.instances,
+      static_cast<unsigned long long>(work.accelerationBytes));
+   RenderBackendTrace("world-lighting slot=%u extent=%ux%u previous_world_gpu_ms=%.3f record_cpu_ms=%.3f",m_context.FrameIndex(),uint32_t(width),uint32_t(height),
+      work.gpuMilliseconds,std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-recordStart).count());
+   const auto renderExtent = m_worldRenderer.RenderExtent(m_context.FrameIndex());
+   RenderBackendTrace("world-upscaling dlss=%u render=%ux%u output=%ux%u",m_worldRenderer.DlssEnabled()?1u:0u,
+      renderExtent[0],renderExtent[1],uint32_t(width),uint32_t(height));
+   const auto &worldCamera=dark::GetWorldScene().camera;
+   RenderBackendTrace("world-camera eye=%.4f,%.4f,%.4f forward=%.5f,%.5f,%.5f",
+      worldCamera.position[0],worldCamera.position[1],worldCamera.position[2],
+      worldCamera.viewProjection[3],worldCamera.viewProjection[7],worldCamera.viewProjection[11]);
+   RenderBackendTrace("world-record-cpu setup_ms=%.3f uploads_tiles_ms=%.3f ray_scene_ms=%.3f lighting_ms=%.3f",
+      work.recordCpuMilliseconds[0],work.recordCpuMilliseconds[1],work.recordCpuMilliseconds[2],work.recordCpuMilliseconds[3]);
+   RenderBackendTrace("world-gpu-phases surface_ms=%.3f di_ms=%.3f gi_ms=%.3f nrd_ms=%.3f history_ms=%.3f composition_ms=%.3f transparency_ms=%.3f",
+      work.gpuPhases[0],work.gpuPhases[1],work.gpuPhases[2],work.gpuPhases[3],work.gpuPhases[4],work.gpuPhases[5],work.gpuPhases[6]);
+   RenderBackendTrace("world-di-phases initial_ms=%.3f temporal_ms=%.3f spatial_shading_ms=%.3f",
+      work.directGpuPhases[0],work.directGpuPhases[1],work.directGpuPhases[2]);
+   const auto textures=m_worldRenderer.GetTextureWorkload(m_context.FrameIndex());
+   RenderBackendTrace("world-textures created_images=%u created_staging=%u uploads=%u evicted_images=%u cached_bytes=%llu",
+      textures.createdImages,textures.createdStagingBuffers,textures.uploads,textures.evictedImages,static_cast<unsigned long long>(textures.cachedBytes));
+   m_worldRendered=true;return true;
 }
 
 void cVulkanRuntime::PresentProgress()
@@ -847,3 +991,9 @@ void DarkRenderPresentRect(const void *pixels, int width, int height,
 }
 void DarkRenderInvalidateCanvas()
 { VulkanRuntime().InvalidateCanvas(); }
+extern "C" int RenderBackendWorldEnabled(void) { return VulkanRuntime().WorldEnabled()?1:0; }
+extern "C" int RenderBackendRenderWorld(void)
+{
+   try { return VulkanRuntime().RenderWorld()?1:0; }
+   catch(const std::exception &error) { std::fprintf(stderr,"Modern world failed: %s\n",error.what());return 0; }
+}

@@ -19,7 +19,7 @@
 //
 // Generic IUnknown
 //
-class cUnknownPropertyStore : public cCTUnaggregated<IPropertyStore,&IID_IPropertyStore,kCTU_NoSelfDelete> 
+class cUnknownPropertyStore : public cCTUnaggregated<IPropertyStore,&IID_IDarkPropertyStore,kCTU_NoSelfDelete>
 {
 public:
    virtual ~cUnknownPropertyStore() {}; 

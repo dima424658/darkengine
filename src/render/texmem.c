@@ -81,6 +81,7 @@
 // - void texmem_free_idx(int idx)
 //     frees up the texture and array usage associated with idx
 
+#include <image_pixels_c.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -278,8 +279,11 @@ static void _texmem_unuse_handle(int handle)
 // in dbg, keeps a count to try and stay on top of usage
 grs_bitmap *texmem_convert_tmap(grs_bitmap *bm)
 {
+   grs_bitmap *mapped;
    DoIfDBG(tm_cnt++);
-   return create_mipmapped_texture(bm);
+   mapped = create_mipmapped_texture(bm);
+   ResImageCloneSource(bm, mapped);
+   return mapped;
 }
 
 // actually frees the texture mem from the pointer
@@ -291,6 +295,7 @@ void texmem_free_tmap(grs_bitmap *bm)
 #endif
    if (bm->align!=0)
       palmgr_release_slot(bm->align);
+   ResImageForgetSource(bm);
    free_mipmapped_texture(bm,TRUE);
 }
 

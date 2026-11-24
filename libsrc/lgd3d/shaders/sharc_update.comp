@@ -1,0 +1,26 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#define SHARC_UPDATE 1
+#define SHARC_QUERY 0
+#include "sharc_bridge.glsl"
+layout(local_size_x=8,local_size_y=8) in;
+void main() {
+    uvec2 tile=gl_GlobalInvocationID.xy;
+    RTXDI_RandomSamplerState rng=RTXDI_InitRandomSampler(tile,di.runtime.frameIndex,31);
+    uvec2 pixel=tile*gi.counts.y+uvec2(RTXDI_GetNextRandom(rng)*gi.counts.y,RTXDI_GetNextRandom(rng)*gi.counts.y);
+    if(any(greaterThanEqual(pixel,di.dimensionsFrame.xy)))return;
+    IndirectSurface hit=rootSurface(ivec2(pixel));if(!hit.surface.valid)return;
+    SharcParameters p=buildSharcParameters();SharcState state;SharcInit(state);
+    for(uint bounce=0;bounce<4;++bounce) {
+        // This clamp belongs only to Update; query footprints use the roughness
+        // of the actual lobe which launched the just-traced segment.
+        hit.surface.material.rough=max(hit.surface.material.rough,gi.tuning.y);
+        if(gi.addresses[0].w!=0u)atomicAdd(sharcStats.updateVertices,1);
+        if(!SharcUpdateHit(p,state,cacheHit(hit),indirectDirect(hit,rng),RTXDI_GetNextRandom(rng)))break;
+        if(bounce==3)break;
+        vec3 direction,weight;bool glossy;if(!sampleContinuation(hit,rng,direction,weight,glossy))break;
+        SharcSetThroughput(state,weight);
+        IndirectSurface next;if(!traceIndirect(hit,direction,next)){SharcUpdateMiss(p,state,vec3(0));break;}
+        hit=next;
+    }
+}

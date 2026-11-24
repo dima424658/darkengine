@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include <string>
 
 class cVulkanSceneRenderer;
 
@@ -26,7 +27,7 @@ public:
    bool Initialize(const std::vector<const char *> &surfaceExtensions,
       const tSurfaceFactory &createSurface, uint32_t drawableWidth,
       uint32_t drawableHeight, int physicalDeviceIndex, char *error,
-      unsigned errorCapacity);
+      unsigned errorCapacity, bool enableWorldRendering = false);
    void Shutdown();
    // Applied when creating or recreating the swapchain.
    void SetVSync(bool enabled) { m_vsync = enabled; }
@@ -34,15 +35,19 @@ public:
    // BeginFrame acquires a swapchain image and starts its render pass. The
    // returned command buffer is valid until EndFrame submits and presents it.
    bool BeginFrame(const std::array<float, 4> &clearColor,
-      vk::CommandBuffer *commandBuffer);
-   bool EndFrame();
-   // Copies RGBA8 storage (including packed legacy canvases) into a reusable
-   // mapped staging allocation. A slot is reused only after its fence signals.
+      vk::CommandBuffer *commandBuffer,
+      const std::function<void(vk::CommandBuffer, uint32_t)> &prepare = {});
+   bool EndFrame(vk::CommandBuffer preparation = {});
+   // Upload storage is reused only after its fence signals.
    bool SubmitUpload(const void *pixels, int width, int height, int rowBytes,
       const std::function<void(vk::CommandBuffer, vk::Buffer)> &record);
    bool Resize(uint32_t drawableWidth, uint32_t drawableHeight);
    bool RecreateSurface(const tSurfaceFactory &createSurface,
       uint32_t drawableWidth, uint32_t drawableHeight);
+   bool WorldRenderingEnabled() const { return m_worldRenderingEnabled; }
+   bool WorldRayTracing() const {return m_worldRenderingEnabled && m_worldRayTracing;}
+   bool WorldRenderingSupported() const { return m_worldRenderingSupported; }
+   const std::string &WorldRenderingUnavailableReason() const { return m_worldRenderingUnavailable; }
    bool NeedsSwapchainRecreation() const { return m_recreateSwapchain; }
    bool NeedsSurfaceRecreation() const { return m_surfaceLost; }
 
@@ -95,6 +100,9 @@ private:
    void CollectCompletedUploads();
    std::unique_ptr<sPendingUpload> AcquireUpload(vk::DeviceSize bytes);
 
+   bool m_worldRenderingSupported{}, m_worldRenderingEnabled{};
+   bool m_worldRayTracing{};
+   std::string m_worldRenderingUnavailable;
    vk::raii::Context m_raiiContext;
    std::vector<std::unique_ptr<sPendingUpload>> m_pendingUploads;
    size_t m_pendingUploadHead{};
@@ -122,7 +130,6 @@ private:
    std::vector<vk::raii::Semaphore> m_imageAvailable;
    std::vector<vk::raii::Semaphore> m_renderFinished;
    std::vector<vk::raii::Fence> m_inFlightFences;
-   std::vector<vk::Fence> m_imageFences;
    uint32_t m_frameIndex{};
    uint32_t m_acquiredImage{};
    bool m_frameActive{};

@@ -1,0 +1,28 @@
+# NRD 4.18's GLSL front end retains one HLSL-only [flatten] hint in an SG
+# helper. Omit that optimization hint in a generated copy; preserve all SDK
+# code/copyrights, and never modify the submodule checkout.
+function(dark_prepare_nrd_glsl output_dir)
+  set(source "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../3rdparty/NRD/Shaders/NRD.hlsli")
+  if(NOT EXISTS "${source}")
+    message(FATAL_ERROR "Initialize the NRD submodule before building the RTX surface shaders")
+  endif()
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${source}")
+  file(READ "${source}" contents)
+  string(REPLACE "[flatten]" "" contents "${contents}")
+  file(MAKE_DIRECTORY "${output_dir}")
+  # Front-end encoding is locked to the native adapter's NRD build settings.
+  set(config "#define NRD_NORMAL_ENCODING 2\n#define NRD_ROUGHNESS_ENCODING 1\n")
+  if(EXISTS "${output_dir}/NRDConfig.hlsli")
+    file(READ "${output_dir}/NRDConfig.hlsli" previous_config)
+  endif()
+  if(NOT config STREQUAL previous_config)
+    file(WRITE "${output_dir}/NRDConfig.hlsli" "${config}")
+  endif()
+  set(destination "${output_dir}/NRD_glsl.hlsli")
+  if(EXISTS "${destination}")
+    file(READ "${destination}" previous)
+  endif()
+  if(NOT contents STREQUAL previous)
+    file(WRITE "${destination}" "${contents}")
+  endif()
+endfunction()

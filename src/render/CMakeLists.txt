@@ -71,6 +71,9 @@ set(dark_render_sources
   texprop.c
   texsave.cpp
   textarch.cpp
+  worldscene.cpp
+  worldscene_models.cpp
+  worldscene_pbr.cpp
   weather.cpp
 )
 

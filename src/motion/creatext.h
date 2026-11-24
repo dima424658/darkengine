@@ -43,6 +43,7 @@ EXTERN void CreatureFreeze(ObjID objID);
 EXTERN void CreatureUnFreeze(ObjID objID);
 
 EXTERN BOOL CreatureGetRenderHandle(const ObjID objID, long *pHandle);
+EXTERN int CreatureGetRenderJointCount(ObjID objID);
 
 EXTERN BOOL CreatureGetHeadTransform(ObjID objID, mxs_trans *pHead);
 

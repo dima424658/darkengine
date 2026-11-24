@@ -11,6 +11,7 @@
 
 namespace
 {
+bool nativeWorldDrawing=true;
 class cVulkanRenderBackend
 {
 public:
@@ -26,6 +27,7 @@ public:
 
    void SetRenderer(cVulkanSceneRenderer *renderer)
    {
+      nativeWorldDrawing=true;
       m_renderer = renderer;
       if (m_renderer)
          m_renderer->SetGamma(m_gamma);
@@ -477,9 +479,13 @@ void RenderBackendDestroyTexture(void *texture)
 }
 void RenderBackendBindTexture(int level, void *texture)
 { Backend().BindTexture(level, texture); }
+int RenderBackendSetNativeWorldDrawing(int enabled) {
+   const int old=nativeWorldDrawing?1:0;nativeWorldDrawing=enabled!=0;return old;
+}
 int RenderBackendDraw(int primitive, const sRenderBackendVertex *vertices,
    int vertexCount, int useSecondTexture)
 {
+   if(!nativeWorldDrawing)return vertices && vertexCount>0;
    try
    {
       return Backend().Draw(primitive, vertices, vertexCount,

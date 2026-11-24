@@ -121,12 +121,27 @@ sPropertyDesc objshad_render_desc =
    }
 };
 
+// Observers only advance a revision; property values and donor invalidation
+// continue through the existing property system. Listener storage owns no
+// renderer objects and remains valid through legacy shutdown callbacks.
+static unsigned long long materialPropertyRevision = 1;
+unsigned long long RenderMaterialPropertyRevision(void) { return materialPropertyRevision; }
+static void LGAPI MaterialPropertyChanged(sPropertyListenMsg *, PropListenerData)
+{
+   ++materialPropertyRevision;
+}
+static void LGAPI MaterialHierarchyChanged(const sHierarchyMsg *, HierarchyListenerData)
+{
+   ++materialPropertyRevision;
+}
+
 IBoolProperty *g_pObjShadowProp = NULL;
 
 
 static void ObjShadPropInit(void)
 {
    g_pObjShadowProp = CreateBoolProperty(&objshad_render_desc, OBJSHAD_IMP);
+   g_pObjShadowProp->Listen(kListenPropModify|kListenPropSet|kListenPropUnset|kListenPropLoad, MaterialPropertyChanged, NULL);
 }
 
 
@@ -153,6 +168,7 @@ IFloatProperty *gAlphaRenderProp;
 static void AlphaRenderPropInit(void)
 {
    gAlphaRenderProp = CreateFloatProperty(&alpha_render_desc, ALPHA_IMP);
+   gAlphaRenderProp->Listen(kListenPropModify|kListenPropSet|kListenPropUnset|kListenPropLoad, MaterialPropertyChanged, NULL);
 }
 
 ////////////////////////////////////////////////////////////
@@ -177,6 +193,7 @@ IFloatProperty *g_pSelfIlluminationProp;
 static void SelfIllumPropInit(void)
 {
    g_pSelfIlluminationProp = CreateFloatProperty(&self_illum_render_desc, SELF_ILLUM_IMP);
+   g_pSelfIlluminationProp->Listen(kListenPropModify|kListenPropSet|kListenPropUnset|kListenPropLoad, MaterialPropertyChanged, NULL);
 }
 
 ////////////////////////////////////////////////////////////
@@ -576,6 +593,9 @@ static sPropertyDesc _g_IsInvisibleProperty =
 
 void RenderPropsInit(void)
 {
+   ++materialPropertyRevision;
+   AutoAppIPtr(TraitManager);
+   pTraitManager->Listen(MaterialHierarchyChanged, NULL);
    RefProp = new cRefProp(&refPropDesc);
    RendTypePropInit();
    JointPosPropInit();

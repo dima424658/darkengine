@@ -11,7 +11,8 @@
 #include <proptype.h>
 #include <dataopst.h>
 
-F_DECLARE_INTERFACE(IPropertyStore); 
+F_DECLARE_INTERFACE(IPropertyStore);
+EXTERN_C const GUID CDECL FAR IID_IDarkPropertyStore;
 //
 // Property Storage Interface
 //

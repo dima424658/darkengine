@@ -1,0 +1,59 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#define SHARC_UPDATE 0
+#define SHARC_QUERY 1
+#include "sharc_bridge.glsl"
+layout(local_size_x=8,local_size_y=8) in;
+vec3 queryPath(IndirectSurface root,vec3 direction,inout RTXDI_RandomSamplerState rng,out float firstDistance,bool glossy) {
+    SharcParameters p=buildSharcParameters();vec3 throughput=vec3(1),radiance=vec3(0);firstDistance=0;
+    IndirectSurface origin=root;
+    for(uint bounce=0;bounce<3;++bounce) {
+        IndirectSurface hit;if(!traceIndirect(origin,direction,hit))break;
+        if(bounce==0)firstDistance=hit.distance;
+        uint level=HashGridGetLevel(hit.surface.position,p.hashGridParameters);
+        float voxel=HashGridGetVoxelSize(level,p.hashGridParameters);
+        float rough=min(origin.surface.material.rough,.99),a=rough*rough;
+        float footprint=2*hit.distance*sqrt(.5*a*a/max(1-a*a,1e-6));
+        vec3 cached;if(gi.addresses[0].w!=0u)atomicAdd(sharcStats.cacheQueries,1);
+        // The G-buffer root is never queried. Eligibility describes the ray
+        // segment just traced, including the first continuation from that root.
+        if(gi.addresses[0].z!=0u && hit.distance>voxel*1.732051 && (!glossy || footprint>voxel) && SharcGetCachedRadiance(p,cacheHit(hit),cached,false)) {
+            if(gi.addresses[0].w!=0u)atomicAdd(sharcStats.cacheHits,1);radiance+=throughput*cached;break;
+        }
+        if(gi.addresses[0].w!=0u)atomicAdd(sharcStats.referenceVertices,1);
+        radiance+=throughput*(indirectDirect(hit,rng)+hit.emission);
+        vec3 weight;if(!sampleContinuation(hit,rng,direction,weight,glossy))break;
+        throughput*=weight;origin=hit;
+    }
+    return radiance;
+}
+void main() {
+    uvec2 pixel=gl_GlobalInvocationID.xy;if(any(greaterThanEqual(pixel,di.dimensionsFrame.xy)))return;
+    IndirectSurface root=rootSurface(ivec2(pixel));if(!root.surface.valid)return;
+    RTXDI_RandomSamplerState rng=RTXDI_InitRandomSampler(pixel,di.runtime.frameIndex,43);
+    vec3 diffuseFactor,specularFactor;
+    NRD_MaterialFactors(root.surface.normal,root.surface.view,root.surface.material.base*(1-root.surface.material.metal),mix(vec3(.04),root.surface.material.base,root.surface.material.metal),root.surface.material.rough,diffuseFactor,specularFactor);
+    float diffuseDistance=0,specularDistance=0;
+    vec3 direction=cosineDirection(root.surface.normal,rng);
+    RAB_LightSample unitLight=RAB_EmptyLightSample();unitLight.direction=direction;unitLight.radiance=vec3(1);
+    vec3 diffuseWeight,unused;directBrdf(root.surface,unitLight,diffuseWeight,unused);
+    diffuseWeight/=max(dot(root.surface.normal,direction)/3.14159265,1e-6);
+    float packedAo=texelFetch(surfaceEmission,ivec2(pixel),0).a;
+    float occlusion=clamp(1-4*(packedAo-(packedAo>.5?1:0)),0,1);
+    vec3 diffuse=vec3(0);
+    if(dot(root.geometryNormal,direction)>0)
+        diffuse=queryPath(root,direction,rng,diffuseDistance,false)*diffuseWeight/max(diffuseFactor,vec3(.0001));
+    // GGX NDF sample for the primary specular lobe, with its own estimator/PDF.
+    float u=min(RTXDI_GetNextRandom(rng),.999999),phi=6.2831853*RTXDI_GetNextRandom(rng);
+    float a=max(root.surface.material.rough*root.surface.material.rough,.002),c=sqrt((1-u)/(1+(a*a-1)*u));
+    vec3 n=root.surface.normal,t=normalize(cross(n,abs(n.z)<.9?vec3(0,0,1):vec3(0,1,0)));
+    vec3 h=t*(sqrt(max(1-c*c,0))*cos(phi))+cross(n,t)*(sqrt(max(1-c*c,0))*sin(phi))+n*c;
+    direction=reflect(-root.surface.view,h);vec3 specular=vec3(0);
+    if(dot(n,direction)>0 && dot(root.geometryNormal,direction)>0) {
+        float d=c*c*(a*a-1)+1,pdf=a*a/(3.14159265*d*d)*c/(4*max(dot(root.surface.view,h),1e-6));
+        unitLight.direction=direction;vec3 weight;directBrdf(root.surface,unitLight,unused,weight);
+        specular=queryPath(root,direction,rng,specularDistance,true)*weight/max(pdf,1e-8)/max(specularFactor,vec3(.0001));
+    }
+    imageStore(diffuseOutput,ivec2(pixel),vec4(imageLoad(diffuseOutput,ivec2(pixel)).rgb+diffuse*gi.tuning.w*occlusion,diffuseDistance));
+    imageStore(specularOutput,ivec2(pixel),vec4(imageLoad(specularOutput,ivec2(pixel)).rgb+specular*gi.tuning.w,specularDistance));
+}

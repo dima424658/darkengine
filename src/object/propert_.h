@@ -23,7 +23,8 @@
 #include <string.h>
 
 F_DECLARE_INTERFACE(ITrait);
-F_DECLARE_INTERFACE(IPropertyStore); 
+F_DECLARE_INTERFACE(IPropertyStore);
+EXTERN_C const GUID CDECL FAR IID_IDarkPropertyStore;
 F_DECLARE_INTERFACE(INetManager);
 F_DECLARE_INTERFACE(IObjectNetworking);
 
@@ -367,7 +368,7 @@ public:
          this->AddRef();
          return S_OK;
       }
-      if (id == IID_IPropertyStore)
+      if (id == IID_IDarkPropertyStore)
       {
          *ppI = &mStoreDel; 
          this->AddRef();

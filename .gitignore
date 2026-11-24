@@ -6,6 +6,9 @@ __pycache__/
 # Prerequisites
 *.d
 
+# Generated Python bytecode
+__pycache__/
+
 # Compiled Object files
 *.slo
 *.lo

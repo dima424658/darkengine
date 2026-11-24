@@ -1,0 +1,78 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#include "rtxdi_bridge.glsl"
+layout(local_size_x=8,local_size_y=8) in;
+// Spatial reuse reads only temporal reservoirs. Final visibility/shading can
+// therefore execute in the same invocation and publish the completed history
+// once, without an intermediate full-screen store, barrier and reload.
+void shadeReservoir(RAB_Surface surface,RTXDI_DIReservoir reservoir,uvec2 pixel) {
+    vec3 diffuse=vec3(0),specular=vec3(0);float hitDistance=0;
+    if(surface.valid && RTXDI_IsValidDIReservoir(reservoir)) {
+        RAB_LightSample light=RAB_SamplePolymorphicLight(RAB_LoadLightInfo(RTXDI_GetDIReservoirLightIndex(reservoir),false),surface,RTXDI_GetDIReservoirSampleUV(reservoir));
+        bool visible=RAB_GetConservativeVisibility(surface,light);
+        if(visible){directBrdf(surface,light,diffuse,specular);diffuse*=RTXDI_GetDIReservoirInvPdf(reservoir);specular*=RTXDI_GetDIReservoirInvPdf(reservoir);hitDistance=light.distance;}
+        // Visibility-aware proposals and cross-surface normalization agree on
+        // the traced distribution. Never reuse final visibility across frames.
+        RTXDI_StoreVisibilityInDIReservoir(reservoir,visible?vec3(1):vec3(0),true);
+    }
+    if(surface.valid) {
+        vec3 diffuseFactor,specularFactor;NRD_MaterialFactors(surface.normal,surface.view,surface.material.base*(1-surface.material.metal),mix(vec3(.04),surface.material.base,surface.material.metal),surface.material.rough,diffuseFactor,specularFactor);
+        diffuse/=max(diffuseFactor,vec3(.0001));specular/=max(specularFactor,vec3(.0001));
+    }
+    imageStore(diffuseOutput,ivec2(pixel),vec4(diffuse,hitDistance));imageStore(specularOutput,ivec2(pixel),vec4(specular,hitDistance));
+    RTXDI_StoreDIReservoir(reservoir,di.addressing,pixel,di.counts.w);
+}
+void main() {
+    uvec2 pixel=gl_GlobalInvocationID.xy;if(any(greaterThanEqual(pixel,di.dimensionsFrame.xy)))return;
+    RAB_Surface surface=RAB_GetGBufferSurface(ivec2(pixel),false);
+    RTXDI_RandomSamplerState rng=RTXDI_InitRandomSampler(pixel,di.runtime.frameIndex,DI_PASS+1);
+    RTXDI_DIReservoir reservoir=RTXDI_EmptyDIReservoir();
+#if DI_PASS == 0
+    if(surface.valid) {
+        uint candidates=surface.offset==0xffffffffu?di.counts.x:surface.lightCount;
+        for(uint i=0;i<di.counts.z && candidates>0;++i) {
+            uint index=min(uint(RTXDI_GetNextRandom(rng)*float(candidates)),candidates-1);
+            if(surface.offset!=0xffffffffu)index=links.data[surface.offset+index];
+            vec2 uv=vec2(RTXDI_GetNextRandom(rng),RTXDI_GetNextRandom(rng));
+            RAB_LightSample light=RAB_SamplePolymorphicLight(RAB_LoadLightInfo(index,false),surface,uv);
+            // The proposal came from this receiver list, so initial membership
+            // is guaranteed. Temporal/spatial reuse still validates the links.
+            RTXDI_StreamSample(reservoir,index,uv,RTXDI_GetNextRandom(rng),directTargetPdf(light,surface),float(candidates));
+        }
+        RTXDI_FinalizeResampling(reservoir,1,float(di.counts.z));
+        reservoir.M=1;
+        if(RTXDI_IsValidDIReservoir(reservoir)) {
+            RAB_LightSample light=RAB_SamplePolymorphicLight(RAB_LoadLightInfo(RTXDI_GetDIReservoirLightIndex(reservoir),false),surface,RTXDI_GetDIReservoirSampleUV(reservoir));
+            if(!RAB_GetConservativeVisibility(surface,light))RTXDI_StoreVisibilityInDIReservoir(reservoir,vec3(0),true);
+        }
+    }
+    RTXDI_StoreDIReservoir(reservoir,di.addressing,pixel,0);
+#elif DI_PASS == 1
+    reservoir=RTXDI_LoadDIReservoir(di.addressing,pixel,0);
+    vec4 motion=texelFetch(surfaceMotion,ivec2(pixel),0);
+    if(surface.valid && motion.w>.5 && di.dimensionsFrame.w!=0u) {
+        RTXDI_DITemporalResamplingParameters parameters;
+        parameters.maxHistoryLength=20;parameters.biasCorrectionMode=RTXDI_BIAS_CORRECTION_RAY_TRACED;
+        parameters.depthThreshold=.05;parameters.normalThreshold=.9;
+        parameters.enableVisibilityShortcut=0;parameters.enablePermutationSampling=0;parameters.uniformRandomNumber=0;
+        parameters.permutationSamplingThreshold=0;parameters.enableFallbackSampling=0;parameters.pad1=parameters.pad2=parameters.pad3=0;
+        ivec2 previousPixel;RAB_LightSample selected=RAB_EmptyLightSample();
+        reservoir=RTXDI_DITemporalResampling(pixel,surface,reservoir,rng,di.runtime,di.addressing,
+            vec3(motion.xy*vec2(di.dimensionsFrame.xy)+di.jitterDelta.xy,motion.z-surface.depth),5u-di.counts.w,parameters,previousPixel,selected);
+    }
+    RTXDI_StoreDIReservoir(reservoir,di.addressing,pixel,1);
+#elif DI_PASS == 2
+    reservoir=RTXDI_LoadDIReservoir(di.addressing,pixel,1);
+    if(surface.valid) {
+        RTXDI_DISpatialResamplingParameters parameters;
+        parameters.numSamples=4;parameters.numDisocclusionBoostSamples=8;parameters.samplingRadius=16;
+        parameters.biasCorrectionMode=RTXDI_BIAS_CORRECTION_RAY_TRACED;parameters.depthThreshold=.05;parameters.normalThreshold=.9;
+        parameters.targetHistoryLength=8;parameters.enableMaterialSimilarityTest=1;parameters.discountNaiveSamples=0;
+        parameters.neighborOffsetSamplingMode=0;parameters.pad2=parameters.pad3=0;
+        RAB_LightSample selected=RAB_EmptyLightSample();
+        reservoir=RTXDI_DISpatialResampling(pixel,surface,reservoir,rng,di.runtime,di.addressing,1,parameters,selected);
+    }
+    shadeReservoir(surface,reservoir,pixel);
+
+#endif
+}
