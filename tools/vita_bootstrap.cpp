@@ -1,4 +1,5 @@
 #include "vita_video_settings.hpp"
+#include "vita_controls.hpp"
 
 #include <psp2/gxm.h>
 #include <psp2/kernel/processmgr.h>
@@ -6,6 +7,7 @@
 #include <vitaGL.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <string>
 
@@ -49,6 +51,7 @@ constexpr int kSliderWidth = 500;
 constexpr int kSliderHeight = 42;
 constexpr int kBrightnessY = 190;
 constexpr int kGammaY = 310;
+constexpr int kTriggerSize = 60;
 
 GLuint CompileShader(GLenum type, const char *source)
 {
@@ -214,6 +217,30 @@ void DrawSettings(const sShader &shader,
               selected == 1, 0.85f, 0.52f, 0.2f, 'G');
 }
 
+void DrawControlLayouts(const sShader &shader,
+                        const DarkVitaVideo::Settings &settings,
+                        DarkVitaControls::Layout layout,
+                        bool showTriggerIcons)
+{
+   for (int index = 0; index < 3; ++index)
+   {
+      const bool active =
+         static_cast<int>(layout) == index;
+      DrawRect(shader, settings, 400 + index * 54, 490, 44, 8,
+               active ? 0.95f : 0.25f,
+               active ? 0.95f : 0.28f,
+               active ? 1.0f : 0.32f);
+   }
+   if (showTriggerIcons)
+   {
+      DrawRect(shader, settings, 16, kScreenHeight - kTriggerSize - 16,
+               kTriggerSize, kTriggerSize, 0.55f, 0.12f, 0.12f);
+      DrawRect(shader, settings, kScreenWidth - kTriggerSize - 16,
+               kScreenHeight - kTriggerSize - 16, kTriggerSize, kTriggerSize,
+               0.12f, 0.45f, 0.55f);
+   }
+}
+
 bool SaveSettings(const std::string &path,
                   const DarkVitaVideo::Settings &settings)
 {
@@ -225,6 +252,22 @@ bool SaveSettings(const std::string &path,
       return false;
    }
    return true;
+}
+
+void LogTriggerAction(const char *trigger,
+                      DarkVitaControls::Action action)
+{
+   if (action != DarkVitaControls::Action::None)
+      SDL_Log("Vita %s action: %d", trigger, static_cast<int>(action));
+}
+
+void SaveControls(const std::string &path,
+                  const DarkVitaControls::Settings &settings)
+{
+   std::string error;
+   if (!DarkVitaControls::Save(path, settings, &error))
+      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                   "Could not save vita_controls.cfg: %s", error.c_str());
 }
 
 void ChangeSlider(DarkVitaVideo::Settings &settings, int selected, int delta,
@@ -285,6 +328,8 @@ int main()
 
    const std::string optionsPath =
       std::string(DARK_VITA_ASSET_ROOT) + "/vita_options.cfg";
+   const std::string controlsPath =
+      std::string(DARK_VITA_ASSET_ROOT) + "/vita_controls.cfg";
    DarkVitaVideo::LoadResult loaded = DarkVitaVideo::Load(optionsPath);
    DarkVitaVideo::Settings settings = loaded.settings;
    if (!loaded.error.empty())
@@ -293,6 +338,10 @@ int main()
                    loaded.error.c_str());
    else if (!loaded.found)
       SDL_Log("Using neutral Vita Slim video settings");
+   DarkVitaControls::Settings controls =
+      DarkVitaControls::Load(controlsPath);
+   SDL_Log("Vita control layout: %s",
+           DarkVitaControls::LayoutName(controls.layout));
 
    SDL_Log("Vita bootstrap: %s (%s), assets: %s",
            DARK_VITA_TITLE, DARK_VITA_TITLE_ID, DARK_VITA_ASSET_ROOT);
@@ -313,6 +362,10 @@ int main()
    bool running = true;
    bool touchChanged = false;
    int selected = 0;
+   uint32_t triggerIconsVisibleUntil = 0;
+   bool hasShownTriggerIcons = false;
+   DarkVitaControls::TouchTrigger leftTrigger;
+   DarkVitaControls::TouchTrigger rightTrigger;
    while (running)
    {
       SDL_Event event;
@@ -339,22 +392,100 @@ int main()
             case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
                ChangeSlider(settings, selected, 2, optionsPath);
                break;
+            case SDL_CONTROLLER_BUTTON_A:
+            {
+               int layout = static_cast<int>(controls.layout);
+               controls.layout =
+                  DarkVitaControls::ClampLayout(layout - 1);
+               SaveControls(controlsPath, controls);
+               SDL_Log("Vita control layout: %s",
+                       DarkVitaControls::LayoutName(controls.layout));
+               break;
+            }
+            case SDL_CONTROLLER_BUTTON_B:
+            {
+               int layout = static_cast<int>(controls.layout);
+               controls.layout =
+                  DarkVitaControls::ClampLayout(layout + 1);
+               SaveControls(controlsPath, controls);
+               SDL_Log("Vita control layout: %s",
+                       DarkVitaControls::LayoutName(controls.layout));
+               break;
+            }
             default:
                break;
             }
          }
          else if (event.type == SDL_FINGERDOWN ||
                   event.type == SDL_FINGERMOTION)
+         {
+            const uint32_t now = SDL_GetTicks();
             touchChanged |= SetSliderFromTouch(
                      settings, selected, event.tfinger.x, event.tfinger.y);
-         else if (event.type == SDL_FINGERUP && touchChanged)
+            if (DarkVitaControls::PointInTriggerCorner(
+                   event.tfinger.x, event.tfinger.y,
+                   DarkVitaControls::Trigger::Left))
+            {
+               DarkVitaControls::UpdateTouchTrigger(
+                  controls.layout, DarkVitaControls::Trigger::Left,
+                  leftTrigger, event.tfinger.fingerId, true, now);
+               triggerIconsVisibleUntil = now + 2200;
+               hasShownTriggerIcons = true;
+            }
+            if (DarkVitaControls::PointInTriggerCorner(
+                   event.tfinger.x, event.tfinger.y,
+                   DarkVitaControls::Trigger::Right))
+            {
+               DarkVitaControls::UpdateTouchTrigger(
+                  controls.layout, DarkVitaControls::Trigger::Right,
+                  rightTrigger, event.tfinger.fingerId, true, now);
+               triggerIconsVisibleUntil = now + 2200;
+               hasShownTriggerIcons = true;
+            }
+         }
+         else if (event.type == SDL_FINGERUP)
          {
-            SaveSettings(optionsPath, settings);
-            touchChanged = false;
+            if (touchChanged)
+            {
+               SaveSettings(optionsPath, settings);
+               touchChanged = false;
+            }
+            const uint32_t now = SDL_GetTicks();
+            LogTriggerAction("LB", DarkVitaControls::UpdateTouchTrigger(
+               controls.layout, DarkVitaControls::Trigger::Left,
+               leftTrigger, event.tfinger.fingerId, true, now));
+            LogTriggerAction("RB", DarkVitaControls::UpdateTouchTrigger(
+               controls.layout, DarkVitaControls::Trigger::Right,
+               rightTrigger, event.tfinger.fingerId, true, now));
+            const DarkVitaControls::Action leftAction =
+               DarkVitaControls::UpdateTouchTrigger(
+                  controls.layout, DarkVitaControls::Trigger::Left,
+                  leftTrigger, event.tfinger.fingerId, false, now);
+            const DarkVitaControls::Action rightAction =
+               DarkVitaControls::UpdateTouchTrigger(
+                  controls.layout, DarkVitaControls::Trigger::Right,
+                  rightTrigger, event.tfinger.fingerId, false, now);
+            LogTriggerAction("LB", leftAction);
+            LogTriggerAction("RB", rightAction);
          }
       }
 
       DrawSettings(shader, settings, selected);
+      const uint32_t now = SDL_GetTicks();
+      if (leftTrigger.down)
+         LogTriggerAction("LB", DarkVitaControls::UpdateTouchTrigger(
+            controls.layout, DarkVitaControls::Trigger::Left,
+            leftTrigger, leftTrigger.fingerId, true, now));
+      if (rightTrigger.down)
+         LogTriggerAction("RB", DarkVitaControls::UpdateTouchTrigger(
+            controls.layout, DarkVitaControls::Trigger::Right,
+            rightTrigger, rightTrigger.fingerId, true, now));
+      const bool showTriggerIcons =
+         leftTrigger.down || rightTrigger.down ||
+         (hasShownTriggerIcons &&
+          static_cast<int32_t>(triggerIconsVisibleUntil - now) > 0);
+      DrawControlLayouts(shader, settings, controls.layout,
+                         showTriggerIcons);
       vglSwapBuffers(GL_FALSE);
       SDL_Delay(16);
    }

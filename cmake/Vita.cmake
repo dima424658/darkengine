@@ -36,6 +36,7 @@ foreach(_platform IN LISTS DARK_VITA_PLATFORMS)
     "${PROJECT_SOURCE_DIR}/tools/vita_bootstrap.cpp"
     "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_paths.cpp"
     "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_subtitles.cpp"
+    "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_controls.cpp"
     "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_video_settings.cpp"
   )
   target_include_directories("${_target}" PRIVATE
