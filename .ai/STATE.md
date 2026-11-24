@@ -1,9 +1,9 @@
 # CURRENT RUNTIME STATE
 
 ## CURRENT WORK BLOCK
-- Objective: TASK 10 - implement the Ghost Check counter and Vita-safe mission/readback feedback.
-- Progress: TASK 6-9 are implemented and verified. Three Vita VPKs build locally and contain `eboot.bin`; THFG00001/2/3 title metadata and names are correct. TASK 7 VRAM, TASK 8 EFX, and TASK 9 30/60 FPS modules pass host regressions.
-- Blockers: Ghost Check UI semantics require a host-safe mission summary contract before engine integration.
+- Objective: Project handheld remaster pipeline complete; physical Vita 2000 calibration remains the only external hardware step.
+- Progress: TASK 6-12 are complete in host and Vita build tooling. The compact trilogy bootstrap rebuilds locally; THFG00001/2/3 VPKs contain eboot.bin and correct title names/IDs.
+- Blockers: Physical Vita runtime, shader visual calibration, and OpenAL device acoustics await hardware.
 
 ## ENCOUNTERED DEAD ENDS & DEFERRED TASKS
 - 2026-11-24: First real build failed on the nonexistent `SceKernel_stub`; resolved by linking `SceLibKernel_stub`.

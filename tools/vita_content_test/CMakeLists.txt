@@ -12,6 +12,8 @@ add_executable(vita_content_test
   ../../libsrc/platform/vita_texture_limits.cpp
   ../../libsrc/platform/vita_acoustics.cpp
   ../../libsrc/platform/vita_power.cpp
+  ../../libsrc/platform/vita_ghost_check.cpp
+  ../../libsrc/platform/vita_readable_zoom.cpp
 )
 target_include_directories(vita_content_test PRIVATE
   ../../libsrc/platform

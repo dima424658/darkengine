@@ -8,6 +8,7 @@
 #include <lg.h>
 #include <mixerlck.h>
 #include <mprintf.h>
+#include <vita_acoustics.hpp>
 
 #define IS_STREAM  (mStateFlags & kSndFlagStream)
 #define IS_LOOP    (mStateFlags & kSndFlagLooped)
@@ -364,20 +365,9 @@ void cALSndMixer::UpdateEffect(void)
    if (!mEffectsAvailable || !MakeCurrent())
       return;
 
-   struct sPreset { float density, diffusion, gain, gainHF, decay, decayHF; };
-   static const sPreset presets[kREVERB_COUNT] = {
-      {1.f,1.f,.32f,.89f,1.49f,.83f}, {1.f,1.f,.25f,.10f,.17f,.10f}, {1.f,1.f,.42f,.59f,.40f,.83f},
-      {1.f,1.f,.32f,.25f,1.49f,.54f}, {1.f,1.f,.32f,.00f,.50f,.10f}, {1.f,1.f,.50f,.71f,2.31f,.64f},
-      {1.f,1.f,.40f,.58f,4.32f,.59f}, {1.f,1.f,.50f,.56f,3.92f,.70f}, {1.f,1.f,.50f,1.00f,2.91f,1.30f},
-      {1.f,1.f,.36f,.45f,7.24f,.33f}, {1.f,1.f,.50f,.32f,10.05f,.23f}, {1.f,1.f,.25f,.01f,.30f,.10f},
-      {1.f,1.f,.36f,.71f,1.49f,.59f}, {1.f,1.f,.44f,.64f,2.70f,.79f}, {1.f,.30f,.32f,.73f,1.49f,.86f},
-      {1.f,.30f,.15f,.54f,1.49f,.54f}, {1.f,.50f,.32f,.67f,1.49f,.67f}, {1.f,.27f,.27f,.21f,1.49f,.21f},
-      {1.f,1.f,1.00f,.32f,1.49f,.83f}, {1.f,.21f,.21f,.50f,1.49f,.50f}, {1.f,1.f,1.00f,1.00f,1.65f,1.50f},
-      {1.f,.80f,.32f,.32f,2.81f,.14f}, {1.f,1.f,.36f,.01f,1.49f,.10f}, {1.f,.50f,.43f,1.00f,8.39f,1.39f},
-      {1.f,.60f,.36f,.63f,17.23f,.56f}, {1.f,.50f,.49f,.84f,7.56f,.91f}
-   };
    const int type = std::max(0, std::min(mReverbSettings.type, kREVERB_COUNT - 1));
-   const sPreset &preset = presets[type];
+   DarkVitaAcoustics::Preset preset =
+      DarkVitaAcoustics::ForRoomType(type);
    float level = preset.gain;
    if (mReverbSettings.flags & kREVERB_FlagLevel)
       level *= std::max(0.0f, std::min(mReverbSettings.level, 1.0f));

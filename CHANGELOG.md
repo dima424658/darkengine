@@ -29,4 +29,12 @@
 
 - 2026-11-24: Completed Handheld Remaster TASK 9. Added Vita 30/60 FPS power profiles with ARM/bus/GPU clock switching and rebuilt separate trilogy VPKs via the local VitaSDK. Verified THFG00001, THFG00002, and THFG00003 metadata and embedded eboot.bin payloads.
 
+- 2026-11-24: Completed Handheld Remaster TASK 10. Added Vita-safe Ghost Check aggregation for detections, alarms, discovered bodies, and kills with persistent mission-summary settings.
+
+- 2026-11-24: Completed Handheld Remaster TASK 11. Added bounded 1x-2x readable zoom for documents and UI text with persisted Vita settings.
+
+- 2026-11-24: Completed Handheld Remaster TASK 12. Verified final compact ARMv7 trilogy bootstrap rebuild and package parity; THFG00001, THFG00002, and THFG00003 VPKs contain eboot.bin and matching title metadata.
+
 - TASK 6 controls: added physical Layout A/B mappings, config-backed custom bindings, per-finger LB/RB touch triggers, and temporary icons; clean host build and CTest passed.
+
+- TASK 6 verification: clean host build/CTest passed and the ARMv7 Vita build regenerated all three bootstrap VPKs; physical-device behavior remains unverified.

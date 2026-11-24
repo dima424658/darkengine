@@ -5,6 +5,8 @@
 #include "vita_texture_limits.hpp"
 #include "vita_acoustics.hpp"
 #include "vita_power.hpp"
+#include "vita_ghost_check.hpp"
+#include "vita_readable_zoom.hpp"
 
 #include <cmath>
 #include <cstdlib>
@@ -283,6 +285,66 @@ void TestPowerProfiles()
    Check(!filesystemError, "remove temporary Vita power settings");
 }
 
+void TestGhostCheck()
+{
+   using namespace DarkVitaGhostCheck;
+   Stats ghostStats;
+   Result result = Evaluate(ghostStats);
+   Check(result.ghost && result.perfect && result.penalties == 0,
+         "zero Ghost Check penalties qualify for ghost and perfect");
+   ghostStats.detections = 1;
+   ghostStats.alarms = 2;
+   ghostStats.bodiesFound = 1;
+   ghostStats.kills = 1;
+   result = Evaluate(ghostStats);
+   Check(!result.ghost && !result.perfect && result.penalties == 5,
+         "Ghost Check aggregates mission penalties safely");
+
+   const std::filesystem::path root =
+      std::filesystem::temp_directory_path() / "thief-vita-ghost-test";
+   std::error_code filesystemError;
+   std::filesystem::remove_all(root, filesystemError);
+   std::filesystem::create_directories(root);
+   const std::string path = (root / "vita_ghost.cfg").string();
+   std::string error;
+   Check(Save(path, ghostStats, &error),
+         "save Vita Ghost Check summary");
+   Stats loaded;
+   Check(Load(path, loaded) &&
+         loaded.detections == 1 && loaded.kills == 1,
+         "load Vita Ghost Check summary");
+   std::filesystem::remove_all(root, filesystemError);
+   Check(!filesystemError, "remove temporary Vita Ghost Check settings");
+}
+
+void TestReadableZoom()
+{
+   using namespace DarkVitaReadableZoom;
+   Check(ClampScale(0.5f) == 1.0f &&
+         ClampScale(3.0f) == 2.0f,
+         "readable zoom stays within 1x-2x bounds");
+   Check(ScaleStep(1.0f, 1) == 1.25f &&
+         ScaleStep(2.0f, 1) == 2.0f &&
+         ScaleStep(1.0f, -1) == 1.0f,
+         "readable zoom steps are bounded");
+
+   const std::filesystem::path root =
+      std::filesystem::temp_directory_path() / "thief-vita-zoom-test";
+   std::error_code filesystemError;
+   std::filesystem::remove_all(root, filesystemError);
+   std::filesystem::create_directories(root);
+   const std::string path = (root / "vita_readables.cfg").string();
+   std::string error;
+   Settings settings{1.75f};
+   Check(Save(path, settings, &error),
+         "save Vita readable zoom");
+   Settings loaded;
+   Check(Load(path, loaded) && loaded.scale == 1.75f,
+         "load Vita readable zoom");
+   std::filesystem::remove_all(root, filesystemError);
+   Check(!filesystemError, "remove temporary Vita readable zoom settings");
+}
+
 void TestControlLayouts()
 {
    using namespace DarkVitaControls;
@@ -405,6 +467,8 @@ int main()
    TestTextureLimits();
    TestAcoustics();
    TestPowerProfiles();
+   TestGhostCheck();
+   TestReadableZoom();
    TestControlLayouts();
    std::cout << "Vita content tests passed\n";
    return 0;
