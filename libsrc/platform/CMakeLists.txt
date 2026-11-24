@@ -4,6 +4,9 @@ if(WIN32)
 else()
  target_sources(dark_platform PRIVATE platform_posix.cpp)
 endif()
+if(DARK_TARGET_VITA)
+ target_sources(dark_platform PRIVATE vita_paths.cpp)
+endif()
 target_include_directories(dark_platform PUBLIC
   "${PROJECT_SOURCE_DIR}/h"
   "${PROJECT_SOURCE_DIR}/libsrc/cpptools"

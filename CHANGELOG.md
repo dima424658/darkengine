@@ -7,3 +7,5 @@
 - Added three staged Vita package layouts for THFG00001, THFG00002, and THFG00003.
 - Deferred real Vita packaging because VitaSDK and Ninja are unavailable in the current environment.
 - Verified the Vita placeholder CMake preset and generated package structure for all three title IDs.
+- Added Vita asset-root resolution for THFG00001, THFG00002, and THFG00003, including preferred write routing.
+- Added and passed the host-side Vita path-routing regression test.

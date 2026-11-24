@@ -1,4 +1,5 @@
 #include <platform_services.h>
+#include "vita_paths.h"
 
 #include <algorithm>
 #include <chrono>
@@ -925,7 +926,8 @@ bool FindPathComponent(const std::filesystem::path &directory,
    return found;
 }
 
-std::string ResolveNativePath(const char *path, bool *exists)
+std::string ResolveNativePath(const char *path, bool *exists,
+                              bool for_write = false)
 {
    std::string text = path ? path : "";
    std::replace(text.begin(), text.end(), '\\', '/');
@@ -933,6 +935,23 @@ std::string ResolveNativePath(const char *path, bool *exists)
       *exists = false;
    if (text.empty())
       return text;
+
+#if defined(DARK_TARGET_VITA)
+   if (!std::filesystem::path(text).is_absolute())
+   {
+      char vitaResolved[4096] = {};
+      bool vitaExists = false;
+      if (PlatformResolveVitaAssetPath(text.c_str(), vitaResolved,
+                                       sizeof(vitaResolved),
+                                       for_write,
+                                       &vitaExists))
+      {
+         if (exists)
+            *exists = vitaExists;
+         return vitaResolved;
+      }
+   }
+#endif
 
    const std::filesystem::path input(text);
 
@@ -1046,7 +1065,8 @@ EXTERN_C FILE *PlatformFopen(const char *path, const char *mode)
    // Reads dominate resource lookup. Reuse the same cache as ResolvePath;
    // writes resolve afresh so newly created files cannot use a cached miss.
    const std::string native = creates
-      ? ResolveNativePath(path, &existed) : ResolveCachedPath(path, nullptr);
+      ? ResolveNativePath(path, &existed, true)
+      : ResolveCachedPath(path, nullptr);
    FILE *file = std::fopen(native.c_str(), mode);
    // Overwriting/appending an existing file does not change directory names.
    if (file && creates && !existed)
@@ -1058,7 +1078,8 @@ EXTERN_C int PlatformOpen(const char *path, int flags, ...)
 {
    bool existed = false;
    const std::string native = (flags & O_CREAT)
-      ? ResolveNativePath(path, &existed) : ResolveCachedPath(path, nullptr);
+      ? ResolveNativePath(path, &existed, true)
+      : ResolveCachedPath(path, nullptr);
    if ((flags & O_CREAT) == 0)
       return open(native.c_str(), flags);
    va_list arguments;

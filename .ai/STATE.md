@@ -1,8 +1,8 @@
 # CURRENT RUNTIME STATE
 
 ## CURRENT WORK BLOCK
-- Objective: TASK 2 - route basic file I/O to the three Vita data roots.
-- Blockers: VitaSDK is unavailable; TASK 2 will add host-verifiable path routing and Vita hooks.
+- Objective: TASK 3 - map the desktop Vulkan/SDL3 rendering pipeline to Vita 960x544 and vitaGL hooks.
+- Blockers: VitaSDK and a Vita GPU validation environment are unavailable; keep a host-verifiable fallback layout.
 
 ## ENCOUNTERED DEAD ENDS & DEFERRED TASKS
 - 2026-11-24: `cmake --preset psvita` failed because `VITASDK` is unset and the VitaSDK CMake toolchain is absent.
