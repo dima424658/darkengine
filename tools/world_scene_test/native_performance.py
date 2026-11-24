@@ -19,6 +19,7 @@ parser.add_argument('--mission',type=int,choices=(1,2),default=2)
 parser.add_argument('--frames',type=int,default=300)
 parser.add_argument('--warmup',type=int,default=60)
 parser.add_argument('--raytracing',type=int,choices=(0,1))
+parser.add_argument('--dlss',default='off',choices=('off','quality','balanced','performance','dlaa'))
 parser.add_argument('--gi',type=int,choices=(0,1))
 parser.add_argument('--visibility',type=int,choices=(0,1))
 parser.add_argument('--portal-drawing',type=int,choices=(0,1))
@@ -67,7 +68,7 @@ with tempfile.TemporaryDirectory(prefix='dark-native-performance-') as temporary
           'content=vanilla',f'mission_loop_test={options.mission}',f'auto_stop={options.frames}',
           'renderer_mode=modern',f'game_screen_size={options.size[0]} {options.size[1]}','game_screen_fit=0',
           'SlowFrame=0','min_frame_time=0','vsync=0',f'game_full_screen={0 if options.windowed else 1}']
-    for key,value in [('renderer_raytracing',options.raytracing),('renderer_gi',options.gi),
+    for key,value in [('renderer_dlss',options.dlss),('renderer_raytracing',options.raytracing),('renderer_gi',options.gi),
                       ('renderer_portal_visibility',options.visibility),
                       ('renderer_portal_rendering',options.portal_drawing)]:
         if value is not None:args.append(f'{key}={value}')
@@ -85,6 +86,9 @@ with tempfile.TemporaryDirectory(prefix='dark-native-performance-') as temporary
     if options.log:options.log.write_text(text)
     errors=any(marker in text or marker in timings for marker in
                ('Validation Error','VUID-','SYNC-HAZARD','FATAL:','Modern world disabled:'))
+    if options.dlss and options.dlss!='off' and f'DLSS enabled: {options.dlss}' not in text:
+        raise SystemExit('requested DLSS mode was not enabled')
+    upscaling={tuple(map(int,row)) for row in re.findall(r'world-upscaling dlss=(\d+) render=(\d+)x(\d+) output=(\d+)x(\d+)',timings)}
     patterns={
         'di':(r'world-di-phases initial_ms=([\d.-]+) temporal_ms=([\d.-]+) spatial_shading_ms=([\d.-]+)',
               ['di_initial_gpu','di_temporal_gpu','di_spatial_shading_gpu']),
@@ -135,6 +139,8 @@ with tempfile.TemporaryDirectory(prefix='dark-native-performance-') as temporary
             'limitations':('Scripted native input near the mission start, no GDB; not broad mission coverage.' if options.route else 'Stationary view, no GDB; not traversal FPS.')+
                           ' Presentation/compositor, tracing and hardware clocks affect timings.',
             'metrics':{}}
+    result['dlss']=options.dlss or 'off'
+    result['upscaling']=[{'enabled':bool(row[0]),'render_size':row[1:3],'output_size':row[3:5]} for row in sorted(upscaling)]
     for group,(_,names) in patterns.items():
         rows=samples[group][options.warmup:]
         for index,name in enumerate(names):

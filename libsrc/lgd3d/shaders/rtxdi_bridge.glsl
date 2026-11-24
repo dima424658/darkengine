@@ -42,6 +42,7 @@ layout(set=1,binding=15,std140) uniform DirectSettings {
     vec4 previousEye;
     RTXDI_ReservoirBufferParameters addressing;
     RTXDI_RuntimeParameters runtime;
+    vec4 jitterDelta; // Current-minus-previous sample jitter, in pixels.
 } di;
 layout(set=1,binding=16,rgba16f) uniform image2D diffuseOutput;
 layout(set=1,binding=17,rgba16f) uniform image2D specularOutput;

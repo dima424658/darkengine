@@ -1,6 +1,7 @@
 #ifndef DARK_VULKAN_WORLD_RENDERER_HPP
 #define DARK_VULKAN_WORLD_RENDERER_HPP
 #include "world_scene.hpp"
+#include "vulkan_dlss.hpp"
 #include <vulkan/vulkan.hpp>
 #include <memory>
 #include <array>
@@ -52,6 +53,11 @@ class VulkanWorldRenderer {
       // and deterministic temporal GPU fixtures. Not a gameplay quality knob.
       float denoiserFrameTimeMilliseconds = 0;
    };
+   // Configure before recording; all GPU work must be retired before changing modes.
+   bool ConfigureDlss(vk::Instance instance, VulkanDlss::Quality quality, std::string &error);
+   bool DlssEnabled() const;
+   VkImage UpscaledImage(uint32_t slot) const;
+   std::array<uint32_t, 2> RenderExtent(uint32_t slot) const;
    void SetRaySettings(const RaySettings &settings);
    struct TextureWorkload {
       uint32_t createdImages = 0, createdStagingBuffers = 0, uploads = 0, evictedImages = 0;

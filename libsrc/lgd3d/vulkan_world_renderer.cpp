@@ -63,9 +63,9 @@ struct SurfaceDrawData {
    uint32_t metadata[4], identity[4];
 };
 struct SurfaceCameraData {
-   float current[16], previous[16], eye[4], forward[4], previousEye[4], previousForward[4];
+   float current[16], previous[16], eye[4], forward[4], previousEye[4], previousForward[4], jitter[4];
 };
-static_assert(sizeof(SurfaceDrawData) == 160 && sizeof(SurfaceCameraData) == 192, "surface shader ABI");
+static_assert(sizeof(SurfaceDrawData) == 160 && sizeof(SurfaceCameraData) == 208, "surface shader ABI");
 struct Frame {
    vk::CommandBuffer command;
    vk::UniqueQueryPool timing;
@@ -88,6 +88,11 @@ struct Frame {
    std::array<double, 4> recordCpuMilliseconds{};
    VulkanWorldRenderer::TextureWorkload textureWorkload;
    float exposure{1};
+#if DARK_DLSS_AVAILABLE
+   std::shared_ptr<Image> upscaled, dlssDepth, dlssMotion;
+   vk::UniqueDescriptorPool dlssPool;
+   vk::DescriptorSet dlssSet;
+#endif
    uint32_t width{}, height{};
    bool nativeDepth = false;
    std::array<float, 3> depthEncoding{};
@@ -125,6 +130,15 @@ struct VulkanWorldRenderer::Impl {
    VulkanRayScene rayScene;
    RaySettings raySettings;
    WorldHistory history;
+   uint64_t jitterFrame = 0;
+   std::array<float, 2> previousJitter{};
+   std::array<float, 2> pendingJitter{};
+#if DARK_DLSS_AVAILABLE
+   VulkanDlss dlss;
+   vk::UniqueDescriptorSetLayout dlssLayout;
+   vk::UniquePipelineLayout dlssPipelineLayout;
+   vk::UniquePipeline dlssPipeline;
+#endif
    vk::UniqueDescriptorSetLayout lightingLayout;
    vk::UniquePipelineLayout lightingPipelineLayout;
    vk::UniqueRenderPass lightingPass, lightingNativePass;
@@ -403,6 +417,32 @@ VulkanWorldRenderer::TextureWorkload VulkanWorldRenderer::GetTextureWorkload(uin
 bool VulkanWorldRenderer::RayTracingEnabled() const {
    return bool(m->device);
 }
+bool VulkanWorldRenderer::ConfigureDlss(vk::Instance instance, VulkanDlss::Quality quality, std::string &error) {
+#if DARK_DLSS_AVAILABLE
+   m->device.waitIdle();
+   m->history.Reset(); m->jitterFrame = 0; m->previousJitter = {};
+   return m->dlss.Initialize(instance, m->physical, m->device, quality, error);
+#else
+   if (quality == VulkanDlss::Quality::Off) return true;
+   error = "DLSS disabled at build time (DARK_ENABLE_DLSS=OFF)"; return false;
+#endif
+}
+bool VulkanWorldRenderer::DlssEnabled() const {
+#if DARK_DLSS_AVAILABLE
+   return m->dlss.Enabled();
+#else
+   return false;
+#endif
+}
+VkImage VulkanWorldRenderer::UpscaledImage(uint32_t slot) const {
+#if DARK_DLSS_AVAILABLE
+   if (DlssEnabled() && slot < 2 && m->frames[slot].upscaled) return *m->frames[slot].upscaled->image;
+#endif
+   return HdrImage(slot);
+}
+std::array<uint32_t, 2> VulkanWorldRenderer::RenderExtent(uint32_t slot) const {
+   const auto &f = m->frames.at(slot); return {f.width, f.height};
+}
 void VulkanWorldRenderer::SetRaySettings(const RaySettings &settings) {
    m->raySettings = settings;
    m->raySettings.sharcEntries = std::clamp(settings.sharcEntries, 1u << 16, 1u << 22);
@@ -423,6 +463,10 @@ void VulkanWorldRenderer::SetTextureCacheBudget(uint64_t bytes) {
    m->textureBudget = bytes;
 }
 void VulkanWorldRenderer::CompleteSubmission(bool accepted) {
+#if DARK_DLSS_AVAILABLE
+   m->dlss.CompleteSubmission(accepted);
+#endif
+   if (accepted && m->pendingSlot >= 0) { ++m->jitterFrame; m->previousJitter = m->pendingJitter; }
    m->history.CompleteSubmission(accepted);
    m->directLighting.CompleteSubmission(accepted);
    m->rayScene.CompleteSubmission(accepted);
@@ -490,10 +534,25 @@ bool VulkanWorldRenderer::Initialize(vk::PhysicalDevice physical, vk::Device dev
 
       if (!m->rasterGeometry.Initialize(physical, device))
          throw std::runtime_error("raster geometry initialization failed");
-      std::array<vk::DescriptorSetLayoutBinding, 2> hdrBindings{
+      std::array<vk::DescriptorSetLayoutBinding, 3> hdrBindings{
           {{0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
-           {1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment}}};
+           {1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+           {2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment}}};
       m->toneLayout = device.createDescriptorSetLayoutUnique(vk::DescriptorSetLayoutCreateInfo({}, hdrBindings));
+#if DARK_DLSS_AVAILABLE
+      const std::array<vk::DescriptorSetLayoutBinding, 4> dlssBindings{{
+         {0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eCompute},
+         {1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eCompute},
+         {2, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eCompute},
+         {3, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eCompute}}};
+      m->dlssLayout = device.createDescriptorSetLayoutUnique(vk::DescriptorSetLayoutCreateInfo({}, dlssBindings));
+      vk::PushConstantRange dlssConstants(vk::ShaderStageFlagBits::eCompute, 0, 64);
+      m->dlssPipelineLayout = device.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, 1, &*m->dlssLayout, 1, &dlssConstants));
+      const auto dlssCode = readShader(directory + "/dlss_prepare.comp.spv");
+      const auto dlssModule = device.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, dlssCode.size()*4, dlssCode.data()));
+      m->dlssPipeline = device.createComputePipelineUnique({}, vk::ComputePipelineCreateInfo({},
+         vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eCompute, *dlssModule, "main"), *m->dlssPipelineLayout)).value;
+#endif
       vk::PushConstantRange draw(vk::ShaderStageFlagBits::eVertex, 0, sizeof(DrawConstants));
       m->transparentPipelineLayout =
           device.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, 1, &*m->sceneLayout, 1, &draw));
@@ -657,7 +716,7 @@ bool VulkanWorldRenderer::Initialize(vk::PhysicalDevice physical, vk::Device dev
             frame.timing = device.createQueryPoolUnique(vk::QueryPoolCreateInfo({}, vk::QueryType::eTimestamp, 11));
          std::vector<vk::DescriptorPoolSize> sizes{{vk::DescriptorType::eStorageBuffer, 16u},
                                                    {vk::DescriptorType::eUniformBuffer, 4u},
-                                                   {vk::DescriptorType::eCombinedImageSampler, 2 * m->maxTextures + 8}};
+                                                   {vk::DescriptorType::eCombinedImageSampler, 2 * m->maxTextures + 9}};
          sizes.push_back({vk::DescriptorType::eAccelerationStructureKHR, 2});
          frame.pool = device.createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo({}, 4, sizes));
          std::array<vk::DescriptorSetLayout, 3> layouts{{*m->toneLayout, *m->sceneLayout, *m->sceneLayout}};
@@ -681,7 +740,24 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
    try {
       if (!m->device || slot >= 2 || !scene.hasCamera || !width || !height) return VK_NULL_HANDLE;
       auto &frame = m->frames[slot];
-      m->history.Prepare(scene, width, height);
+      const uint32_t outputWidth = width, outputHeight = height;
+#if DARK_DLSS_AVAILABLE
+      if (DlssEnabled() && !m->dlss.Resolution(outputWidth, outputHeight, width, height, error))
+         throw std::runtime_error(error);
+#endif
+      const bool historyValid = m->history.Prepare(scene, width, height);
+      std::array<float, 2> jitter{};
+      if (DlssEnabled()) {
+         const auto halton = [](uint64_t index, uint32_t base) {
+            float value = 0, fraction = 1;
+            while (index) { fraction /= float(base); value += fraction * float(index % base); index /= base; }
+            return value - .5f;
+         };
+         const uint32_t phases = std::max(8u, uint32_t(8.0 * outputWidth * outputHeight / (double(width) * height)));
+         const uint64_t index = m->jitterFrame % phases + 1;
+         jitter = {halton(index, 2), halton(index, 3)};
+      }
+      m->pendingJitter = jitter;
       const auto recordStart = std::chrono::steady_clock::now();
       if (frame.timing && frame.timingRecorded) {
          uint64_t ticks[11]{};
@@ -718,6 +794,21 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
          command.writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, *frame.timing, 0);
       }
       m->targets(frame, width, height, scene.camera.nativeDepth[3] != 0);
+#if DARK_DLSS_AVAILABLE
+      if (DlssEnabled() && (!frame.upscaled || frame.upscaled->width != outputWidth || frame.upscaled->height != outputHeight ||
+                           !frame.dlssDepth || frame.dlssDepth->width != width || frame.dlssDepth->height != height)) {
+         frame.upscaled = m->image(outputWidth, outputHeight, vk::Format::eR16G16B16A16Sfloat,
+            vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
+            vk::ImageAspectFlagBits::eColor);
+         frame.dlssDepth = m->image(width, height, vk::Format::eR32Sfloat,
+            vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor);
+         frame.dlssMotion = m->image(width, height, vk::Format::eR32G32Sfloat,
+            vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eColor);
+         const std::array<vk::DescriptorPoolSize, 2> sizes{{{vk::DescriptorType::eCombinedImageSampler, 2}, {vk::DescriptorType::eStorageImage, 2}}};
+         frame.dlssPool = m->device.createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo({}, 1, sizes));
+         frame.dlssSet = m->device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo(*frame.dlssPool, 1, &*m->dlssLayout))[0];
+      }
+#endif
       std::copy(scene.camera.nativeDepth, scene.camera.nativeDepth + 3, frame.depthEncoding.begin());
       frame.exposure = scene.camera.exposure;
       if (m->materialScene != &scene || m->materialRevision != scene.materialsRevision) {
@@ -926,6 +1017,11 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
          camera.depthPlane[3] -= camera.depthPlane[i] * scene.camera.position[i];
       }
 
+      // Shift only rasterization. Surface motion and temporal camera matrices stay unjittered.
+      if (DlssEnabled()) for (unsigned column = 0; column < 4; ++column) {
+         camera.matrix[column*4] -= 2*jitter[0]/float(width)*scene.camera.viewProjection[column*4+3];
+         camera.matrix[column*4+1] -= 2*jitter[1]/float(height)*scene.camera.viewProjection[column*4+3];
+      }
       camera.lightingCounts[3] = uint32_t(globalLights.size());
       std::copy(scene.camera.position, scene.camera.position + 3, camera.positionExposure);
       camera.positionExposure[3] = frame.exposure;
@@ -945,7 +1041,12 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
          images.emplace_back(*m->sampler, *texture->view, vk::ImageLayout::eShaderReadOnlyOptimal);
       std::vector<vk::WriteDescriptorSet> writes;
       vk::DescriptorImageInfo hdr(*m->sampler, *frame.hdr->view, vk::ImageLayout::eShaderReadOnlyOptimal);
+      const auto coverage = hdr;
+#if DARK_DLSS_AVAILABLE
+      if (DlssEnabled()) hdr.imageView = *frame.upscaled->view;
+#endif
       writes.emplace_back(frame.tone, 0, 0, 1, vk::DescriptorType::eCombinedImageSampler, &hdr);
+      writes.emplace_back(frame.tone, 2, 0, 1, vk::DescriptorType::eCombinedImageSampler, &coverage);
       const vk::DescriptorImageInfo bridgeDepth(*m->pointSampler,
                                                 frame.nativeDepth ? *frame.viewDistance->view : *frame.hdr->view,
                                                 vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -1112,6 +1213,8 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
          for (unsigned axis = 0; axis < 3; ++axis)
             output[axis] /= float(std::sqrt(length));
       };
+      surfaceCamera.jitter[0] = -2*jitter[0]/float(width);
+      surfaceCamera.jitter[1] = -2*jitter[1]/float(height);
       forward(scene.camera, surfaceCamera.forward);
       forward(oldCamera, surfaceCamera.previousForward);
       surfaceBuffers = {m->upload(frame, 5, surfaceDraws.data(), surfaceDraws.size(), storage),
@@ -1192,6 +1295,8 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
          input.texturesRevision = scene.texturesRevision;
          const auto rayWork = m->rayScene.Stats(slot);
          input.geometryChanged = rayWork.blasBuilds != 0 || rayWork.tlasBuilds != 0;
+         input.jitter = jitter;
+         input.previousJitter = historyValid ? m->previousJitter : jitter;
          input.camera = scene.camera;
          input.linearDepth = *frame.linearDepthView;
          input.historyValid = m->history.Previous() != nullptr;
@@ -1249,6 +1354,51 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
       if (frame.timing) command.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, *frame.timing, 2);
       draw(blended, frame.nativeDepth ? *m->transparentNativePipeline : *m->transparentPipeline);
       command.endRenderPass();
+#if DARK_DLSS_AVAILABLE
+      if (DlssEnabled()) {
+         // Color attachments finish shader-readable; NGX resources enter/leave GENERAL.
+         const vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+         std::vector<vk::ImageMemoryBarrier> barriers;
+         barriers.emplace_back(vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+            vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eGeneral, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, *frame.hdr->image, range);
+         for (const auto &target : {frame.upscaled, frame.dlssDepth, frame.dlssMotion})
+            barriers.emplace_back(vk::AccessFlagBits::eMemoryRead, vk::AccessFlagBits::eMemoryWrite,
+               vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, *target->image, range);
+         const vk::MemoryBarrier surfaceReady(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderWrite,
+                                              vk::AccessFlagBits::eShaderRead);
+         command.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands,
+            {}, surfaceReady, {}, barriers);
+         const std::array<vk::DescriptorImageInfo, 4> info{{
+            {*m->pointSampler, *frame.surface[0]->view, vk::ImageLayout::eGeneral},
+            {*m->pointSampler, *frame.surface[4]->view, vk::ImageLayout::eGeneral},
+            {{}, *frame.dlssDepth->view, vk::ImageLayout::eGeneral},
+            {{}, *frame.dlssMotion->view, vk::ImageLayout::eGeneral}}};
+         std::array<vk::WriteDescriptorSet, 4> dlssWrites;
+         for (uint32_t i = 0; i < 4; ++i) dlssWrites[i] = {frame.dlssSet, i, 0, 1,
+            i < 2 ? vk::DescriptorType::eCombinedImageSampler : vk::DescriptorType::eStorageImage, &info[i]};
+         m->device.updateDescriptorSets(dlssWrites, {});
+         command.bindPipeline(vk::PipelineBindPoint::eCompute, *m->dlssPipeline);
+         command.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *m->dlssPipelineLayout, 0, frame.dlssSet, {});
+         command.pushConstants(*m->dlssPipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, 64, scene.camera.viewProjection);
+         command.dispatch((width+7)/8, (height+7)/8, 1);
+         const vk::MemoryBarrier prepared(vk::AccessFlagBits::eShaderWrite, vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite);
+         command.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eAllCommands, {}, prepared, {}, {});
+         const auto texture = [](const auto &image, vk::Format format) -> VulkanDlss::Texture {
+            return {*image->image, *image->view, format, image->width, image->height};
+         };
+         // NGX jitter is the projected raster displacement in motion-vector
+         // coordinates. NRD uses the opposite offset: the pixel sample location.
+         if (!m->dlss.Record(command, texture(frame.hdr, vk::Format::eR16G16B16A16Sfloat),
+            texture(frame.dlssDepth, vk::Format::eR32Sfloat), texture(frame.dlssMotion, vk::Format::eR32G32Sfloat),
+            texture(frame.upscaled, vk::Format::eR16G16B16A16Sfloat), -jitter[0], -jitter[1], !historyValid, error))
+            throw std::runtime_error(error);
+         barriers.clear();
+         for (const auto &target : {frame.hdr, frame.upscaled})
+            barriers.emplace_back(vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite, vk::AccessFlagBits::eShaderRead,
+               vk::ImageLayout::eGeneral, vk::ImageLayout::eShaderReadOnlyOptimal, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, *target->image, range);
+         command.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, barriers);
+      }
+#endif
       if (frame.timing) {
          command.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, *frame.timing, 3);
          frame.timingRecorded = true;
@@ -1264,6 +1414,9 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t slot, const WorldScene &sce
       return command;
    } catch (const std::exception &failure) {
       error = failure.what();
+#if DARK_DLSS_AVAILABLE
+      m->dlss.CompleteSubmission(false);
+#endif
       m->history.CompleteSubmission(false);
       m->directLighting.CompleteSubmission(false);
       m->rayScene.CompleteSubmission(false);

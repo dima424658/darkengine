@@ -1,3 +1,6 @@
+#if DARK_DLSS_AVAILABLE
+#include "vulkan_dlss.hpp"
+#endif
 #include "vulkan_world_features.hpp"
 #include "vulkan_context.hpp"
 
@@ -217,6 +220,9 @@ bool cVulkanContext::Initialize(
    try
    {
       std::vector<const char *> extensions = surfaceExtensions;
+#if DARK_DLSS_AVAILABLE
+      if (enableWorldRendering) dark::VulkanDlss::InstanceExtensions(extensions);
+#endif
 
       const auto availableExtensions = vk::enumerateInstanceExtensionProperties();
       vk::InstanceCreateFlags instanceFlags{};
@@ -366,6 +372,9 @@ bool cVulkanContext::Initialize(
       if (m_worldRenderingEnabled)
       {
          deviceExtensions.insert(deviceExtensions.end(), worldFeatures.extensions.begin(), worldFeatures.extensions.end());
+#if DARK_DLSS_AVAILABLE
+         dark::VulkanDlss::DeviceExtensions(*m_instance, *m_physicalDevice, deviceExtensions);
+#endif
          deviceInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
          deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
          deviceInfo.pEnabledFeatures = nullptr;

@@ -37,3 +37,7 @@
 [submodule "3rdparty/bcdec"]
 	path = 3rdparty/bcdec
 	url = https://github.com/iOrange/bcdec.git
+[submodule "3rdparty/DLSS"]
+	path = 3rdparty/DLSS
+	url = https://github.com/NVIDIA/DLSS.git
+	shallow = true

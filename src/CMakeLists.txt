@@ -242,3 +242,14 @@ endif()
 if(TARGET dromed)
  target_link_libraries(dromed PRIVATE nfd)
 endif()
+
+if(DARK_ENABLE_DLSS)
+  install(FILES "${DARK_DLSS_RUNTIME}" DESTINATION bin RENAME "${DARK_DLSS_RUNTIME_NAME}")
+  foreach(runtime_target thief2 dromed)
+    if(TARGET ${runtime_target})
+      add_custom_command(TARGET ${runtime_target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DARK_DLSS_RUNTIME}"
+          "$<TARGET_FILE_DIR:${runtime_target}>/${DARK_DLSS_RUNTIME_NAME}" VERBATIM)
+    endif()
+  endforeach()
+endif()

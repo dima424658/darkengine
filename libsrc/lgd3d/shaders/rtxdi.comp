@@ -58,7 +58,7 @@ void main() {
         parameters.permutationSamplingThreshold=0;parameters.enableFallbackSampling=0;parameters.pad1=parameters.pad2=parameters.pad3=0;
         ivec2 previousPixel;RAB_LightSample selected=RAB_EmptyLightSample();
         reservoir=RTXDI_DITemporalResampling(pixel,surface,reservoir,rng,di.runtime,di.addressing,
-            vec3(motion.xy*vec2(di.dimensionsFrame.xy),motion.z-surface.depth),5u-di.counts.w,parameters,previousPixel,selected);
+            vec3(motion.xy*vec2(di.dimensionsFrame.xy)+di.jitterDelta.xy,motion.z-surface.depth),5u-di.counts.w,parameters,previousPixel,selected);
     }
     RTXDI_StoreDIReservoir(reservoir,di.addressing,pixel,1);
 #elif DI_PASS == 2

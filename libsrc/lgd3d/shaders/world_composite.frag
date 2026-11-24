@@ -3,6 +3,7 @@ layout(location=0) in vec2 uv;
 layout(location=0) out vec4 color;
 layout(set=0,binding=0) uniform sampler2D hdr;
 layout(set=0,binding=1) uniform sampler2D worldDepth;
+layout(set=0,binding=2) uniform sampler2D coverageImage;
 layout(push_constant) uniform Exposure {
     float value; uint srgbAttachment;
     float nativeLinear; float nativeReciprocal; float nativeConstant; uint writeDepth;
@@ -15,7 +16,7 @@ void main() {
             exposure.nativeReciprocal/distance+exposure.nativeConstant,0.0,1.0);
     }
     vec4 sampleColor=texture(hdr,uv);
-    float coverage=clamp(sampleColor.a,0,1);
+    float coverage=clamp(texture(coverageImage,uv).a,0,1);
     // HDR blending/filtering stores premultiplied radiance. Recover straight
     // color for the nonlinear tone map, then blend with the native background.
     vec3 x=max(sampleColor.rgb/max(coverage,0.000001)*exposure.value,vec3(0));

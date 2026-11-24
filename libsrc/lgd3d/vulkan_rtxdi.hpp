@@ -21,6 +21,7 @@ public:
       vk::QueryPool timing;uint32_t timestampBase=0;
       // Optional two timestamps after initial/temporal DI, in the same pool.
       uint32_t directTimestampBase=UINT32_MAX;
+      std::array<float, 2> jitter{}, previousJitter{};
       bool historyValid=false;
       bool gi=false,cacheEnabled=true,collectStatistics=false;
       uint64_t materialRevision=0;

@@ -236,3 +236,7 @@ The preload masks one queried feature at a time: ray queries, NRD formatless
 storage writes, or SHaRC buffer int64 atomics. It requires an actual mask, native
 presentation, explicit fallback and clean validation. This is capability fault
 injection on the tested GPU, not a cross-vendor hardware certification.
+
+## DLSS
+
+See [DLSS integration and GPU checks](../../docs/dlss.md) for optional build setup, mode selection, and the `dark_dlss_test` fixture.

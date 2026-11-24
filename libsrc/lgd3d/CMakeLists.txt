@@ -33,3 +33,8 @@ if(DARK_ENABLE_RTX_SDK)
 else()
   target_sources(dark_lgd3d PRIVATE vulkan_world_renderer_stub.cpp)
 endif()
+
+if(DARK_ENABLE_DLSS)
+  target_link_libraries(dark_lgd3d PRIVATE dark_dlss)
+  target_compile_definitions(dark_lgd3d PRIVATE DARK_DLSS_AVAILABLE=1)
+endif()

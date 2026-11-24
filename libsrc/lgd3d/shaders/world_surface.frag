@@ -11,7 +11,7 @@ layout(set=0,binding=7) uniform sampler2D textures[];
 #include "material_sampling.glsl"
 layout(set=0,binding=17,std430) readonly buffer SurfaceDraws {SurfaceDraw data[];} draws;
 layout(set=0,binding=19,std140) uniform SurfaceCamera {
-    mat4 current;mat4 previous;vec4 eye;vec4 forward;vec4 previousEye;vec4 previousForward;
+    mat4 current;mat4 previous;vec4 eye;vec4 forward;vec4 previousEye;vec4 previousForward;vec4 jitter;
 } camera;
 layout(location=0) in vec3 worldPosition;
 layout(location=1) in vec3 worldNormal;

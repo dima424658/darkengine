@@ -14,6 +14,12 @@ VkCommandBuffer VulkanWorldRenderer::Record(uint32_t, const WorldScene &, uint32
    error = "RTX SDK lighting is unavailable";
    return VK_NULL_HANDLE;
 }
+bool VulkanWorldRenderer::ConfigureDlss(vk::Instance, VulkanDlss::Quality, std::string &error) {
+   error = "DLSS requires the RTX world renderer"; return false;
+}
+bool VulkanWorldRenderer::DlssEnabled() const { return false; }
+VkImage VulkanWorldRenderer::UpscaledImage(uint32_t) const { return VK_NULL_HANDLE; }
+std::array<uint32_t, 2> VulkanWorldRenderer::RenderExtent(uint32_t) const { return {}; }
 void VulkanWorldRenderer::CompleteSubmission(bool) {
 }
 void VulkanWorldRenderer::Composite(vk::CommandBuffer, uint32_t, int, int, uint32_t, uint32_t) {

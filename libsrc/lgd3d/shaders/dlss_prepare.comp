@@ -1,0 +1,18 @@
+#version 450
+layout(local_size_x=8,local_size_y=8) in;
+layout(set=0,binding=0) uniform sampler2D positionDepth;
+layout(set=0,binding=1) uniform sampler2D surfaceMotion;
+layout(set=0,binding=2,r32f) writeonly uniform image2D depthOutput;
+layout(set=0,binding=3,rg32f) writeonly uniform image2D motionOutput;
+layout(push_constant) uniform Camera { mat4 viewProjection; } camera;
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy),size=imageSize(depthOutput);
+    if(any(greaterThanEqual(p,size)))return;
+    vec4 position=texelFetch(positionDepth,p,0);
+    vec4 clip=camera.viewProjection*vec4(position.xyz,1);
+    float depth=position.w>0 && position.w<500000 && clip.w>0?clamp(clip.z/clip.w,0,1):1;
+    vec4 mv=texelFetch(surfaceMotion,p,0);
+    // Engine motion is previousUV-currentUV, unjittered. NGX needs pixels.
+    imageStore(depthOutput,p,vec4(depth));
+    imageStore(motionOutput,p,vec4(mv.w>0?mv.xy*vec2(size):vec2(0),0,0));
+}

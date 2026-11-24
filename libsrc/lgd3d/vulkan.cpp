@@ -678,6 +678,17 @@ bool cVulkanRuntime::InitializeWorldRenderer()
       std::fprintf(stderr,"Modern world unavailable: %s; retaining legacy renderer\n",
          failure.empty()?m_context.WorldRenderingUnavailableReason().c_str():failure.c_str());
    else {
+      char dlssMode[32] = "off";
+      config_get_raw("renderer_dlss", dlssMode, sizeof(dlssMode));
+      auto dlssQuality = dark::VulkanDlss::Quality::Off;
+      if (std::strcmp(dlssMode,"quality")==0) dlssQuality = dark::VulkanDlss::Quality::Quality;
+      else if (std::strcmp(dlssMode,"balanced")==0) dlssQuality = dark::VulkanDlss::Quality::Balanced;
+      else if (std::strcmp(dlssMode,"performance")==0) dlssQuality = dark::VulkanDlss::Quality::Performance;
+      else if (std::strcmp(dlssMode,"dlaa")==0) dlssQuality = dark::VulkanDlss::Quality::Dlaa;
+      else if (std::strcmp(dlssMode,"off")!=0) std::fprintf(stderr,"Unknown renderer_dlss mode '%s'; using off\n",dlssMode);
+      if (!m_worldRenderer.ConfigureDlss(m_context.Instance(), dlssQuality, failure))
+         std::fprintf(stderr,"DLSS unavailable: %s; using native resolution\n",failure.c_str());
+      else if (m_worldRenderer.DlssEnabled()) std::fprintf(stderr,"DLSS enabled: %s\n",dlssMode);
       dark::VulkanWorldRenderer::RaySettings rays;
       int gi=1;float strength=rays.giStrength;
       config_get_int("renderer_gi",&gi);
@@ -725,6 +736,9 @@ bool cVulkanRuntime::RenderWorld()
       static_cast<unsigned long long>(work.accelerationBytes));
    RenderBackendTrace("world-lighting slot=%u extent=%ux%u previous_world_gpu_ms=%.3f record_cpu_ms=%.3f",m_context.FrameIndex(),uint32_t(width),uint32_t(height),
       work.gpuMilliseconds,std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-recordStart).count());
+   const auto renderExtent = m_worldRenderer.RenderExtent(m_context.FrameIndex());
+   RenderBackendTrace("world-upscaling dlss=%u render=%ux%u output=%ux%u",m_worldRenderer.DlssEnabled()?1u:0u,
+      renderExtent[0],renderExtent[1],uint32_t(width),uint32_t(height));
    const auto &worldCamera=dark::GetWorldScene().camera;
    RenderBackendTrace("world-camera eye=%.4f,%.4f,%.4f forward=%.5f,%.5f,%.5f",
       worldCamera.position[0],worldCamera.position[1],worldCamera.position[2],

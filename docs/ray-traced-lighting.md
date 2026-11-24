@@ -62,3 +62,5 @@ test scope and measured limitations.
 Validation commands and SHaRC configuration are documented in
 [SDK checks](../tools/rtx_sdk_test/README.md) and
 [migration status](rtx-sdk-migration.md).
+
+Optional [DLSS Super Resolution and DLAA](dlss.md) can reduce the world rendering resolution while retaining native UI composition.

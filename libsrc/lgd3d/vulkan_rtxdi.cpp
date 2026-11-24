@@ -17,9 +17,9 @@ struct Buffer {
 struct Image {vk::UniqueDeviceMemory memory;vk::UniqueImage image;vk::UniqueImageView view;vk::Format format;};
 struct alignas(16) Constants {
    uint32_t dimensionsFrame[4],counts[4];float previousEye[4];
-   RTXDI_ReservoirBufferParameters addressing;RTXDI_RuntimeParameters runtime;
+   RTXDI_ReservoirBufferParameters addressing;RTXDI_RuntimeParameters runtime;float jitterDelta[4];
 };
-static_assert(sizeof(Constants)==80 && sizeof(RTXDI_PackedDIReservoir)==24,"RTXDI shader ABI");
+static_assert(sizeof(Constants)==96 && sizeof(RTXDI_PackedDIReservoir)==24,"RTXDI shader ABI");
 struct alignas(16) SharcConstants {uint32_t addresses[3][4];float tuning[4];uint32_t counts[4];};
 static_assert(sizeof(SharcConstants)==80,"SHaRC shader ABI");
 struct Frame {
@@ -207,6 +207,7 @@ bool VulkanRtxdi::Record(vk::CommandBuffer command,uint32_t slot,vk::DescriptorS
    if(!frame.remap || frame.remap->capacity<remapBytes)frame.remap=m->buffer(remapBytes,vk::BufferUsageFlagBits::eStorageBuffer,true);
    if(!remap.empty())std::memcpy(frame.remap->mapped,remap.data(),remap.size()*4);
    Constants constants{};constants.dimensionsFrame[0]=m->width;constants.dimensionsFrame[1]=m->height;constants.dimensionsFrame[2]=m->frameIndex;
+   for(unsigned axis=0;axis<2;++axis)constants.jitterDelta[axis]=input.jitter[axis]-input.previousJitter[axis];
    constants.dimensionsFrame[3]=m->history && input.historyValid?1:0;
    const bool changed=!constants.dimensionsFrame[3] || !m->previousGi || input.geometryChanged ||
       input.lightsRevision!=m->lightsRevision || input.materialRevision!=m->materialRevision || input.texturesRevision!=m->texturesRevision ||
@@ -304,6 +305,8 @@ bool VulkanRtxdi::Record(vk::CommandBuffer command,uint32_t slot,vk::DescriptorS
    nrdCamera(constants.dimensionsFrame[3]?m->previousCamera:input.camera,common.worldToViewMatrixPrev,common.viewToClipMatrixPrev);
    common.resourceSize[0]=common.resourceSizePrev[0]=common.rectSize[0]=common.rectSizePrev[0]=uint16_t(m->width);
    common.resourceSize[1]=common.resourceSizePrev[1]=common.rectSize[1]=common.rectSizePrev[1]=uint16_t(m->height);
+   std::copy(input.jitter.begin(),input.jitter.end(),common.cameraJitter);
+   std::copy(input.previousJitter.begin(),input.previousJitter.end(),common.cameraJitterPrev);
    common.frameIndex=m->frameIndex;
    common.timeDeltaBetweenFrames=input.denoiserFrameTimeMilliseconds;
    if(!constants.dimensionsFrame[3] || m->previousGi!=input.gi)m->denoiser.ResetHistory();

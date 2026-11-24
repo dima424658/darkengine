@@ -41,7 +41,7 @@ if(DARK_COMPILE_VULKAN_SHADERS)
       "${PROJECT_SOURCE_DIR}/libsrc/lgd3d/shaders/world_material.glsl"
       "${PROJECT_SOURCE_DIR}/libsrc/lgd3d/shaders/material_sampling.glsl")
     foreach(shader world.vert world_surface.vert world_surface.frag world_lighting.frag world_lighting_native.frag
-        world_composite.vert world_composite.frag world_transparent.frag world_transparent_native.frag)
+        world_composite.vert world_composite.frag world_transparent.frag world_transparent_native.frag dlss_prepare.comp)
       set(shader_source "${PROJECT_SOURCE_DIR}/libsrc/lgd3d/shaders/${shader}")
       set(shader_output "${DARK_VULKAN_SHADER_OUTPUT_DIR}/${shader}.spv")
       add_custom_command(OUTPUT "${shader_output}"
