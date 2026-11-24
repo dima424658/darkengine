@@ -14,3 +14,5 @@
 - Core Port scaffolding: added VitaSDK ARMv7 toolchain configuration and SDL2/vitaGL bootstrap targets for the three Thief title IDs; actual VPK generation remains unverified because VitaSDK is not available in the active build session.
 - Removed host-only VPK placeholders. Replaced them with VitaSDK `vita_create_self` and `vita_create_vpk` targets using SDL2 and vitaGL. The CMake preset parses, but actual configuration is blocked by the missing `VITASDK` environment path in this session.
 - Explicit toolchain build attempt confirmed `/usr/local/vitasdk/share/vita.toolchain.cmake` is absent in this session. TASK 1–3 remain open for real Vita verification; Part II is not activated yet.
+
+- 2026-11-24: Built the Vita ARMv7 bootstrap for Thief, Thief Gold, and Thief II with VitaSDK 2026.08; verified each VPK contains a Vita SELF payload and correct title metadata. Recorded the C++ linker-driver fix and moved the focus pipeline to Handheld Remaster TASK 4-6.

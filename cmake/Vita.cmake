@@ -35,6 +35,7 @@ foreach(_platform IN LISTS DARK_VITA_PLATFORMS)
   add_executable("${_target}" "${PROJECT_SOURCE_DIR}/tools/vita_bootstrap.c")
   target_include_directories("${_target}" PRIVATE "${DARK_VITAGL_INCLUDE_DIR}")
   target_compile_features("${_target}" PRIVATE c_std_11)
+  set_target_properties("${_target}" PROPERTIES LINKER_LANGUAGE CXX)
   target_compile_definitions("${_target}" PRIVATE
     "DARK_VITA_TITLE=\"${_title}\""
     "DARK_VITA_TITLE_ID=\"${_title_id}\""
@@ -47,7 +48,7 @@ foreach(_platform IN LISTS DARK_VITA_PLATFORMS)
     SceCtrl_stub
     SceDisplay_stub
     SceGxm_stub
-    SceKernel_stub
+    SceLibKernel_stub
     SceSysmodule_stub
     SceTouch_stub
     m
