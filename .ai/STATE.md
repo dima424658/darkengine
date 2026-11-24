@@ -1,9 +1,9 @@
 # CURRENT RUNTIME STATE
 
 ## CURRENT WORK BLOCK
-- Objective: TASK 5 - add separate Vita Slim brightness and gamma shader controls.
-- Progress: TASK 4 is implemented: Vita loose-file lookup discovers `mods/` overlays ahead of base assets, and the SUB1 parser handles NewDark declarations, duplicate IDs, timed cues, comments, escaped text, SRT references, and Windows-1250-to-UTF-8 conversion. Focused host tests pass, and the parser/path sources cross-compile into all three ARMv7 test VPKs.
-- Blockers: The current VPKs are still bootstrap packages; full game-engine integration and on-device subtitle presentation remain unverified. Proceed with TASK 5.
+- Objective: TASK 6 - add three physical control layouts and temporary touch trigger icons.
+- Progress: TASK 4 and TASK 5 are implemented and verified. TASK 5 adds independent brightness/gamma sliders to the Vita bootstrap, GLES2 correction shaders, `vita_options.cfg` persistence, D-pad/touch adjustment, and host regression tests. All three Vita ARMv7 VPKs build.
+- Blockers: Gamma/brightness ranges are conservative and await visual calibration on a physical Vita 2000. The VPKs remain bootstrap packages rather than full game-engine builds. Proceed with TASK 6.
 
 ## ENCOUNTERED DEAD ENDS & DEFERRED TASKS
 - 2026-11-24: First real build failed on the nonexistent `SceKernel_stub`; resolved by linking `SceLibKernel_stub`.

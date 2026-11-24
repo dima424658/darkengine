@@ -18,3 +18,5 @@
 - 2026-11-24: Built the Vita ARMv7 bootstrap for Thief, Thief Gold, and Thief II with VitaSDK 2026.08; verified each VPK contains a Vita SELF payload and correct title metadata. Recorded the C++ linker-driver fix and moved the focus pipeline to Handheld Remaster TASK 4-6.
 
 - 2026-11-24: Completed Handheld Remaster TASK 4. Added ordered loose-file overlays from each Vita title’s `mods/` directory, safe base-root writes, parent-traversal rejection, and a NewDark SUB1 parser with UTF-8/Windows-1250 decoding; focused host tests and all three Vita ARMv7 VPK builds pass. Documented behavior in docs/vita-content.md.
+
+- 2026-11-24: Completed Handheld Remaster TASK 5. Added separate Vita Slim brightness/gamma sliders, a GLES2 correction shader, conservative correction ranges, D-pad/front-touch adjustment, and atomic `vita_options.cfg` persistence. Host tests and all three Vita ARMv7 test VPK builds pass; hardware calibration remains pending.

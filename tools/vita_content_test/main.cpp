@@ -1,6 +1,8 @@
 #include "vita_paths.h"
 #include "vita_subtitles.hpp"
+#include "vita_video_settings.hpp"
 
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -138,12 +140,63 @@ void TestModOverlay()
    std::filesystem::remove_all(root, error);
    Check(!error, "remove temporary mod overlay tree");
 }
+
+void TestVideoSettings()
+{
+   using namespace DarkVitaVideo;
+   Settings settings;
+   Check(BrightnessOffset(settings) == 0.0f && GammaValue(settings) == 1.0f,
+         "neutral Vita LCD settings");
+   const Color neutral = ApplyCorrection({0.25f, 0.5f, 0.75f}, settings);
+   Check(std::abs(neutral.red - 0.25f) < 0.0001f &&
+         std::abs(neutral.green - 0.5f) < 0.0001f,
+         "neutral shader correction leaves colors unchanged");
+
+   settings.brightnessSlider = 100;
+   const Color brighter = ApplyCorrection({0.25f, 0.5f, 0.75f}, settings);
+   Check(brighter.red > neutral.red, "brightness slider lifts dark values");
+   settings.brightnessSlider = 50;
+   settings.gammaSlider = 100;
+   const Color gammaCorrected =
+      ApplyCorrection({0.25f, 0.5f, 0.75f}, settings);
+   Check(gammaCorrected.red > neutral.red,
+         "gamma slider separately adjusts LCD shadow response");
+   Check(std::string(FragmentShaderSource()).find("uBrightness") !=
+         std::string::npos &&
+         std::string(FragmentShaderSource()).find("uGamma") !=
+         std::string::npos, "shader exposes separate brightness and gamma");
+
+   const std::filesystem::path root =
+      std::filesystem::temp_directory_path() / "thief-vita-video-test";
+   std::error_code filesystemError;
+   std::filesystem::remove_all(root, filesystemError);
+   std::filesystem::create_directories(root);
+   const std::string path = (root / "vita_options.cfg").string();
+   std::string error;
+   Check(Save(path, settings, &error), "save Vita video options");
+   settings.brightnessSlider = 5;
+   settings.gammaSlider = 5;
+   Check(Save(path, settings, &error), "replace Vita video options");
+   const LoadResult loaded = Load(path);
+   Check(loaded.found && loaded.error.empty() &&
+         loaded.settings.brightnessSlider == 5 &&
+         loaded.settings.gammaSlider == 5,
+         "load independently persisted video sliders");
+
+   WriteFile(root / "vita_options.cfg", "version=1\nbrightness=999\ngamma=50\n");
+   const LoadResult invalid = Load(path);
+   Check(!invalid.found && !invalid.error.empty(),
+         "report invalid persisted slider values");
+   std::filesystem::remove_all(root, filesystemError);
+   Check(!filesystemError, "remove temporary video settings");
+}
 }
 
 int main()
 {
    TestSubtitleParser();
    TestModOverlay();
+   TestVideoSettings();
    std::cout << "Vita content tests passed\n";
    return 0;
 }

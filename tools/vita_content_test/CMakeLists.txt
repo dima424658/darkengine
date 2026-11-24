@@ -7,6 +7,7 @@ add_executable(vita_content_test
   main.cpp
   ../../libsrc/platform/vita_paths.cpp
   ../../libsrc/platform/vita_subtitles.cpp
+  ../../libsrc/platform/vita_video_settings.cpp
 )
 target_include_directories(vita_content_test PRIVATE
   ../../libsrc/platform
