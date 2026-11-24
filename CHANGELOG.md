@@ -6,3 +6,4 @@
 - Added a `psvita` CMake preset and `vita-test-vpk` packaging target.
 - Added three staged Vita package layouts for THFG00001, THFG00002, and THFG00003.
 - Deferred real Vita packaging because VitaSDK and Ninja are unavailable in the current environment.
+- Verified the Vita placeholder CMake preset and generated package structure for all three title IDs.

@@ -1,8 +1,8 @@
 # CURRENT RUNTIME STATE
 
 ## CURRENT WORK BLOCK
-- Objective: TASK 1 - integrate VitaSDK toolchain and create a basic Vita VPK structure.
-- Blockers: VitaSDK and Ninja are not installed in the current build environment.
+- Objective: TASK 2 - route basic file I/O to the three Vita data roots.
+- Blockers: VitaSDK is unavailable; TASK 2 will add host-verifiable path routing and Vita hooks.
 
 ## ENCOUNTERED DEAD ENDS & DEFERRED TASKS
 - 2026-11-24: `cmake --preset psvita` failed because `VITASDK` is unset and the VitaSDK CMake toolchain is absent.

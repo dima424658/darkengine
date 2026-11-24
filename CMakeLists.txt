@@ -6,6 +6,10 @@ option(DARK_VITA_PLACEHOLDER "Build Vita packaging placeholders without VitaSDK"
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Vita.cmake")
 
+if(DARK_VITA_PLACEHOLDER)
+  return()
+endif()
+
 if(NOT WIN32)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()

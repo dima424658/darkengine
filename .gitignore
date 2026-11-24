@@ -65,6 +65,7 @@ ReleaseGame/
 /build-macos-debug/
 /build-linux-debug/
 /build-vita/
+/build-vita-placeholder/
 /build-win64-sanitizers/
 /build-win64/
 /build-win32/
