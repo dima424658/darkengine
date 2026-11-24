@@ -64,6 +64,7 @@ ReleaseGame/
 /build-linux-sanitizers/
 /build-macos-debug/
 /build-linux-debug/
+/build-vita/
 /build-win64-sanitizers/
 /build-win64/
 /build-win32/

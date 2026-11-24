@@ -7,6 +7,25 @@
   },
   "configurePresets": [
     {
+      "name": "psvita",
+      "displayName": "PS Vita",
+      "description": "Configure the PS Vita port with VitaSDK.",
+      "generator": "Ninja",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "binaryDir": "${sourceDir}/build-vita",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/VitaToolchain.cmake",
+        "DARK_TARGET_VITA": "ON",
+        "DARK_BUILD_DROMED": "OFF",
+        "DARK_COMPILE_VULKAN_SHADERS": "OFF"
+      }
+    },
+    {
       "name": "macos",
       "displayName": "macOS",
       "description": "Build the game and DromEd.",
@@ -118,6 +137,12 @@
     }
   ],
   "buildPresets": [
+    {
+      "name": "psvita-test-vpk",
+      "displayName": "PS Vita test VPK structure",
+      "configurePreset": "psvita",
+      "targets": ["vita-test-vpk"]
+    },
     {
       "name": "macos-release",
       "displayName": "macOS Release",
