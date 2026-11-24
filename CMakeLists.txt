@@ -2,11 +2,10 @@ cmake_minimum_required(VERSION 3.24)
 project(DarkEngine LANGUAGES C CXX)
 
 option(DARK_TARGET_VITA "Configure the PS Vita port" OFF)
-option(DARK_VITA_PLACEHOLDER "Build Vita packaging placeholders without VitaSDK" OFF)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Vita.cmake")
 
-if(DARK_VITA_PLACEHOLDER)
+if(DARK_TARGET_VITA)
   return()
 endif()
 

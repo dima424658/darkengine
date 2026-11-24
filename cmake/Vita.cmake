@@ -1,70 +1,67 @@
-if(DARK_TARGET_VITA)
-  if(NOT DARK_VITA_PLACEHOLDER)
-    if(NOT DEFINED ENV{VITASDK} OR "$ENV{VITASDK}" STREQUAL "")
-      message(FATAL_ERROR
-        "DARK_TARGET_VITA requires VITASDK. Install VitaSDK and set VITASDK "
-        "to its installation directory.")
-    endif()
-  endif()
+if(NOT DARK_TARGET_VITA)
+  return()
+endif()
 
-  set(DARK_BUILD_DROMED OFF CACHE BOOL "Vita port does not build DromEd" FORCE)
-  set(DARK_COMPILE_VULKAN_SHADERS OFF CACHE BOOL "Vita uses vitaGL" FORCE)
+if(NOT DEFINED ENV{VITASDK} OR "$ENV{VITASDK}" STREQUAL "")
+  message(FATAL_ERROR
+    "DARK_TARGET_VITA requires VITASDK to point to a VitaSDK installation.")
+endif()
 
-  set(VITA_PACKAGES
-    THFG00001_THIEF1
-    THFG00002_THIEFGOLD
-    THFG00003_THIEF2
+include("$ENV{VITASDK}/share/vita.cmake")
+
+find_package(SDL2 REQUIRED)
+find_path(DARK_VITAGL_INCLUDE_DIR vitaGL.h REQUIRED)
+find_library(DARK_VITAGL_LIBRARY NAMES vitaGL REQUIRED)
+
+if(NOT TARGET SDL2::SDL2)
+  message(FATAL_ERROR
+    "The Vita SDL2 package did not define the expected SDL2::SDL2 target.")
+endif()
+
+set(DARK_VITA_PLATFORMS
+  "thief1-vita|THFG00001|Thief: The Dark Project|ux0:data/thief1"
+  "thiefgold-vita|THFG00002|Thief Gold|ux0:data/thiefgold"
+  "thief2-vita|THFG00003|Thief II: The Metal Age|ux0:data/thief2"
+)
+
+set(_vita_vpk_targets)
+foreach(_platform IN LISTS DARK_VITA_PLATFORMS)
+  string(REPLACE "|" ";" _fields "${_platform}")
+  list(GET _fields 0 _target)
+  list(GET _fields 1 _title_id)
+  list(GET _fields 2 _title)
+  list(GET _fields 3 _asset_root)
+
+  add_executable("${_target}" "${PROJECT_SOURCE_DIR}/tools/vita_bootstrap.c")
+  target_include_directories("${_target}" PRIVATE "${DARK_VITAGL_INCLUDE_DIR}")
+  target_compile_features("${_target}" PRIVATE c_std_11)
+  target_compile_definitions("${_target}" PRIVATE
+    "DARK_VITA_TITLE=\"${_title}\""
+    "DARK_VITA_TITLE_ID=\"${_title_id}\""
+    "DARK_VITA_ASSET_ROOT=\"${_asset_root}\""
+  )
+  target_link_libraries("${_target}" PRIVATE
+    SDL2::SDL2
+    "${DARK_VITAGL_LIBRARY}"
+    SceAppUtil_stub
+    SceCtrl_stub
+    SceDisplay_stub
+    SceGxm_stub
+    SceKernel_stub
+    SceSysmodule_stub
+    SceTouch_stub
+    m
   )
 
-  if(NOT DARK_VITA_PLACEHOLDER)
-    find_path(DARK_VITAGL_INCLUDE_DIR NAMES vitaGL.h)
-    find_library(DARK_VITAGL_LIBRARY NAMES vitaGL)
-    if(NOT DARK_VITAGL_INCLUDE_DIR OR NOT DARK_VITAGL_LIBRARY)
-      message(FATAL_ERROR
-        "vitaGL was not found in VitaSDK. Install vitaGL and retry.")
-    endif()
-    add_library(dark_vita_gl INTERFACE)
-    target_include_directories(dark_vita_gl INTERFACE
-      "${DARK_VITAGL_INCLUDE_DIR}")
-    target_link_libraries(dark_vita_gl INTERFACE
-      "${DARK_VITAGL_LIBRARY}")
-    target_compile_definitions(dark_vita_gl INTERFACE DARK_VITA_GL=1)
-  endif()
+  vita_create_self("${_target}.self" "${_target}")
+  vita_create_vpk("${_target}.vpk" "${_title_id}" "${_target}.self"
+    VERSION "01.00"
+    NAME "${_title}"
+  )
+  list(APPEND _vita_vpk_targets "${_target}.vpk-vpk")
+endforeach()
 
-  if(DARK_VITA_PLACEHOLDER)
-    add_executable(vita_path_test
-      "${CMAKE_CURRENT_SOURCE_DIR}/tools/vita_path_test.cpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/platform/vita_paths.cpp")
-    target_include_directories(vita_path_test PRIVATE
-      "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/platform")
+add_custom_target(vita-trilogy-vpk DEPENDS ${_vita_vpk_targets})
 
-    add_executable(vita_layout_test
-      "${CMAKE_CURRENT_SOURCE_DIR}/tools/vita_layout_test.cpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/dispdev/vita_layout.cpp")
-    target_include_directories(vita_layout_test PRIVATE
-      "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/dispdev")
-  endif()
-
-  add_custom_target(vita-test-vpk
-    COMMAND "${CMAKE_COMMAND}"
-      "-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
-      "-DBINARY_DIR=${CMAKE_BINARY_DIR}"
-      "-DVITASDK=$ENV{VITASDK}"
-      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VitaPackageTest.cmake"
-    COMMENT "Creating the Vita test package structure"
-    VERBATIM)
-
-  if(TARGET vita_path_test)
-    add_dependencies(vita-test-vpk vita_path_test vita_layout_test)
-    add_custom_command(TARGET vita-test-vpk POST_BUILD
-      COMMAND $<TARGET_FILE:vita_path_test>
-      COMMENT "Running Vita asset path routing test"
-      VERBATIM)
-  endif()
-  if(TARGET vita_layout_test)
-    add_custom_command(TARGET vita-test-vpk POST_BUILD
-      COMMAND $<TARGET_FILE:vita_layout_test>
-      COMMENT "Running Vita 960x544 layout test"
-      VERBATIM)
-  endif()
-endif()
+message(STATUS "Configured Vita ARM target: ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "VPK targets: ${_vita_vpk_targets}")

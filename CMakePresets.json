@@ -7,28 +7,9 @@
   },
   "configurePresets": [
     {
-      "name": "psvita-placeholder",
-      "displayName": "PS Vita packaging placeholder",
-      "description": "Generate Vita package layouts without VitaSDK.",
-      "generator": "Unix Makefiles",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      },
-      "binaryDir": "${sourceDir}/build-vita-placeholder",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "DARK_TARGET_VITA": "ON",
-        "DARK_VITA_PLACEHOLDER": "ON",
-        "DARK_BUILD_DROMED": "OFF",
-        "DARK_COMPILE_VULKAN_SHADERS": "OFF"
-      }
-    },
-    {
       "name": "psvita",
       "displayName": "PS Vita",
-      "description": "Configure the PS Vita port with VitaSDK.",
+      "description": "Build SDL2/vitaGL ARMv7 Vita test VPKs with VitaSDK.",
       "generator": "Ninja",
       "condition": {
         "type": "equals",
@@ -157,16 +138,10 @@
   ],
   "buildPresets": [
     {
-      "name": "psvita-placeholder-test-vpk",
-      "displayName": "Generate PS Vita test package structure",
-      "configurePreset": "psvita-placeholder",
-      "targets": ["vita-test-vpk"]
-    },
-    {
-      "name": "psvita-test-vpk",
-      "displayName": "PS Vita test VPK structure",
+      "name": "psvita-trilogy-vpk",
+      "displayName": "Build PS Vita trilogy bootstrap VPKs",
       "configurePreset": "psvita",
-      "targets": ["vita-test-vpk"]
+      "targets": ["vita-trilogy-vpk"]
     },
     {
       "name": "macos-release",

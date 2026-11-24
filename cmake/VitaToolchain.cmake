@@ -12,3 +12,5 @@ if(NOT EXISTS "${VITA_TOOLCHAIN}")
 endif()
 
 include("${VITA_TOOLCHAIN}")
+
+set(CMAKE_SYSTEM_PROCESSOR armv7-a)
