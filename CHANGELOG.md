@@ -20,3 +20,13 @@
 - 2026-11-24: Completed Handheld Remaster TASK 4. Added ordered loose-file overlays from each Vita title’s `mods/` directory, safe base-root writes, parent-traversal rejection, and a NewDark SUB1 parser with UTF-8/Windows-1250 decoding; focused host tests and all three Vita ARMv7 VPK builds pass. Documented behavior in docs/vita-content.md.
 
 - 2026-11-24: Completed Handheld Remaster TASK 5. Added separate Vita Slim brightness/gamma sliders, a GLES2 correction shader, conservative correction ranges, D-pad/front-touch adjustment, and atomic `vita_options.cfg` persistence. Host tests and all three Vita ARMv7 test VPK builds pass; hardware calibration remains pending.
+
+- 2026-11-24: Completed Handheld Remaster TASK 6. Added Layout A dual-analog FPS, Layout B retro D-pad movement, and Layout C custom bindings, plus lower-corner LB/RB touch icons with layout-specific short/long-press actions. Documented behavior in docs/vita-controls.md.
+
+- 2026-11-24: Completed Handheld Remaster TASK 7. Added 256/512/1024/Unlimited Vita texture profiles with power-of-two dimension bounding, RGBA VRAM estimates, and persistent texture settings. Host regressions pass.
+
+- 2026-11-24: Completed Handheld Remaster TASK 8. Added Vita EAX/EFX room preset mapping, distance/occlusion propagation, underwater attenuation, and headphone wet-mix compensation. Host acoustics regressions pass.
+
+- 2026-11-24: Completed Handheld Remaster TASK 9. Added Vita 30/60 FPS power profiles with ARM/bus/GPU clock switching and rebuilt separate trilogy VPKs via the local VitaSDK. Verified THFG00001, THFG00002, and THFG00003 metadata and embedded eboot.bin payloads.
+
+- TASK 6 controls: added physical Layout A/B mappings, config-backed custom bindings, per-finger LB/RB touch triggers, and temporary icons; clean host build and CTest passed.

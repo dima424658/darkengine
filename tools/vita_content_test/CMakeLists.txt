@@ -9,6 +9,9 @@ add_executable(vita_content_test
   ../../libsrc/platform/vita_subtitles.cpp
   ../../libsrc/platform/vita_controls.cpp
   ../../libsrc/platform/vita_video_settings.cpp
+  ../../libsrc/platform/vita_texture_limits.cpp
+  ../../libsrc/platform/vita_acoustics.cpp
+  ../../libsrc/platform/vita_power.cpp
 )
 target_include_directories(vita_content_test PRIVATE
   ../../libsrc/platform

@@ -9,6 +9,14 @@ endif()
 
 include("$ENV{VITASDK}/share/vita.cmake")
 
+add_compile_options(
+  -O3
+  -mfloat-abi=hard
+  -mcpu=cortex-a9
+  -mfpu=neon
+  -mneon-for-64bits
+)
+
 find_package(SDL2 REQUIRED)
 find_path(DARK_VITAGL_INCLUDE_DIR vitaGL.h REQUIRED)
 find_library(DARK_VITAGL_LIBRARY NAMES vitaGL REQUIRED)
@@ -37,6 +45,9 @@ foreach(_platform IN LISTS DARK_VITA_PLATFORMS)
     "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_paths.cpp"
     "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_subtitles.cpp"
     "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_controls.cpp"
+    "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_texture_limits.cpp"
+    "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_acoustics.cpp"
+    "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_power.cpp"
     "${PROJECT_SOURCE_DIR}/libsrc/platform/vita_video_settings.cpp"
   )
   target_include_directories("${_target}" PRIVATE

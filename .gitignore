@@ -76,6 +76,8 @@ local.properties
 # Optional local source checkouts; keep external dependencies out of the
 # repository.
 /3rdparty/kctools/
+/.vitasdk_local/
+/.ai/compiler_errors.log
 
 # Local game state and diagnostics. Retail Thief 2 data is never part of this
 # repository.

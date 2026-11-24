@@ -1,9 +1,9 @@
 # CURRENT RUNTIME STATE
 
 ## CURRENT WORK BLOCK
-- Objective: TASK 6 - add three physical control layouts and temporary touch trigger icons.
-- Progress: TASK 4 and TASK 5 are implemented and verified. TASK 5 adds independent brightness/gamma sliders to the Vita bootstrap, GLES2 correction shaders, `vita_options.cfg` persistence, D-pad/touch adjustment, and host regression tests. All three Vita ARMv7 VPKs build.
-- Blockers: Gamma/brightness ranges are conservative and await visual calibration on a physical Vita 2000. The VPKs remain bootstrap packages rather than full game-engine builds. Proceed with TASK 6.
+- Objective: TASK 10 - implement the Ghost Check counter and Vita-safe mission/readback feedback.
+- Progress: TASK 6-9 are implemented and verified. Three Vita VPKs build locally and contain `eboot.bin`; THFG00001/2/3 title metadata and names are correct. TASK 7 VRAM, TASK 8 EFX, and TASK 9 30/60 FPS modules pass host regressions.
+- Blockers: Ghost Check UI semantics require a host-safe mission summary contract before engine integration.
 
 ## ENCOUNTERED DEAD ENDS & DEFERRED TASKS
 - 2026-11-24: First real build failed on the nonexistent `SceKernel_stub`; resolved by linking `SceLibKernel_stub`.
