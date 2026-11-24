@@ -38,3 +38,9 @@ The lower-left and lower-right front-touch corners act as virtual LB and RB.
 Icons appear while a trigger is held and for about 2.2 seconds after touching
 either corner. A short press activates its layout-specific tap action; holding
 for 400 ms activates the long-press action once.
+
+## Validation
+
+The host regression suite clean-builds and passes, and the ARMv7 Vita build
+generates all three bootstrap VPKs. Physical-device input behavior remains
+unverified.
