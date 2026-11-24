@@ -16,12 +16,33 @@ if(DARK_TARGET_VITA)
     THFG00003_THIEF2
   )
 
+  if(NOT DARK_VITA_PLACEHOLDER)
+    find_path(DARK_VITAGL_INCLUDE_DIR NAMES vitaGL.h)
+    find_library(DARK_VITAGL_LIBRARY NAMES vitaGL)
+    if(NOT DARK_VITAGL_INCLUDE_DIR OR NOT DARK_VITAGL_LIBRARY)
+      message(FATAL_ERROR
+        "vitaGL was not found in VitaSDK. Install vitaGL and retry.")
+    endif()
+    add_library(dark_vita_gl INTERFACE)
+    target_include_directories(dark_vita_gl INTERFACE
+      "${DARK_VITAGL_INCLUDE_DIR}")
+    target_link_libraries(dark_vita_gl INTERFACE
+      "${DARK_VITAGL_LIBRARY}")
+    target_compile_definitions(dark_vita_gl INTERFACE DARK_VITA_GL=1)
+  endif()
+
   if(DARK_VITA_PLACEHOLDER)
     add_executable(vita_path_test
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/vita_path_test.cpp"
       "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/platform/vita_paths.cpp")
     target_include_directories(vita_path_test PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/platform")
+
+    add_executable(vita_layout_test
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/vita_layout_test.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/dispdev/vita_layout.cpp")
+    target_include_directories(vita_layout_test PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}/libsrc/dispdev")
   endif()
 
   add_custom_target(vita-test-vpk
@@ -34,10 +55,16 @@ if(DARK_TARGET_VITA)
     VERBATIM)
 
   if(TARGET vita_path_test)
-    add_dependencies(vita-test-vpk vita_path_test)
+    add_dependencies(vita-test-vpk vita_path_test vita_layout_test)
     add_custom_command(TARGET vita-test-vpk POST_BUILD
       COMMAND $<TARGET_FILE:vita_path_test>
       COMMENT "Running Vita asset path routing test"
+      VERBATIM)
+  endif()
+  if(TARGET vita_layout_test)
+    add_custom_command(TARGET vita-test-vpk POST_BUILD
+      COMMAND $<TARGET_FILE:vita_layout_test>
+      COMMENT "Running Vita 960x544 layout test"
       VERBATIM)
   endif()
 endif()

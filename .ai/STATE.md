@@ -1,8 +1,8 @@
 # CURRENT RUNTIME STATE
 
 ## CURRENT WORK BLOCK
-- Objective: TASK 3 - map the desktop Vulkan/SDL3 rendering pipeline to Vita 960x544 and vitaGL hooks.
-- Blockers: VitaSDK and a Vita GPU validation environment are unavailable; keep a host-verifiable fallback layout.
+- Objective: Roadmap complete through TASK 3 in host-verifiable placeholder form.
+- Blockers: Real VitaSDK/vitaGL/Vita hardware validation remains unavailable in this environment.
 
 ## ENCOUNTERED DEAD ENDS & DEFERRED TASKS
 - 2026-11-24: `cmake --preset psvita` failed because `VITASDK` is unset and the VitaSDK CMake toolchain is absent.
